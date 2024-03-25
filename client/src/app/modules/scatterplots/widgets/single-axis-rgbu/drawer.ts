@@ -75,10 +75,7 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
 
-    if (this._mdl.showAllMineralLabels) {
-      this.drawMinerals(screenContext, this._mdl.drawModel);
-    }
-
+    this.drawMinerals(screenContext, this._mdl.drawModel);
     this.drawHoveredMineral(screenContext, this._mdl.drawModel);
   }
 
@@ -123,7 +120,7 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
     screenContext.textAlign = "left";
 
     // If we are hovered over a mineral, show ALL mineral labels, with the one hovered being last
-    let isAnyHovered = drawData.mineralHoverIdx >= 0 || this._mdl.showAllMineralLabels;
+    let isAnyHovered = drawData.mineralHoverIdx >= 0;
 
     let outOfBoundsLeft = new Set<number>();
     let outOfBoundsRight = new Set<number>();
@@ -140,19 +137,37 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
       } else if (xPoint < 70) {
         outOfBoundsLeft.add(c);
       } else {
-        this.drawMineral(screenContext, drawData.minerals[c], false, isAnyHovered, drawData.dataArea);
+        this.drawMineral(screenContext, drawData.minerals[c], false, this._mdl.showAllMineralLabels, drawData.dataArea);
       }
     }
 
     Array.from(outOfBoundsLeft.values()).forEach((mineralIndex, i) => {
       let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i;
-      this.drawMineral(screenContext, drawData.minerals[mineralIndex], false, isAnyHovered, drawData.dataArea, true, false, outOfBoundsOffset);
+      this.drawMineral(
+        screenContext,
+        drawData.minerals[mineralIndex],
+        false,
+        this._mdl.showAllMineralLabels,
+        drawData.dataArea,
+        this._mdl.showAllMineralLabels,
+        false,
+        outOfBoundsOffset
+      );
     });
 
     let keyOffset = this._mdl.keyItems.length > 0 ? 35 : 0;
     Array.from(outOfBoundsRight.values()).forEach((mineralIndex, i) => {
       let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i + keyOffset;
-      this.drawMineral(screenContext, drawData.minerals[mineralIndex], false, isAnyHovered, drawData.dataArea, false, true, outOfBoundsOffset);
+      this.drawMineral(
+        screenContext,
+        drawData.minerals[mineralIndex],
+        false,
+        this._mdl.showAllMineralLabels,
+        drawData.dataArea,
+        false,
+        this._mdl.showAllMineralLabels,
+        outOfBoundsOffset
+      );
     });
 
     if (isAnyHovered && !outOfBoundsLeft.has(drawData.mineralHoverIdx) && !outOfBoundsRight.has(drawData.mineralHoverIdx)) {
@@ -182,7 +197,7 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
     }
 
     if (drawLabel || outOfLeftBounds || outOfRightBounds) {
-      let text = outOfLeftBounds ? `<- ${m.name}` : outOfRightBounds ? `${m.name} ->` : m.name;
+      let text = outOfLeftBounds ? `← ${m.name}` : outOfRightBounds ? `${m.name} →` : m.name;
       const textOffset = 4;
       const padding = 3;
 

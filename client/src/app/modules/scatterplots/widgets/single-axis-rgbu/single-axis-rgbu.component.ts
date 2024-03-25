@@ -254,7 +254,8 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
     selectMinerals(this.dialog, trigger, this.mdl.mineralsShown, mineralsShown => {
       if (mineralsShown) {
         this.mdl.mineralsShown = mineralsShown;
-        this.loadData(this.mdl.imageName, this.mdl.visibleRegionIds);
+        this.mdl.rebuild();
+        this.saveState();
       }
     });
   }
@@ -435,6 +436,10 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
     const request: Observable<RGBUImage | RegionSettings>[] = [this._endpointsService.loadRGBUImageTIF(imagePath)];
     for (const roiId of roiIDs) {
       request.push(this._roiService.getRegionSettings(roiId));
+    }
+
+    if (request.length === 0) {
+      this.isWidgetDataLoading = false;
     }
 
     combineLatest(request).subscribe({
