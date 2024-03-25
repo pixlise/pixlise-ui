@@ -9,6 +9,8 @@ import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SentryHelper } from "src/app/utils/utils";
+import { WSError } from "./wsMessageHandler";
+import { ResponseStatus } from "src/app/generated-protos/websocket";
 
 @Injectable({
   providedIn: "root",
@@ -101,7 +103,12 @@ export class MemoisationService {
           }
         })
         .catch(async err => {
-          SentryHelper.logMsg(true, `Error reading ${key} from local storage memoisation: ${err}`);
+          // This should've worked...
+          //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
+          // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
+          if (!err?.message.endsWith(" not found")) {
+            SentryHelper.logMsg(true, `Error reading ${key} from local storage memoisation: ${err}`);
+          }
 
           // Get from API
           return await this.getFromAPI(key);

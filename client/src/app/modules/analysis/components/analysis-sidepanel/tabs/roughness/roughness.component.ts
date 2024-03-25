@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -63,7 +63,7 @@ export type DiffractionExpressionResponse = {
   templateUrl: "./roughness.component.html",
   styleUrls: ["./roughness.component.scss", "../diffraction/diffraction.component.scss"],
 })
-export class RoughnessComponent implements OnInit {
+export class RoughnessComponent implements OnInit, OnDestroy {
   public static readonly tableRowLimit = 100;
 
   @ViewChild("newPeakDialogBtn") newPeakDialogBtn!: ElementRef;
@@ -152,9 +152,9 @@ export class RoughnessComponent implements OnInit {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         if (config) {
-          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
           config.layouts.forEach((layout, i) => {
-            let widgetCounts: Record<string, number> = {};
+            const widgetCounts: Record<string, number> = {};
             layout.widgets.forEach((widget, widgetIndex) => {
               if (widgetCounts[widget.type]) {
                 widgetCounts[widget.type]++;
@@ -162,8 +162,8 @@ export class RoughnessComponent implements OnInit {
                 widgetCounts[widget.type] = 1;
               }
 
-              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
-              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
+              const widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
+              const widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
 
               widgetReferences.push({ widget, name: widgetName, type: widget.type });
             });
@@ -276,14 +276,10 @@ export class RoughnessComponent implements OnInit {
     return this.activeList === this.userRoughnessLabel ? this.filteredUserPeaks : this.filteredPeaks;
   }
 
-  get selectedScanId() {
-    return this._selectedScanId;
-  }
-
   onToggleDetectedPeakStatus(peak: RoughnessItem) {
-    let status = peak.deleted ? DiffractionPeak.roughnessPeak : DiffractionPeak.statusNotAnomaly;
+    const status = peak.deleted ? DiffractionPeak.roughnessPeak : DiffractionPeak.statusNotAnomaly;
     this._diffractionService.addPeakStatus(this._selectedScanId, peak.id, status);
-    let matchedPeak = this.peaks.find(existingPeak => existingPeak.id === peak.id);
+    const matchedPeak = this.peaks.find(existingPeak => existingPeak.id === peak.id);
     if (matchedPeak) {
       matchedPeak.deleted = status === DiffractionPeak.statusNotAnomaly;
       this.updateDisplayList();
@@ -308,6 +304,10 @@ export class RoughnessComponent implements OnInit {
     }
   }
 
+  get selectedScanId() {
+    return this._selectedScanId;
+  }
+
   set selectedScanId(value: string) {
     this._selectedScanId = value;
     this.selectedScan = this.allScans.find(scan => scan.id === value) || ScanItem.create();
@@ -317,7 +317,7 @@ export class RoughnessComponent implements OnInit {
 
     this._subs.add(
       this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
-        let dataSource = new ExpressionDataSource();
+        const dataSource = new ExpressionDataSource();
         dataSource
           .prepare(
             this._cachedDataService,
@@ -342,7 +342,7 @@ export class RoughnessComponent implements OnInit {
   }
 
   runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {
-    let expression = DataExpression.create({
+    const expression = DataExpression.create({
       id: DataExpressionId.predefinedRoughnessDataExpression,
       name: formedExpression.title,
       sourceCode: formedExpression.expression,
@@ -387,10 +387,10 @@ export class RoughnessComponent implements OnInit {
   }
 
   onSelectPMCsWithRoughness() {
-    let detectedPMCs = this.filteredPeaks.map(peak => peak.pmc);
-    let userPMCs = this.filteredUserPeaks.map(peak => peak.pmc);
+    const detectedPMCs = this.filteredPeaks.map(peak => peak.pmc);
+    const userPMCs = this.filteredUserPeaks.map(peak => peak.pmc);
 
-    let pmcSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([...detectedPMCs, ...userPMCs])]]);
+    const pmcSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([...detectedPMCs, ...userPMCs])]]);
     this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(pmcSelection), PixelSelection.makeEmptySelection());
   }
 
@@ -421,7 +421,7 @@ export class RoughnessComponent implements OnInit {
   onToggleManualPeakVisible(peak: ManualDiffractionPeak) {}
 
   onTogglePeakVisible(peak: RoughnessItem) {
-    let trackId = this.trackByPeakId(0, peak);
+    const trackId = this.trackByPeakId(0, peak);
     if (this.selectedPeakTrackId === trackId) {
       this.selectedPeakTrackId = "";
       this._selectionService.setSelection(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
@@ -430,7 +430,7 @@ export class RoughnessComponent implements OnInit {
       return;
     }
 
-    let singlePMCSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([peak.pmc])]]);
+    const singlePMCSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([peak.pmc])]]);
     this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(singlePMCSelection), PixelSelection.makeEmptySelection());
     this._selectionService.setHoverEntryPMC(this._selectedScanId, peak.pmc);
     this.selectedPeakTrackId = this.trackByPeakId(0, peak);
@@ -444,7 +444,7 @@ export class RoughnessComponent implements OnInit {
   }
 
   onToggleUserPeakVisible(peak: ManualDiffractionPeak) {
-    let trackId = this.trackByUserId(0, peak);
+    const trackId = this.trackByUserId(0, peak);
     if (this.selectedPeakTrackId === trackId) {
       this.selectedPeakTrackId = "";
       this._selectionService.setSelection(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
@@ -453,12 +453,12 @@ export class RoughnessComponent implements OnInit {
       return;
     }
 
-    let singlePMCSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([peak.pmc])]]);
+    const singlePMCSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([peak.pmc])]]);
     this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(singlePMCSelection), PixelSelection.makeEmptySelection());
     this._selectionService.setHoverEntryPMC(this._selectedScanId, peak.pmc);
     this.selectedPeakTrackId = trackId;
 
-    let diffractionPeak = new DiffractionPeak(
+    const diffractionPeak = new DiffractionPeak(
       peak.pmc,
       0,
       0,
@@ -513,7 +513,7 @@ export class RoughnessComponent implements OnInit {
   }
 
   sortDetectedPeaks() {
-    let peaksCopy = this.peaks.slice().filter(peak => {
+    const peaksCopy = this.peaks.slice().filter(peak => {
       let isNotDeletedVisible = this.visibleDetectedStatuses.includes(DiffractionPeak.roughnessPeak) && !peak.deleted;
       let isDeletedVisible = this.visibleDetectedStatuses.includes(DiffractionPeak.statusNotAnomaly) && peak.deleted;
 
@@ -538,11 +538,11 @@ export class RoughnessComponent implements OnInit {
   }
 
   sortUserPeaks() {
-    let peaksCopy = this.userPeaks.slice().filter(peak => peak.energykeV === -1);
+    const peaksCopy = this.userPeaks.slice().filter(peak => peak.energykeV === -1);
     setTimeout(() => {
       this.filteredUserPeaks = peaksCopy.sort((a: ManualDiffractionPeak, b: ManualDiffractionPeak) => {
-        let aValue = a.pmc;
-        let bValue = b.pmc;
+        const aValue = a.pmc;
+        const bValue = b.pmc;
 
         return this._sortAscending ? aValue - bValue : bValue - aValue;
       });

@@ -391,7 +391,7 @@ export class WidgetDataService {
             // Make sure we don't have broken stuff cached!
             this._inFluxSingleQueryResultCache.delete(cacheKey);
 
-            const errorMsg = httpErrorToString(err, "Expression runtime error"); // We use this function because it can decode many kinds of error class/type
+            const errorMsg = httpErrorToString(err, "Expression [" + cacheKey + "] error"); // We use this function because it can decode many kinds of error class/type
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (
