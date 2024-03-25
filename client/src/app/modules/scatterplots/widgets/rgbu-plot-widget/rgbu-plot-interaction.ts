@@ -112,8 +112,14 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
       this._mdl.cursorShown = CursorId.pointerCursor;
       this._mdl.drawModel.hoverLabel = "";
 
-      // See if it hovered over a mineral point
-      let hoverMineralIndex = this._mdl.drawModel.minerals.findIndex(mineral => distanceBetweenPoints(canvasPt, mineral.ratioPt) <= MINERAL_HOVER_RADIUS);
+      // See if it hovered over a mineral point (or line in the case of single axis)
+      let hoverMineralIndex = this._mdl.drawModel.minerals.findIndex(mineral => {
+        if (this._mdl.isSingleAxis) {
+          return Math.abs(mineral.ratioPt.x - canvasPt.x) <= MINERAL_HOVER_RADIUS;
+        } else {
+          return distanceBetweenPoints(canvasPt, mineral.ratioPt) <= MINERAL_HOVER_RADIUS;
+        }
+      });
       if (hoverMineralIndex >= 0) {
         this._mdl.drawModel.mineralHoverIdx = hoverMineralIndex;
       }

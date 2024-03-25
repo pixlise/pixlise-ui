@@ -12,12 +12,14 @@ import { ChordDiagramWidgetComponent } from "./widgets/chord-diagram-widget/chor
 import { RGBUAxisRatioPickerComponent } from "./widgets/rgbu-plot-widget/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { RGBUPlotWidgetComponent } from "./widgets/rgbu-plot-widget/rgbu-plot-widget.component";
 import { WidgetModule } from "../widget/widget.module";
+import { SingleAxisRGBUComponent } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/single-axis-rgbu.component";
 
 export { BinaryChartWidgetComponent } from "./widgets/binary-chart-widget/binary-chart-widget.component";
 export { TernaryChartWidgetComponent } from "./widgets/ternary-chart-widget/ternary-chart-widget.component";
 export { HistogramWidgetComponent } from "./widgets/histogram-widget/histogram-widget.component";
 export { ChordDiagramWidgetComponent } from "./widgets/chord-diagram-widget/chord-diagram-widget.component";
 export { RGBUPlotWidgetComponent } from "./widgets/rgbu-plot-widget/rgbu-plot-widget.component";
+export { SingleAxisRGBUComponent } from "./widgets/single-axis-rgbu/single-axis-rgbu.component";
 
 @NgModule({
   declarations: [
@@ -28,9 +30,17 @@ export { RGBUPlotWidgetComponent } from "./widgets/rgbu-plot-widget/rgbu-plot-wi
     ChordDiagramWidgetComponent,
     RGBUAxisRatioPickerComponent,
     RGBUPlotWidgetComponent,
+    SingleAxisRGBUComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, WidgetModule],
-  exports: [BinaryChartWidgetComponent, TernaryChartWidgetComponent, HistogramWidgetComponent, ChordDiagramWidgetComponent, RGBUPlotWidgetComponent],
+  exports: [
+    BinaryChartWidgetComponent,
+    TernaryChartWidgetComponent,
+    HistogramWidgetComponent,
+    ChordDiagramWidgetComponent,
+    RGBUPlotWidgetComponent,
+    SingleAxisRGBUComponent,
+  ],
   providers: [],
 })
 export class ScatterPlotsModule {}
