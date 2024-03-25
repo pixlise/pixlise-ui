@@ -508,16 +508,16 @@ export function drawTextWithBackground(
     labelRect.x -= labelRect.w - padding;
   }
 
-  // if (ensureWithinRect) {
-  //   // If we're past the ends of the rect, reposition so we are fully visible
-  //   if (labelRect.maxX() > ensureWithinRect.maxX()) {
-  //     labelRect.x -= labelRect.maxX() - ensureWithinRect.maxX();
-  //   }
+  if (ensureWithinRect) {
+    // If we're past the ends of the rect, reposition so we are fully visible
+    if (labelRect.maxX() > ensureWithinRect.maxX()) {
+      labelRect.x -= labelRect.maxX() - ensureWithinRect.maxX();
+    }
 
-  //   if (labelRect.x < ensureWithinRect.x) {
-  //     labelRect.x += ensureWithinRect.x - labelRect.x;
-  //   }
-  // }
+    if (labelRect.x < ensureWithinRect.x) {
+      labelRect.x += ensureWithinRect.x - labelRect.x;
+    }
+  }
 
   ctx.textAlign = "start";
   ctx.textBaseline = "top";
