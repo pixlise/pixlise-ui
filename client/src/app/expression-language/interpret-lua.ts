@@ -100,7 +100,16 @@ export class LuaDataQuerier {
         console.log(str);
       },
       str => {
-        SentryHelper.logMsg(true, `lua stderr: ${str}`);
+        if (
+          str.indexOf("(error object is not a string)") > -1 || // Not sure what causes these
+          str.startsWith("Aborted()") // Lua timed out error!
+        ) {
+          // Local logging only
+          console.error(str);
+        } else {
+          // We want to learn from this, but if it turns out to be spam, make a condition above for it!
+          SentryHelper.logMsg(true, `lua stderr: ${str}`);
+        }
         this._runtimeStdErr += str + "\n";
       }
     );

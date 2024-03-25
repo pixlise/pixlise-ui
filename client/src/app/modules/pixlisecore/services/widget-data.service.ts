@@ -347,8 +347,18 @@ export class WidgetDataService {
         return this.fromMemoised(item.data);
       }),
       catchError(err => {
-        // This is now already logged in memoisation service
-        SentryHelper.logMsg(true, `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`);
+        // This may have already logged something in memoisation service, but here we make sure we don't send to sentry
+        // if not needed
+        // This should've worked...
+        //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
+        // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
+        const msg = `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`;
+        if (!err?.message.endsWith(" not found")) {
+          SentryHelper.logMsg(true, msg);
+        } else {
+          // Just log it locally
+          console.warn(msg);
+        }
 
         // No matter what the error was, we need to now calculate this locally
         return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
