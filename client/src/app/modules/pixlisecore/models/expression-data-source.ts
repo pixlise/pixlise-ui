@@ -28,7 +28,7 @@ import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src
 import { APICachedDataService } from "../services/apicacheddata.service";
 import { DefaultDetectorId } from "src/app/expression-language/predefined-expressions";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
-import { DetectedDiffractionPeakStatuses, DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
+import { DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
 
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
@@ -158,19 +158,6 @@ export class ExpressionDataSource
       })
     );
   }
-  /*
-  private getPMCsForEntryIndexes(entryIdxs: number[]): number[] {
-    if (!this._scanEntries || !this._scanEntries.entries) {
-      throw new Error("getPMC: ScanEntryResp indexes not available");
-    }
-
-    const result = [];
-    for (const entryIdx of entryIdxs) {
-      result.push(this._scanEntries.entries[entryIdx].id);
-    }
-    return result;
-  }
-*/
 
   private getQuantData(): Observable<QuantGetResp> {
     if (!this._cachedDataService) {
@@ -815,7 +802,7 @@ export class ExpressionDataSource
           }
 
           for (const peak of this._allPeaks) {
-            let withinChannelRange = (channelStart === -1 || peak.channel >= channelStart) && (channelEnd === -1 || peak.channel < channelEnd);
+            const withinChannelRange = (channelStart === -1 || peak.channel >= channelStart) && (channelEnd === -1 || peak.channel < channelEnd);
             if (peak.status != DiffractionPeak.statusNotAnomaly && withinChannelRange) {
               let prev = pmcDiffractionCount.get(peak.pmc);
               if (!prev) {

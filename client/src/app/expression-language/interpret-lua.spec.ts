@@ -42,7 +42,8 @@ describe("LuaDataQuerier parseLuaError()", () => {
     const lua = new LuaDataQuerier(false);
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
-    expect(err2).toEqual(err);
+    expect(err2.message).toEqual(err.message);
+    expect(err2.stack).toEqual(err.stack);
   });
 
   it("should parse (Syntax error)", () => {
@@ -53,11 +54,11 @@ describe("LuaDataQuerier parseLuaError()", () => {
     const lua = new LuaDataQuerier(false);
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
-    expect(err2["line"]).toEqual(7);
+    expect(err2.line).toEqual(7);
     expect(err2.message).toEqual("Syntax error on line 7: unfinished string near '\"A)'");
     expect(err2.stack).toEqual(err.stack);
-    expect(err2["sourceLine"]).toEqual("7");
-    expect(err2["errType"]).toEqual("ErrorSyntax");
+    expect(err2.sourceLine).toEqual("7");
+    expect(err2.errType).toEqual("ErrorSyntax");
   });
 
   it("should parse (Different syntax error)", () => {
@@ -68,11 +69,11 @@ describe("LuaDataQuerier parseLuaError()", () => {
     const lua = new LuaDataQuerier(false);
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
-    expect(err2["line"]).toEqual(7);
+    expect(err2.line).toEqual(7);
     expect(err2.message).toEqual("Syntax error on line 7: 'end' expected (to close 'function' at line 4) near ')'");
     expect(err2.stack).toEqual(err.stack);
-    expect(err2["sourceLine"]).toEqual("7");
-    expect(err2["errType"]).toEqual("ErrorSyntax");
+    expect(err2.sourceLine).toEqual("7");
+    expect(err2.errType).toEqual("ErrorSyntax");
   });
 
   it("should parse (Runtime error)", () => {
@@ -86,9 +87,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
     expect(err2["line"]).toEqual(5);
-    expect(err2.message).toEqual(
-      "Runtime error on line 5: [string \"local Map = makeMapLib()...\"]:5: attempt to call a nil value (field 'addd')"
-    );
+    expect(err2.message).toEqual("Runtime error on line 5: [string \"local Map = makeMapLib()...\"]:5: attempt to call a nil value (field 'addd')");
     expect(err2.stack).toEqual(err.stack);
     expect(err2["sourceLine"]).toEqual("5");
     expect(err2["errType"]).toEqual("ErrorRun");
@@ -104,13 +103,11 @@ describe("LuaDataQuerier parseLuaError()", () => {
     const lua = new LuaDataQuerier(false);
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
-    expect(err2["line"]).toEqual(6);
-    expect(err2.message).toEqual(
-      'Runtime error on line 6: [string "local Map = makeMapLib()..."]:6: Something went wrong'
-    );
+    expect(err2.line).toEqual(6);
+    expect(err2.message).toEqual('Runtime error on line 6: [string "local Map = makeMapLib()..."]:6: Something went wrong');
     expect(err2.stack).toEqual(err.stack);
-    expect(err2["sourceLine"]).toEqual("6");
-    expect(err2["errType"]).toEqual("ErrorRun");
+    expect(err2.sourceLine).toEqual("6");
+    expect(err2.errType).toEqual("ErrorRun");
   });
 });
 
@@ -201,7 +198,7 @@ describe("LuaDataQuerier runQuery()", () => {
       done
     );
   });
-/* Input recording no longer works since everything went async
+  /* Input recording no longer works since everything went async
   it("should run simple expression (and record inputs)", done => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);

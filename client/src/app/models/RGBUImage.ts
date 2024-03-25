@@ -122,6 +122,20 @@ export class RGBUImage {
     public u: FloatImage
   ) {}
 
+  getChannel(channelName: string): FloatImage | null {
+    const ch = channelName.toLowerCase();
+    if (ch == "r") {
+      return this.r;
+    } else if (ch == "g") {
+      return this.g;
+    } else if (ch == "b") {
+      return this.b;
+    } else if (ch == "u") {
+      return this.u;
+    }
+    return null;
+  }
+
   get loadComplete(): boolean {
     return this._loadComplete;
   }

@@ -12,6 +12,9 @@ import { APIPaths } from "src/app/utils/api-helpers";
 import { randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
 import { getMessageName } from "./wsMessageHandler";
 
+import * as Sentry from "@sentry/browser";
+import { AuthService } from "@auth0/auth0-angular";
+
 @Injectable({
   providedIn: "root",
 })
@@ -22,8 +25,20 @@ export class APICommService implements OnDestroy {
 
   private _id = randomString(6);
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private _authService: AuthService
+  ) {
     console.log(`APICommService [${this._id}] created`);
+
+    this._authService.user$.subscribe((user: undefined | null | Sentry.User) => {
+      // Once we have user info, tell sentry the details so any errors can get logged against this user info
+      if (!user) {
+        Sentry.setUser(null);
+      } else {
+        Sentry.setUser({ id: user.id, username: user.username, email: user.email });
+      }
+    });
   }
 
   ngOnDestroy() {
