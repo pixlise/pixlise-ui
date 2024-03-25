@@ -119,7 +119,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
         return Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]);
       });
     } else {
-      SentryHelper.logMsg(true, `sortScans failed when called with ${this.scanConfigurations} configs and ${Object.keys(this.idToScan).length} idToScans`);
+      SentryHelper.logMsg(true, `sortScans failed when called with ${this.scanConfigurations.length} configs and ${Object.keys(this.idToScan).length} idToScans`);
     }
   }
 
