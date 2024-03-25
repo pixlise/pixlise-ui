@@ -353,7 +353,7 @@ export class WidgetDataService {
         //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
         // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
         const msg = `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`;
-        if (err && err.message.indexOf(" not found") > 0) {
+        if (err && err.message.indexOf(" not found") < 0) {
           SentryHelper.logMsg(true, msg);
         } else {
           // Just log it locally
