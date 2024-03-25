@@ -160,12 +160,12 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   calculateRowCount(): number {
-    let count = this._values.length;
+    const count = this._values.length;
     return count && this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
   }
 
   calculatePrintableResultValue() {
-    let values = this._evaluatedExpression?.resultValues;
+    const values = this._evaluatedExpression?.resultValues;
     if (this.isValidTableData) {
       return values?.values?.map((point: any) => point.value).join(", ") || "";
     }
@@ -173,7 +173,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
     if (Array.isArray(values)) {
       return values.map(value => JSON.stringify(value)).join("\n");
     } else if (typeof values === "object") {
-      let cache: any[] = [];
+      const cache: any[] = [];
 
       // This is a bit of a hack to get around the fact that JSON.stringify doesn't handle circular references
       return JSON.stringify(
@@ -195,12 +195,12 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   calculateIsValidData(): boolean {
-    let values = this._evaluatedExpression?.resultValues;
+    const values = this._evaluatedExpression?.resultValues;
     return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
   }
 
   calculateIsValidTableData(): boolean {
-    let values = this.evaluatedExpression?.resultValues;
+    const values = this.evaluatedExpression?.resultValues;
     return values instanceof PMCDataValues && values?.values?.length > 0;
   }
 
@@ -211,7 +211,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
     let avgValue = 0;
     let validPointCount = 0;
 
-    let values = this._values || [];
+    const values = this._values || [];
     values.forEach(point => {
       if (typeof point.value === "number" && !point.isUndefined && !isNaN(point.value)) {
         avgValue += point.value;
@@ -223,7 +223,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   private _getDataPoint(row: number, col: number): PMCDataValue | null {
-    let index = row * this.columnCount + col;
+    const index = row * this.columnCount + col;
     if (index >= this._values.length) {
       return null;
     }
@@ -236,30 +236,30 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   private _getDataValue(row: number, col: number): number | string {
-    let value: any = this._getDataPoint(row, col)?.value;
+    const value: any = this._getDataPoint(row, col)?.value;
     return [null, undefined].includes(value) ? "" : value;
   }
 
   private _getDataTooltip(row: number, col: number): string {
-    let point = this._getDataPoint(row, col);
+    const point = this._getDataPoint(row, col);
     if (point === null) {
       return "Undefined";
     } else {
-      let roundedValue = typeof point.value === "number" ? Math.round(point.value * 1000) / 1000 : point.value;
+      const roundedValue = typeof point.value === "number" ? Math.round(point.value * 1000) / 1000 : point.value;
       return `PMC: ${point.pmc}\nValue: ${point.isUndefined ? "Undefined" : roundedValue}`;
     }
   }
 
   calculateData() {
-    let data: DataCell[][] = [];
+    const data: DataCell[][] = [];
     for (let rowIndex = 0; rowIndex < this.rowCount; rowIndex++) {
-      let row: DataCell[] = [];
+      const row: DataCell[] = [];
       for (let colIndex = 0; colIndex < this.columnCount; colIndex++) {
-        let pmc = this._getDataPointPMC(rowIndex, colIndex);
+        const pmc = this._getDataPointPMC(rowIndex, colIndex);
         if (pmc === null) {
           continue;
         }
-        let value = this._getDataValue(rowIndex, colIndex);
+        const value = this._getDataValue(rowIndex, colIndex);
 
         if (!this.showAllPMCs && isNaN(Number(value))) {
           continue;
@@ -293,7 +293,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
 
   get hoveredIndex(): number[] {
     if (this.isValidTableData && this._selectionService.hoverEntryPMC !== invalidPMC && this._pmcToValueIdx.size > 0) {
-      let point = this._pmcToValueIdx.get(this._selectionService.hoverEntryPMC);
+      const point = this._pmcToValueIdx.get(this._selectionService.hoverEntryPMC);
       if (point !== undefined) {
         return [point.row, point.col];
       }
@@ -316,14 +316,14 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   onMouseEnter(row: number, col: number) {
-    let point = this.data[row][col];
+    const point = this.data[row][col];
     if (point !== null && point !== undefined && this.scanId) {
       this._selectionService.setHoverEntryPMC(this.scanId, point.pmc);
     }
   }
 
   onMouseLeave(row: number, col: number) {
-    let point = this.data[row][col];
+    const point = this.data[row][col];
     this._selectionService.hoverEntryPMC;
     if (point !== null && point !== undefined && this._selectionService.hoverEntryPMC === point.pmc) {
       this._selectionService.clearHoverEntry();
@@ -331,14 +331,14 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   onClickPMC(row: number, col: number) {
-    let pmc = this.data[row]?.[col]?.pmc;
+    const pmc = this.data[row]?.[col]?.pmc;
     if (pmc === undefined || pmc === null || !this.scanId) {
       return;
     }
 
-    let pixelSelection = this.currentSelection.pixelSelection;
-    let currentlySelected = this.currentSelection.beamSelection.getSelectedScanEntryPMCs(this.scanId);
-    let newSelection = new Set(currentlySelected);
+    const pixelSelection = this.currentSelection.pixelSelection;
+    const currentlySelected = this.currentSelection.beamSelection.getSelectedScanEntryPMCs(this.scanId);
+    const newSelection = new Set(currentlySelected);
     if (newSelection.has(pmc)) {
       newSelection.delete(pmc);
     } else {
@@ -357,12 +357,12 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   get printableStdout(): string {
-    let text = this.stdout || "";
+    const text = this.stdout || "";
     return text.replace(/[\t]/g, "    ");
   }
 
   get printableStderr(): string {
-    let text = this.stderr?.trim() || "";
+    const text = this.stderr?.trim() || "";
     return text.replace(/[\t]/g, "    ");
   }
 

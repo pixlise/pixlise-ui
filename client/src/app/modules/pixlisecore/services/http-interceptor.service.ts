@@ -59,7 +59,9 @@ export class HttpInterceptorService {
         } else {
           this._snackService.openError(err);
         }
-        return throwError(() => new Error(err));
+        return throwError(() => {
+          return err;
+        });
       })
     );
   }

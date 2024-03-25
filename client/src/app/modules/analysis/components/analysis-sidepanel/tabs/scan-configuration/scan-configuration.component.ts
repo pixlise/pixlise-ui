@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { Subscription } from "rxjs";
@@ -35,13 +35,14 @@ import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos
 import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
+import { SentryHelper } from "src/app/utils/utils";
 
 @Component({
   selector: "scan-configuration",
   templateUrl: "./scan-configuration.component.html",
   styleUrls: ["./scan-configuration.component.scss"],
 })
-export class ScanConfigurationTabComponent implements OnInit {
+export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   scanConfigurations: ScanConfiguration[] = [];
@@ -80,9 +81,7 @@ export class ScanConfigurationTabComponent implements OnInit {
           this.idToScan[scan.id] = scan;
         });
 
-        if (this.scanConfigurations && this.scanConfigurations.length > 0) {
-          this.scanConfigurations.sort((a, b) => Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]));
-        }
+        this.sortScans();
       })
     );
 
@@ -101,11 +100,27 @@ export class ScanConfigurationTabComponent implements OnInit {
       this._analysisLayoutService.fetchQuantsForScan(config.id);
     });
 
-    if (this.idToScan && Object.keys(this.idToScan).length > 0) {
-      this.scanConfigurations.sort((a, b) => Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]));
-    }
-
+    this.sortScans();
     this.hasConfigChanged = false;
+  }
+
+  private sortScans() {
+    if (this.scanConfigurations && this.scanConfigurations.length > 0 && this.idToScan && Object.keys(this.idToScan).length > 0) {
+      this.scanConfigurations.sort((a, b) => {
+        const checkIds = [a.id, b.id];
+        for (const id of checkIds) {
+          const s = this.idToScan[id];
+          if (!s || !s.meta || !s.meta["Sol"]) {
+            SentryHelper.logMsg(true, `sortScans failed to read Sol for scan id: ${id}`)
+            return -1;
+          }
+        }
+
+        return Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]);
+      });
+    } else {
+      SentryHelper.logMsg(true, `sortScans failed when called with ${this.scanConfigurations} configs and ${Object.keys(this.idToScan).length} idToScans`);
+    }
   }
 
   ngOnDestroy(): void {
@@ -113,7 +128,7 @@ export class ScanConfigurationTabComponent implements OnInit {
   }
 
   onScanSearchMenu() {
-    let searchBox = document.getElementsByClassName("scan-search");
+    const searchBox = document.getElementsByClassName("scan-search");
     if (searchBox.length > 0) {
       (searchBox[0] as any).focus();
     }
@@ -137,7 +152,7 @@ export class ScanConfigurationTabComponent implements OnInit {
   }
 
   onAddScan(scanId: string) {
-    let scan = this.idToScan[scanId];
+    const scan = this.idToScan[scanId];
     if (!scan || this.scanConfigurations.find(config => config.id === scanId)) {
       return;
     }
@@ -158,7 +173,7 @@ export class ScanConfigurationTabComponent implements OnInit {
   }
 
   updateConfig(config: ScanConfiguration) {
-    let index = this.scanConfigurations.findIndex(c => c.id === config.id);
+    const index = this.scanConfigurations.findIndex(c => c.id === config.id);
     if (index >= 0) {
       this.scanConfigurations[index] = config;
       this.hasConfigChanged = true;
@@ -170,7 +185,7 @@ export class ScanConfigurationTabComponent implements OnInit {
   }
 
   onSave(): void {
-    let screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    const screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
     if (!screenConfig) {
       return;
     }
