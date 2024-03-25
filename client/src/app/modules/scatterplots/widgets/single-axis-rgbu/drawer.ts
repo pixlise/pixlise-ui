@@ -144,15 +144,14 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
       }
     }
 
-    // Draw left out of bounds minerals
-
     Array.from(outOfBoundsLeft.values()).forEach((mineralIndex, i) => {
       let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i;
       this.drawMineral(screenContext, drawData.minerals[mineralIndex], false, isAnyHovered, drawData.dataArea, true, false, outOfBoundsOffset);
     });
 
+    let keyOffset = this._mdl.keyItems.length > 0 ? 35 : 0;
     Array.from(outOfBoundsRight.values()).forEach((mineralIndex, i) => {
-      let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i;
+      let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i + keyOffset;
       this.drawMineral(screenContext, drawData.minerals[mineralIndex], false, isAnyHovered, drawData.dataArea, false, true, outOfBoundsOffset);
     });
 
@@ -179,7 +178,7 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
     let radius = isHovered ? 4 : 2;
     if (!outOfLeftBounds && !outOfRightBounds) {
       screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
-      screenContext.fillRect(pt.x, pt.y - drawArea.h, radius, drawArea.h);
+      screenContext.fillRect(pt.x, 4, radius, drawArea.h + 10);
     }
 
     if (drawLabel || outOfLeftBounds || outOfRightBounds) {
@@ -191,7 +190,7 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
       let textColour = isHovered ? Colours.CONTEXT_PURPLE.asString() : Colours.GRAY_10.asString();
 
       let xPos = pt.x + textOffset;
-      let yPos = pt.y - drawArea.h - RGBUPlotModel.FONT_SIZE + padding + padding;
+      let yPos = textOffset;
       if (outOfLeftBounds) {
         xPos = 70;
         yPos = textOffset + outOfBoundsOffset;
