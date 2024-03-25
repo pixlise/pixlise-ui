@@ -138,7 +138,12 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
       topRightInsetButton: {
         id: "key",
         type: "widget-key",
-        onClick: () => {},
+        value: this.mdl.keyItems,
+        onClick: () => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        },
       },
     };
   }
@@ -229,6 +234,12 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
     this.mdl.roiStackedOverlap = !this.mdl.roiStackedOverlap;
     this.mdl.rebuild();
     this.saveState();
+
+    setTimeout(() => {
+      if (this.widgetControlConfiguration.topRightInsetButton) {
+        this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+      }
+    }, 200);
   }
 
   onSoloView() {
@@ -447,7 +458,7 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
-        }, 0);
+        }, 200);
       },
       error: err => {
         this.isWidgetDataLoading = false;

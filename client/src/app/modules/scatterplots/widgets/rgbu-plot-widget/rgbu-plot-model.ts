@@ -584,6 +584,11 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
               roiCount = activePixelROIs.map(roi => {
                 let currentColour = visibleROIs[roi].displaySettings.colour;
                 currentColour = new RGBA(currentColour.r, currentColour.g, currentColour.b, 255);
+
+                if (!colourKey[visibleROIs[roi].region.name]) {
+                  colourKey[visibleROIs[roi].region.name] = currentColour;
+                }
+
                 return {
                   roi: visibleROIs[roi].region.name,
                   count,
