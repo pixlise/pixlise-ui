@@ -1,18 +1,17 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription, combineLatest, map } from "rxjs";
-import { ROIItem } from "src/app/generated-protos/roi";
 import { ContextImageItem } from "src/app/modules/image-viewers/image-viewers.module";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { httpErrorToString } from "src/app/utils/utils";
 import { AverageRGBURatio, SelectionTabModel } from "./model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { RGBUImage } from "src/app/models/RGBUImage";
 
 const emptySelectionDescription = "Empty";
 
@@ -47,6 +46,7 @@ export class SelectionComponent implements OnInit, OnDestroy {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cacheDataService: APICachedDataService,
+    protected _endpointsService: APIEndpointsService,
     //private _datasetService: DataSetService,
     private _roiService: ROIService,
     private _selectionService: SelectionService,
@@ -147,13 +147,12 @@ export class SelectionComponent implements OnInit, OnDestroy {
       });
     }
 
-    /*
-    // Only calculate RGBU ratio averages if dataset has an RGBU Image
-    if (this._datasetService.datasetLoaded.rgbuImages.length > 0) {
-      let contextImage = this._contextImageService.mdl.contextImageItemShowing;
-      this._averageRGBURatios = SelectionTabModel.calculateAverageRGBURatios(selection, contextImage);
+    // If there are pixels selected, respond to those too
+    if (selection.pixelSelection.imageName) {
+      this._endpointsService.loadRGBUImageTIF(selection.pixelSelection.imageName).subscribe((img: RGBUImage) => {
+        this._averageRGBURatios = SelectionTabModel.calculateAverageRGBURatios(selection, img);
+      });
     }
-    */
   }
 
   get beamSelection(): BeamSelection {
