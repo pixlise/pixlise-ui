@@ -35,19 +35,14 @@ import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/p
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-// import { RGBUPlotDrawer } from "./rgbu-plot-drawer";
-// import { RGBUPlotInteraction } from "./rgbu-plot-interaction";
-// import { RGBUPlotModel } from "./rgbu-plot-model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { RGBUPlotWidgetState, SingleAxisRGBUWidgetState } from "src/app/generated-protos/widget-data";
+import { SingleAxisRGBUWidgetState } from "src/app/generated-protos/widget-data";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
-// import { RGBUAxisUnit } from "./rgbu-plot-data";
-// import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
@@ -58,14 +53,13 @@ import {
   ImagePickerDialogResponse,
 } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 import { RGBUPlotModel } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-model";
-import { RGBUPlotDrawer } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-drawer";
-import { RGBUPlotInteraction } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-interaction";
 import {
   RatioPickerData,
   RGBUAxisRatioPickerComponent,
 } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { RGBUAxisUnit } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-data";
 import { SingleAxisRGBUDrawer } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/drawer";
+import { SingleAxisRGBUInteraction } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/single-axis-rgbu-interaction";
 
 @Component({
   selector: "single-axis-rgbu",
@@ -107,7 +101,7 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
     super();
 
     this.drawer = new SingleAxisRGBUDrawer(this.mdl);
-    this.toolhost = new RGBUPlotInteraction(this.mdl, this._selectionService);
+    this.toolhost = new SingleAxisRGBUInteraction(this.mdl, this._selectionService);
 
     this._widgetControlConfiguration = {
       topToolbar: [

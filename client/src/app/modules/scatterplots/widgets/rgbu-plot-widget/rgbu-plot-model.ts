@@ -521,6 +521,14 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     useFirstROIColour: boolean = false,
     stackedROIs = false
   ): [RGBURatioPoint[], Record<string, RGBA>] {
+    if (xMinMax.min === null && xMinMax.max === null) {
+      xMinMax = new MinMax(0, 0);
+    }
+
+    if (yMinMax.min === null && yMinMax.max === null) {
+      yMinMax = new MinMax(0, 0);
+    }
+
     if (xMinMax.min === null || yMinMax.min === null) {
       throw new Error("generateRGBURatioPoints called with null xMinMax or yMinMax");
     }

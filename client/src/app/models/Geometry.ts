@@ -30,6 +30,7 @@
 ///////////////////////////////////////////////
 // Geometry transformations
 import { inv, matrix, Matrix, multiply } from "mathjs";
+import { MinMax } from "src/app/models/BasicTypes";
 import { environment } from "src/environments/environment";
 
 // TODO: Use point class from:
@@ -275,7 +276,32 @@ export function colinearVectors(v1: Point, v2: Point): boolean {
   return false;
 }
 
-export function ptWithinPolygon(p: Point, polyPoints: Point[], polyPointBBox: Rect = null): boolean {
+export function pointWithinSingleAxisPlane(point: Point, polyPoints: Point[], axis: "x" | "y" = "x"): boolean {
+  if (polyPoints.length < 1) {
+    return false;
+  }
+
+  // Get min/max bounds for axis
+  let minMaxPolyBounds = new MinMax(polyPoints[0][axis], polyPoints[0][axis]);
+  polyPoints.forEach(pt => {
+    if (isNaN(pt[axis])) {
+      // If any point is NaN, skip it
+      return;
+    }
+
+    minMaxPolyBounds.expandMin(pt[axis]);
+    minMaxPolyBounds.expandMax(pt[axis]);
+  });
+
+  if (minMaxPolyBounds.min === null || minMaxPolyBounds.max === null) {
+    return false;
+  }
+
+  // If the point is within the min/max bounds, it's within the plane
+  return point[axis] >= minMaxPolyBounds.min && point[axis] <= minMaxPolyBounds.max;
+}
+
+export function ptWithinPolygon(p: Point, polyPoints: Point[], polyPointBBox: Rect | null = null): boolean {
   // Using the ray casting algorithm to determine if point is within polygon:
   // https://en.wikipedia.org/wiki/Point_in_polygon
 
@@ -324,28 +350,7 @@ export function ptWithinPolygon(p: Point, polyPoints: Point[], polyPointBBox: Re
 
       // If t > 0 (this way we're testing only intersections in the direction of r) and 0 < u < 1, it's a hit!
       if (t > 0 && u >= 0 && u <= 1) {
-        log.push(
-          "HIT: p=" +
-            p.x +
-            "," +
-            p.y +
-            ", r=1,0, q=" +
-            q.x +
-            "," +
-            q.y +
-            ", lineEnd=" +
-            lineEnd.x +
-            "," +
-            lineEnd.y +
-            ", s=" +
-            s.x +
-            "," +
-            s.y +
-            ", u=" +
-            u +
-            ", t=" +
-            t
-        );
+        log.push(`HIT: p=${p.x},${p.y}, r=1,0, q=${q.x},${q.y}, lineEnd=${lineEnd.x},${lineEnd.y}, s=${s.x},${s.y}, u=${u}, t=${t}`);
         intersectCount++;
       }
 
@@ -355,7 +360,7 @@ export function ptWithinPolygon(p: Point, polyPoints: Point[], polyPointBBox: Re
 
   let isInside = intersectCount % 2 != 0;
 
-  if (polyPointBBox != null && isInside && !polyPointBBox.containsPoint(p)) {
+  if (polyPointBBox !== null && isInside && !polyPointBBox.containsPoint(p)) {
     // Bounding box overrules
     isInside = false;
 

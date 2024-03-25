@@ -66,11 +66,12 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
       return;
     }
 
-    const clrLasso = Colours.WHITE;
+    const clrLasso = Colours.CONTEXT_BLUE;
 
     // And lasso if any
     if (this._mdl.mouseLassoPoints) {
       const drawer = new OutlineDrawer(screenContext, clrLasso);
+      drawer.lineWidth = 2;
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
 
@@ -84,12 +85,8 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
   drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Draw data
     this.drawPlot(screenContext, this._mdl.drawModel, drawParams);
-
-    // On top of everything, draw the mineral points
-    this.drawMinerals(screenContext, this._mdl.drawModel);
   }
 
-  //   NEW
   private drawPlot(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel, drawParams: CanvasDrawParameters): void {
     if (!this._mdl?.raw || !this._mdl?.plotData || !this._mdl?.plotData?.points || !this._mdl?.plotData?.yRange?.max || this._mdl.plotData.yRange.max <= 0) {
       return;
@@ -128,16 +125,38 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
     // If we are hovered over a mineral, show ALL mineral labels, with the one hovered being last
     let isAnyHovered = drawData.mineralHoverIdx >= 0 || this._mdl.showAllMineralLabels;
 
+    let outOfBoundsLeft = new Set<number>();
+    let outOfBoundsRight = new Set<number>();
     for (let c = 0; c < drawData.minerals.length; c++) {
       if (drawData.mineralHoverIdx == c) {
         // Draw the hovered one last
         continue;
       }
 
-      this.drawMineral(screenContext, drawData.minerals[c], false, isAnyHovered, drawData.dataArea);
+      let xPoint = drawData.minerals[c]?.ratioPt?.x || 0;
+
+      if (xPoint > drawData.dataArea.maxX()) {
+        outOfBoundsRight.add(c);
+      } else if (xPoint < 70) {
+        outOfBoundsLeft.add(c);
+      } else {
+        this.drawMineral(screenContext, drawData.minerals[c], false, isAnyHovered, drawData.dataArea);
+      }
     }
 
-    if (isAnyHovered) {
+    // Draw left out of bounds minerals
+
+    Array.from(outOfBoundsLeft.values()).forEach((mineralIndex, i) => {
+      let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i;
+      this.drawMineral(screenContext, drawData.minerals[mineralIndex], false, isAnyHovered, drawData.dataArea, true, false, outOfBoundsOffset);
+    });
+
+    Array.from(outOfBoundsRight.values()).forEach((mineralIndex, i) => {
+      let outOfBoundsOffset = 1.5 * RGBUPlotModel.FONT_SIZE * i;
+      this.drawMineral(screenContext, drawData.minerals[mineralIndex], false, isAnyHovered, drawData.dataArea, false, true, outOfBoundsOffset);
+    });
+
+    if (isAnyHovered && !outOfBoundsLeft.has(drawData.mineralHoverIdx) && !outOfBoundsRight.has(drawData.mineralHoverIdx)) {
       this.drawMineral(screenContext, drawData.minerals[drawData.mineralHoverIdx], true, isAnyHovered, drawData.dataArea);
     }
   }
@@ -147,40 +166,41 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
     m: RGBUMineralPoint,
     isHovered: boolean,
     drawLabel: boolean,
-    drawArea: Rect
+    drawArea: Rect,
+    outOfLeftBounds: boolean = false,
+    outOfRightBounds: boolean = false,
+    outOfBoundsOffset: number = 0
   ) {
-    screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
-    // drawFilledCircle(screenContext, m.ratioPt, isHovered ? 4 : 2);
+    if (!m?.ratioPt) {
+      return;
+    }
 
     let pt = m.ratioPt;
     let radius = isHovered ? 4 : 2;
-    // screenContext.beginPath();
-    // screenContext.arc(pt.x, pt.y, radius, 0, 2 * Math.PI);
-    screenContext.rect(pt.x, pt.y - drawArea.h, radius, drawArea.h);
-    screenContext.fill();
+    if (!outOfLeftBounds && !outOfRightBounds) {
+      screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+      screenContext.fillRect(pt.x, pt.y - drawArea.h, radius, drawArea.h);
+    }
 
-    // screenContext.beginPath();
-    // screenContext.arc(pt.x, pt.y, radius, 0, 2 * Math.PI);
-    // screenContext.fill();
-
-    if (drawLabel) {
+    if (drawLabel || outOfLeftBounds || outOfRightBounds) {
+      let text = outOfLeftBounds ? `<- ${m.name}` : outOfRightBounds ? `${m.name} ->` : m.name;
       const textOffset = 4;
       const padding = 3;
 
       let backgroundColour = isHovered ? Colours.GRAY_80.asStringWithA(0.9) : Colours.GRAY_80.asStringWithA(0.5);
       let textColour = isHovered ? Colours.CONTEXT_PURPLE.asString() : Colours.GRAY_10.asString();
 
-      drawTextWithBackground(
-        screenContext,
-        m.name,
-        pt.x + textOffset,
-        pt.y - drawArea.h - RGBUPlotModel.FONT_SIZE + padding + padding,
-        RGBUPlotModel.FONT_SIZE,
-        padding,
-        backgroundColour,
-        textColour,
-        drawArea
-      );
+      let xPos = pt.x + textOffset;
+      let yPos = pt.y - drawArea.h - RGBUPlotModel.FONT_SIZE + padding + padding;
+      if (outOfLeftBounds) {
+        xPos = 70;
+        yPos = textOffset + outOfBoundsOffset;
+      } else if (outOfRightBounds) {
+        xPos = drawArea.maxX() - screenContext.measureText(text).width - textOffset * 2;
+        yPos = textOffset + outOfBoundsOffset;
+      }
+
+      drawTextWithBackground(screenContext, text, xPos, yPos, RGBUPlotModel.FONT_SIZE, padding, backgroundColour, textColour);
     }
   }
 }

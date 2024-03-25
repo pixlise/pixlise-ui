@@ -295,6 +295,8 @@ export class PointDrawer {
 // Line drawing
 
 export class OutlineDrawer {
+  lineWidth: number = 1;
+
   constructor(
     private _screenContext: CanvasRenderingContext2D,
     //private _lineWidth: number,
@@ -302,6 +304,7 @@ export class OutlineDrawer {
   ) {
     // Setup the context for drawing this
     this._screenContext.strokeStyle = this._outlineColour.asString();
+    this._screenContext.fillStyle = "rgba(0, 0, 0, 0)";
   }
 
   drawOutline(points: Point[]): void {
@@ -309,6 +312,10 @@ export class OutlineDrawer {
       return;
     }
 
+    this._screenContext.save();
+    this._screenContext.strokeStyle = this._outlineColour.asString();
+    this._screenContext.lineWidth = this.lineWidth;
+    this._screenContext.fillStyle = "rgba(0, 0, 0, 0)";
     this._screenContext.beginPath();
     this._screenContext.moveTo(points[0].x, points[0].y);
     for (let c = 1; c < points.length; c++) {
@@ -317,6 +324,8 @@ export class OutlineDrawer {
 
     this._screenContext.closePath();
     this._screenContext.stroke();
+    this._screenContext.fill();
+    this._screenContext.restore();
   }
 }
 
@@ -499,16 +508,16 @@ export function drawTextWithBackground(
     labelRect.x -= labelRect.w - padding;
   }
 
-  if (ensureWithinRect) {
-    // If we're past the ends of the rect, reposition so we are fully visible
-    if (labelRect.maxX() > ensureWithinRect.maxX()) {
-      labelRect.x -= labelRect.maxX() - ensureWithinRect.maxX();
-    }
+  // if (ensureWithinRect) {
+  //   // If we're past the ends of the rect, reposition so we are fully visible
+  //   if (labelRect.maxX() > ensureWithinRect.maxX()) {
+  //     labelRect.x -= labelRect.maxX() - ensureWithinRect.maxX();
+  //   }
 
-    if (labelRect.x < ensureWithinRect.x) {
-      labelRect.x += ensureWithinRect.x - labelRect.x;
-    }
-  }
+  //   if (labelRect.x < ensureWithinRect.x) {
+  //     labelRect.x += ensureWithinRect.x - labelRect.x;
+  //   }
+  // }
 
   ctx.textAlign = "start";
   ctx.textBaseline = "top";
