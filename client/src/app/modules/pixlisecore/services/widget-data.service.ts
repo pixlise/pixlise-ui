@@ -195,7 +195,7 @@ export class WidgetDataService {
         for (const x of what) {
           whatDbg.push(`Query: expr=${x.exprId}, scan=${x.scanId}, quant=${x.quantId}, roi=${x.roiId}`);
         }
-        SentryHelper.logMsg(true, `Uncaught error in getData: ${err}.\nQuery items:\n${whatDbg.join("\n")}`);
+        SentryHelper.logException(new Error(`Uncaught error in getData: ${err}.\nQuery items:\n${whatDbg.join("\n")}`));
 
         // TODO: make it so getData() never throws an error!
         // return new RegionDataResults([], err);

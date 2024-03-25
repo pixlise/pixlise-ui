@@ -107,7 +107,7 @@ export class MemoisationService {
           //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
           // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
           if (!err?.message.endsWith(" not found")) {
-            SentryHelper.logMsg(true, `Error reading ${key} from local storage memoisation: ${err}`);
+            SentryHelper.logException(err, "Error in local storage getMemoData");
           }
 
           // Get from API
