@@ -132,11 +132,11 @@ export class MemoisationService {
           this._localStorageService.storeMemoData(resp.item);
 
           return resp.item;
-        }),
+        }) /*,
         catchError(err => {
           console.log("Not memoised: " + key);
           throw new Error(err);
-        })
+        })*/
       )
     );
 
