@@ -32,6 +32,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
       // Init sentry now that we have the config
       if (config && config.sentry_dsn.length > 0) {
         Sentry.init({
+          attachStacktrace: true,
+          enabled: true,
           dsn: config.sentry_dsn,
           environment: config.name,
           // Added to stop all logs coming from instrument.js, see:
@@ -46,11 +48,16 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
           replaysOnErrorSampleRate: 1.0,
           // The below came from: https://github.com/getsentry/sentry-javascript/issues/2292
           beforeSend(event, hint) {
+            // Ignore errors that occur while the user is offline
+            if (!navigator.onLine) {
+              return null;
+            }
+
             // Note: issue with double entries during http exceptions: https://github.com/getsentry/sentry-javascript/issues/2169
             // Note: issue with a second entry not being set correctly (as a non-error): https://github.com/getsentry/sentry-javascript/issues/2292#issuecomment-554932519
             const isNonErrorException = event?.exception?.values?.[0]?.value?.startsWith?.("Non-Error exception captured");
             if (isNonErrorException) {
-              let serializedExtra: any = event?.extra?.["__serialized__"];
+              const serializedExtra: any = event?.extra?.["__serialized__"];
               if (!serializedExtra) {
                 return null;
               }
@@ -68,7 +75,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
 
         const version = (VERSION as any)["raw"];
         console.log("Sentry Initialised, adding version tag: " + version);
-        Sentry.setTag("version", version);
+        Sentry.setTag("pixlise_version", version);
       } else {
         console.log("No Sentry DNS, Sentry error reporting disabled");
       }
