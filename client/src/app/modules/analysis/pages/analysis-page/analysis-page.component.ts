@@ -3,6 +3,7 @@ import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
+import { UsersService } from "src/app/modules/settings/services/users.service";
 
 export type ScreenConfigurationCSS = {
   templateColumns: string;
@@ -24,7 +25,10 @@ export class AnalysisPageComponent {
   soloViewWidgetId: string | null = null;
   soloViewWidget: WidgetLayoutConfiguration | null = null;
 
-  constructor(private _analysisLayoutService: AnalysisLayoutService) {}
+  constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _usersService: UsersService
+  ) {}
 
   ngOnInit(): void {
     this._subs.add(
@@ -49,6 +53,8 @@ export class AnalysisPageComponent {
         }
       })
     );
+
+    this._usersService.searchUsers("");
   }
 
   ngOnDestroy(): void {
