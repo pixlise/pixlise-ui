@@ -565,7 +565,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     this._data = this._data.concat(this.visibleMinerals);
 
     let currentSelection = this._selectionService.getCurrentSelection();
-    let selectedPixels = currentSelection.pixelSelection.selectedPixels;
+    let selectedPixels = new Set<number>();
+    if (currentSelection.pixelSelection.imageName === this.imageName) {
+      selectedPixels = currentSelection.pixelSelection.selectedPixels;
+    }
 
     this.keyItems = [];
 
