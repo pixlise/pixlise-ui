@@ -16,6 +16,8 @@ import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { BINARY_WIDGET_OPTIONS, TERNARY_WIDGET_OPTIONS, widgetLayerPositions } from "../models/expression-widget-layer-configs";
 import { WidgetType } from "../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UserInfo } from "src/app/generated-protos/user";
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",
@@ -27,7 +29,7 @@ export class ExpressionLayerComponent implements OnInit {
   private _subs = new Subscription();
 
   private _module: DataModule | null = null;
-  @Input() expression: DataExpression | ExpressionGroup | null = null;
+  private _expression: DataExpression | ExpressionGroup | null = null;
   @Input() isExpressionGroup: boolean = false;
 
   private _name: string = "";
@@ -52,6 +54,8 @@ export class ExpressionLayerComponent implements OnInit {
   @Input() showActiveExpressionConfiguration: boolean = false;
 
   @Output() onCloseModal = new EventEmitter();
+
+  creatorUser: UserInfo = UserInfo.create();
 
   private _widgetType: WidgetType | "" = "" as WidgetType;
   widgetOptions: string[] = [];
@@ -79,10 +83,13 @@ export class ExpressionLayerComponent implements OnInit {
     private _router: Router,
     private _expressionsService: ExpressionsService,
     private _analysisLayoutService: AnalysisLayoutService,
+    private _usersService: UsersService,
     private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
+    this.updateUser();
+
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         this.availableScans = Object.values(config.scanConfigurations);
@@ -97,6 +104,22 @@ export class ExpressionLayerComponent implements OnInit {
         });
       })
     );
+
+    this._subs.add(
+      this._usersService.searchedUsers$.subscribe(() => {
+        this.updateUser();
+      })
+    );
+  }
+
+  updateUser() {
+    let cachedUsers = this._usersService?.cachedUsers;
+    let userId = this.expression?.owner?.creatorUser?.id || "";
+    if (cachedUsers && userId && this.expression?.owner && cachedUsers[userId]) {
+      this.creatorUser = UserInfo.create(cachedUsers[userId]);
+    } else if (this.expression?.owner?.creatorUser) {
+      this.creatorUser = UserInfo.create(this.expression.owner.creatorUser);
+    }
   }
 
   ngOnDestroy() {
@@ -109,6 +132,19 @@ export class ExpressionLayerComponent implements OnInit {
 
   get hasTopExpression(): boolean {
     return !!this._route.snapshot.queryParams[EditorConfig.topExpressionId];
+  }
+
+  get expression(): DataExpression | ExpressionGroup | null {
+    return this._expression;
+  }
+
+  @Input() set expression(expression: DataExpression | ExpressionGroup | null) {
+    if (!expression) {
+      return;
+    }
+
+    this._expression = expression;
+    this.updateUser();
   }
 
   @Input() set module(module: DataModule | null) {
@@ -178,11 +214,11 @@ export class ExpressionLayerComponent implements OnInit {
   }
 
   get creatorName(): string {
-    return this.expression?.owner?.creatorUser?.name || "";
+    return this.creatorUser?.name || "";
   }
 
   get creatorIcon(): string {
-    return this.expression?.owner?.creatorUser?.iconURL || "";
+    return this.creatorUser?.iconURL || "";
   }
 
   get creatorAbbreviation(): string {
