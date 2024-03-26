@@ -267,9 +267,7 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
     if (pmcs) {
       pmcbit = ", pmcs: " + pmcs.length;
     }
-    throw new Error(
-      "makeScatterPlotData called with differing array lengths: xvalues: " + xvalues.length + ", yvalues: " + yvalues.length + pmcbit
-    );
+    throw new Error("makeScatterPlotData called with differing array lengths: xvalues: " + xvalues.length + ", yvalues: " + yvalues.length + pmcbit);
   }
 
   const xys: any[] = [];
@@ -885,12 +883,7 @@ export class SDSFields {
       }
 
       if (this.isAlpha(site.substring(0, 1)) && this.isAlpha(site.substring(1, 2)) && this.isAlpha(site.substring(2, 3))) {
-        return (
-          10360 +
-          this.letterValue(site.substring(0, 1)) * 26 * 26 +
-          this.letterValue(site.substring(1, 2)) * 26 +
-          this.letterValue(site.substring(2, 3))
-        );
+        return 10360 + this.letterValue(site.substring(0, 1)) * 26 * 26 + this.letterValue(site.substring(1, 2)) * 26 + this.letterValue(site.substring(2, 3));
       }
 
       if (this.isAllDigits(site.substring(0, 1)) && this.isAlpha(site.substring(1, 2)) && this.isAlpha(site.substring(2, 3))) {
@@ -934,6 +927,11 @@ export class SDSFields {
 
     return -1;
   }
+}
+
+export function getScanIdFromImagePath(imagePath: string): string {
+  const match = imagePath.match(/^(?<scanId>\d+)\//);
+  return match ? match.groups!["scanId"] : "";
 }
 
 // For use with API endpoints that allow encoding indexes in more compact formats:
