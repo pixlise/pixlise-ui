@@ -13,6 +13,7 @@ import { RGBUAxisRatioPickerComponent } from "./widgets/rgbu-plot-widget/rgbuaxi
 import { RGBUPlotWidgetComponent } from "./widgets/rgbu-plot-widget/rgbu-plot-widget.component";
 import { WidgetModule } from "../widget/widget.module";
 import { SingleAxisRGBUComponent } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/single-axis-rgbu.component";
+import { ParallelCoordinatesPlotWidgetComponent } from "src/app/modules/scatterplots/widgets/parallel-coordinates-plot-widget/parallel-coordinates-plot-widget.component";
 
 export { BinaryChartWidgetComponent } from "./widgets/binary-chart-widget/binary-chart-widget.component";
 export { TernaryChartWidgetComponent } from "./widgets/ternary-chart-widget/ternary-chart-widget.component";
@@ -20,6 +21,7 @@ export { HistogramWidgetComponent } from "./widgets/histogram-widget/histogram-w
 export { ChordDiagramWidgetComponent } from "./widgets/chord-diagram-widget/chord-diagram-widget.component";
 export { RGBUPlotWidgetComponent } from "./widgets/rgbu-plot-widget/rgbu-plot-widget.component";
 export { SingleAxisRGBUComponent } from "./widgets/single-axis-rgbu/single-axis-rgbu.component";
+export { ParallelCoordinatesPlotWidgetComponent } from "./widgets/parallel-coordinates-plot-widget/parallel-coordinates-plot-widget.component";
 
 @NgModule({
   declarations: [
@@ -31,6 +33,7 @@ export { SingleAxisRGBUComponent } from "./widgets/single-axis-rgbu/single-axis-
     RGBUAxisRatioPickerComponent,
     RGBUPlotWidgetComponent,
     SingleAxisRGBUComponent,
+    ParallelCoordinatesPlotWidgetComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, WidgetModule],
   exports: [
@@ -40,6 +43,7 @@ export { SingleAxisRGBUComponent } from "./widgets/single-axis-rgbu/single-axis-
     ChordDiagramWidgetComponent,
     RGBUPlotWidgetComponent,
     SingleAxisRGBUComponent,
+    ParallelCoordinatesPlotWidgetComponent,
   ],
   providers: [],
 })

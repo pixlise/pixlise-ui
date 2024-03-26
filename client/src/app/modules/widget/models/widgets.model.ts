@@ -7,6 +7,7 @@ import {
   ChordDiagramWidgetComponent,
   RGBUPlotWidgetComponent,
   SingleAxisRGBUComponent,
+  ParallelCoordinatesPlotWidgetComponent,
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 import { QuantificationTableComponent } from "../../table-views/table-views.module";
@@ -139,6 +140,13 @@ export const WIDGETS = {
     description: "Single Axis RGBU Plot",
     component: SingleAxisRGBUComponent,
     dataKey: "singleAxisRGBU",
+    controlConfiguration: {},
+  },
+  "parallel-coordinates-plot": {
+    name: "Parallel Coordinates Plot",
+    description: "Parallel Coordinates Plot",
+    component: ParallelCoordinatesPlotWidgetComponent,
+    dataKey: "parallelogram",
     controlConfiguration: {},
   },
   "quant-table": {
