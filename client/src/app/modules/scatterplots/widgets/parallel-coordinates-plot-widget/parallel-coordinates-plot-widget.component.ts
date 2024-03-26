@@ -607,8 +607,14 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
     // Get averages for all ROIs
     this._rois.forEach(roi => {
+      // Skip if the ROI is not for the current image
+      if (roi.region.imageName !== this.imageName) {
+        return;
+      }
+
       let color = roi.displaySettings.colour;
       let colorStr = `${color.r},${color.g},${color.b}`;
+
       this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color));
 
       let pixels = new Set(decodeIndexList(roi.region.pixelIndexesEncoded));
