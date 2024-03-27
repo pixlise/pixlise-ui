@@ -41,6 +41,7 @@ import {
   decodeIndexList,
   encodeIndexList,
   decompressZeroRunLengthEncoding,
+  replaceAsDateIfTestSOL
 } from "./utils";
 
 function doesVersionDiffer(versionA: string, versionB: string): boolean {
@@ -522,5 +523,27 @@ describe("decompressZeroRunLengthEncoding", () => {
   });
   it("decompressZeroRunLengthEncoding multiple zero runs work", () => {
     expect(decompressZeroRunLengthEncoding([1, 0, 2, 3, 0, 4, 7], 9)).toEqual(new Int32Array([1, 0, 0, 3, 0, 0, 0, 0, 7]));
+  });
+});
+
+fdescribe("replaceAsDateIfTestSOL", () => {
+  it("replaceAsDateIfTestSOL should work", () => {
+    expect(replaceAsDateIfTestSOL("")).toEqual(""); // Returning if cant interpret (just a string)
+    expect(replaceAsDateIfTestSOL("Hello")).toEqual("Hello"); // Returning if cant interpret (just a string)
+    expect(replaceAsDateIfTestSOL("A152")).toEqual("1-Jun-2016");
+    expect(replaceAsDateIfTestSOL("D000")).toEqual("1-Jan-2019");
+    expect(replaceAsDateIfTestSOL("E001")).toEqual("2-Jan-2020");
+    expect(replaceAsDateIfTestSOL("F364")).toEqual("31-Dec-2021");
+    expect(replaceAsDateIfTestSOL("G365")).toEqual("1-Jan-2022");
+    expect(replaceAsDateIfTestSOL("H366")).toEqual("2-Jan-2023");
+    expect(replaceAsDateIfTestSOL("I367")).toEqual("2-Jan-2024"); // Loops around in JS apparently
+    expect(replaceAsDateIfTestSOL("I360")).toEqual("26-Dec-2024");
+    expect(replaceAsDateIfTestSOL("I058")).toEqual("28-Feb-2024");
+    expect(replaceAsDateIfTestSOL("I58")).toEqual("I58");
+    expect(replaceAsDateIfTestSOL("I059")).toEqual("29-Feb-2024"); // Testing leap year
+    expect(replaceAsDateIfTestSOL("I060")).toEqual("1-Mar-2024");
+    expect(replaceAsDateIfTestSOL("G060")).toEqual("2-Mar-2022");
+    expect(replaceAsDateIfTestSOL("1024")).toEqual("1024"); // Returning if cant interpret (sol)
+    expect(replaceAsDateIfTestSOL("0983")).toEqual("0983"); // Returning if cant interpret (sol)
   });
 });

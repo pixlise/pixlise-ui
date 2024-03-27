@@ -1083,3 +1083,21 @@ export function rawProtoMessageToDebugString(buffer: ArrayBuffer, charLimit: num
   const byteList = [...subBuff].map(x => x.toString(16).padStart(2, "0")).join(",");
   return `MsgId: ${msgId}, Length: ${buffer.byteLength} bytes, Starts With: [${byteList}]`;
 }
+
+export function replaceAsDateIfTestSOL(sol: string): string {
+  if (sol[0] >= "A" && sol[0] <= "Z" && sol.length == 4) {
+    const dayOfYear = Number.parseInt(sol.substring(1)) + 1; // Are we zero based? 000=Jan 1? Probably... JS treats that as Dec31 though
+    if (!isNaN(dayOfYear)) {
+      // OK we're probably dealing with an encoded test date. H=2023, so work from there
+      const year = 2016 + (sol.charCodeAt(0) - "A".charCodeAt(0));
+
+      const yearStart = new Date(year, 0); // initialize a date in `year-01-01`
+      const theDate = new Date(yearStart.setDate(dayOfYear));
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${theDate.getDate()}-${months[theDate.getMonth()]}-${year}`;
+    }
+  }
+
+  return sol;
+}
