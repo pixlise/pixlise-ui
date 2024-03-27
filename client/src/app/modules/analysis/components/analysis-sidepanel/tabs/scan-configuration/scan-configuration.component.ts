@@ -105,21 +105,29 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   }
 
   private sortScans() {
+    // Only sort if we have scans and idToScan
     if (this.scanConfigurations && this.scanConfigurations.length > 0 && this.idToScan && Object.keys(this.idToScan).length > 0) {
       this.scanConfigurations.sort((a, b) => {
-        const checkIds = [a.id, b.id];
-        for (const id of checkIds) {
-          const s = this.idToScan[id];
-          if (!s || !s.meta || !s.meta["Sol"]) {
-            SentryHelper.logMsg(true, `sortScans failed to read Sol for scan id: ${id}`)
-            return -1;
+        const scanA = this.idToScan?.[a?.id];
+        const scanB = this.idToScan?.[b?.id];
+
+        const solA = Number(scanA?.meta?.["Sol"]);
+        const solB = Number(scanB?.meta?.["Sol"]);
+
+        if (isNaN(solA) && !isNaN(solB)) {
+          return 1;
+        } else if (!isNaN(solA) && isNaN(solB)) {
+          return -1;
+        } else if (!isNaN(solA) && !isNaN(solB)) {
+          return solA - solB;
+        } else {
+          if (scanA && scanB) {
+            return scanA.title < scanB.title ? -1 : scanA.title > scanB.title ? 1 : 0;
+          } else {
+            return scanA && !scanB ? -1 : !scanA && scanB ? 1 : 0;
           }
         }
-
-        return Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]);
       });
-    } else {
-      SentryHelper.logMsg(true, `sortScans failed when called with ${this.scanConfigurations.length} configs and ${Object.keys(this.idToScan).length} idToScans`);
     }
   }
 

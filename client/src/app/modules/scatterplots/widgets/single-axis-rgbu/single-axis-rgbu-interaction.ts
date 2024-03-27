@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Subject } from "rxjs";
-import { distanceBetweenPoints, Point, ptWithinPolygon, Rect } from "src/app/models/Geometry";
+import { distanceBetweenPoints, Point, pointWithinSingleAxisPlane, ptWithinPolygon, Rect } from "src/app/models/Geometry";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
@@ -39,13 +39,13 @@ import {
   CanvasMouseEventId,
   CanvasKeyEvent,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { RGBUPlotModel } from "./rgbu-plot-model";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { RGBUPlotModel } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-model";
 
 const DRAG_THRESHOLD = 2; // how many pixels mouse can drift before we assume we're drawing a lasso
 const MINERAL_HOVER_RADIUS = 4; // how far a mineral hover is detected from the mineral pos
 
-export class RGBUPlotInteraction implements CanvasInteractionHandler {
+export class SingleAxisRGBUInteraction implements CanvasInteractionHandler {
   axisClick$: Subject<string> = new Subject<string>();
 
   constructor(
@@ -53,23 +53,33 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
     private _selectionService: SelectionService
   ) {}
 
+  xDistanceBetweenPoints(pointA: Point, pointB: Point): number {
+    return Math.abs(pointA.x - pointB.x);
+  }
+
+  getLassoLine(point: Point): Point[] {
+    let topPoint = new Point(point.x, 0);
+    let bottomPoint = new Point(point.x, this._mdl.drawModel.dataArea.h + 10);
+    return [topPoint, bottomPoint];
+  }
+
   mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    /*if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
-    } else*/ if (event.eventId == CanvasMouseEventId.MOUSE_DRAG) {
+    if (event.eventId === CanvasMouseEventId.MOUSE_DRAG) {
       // User is mouse-dragging, if we haven't started a drag operation yet, do it
       if (this._mdl.mouseLassoPoints.length <= 0 && distanceBetweenPoints(event.canvasPoint, event.canvasMouseDown) > DRAG_THRESHOLD) {
         // Save the start point
-        this._mdl.mouseLassoPoints = [event.canvasMouseDown, event.canvasPoint];
+        this._mdl.mouseLassoPoints = this.getLassoLine(event.canvasPoint);
       }
-      // If they have moved some distance from the start, save subsequent points in lasso shape
+      // If they have moved some distance from the start, update the end
       else if (
         this._mdl.mouseLassoPoints.length > 0 &&
         distanceBetweenPoints(event.canvasPoint, this._mdl.mouseLassoPoints[this._mdl.mouseLassoPoints.length - 1]) > DRAG_THRESHOLD
       ) {
-        this._mdl.mouseLassoPoints.push(event.canvasPoint);
+        // this._mdl.mouseLassoPoints.push(event.canvasPoint);
+        this._mdl.mouseLassoPoints = [...this._mdl.mouseLassoPoints.slice(0, 3), ...this.getLassoLine(event.canvasPoint).reverse()];
         return CanvasInteractionResult.redrawAndCatch;
       }
-    } else if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
+    } else if (event.eventId === CanvasMouseEventId.MOUSE_MOVE) {
       // General mouse move, check if hovering over anything
       return this.handleMouseHover(event.canvasPoint);
     } else if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
@@ -115,7 +125,7 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
       // See if it hovered over a mineral point (or line in the case of single axis)
       let hoverMineralIndex = this._mdl.drawModel.minerals.findIndex(mineral => {
         if (this._mdl.isSingleAxis) {
-          return Math.abs(mineral.ratioPt.x - canvasPt.x) <= MINERAL_HOVER_RADIUS;
+          return this.xDistanceBetweenPoints(canvasPt, mineral.ratioPt) <= MINERAL_HOVER_RADIUS;
         } else {
           return distanceBetweenPoints(canvasPt, mineral.ratioPt) <= MINERAL_HOVER_RADIUS;
         }
@@ -126,7 +136,7 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
 
       // If we're not hovering over a mineral point, check if we are within the draw area, if so, lasso is possible
       if (this._mdl.drawModel.mineralHoverIdx === -1 && this._mdl.drawModel.dataArea.containsPoint(canvasPt)) {
-        this._mdl.cursorShown = CursorId.lassoCursor;
+        this._mdl.cursorShown = CursorId.lineCursorAdd;
       }
     }
 
@@ -141,26 +151,11 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
     if (!this._mdl.drawModel) {
       return;
     }
-    /*
-        let mouseOverIdx = this.getIndexforPoint(canvasPt);
-
-        if(mouseOverIdx != null)
-        {
-            this.setSelection(new Set<number>([mouseOverIdx.pmc]));
-        }
-        else*/ if (this._mdl.drawModel.xAxisLabelArea.containsPoint(canvasPt)) {
+    if (this._mdl.drawModel.xAxisLabelArea.containsPoint(canvasPt)) {
       this.axisClick$.next("X");
     } else if (this._mdl.drawModel.yAxisLabelArea.containsPoint(canvasPt)) {
       this.axisClick$.next("Y");
     }
-    /*        else
-        {
-            // They clicked on chart, but not on any pmcs, clear selection
-            if(this._mdl.drawData.dataArea.containsPoint(canvasPt))
-            {
-                this.setSelection(new Set<number>());
-            }
-        }*/
   }
 
   private handleLassoFinish(lassoPoints: Point[]): void {
@@ -183,7 +178,7 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
 
     for (let c = 0; c < this._mdl.drawModel.points.length; c++) {
       const coord = this._mdl.drawModel.points[c];
-      if (ptWithinPolygon(coord, lassoPoints, bbox)) {
+      if (pointWithinSingleAxisPlane(coord, lassoPoints, "x")) {
         // Look up the bin that this sits in, and add all pixels that are part of that bin
         for (const srcPixel of this._mdl.plotData.points[c].srcPixelIdxs) {
           // Add or delete as required
