@@ -48,6 +48,7 @@ import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atom
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { widgetLayerPositions } from "../../models/expression-widget-layer-configs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
+import { UsersService } from "src/app/modules/settings/services/users.service";
 
 export type ExpressionPickerResponse = {
   selectedExpressions: (DataExpression | ExpressionGroup)[];

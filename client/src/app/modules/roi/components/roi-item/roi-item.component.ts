@@ -10,6 +10,8 @@ import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../model
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
+import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UserInfo } from "src/app/generated-protos/user";
 
 export type SubItemOptionSection = {
   title: string;
@@ -46,6 +48,8 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   objectType: ObjectType = ObjectType.OT_ROI;
   @Input() summary!: ROIItemSummary;
+
+  creatorUser: UserInfo = UserInfo.create();
 
   @Output() onROISelect = new EventEmitter();
   @Output() onVisibilityChange = new EventEmitter<boolean>();
@@ -85,10 +89,13 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   constructor(
     private _snackBarService: SnackbarService,
     private _roiService: ROIService,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _usersService: UsersService
   ) {}
 
   ngOnInit(): void {
+    this.updateUser();
+
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         if (this._selectionService.hoverScanId === this.summary?.scanId) {
@@ -133,7 +140,19 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
           this._shapeDefined = false;
           this._colourDefined = false;
         }
+
+        this.updateUser();
       }
+    }
+  }
+
+  updateUser() {
+    let cachedUsers = this._usersService?.cachedUsers;
+    let userId = this.summary?.owner?.creatorUser?.id || "";
+    if (cachedUsers && userId && this.summary?.owner && cachedUsers[userId]) {
+      this.creatorUser = UserInfo.create(cachedUsers[userId]);
+    } else if (this.summary?.owner?.creatorUser) {
+      this.creatorUser = UserInfo.create(this.summary.owner.creatorUser);
     }
   }
 
@@ -179,7 +198,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get icon(): string {
-    return this.summary.owner?.creatorUser?.iconURL || "";
+    return this.creatorUser?.iconURL || "";
   }
 
   get name(): string {

@@ -73,6 +73,12 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   imageName: string = "";
   visibleRegionIds: string[] = [];
 
+  // If this is true, we only use the x axis
+  isSingleAxis: boolean = false;
+
+  roiStackedOverlap: boolean = false;
+  drawMonochrome: boolean = false;
+
   // Start with some reasonable axis defaults. These get replaced when view state is loaded
   xAxisUnit = new RGBUAxisUnit(0, 1);
   yAxisUnit = new RGBUAxisUnit(2, 3);
@@ -80,7 +86,6 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   cursorShown: string = CursorId.defaultPointer;
   mouseLassoPoints: Point[] = [];
   selectionMode: string = RGBUPlotModel.SELECT_RESET;
-  drawMonochrome: boolean = false;
   private _mineralsShown: string[] = [];
 
   xAxisMinMax: MinMax = new MinMax(0, 5);
@@ -108,6 +113,11 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
 
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
+
+  constructor(isSingleAxis: boolean = false, drawMonochrome: boolean = false) {
+    this.isSingleAxis = isSingleAxis;
+    this.drawMonochrome = drawMonochrome;
+  }
 
   get raw(): RGBUPlotRawData | null {
     return this._raw;
@@ -171,7 +181,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     this.selectedMaxYValue = this.selectedMaxYValue || maxY;
 
     this.xAxisMinMax = new MinMax(xMinMax.min, xMinMax.max);
-    this.yAxisMinMax = new MinMax(xMinMax.min, xMinMax.max);
+    this.yAxisMinMax = new MinMax(yMinMax.min, yMinMax.max);
 
     this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this.xAxisUnit.numeratorChannelIdx, this.xAxisUnit.denominatorChannelIdx);
     this.xAxisMinMax.expand(0);
@@ -182,7 +192,9 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       this.xAxisMinMax.expandMax(xMinMax.max);
     }
 
-    this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this.yAxisUnit.numeratorChannelIdx, this.yAxisUnit.denominatorChannelIdx);
+    let axisUnit = this.isSingleAxis ? this.xAxisUnit : this.yAxisUnit;
+
+    this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(axisUnit.numeratorChannelIdx, axisUnit.denominatorChannelIdx);
     this.yAxisMinMax.expand(0);
     //this.yAxisMinMax.expand(Math.max((yMinMax.max || 0) * 1.2, minAxisMax));
     // See comment for X
@@ -214,16 +226,16 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       selectedYRange = new MinMax(this.yAxisMinMax.min, this.yAxisMinMax.max);
     }
 
-    const [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax] = this.generatePoints(
+    let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax] = this.generatePoints(
       plotData.image,
       cropSelection,
       this.xAxisUnit,
-      this.yAxisUnit,
+      this.isSingleAxis ? this.xAxisUnit : this.yAxisUnit,
       selectedXRange,
-      selectedYRange
+      this.isSingleAxis ? undefined : selectedYRange
     );
 
-    this.setInitRange(xAxisRawMinMax, yAxisRawMinMax);
+    this.setInitRange(xAxisRawMinMax, this.isSingleAxis ? xAxisMinMax : yAxisRawMinMax);
 
     const xBinCount = 200;
     const yBinCount = 200;
@@ -255,15 +267,18 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       binMemberInfo,
       plotData.rois,
       currSelPixels.selectedPixels,
-      binSrcPixels
+      binSrcPixels,
+      false,
+      this.roiStackedOverlap
     );
 
     const allMinerals = RGBUPlotModel.getMineralPointsForAxes(this.xAxisUnit, this.yAxisUnit);
     const shownMinerals: RGBUMineralPoint[] = allMinerals.filter(mineral => this._mineralsShown.indexOf(mineral.name) >= 0);
 
+    yAxisMinMax = !this.isSingleAxis ? yAxisMinMax : new MinMax(0, Math.max(...ratioPoints.map(point => point.combinedCount)) * 1.2);
     const rgbuPlotData = new RGBUPlotData(
       this.xAxisUnit,
-      this.yAxisUnit,
+      this.isSingleAxis ? this.xAxisUnit : this.yAxisUnit,
       ratioPoints,
       xBinSize,
       yBinSize,
@@ -506,11 +521,18 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     useFirstROIColour: boolean = false,
     stackedROIs = false
   ): [RGBURatioPoint[], Record<string, RGBA>] {
+    if (xMinMax.min === null && xMinMax.max === null) {
+      xMinMax = new MinMax(0, 0);
+    }
+
+    if (yMinMax.min === null && yMinMax.max === null) {
+      yMinMax = new MinMax(0, 0);
+    }
+
     if (xMinMax.min === null || yMinMax.min === null) {
       throw new Error("generateRGBURatioPoints called with null xMinMax or yMinMax");
     }
     const colourRamp = drawMonochrome ? ColourRamp.SHADE_MONO_SOLID_GRAY : ColourRamp.SHADE_MAGMA;
-
     const ratioPoints: RGBURatioPoint[] = [];
     const colourKey: Record<string, RGBA> = {};
 
@@ -562,6 +584,11 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
               roiCount = activePixelROIs.map(roi => {
                 let currentColour = visibleROIs[roi].displaySettings.colour;
                 currentColour = new RGBA(currentColour.r, currentColour.g, currentColour.b, 255);
+
+                if (!colourKey[visibleROIs[roi].region.name]) {
+                  colourKey[visibleROIs[roi].region.name] = currentColour;
+                }
+
                 return {
                   roi: visibleROIs[roi].region.name,
                   count,
@@ -673,7 +700,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return result;
   }
 
-  private static channelToIdx(ch: string): number {
+  public static channelToIdx(ch: string): number {
     let idx = RGBUImage.channels.indexOf(ch);
     if (idx < 0) {
       console.log("channelToIdx: invalid channel: " + ch);
@@ -682,7 +709,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return idx;
   }
 
-  private static idxToChannel(idx: number): string {
+  public static idxToChannel(idx: number): string {
     if (idx < 0 || idx >= RGBUImage.channels.length) {
       console.log("idxToChannel: invalid index: " + idx);
       return RGBUImage.channels[0];

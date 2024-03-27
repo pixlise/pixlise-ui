@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, map, mergeMap, of } from "rxjs";
+import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, tap, throwError } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
@@ -24,54 +24,35 @@ export class APIEndpointsService {
     }
 
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
-    return new Observable<HTMLImageElement>(observer => {
-      this.localStorageService
-        .getImage(apiUrl)
-        .then(async imageData => {
-          // If we have it and it's not older than maxAge (2 days), use it
-          if (imageData && imageData.timestamp > Date.now() - maxAge) {
-            const img = new Image();
-            img.src = imageData.data;
-            observer.next(img);
-            observer.complete();
-          } else {
-            // Get from API
-            this.loadImageFromURL(apiUrl).subscribe({
-              next: img => {
-                observer.next(img);
-                observer.complete();
-              },
-              error: err => {
-                observer.error(err);
-              },
-            });
-          }
-        })
-        .catch(async err => {
-          console.error(err);
 
-          // Get from API
-          this.loadImageFromURL(apiUrl).subscribe({
-            next: img => {
-              observer.next(img);
-              observer.complete();
-            },
-            error: err => {
-              observer.error(err);
-            },
-          });
-        });
-    });
+    return from(this.localStorageService.getImage(apiUrl)).pipe(
+      switchMap(imageData => {
+        // If we have it and it's not older than maxAge (2 days), use it
+        if (imageData && imageData.timestamp > Date.now() - maxAge) {
+          const img = new Image();
+          img.src = imageData.data;
+          return of(img);
+        } else {
+          return this.loadImageFromURL(apiUrl).pipe(
+            catchError(err => {
+              return throwError(() => new Error(err));
+            })
+          );
+        }
+      }),
+      catchError(err => {
+        console.error(err);
+        return this.loadImageFromURL(apiUrl).pipe(
+          catchError(err => {
+            console.error(err);
+            return throwError(() => new Error(err));
+          })
+        );
+      }),
+      shareReplay(1)
+    );
+  }
 
-    // return this.loadImageFromURL(apiUrl);
-  }
-  /*
-  // Constructs the path from scan id and image
-  loadImageForScan(scanId: string, imageName: string): Observable<HTMLImageElement> {
-    const apiUrl = APIPaths.getWithHost(`images/download/${scanId}/${imageName}`);
-    return this.loadImageFromURL(apiUrl);
-  }
-*/
   private loadImageFromURL(url: string, maxCacheSize: number = 10000000): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
@@ -120,7 +101,7 @@ export class APIEndpointsService {
     });
   }
 
-  private loadRGBUImageTIFFromAPI(imagePath: string, maxCacheSize: number = 15000000): Observable<RGBUImage> {
+  loadRGBUImageTIFFromAPI(imagePath: string, maxCacheSize: number = 15000000): Observable<RGBUImage> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
       mergeMap((bytes: ArrayBuffer) => {
@@ -134,130 +115,95 @@ export class APIEndpointsService {
   }
 
   private _generatedTIFFPreview(imagePath: string, maxAge: number = 3600): Observable<string> {
-    return new Observable<string>(previewObserver => {
-      this.loadRGBUImageTIF(imagePath, maxAge).subscribe({
-        next: img => {
-          new Observable<string>(observer => {
-            let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
-            if (generated?.image?.src) {
-              observer.next(generated.image.src);
-            } else {
-              observer.error("error");
-              console.error("Error generating RGB display image", img?.path);
-            }
-          }).subscribe({
-            next: (url: string) => {
-              previewObserver.next(url);
-            },
-            error: (err: any) => {
-              console.error(err);
-              previewObserver.error(err);
-            },
-          });
-        },
-        error: err => {
-          console.error(err);
-          previewObserver.error(err);
-        },
-      });
-    });
+    return this.loadRGBUImageTIF(imagePath, maxAge).pipe(
+      switchMap(img => {
+        return new Observable<string>(observer => {
+          let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
+          if (generated?.image?.src) {
+            observer.next(generated.image.src);
+          } else {
+            observer.error("Error generating RGB display image");
+            console.error("Error generating RGB display image", img?.path);
+          }
+        });
+      }),
+      catchError(err => {
+        console.error(err);
+        return throwError(() => new Error(err));
+      }),
+      tap(url => console.log(`Generated preview URL: ${url}`)),
+      mergeMap(url => of(url)),
+      shareReplay(1)
+    );
   }
 
   loadRGBUImageTIFPreview(imagePath: string, maxAge: number = 3600): Observable<string> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     let tiffPreviewKey = `tiff-preview-${apiUrl}`;
 
-    return new Observable<string>(previewObserver => {
-      this.localStorageService
-        .getImage(tiffPreviewKey)
-        .then(async imageData => {
-          if (imageData && imageData.timestamp > Date.now() - maxAge) {
-            previewObserver.next(imageData.data);
-            previewObserver.complete();
-          } else {
-            this._generatedTIFFPreview(imagePath, maxAge).subscribe({
-              next: url => {
-                previewObserver.next(url);
-                this.localStorageService.storeImage(url, tiffPreviewKey, tiffPreviewKey, 0, 0, url.length);
-                previewObserver.complete();
-              },
-              error: err => {
-                previewObserver.error(err);
-              },
-            });
-          }
-        })
-        .catch(async err => {
-          console.error(err);
-          this._generatedTIFFPreview(imagePath, maxAge).subscribe({
-            next: url => {
-              previewObserver.next(url);
+    return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
+      switchMap(imageData => {
+        if (imageData && imageData.timestamp > Date.now() - maxAge) {
+          return of(imageData.data);
+        } else {
+          return this._generatedTIFFPreview(imagePath, maxAge).pipe(
+            catchError(err => {
+              return throwError(() => new Error(err));
+            }),
+            switchMap(url => {
               this.localStorageService.storeImage(url, tiffPreviewKey, tiffPreviewKey, 0, 0, url.length);
-              previewObserver.complete();
-            },
-            error: err => {
-              previewObserver.error(err);
-            },
-          });
-        });
-    });
+              return of(url);
+            })
+          );
+        }
+      }),
+      catchError(err => {
+        console.error(err);
+        return this._generatedTIFFPreview(imagePath, maxAge).pipe(
+          catchError(err => {
+            console.error(err);
+            return throwError(() => new Error(err));
+          })
+        );
+      })
+    );
   }
 
   // Used by dataset customisation RGBU loading and from loadRGBUImage()
   // Gets and decodes image
   loadRGBUImageTIF(imagePath: string, maxAge: number = 3600): Observable<RGBUImage> {
     if (!imagePath) {
-      throw new Error("No image path provided");
+      return throwError(() => new Error("No image path provided"));
     }
 
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
 
-    return new Observable<RGBUImage>(observer => {
-      this.localStorageService
-        .getRGBUImage(apiUrl)
-        .then(async imageData => {
-          // If we have it, use it
-          if (imageData && imageData.timestamp > Date.now() - maxAge) {
-            RGBUImage.readImage(imageData.data, imagePath).subscribe({
-              next: img => {
-                observer.next(img);
-                observer.complete();
-              },
-              error: err => {
-                observer.error(err);
-              },
-            });
-            observer.complete();
-          } else {
-            // Get from API
-            this.loadRGBUImageTIFFromAPI(imagePath).subscribe({
-              next: img => {
-                observer.next(img);
-                observer.complete();
-              },
-              error: err => {
-                observer.error(err);
-              },
-            });
-          }
-        })
-        .catch(async err => {
-          console.error(err);
-
-          // Get from API
-          this.loadRGBUImageTIFFromAPI(imagePath).subscribe({
-            next: img => {
-              observer.next(img);
-              observer.complete();
-            },
-            error: err => {
-              observer.error(err);
-            },
-          });
-        });
-    });
-
-    // TODO: shareReplay(1)?
+    return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
+      switchMap(imageData => {
+        if (imageData && imageData.timestamp > Date.now() - maxAge) {
+          return RGBUImage.readImage(imageData.data, imagePath);
+        } else {
+          return of(null);
+        }
+      }),
+      catchError(err => {
+        console.error(err);
+        return of(null);
+      }),
+      switchMap(img => {
+        if (img) {
+          return of(img);
+        } else {
+          return this.loadRGBUImageTIFFromAPI(imagePath).pipe(
+            catchError(err => {
+              console.error(err);
+              return throwError(() => new Error(err));
+            })
+          );
+        }
+      }),
+      shareReplay(1)
+    );
   }
 
   uploadImage(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {

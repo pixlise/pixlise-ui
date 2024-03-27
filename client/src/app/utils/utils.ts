@@ -267,9 +267,7 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
     if (pmcs) {
       pmcbit = ", pmcs: " + pmcs.length;
     }
-    throw new Error(
-      "makeScatterPlotData called with differing array lengths: xvalues: " + xvalues.length + ", yvalues: " + yvalues.length + pmcbit
-    );
+    throw new Error("makeScatterPlotData called with differing array lengths: xvalues: " + xvalues.length + ", yvalues: " + yvalues.length + pmcbit);
   }
 
   const xys: any[] = [];
@@ -885,12 +883,7 @@ export class SDSFields {
       }
 
       if (this.isAlpha(site.substring(0, 1)) && this.isAlpha(site.substring(1, 2)) && this.isAlpha(site.substring(2, 3))) {
-        return (
-          10360 +
-          this.letterValue(site.substring(0, 1)) * 26 * 26 +
-          this.letterValue(site.substring(1, 2)) * 26 +
-          this.letterValue(site.substring(2, 3))
-        );
+        return 10360 + this.letterValue(site.substring(0, 1)) * 26 * 26 + this.letterValue(site.substring(1, 2)) * 26 + this.letterValue(site.substring(2, 3));
       }
 
       if (this.isAllDigits(site.substring(0, 1)) && this.isAlpha(site.substring(1, 2)) && this.isAlpha(site.substring(2, 3))) {
@@ -934,6 +927,11 @@ export class SDSFields {
 
     return -1;
   }
+}
+
+export function getScanIdFromImagePath(imagePath: string): string {
+  const match = imagePath.match(/^(?<scanId>\d+)\//);
+  return match ? match.groups!["scanId"] : "";
 }
 
 // For use with API endpoints that allow encoding indexes in more compact formats:
@@ -1084,4 +1082,22 @@ export function rawProtoMessageToDebugString(buffer: ArrayBuffer, charLimit: num
 
   const byteList = [...subBuff].map(x => x.toString(16).padStart(2, "0")).join(",");
   return `MsgId: ${msgId}, Length: ${buffer.byteLength} bytes, Starts With: [${byteList}]`;
+}
+
+export function replaceAsDateIfTestSOL(sol: string): string {
+  if (sol[0] >= "A" && sol[0] <= "Z" && sol.length == 4) {
+    const dayOfYear = Number.parseInt(sol.substring(1)) + 1; // Are we zero based? 000=Jan 1? Probably... JS treats that as Dec31 though
+    if (!isNaN(dayOfYear)) {
+      // OK we're probably dealing with an encoded test date. H=2023, so work from there
+      const year = 2016 + (sol.charCodeAt(0) - "A".charCodeAt(0));
+
+      const yearStart = new Date(year, 0); // initialize a date in `year-01-01`
+      const theDate = new Date(yearStart.setDate(dayOfYear));
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${theDate.getDate()}-${months[theDate.getMonth()]}-${year}`;
+    }
+  }
+
+  return sol;
 }

@@ -27,17 +27,18 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { replaceAsDateIfTestSOL } from "src/app/utils/utils";
 
 @Component({
   selector: "data-set-summary",
   templateUrl: "./data-set-summary.component.html",
   styleUrls: ["./data-set-summary.component.scss"],
 })
-export class DataSetSummaryComponent implements OnInit {
+export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   private _subs = new Subscription();
 
   @Input() summary: ScanItem | null = null;
@@ -60,7 +61,12 @@ export class DataSetSummaryComponent implements OnInit {
     this._title = "";
     const sol = this.summary.meta["Sol"] || "";
     if (sol) {
-      this._title += "SOL-" + sol + ": ";
+      const testSOLAsDate = replaceAsDateIfTestSOL(sol);
+      if (testSOLAsDate.length != sol.length) {
+        this._title = testSOLAsDate + ": ";
+      } else {
+        this._title += "SOL-" + sol + ": ";
+      }
     }
     this._title += this.summary.title;
 

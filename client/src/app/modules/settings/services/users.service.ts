@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { ReplaySubject, Subject } from "rxjs";
+import { BehaviorSubject, ReplaySubject, Subject } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
 import { UserListReq } from "src/app/generated-protos/user-management-msgs";
@@ -16,7 +16,7 @@ export class UsersService {
   usersChanged$ = new ReplaySubject<void>(1);
 
   cachedUsers: Record<string, UserInfo> = {};
-  searchedUsers$ = new Subject<UserInfo[]>();
+  searchedUsers$ = new BehaviorSubject<UserInfo[]>([]);
 
   constructor(private _dataService: APIDataService) {}
 

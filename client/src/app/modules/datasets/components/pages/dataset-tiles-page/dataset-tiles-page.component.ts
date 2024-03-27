@@ -47,7 +47,7 @@ import { FilterDialogComponent, FilterDialogData } from "../../atoms/filter-dial
 //import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { HelpMessage } from "src/app/utils/help-message";
-import { getMB, httpErrorToString } from "src/app/utils/utils";
+import { getMB, httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
@@ -269,6 +269,20 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.filterScans();
   }
 
+  getSearchFields(scan: ScanItem): string[] {
+    return [
+      scan?.title || null,
+      scan?.description || null,
+      scan?.instrumentConfig || null,
+      scan?.meta?.["Sol"] ?? null,
+      scan?.meta?.["Target"] ?? null,
+      scan?.meta?.["Site"] ?? null,
+      scan?.meta?.["DriveId"] ?? null,
+      scan?.meta?.["RTT"] ?? null,
+      scan?.meta?.["SCLK"] ?? null,
+    ].filter(field => field !== null);
+  }
+
   filterScans() {
     if (this._searchString.length === 0) {
       this.filteredScans = this.scans;
@@ -278,43 +292,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // Filter by title, description
     this.filteredScans = this.scans
       .filter(scan => {
-        let searchFields = [
-          scan.title,
-          scan.description,
-          scan.instrumentConfig,
-          scan.meta["Sol"],
-          scan.meta["Target"],
-          scan.meta["Site"],
-          scan.meta["DriveId"],
-          scan.meta["RTT"],
-          scan.meta["SCLK"],
-        ];
+        let searchFields = this.getSearchFields(scan);
         return searchFields.some(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
       })
       .sort((scanA, scanB) => {
-        let scanASearchFields = [
-          scanA.title,
-          scanA.description,
-          scanA.instrumentConfig,
-          scanA.meta["Sol"],
-          scanA.meta["Target"],
-          scanA.meta["Site"],
-          scanA.meta["DriveId"],
-          scanA.meta["RTT"],
-          scanA.meta["SCLK"],
-        ];
-
-        let scanBSearchFields = [
-          scanB.title,
-          scanB.description,
-          scanB.instrumentConfig,
-          scanB.meta["Sol"],
-          scanB.meta["Target"],
-          scanB.meta["Site"],
-          scanB.meta["DriveId"],
-          scanB.meta["RTT"],
-          scanB.meta["SCLK"],
-        ];
+        let scanASearchFields = this.getSearchFields(scanA);
+        let scanBSearchFields = this.getSearchFields(scanB);
 
         // Sort by matching order and then alphabetically
         let aMatch = scanASearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
@@ -447,7 +430,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onFilters(event: MouseEvent): void {
     const dialogConfig = new MatDialogConfig();
-    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 
     const filter = this._filter.copy();
     dialogConfig.data = new FilterDialogData(filter, new ElementRef(event.currentTarget));
@@ -531,7 +513,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedScanTrackingItems = [
       new SummaryItem("Target Name:", this.selectedScan.meta["Target"] || ""),
       new SummaryItem("Site:", this.selectedScan.meta["Site"] || ""),
-      new SummaryItem("Sol:", this.selectedScan.meta["Sol"] || ""),
+    ];
+    let solLabel = "Sol:";
+    const sol = this.selectedScan.meta["Sol"] || "";
+    let testSOLAsDate = replaceAsDateIfTestSOL(sol);
+    if (testSOLAsDate.length != sol.length) {
+      solLabel = "Test Date:";
+      testSOLAsDate += " (" + sol + ")";
+    }
+    this.selectedScanTrackingItems.push(new SummaryItem(solLabel, testSOLAsDate));
+
+    this.selectedScanTrackingItems = [
+      ...this.selectedScanTrackingItems,
       new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""),
       new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""),
       new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""),
