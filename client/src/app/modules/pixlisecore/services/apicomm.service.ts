@@ -9,11 +9,12 @@ import { environment } from "src/environments/environment";
 import { WSMessage } from "../../../generated-protos/websocket";
 import { BeginWSConnectionResponse } from "../../../generated-protos/restmsgs";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
+import { SentryHelper, randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
 import { getMessageName } from "./wsMessageHandler";
 
 import * as Sentry from "@sentry/browser";
 import { AuthService } from "@auth0/auth0-angular";
+import { SnackbarService } from "./snackbar.service";
 
 @Injectable({
   providedIn: "root",
@@ -21,13 +22,14 @@ import { AuthService } from "@auth0/auth0-angular";
 export class APICommService implements OnDestroy {
   connection$: WebSocketSubject<any> | null = null;
   WS_RETRY_ATTEMPTS = 30;
-  WS_RETRY_DELAY_MS = 2000;
+  WS_RETRY_DELAY_MS = 5000;
 
   private _id = randomString(6);
 
   constructor(
     private http: HttpClient,
-    private _authService: AuthService
+    private _authService: AuthService,
+    private _snackService: SnackbarService
   ) {
     console.log(`APICommService [${this._id}] created`);
 
@@ -54,7 +56,11 @@ export class APICommService implements OnDestroy {
         return res.connToken;
       }),
       catchError(err => {
-        console.error(`APICommService [${this._id}] beginConnect error: ${err}`);
+        console.error(`APICommService [${this._id}] beginConnect error: ${err?.message || err}`);
+        this._snackService.openError(
+          `Failed to connect to PIXLISE server. Retrying...`,
+          `You may need to refresh this tab to try to reconnect. Error details: ${err?.message || err}`
+        );
         throw err;
       })
     );
@@ -93,7 +99,8 @@ export class APICommService implements OnDestroy {
             } catch (e) {
               // Log the deserialisation error, otherwise it gets swallowed up and next thing we know is the connection is closed
               const msgInfo = rawProtoMessageToDebugString(arr, 20);
-              console.error(`Deserialisation error for incoming ${msgInfo}`);
+              const errMsg = `Deserialisation error for incoming ${msgInfo}. Error: ${e}`;
+              SentryHelper.logMsg(true, errMsg);
               console.error(e);
               throw e;
             }
@@ -112,7 +119,8 @@ export class APICommService implements OnDestroy {
               return sendbuf;
             } catch (e) {
               // Log the serialisation error, otherwise it gets swallowed up and next thing we know is the connection is closed
-              console.error(`Serialisation error for outgoing ${getMessageName(msg)} message with id: ${msg.msgId}`);
+              const errMsg = `Serialisation error for outgoing ${getMessageName(msg)} message with id: ${msg.msgId}. Error: ${e}`;
+              SentryHelper.logMsg(true, errMsg);
               console.error(e);
               throw e;
             }
@@ -120,6 +128,7 @@ export class APICommService implements OnDestroy {
           openObserver: {
             next: () => {
               console.log(`APICommService [${this._id}] beginConnect: CONNECTED`);
+              this._snackService.openSuccess(`Connected to PIXLISE server!`);
               connectEvent();
             },
             error: err => {
@@ -131,6 +140,12 @@ export class APICommService implements OnDestroy {
             next: (closeEvent: CloseEvent) => {
               console.log(`APICommService [${this._id}] beginConnect: Websocket Closed. Close event:`);
               console.log(closeEvent);
+
+              this._snackService.openError(
+                `Disconnected from PIXLISE server (error code: ${closeEvent.code}). Refresh this page to reconnect!`,
+                "Check your internet connection. You may need to log in again."
+              );
+
               this.connection$ = null;
               //this.connect({ reconnect: true });
             },
