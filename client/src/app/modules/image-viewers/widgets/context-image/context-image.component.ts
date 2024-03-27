@@ -35,7 +35,7 @@ import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePic
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
-import { HighlightedROI } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 
 @Component({
   selector: "app-context-image",
@@ -385,20 +385,23 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     );
 
     this._subs.add(
-      this._analysisLayoutService.highlightedROI$.subscribe((highlighted: HighlightedROI | null) => {
+      this._analysisLayoutService.highlightedROIs$.subscribe((highlighted: HighlightedROIs | null) => {
         if (!highlighted || highlighted.widgetId !== this._widgetId) {
           return;
         }
 
         if (highlighted.scanId !== this.scanId) {
           this._snackService.openWarning("Highlighted ROI is not in the current scan on the context image");
-          this._analysisLayoutService.highlightedROI$.next(null);
+          this._analysisLayoutService.highlightedROIs$.next(null);
           return;
         }
 
-        if (highlighted.roiId) {
-          const visibleROI = VisibleROI.create({ id: highlighted.roiId, scanId: highlighted.scanId });
-          this.loadROIRegion(visibleROI, true);
+        if (highlighted.roiIds.length > 0) {
+          this.mdl.roiIds = [];
+          highlighted.roiIds.forEach(id => {
+            const visibleROI = VisibleROI.create({ id, scanId: highlighted.scanId });
+            this.loadROIRegion(visibleROI, true);
+          });
         } else {
           this.mdl.roiIds = this.cachedROIs.slice();
         }
@@ -583,7 +586,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
 
           if (setROIVisible) {
-            this.mdl.roiIds = [roi];
+            if (!this.mdl.roiIds.find(existingROI => existingROI.id === roi.id)) {
+              this.mdl.roiIds = [roi, ...this.mdl.roiIds];
+            }
             this.reloadModel();
           }
         }

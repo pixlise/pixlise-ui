@@ -6,6 +6,7 @@ import { WSError } from "./wsMessageHandler";
 import { WidgetError } from "./widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { Subscription } from "rxjs";
+import { HttpErrorResponse } from "@angular/common/http";
 
 export type SnackbarType = "warning" | "error" | "info" | "success";
 
@@ -63,6 +64,10 @@ export class SnackbarService {
       const wsErr = message as WSError;
       messageText = `Request failed: ${wsErr.messageName} - ${wsErr.message}`;
       newDetails = (message as WSError).errorText;
+    } else if (message instanceof HttpErrorResponse) {
+      const httpError = message as HttpErrorResponse;
+      messageText = `Request failed: ${httpError.name} - ${httpError.message}`;
+      newDetails = (message as HttpErrorResponse).message;
     } else if (typeof message === "object" && message?.errorText) {
       messageText = message.errorText;
     } else if (typeof message === "object" && message?.message) {
@@ -96,6 +101,11 @@ export class SnackbarService {
           newDetails += ". ";
         }
         newDetails += details;
+      } else if ((details as any)?.["message"]) {
+        if (newDetails.length > 0) {
+          newDetails += ". ";
+        }
+        newDetails += (details as any).message;
       }
       details = newDetails;
     }

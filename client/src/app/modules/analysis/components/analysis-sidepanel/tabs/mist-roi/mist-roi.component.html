@@ -73,6 +73,18 @@ POSSIBILITY OF SUCH DAMAGE. -->
       <push-button class="option" (onClick)="onConvertSelected()" [disabled]="roiSelectionEmpty" buttonStyle="outline">Convert Selected</push-button>
     </div>
   </div>
+  <section class="bulk-controls">
+    <span class="count">{{ selectionCount }} ROIs selected / {{ highlightedROIIds.length }} ROIs highlighted</span>
+    <action-button
+      class="visible-toggle"
+      [disabled]="highlightedROIIds.length <= 0 && selectionCount === 0"
+      [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
+      #tooltip="matTooltip"
+      [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle selected ROIs on'"
+      [matTooltipDisabled]="highlightedROIIds.length <= 0 && selectionCount === 0"
+      (onClick)="onToggleAllVisible()">
+    </action-button>
+  </section>
   <cdk-accordion class="mist-roi-accordion">
     <cdk-accordion-item role="button" tabindex="0">
       <div class="accordion-title">
@@ -109,7 +121,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
           [showCreatorIcon]="false"
           [selected]="checkSelected(region)"
           (onROISelect)="onROISelectToggle(region)"
-          [isVisible]="highlightedROIId === region.id"
+          [isVisible]="highlightedROIIds.includes(region.id)"
           (onVisibilityChange)="onROIVisibleToggle(region)">
         </roi-item>
         <!-- </cdk-virtual-scroll-viewport> -->
