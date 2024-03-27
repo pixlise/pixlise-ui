@@ -108,11 +108,11 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     // Only sort if we have scans and idToScan
     if (this.scanConfigurations && this.scanConfigurations.length > 0 && this.idToScan && Object.keys(this.idToScan).length > 0) {
       this.scanConfigurations.sort((a, b) => {
-        let scanA = this.idToScan?.[a?.id];
-        let scanB = this.idToScan?.[b?.id];
+        const scanA = this.idToScan?.[a?.id];
+        const scanB = this.idToScan?.[b?.id];
 
-        let solA = Number(scanA?.meta?.["Sol"]);
-        let solB = Number(scanB?.meta?.["Sol"]);
+        const solA = Number(scanA?.meta?.["Sol"]);
+        const solB = Number(scanB?.meta?.["Sol"]);
 
         if (isNaN(solA) && !isNaN(solB)) {
           return 1;

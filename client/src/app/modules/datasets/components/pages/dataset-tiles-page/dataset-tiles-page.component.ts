@@ -47,7 +47,7 @@ import { FilterDialogComponent, FilterDialogData } from "../../atoms/filter-dial
 //import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { HelpMessage } from "src/app/utils/help-message";
-import { getMB, httpErrorToString } from "src/app/utils/utils";
+import { getMB, httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
@@ -513,7 +513,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedScanTrackingItems = [
       new SummaryItem("Target Name:", this.selectedScan.meta["Target"] || ""),
       new SummaryItem("Site:", this.selectedScan.meta["Site"] || ""),
-      new SummaryItem("Sol:", this.selectedScan.meta["Sol"] || ""),
+    ];
+    let solLabel = "Sol:";
+    const sol = this.selectedScan.meta["Sol"] || "";
+    let testSOLAsDate = replaceAsDateIfTestSOL(sol);
+    if (testSOLAsDate.length != sol.length) {
+      solLabel = "Test Date:";
+      testSOLAsDate += " (" + sol + ")";
+    }
+    this.selectedScanTrackingItems.push(new SummaryItem(solLabel, testSOLAsDate));
+
+    this.selectedScanTrackingItems = [
+      ...this.selectedScanTrackingItems,
       new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""),
       new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""),
       new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""),

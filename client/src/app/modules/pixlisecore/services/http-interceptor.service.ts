@@ -57,7 +57,19 @@ export class HttpInterceptorService {
             600000 // 10 minute rate limit
           );
         } else {
-          this._snackService.openError(err);
+          // When the connection goes down, or we fail to reconnect, we get spammed here by:
+          // {
+          //  message: "Http failure response for http://localhost:8080/ws-connect: 0 Unknown Error"
+          //  ok: false,
+          //  name: "HttpErrorResponse"
+          //  status: 0,
+          //  statusText: "Unknown Error"
+          // }
+          // We don't want to spam the user with these, because we've most likely already shown a disconnection error (see APICommService closeObserver)
+          // so we filter these out. Other errors may be of interest, or we may have to add more exclusion clauses here...
+          if (err?.status !== 0) {
+            this._snackService.openError(err);
+          }
         }
         return throwError(() => {
           return err;
