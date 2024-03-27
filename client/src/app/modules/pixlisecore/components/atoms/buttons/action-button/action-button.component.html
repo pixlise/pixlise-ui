@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <span
-  class="action-btn {{ buttonBackground ? 'btn-bg' : '' }} {{ action }} {{ disabled ? 'disabled' : '' }}"
-  (click)="onClickInternal()"
+  class="action-btn {{ buttonBackground ? 'btn-bg' : '' }} {{ action }} {{ disabled ? 'disabled' : '' }} {{ !isMatIcon ? 'custom' : '' }}"
+  (click)="onClickInternal($event)"
   [ngStyle]="color ? { color } : {}"
   #tooltip="matTooltip"
   [matTooltip]="tooltipTitle">

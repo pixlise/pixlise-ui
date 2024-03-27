@@ -27,70 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ParallelCoordinatesPlotWidgetComponent } from "./parallel-coordinates-plot-widget.component";
 
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
 
-  &.btn-bg {
-    margin: 2px;
+describe("ParallelCoordinatesPlotWidgetComponent", () => 
+{
+    let component: ParallelCoordinatesPlotWidgetComponent;
+    let fixture: ComponentFixture<ParallelCoordinatesPlotWidgetComponent>;
 
-    width: 24px;
-    height: 24px;
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ ParallelCoordinatesPlotWidgetComponent ]
+        })
+            .compileComponents();
+    });
 
-    background-color: $clr-gray-60;
-    filter: drop-shadow(0px 0px $sz-half $clr-shadow);
-    border-radius: $sz-half;
-  }
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(ParallelCoordinatesPlotWidgetComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  &.check {
-    color: #7bb972;
-  }
-
-  &.close {
-    color: orangered;
-  }
-
-  &.disabled {
-    color: white;
-    opacity: 0.5;
-  }
-
-  mat-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 4px;
-    border-radius: 50%;
-  }
-
-  &.custom {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 4px;
-    border-radius: 50%;
-  }
-}
-
-.action-btn:not(.disabled) {
-  mat-icon,
-  &.custom {
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    &:active,
-    &:focus {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    transition: all 0.2s ease;
-  }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

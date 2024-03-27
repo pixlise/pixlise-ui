@@ -25,7 +25,6 @@ import {
   createDefaultAllPointsItem,
   createDefaultAllPointsRegionSettings,
   createDefaultROIDisplaySettings,
-  //createDefaultRemainingPointsRegionSettings,
   createDefaultSelectedPointsItem,
   createDefaultSelectedPointsRegionSettings,
 } from "../models/roi-region";
@@ -157,7 +156,7 @@ export class ROIService {
   getSelectedPointsROI(scanId: string): ROIItem | null {
     const currentSelection = this._selectionService.getCurrentSelection();
     if (!currentSelection || !scanId) {
-      return null;
+      return ROIItem.create({});
     }
 
     const selectedPointsROI = createDefaultSelectedPointsItem(scanId);
