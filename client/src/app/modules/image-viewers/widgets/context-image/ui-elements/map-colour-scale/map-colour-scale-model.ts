@@ -109,6 +109,8 @@ export class MapColourScaleModel {
     );
   }
   setDisplayValueRange(r: MinMax) {
+    const prevRange = new MinMax(this._displayValueRange.min, this._displayValueRange.max);
+
     if (r.min !== null) {
       this._displayValueRange.setMin(r.min);
     }
@@ -140,7 +142,9 @@ export class MapColourScaleModel {
       }
     }
 
-    this._needsRecalc = true;
+    if (!prevRange.equals(this._displayValueRange)) {
+      this._needsRecalc = true;
+    }
   }
   get valueRange(): MinMax {
     return this._mapData.valueRange;

@@ -651,13 +651,13 @@ export class ExpressionDataSource
       this.logFunc(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr})`);
     }
     return await lastValueFrom(
-      combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum(), this.getScanEntryMetadata()]).pipe(
-        map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp, ScanEntryMetadataResp]) => {
+      combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum() /*, this.getScanEntryMetadata()*/]).pipe(
+        map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp /*, ScanEntryMetadataResp*/]) => {
           const scanMetaLabelsAndTypes = dataItems[0];
           const spectrumData = dataItems[1];
-          const scanMetaData = dataItems[2];
+          //const scanMetaData = dataItems[2];
 
-          if (!scanMetaLabelsAndTypes || !scanMetaData || !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+          if (!scanMetaLabelsAndTypes || /*!scanMetaData ||*/ !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
             throw new Error("getSpectrumRangeMapData: No data available");
           }
 
@@ -779,13 +779,13 @@ export class ExpressionDataSource
       this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
     return await lastValueFrom(
-      combineLatest([this.getDetectedDiffractionStatus(), this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
-        map((dataItems: [DiffractionPeakStatusListResp, DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
+      combineLatest([this.getDetectedDiffractionStatus(), /*this.getDetectedDiffraction(),*/ this.getDiffractionPeakManualList()]).pipe(
+        map((dataItems: [DiffractionPeakStatusListResp, /*DetectedDiffractionPeaksResp,*/ DiffractionPeakManualListResp]) => {
           const diffractionStatusData = dataItems[0];
-          const diffractionData = dataItems[1];
-          const userDiffractionPeakData = dataItems[2];
+          //const diffractionData = dataItems[1];
+          const userDiffractionPeakData = dataItems[1 /*2*/];
 
-          if (!diffractionStatusData || !diffractionData || !this._scanEntries) {
+          if (!diffractionStatusData || /*!diffractionData ||*/ !this._scanEntries) {
             throw new Error("getDiffractionPeakEffectData: No data available");
           }
 
@@ -841,9 +841,7 @@ export class ExpressionDataSource
           // Now turn these into data values
           const result: PMCDataValue[] = [];
           for (const [pmc, sum] of pmcDiffractionCount.entries()) {
-            if (pmc != 218) {
-              result.push(new PMCDataValue(pmc, sum));
-            }
+            result.push(new PMCDataValue(pmc, sum));
           }
 
           return PMCDataValues.makeWithValues(result);
@@ -905,6 +903,12 @@ export class ExpressionDataSource
             throw new Error("getHousekeepingData: No data available");
           }
 
+          if (scanMetaData.entries.length != this._scanEntryIndexesRequested.length) {
+            throw new Error(
+              `getHousekeepingData: Requested ${this._scanEntryIndexesRequested.length} scan meta entries, but received ${scanMetaData.entries.length}`
+            );
+          }
+
           // If it exists as a metaLabel and has a type we can return, do it
           const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
           if (metaIdx < 0) {
@@ -919,18 +923,14 @@ export class ExpressionDataSource
           // Run through all locations & build it
           const values: PMCDataValue[] = [];
 
-          for (const idx of this._scanEntryIndexesRequested) {
-            const entry = scanMetaData.entries[idx];
+          for (let c = 0; c < scanMetaData.entries.length; c++) {
+            const entry = scanMetaData.entries[c];
             if (entry) {
               const item = entry.meta[metaIdx];
-              let value = metaType == ScanMetaDataType.MT_FLOAT ? item.fvalue : item.ivalue;
+              const value = (metaType == ScanMetaDataType.MT_FLOAT ? item.fvalue : item.ivalue) || 0; // Shut up compiler...
 
-              // Shut up compiler...
-              if (value === undefined) {
-                value = 0;
-              }
-
-              const pmc = this._scanEntries.entries[idx].id;
+              const locIdx = this._scanEntryIndexesRequested[c];
+              const pmc = this._scanEntries.entries[locIdx].id;
               values.push(new PMCDataValue(pmc, value));
             }
           }
@@ -952,17 +952,33 @@ export class ExpressionDataSource
             throw new Error("getPositionData: No data available");
           }
 
+          if (beamLocationData.beamLocations.length != this._scanEntryIndexesRequested.length) {
+            throw new Error(`getPositionData: Requested ${this._scanEntryIndexesRequested.length} locations, but received ${beamLocationData.beamLocations.length}`);
+          }
+
           if (axis != "x" && axis != "y" && axis != "z") {
             throw new Error("Cannot find position for axis: " + axis);
           }
 
           const values: PMCDataValue[] = [];
 
-          for (const idx of this._scanEntryIndexesRequested) {
-            const loc = beamLocationData.beamLocations[idx];
+          // We've requested the items indexed by _scanEntryIndexesRequested, so here we loop through them
+          // but have to read the corresponding item in the response. Previously we had a bug here where
+          // we iterated through the returned values using the _scanEntryIndexesRequested indexes!
+          for (let c = 0; c < beamLocationData.beamLocations.length; c++) {
+            const loc = beamLocationData.beamLocations[c];
+            const locIdx = this._scanEntryIndexesRequested[c];
+
             if (loc) {
-              const pmc = this._scanEntries.entries[idx].id;
-              values.push(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
+              const pmc = this._scanEntries.entries[locIdx].id;
+              // TODO: We should fix this another way, but for now, we request "only" the indexes needed - but that's defined
+              //       by what has spectra (see prepare())!
+              // The bulk/max PMC will have spectra, but likely an invalid location so here we check for that. Because protobuf
+              // doesn't encode "null" values, it actually puts 0,0,0 there. That's not a likely valid coordinate anyway, so we
+              // can check for it here
+              if (loc.x !== 0 || loc.y !== 0 || loc.z !== 0) {
+                values.push(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
+              }
             }
           }
 
