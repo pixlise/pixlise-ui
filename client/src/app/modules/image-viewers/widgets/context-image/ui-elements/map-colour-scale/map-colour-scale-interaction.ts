@@ -83,7 +83,7 @@ export class MapColourScaleInteraction {
     const distanceMoved = getVectorBetweenPoints(event.canvasMouseDown, event.canvasPoint);
     const distance = Math.sqrt(distanceMoved.x * distanceMoved.x + distanceMoved.y * distanceMoved.y);
     if (distance < 1) {
-      let displayValueRange = new MinMax(this._mdl.displayValueRange.min, this._mdl.displayValueRange.max);
+      const displayValueRange = new MinMax(this._mdl.displayValueRange.min, this._mdl.displayValueRange.max);
       if (this._mdl.mouseMode === MouseMode.DRAG_TOP_TAG) {
         isClickEvent = true;
         const newMax = prompt("Enter new max value", this._mdl.tagRawValue.toString());
@@ -152,7 +152,14 @@ export class MapColourScaleInteraction {
       const rawValue = this.getRawValueForYPos(dragEndY, pos.stepsShown, pos.rect.maxY(), pos.tagHeight, pos.boxHeight);
       //console.log('mouse UP mode: '+this._mdl.mouseMode+', tagDrag['+this._tagDragYMin+', '+this._tagDragYMax+'], y='+this._mdl.tagDragYPos+', rawValue='+rawValue);
       if (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG) {
-        this._mdl.setDisplayValueRange(new MinMax(this._mdl.displayValueRange.min, rawValue));
+        // We may have them reversed, eg if both were equal and user dragged one down...
+        const toSet = new MinMax();
+        if (this._mdl.displayValueRange.min !== null) {
+          toSet.expand(this._mdl.displayValueRange.min);
+        }
+        toSet.expand(rawValue);
+
+        this._mdl.setDisplayValueRange(toSet);
 
         const valueRange = this._mdl.valueRange;
         if (valueRange.max) {
@@ -162,7 +169,13 @@ export class MapColourScaleInteraction {
         // Now remain in "hover" mode for this tag...
         this._mdl.mouseMode = MouseMode.HOVER_TOP_TAG;
       } else {
-        this._mdl.setDisplayValueRange(new MinMax(rawValue, this._mdl.displayValueRange.max));
+        const toSet = new MinMax();
+        if (this._mdl.displayValueRange.max !== null) {
+          toSet.expand(this._mdl.displayValueRange.max);
+        }
+        toSet.expand(rawValue);
+
+        this._mdl.setDisplayValueRange(toSet);
 
         const valueRange = this._mdl.valueRange;
         if (valueRange.min) {
@@ -290,7 +303,14 @@ export class MapColourScaleInteraction {
     const scaleY = bottomY - tagHeight - scaleH;
 
     // NOTE: have to flip Y!
-    const pct = 1 - (y - scaleY) / scaleH;
+    let pct = 1 - (y - scaleY) / scaleH;
+
+    // Also clamp it!
+    if (pct > 1) {
+      pct = 1;
+    } else if (pct < 0) {
+      pct = 0;
+    }
 
     const valueRange = this._mdl.valueRange;
     return (valueRange.min || 0) + pct * valueRange.getRange();
