@@ -5,9 +5,17 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { Subscription } from "rxjs";
+import { catchError, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import {
+  WidgetExportData,
+  WidgetExportDialogComponent,
+  WidgetExportDialogData,
+  WidgetExportRequest,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
@@ -58,24 +66,35 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
   isWidgetDataError: boolean = false;
   widgetDataErrorMessage: string = "";
 
-  constructor(private _analysisLayoutService: AnalysisLayoutService) {}
+  private _exportDialogOpen: boolean = false;
+
+  constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
-    this._analysisLayoutService.resizeCanvas$.subscribe(() => {
-      this.hideOverflowedButtons();
-    });
+    this._subs.add(
+      this._analysisLayoutService.resizeCanvas$.subscribe(() => {
+        this.hideOverflowedButtons();
+      })
+    );
 
-    this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
-      if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
-        this.isWidgetHighlighted = true;
-      } else if (this.isWidgetHighlighted) {
-        this.isWidgetHighlighted = false;
-      }
-    });
+    this._subs.add(
+      this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
+        if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
+          this.isWidgetHighlighted = true;
+        } else if (this.isWidgetHighlighted) {
+          this.isWidgetHighlighted = false;
+        }
+      })
+    );
 
-    this._analysisLayoutService.targetWidgetIds$.subscribe(targetWidgetIds => {
-      this.isWidgetTargeted = targetWidgetIds.has(this.widgetLayoutConfig.id);
-    });
+    this._subs.add(
+      this._analysisLayoutService.targetWidgetIds$.subscribe(targetWidgetIds => {
+        this.isWidgetTargeted = targetWidgetIds.has(this.widgetLayoutConfig.id);
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -241,6 +260,34 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
     };
   }
 
+  onOpenExport() {
+    if (!this._currentWidgetRef?.instance?.getExportOptions || !this._currentWidgetRef?.instance?.onExport || this._exportDialogOpen) {
+      return;
+    }
+
+    let dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
+    dialogConfig.data = this._currentWidgetRef?.instance?.getExportOptions();
+    const dialogRef = this._dialog.open(WidgetExportDialogComponent, dialogConfig);
+    this._subs.add(
+      dialogRef.componentInstance.requestExportData
+        .pipe(
+          switchMap(response => this._currentWidgetRef?.instance?.onExport(response)),
+          tap(exportData => dialogRef.componentInstance.onDownload(exportData as WidgetExportData)),
+          catchError(err => {
+            if (dialogRef?.componentInstance?.onExportError) {
+              dialogRef.componentInstance.onExportError(err);
+            }
+            return throwError(() => new WidgetError("Failed to export", err));
+          })
+        )
+        .subscribe()
+    );
+
+    dialogRef.afterClosed().subscribe(() => {
+      this._exportDialogOpen = false;
+    });
+  }
+
   loadWidget() {
     if (this._currentWidgetRef) {
       this._currentWidgetRef.destroy();
@@ -309,6 +356,14 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
             const data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
             data[this.widgetConfiguration!.dataKey] = widgetData;
             this._analysisLayoutService.writeWidgetData(data);
+          })
+        );
+      }
+
+      if (this._currentWidgetRef.instance.onExportWidgetData) {
+        this._subs.add(
+          this._currentWidgetRef.instance.onExportWidgetData.subscribe(() => {
+            this.onOpenExport();
           })
         );
       }

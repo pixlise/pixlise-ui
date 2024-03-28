@@ -1,8 +1,9 @@
 import { Component, ComponentRef, EventEmitter, Output, TemplateRef, ViewChild } from "@angular/core";
 import { WidgetControlConfiguration } from "./widgets.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Observable, of } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 
 export type LiveExpression = {
   expressionId: string;
@@ -39,6 +40,8 @@ export class BaseWidgetModel {
 
   @Output() public onUpdateWidgetControlConfiguration: EventEmitter<any> = new EventEmitter<any>();
   @Output() public onSaveWidgetData: EventEmitter<any> = new EventEmitter<any>();
+
+  @Output() public onExportWidgetData: EventEmitter<void> = new EventEmitter<void>();
 
   @ViewChild("settingsMenu") settingsMenu!: TemplateRef<any>;
 
@@ -80,6 +83,20 @@ export class BaseWidgetModel {
     this._isWidgetDataError = false;
     this._isWidgetDataLoading = false;
     this.onWidgetLoading.emit(isWidgetDataLoading);
+  }
+
+  getExportOptions(): WidgetExportDialogData {
+    return {
+      title: "Export Plot",
+      defaultZipName: "DataExport.zip",
+      options: [],
+      dataProducts: [],
+      showPreview: false,
+    };
+  }
+
+  onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return of({});
   }
 
   ngAfterViewInit(): void {

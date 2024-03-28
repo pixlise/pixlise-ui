@@ -26,7 +26,9 @@ export class RGBUPoint {
     public gu: number = 0,
     public bu: number = 0,
     public color: string = "255,255,255",
-    public name: string = ""
+    public name: string = "",
+    public scanId: string = "",
+    public imageName: string = ""
   ) {}
 
   getValue(key: keyof RGBUPoint | string): number {

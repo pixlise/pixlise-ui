@@ -92,13 +92,13 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
-        {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export",
-          onClick: () => this.onExport(),
-        },
+        // {
+        //   id: "export",
+        //   type: "button",
+        //   icon: "assets/button-icons/export.svg",
+        //   tooltip: "Export",
+        //   onClick: () => this.onExport(),
+        // },
         {
           id: "solo",
           type: "button",
@@ -324,7 +324,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     return this.toolhost;
   }
 
-  onExport() {}
+  // onExport() {}
 
   onSoloView() {
     if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {

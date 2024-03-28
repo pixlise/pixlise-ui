@@ -96,14 +96,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export",
-          value: false,
-          onClick: (value, trigger) => this.onExport(trigger),
-        },
+        // {
+        //   id: "export",
+        //   type: "button",
+        //   icon: "assets/button-icons/export.svg",
+        //   tooltip: "Export",
+        //   value: false,
+        //   onClick: (value, trigger) => this.onExport(trigger),
+        // },
         {
           id: "crop",
           type: "button",
@@ -659,7 +659,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
   }
 
-  onExport(trigger: Element | undefined) {}
+  // onExport(trigger: Element | undefined) {}
 
   onCrop(trigger: Element | undefined) {}
 

@@ -57,6 +57,12 @@ import { Dimension, PCPAxis, RGBUPoint } from "src/app/modules/scatterplots/widg
 import { ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportFile,
+  WidgetExportRequest,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 
 @Component({
   selector: "app-parallel-coordinates-plot-widget",
@@ -128,6 +134,13 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
         },
         {
           id: "solo",
@@ -380,10 +393,12 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     );
   }
 
-  private getROIAveragePoint(points: Set<number>, color: string, name: string, fullDataset: boolean = false): RGBUPoint {
+  private getROIAveragePoint(points: Set<number>, color: string, name: string, fullDataset: boolean = false, scanId: string = "", imageName: string = ""): RGBUPoint {
     let avgData = new RGBUPoint();
     avgData.name = name;
     avgData.color = color;
+    avgData.scanId = scanId || this.scanIdAssociatedWithImage;
+    avgData.imageName = imageName || this.imageName;
 
     if (!this._rgbuLoaded) {
       return avgData;
@@ -505,6 +520,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
   }
 
   loadData(imagePath: string, visibleROIs: string[]): void {
+    if (!imagePath) {
+      return;
+    }
+
     this.isWidgetDataLoading = true;
 
     this._endpointsService
@@ -618,7 +637,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color));
 
       let pixels = new Set(decodeIndexList(roi.region.pixelIndexesEncoded));
-      let averagePoint = this.getROIAveragePoint(pixels, colorStr, roi.region.name, false);
+      let averagePoint = this.getROIAveragePoint(pixels, colorStr, roi.region.name, false, roi.region.scanId, roi.region.imageName);
       averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
       this._data.push(averagePoint);
     });
@@ -728,42 +747,57 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
   exportPlotData(): string {
     let axisNames = this.visibleAxes.map(axis => `"${axis.title.replace(/"/g, "'")}"`);
     let axisKeys = this.visibleAxes.map(axis => axis.key);
-    let data = `"ROI",${axisNames.join(",")}\n`;
+    let data = `"Scan Name", "Scan ID", "Image Name", "ROI",${axisNames.join(",")}\n`;
     this._data.forEach(rgbuPoint => {
-      let row = [rgbuPoint.name, axisKeys.map(key => rgbuPoint[key])];
+      let scanName = this.configuredScans.find(scan => scan.id === rgbuPoint.scanId)?.title ?? "";
+      let row = [scanName, rgbuPoint.scanId, rgbuPoint.imageName, rgbuPoint.name, axisKeys.map(key => rgbuPoint[key])];
       data += `${row.join(",")}\n`;
     });
 
     return data;
   }
 
-  //   onExport() {
-  //     if (this._data) {
-  //       let exportOptions = [new PlotExporterDialogOption("Plot Data .csv", true)];
+  override getExportOptions(): WidgetExportDialogData {
+    let imageShortName = this.imageName?.split("/").pop() || "";
+    if (this.imageName?.includes("MSA_")) {
+      imageShortName = "MSA";
+    } else if (this.imageName?.includes("VIS_")) {
+      imageShortName = "VIS";
+    }
 
-  //       const dialogConfig = new MatDialogConfig();
-  //       dialogConfig.data = new PlotExporterDialogData(
-  //         `${this._datasetService.datasetLoaded.getId()} - Parallel Coords Plot`,
-  //         "Export Parallel Coordinates Plot",
-  //         exportOptions
-  //       );
+    return {
+      title: "Export Parallel Coordinates Plot",
+      defaultZipName: `${this.scanIdAssociatedWithImage} - ${imageShortName} - Parallel Coords Plot`,
+      options: [],
+      dataProducts: [
+        {
+          id: "plotData",
+          name: "Plot Data .csv",
+          type: "checkbox",
+          description: "Export the data used to generate the plot",
+          selected: true,
+        },
+      ],
+      showPreview: false,
+    };
+  }
 
-  //       const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
-  //       dialogRef.componentInstance.onConfirmOptions.subscribe((options: PlotExporterDialogOption[]) => {
-  //         let optionLabels = options.map(option => option.label);
-  //         let csvs: CSVExportItem[] = [];
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return new Observable<WidgetExportData>(observer => {
+      let csvs: WidgetExportFile[] = [];
+      if (request.dataProducts) {
+        if (request.dataProducts["plotData"]?.selected) {
+          csvs.push({
+            fileName: `Plot Data.csv`,
+            data: this.exportPlotData(),
+          });
+        }
+      }
 
-  //         if (optionLabels.indexOf("Plot Data .csv") > -1) {
-  //           // Export CSV
-  //           csvs.push(new CSVExportItem("Parallel Coords Plot Data", this.exportPlotData()));
-  //         }
-
-  //         dialogRef.componentInstance.onDownload([], csvs);
-  //       });
-
-  //       return dialogRef.afterClosed();
-  //     }
-  //   }
+      observer.next({ csvs });
+      observer.complete();
+    });
+  }
 
   @HostListener("window:resize", ["$event"])
   onResize() {

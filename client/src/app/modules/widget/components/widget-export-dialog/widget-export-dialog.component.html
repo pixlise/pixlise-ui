@@ -1,0 +1,132 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="export-dialog">
+  <h1>{{ title }}</h1>
+  <div class="fields">
+    <div class="zip-options">
+      <h5 class="zip-label">Zip File Name</h5>
+      <input type="text" [(ngModel)]="zipFileName" [placeholder]="data.defaultZipName.replace('.zip', '') + '.zip'" />
+    </div>
+    <div *ngIf="options && options.length > 0" class="export-options options">
+      <span class="options-label-container">
+        <h5 class="options-label">Options</h5>
+      </span>
+      <div class="options-container">
+        <div *ngFor="let option of options" class="option {{ option.selected ? 'selected' : '' }}">
+          <div *ngIf="option.type === 'checkbox'" class="checkbox-option">
+            <span class="option-label">{{ option.name }}</span>
+            <action-button
+              #tooltip="matTooltip"
+              [matTooltip]="option.description"
+              [matTooltipDisabled]="!option.description"
+              [matTooltipShowDelay]="200"
+              [action]="option.selected ? 'checkOn' : 'checkOff'"
+              (onClick)="option.selected = !option.selected"></action-button>
+          </div>
+          <div *ngIf="option.type === 'multiswitch'" class="multiswitch-option">
+            <span class="option-label">{{ option.name }}</span>
+            <multi-switch-button
+              #tooltip="matTooltip"
+              [matTooltip]="option.description"
+              [matTooltipDisabled]="!option.description"
+              [matTooltipShowDelay]="200"
+              [options]="option.options || []"
+              [value]="option.selectedOption || ''"
+              (onChange)="option.selectedOption = $event">
+            </multi-switch-button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="dataProducts && dataProducts.length > 0" class="export-options data-products">
+      <span class="options-label-container">
+        <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
+      </span>
+      <div class="options-container">
+        <div *ngFor="let option of dataProducts" class="option {{ option.selected ? 'selected' : '' }}">
+          <div *ngIf="option.type === 'checkbox'" class="checkbox-option">
+            <span class="option-label">{{ option.name }}:</span>
+            <action-button
+              #tooltip="matTooltip"
+              [matTooltip]="option.description"
+              [matTooltipDisabled]="!option.description"
+              [matTooltipShowDelay]="200"
+              [action]="option.selected ? 'checkOn' : 'checkOff'"
+              (onClick)="option.selected = !option.selected"></action-button>
+          </div>
+          <div *ngIf="option.type === 'multiswitch'" class="multiswitch-option">
+            <span class="option-label">{{ option.name }}</span>
+            <multi-switch-button
+              #tooltip="matTooltip"
+              [matTooltip]="option.description"
+              [matTooltipDisabled]="!option.description"
+              [matTooltipShowDelay]="200"
+              [options]="option.options || []"
+              [value]="option.selectedOption || ''"
+              (onChange)="option.selectedOption = $event">
+            </multi-switch-button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="data.preview" class="export-options preview">
+      <span class="options-label-container">
+        <h5 class="options-label">Preview</h5>
+        <action-button [action]="showPreview ? 'checkOn' : 'checkOff'" (onClick)="showPreview = !showPreview"></action-button>
+      </span>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+      <div *ngIf="loading && !errorMessage" class="loading-container">
+        <wait-spinner></wait-spinner>
+        <div class="prompt">
+          <h5 class="loading-message">Exporting Data</h5>
+        </div>
+      </div>
+      <div *ngIf="errorMessage" class="loading-container" #tooltip="matTooltip" [matTooltip]="errorMessage">
+        <img src="assets/icons/error-triangle-yellow.svg" />
+        <div class="prompt">
+          <h5 class="error">Error exporting</h5>
+        </div>
+      </div>
+      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+      <push-button
+        buttonStyle="yellow"
+        [disabled]="selectedDataProductsCount === 0"
+        #tooltip="matTooltip"
+        matTooltip="Nothing to export"
+        [matTooltipDisabled]="selectedDataProductsCount > 0"
+        (onClick)="onConfirm()"
+        >Export</push-button
+      >
+    </div>
+  </div>
+</div>
