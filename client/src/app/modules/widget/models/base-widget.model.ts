@@ -3,7 +3,7 @@ import { WidgetControlConfiguration } from "./widgets.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { BehaviorSubject, Observable, of } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 export type LiveExpression = {
   expressionId: string;

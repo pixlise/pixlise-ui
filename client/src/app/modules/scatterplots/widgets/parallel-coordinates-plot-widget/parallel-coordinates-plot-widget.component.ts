@@ -62,7 +62,7 @@ import {
   WidgetExportDialogData,
   WidgetExportFile,
   WidgetExportRequest,
-} from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
   selector: "app-parallel-coordinates-plot-widget",

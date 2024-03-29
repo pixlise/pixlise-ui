@@ -5,17 +5,13 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { catchError, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
+import { catchError, Subscription, switchMap, tap, throwError } from "rxjs";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import {
-  WidgetExportData,
-  WidgetExportDialogComponent,
-  WidgetExportDialogData,
-  WidgetExportRequest,
-} from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 
 const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));

@@ -79,7 +79,14 @@ POSSIBILITY OF SUCH DAMAGE.
     </span>
   </div>
   <div class="canvas-container">
-    <interactive-canvas *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
+    <interactive-canvas
+      #interactiveCanvas
+      *ngIf="!errorMsg"
+      [ngClass]="mdl.cursorShown"
+      [drawer]="drawer"
+      [drawNotifier]="mdl"
+      [interactionHandler]="toolhost"
+      [transform]="transform">
     </interactive-canvas>
 
     <div *ngIf="mdl.hasRawData()" class="axis x-axis">

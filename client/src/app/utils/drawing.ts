@@ -170,7 +170,7 @@ export class PointDrawer {
     private _screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     private _size: number,
     private _fillColour: RGBA,
-    private _outlineColour: RGBA,
+    private _outlineColour: RGBA | null = null,
     private _shape: string = PointDrawer.ShapeCircle
   ) {}
 

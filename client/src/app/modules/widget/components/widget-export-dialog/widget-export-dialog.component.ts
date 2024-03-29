@@ -27,52 +27,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-
-export type WidgetExportOptionType = "checkbox" | "multiswitch";
-
-export type WidgetExportOption = {
-  id: string;
-  name: string;
-  type: WidgetExportOptionType;
-  description: string;
-  selected: boolean;
-
-  // Only for multiswitch
-  options?: string[];
-  selectedOption?: string;
-};
-
-export type WidgetExportDialogData = {
-  title: string;
-  defaultZipName: string;
-  options: WidgetExportOption[];
-  dataProducts: WidgetExportOption[];
-
-  // Preview Options
-  showPreview: boolean;
-  preview?: ElementRef;
-};
-
-export type WidgetExportRequest = {
-  options: Record<string, WidgetExportOption>;
-  dataProducts: Record<string, WidgetExportOption>;
-};
-
-export type WidgetExportFile = {
-  fileName: string;
-  subFolder?: string;
-  data: any;
-};
-
-export type WidgetExportData = {
-  csvs?: WidgetExportFile[];
-  txts?: WidgetExportFile[];
-  images?: WidgetExportFile[];
-};
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportFile,
+  WidgetExportOption,
+  WidgetExportRequest,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
   selector: "widget-export-dialog",

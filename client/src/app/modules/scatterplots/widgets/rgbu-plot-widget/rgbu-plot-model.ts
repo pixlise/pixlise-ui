@@ -123,6 +123,10 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return this._raw;
   }
 
+  get lastCalcCanvasParams(): CanvasParams | null {
+    return this._lastCalcCanvasParams;
+  }
+
   hasRawData(): boolean {
     return this._raw != null;
   }
