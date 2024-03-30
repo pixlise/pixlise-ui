@@ -49,6 +49,7 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { widgetLayerPositions } from "../../models/expression-widget-layer-configs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group-msgs";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
 
 export type ExpressionPickerResponse = {
   selectedGroup?: ExpressionGroup;
@@ -146,6 +147,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   rgbMixModeGroupOptions = ["Expressions", "RGB Mix"];
   private _activeRGBMixModeGroup: string = "Expressions";
   private _showRGBMixMode: boolean = false;
+
+  expressionGroupType: ObjectType = ObjectType.OT_EXPRESSION_GROUP;
 
   constructor(
     private _cachedDataSerivce: APICachedDataService,

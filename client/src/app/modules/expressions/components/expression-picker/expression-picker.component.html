@@ -161,6 +161,10 @@ POSSIBILITY OF SUCH DAMAGE.
             [showCurrentTagsSection]="true"
             (onTagSelectionChanged)="selectedGroup.tags = $event">
           </tag-picker>
+          <share-ownership-item-button
+            [id]="selectedGroup.id"
+            [type]="expressionGroupType"
+            [ownershipSummary]="selectedGroup.owner || null"></share-ownership-item-button>
         </div>
       </div>
       <section class="layer-container">
