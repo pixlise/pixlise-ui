@@ -144,6 +144,7 @@
 
         push-button {
           margin-left: auto;
+          margin-right: 6px;
         }
       }
     }
@@ -230,6 +231,42 @@
         align-items: center;
 
         .recent-btn {
+          margin-left: auto;
+        }
+      }
+
+      &.quant-elements {
+        display: flex;
+        align-items: center;
+        padding: 0px 16px;
+        height: 46px;
+
+        .quant-element-switch-button {
+          width: 150px;
+          margin-left: auto;
+
+          display: flex;
+          align-items: center;
+
+          border: 1px solid #444c50;
+          border-radius: 4px;
+        }
+      }
+
+      .scan-selector {
+        width: fit-content !important;
+        background-color: #232829 !important;
+        border: 1px solid #444c50;
+        border-radius: 4px !important;
+      }
+
+      &.pseudo-elements {
+        display: flex;
+        align-items: center;
+        padding: 0px 16px;
+        height: 46px;
+
+        .scan-selector {
           margin-left: auto;
         }
       }

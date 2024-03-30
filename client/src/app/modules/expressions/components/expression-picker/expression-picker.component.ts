@@ -30,12 +30,12 @@
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { combineLatest, of, Subscription } from "rxjs";
+import { combineLatest, filter, map, of, Subscription, switchMap } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -50,6 +50,7 @@ import { widgetLayerPositions } from "../../models/expression-widget-layer-confi
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group-msgs";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 export type ExpressionPickerResponse = {
   selectedGroup?: ExpressionGroup;
@@ -67,6 +68,7 @@ export type ExpressionPickerData = {
   quantId?: string;
   noActiveScreenConfig?: boolean;
   maxSelection?: number;
+  enforceMaxSelectionWhileEditing?: boolean;
   widgetType?: string;
   disableExpressionGroups?: boolean;
   expressionsOnly?: boolean;
@@ -149,6 +151,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _showRGBMixMode: boolean = false;
 
   expressionGroupType: ObjectType = ObjectType.OT_EXPRESSION_GROUP;
+
+  configuredScans: ScanItem[] = [];
+
+  selectedScanIdForQuantifiedElements: string = "";
+  private _activeQuantifiedElementDetector: "A" | "B" | "A&B" | "" = "";
 
   constructor(
     private _cachedDataSerivce: APICachedDataService,
@@ -240,6 +247,43 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           });
         }
       })
+    );
+
+    // this._subs.add(
+    //   this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+    //     if (config) {
+    //     this._subs.add(
+    //       this._analysisLayoutService.availableScans$.subscribe(scans => {
+    //         if (scans) {
+    //           let configuredScans = Object.entries(config.scanConfigurations).map(([scanId]) => {
+    //             return scans.find(scan => scan.id === scanId);
+    //           });
+    //           this.configuredScans = configuredScans.filter(scan => !!scan) as ScanItem[];
+    //         }
+    //       })
+    //     );
+    //     }
+    //   })
+    // );
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$
+        .pipe(
+          filter(config => !!config),
+          switchMap(config =>
+            this._analysisLayoutService.availableScans$.pipe(
+              filter(scans => !!scans),
+              map(scans => {
+                let configuredScans = Object.entries(config.scanConfigurations).map(([scanId]) => {
+                  return scans.find(scan => scan.id === scanId);
+                });
+                return configuredScans.filter(scan => !!scan) as ScanItem[];
+              })
+            )
+          )
+        )
+        .subscribe(configuredScans => {
+          this.configuredScans = configuredScans;
+        })
     );
 
     this._subs.add(
@@ -497,6 +541,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     });
   }
 
+  get activeQuantifiedElementDetector(): "A" | "B" | "A&B" | "" {
+    return this._activeQuantifiedElementDetector;
+  }
+
+  set activeQuantifiedElementDetector(detector: "A" | "B" | "A&B" | "") {
+    this._activeQuantifiedElementDetector = detector;
+    this.loadQuantifiedExpressions(this._analysisLayoutService.availableScanQuants$.value);
+  }
+
   loadQuantifiedExpressions(availableScanQuants: Record<string, QuantificationSummary[]>): void {
     this._quantifiedExpressions = {};
 
@@ -508,12 +561,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       const currentQuant = quants.find(quant => quant.id === this.quantId);
       if (currentQuant) {
         currentQuant.elements.forEach(quantElement => {
-          let det = currentQuant?.params?.userParams?.quantMode || "";
-          if (det.length > 0 && det != "Combined") {
-            det = det.substring(0, 1);
+          let quantMode = currentQuant?.params?.userParams?.quantMode || "";
+          let defaultDetector = quantMode;
+          if (defaultDetector.length > 0 && defaultDetector != "Combined") {
+            defaultDetector = defaultDetector.substring(0, 1);
           }
 
-          const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", det);
+          if (!this.activeQuantifiedElementDetector) {
+            this.activeQuantifiedElementDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
+          }
+
+          let detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");
+
+          const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
           const expr = getPredefinedExpression(id);
           if (expr) {
             this._quantifiedExpressions[id] = expr;
@@ -551,6 +611,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           toSelect.push(this._quantifiedExpressions[id]);
         } else if (this._anomalyExpressions[id]) {
           toSelect.push(this._anomalyExpressions[id]);
+        } else if (DataExpressionId.isPredefinedExpression(id)) {
+          // Check if it's a predefined expression
+          const expr = getPredefinedExpression(id);
+          if (expr) {
+            toSelect.push(expr);
+          } else {
+            // If we dont have it, then we are waiting for it to load
+            toSelect.push(DataExpression.create({ id, name: `Loading (${id})...` }));
+            this._unmatchedExpressions = true;
+          }
         } else if (this.filteredExpressions) {
           // Check if we have it in filtered expressions
           const filteredItem = this.filteredExpressions.find(expression => expression.id === id);
@@ -576,7 +646,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             }
           } else {
             // If we dont have it in filtered expressions, then we are waiting for it to load
-            toSelect.push(DataExpression.create({ id: `loading-${id}`, name: `Loading (${id})...` }));
+            toSelect.push(DataExpression.create({ id, name: `Loading (${id})...` }));
             this._unmatchedExpressions = true;
           }
         }
@@ -685,7 +755,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   get canSelectMore(): boolean {
-    return !this.maxSelection || this.selectedExpressionIds.size < this.maxSelection;
+    return !this.maxSelection || !this.data.enforceMaxSelectionWhileEditing || this.selectedExpressionIds.size < this.maxSelection;
   }
 
   get selectedExpressionGroupId(): string {
@@ -822,27 +892,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             this.updateSelectedExpressions();
           }
         });
-        // groupItemIds.forEach(expressionId => {
-        //   if (expressionId && !DataExpressionId.isPredefinedExpression(expressionId)) {
-        //     this._expressionService.fetchExpression(expressionId);
-        //   }
-        // });
-
-        // if (this.maxSelection === 1 && this.showRGBMixMode) {
-        //   this.selectedExpressionIdOrder = groupItemIds.slice(0, 3);
-        //   this.selectedExpressionIds = new Set(this.selectedExpressionIdOrder);
-        //   this.updateSelectedExpressions();
-
-        //   if (this.persistDialog) {
-        //     this.onConfirm();
-        //   }
-        // }
-
-        // this.overwriteExistingExpressionGroup = true;
-        // this.selectedExpressionGroupId = expressionGroup.id;
-
-        // // Clear the last written expression because we're now working with a new group
-        // this._expressionService.lastWrittenExpressionGroupId$.next("");
       } else {
         this.toggleExpression(expressionGroup);
       }

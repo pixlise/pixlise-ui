@@ -90,17 +90,35 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </section>
     <section class="column expressions-list">
-      <div class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }}">
+      <div
+        class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }} {{ 'Quantified Elements' === activeBrowseSection ? 'quant-elements' : '' }} {{
+          activeBrowseSection === 'Pseudo-Intensities' ? 'pseudo-elements' : ''
+        }}">
         <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
         <push-button *ngIf="activeBrowseSection === 'Recent'" class="recent-btn" buttonStyle="outline" (onClick)="onClearRecent(activeBrowseGroup)"
           >Clear Recent</push-button
         >
+        <multi-switch-button
+          class="quant-element-switch-button"
+          *ngIf="activeBrowseSection === 'Quantified Elements'"
+          [options]="['A', 'B', 'A&B']"
+          [value]="activeQuantifiedElementDetector"
+          (onChange)="activeQuantifiedElementDetector = $event">
+        </multi-switch-button>
+        <mat-select
+          class="scan-selector"
+          *ngIf="['Quantified Elements', 'Pseudo-Intensities'].includes(activeBrowseSection)"
+          [(ngModel)]="scanId"
+          placeholder="Choose a Scan">
+          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }}</mat-option>
+        </mat-select>
       </div>
       <expression-search-controls
         class="{{ showSearchControls ? 'visible' : '' }}"
         (onFilterChanged)="onFilterChanged($event)"
         [scanId]="scanId"
         [quantId]="quantId"
+        [selectedDetector]="activeQuantifiedElementDetector"
         [recentExpressions]="recentExpressions"
         [manualFilters]="manualFilters"></expression-search-controls>
       <section class="expressions">
@@ -137,7 +155,7 @@ POSSIBILITY OF SUCH DAMAGE.
           #tooltip="matTooltip"
           matTooltip="Edit Group ({{ newExpressionGroupName }})"
           [matTooltipDisabled]="newExpressionGroupName.length === 0"
-          >{{ overwriteExistingExpressionGroup && selectedExpressionGroupId.length > 0 ? "Edit" : "Save" }} Group</push-button
+          >Save As Group</push-button
         >
       </div>
       <div *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup" class="rgbmix-row">
