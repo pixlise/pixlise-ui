@@ -371,4 +371,12 @@ export class AnalysisLayoutService implements OnDestroy {
     const quantId = this.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
     return quantId;
   }
+
+  getLoadedScan(scanId: string): ScanItem | undefined {
+    return this.availableScans$.value.find(scan => scan.id === scanId);
+  }
+
+  getLoadedQuant(scanId: string, quantId: string): QuantificationSummary | undefined {
+    return this.availableScanQuants$.value[scanId]?.find(quant => quant.id === quantId);
+  }
 }

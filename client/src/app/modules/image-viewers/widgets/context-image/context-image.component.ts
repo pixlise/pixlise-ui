@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { catchError, combineLatest, map, mergeMap, Observable, of, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ContextImageModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
@@ -36,6 +36,10 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+
+export type RegionMap = Map<string, ROIItem>;
+export type MapLayers = Map<string, ContextImageMapLayer[]>;
+export type ContextImageLayers = { mapLayers: MapLayers; regions: RegionMap };
 
 @Component({
   selector: "app-context-image",
@@ -275,7 +279,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         const contextData = data as ContextImageState;
 
         if (this._analysisLayoutService.isMapsPage && contextData.mapLayers.length > 0) {
-          this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          let validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
+          this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
           this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.cachedROIs = this.mdl.roiIds.slice();
           this.mdl.drawImage = false;
@@ -283,7 +288,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.hidePointsForScans = [this.scanId];
           // this.setInitialConfig(true);
         } else if (contextData) {
-          this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          let validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
+          this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
 
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
@@ -398,9 +404,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (highlighted.roiIds.length > 0) {
           this.mdl.roiIds = [];
-          highlighted.roiIds.forEach(id => {
-            const visibleROI = VisibleROI.create({ id, scanId: highlighted.scanId });
-            this.loadROIRegion(visibleROI, true);
+          let highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(VisibleROI.create({ id, scanId: highlighted.scanId }), true));
+          combineLatest(highlightRequests).subscribe({
+            next: () => {
+              this.reloadModel();
+            },
+            error: err => {
+              this._snackService.openError("Failed to highlight region", err);
+            },
           });
         } else {
           this.mdl.roiIds = this.cachedROIs.slice();
@@ -419,7 +430,11 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         if (result) {
           this.mdl.expressionIds = [];
 
-          if (result && result.selectedExpressions?.length > 0) {
+          if (result.selectedGroup) {
+            this.mdl.expressionIds.push(result.selectedGroup.id);
+          }
+
+          if (result.selectedExpressions && result.selectedExpressions.length > 0) {
             for (const expr of result.selectedExpressions) {
               this.mdl.expressionIds.push(expr.id);
             }
@@ -510,113 +525,165 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.reDraw();
   }
 
-  private loadMapLayers(setViewToExperiment: boolean = false) {
-    this.isWidgetDataLoading = false;
+  private loadMapLayerExpressions(scanId: string, expressionIds: string[], setViewToExperiment: boolean = false): Observable<ContextImageMapLayer[]> {
+    this.scanId = scanId;
 
-    // Get the expression layers
-    if (this.mdl.expressionIds.length > 0) {
-      for (const scanId of this.mdl.scanIds) {
-        const scanMdl = this.mdl.getScanModelFor(scanId);
-        if (scanMdl) {
-          const pts = scanMdl.scanPoints;
-          const pmcToIndexLookup = new Map<number, number>();
-          for (const pt of pts) {
-            pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-          }
-
-          const quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
-
-          const shading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
-
-          this.mdl.expressionIds.forEach((exprId, i) => {
-            this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), shading, pmcToIndexLookup).subscribe({
-              next: (layer: ContextImageMapLayer) => {
-                this.mdl.setMapLayer(layer);
-                this.widgetErrorMessage = "";
-
-                if (setViewToExperiment && i == this.mdl.expressionIds.length - 1) {
-                  setTimeout(() => {
-                    this.onResetViewToExperiment();
-                  }, 1);
-                }
-              },
-              error: err => {
-                if (this._analysisLayoutService.isMapsPage) {
-                  // We have to wait for things to be injected on maps page, so this may be falsely called
-                  console.warn("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                } else {
-                  //this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                  this._snackService.openError(err);
-                  this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
-                }
-              },
-            });
-          });
-
-          this.scanId = scanId;
-        }
+    const scanMdl = this.mdl.getScanModelFor(scanId);
+    if (scanMdl) {
+      const pts = scanMdl.scanPoints;
+      const pmcToIndexLookup = new Map<number, number>();
+      for (const pt of pts) {
+        pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
       }
-    }
 
-    // And generate ROI polygons
-    for (const roi of this.mdl.roiIds) {
-      this.loadROIRegion(roi);
+      const quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
+
+      const shading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
+
+      let modelRequests = expressionIds.map(exprId => {
+        return this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), shading, pmcToIndexLookup);
+      });
+
+      return combineLatest(modelRequests).pipe(
+        tap({
+          next: (layers: ContextImageMapLayer[]) => {
+            layers.forEach(layer => {
+              this.mdl.setMapLayer(layer);
+            });
+
+            this.reDraw();
+
+            this.widgetErrorMessage = "";
+
+            if (setViewToExperiment) {
+              setTimeout(() => {
+                this.onResetViewToExperiment();
+              }, 1);
+            }
+          },
+          error: err => {
+            if (this._analysisLayoutService.isMapsPage) {
+              // We have to wait for things to be injected on maps page, so this may be falsely called
+              console.warn("Failed to add layer", err);
+            } else {
+              this._snackService.openError("Failed to add layer", err);
+              this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
+            }
+          },
+        })
+      );
+    } else {
+      return of([]);
     }
   }
 
-  private loadROIRegion(roi: VisibleROI, setROIVisible: boolean = false) {
+  private loadMapLayers(setViewToExperiment: boolean = false): Observable<ContextImageLayers> {
+    let layerRequests: Observable<ContextImageMapLayer[]>[] = [];
+
+    // We need to run through expressions for every scan we have loaded, so first check if we have expressions
+    if (this.mdl.expressionIds.length > 0) {
+      layerRequests = this.mdl.scanIds.map(scanId => this.loadMapLayerExpressions(scanId, this.mdl.expressionIds, setViewToExperiment));
+    }
+
+    // Queue up region requests
+    let regionRequests = this.mdl.roiIds.map(roi => this.loadROIRegion(roi));
+
+    return combineLatest(layerRequests).pipe(
+      mergeMap(layerRequest => layerRequest),
+      toArray(),
+      mergeMap(scanLayers => {
+        let mapLayers = new Map<string, ContextImageMapLayer[]>();
+        scanLayers.forEach((layers, i) => {
+          mapLayers.set(this.mdl.scanIds[i], layers);
+        });
+
+        return combineLatest(regionRequests).pipe(
+          mergeMap(regionRequest => regionRequest),
+          toArray(),
+          map(regions => {
+            let regionsMap: RegionMap = new Map<string, ROIItem>();
+            regions.forEach(region => {
+              regionsMap.set(region.id, region);
+            });
+
+            let contextLayers: ContextImageLayers = { mapLayers, regions: regionsMap };
+            return contextLayers;
+          })
+        );
+      }),
+      catchError(err => {
+        console.error(err);
+        return throwError(() => new Error(err));
+      })
+    );
+  }
+
+  private loadROIRegion(roi: VisibleROI, setROIVisible: boolean = false): Observable<ROIItem> {
     // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
-    this._roiService.loadROI(roi.id).subscribe({
-      next: (roiLoaded: ROIItem) => {
-        // We need to be able to convert PMCs to location indexes...
-        const scanMdl = this.mdl.getScanModelFor(roi.scanId);
-        if (scanMdl) {
-          const pmcToIndexLookup = new Map<number, number>();
-          for (const pt of scanMdl.scanPoints) {
-            pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-          }
-
-          // Make sure it has up to date display settings
-          const disp = this._roiService.getRegionDisplaySettings(roi.id);
-          if (disp) {
-            roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
-          }
-
-          // We've loaded the region itself, store these so we can build a draw model when needed
-          this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
-
-          if (setROIVisible) {
-            if (!this.mdl.roiIds.find(existingROI => existingROI.id === roi.id)) {
-              this.mdl.roiIds = [roi, ...this.mdl.roiIds];
+    return this._roiService.loadROI(roi.id).pipe(
+      tap({
+        next: (roiLoaded: ROIItem) => {
+          // We need to be able to convert PMCs to location indexes...
+          const scanMdl = this.mdl.getScanModelFor(roi.scanId);
+          if (scanMdl) {
+            const pmcToIndexLookup = new Map<number, number>();
+            for (const pt of scanMdl.scanPoints) {
+              pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
             }
-            this.reloadModel();
+
+            // Make sure it has up to date display settings
+            const disp = this._roiService.getRegionDisplaySettings(roi.id);
+            if (disp) {
+              roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
+            }
+
+            // We've loaded the region itself, store these so we can build a draw model when needed
+            this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
+
+            if (setROIVisible) {
+              if (!this.mdl.roiIds.find(existingROI => existingROI.id === roi.id)) {
+                this.mdl.roiIds = [roi, ...this.mdl.roiIds];
+              }
+            }
           }
-        }
-      },
-      error: err => {
-        this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
-        this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
-      },
-    });
+        },
+        error: err => {
+          this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
+          this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
+        },
+      })
+    );
   }
 
   private reloadModel(setViewToExperiment: boolean = false) {
     this.isWidgetDataLoading = true;
 
-    this._contextDataService.getModelData(this.mdl.imageName, this._widgetId).subscribe({
-      next: (data: ContextImageModelLoadedData) => {
-        if (data.scanModels.size > 0) {
-          this.scanId = data.scanModels.keys().next().value;
-        }
+    this._contextDataService
+      .getModelData(this.mdl.imageName, this._widgetId)
+      .pipe(
+        switchMap((data: ContextImageModelLoadedData) => {
+          if (data.scanModels.size > 0) {
+            this.scanId = data.scanModels.keys().next().value;
+          }
 
-        this.mdl.setData(data);
-        this.loadMapLayers(setViewToExperiment);
-      },
-      error: err => {
-        this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
-        this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
-      },
-    });
+          this.mdl.setData(data);
+          return this.loadMapLayers(setViewToExperiment);
+        }),
+        catchError((err: any) => {
+          return throwError(() => new Error(err));
+        })
+      )
+      .subscribe({
+        next: (layers: ContextImageLayers) => {
+          this.isWidgetDataLoading = false;
+          this.reDraw();
+        },
+        error: err => {
+          this.isWidgetDataLoading = false;
+          this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
+          this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
+        },
+      });
   }
 
   ngOnDestroy() {
@@ -812,7 +879,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       liveReload: true,
       singleSelectionOption: true,
       maxSelection: 1,
-      preserveGroupSelection: true,
     };
 
     this._expressionPickerDialog = this.dialog.open(ExpressionPickerComponent, dialogConfig);

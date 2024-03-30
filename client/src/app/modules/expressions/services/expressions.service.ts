@@ -7,8 +7,15 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleAddVersionReq, DataModuleGetReq, DataModuleListReq, DataModuleWriteReq } from "src/app/generated-protos/module-msgs";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
-import { ExpressionGroupGetReq, ExpressionGroupListReq, ExpressionGroupListResp, ExpressionGroupWriteReq } from "src/app/generated-protos/expression-group-msgs";
+import {
+  ExpressionGroupDeleteReq,
+  ExpressionGroupGetReq,
+  ExpressionGroupListReq,
+  ExpressionGroupListResp,
+  ExpressionGroupWriteReq,
+} from "src/app/generated-protos/expression-group-msgs";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 @Injectable({
   providedIn: "root",
@@ -208,7 +215,7 @@ export class ExpressionsService {
   }
 
   deleteExpressionGroup(id: string) {
-    this._dataService.sendExpressionGroupDeleteRequest(ExpressionGroupGetReq.create({ id })).subscribe(res => {
+    this._dataService.sendExpressionGroupDeleteRequest(ExpressionGroupDeleteReq.create({ id })).subscribe(res => {
       this.expressionGroups$.value.filter(group => group.id !== id);
       this.expressionGroups$.next(this.expressionGroups$.value);
       this.listExpressionGroups(true);
@@ -221,6 +228,42 @@ export class ExpressionsService {
       let expressionGroups = Object.values(resp.groups);
       this.expressionGroups$.next(expressionGroups);
     });
+  }
+
+  writeExpressionGroupAsync(expressionGroupToWrite: ExpressionGroup, silent: boolean = false): Observable<ExpressionGroup> {
+    return this._dataService
+      .sendExpressionGroupWriteRequest(
+        ExpressionGroupWriteReq.create({
+          group: expressionGroupToWrite,
+        })
+      )
+      .pipe(
+        map(res => {
+          if (res.group) {
+            if (!silent) {
+              this._snackBarService.openSuccess(`Expression group (${expressionGroupToWrite.name}) saved`);
+            }
+
+            let existingGroupIndex = this.expressionGroups$.value.findIndex(group => group.id === res.group?.id);
+            if (existingGroupIndex >= 0) {
+              this.expressionGroups$.value[existingGroupIndex] = res.group;
+            } else {
+              this.expressionGroups$.value.push(res.group);
+            }
+            this.expressionGroups$.next(this.expressionGroups$.value);
+
+            this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), true);
+            this.lastWrittenExpressionGroupId$.next(res.group.id);
+
+            return res.group;
+          } else {
+            throw new WidgetError(
+              "Failed to write expression group",
+              `Expression group (${expressionGroupToWrite.name}, ${expressionGroupToWrite.id}) was not returned from the API`
+            );
+          }
+        })
+      );
   }
 
   writeExpressionGroup(expressionGroupToWrite: ExpressionGroup) {

@@ -127,16 +127,16 @@ export class ContextImageDataService {
 
   private getExpressionGroupModel(
     scanId: string,
-    expressionId: string,
+    groupId: string,
     quantId: string,
     roiId: string,
     colourRamp: ColourRamp,
     pmcToIndexLookup: Map<number, number>
   ): Observable<ContextImageMapLayer> {
-    return this._cachedDataService.getExpressionGroup(ExpressionGroupGetReq.create({ id: expressionId })).pipe(
+    return this._cachedDataService.getExpressionGroup(ExpressionGroupGetReq.create({ id: groupId })).pipe(
       concatMap((resp: ExpressionGroupGetResp) => {
         if (!resp.group) {
-          throw new Error("Failed to query expression group: " + expressionId);
+          throw new Error("Failed to query expression group: " + groupId);
         }
 
         if (resp.group.groupItems.length != 3) {
@@ -150,7 +150,7 @@ export class ContextImageDataService {
 
         return this._widgetDataService.getData(query).pipe(
           map((results: RegionDataResults) => {
-            return this.processQueryResults(results, scanId, expressionId, quantId, roiId, query, colourRamp, pmcToIndexLookup);
+            return this.processQueryResults(results, scanId, groupId, quantId, roiId, query, colourRamp, pmcToIndexLookup);
           }),
           shareReplay(1)
         );

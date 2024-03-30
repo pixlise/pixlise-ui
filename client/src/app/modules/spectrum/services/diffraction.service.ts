@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, map, Observable, tap } from "rxjs";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import {
   DiffractionPeakManualDeleteReq,
@@ -38,6 +38,20 @@ export class DiffractionService {
     private _dataService: APIDataService,
     private _apiCacheService: APICachedDataService
   ) {}
+
+  fetchPeakStatusesForScanAsync(scanId: string): Observable<Map<string, DetectedDiffractionPeakStatuses>> {
+    return this._dataService.sendDiffractionPeakStatusListRequest(DiffractionPeakStatusListReq.create({ scanId })).pipe(
+      map(response => {
+        let peaksPerScan = this.diffractionPeaksStatuses$.value;
+        if (response.peakStatuses) {
+          peaksPerScan.set(scanId, response.peakStatuses);
+        }
+        this.diffractionPeaksStatuses$.next(peaksPerScan);
+
+        return peaksPerScan;
+      })
+    );
+  }
 
   fetchPeakStatusesForScan(scanId: string) {
     this._dataService.sendDiffractionPeakStatusListRequest(DiffractionPeakStatusListReq.create({ scanId })).subscribe(response => {
@@ -84,6 +98,25 @@ export class DiffractionService {
         console.error(`Failed to add peak status for peak ${diffractionPeakId}:`, err);
       },
     });
+  }
+
+  fetchManualPeaksForScanAsync(scanId: string): Observable<Map<string, ManualDiffractionPeak[]>> {
+    return this._dataService.sendDiffractionPeakManualListRequest(DiffractionPeakManualListReq.create({ scanId })).pipe(
+      map(response => {
+        let scanPeaks: ManualDiffractionPeak[] = [];
+        Object.entries(response.peaks).forEach(([peakId, peak]) => {
+          peak.id = peakId;
+          peak.scanId = scanId;
+          scanPeaks.push(peak);
+        });
+
+        let peaksPerScan = this.manualPeaksPerScan$.value;
+        peaksPerScan.set(scanId, scanPeaks);
+        this.manualPeaksPerScan$.next(peaksPerScan);
+
+        return peaksPerScan;
+      })
+    );
   }
 
   fetchManualPeaksForScan(scanId: string) {
