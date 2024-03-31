@@ -36,6 +36,8 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -77,6 +79,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
     private _contextDataService: ContextImageDataService,
+    private _expressionsService: ExpressionsService,
     private _selectionService: SelectionService,
     private _snackService: SnackbarService,
     public dialog: MatDialog
@@ -461,6 +464,15 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       })
     );
 
+    this._subs.add(
+      this._expressionsService.displaySettings$.subscribe(displaySettings => {
+        // We only draw the colour scale for the top, so we only need to reload the model if this has changed
+        if (displaySettings && this.mdl.expressionIds.length > 0 && this.mdl.expressionIds[0] in displaySettings) {
+          this.reloadModel();
+        }
+      })
+    );
+
     this.reDraw();
   }
 
@@ -538,10 +550,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
       const quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
 
-      const shading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
-
+      let defaultShading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
       let modelRequests = expressionIds.map(exprId => {
-        return this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), shading, pmcToIndexLookup);
+        return this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), defaultShading, pmcToIndexLookup);
       });
 
       return combineLatest(modelRequests).pipe(

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, TemplateRef, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
@@ -25,6 +25,7 @@ import { WidgetType } from "../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserInfo } from "src/app/generated-protos/user";
+import { ColourRamp } from "src/app/utils/colours";
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",

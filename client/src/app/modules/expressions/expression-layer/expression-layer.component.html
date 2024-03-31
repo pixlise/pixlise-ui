@@ -132,6 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [editable]="expression?.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
+      <expression-color-scale-picker *ngIf="!isExpressionGroup" [id]="expression?.id || ''"></expression-color-scale-picker>
       <!-- <two-state-icon-button
         *ngIf="showVisibilityButton"
         toolTip="Toggle visibility on Context Image"

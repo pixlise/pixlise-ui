@@ -22,6 +22,7 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { ContextImageItemTransform } from "../image-viewers.module";
 import { Point } from "src/app/models/Geometry";
 import { WidgetError } from "../../pixlisecore/services/widget-data.service";
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 
 export type SyncedTransform = {
   scale: Point;
@@ -37,6 +38,7 @@ export class ContextImageDataService {
   private _syncedTransform$: BehaviorSubject<Record<string, SyncedTransform>> = new BehaviorSubject({});
 
   constructor(
+    protected _expressionsService: ExpressionsService,
     protected _cachedDataService: APICachedDataService,
     protected _widgetDataService: WidgetDataService,
     protected _endpointsService: APIEndpointsService
@@ -90,22 +92,49 @@ export class ContextImageDataService {
     return result;
   }
 
+  // getLayerModel(
+  //   scanId: string,
+  //   expressionId: string,
+  //   quantId: string,
+  //   roiId: string,
+  //   colourRamp: ColourRamp,
+  //   pmcToIndexLookup: Map<number, number>
+  // ): Observable<ContextImageMapLayer> {
+  //   return this._expressionsService.getUserExpressionDisplaySettings(expressionId).pipe(
+  //     map(() => {
+  //         // If we're dealing with an expression group, we need to load the group first and run each expression in the group
+  //         if (!DataExpressionId.isExpressionGroupId(expressionId)) {
+  //           // It's just a simple layer, load it
+  //           return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+  //         } else {
+  //           // Load the expression group first, run the first 3 expressions
+  //           return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+  //         }
+  //     })
+  //   );
+  // }
+
   getLayerModel(
     scanId: string,
     expressionId: string,
     quantId: string,
     roiId: string,
-    colourRamp: ColourRamp,
+    defaultColourRamp: ColourRamp,
     pmcToIndexLookup: Map<number, number>
   ): Observable<ContextImageMapLayer> {
-    // If we're dealing with an expression group, we need to load the group first and run each expression in the group
-    if (!DataExpressionId.isExpressionGroupId(expressionId)) {
-      // It's just a simple layer, load it
-      return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
-    } else {
-      // Load the expression group first, run the first 3 expressions
-      return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
-    }
+    return this._expressionsService.getUserExpressionDisplaySettings(expressionId).pipe(
+      switchMap(displaySettings => {
+        let colourRamp: ColourRamp = (displaySettings.colourRamp as ColourRamp) || defaultColourRamp;
+        // If we're dealing with an expression group, we need to load the group first and run each expression in the group
+        if (!DataExpressionId.isExpressionGroupId(expressionId)) {
+          // It's just a simple layer, load it
+          return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+        } else {
+          // Load the expression group first, run the first 3 expressions
+          return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+        }
+      })
+    );
   }
 
   private getExpressionLayerModel(
