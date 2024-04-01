@@ -46,9 +46,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <span class="option-label">{{ option.name }}</span>
             <action-button
               #tooltip="matTooltip"
-              [matTooltip]="option.description"
-              [matTooltipDisabled]="!option.description"
+              [matTooltip]="!option.disabled ? option.description : option.disabledText"
+              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
               [matTooltipShowDelay]="200"
+              [disabled]="option.disabled"
               [action]="option.selected ? 'checkOn' : 'checkOff'"
               (onClick)="option.selected = !option.selected"></action-button>
           </div>
@@ -56,9 +57,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <span class="option-label">{{ option.name }}</span>
             <multi-switch-button
               #tooltip="matTooltip"
-              [matTooltip]="option.description"
-              [matTooltipDisabled]="!option.description"
+              [matTooltip]="!option.disabled ? option.description : option.disabledText"
+              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
               [matTooltipShowDelay]="200"
+              [disabled]="option.disabled"
               [options]="option.options || []"
               [value]="option.selectedOption || ''"
               (onChange)="option.selectedOption = $event">
@@ -77,9 +79,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <span class="option-label">{{ option.name }}:</span>
             <action-button
               #tooltip="matTooltip"
-              [matTooltip]="option.description"
-              [matTooltipDisabled]="!option.description"
+              [matTooltip]="!option.disabled ? option.description : option.disabledText"
+              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
               [matTooltipShowDelay]="200"
+              [disabled]="option.disabled"
               [action]="option.selected ? 'checkOn' : 'checkOff'"
               (onClick)="option.selected = !option.selected"></action-button>
           </div>
@@ -87,9 +90,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <span class="option-label">{{ option.name }}</span>
             <multi-switch-button
               #tooltip="matTooltip"
-              [matTooltip]="option.description"
-              [matTooltipDisabled]="!option.description"
+              [matTooltip]="!option.disabled ? option.description : option.disabledText"
+              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
               [matTooltipShowDelay]="200"
+              [disabled]="option.disabled"
               [options]="option.options || []"
               [value]="option.selectedOption || ''"
               (onChange)="option.selectedOption = $event">

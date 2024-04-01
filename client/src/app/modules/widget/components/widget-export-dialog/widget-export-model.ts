@@ -19,6 +19,9 @@ export type WidgetExportOption = {
   description: string;
   selected: boolean;
 
+  disabled?: boolean;
+  disabledText?: string;
+
   // Only for multiswitch
   options?: string[];
   selectedOption?: string;

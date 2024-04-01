@@ -32,11 +32,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, of } from "rxjs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import {
-  CanvasInteractionHandler,
-  CanvasDrawer,
-  InteractiveCanvasComponent,
-} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { RGBUPlotDrawer } from "./rgbu-plot-drawer";
@@ -49,7 +45,6 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
-import { MatSelectChange } from "@angular/material/select";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUAxisUnit } from "./rgbu-plot-data";
 import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
@@ -63,13 +58,8 @@ import {
   ImagePickerDialogResponse,
 } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 import { getScanIdFromImagePath } from "src/app/utils/utils";
-import {
-  generatePlotImage,
-  WidgetExportData,
-  WidgetExportDialogData,
-  WidgetExportFile,
-  WidgetExportRequest,
-} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { RGBUPlotExporter } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-exporter";
 
 @Component({
   selector: "rgbu-plot",
@@ -82,6 +72,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   mdl = new RGBUPlotModel();
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
+  exporter: RGBUPlotExporter;
 
   // Just a dummy, we don't pan/zoom
   transform: PanZoom = new PanZoom();
@@ -114,6 +105,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
     this.drawer = new RGBUPlotDrawer(this.mdl);
     this.toolhost = new RGBUPlotInteraction(this.mdl, this._selectionService);
+    this.exporter = new RGBUPlotExporter(this._endpointsService, this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -475,134 +467,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     });
   }
 
-  exportPlotImage(includeKey: boolean, darkMode: boolean, exportWidth: number = 800): Observable<string> {
-    let canvasParams = this.mdl.lastCalcCanvasParams;
-    let width = canvasParams?.width ?? 1;
-    let height = canvasParams?.height || 1;
-
-    let ratio = width / height;
-    let exportHeight = exportWidth / ratio;
-
-    return new Observable<string>(observer => {
-      let plot = generatePlotImage(this.drawer, this.transform, this.mdl.keyItems, exportWidth, exportHeight, includeKey, !darkMode);
-      if (plot) {
-        let dataURL = plot?.toDataURL("image/png")?.split(",");
-        if (dataURL && dataURL.length > 1) {
-          observer.next(dataURL[1]);
-        } else {
-          observer.error("Error generating RGBU plot export data");
-        }
-      } else {
-        observer.error("Error exporting RGBU plot data");
-      }
-    });
-  }
-
   override getExportOptions(): WidgetExportDialogData {
-    let imageShortName = this.mdl.imageName?.split("/").pop() || "";
-    if (this.mdl.imageName?.includes("MSA_")) {
-      imageShortName = "MSA";
-    } else if (this.mdl.imageName?.includes("VIS_")) {
-      imageShortName = "VIS";
-    }
-
-    return {
-      title: "Export RGBU Plot",
-      defaultZipName: `${this.scanIdAssociatedWithImage} - ${imageShortName} - RGBU Plot`,
-      options: [
-        {
-          id: "darkMode",
-          name: "Dark Mode",
-          type: "checkbox",
-          description: "Export the plots in dark mode",
-          selected: true,
-        },
-        {
-          id: "key",
-          name: "Visible Key",
-          type: "checkbox",
-          description: "Include the key for the visible regions",
-          selected: true,
-        },
-      ],
-      dataProducts: [
-        {
-          id: "rawImage",
-          name: "TIF Image as PNG",
-          type: "checkbox",
-          description: "Export the TIF image used to generate the plot as a PNG",
-          selected: false,
-        },
-        {
-          id: "plotImage",
-          name: "Plot Image",
-          type: "checkbox",
-          description: "Export the plot image as a PNG",
-          selected: true,
-        },
-        {
-          id: "largePlotImage",
-          name: "Large Plot Image",
-          type: "checkbox",
-          description: "Export a large version of the plot image as a PNG",
-          selected: false,
-        },
-      ],
-      showPreview: false,
-    };
+    return this.exporter.getExportOptions(this.mdl, this.scanIdAssociatedWithImage);
   }
 
   override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
-    return new Observable<WidgetExportData>(observer => {
-      if (request.dataProducts) {
-        let darkMode = request.options["darkMode"]?.selected || false;
-        let showKey = request.options["key"]?.selected || false;
-
-        let requestRawImage = request.dataProducts["rawImage"]?.selected;
-        let requestPlotImage = request.dataProducts["plotImage"]?.selected;
-        let requestLargePlotImage = request.dataProducts["largePlotImage"]?.selected;
-
-        let requests = [
-          requestRawImage ? this._endpointsService.loadRGBUImageTIFPreview(this.mdl.imageName) : of(null),
-          requestPlotImage ? this.exportPlotImage(showKey, darkMode, 800) : of(null),
-          requestLargePlotImage ? this.exportPlotImage(showKey, darkMode, 1600) : of(null),
-        ];
-        combineLatest(requests).subscribe({
-          next: ([rawImage, plotImage, largePlotImage]) => {
-            let images: WidgetExportFile[] = [];
-
-            if (rawImage) {
-              let imageFromDataURL = rawImage?.split(",")[1];
-              let imageName = this.mdl.imageName?.split("/").pop() || "";
-              images.push({
-                fileName: imageName,
-                data: imageFromDataURL,
-              });
-            }
-            if (plotImage) {
-              images.push({
-                fileName: `Plot Image`,
-                data: plotImage,
-              });
-            }
-            if (largePlotImage) {
-              images.push({
-                fileName: `Large Plot Image`,
-                data: largePlotImage,
-              });
-            }
-
-            observer.next({ images });
-            observer.complete();
-          },
-          error: err => {
-            observer.error(err);
-            this._snackService.openError("Error exporting RGBU plot data", err);
-            observer.complete();
-          },
-        });
-      }
-    });
+    return this.exporter.onExport(this.mdl, this.scanIdAssociatedWithImage, request);
   }
 
   private loadData(imagePath: string, roiIDs: string[]) {
