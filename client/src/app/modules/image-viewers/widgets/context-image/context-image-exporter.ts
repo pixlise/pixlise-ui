@@ -1,8 +1,10 @@
 import { combineLatest, Observable, of } from "rxjs";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageModel } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageDrawModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model";
+import { SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUPlotModel } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-model";
-import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import {
   exportPlotImage,
@@ -12,7 +14,7 @@ import {
   WidgetExportRequest,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
-export class RGBUPlotExporter {
+export class ContextImageExporter {
   constructor(
     private _endpointsService: APIEndpointsService,
     private _snackService: SnackbarService,
@@ -20,15 +22,12 @@ export class RGBUPlotExporter {
     private transform: PanZoom
   ) {}
 
-  exportRGBUPlotImage(mdl: RGBUPlotModel, includeKey: boolean, darkMode: boolean, exportWidth: number = 800): Observable<string> {
-    let canvasParams = mdl.lastCalcCanvasParams;
-    let width = canvasParams?.width ?? 1;
-    let height = canvasParams?.height || 1;
+  exportRGBUPlotImage(mdl: ContextImageModel, includeKey: boolean, darkMode: boolean, width: number = 1200, height: number = 800): Observable<string> {
+    let canvasParams = new CanvasParams(width, height, 1);
 
-    let ratio = width / height;
-    let exportHeight = exportWidth / ratio;
+    let keyItems: WidgetKeyItem[] = [];
 
-    return exportPlotImage(this.drawer, this.transform, mdl.keyItems, includeKey, darkMode, exportWidth, exportHeight);
+    return exportPlotImage(this.drawer, this.transform, keyItems, includeKey, darkMode, canvasParams.width, canvasParams.height);
   }
 
   getImageShortName(imageName: string): string {
@@ -42,7 +41,7 @@ export class RGBUPlotExporter {
     return imageShortName;
   }
 
-  getExportOptions(mdl: RGBUPlotModel, scanId: string, widgetName: string = "RGBU Plot"): WidgetExportDialogData {
+  getExportOptions(mdl: ContextImageModel, scanId: string, widgetName: string = "Context Image"): WidgetExportDialogData {
     let imageShortName = this.getImageShortName(mdl.imageName);
 
     return {
@@ -56,22 +55,22 @@ export class RGBUPlotExporter {
           description: "Export the plots in dark mode",
           selected: true,
         },
-        {
-          id: "key",
-          name: "Visible Key",
-          type: "checkbox",
-          description: "Include the key for the visible regions",
-          selected: mdl?.keyItems && mdl.keyItems.length > 0,
-          disabled: mdl?.keyItems && mdl.keyItems.length === 0,
-          disabledText: "No visible regions to show",
-        },
+        // {
+        //   id: "key",
+        //   name: "Visible Key",
+        //   type: "checkbox",
+        //   description: "Include the key for the visible regions",
+        //   selected: mdl?.keyItems && mdl.keyItems.length > 0,
+        //   disabled: mdl?.keyItems && mdl.keyItems.length === 0,
+        //   disabledText: "No visible regions to show",
+        // },
       ],
       dataProducts: [
         {
           id: "rawImage",
-          name: "TIF Image as PNG",
+          name: "Background Image",
           type: "checkbox",
-          description: "Export the TIF image used to generate the plot as a PNG",
+          description: "Export the background image as a PNG",
           selected: true,
         },
         {
@@ -93,7 +92,7 @@ export class RGBUPlotExporter {
     };
   }
 
-  onExport(mdl: RGBUPlotModel, scanId: string, request: WidgetExportRequest): Observable<WidgetExportData> {
+  onExport(mdl: ContextImageModel, scanId: string, drawMdl: ContextImageDrawModel, request: WidgetExportRequest): Observable<WidgetExportData> {
     return new Observable<WidgetExportData>(observer => {
       if (request.dataProducts) {
         let imageShortName = this.getImageShortName(mdl.imageName);
@@ -105,10 +104,17 @@ export class RGBUPlotExporter {
         let requestPlotImage = request.dataProducts["plotImage"]?.selected;
         let requestLargePlotImage = request.dataProducts["largePlotImage"]?.selected;
 
+        let rawImageRequest = mdl.imageName.endsWith(".tif")
+          ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName)
+          : this._endpointsService.loadImagePreviewForPath(mdl.imageName);
+
+        let width = drawMdl.image?.width || 1200;
+        let height = drawMdl.image?.height || 800;
+
         let requests = [
-          requestRawImage ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName) : of(null),
-          requestPlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 800) : of(null),
-          requestLargePlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 1600) : of(null),
+          requestRawImage ? rawImageRequest : of(null),
+          requestPlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, width, height) : of(null),
+          requestLargePlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, width * 2, height * 2) : of(null),
         ];
         combineLatest(requests).subscribe({
           next: ([rawImage, plotImage, largePlotImage]) => {

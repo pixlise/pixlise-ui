@@ -22,7 +22,7 @@ export class BinaryChartExporter extends NaryChartExporter {
     let yLabel = rawData.yAxisInfo.label;
 
     let data = `"Scan ID","ROI","PMC","${xLabel}","${yLabel}"\n`;
-    rawData.pointGroups.forEach((pointGroup, idx) => {
+    rawData.pointGroups.forEach(pointGroup => {
       let roiName = pointGroup.roiId;
       let matchingLabel = mdl.keyItems.find(keyItem => keyItem.id === pointGroup.roiId)?.label;
       if (matchingLabel) {

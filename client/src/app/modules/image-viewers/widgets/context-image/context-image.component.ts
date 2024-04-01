@@ -38,6 +38,9 @@ import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
+import { ContextImageExporter } from "src/app/modules/image-viewers/widgets/context-image/context-image-exporter";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -52,6 +55,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   mdl: ContextImageModel;
   drawer: CanvasDrawer;
   toolhost: ContextImageToolHost;
+  exporter: ContextImageExporter;
 
   // For saving and restoring
   cachedExpressionIds: string[] = [];
@@ -75,6 +79,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   private _showBottomToolbar: boolean = !this._analysisLayoutService.isMapsPage;
 
   constructor(
+    private _endpointsService: APIEndpointsService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
@@ -100,6 +105,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     const toolSettings = new ToolHostCreateSettings(showLineDrawTool, showNavTools, showPMCTool, showSelectionTools, showPhysicalScale, showMapColourScale);
     this.toolhost = new ContextImageToolHost(toolSettings, this.mdl, this._selectionService);
     this.drawer = new ContextImageDrawer(this.mdl, this.toolhost);
+    this.exporter = new ContextImageExporter(this._endpointsService, this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -119,6 +125,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           tooltip: "Not implemented yet. Click here to remove unselected pixels",
           value: false,
           onClick: (value, trigger) => this.onCrop(trigger),
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
         },
         {
           id: "solo",
@@ -737,7 +750,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
   }
 
-  // onExport(trigger: Element | undefined) {}
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this.mdl, this.scanId);
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return this.exporter.onExport(this.mdl, this.scanId, this.mdl.drawModel, request);
+  }
 
   onCrop(trigger: Element | undefined) {}
 

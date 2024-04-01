@@ -24,7 +24,7 @@ export class TernaryChartExporter extends NaryChartExporter {
 
     // NOTE: Selection is not included in the CSV export
     let data = `"Scan ID","ROI","PMC","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"\n`;
-    rawData.pointGroups.forEach((pointGroup, idx) => {
+    rawData.pointGroups.forEach(pointGroup => {
       let roiName = pointGroup.roiId;
       let matchingLabel = mdl.keyItems.find(keyItem => keyItem.id === pointGroup.roiId)?.label;
       if (matchingLabel) {
@@ -36,7 +36,7 @@ export class TernaryChartExporter extends NaryChartExporter {
       }
 
       let scanId = pointGroup.scanId;
-      pointGroup.valuesPerScanEntry.forEach((valuesPerScanEntry, idx) => {
+      pointGroup.valuesPerScanEntry.forEach(valuesPerScanEntry => {
         let pmc = valuesPerScanEntry.scanEntryId;
         let [cornerAValue, cornerBValue, cornerCValue] = valuesPerScanEntry.values;
         data += `${scanId},"${roiName}",${pmc},${cornerAValue ?? ""},${cornerBValue ?? ""},${cornerCValue ?? ""}\n`;
