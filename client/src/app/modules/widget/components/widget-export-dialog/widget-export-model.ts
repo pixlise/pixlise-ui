@@ -58,6 +58,13 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
   }
 
   let legendWidth = 200;
+
+  //   Get width of every key item text and set the legend width to the maximum
+  keyItems.forEach(keyItem => {
+    let textWidth = screenContext?.measureText(keyItem?.label || "")?.width || 0;
+    legendWidth = Math.max(legendWidth, textWidth + 65);
+  });
+
   let legendHeight = 35 + keyItems.length * 20;
   let legendX = viewport.width - legendWidth - 10;
   let legendY = 10;
@@ -67,6 +74,7 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
   screenContext.strokeStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
   screenContext.lineWidth = 1;
   screenContext.strokeRect(legendX, legendY, legendWidth, legendHeight);
+  screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
 
   screenContext.font = "12px Arial";
   screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
@@ -89,7 +97,7 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
     drawer.drawPoints([new Point(legendTextX, legendTextY)], 1);
 
     screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
-    screenContext.fillText(keyItem.label, legendTextX + 15, legendTextY);
+    screenContext.fillText(keyItem.label, legendTextX + 15, legendTextY, legendWidth - 15);
 
     legendTextY += 20;
   });

@@ -510,13 +510,13 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       title: "Export RGBU Plot",
       defaultZipName: `${this.scanIdAssociatedWithImage} - ${imageShortName} - RGBU Plot`,
       options: [
-        // {
-        //   id: "darkMode",
-        //   name: "Dark Mode",
-        //   type: "checkbox",
-        //   description: "Export the plots in dark mode",
-        //   selected: true,
-        // },
+        {
+          id: "darkMode",
+          name: "Dark Mode",
+          type: "checkbox",
+          description: "Export the plots in dark mode",
+          selected: true,
+        },
         {
           id: "key",
           name: "Visible Key",
@@ -555,7 +555,8 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
     return new Observable<WidgetExportData>(observer => {
       if (request.dataProducts) {
-        let darkMode = false;
+        let darkMode = request.options["darkMode"]?.selected || false;
+        let showKey = request.options["key"]?.selected || false;
 
         let requestRawImage = request.dataProducts["rawImage"]?.selected;
         let requestPlotImage = request.dataProducts["plotImage"]?.selected;
@@ -563,8 +564,8 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
         let requests = [
           requestRawImage ? this._endpointsService.loadRGBUImageTIFPreview(this.mdl.imageName) : of(null),
-          requestPlotImage ? this.exportPlotImage(request.options["key"]?.selected || false, darkMode, 800) : of(null),
-          requestLargePlotImage ? this.exportPlotImage(request.options["key"]?.selected || false, darkMode, 1600) : of(null),
+          requestPlotImage ? this.exportPlotImage(showKey, darkMode, 800) : of(null),
+          requestLargePlotImage ? this.exportPlotImage(showKey, darkMode, 1600) : of(null),
         ];
         combineLatest(requests).subscribe({
           next: ([rawImage, plotImage, largePlotImage]) => {
@@ -600,25 +601,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
             observer.complete();
           },
         });
-
-        // if (request.dataProducts["rawImage"]?.selected) {
-        //   let imageName = this.mdl.imageName?.split("/").pop() || "";
-        //   images.push({
-        //     fileName: imageName,
-        //     subFolder: "raw",
-        //     data: this._endpointsService.loadImageForPath(this.mdl.imageName),
-        //   });
-        // }
-        // if (request.dataProducts["plotImage"]?.selected) {
-        //   images.push({
-        //     fileName: `Plot Image`,
-        //     data: this.exportPlotImage(request.options["key"]?.selected || false),
-        //   });
-        // }
       }
-
-      // observer.next({ images });
-      // observer.complete();
     });
   }
 
