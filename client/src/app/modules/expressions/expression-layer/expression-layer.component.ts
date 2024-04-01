@@ -148,6 +148,10 @@ export class ExpressionLayerComponent implements OnInit {
     return this._expression;
   }
 
+  get isSharedWithOthers(): boolean {
+    return this._expression?.owner?.sharedWithOthers || false;
+  }
+
   @Input() set expression(expression: DataExpression | ExpressionGroup | null) {
     if (!expression) {
       return;

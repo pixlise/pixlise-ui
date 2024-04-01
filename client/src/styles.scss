@@ -464,6 +464,7 @@ h3 {
 
 .multiline-tooltip {
   white-space: pre-line;
+  max-width: 1000px;
 }
 
 .mat-primary .mat-pseudo-checkbox-checked.mat-pseudo-checkbox-minimal::after,

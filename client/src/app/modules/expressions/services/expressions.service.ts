@@ -6,7 +6,6 @@ import {
   ExpressionDeleteReq,
   ExpressionDisplaySettingsGetReq,
   ExpressionDisplaySettingsWriteReq,
-  ExpressionDisplaySettingsWriteResp,
   ExpressionGetReq,
   ExpressionGetResp,
   ExpressionListReq,
@@ -16,13 +15,7 @@ import { DataExpression, ExpressionDisplaySettings } from "src/app/generated-pro
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleAddVersionReq, DataModuleGetReq, DataModuleListReq, DataModuleWriteReq } from "src/app/generated-protos/module-msgs";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
-import {
-  ExpressionGroupDeleteReq,
-  ExpressionGroupGetReq,
-  ExpressionGroupListReq,
-  ExpressionGroupListResp,
-  ExpressionGroupWriteReq,
-} from "src/app/generated-protos/expression-group-msgs";
+import { ExpressionGroupDeleteReq, ExpressionGroupListReq, ExpressionGroupListResp, ExpressionGroupWriteReq } from "src/app/generated-protos/expression-group-msgs";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";

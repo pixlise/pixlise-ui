@@ -55,7 +55,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <share-ownership-item-button
         [id]="expression?.id || ''"
         [triggerOpen]="isShareDialogOpen"
-        (onEmitOpenState)="onToggleShareDialog($event)"
         [type]="objectType"
         [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
       <span class="option-label">Share</span>
@@ -132,6 +131,13 @@ POSSIBILITY OF SUCH DAMAGE.
         [editable]="expression?.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
+      <share-ownership-item-button
+        *ngIf="canEdit && isSharedWithOthers"
+        [id]="expression?.id || ''"
+        [triggerOpen]="isShareDialogOpen"
+        (onEmitOpenState)="onToggleShareDialog($event)"
+        [type]="objectType"
+        [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
       <expression-color-scale-picker *ngIf="!isExpressionGroup" [id]="expression?.id || ''"></expression-color-scale-picker>
       <!-- <two-state-icon-button
         *ngIf="showVisibilityButton"

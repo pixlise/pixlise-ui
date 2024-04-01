@@ -33,6 +33,7 @@ import { ShareDialogComponent, ShareDialogData, ShareDialogResponse } from "./sh
 import { ObjectType, OwnershipSummary, objectTypeToJSON } from "src/app/generated-protos/ownership-access";
 import { APIDataService, SnackbarService } from "../../../pixlisecore.module";
 import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
+import { catchError, of, switchMap } from "rxjs";
 
 @Component({
   selector: "share-ownership-item-button",
@@ -42,7 +43,7 @@ import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/o
 export class ShareOwnershipItemButtonComponent implements OnInit {
   @Input() id: string = "";
   @Input() type: ObjectType = ObjectType.OT_EXPRESSION;
-  @Input() ownershipSummary: OwnershipSummary | null = null;
+  private _ownershipSummary: OwnershipSummary | null = null;
 
   @Output() onEmitOpenState: EventEmitter<boolean> = new EventEmitter<boolean>();
 
@@ -68,6 +69,15 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
     }
   }
 
+  get ownershipSummary(): OwnershipSummary | null {
+    return this._ownershipSummary;
+  }
+
+  @Input() set ownershipSummary(summary: OwnershipSummary | null) {
+    this._ownershipSummary = summary;
+    this.isSharedWithOthers = this.ownershipSummary?.sharedWithOthers || false;
+  }
+
   get sharingTooltip(): string {
     let tooltip = "";
 
@@ -88,35 +98,41 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
   }
 
   onOpenShareDialog(): void {
-    this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: this.id, objectType: this.type })).subscribe(res => {
-      if (!res || !res.ownership) {
-        this._snackbarService.openError(`Could not find ownership information for item (${this.id}, ${this.type}).`);
-        return;
-      }
+    this._apiDataService
+      .sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: this.id, objectType: this.type }))
+      .pipe(
+        catchError(error => {
+          this._snackbarService.openError(`Could not find ownership information for item (${this.id}, ${this.type}).`);
+          return of(null);
+        }),
+        switchMap(res => {
+          if (!res || !res.ownership) {
+            return of(null);
+          }
 
-      // Convert the object type to a human-readable string
-      let typeName = objectTypeToJSON(this.type).replace("OT_", "");
-      if (typeName.length > 0) {
-        typeName = typeName
-          .split("_")
-          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(" ");
-      }
+          let typeName = objectTypeToJSON(this.type).replace("OT_", "");
+          if (typeName.length > 0) {
+            typeName = typeName
+              .split("_")
+              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(" ");
+          }
 
-      const dialogConfig = new MatDialogConfig<ShareDialogData>();
-      dialogConfig.data = {
-        ownershipItem: res.ownership,
-        typeName,
-      };
+          const dialogConfig = new MatDialogConfig<ShareDialogData>();
+          dialogConfig.data = {
+            ownershipItem: res.ownership,
+            typeName,
+          };
 
-      let dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
-      dialogRef.afterClosed().subscribe((sharingChangeResponse: ShareDialogResponse) => {
-        if (!sharingChangeResponse) {
-          return;
-        }
+          const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
+          return dialogRef.afterClosed();
+        }),
+        switchMap(sharingChangeResponse => {
+          if (!sharingChangeResponse) {
+            return of(null);
+          }
 
-        this._apiDataService
-          .sendObjectEditAccessRequest(
+          return this._apiDataService.sendObjectEditAccessRequest(
             ObjectEditAccessReq.create({
               objectId: this.id,
               objectType: this.type,
@@ -125,27 +141,30 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
               deleteEditors: sharingChangeResponse.deleteEditors,
               deleteViewers: sharingChangeResponse.deleteViewers,
             })
-          )
-          .subscribe({
-            next: res => {
-              let shareCount = 0;
-              if (res.ownership?.editors) {
-                shareCount += res.ownership.editors.groupIds.length + res.ownership.editors.userIds.length;
-              }
+          );
+        }),
+        catchError(error => {
+          this._snackbarService.openError(`Could not share item (${this.id}, ${this.type})`, error);
+          return of(null);
+        })
+      )
+      .subscribe(res => {
+        if (!res) {
+          return;
+        }
 
-              if (res.ownership?.viewers) {
-                shareCount += res.ownership.viewers.groupIds.length + res.ownership.viewers.userIds.length;
-              }
+        let shareCount = 0;
+        if (res.ownership?.editors) {
+          shareCount += res.ownership.editors.groupIds.length + res.ownership.editors.userIds.length;
+        }
 
-              this.isSharedWithOthers = shareCount > 1;
+        if (res.ownership?.viewers) {
+          shareCount += res.ownership.viewers.groupIds.length + res.ownership.viewers.userIds.length;
+        }
 
-              this._snackbarService.openSuccess(`Item shared successfully!`);
-            },
-            error: err => {
-              this._snackbarService.openError(`Could not share item (${this.id}, ${this.type})`, err);
-            },
-          });
+        this.isSharedWithOthers = shareCount > 1;
+
+        this._snackbarService.openSuccess(`Item shared successfully!`);
       });
-    });
   }
 }
