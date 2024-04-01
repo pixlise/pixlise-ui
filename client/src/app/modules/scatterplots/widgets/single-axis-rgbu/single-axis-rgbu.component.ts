@@ -442,7 +442,7 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
   }
 
   override getExportOptions(): WidgetExportDialogData {
-    return this.exporter.getExportOptions(this.mdl, this.scanIdAssociatedWithImage);
+    return this.exporter.getExportOptions(this.mdl, this.scanIdAssociatedWithImage, "Single Axis RGBU");
   }
 
   override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {

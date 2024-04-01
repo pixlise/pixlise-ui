@@ -1,4 +1,5 @@
 import { ElementRef } from "@angular/core";
+import { Observable } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
@@ -143,4 +144,28 @@ export const generatePlotImage = (
   drawer.lightMode = existingMode;
 
   return canvas;
+};
+
+export const exportPlotImage = (
+  drawer: CanvasDrawer,
+  transform: CanvasWorldTransform,
+  keyItems: WidgetKeyItem[],
+  includeKey: boolean,
+  darkMode: boolean,
+  width: number = 1200,
+  height: number = 800
+): Observable<string> => {
+  return new Observable<string>(observer => {
+    let plot = generatePlotImage(drawer, transform, keyItems, width, height, includeKey, !darkMode);
+    if (plot) {
+      let dataURL = plot?.toDataURL("image/png")?.split(",");
+      if (dataURL && dataURL.length > 1) {
+        observer.next(dataURL[1]);
+      } else {
+        observer.error("Error generating RGBU plot export data");
+      }
+    } else {
+      observer.error("Error exporting RGBU plot data");
+    }
+  });
 };

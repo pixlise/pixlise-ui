@@ -1,7 +1,7 @@
 import { combineLatest, Observable, of } from "rxjs";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { RGBUPlotModel } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-model";
+import { BinaryChartModel } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-model";
+import { TernaryChartModel } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-model";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import {
@@ -12,42 +12,32 @@ import {
   WidgetExportRequest,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
-export class RGBUPlotExporter {
+export class NaryChartExporter {
   constructor(
-    private _endpointsService: APIEndpointsService,
     private _snackService: SnackbarService,
     private drawer: CanvasDrawer,
     private transform: PanZoom
   ) {}
 
-  exportRGBUPlotImage(mdl: RGBUPlotModel, includeKey: boolean, darkMode: boolean, exportWidth: number = 800): Observable<string> {
-    let canvasParams = mdl.lastCalcCanvasParams;
-    let width = canvasParams?.width ?? 1;
-    let height = canvasParams?.height || 1;
-
-    let ratio = width / height;
-    let exportHeight = exportWidth / ratio;
-
-    return exportPlotImage(this.drawer, this.transform, mdl.keyItems, includeKey, darkMode, exportWidth, exportHeight);
+  exportPlotData(mdl: TernaryChartModel | BinaryChartModel): Observable<string> {
+    return of("");
   }
 
-  getImageShortName(imageName: string): string {
-    let imageShortName = imageName?.split("/").pop() || "";
-    if (imageName?.includes("MSA_")) {
-      imageShortName = "MSA";
-    } else if (imageName?.includes("VIS_")) {
-      imageShortName = "VIS";
+  getJoinedScanIds(mdl: TernaryChartModel | BinaryChartModel): string {
+    let scanIds = [];
+    for (let scanId of mdl.dataSourceIds.keys()) {
+      scanIds.push(scanId);
     }
 
-    return imageShortName;
+    return scanIds.join(" - ") || "No Scan";
   }
 
-  getExportOptions(mdl: RGBUPlotModel, scanId: string, widgetName: string = "RGBU Plot"): WidgetExportDialogData {
-    let imageShortName = this.getImageShortName(mdl.imageName);
+  getNaryExportOptions(mdl: TernaryChartModel | BinaryChartModel, widgetTypeName: string = "Chart"): WidgetExportDialogData {
+    let joinedScanIds = this.getJoinedScanIds(mdl);
 
     return {
-      title: `Export ${widgetName}`,
-      defaultZipName: `${scanId} - ${imageShortName} - ${widgetName}}`,
+      title: `Export ${widgetTypeName}`,
+      defaultZipName: `${joinedScanIds} - ${widgetTypeName}`,
       options: [
         {
           id: "darkMode",
@@ -68,13 +58,6 @@ export class RGBUPlotExporter {
       ],
       dataProducts: [
         {
-          id: "rawImage",
-          name: "TIF Image as PNG",
-          type: "checkbox",
-          description: "Export the TIF image used to generate the plot as a PNG",
-          selected: true,
-        },
-        {
           id: "plotImage",
           name: "Plot Image",
           type: "checkbox",
@@ -88,54 +71,60 @@ export class RGBUPlotExporter {
           description: "Export a large version of the plot image as a PNG",
           selected: true,
         },
+        {
+          id: "csvData",
+          name: "Plot Data .csv",
+          type: "checkbox",
+          description: "Export the plot data as a CSV",
+          selected: true,
+        },
       ],
       showPreview: false,
     };
   }
 
-  onExport(mdl: RGBUPlotModel, scanId: string, request: WidgetExportRequest): Observable<WidgetExportData> {
+  onNaryExport(mdl: TernaryChartModel | BinaryChartModel, widgetTypeName: string = "Chart", request: WidgetExportRequest): Observable<WidgetExportData> {
     return new Observable<WidgetExportData>(observer => {
       if (request.dataProducts) {
-        let imageShortName = this.getImageShortName(mdl.imageName);
+        let joinedScanIds = this.getJoinedScanIds(mdl);
 
         let darkMode = request.options["darkMode"]?.selected || false;
         let showKey = request.options["key"]?.selected || false;
 
-        let requestRawImage = request.dataProducts["rawImage"]?.selected;
+        let requestCSVData = request.dataProducts["csvData"]?.selected;
         let requestPlotImage = request.dataProducts["plotImage"]?.selected;
         let requestLargePlotImage = request.dataProducts["largePlotImage"]?.selected;
 
         let requests = [
-          requestRawImage ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName) : of(null),
-          requestPlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 800) : of(null),
-          requestLargePlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 1600) : of(null),
+          requestCSVData ? this.exportPlotData(mdl) : of(null),
+          requestPlotImage ? exportPlotImage(this.drawer, this.transform, mdl.keyItems, showKey, darkMode, 1200, 800) : of(null),
+          requestLargePlotImage ? exportPlotImage(this.drawer, this.transform, mdl.keyItems, showKey, darkMode, 4096, 2160) : of(null),
         ];
         combineLatest(requests).subscribe({
-          next: ([rawImage, plotImage, largePlotImage]) => {
+          next: ([csvData, plotImage, largePlotImage]) => {
             let images: WidgetExportFile[] = [];
+            let csvs: WidgetExportFile[] = [];
 
-            if (rawImage) {
-              let imageFromDataURL = rawImage?.split(",")[1];
-              let imageName = mdl.imageName?.split("/").pop() || "";
-              images.push({
-                fileName: imageName,
-                data: imageFromDataURL,
+            if (csvData) {
+              csvs.push({
+                fileName: `${joinedScanIds} - ${widgetTypeName} Data`,
+                data: csvData,
               });
             }
             if (plotImage) {
               images.push({
-                fileName: `${scanId} - ${imageShortName} - Plot Image`,
+                fileName: `${joinedScanIds} - ${widgetTypeName}`,
                 data: plotImage,
               });
             }
             if (largePlotImage) {
               images.push({
-                fileName: `${scanId} - ${imageShortName} - Large Plot Image`,
+                fileName: `${joinedScanIds} - Large ${widgetTypeName}`,
                 data: largePlotImage,
               });
             }
 
-            observer.next({ images });
+            observer.next({ images, csvs });
             observer.complete();
           },
           error: err => {

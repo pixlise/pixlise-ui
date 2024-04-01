@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { Subscription } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
@@ -24,6 +24,8 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -58,6 +60,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   mdl = new TernaryChartModel(new TernaryDrawModel());
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
+  exporter: TernaryChartExporter;
 
   scanId: string = "";
   quantId: string = "";
@@ -67,7 +70,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   constructor(
     public dialog: MatDialog,
     private _selectionService: SelectionService,
-    //private _route: ActivatedRoute,
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
@@ -77,6 +79,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this.drawer = new TernaryChartDrawer(this.mdl);
     this.toolhost = new TernaryChartToolHost(this.mdl, this._selectionService);
+    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -94,13 +97,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
-        // {
-        //   id: "export",
-        //   type: "button",
-        //   icon: "assets/button-icons/export.svg",
-        //   tooltip: "Export",
-        //   onClick: () => this.onExport(),
-        // },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+        },
         {
           id: "solo",
           type: "button",
@@ -330,7 +333,14 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     return this.toolhost;
   }
 
-  // onExport() {}
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this.mdl);
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return this.exporter.onExport(this.mdl, request);
+  }
+
   onSoloView() {
     if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
       this._analysisLayoutService.soloViewWidgetId$.next("");
