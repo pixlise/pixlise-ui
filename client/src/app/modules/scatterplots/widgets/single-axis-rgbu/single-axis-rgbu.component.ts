@@ -60,6 +60,9 @@ import {
 import { RGBUAxisUnit } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-data";
 import { SingleAxisRGBUDrawer } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/drawer";
 import { SingleAxisRGBUInteraction } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/single-axis-rgbu-interaction";
+import { RGBUPlotExporter } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-exporter";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { getScanIdFromImagePath } from "src/app/utils/utils";
 
 @Component({
   selector: "single-axis-rgbu",
@@ -70,6 +73,7 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
   mdl = new RGBUPlotModel(true, true);
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
+  exporter: RGBUPlotExporter;
 
   // Just a dummy, we don't pan/zoom
   transform: PanZoom = new PanZoom();
@@ -102,6 +106,7 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
 
     this.drawer = new SingleAxisRGBUDrawer(this.mdl);
     this.toolhost = new SingleAxisRGBUInteraction(this.mdl, this._selectionService);
+    this.exporter = new RGBUPlotExporter(this._endpointsService, this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -122,10 +127,16 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
         {
           id: "image-picker",
           type: "button",
-          // icon: "image",
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
         },
         {
           id: "solo",
@@ -430,6 +441,14 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
     });
   }
 
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this.mdl, this.scanIdAssociatedWithImage, "Single Axis RGBU");
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return this.exporter.onExport(this.mdl, this.scanIdAssociatedWithImage, request);
+  }
+
   private loadData(imagePath: string, roiIDs: string[]) {
     this.isWidgetDataLoading = true;
 
@@ -452,6 +471,8 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
 
         // Now we can set this
         this.mdl.imageName = imagePath;
+        this.scanIdAssociatedWithImage = getScanIdFromImagePath(imagePath);
+
         this.mdl.setData(image, rois);
         this.mdl.visibleRegionIds = roiIDs;
         this.errorMsg = "";

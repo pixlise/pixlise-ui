@@ -130,6 +130,8 @@ export class ShareDialogComponent implements OnInit {
         if (!this.isChanged) {
           this.resetMembers();
         }
+
+        this.filterSearch();
       })
     );
 
@@ -140,6 +142,8 @@ export class ShareDialogComponent implements OnInit {
         if (!this.isChanged) {
           this.resetMembers();
         }
+
+        this.filterSearch();
       })
     );
 

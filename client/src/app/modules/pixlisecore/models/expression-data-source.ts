@@ -779,12 +779,10 @@ export class ExpressionDataSource
       this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
     return await lastValueFrom(
-      combineLatest([this.getDetectedDiffractionStatus(), /*this.getDetectedDiffraction(),*/ this.getDiffractionPeakManualList()]).pipe(
-        map((dataItems: [DiffractionPeakStatusListResp, /*DetectedDiffractionPeaksResp,*/ DiffractionPeakManualListResp]) => {
-          const diffractionStatusData = dataItems[0];
-          //const diffractionData = dataItems[1];
-          const userDiffractionPeakData = dataItems[1 /*2*/];
-
+      combineLatest([this.getDetectedDiffractionStatus(), this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
+        map(([diffractionStatusData, diffractionData, userDiffractionPeakData]) => {
+          // Detected Diffraction data is fetched for the Roughness and Diffraction tabs
+          // We can continue here on fail, but without this data those tabs won't load
           if (!diffractionStatusData || /*!diffractionData ||*/ !this._scanEntries) {
             throw new Error("getDiffractionPeakEffectData: No data available");
           }

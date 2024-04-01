@@ -33,7 +33,7 @@
 .expression-picker-container {
   display: flex;
   flex-direction: column;
-  width: 1000px;
+  width: 1050px;
 
   header {
     display: flex;
@@ -123,17 +123,28 @@
       }
 
       &.active-widget-selection {
-        padding: 9px;
+        padding: 9px 0;
         display: flex;
         align-items: center;
 
         mat-select {
+          margin-left: 0 !important;
           width: fit-content !important;
           background-color: transparent !important;
         }
 
+        multi-switch-button {
+          margin-left: auto;
+          flex: 1;
+          margin-right: 6px;
+
+          border: 1px solid #444c50;
+          border-radius: 4px;
+        }
+
         push-button {
           margin-left: auto;
+          margin-right: 6px;
         }
       }
     }
@@ -223,6 +234,42 @@
           margin-left: auto;
         }
       }
+
+      &.quant-elements {
+        display: flex;
+        align-items: center;
+        padding: 0px 16px;
+        height: 46px;
+
+        .quant-element-switch-button {
+          width: 150px;
+          margin-left: auto;
+
+          display: flex;
+          align-items: center;
+
+          border: 1px solid #444c50;
+          border-radius: 4px;
+        }
+      }
+
+      .scan-selector {
+        width: fit-content !important;
+        background-color: #232829 !important;
+        border: 1px solid #444c50;
+        border-radius: 4px !important;
+      }
+
+      &.pseudo-elements {
+        display: flex;
+        align-items: center;
+        padding: 0px 16px;
+        height: 46px;
+
+        .scan-selector {
+          margin-left: auto;
+        }
+      }
     }
 
     expression-search-controls {
@@ -238,9 +285,55 @@
     }
   }
 
+  .layer-container {
+    height: 482px;
+  }
+
+  .rgbmix-mode {
+    .layer-container {
+      height: 398px;
+    }
+  }
+
+  .rgbmix-row {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+
+    tag-picker {
+      display: flex;
+      align-items: center;
+    }
+
+    .title-row {
+      display: flex;
+      gap: 4px;
+
+      .name {
+        flex: 1;
+
+        height: 23px;
+        border: 2px solid rgb(84, 95, 100);
+      }
+    }
+
+    .additional-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .description {
+        flex: 1;
+
+        height: 23px;
+        border: 2px solid rgb(84, 95, 100);
+      }
+    }
+  }
+
   .active-expressions {
     flex: 3;
-    height: 482px;
 
     .expressions-viewport {
       height: 100%;

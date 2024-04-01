@@ -43,9 +43,9 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
 
-export type HighlightedROI = {
+export type HighlightedROIs = {
   widgetId: string;
-  roiId: string;
+  roiIds: string[];
   scanId: string;
 };
 
@@ -162,10 +162,10 @@ export class ROITabComponent implements OnInit {
 
   set selectedContextImage(widgetId: string) {
     // If the ROI is highlighted, update the widgetId
-    if (this._analysisLayoutService.highlightedROI$.value?.widgetId === this._selectedContextImage) {
-      this._analysisLayoutService.highlightedROI$.next({
+    if (this._analysisLayoutService.highlightedROIs$.value?.widgetId === this._selectedContextImage) {
+      this._analysisLayoutService.highlightedROIs$.next({
         widgetId,
-        roiId: this._analysisLayoutService.highlightedROI$.value?.roiId,
+        roiIds: this._analysisLayoutService.highlightedROIs$.value?.roiIds,
         scanId: this.visibleScanId,
       });
     }
@@ -210,24 +210,37 @@ export class ROITabComponent implements OnInit {
     this.closeCreateROIMenu();
   }
 
-  get highlightedROIId(): string {
-    return this._analysisLayoutService.highlightedROI$.value?.roiId || "";
+  get highlightedROIIds(): string[] {
+    return this._analysisLayoutService.highlightedROIs$.value?.roiIds || [];
   }
 
-  onROIVisibleToggle(roi: ROIItemSummary) {
-    if (
-      roi.id === this._analysisLayoutService.highlightedROI$.value?.roiId &&
-      this.selectedContextImage === this._analysisLayoutService.highlightedROI$.value?.widgetId
-    ) {
-      this._analysisLayoutService.highlightedROI$.next({
+  onToggleAllVisible() {
+    if (this.highlightedROIIds.length > 0) {
+      this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiId: "", // Clear the highlighted ROI
+        roiIds: [],
         scanId: this.visibleScanId,
       });
     } else {
-      this._analysisLayoutService.highlightedROI$.next({
+      this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiId: roi.id,
+        roiIds: this.filteredSummaries.map(summary => summary.id),
+        scanId: this.visibleScanId,
+      });
+    }
+  }
+
+  onROIVisibleToggle(roi: ROIItemSummary) {
+    if (this.highlightedROIIds.includes(roi.id) && this.selectedContextImage === this._analysisLayoutService.highlightedROIs$.value?.widgetId) {
+      this._analysisLayoutService.highlightedROIs$.next({
+        widgetId: this.selectedContextImage,
+        roiIds: this.highlightedROIIds.filter(highlightedROI => highlightedROI !== roi.id),
+        scanId: this.visibleScanId,
+      });
+    } else {
+      this._analysisLayoutService.highlightedROIs$.next({
+        widgetId: this.selectedContextImage,
+        roiIds: [roi.id, ...this.highlightedROIIds],
         scanId: this.visibleScanId,
       });
     }

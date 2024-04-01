@@ -69,6 +69,7 @@ export class APICachedDataService {
   public exprListReqMapCacheInvalid: boolean = false;
   public modListReqMapCacheInvalid: boolean = false;
   public userGroupListReqMapCacheInvalid: boolean = false;
+  public invalidExpressionGroupIds: Set<string> = new Set();
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -538,12 +539,13 @@ export class APICachedDataService {
   getExpressionGroup(req: ExpressionGroupGetReq): Observable<ExpressionGroupGetResp> {
     const cacheId = JSON.stringify(ExpressionGroupGetReq.toJSON(req));
     let result = this._exprGroupReqMap.get(cacheId);
-    if (result === undefined) {
+    if (result === undefined || this.invalidExpressionGroupIds.has(req.id)) {
       // Have to request it!
       result = this._dataService.sendExpressionGroupGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._exprGroupReqMap.set(cacheId, result);
+      this.invalidExpressionGroupIds.delete(req.id);
     }
 
     return result;

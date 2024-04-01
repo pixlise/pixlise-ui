@@ -27,9 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription, combineLatest } from "rxjs";
+import { Observable, Subscription, combineLatest, of } from "rxjs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -45,7 +45,6 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
-import { MatSelectChange } from "@angular/material/select";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUAxisUnit } from "./rgbu-plot-data";
 import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
@@ -58,6 +57,9 @@ import {
   ImagePickerDialogData,
   ImagePickerDialogResponse,
 } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
+import { getScanIdFromImagePath } from "src/app/utils/utils";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { RGBUPlotExporter } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-exporter";
 
 @Component({
   selector: "rgbu-plot",
@@ -65,9 +67,12 @@ import {
   styleUrls: ["./rgbu-plot-widget.component.scss"],
 })
 export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+  @ViewChild("interactiveCanvas") interactiveCanvas!: ElementRef;
+
   mdl = new RGBUPlotModel();
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
+  exporter: RGBUPlotExporter;
 
   // Just a dummy, we don't pan/zoom
   transform: PanZoom = new PanZoom();
@@ -100,6 +105,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
     this.drawer = new RGBUPlotDrawer(this.mdl);
     this.toolhost = new RGBUPlotInteraction(this.mdl, this._selectionService);
+    this.exporter = new RGBUPlotExporter(this._endpointsService, this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -120,10 +126,16 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         {
           id: "image-picker",
           type: "button",
-          // icon: "image",
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
         },
         {
           id: "solo",
@@ -455,6 +467,14 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     });
   }
 
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this.mdl, this.scanIdAssociatedWithImage);
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return this.exporter.onExport(this.mdl, this.scanIdAssociatedWithImage, request);
+  }
+
   private loadData(imagePath: string, roiIDs: string[]) {
     this.isWidgetDataLoading = true;
 
@@ -470,6 +490,8 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         for (let c = 1; c < results.length; c++) {
           rois.push(results[c] as RegionSettings);
         }
+
+        this.scanIdAssociatedWithImage = getScanIdFromImagePath(imagePath);
 
         // Now we can set this
         this.mdl.imageName = imagePath;

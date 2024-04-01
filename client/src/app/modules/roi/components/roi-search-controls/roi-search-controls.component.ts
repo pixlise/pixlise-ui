@@ -170,9 +170,9 @@ export class ROISearchControlsComponent {
     const filteredSummaries: ROIItemSummary[] = [];
     const searchString = this.roiSearchString.toLowerCase();
     for (const summary of this.summaries) {
-      if (PredefinedROIID.isAllPointsROI(summary.id)) {
-        continue;
-      }
+      // if (PredefinedROIID.isAllPointsROI(summary.id)) {
+      //   continue;
+      // }
 
       const summaryNameLower = summary.name.toLowerCase();
       if (this.visibleScanId.length > 0 && summary.scanId !== this.visibleScanId) {

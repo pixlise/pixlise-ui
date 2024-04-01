@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { catchError, map, Subscription, switchMap } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
@@ -316,24 +316,33 @@ export class RoughnessComponent implements OnInit, OnDestroy {
     this._diffractionService.fetchPeakStatusesForScan(this._selectedScanId);
 
     this._subs.add(
-      this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
-        const dataSource = new ExpressionDataSource();
-        dataSource
-          .prepare(
-            this._cachedDataService,
-            this.selectedScanId,
-            this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
-            PredefinedROIID.getAllPointsForScan(this.selectedScanId),
-            calibrations
-          )
-          .subscribe(() => {
-            // getRoughnessData
-            dataSource.getDiffractionPeakEffectData(-1, -1).then((data: PMCDataValues) => {
-              this.peaks = dataSource.roughnessItems;
-              this.updateDisplayList();
-            });
-          });
-      })
+      this._energyCalibrationService
+        .getCurrentCalibration(this.selectedScanId)
+        .pipe(
+          switchMap(calibrations => {
+            const dataSource = new ExpressionDataSource();
+            return dataSource
+              .prepare(
+                this._cachedDataService,
+                this.selectedScanId,
+                this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
+                PredefinedROIID.getAllPointsForScan(this.selectedScanId),
+                calibrations
+              )
+              .pipe(
+                switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
+                map(() => dataSource)
+              );
+          }),
+          catchError(err => {
+            console.error("Error fetching roughness data", err);
+            return [];
+          })
+        )
+        .subscribe(dataSource => {
+          this.peaks = dataSource.roughnessItems;
+          this.updateDisplayList();
+        })
     );
   }
 

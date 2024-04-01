@@ -58,6 +58,7 @@ import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generat
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
+import { ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -222,7 +223,12 @@ export class WidgetDataService {
     let scanIdIdx = -1;
 
     // Only query timestamp for actual expressions, not our predefined internal ones
-    if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+    if (
+      query.exprId &&
+      !DataExpressionId.isPredefinedExpression(query.exprId) &&
+      !DataExpressionId.isUnsavedExpressionId(query.exprId) &&
+      !DataExpressionId.isExpressionGroupId(query.exprId)
+    ) {
       exprIdIdx = queryList.length;
       queryList.push(
         this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })).pipe(

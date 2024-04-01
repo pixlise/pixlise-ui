@@ -58,6 +58,18 @@ POSSIBILITY OF SUCH DAMAGE.
       [scanId]="data?.scanId || ''"
       (onFilterChanged)="onFilterChanged($event)"
       [manualFilters]="manualFilters"></roi-search-controls>
+    <section class="bulk-controls" *ngIf="!data.selectableSubItemOptions">
+      <span class="count">{{ selectionCount }} ROIs selected</span>
+      <action-button
+        class="visible-toggle"
+        [disabled]="filteredSummaries.length <= 0 && selectionCount === 0"
+        [action]="selectionCount > 0 ? 'checkOn' : 'checkOff'"
+        #tooltip="matTooltip"
+        [matTooltip]="selectionCount > 0 ? 'Toggle ROIs off' : 'Toggle selected ROIs on'"
+        [matTooltipDisabled]="filteredSummaries.length <= 0 && selectionCount === 0"
+        (onClick)="onToggleAllVisible()">
+      </action-button>
+    </section>
   </header>
   <section class="rois">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">

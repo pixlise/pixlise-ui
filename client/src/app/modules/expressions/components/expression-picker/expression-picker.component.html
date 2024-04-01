@@ -90,17 +90,35 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </section>
     <section class="column expressions-list">
-      <div class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }}">
+      <div
+        class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }} {{ 'Quantified Elements' === activeBrowseSection ? 'quant-elements' : '' }} {{
+          activeBrowseSection === 'Pseudo-Intensities' ? 'pseudo-elements' : ''
+        }}">
         <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
         <push-button *ngIf="activeBrowseSection === 'Recent'" class="recent-btn" buttonStyle="outline" (onClick)="onClearRecent(activeBrowseGroup)"
           >Clear Recent</push-button
         >
+        <multi-switch-button
+          class="quant-element-switch-button"
+          *ngIf="activeBrowseSection === 'Quantified Elements'"
+          [options]="['A', 'B', 'A&B']"
+          [value]="activeQuantifiedElementDetector"
+          (onChange)="activeQuantifiedElementDetector = $event">
+        </multi-switch-button>
+        <mat-select
+          class="scan-selector"
+          *ngIf="['Quantified Elements', 'Pseudo-Intensities'].includes(activeBrowseSection)"
+          [(ngModel)]="scanId"
+          placeholder="Choose a Scan">
+          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }}</mat-option>
+        </mat-select>
       </div>
       <expression-search-controls
         class="{{ showSearchControls ? 'visible' : '' }}"
         (onFilterChanged)="onFilterChanged($event)"
         [scanId]="scanId"
         [quantId]="quantId"
+        [selectedDetector]="activeQuantifiedElementDetector"
         [recentExpressions]="recentExpressions"
         [manualFilters]="manualFilters"></expression-search-controls>
       <section class="expressions">
@@ -119,22 +137,55 @@ POSSIBILITY OF SUCH DAMAGE.
         </cdk-virtual-scroll-viewport>
       </section>
     </section>
-    <section *ngIf="maxSelection !== 1" class="column active-expressions">
+    <section *ngIf="maxSelection !== 1" class="column active-expressions {{ showRGBMixMode && isRGBMixModeActive ? 'rgbmix-mode' : '' }}">
       <div class="title active-widget-selection">
-        Active:<mat-select [(ngModel)]="activeWidgetId" placeholder="Active Group">
+        <mat-select [(ngModel)]="activeWidgetId" placeholder="Active Group">
           <mat-option *ngFor="let option of layoutWidgets; let i = index" [value]="option.widget.id">{{ option.name }}</mat-option>
         </mat-select>
+        <multi-switch-button
+          *ngIf="showRGBMixMode"
+          [options]="rgbMixModeGroupOptions"
+          [value]="activeRGBMixModeGroup"
+          (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button>
         <push-button
+          *ngIf="!showRGBMixMode"
           buttonStyle="gray"
           #saveExpressionGroupDialogBtn
           [customDialog]="saveExpressionGroupDialog"
           #tooltip="matTooltip"
           matTooltip="Edit Group ({{ newExpressionGroupName }})"
           [matTooltipDisabled]="newExpressionGroupName.length === 0"
-          >{{ overwriteExistingExpressionGroup && selectedExpressionGroupId.length > 0 ? "Edit" : "Save" }} Group</push-button
+          >Save As Group</push-button
         >
       </div>
-      <section class="active-expressions">
+      <div *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup" class="rgbmix-row">
+        <div class="title-row">
+          <action-button
+            #tooltip="matTooltip"
+            matTooltip="Remove the loaded RGB Mix"
+            [matTooltipDisabled]="!selectedGroup.id"
+            [disabled]="!selectedGroup.id"
+            action="close"
+            color="rgb(var(--clr-gray-30))"
+            (onClick)="onClearRGBMix()"></action-button>
+          <input class="name" type="text" [(ngModel)]="selectedGroup.name" placeholder="RGB Mix Name" />
+        </div>
+        <div class="additional-row">
+          <input class="description" type="text" [(ngModel)]="selectedGroup.description" placeholder="Description" />
+          <tag-picker
+            type="expression-mix"
+            [additionalVisibleTagType]="['rgbmix']"
+            [selectedTagIDs]="selectedGroup.tags"
+            [showCurrentTagsSection]="true"
+            (onTagSelectionChanged)="selectedGroup.tags = $event">
+          </tag-picker>
+          <share-ownership-item-button
+            [id]="selectedGroup.id"
+            [type]="expressionGroupType"
+            [ownershipSummary]="selectedGroup.owner || null"></share-ownership-item-button>
+        </div>
+      </div>
+      <section class="layer-container">
         <cdk-virtual-scroll-viewport [itemSize]="activeLayerHeight" class="expressions-viewport">
           <expression-layer
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
@@ -144,6 +195,7 @@ POSSIBILITY OF SUCH DAMAGE.
             (onSelect)="onSelect(item)"
             [isWidgetExpression]="true"
             [widgetType]="widgetType || ''"
+            [showRGBMixMode]="isRGBMixModeActive"
             [selectIfValidPosition]="true"
             [isTriggerPosition]="expressionTriggerPosition > -1 && expressionTriggerPosition === selectedExpressionIdOrder.indexOf(item.id)"
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
@@ -158,7 +210,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="persist-dialog" *ngIf="singleSelectionOption">
       <two-state-icon-button
         #tooltip="matTooltip"
-        matTooltip="Instantly apply the expression on selection"
+        matTooltip="Instantly apply the expression or group on selection (clears previous selection)"
         [matTooltipShowDelay]="200"
         [activeIcon]="'assets/button-icons/check-on.svg'"
         [inactiveIcon]="'assets/button-icons/check-off.svg'"

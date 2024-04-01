@@ -79,6 +79,9 @@
 
         .description {
           color: rgb(var(--clr-gray-40));
+
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
     }

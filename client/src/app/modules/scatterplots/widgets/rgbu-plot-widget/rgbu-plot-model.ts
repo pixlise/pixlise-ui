@@ -44,6 +44,7 @@ import { Subject } from "rxjs";
 import { BaseChartModel } from "../../base/model-interfaces";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
+import { WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 const xMargin = 40;
 const yMargin = 40;
@@ -121,6 +122,10 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
 
   get raw(): RGBUPlotRawData | null {
     return this._raw;
+  }
+
+  get lastCalcCanvasParams(): CanvasParams | null {
+    return this._lastCalcCanvasParams;
   }
 
   hasRawData(): boolean {
