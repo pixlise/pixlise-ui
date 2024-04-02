@@ -38,11 +38,13 @@ import { SpectrumChartModel } from "../spectrum-model";
 import { XRFDatabaseService } from "src/app/services/xrf-database.service";
 
 export class SpectrumPeakIdentificationData {
-  constructor(public mdl: SpectrumChartModel, public draggable: boolean) {}
+  constructor(
+    public mdl: SpectrumChartModel,
+    public draggable: boolean
+  ) {}
 }
 
-export class PeakIdentificationData {
-}
+export class PeakIdentificationData {}
 
 @Component({
   selector: "spectrum-peak-identification",
@@ -50,7 +52,7 @@ export class PeakIdentificationData {
   styleUrls: ["./spectrum-peak-identification.component.scss"],
 })
 export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
-  @ViewChild("peakTab", { read: ViewContainerRef }) tabAreaContainer;
+  @ViewChild("peakTab", { read: ViewContainerRef }) tabAreaContainer!: any;
 
   private _subs = new Subscription();
 

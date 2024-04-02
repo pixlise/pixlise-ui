@@ -62,7 +62,7 @@ export class TwoStateEditButtonComponent implements OnInit {
       this.onToggle.emit(this.active);
     }
   }
-  onEditInternal(event): void {
+  onEditInternal(event: any): void {
     if (!this.disabled) {
       this.onEdit.emit(event);
     }
