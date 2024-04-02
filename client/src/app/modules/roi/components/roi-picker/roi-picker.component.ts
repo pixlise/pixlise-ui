@@ -33,7 +33,7 @@ import { ROIService, ROISummaries } from "../../services/roi.service";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROISearchFilter } from "../../models/roi-search";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 import { ROIDisplaySettings } from "../../models/roi-region";
 import { SubItemOptionSection } from "../roi-item/roi-item.component";
 
@@ -179,6 +179,27 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
     return summary.id;
   }
 
+  get selectionCount(): number {
+    return Object.keys(this.selectedROIs).length;
+  }
+
+  onToggleAllVisible() {
+    if (this.selectionCount > 0) {
+      this.onClear();
+    } else {
+      this.selectedROIs = {};
+      this.selectedItems.clear();
+      this.filteredSummaries.forEach(summary => {
+        this.selectedROIs[summary.id] = summary;
+        this._roiService.fetchROI(summary.id, true);
+      });
+
+      if (this.data.liveUpdate) {
+        this.onConfirm();
+      }
+    }
+  }
+
   onROISelect(roi: ROIItemSummary, customSelection: { selectedOptions: string[] }): void {
     if (this.data?.singleSelect) {
       // Almost like onClear(), we ensure only one item gets selected - the one being selected now!
@@ -240,25 +261,51 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
 
   onConfirm(): void {
     const selectedROISummaries = Object.values(this.selectedROIs);
-    const selectedROIs: ROIItem[] = selectedROISummaries.map(summary => {
-      const roi = this._roiService.roiItems$.value[summary.id];
-      if (!roi) {
-        this._snackBarService.openError(`ROI ${summary.id} was not found in the ROI cache`);
+
+    if (selectedROISummaries.length === 0) {
+      const emptyResponse = {
+        selectedROISummaries: [],
+        selectedROIs: [],
+        selectedItems: new Map(),
+      };
+
+      if (this.data.liveUpdate) {
+        this.onChange.emit(emptyResponse);
+      } else {
+        this.dialogRef.close(emptyResponse);
       }
-      return roi;
+    }
+
+    let regionRequests = selectedROISummaries.map(summary => {
+      return this._roiService.loadROI(summary.id);
     });
 
-    const pickerResponse = {
-      selectedROISummaries,
-      selectedROIs,
-      selectedItems: this.selectedItems,
-    };
+    // const selectedROIs: ROIItem[] = selectedROISummaries.map(summary => {
+    //   const roi = this._roiService.roiItems$.value[summary.id];
+    //   if (!roi) {
+    //     this._snackBarService.openError(`ROI ${summary.id} was not found in the ROI cache`);
+    //   }
+    //   return roi;
+    // });
 
-    if (this.data.liveUpdate) {
-      this.onChange.emit(pickerResponse);
-    } else {
-      this.dialogRef.close(pickerResponse);
-    }
+    combineLatest(regionRequests).subscribe({
+      next: selectedROIs => {
+        const pickerResponse = {
+          selectedROISummaries,
+          selectedROIs,
+          selectedItems: this.selectedItems,
+        };
+
+        if (this.data.liveUpdate) {
+          this.onChange.emit(pickerResponse);
+        } else {
+          this.dialogRef.close(pickerResponse);
+        }
+      },
+      error: err => {
+        this._snackBarService.openError(`Failed to load ROIs!`, err);
+      },
+    });
   }
 
   onClear(): void {

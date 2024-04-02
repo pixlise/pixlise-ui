@@ -65,7 +65,11 @@ export type WidgetConfiguration = {
   id?: WidgetType;
   name: string;
   description: string;
+
+  hasExpressions?: boolean;
   maxExpressions?: number;
+
+  showRGBMixExpressionPickerMode?: boolean;
 
   // Projected component
   component: any;
@@ -87,6 +91,7 @@ export const WIDGETS = {
   "binary-plot": {
     name: "Binary Plot",
     description: "Binary plot",
+    hasExpressions: true,
     maxExpressions: 2,
     component: BinaryChartWidgetComponent,
     dataKey: "binary",
@@ -95,6 +100,7 @@ export const WIDGETS = {
   "ternary-plot": {
     name: "Ternary Plot",
     description: "Ternary plot",
+    hasExpressions: true,
     maxExpressions: 3,
     component: TernaryChartWidgetComponent,
     dataKey: "ternary",
@@ -103,6 +109,7 @@ export const WIDGETS = {
   histogram: {
     name: "Histogram",
     description: "Histogram",
+    hasExpressions: true,
     component: HistogramWidgetComponent,
     dataKey: "histogram",
     controlConfiguration: {},
@@ -110,6 +117,7 @@ export const WIDGETS = {
   "chord-diagram": {
     name: "Chord Diagram",
     description: "Chord Diagram",
+    hasExpressions: true,
     component: ChordDiagramWidgetComponent,
     dataKey: "chord",
     controlConfiguration: {},
@@ -117,8 +125,10 @@ export const WIDGETS = {
   "context-image": {
     name: "Context Image",
     description: "Context Image",
+    hasExpressions: true,
     component: ContextImageComponent,
     dataKey: "contextImage",
+    showRGBMixExpressionPickerMode: true,
     controlConfiguration: {},
   },
   "multi-channel-image": {

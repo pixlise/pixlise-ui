@@ -61,6 +61,16 @@ POSSIBILITY OF SUCH DAMAGE.
     (onFilterChanged)="onFilterChanged($event)"
     [showBuiltin]="false"
     [manualFilters]="manualFilters"></roi-search-controls>
+  <section class="bulk-controls">
+    <span class="count">{{ highlightedROIIds.length }} ROIs highlighted</span>
+    <action-button
+      class="visible-toggle"
+      [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
+      #tooltip="matTooltip"
+      [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'"
+      (onClick)="onToggleAllVisible()">
+    </action-button>
+  </section>
   <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
       <roi-item
@@ -69,7 +79,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectAuthorToFilter]="showSearch"
         (onFilterAuthor)="onFilterAuthor($event)"
         [displaySettings]="displaySettingsMap[item.id]"
-        [isVisible]="highlightedROIId === item.id"
+        [isVisible]="highlightedROIIds.includes(item.id)"
         (onVisibilityChange)="onROIVisibleToggle(item)"></roi-item>
     </cdk-virtual-scroll-viewport>
   </section>

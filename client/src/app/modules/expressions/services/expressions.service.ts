@@ -1,14 +1,25 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, map, of } from "rxjs";
+import { BehaviorSubject, Observable, defaultIfEmpty, map, mergeMap, of } from "rxjs";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { ExpressionDeleteReq, ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionWriteReq } from "src/app/generated-protos/expression-msgs";
-import { DataExpression } from "src/app/generated-protos/expressions";
+import {
+  ExpressionDeleteReq,
+  ExpressionDisplaySettingsGetReq,
+  ExpressionDisplaySettingsWriteReq,
+  ExpressionGetReq,
+  ExpressionGetResp,
+  ExpressionListReq,
+  ExpressionWriteReq,
+} from "src/app/generated-protos/expression-msgs";
+import { DataExpression, ExpressionDisplaySettings } from "src/app/generated-protos/expressions";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleAddVersionReq, DataModuleGetReq, DataModuleListReq, DataModuleWriteReq } from "src/app/generated-protos/module-msgs";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
-import { ExpressionGroupGetReq, ExpressionGroupListReq, ExpressionGroupListResp, ExpressionGroupWriteReq } from "src/app/generated-protos/expression-group-msgs";
+import { ExpressionGroupDeleteReq, ExpressionGroupListReq, ExpressionGroupListResp, ExpressionGroupWriteReq } from "src/app/generated-protos/expression-group-msgs";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { ColourRamp } from "src/app/utils/colours";
 
 @Injectable({
   providedIn: "root",
@@ -17,6 +28,8 @@ export class ExpressionsService {
   expressionGroups$: BehaviorSubject<ExpressionGroup[]> = new BehaviorSubject<ExpressionGroup[]>([]);
   expressions$ = new BehaviorSubject<Record<string, DataExpression>>({});
   modules$ = new BehaviorSubject<Record<string, DataModule>>({});
+
+  displaySettings$ = new BehaviorSubject<Record<string, ExpressionDisplaySettings>>({});
 
   lastWrittenExpressionGroupId$ = new BehaviorSubject<string>("");
 
@@ -31,10 +44,7 @@ export class ExpressionsService {
     private _snackBarService: SnackbarService,
     private _cacheService: APICachedDataService,
     private _dataService: APIDataService
-  ) {
-    // this.fetchExpressions();
-    // this.fetchModules();
-  }
+  ) {}
 
   fetchModules() {
     this._cacheService.getModuleList(DataModuleListReq.create({})).subscribe(res => {
@@ -104,6 +114,50 @@ export class ExpressionsService {
         }
 
         return res;
+      })
+    );
+  }
+
+  writeUserExpressionDisplaySettings(settings: ExpressionDisplaySettings) {
+    this._dataService.sendExpressionDisplaySettingsWriteRequest(ExpressionDisplaySettingsWriteReq.create({ id: settings.id, displaySettings: settings })).subscribe({
+      next: res => {
+        if (res.displaySettings) {
+          this.displaySettings$.next({ ...this.displaySettings$.value, [settings.id]: settings });
+        }
+      },
+      error: err => {
+        this._snackBarService.openError(`Failed to save expression display settings (${settings.id})`, err);
+        console.error(`Failed to save expression display settings (${settings.id}): `, err);
+      },
+    });
+  }
+
+  getDefaultExpressionDisplaySettings(id: string): ExpressionDisplaySettings {
+    let displaySettings: ExpressionDisplaySettings = {
+      id,
+      colourRamp: DataExpressionId.isPredefinedExpression(id) ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA,
+    };
+
+    return displaySettings;
+  }
+
+  getUserExpressionDisplaySettings(id: string): Observable<ExpressionDisplaySettings> {
+    return of(this.displaySettings$.value[id]).pipe(
+      mergeMap(displaySettings => {
+        if (displaySettings) {
+          return of(displaySettings);
+        } else {
+          return this._dataService.sendExpressionDisplaySettingsGetRequest(ExpressionDisplaySettingsGetReq.create({ id })).pipe(
+            mergeMap(res => {
+              if (res.displaySettings && res.displaySettings.colourRamp) {
+                return of(res.displaySettings);
+              } else {
+                return of(this.getDefaultExpressionDisplaySettings(id));
+              }
+            }),
+            defaultIfEmpty(this.getDefaultExpressionDisplaySettings(id))
+          );
+        }
       })
     );
   }
@@ -208,7 +262,7 @@ export class ExpressionsService {
   }
 
   deleteExpressionGroup(id: string) {
-    this._dataService.sendExpressionGroupDeleteRequest(ExpressionGroupGetReq.create({ id })).subscribe(res => {
+    this._dataService.sendExpressionGroupDeleteRequest(ExpressionGroupDeleteReq.create({ id })).subscribe(res => {
       this.expressionGroups$.value.filter(group => group.id !== id);
       this.expressionGroups$.next(this.expressionGroups$.value);
       this.listExpressionGroups(true);
@@ -221,6 +275,42 @@ export class ExpressionsService {
       let expressionGroups = Object.values(resp.groups);
       this.expressionGroups$.next(expressionGroups);
     });
+  }
+
+  writeExpressionGroupAsync(expressionGroupToWrite: ExpressionGroup, silent: boolean = false): Observable<ExpressionGroup> {
+    return this._dataService
+      .sendExpressionGroupWriteRequest(
+        ExpressionGroupWriteReq.create({
+          group: expressionGroupToWrite,
+        })
+      )
+      .pipe(
+        map(res => {
+          if (res.group) {
+            if (!silent) {
+              this._snackBarService.openSuccess(`Expression group (${expressionGroupToWrite.name}) saved`);
+            }
+
+            let existingGroupIndex = this.expressionGroups$.value.findIndex(group => group.id === res.group?.id);
+            if (existingGroupIndex >= 0) {
+              this.expressionGroups$.value[existingGroupIndex] = res.group;
+            } else {
+              this.expressionGroups$.value.push(res.group);
+            }
+            this.expressionGroups$.next(this.expressionGroups$.value);
+
+            this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), true);
+            this.lastWrittenExpressionGroupId$.next(res.group.id);
+
+            return res.group;
+          } else {
+            throw new WidgetError(
+              "Failed to write expression group",
+              `Expression group (${expressionGroupToWrite.name}, ${expressionGroupToWrite.id}) was not returned from the API`
+            );
+          }
+        })
+      );
   }
 
   writeExpressionGroup(expressionGroupToWrite: ExpressionGroup) {

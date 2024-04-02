@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { forkJoin, mergeMap, Subscription, map, from, switchMap, catchError } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
@@ -245,20 +245,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     );
 
     this._subs.add(
-      this._diffractionService.detectedPeaksPerScan$.subscribe(peaksPerScan => {
-        this.detectedPeaksPerScan = peaksPerScan;
-        if (this.selectedScanId) {
-          this.updateDisplayList();
-          this.updateRange();
-
-          setTimeout(() => {
-            this.mdl.needsCanvasResize$.next();
-          }, 200);
-        }
-      })
-    );
-
-    this._subs.add(
       this._diffractionService.diffractionPeaksStatuses$.subscribe(peakStatusesPerScan => {
         this.peakStatusesPerScan = peakStatusesPerScan;
         if (this.selectedScanId) {
@@ -374,56 +360,40 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._selectedScanId = value;
     this.selectedScan = this.allScans.find(scan => scan.id === value) || ScanItem.create();
 
-    this.fetchDiffractionData();
-    // this._diffractionService.fetchManualPeaksForScan(this._selectedScanId);
-    // this._diffractionService.fetchPeakStatusesForScan(this._selectedScanId);
-
-    // this._subs.add(
-    //   this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
-    //     this._currentCalibrations = calibrations;
-    //     let dataSource = new ExpressionDataSource();
-    //     dataSource
-    //       .prepare(
-    //         this._cachedDataService,
-    //         this.selectedScanId,
-    //         this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
-    //         PredefinedROIID.getAllPointsForScan(this.selectedScanId),
-    //         calibrations
-    //       )
-    //       .subscribe(() => {
-    //         dataSource.getDiffractionPeakEffectData(-1, -1).then((data: PMCDataValues) => {
-    //           this.peaks = dataSource.allPeaks;
-    //           this.updateDisplayList();
-    //         });
-    //       });
-    //   })
-    // );
+    this.fetchDiffractionData(this._selectedScanId);
   }
 
-  private fetchDiffractionData() {
-    this._diffractionService.fetchManualPeaksForScan(this._selectedScanId);
-    this._diffractionService.fetchPeakStatusesForScan(this._selectedScanId);
-
-    this._subs.add(
-      this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
-        this._currentCalibrations = calibrations;
-        let dataSource = new ExpressionDataSource();
-        dataSource
-          .prepare(
-            this._cachedDataService,
-            this.selectedScanId,
-            this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
-            PredefinedROIID.getAllPointsForScan(this.selectedScanId),
-            calibrations
-          )
-          .subscribe(() => {
-            dataSource.getDiffractionPeakEffectData(-1, -1).then((data: PMCDataValues) => {
-              this.peaks = dataSource.allPeaks;
-              this.updateDisplayList();
-            });
-          });
-      })
-    );
+  private fetchDiffractionData(scanId: string) {
+    const fetchManualPeaks$ = this._diffractionService.fetchManualPeaksForScanAsync(scanId);
+    const fetchPeakStatuses$ = this._diffractionService.fetchPeakStatusesForScanAsync(scanId);
+    const getCurrentCalibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
+    forkJoin({
+      manualPeaks: fetchManualPeaks$,
+      peakStatuses: fetchPeakStatuses$,
+      currentCalibrations: getCurrentCalibration$,
+    })
+      .pipe(
+        mergeMap(({ currentCalibrations }) => {
+          this._currentCalibrations = currentCalibrations;
+          const dataSource = new ExpressionDataSource();
+          return dataSource
+            .prepare(
+              this._cachedDataService,
+              scanId,
+              this._analysisLayoutService.getQuantIdForScan(scanId),
+              PredefinedROIID.getAllPointsForScan(scanId),
+              currentCalibrations
+            )
+            .pipe(
+              switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
+              map(() => dataSource)
+            );
+        })
+      )
+      .subscribe(dataSource => {
+        this.peaks = dataSource.allPeaks;
+        this.updateDisplayList();
+      });
   }
 
   ngOnDestroy() {

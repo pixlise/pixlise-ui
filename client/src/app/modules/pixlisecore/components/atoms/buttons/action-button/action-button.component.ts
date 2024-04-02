@@ -51,6 +51,12 @@ const customActionIcons = {
   verticalEllipsis: "assets/button-icons/vertical-ellipsis.svg",
   visibleOn: "assets/button-icons/visible-on.svg",
   visibleOff: "assets/button-icons/visible-off.svg",
+  checkOn: "assets/button-icons/check-on.svg",
+  checkOff: "assets/button-icons/check-off.svg",
+  radioOn: "assets/button-icons/radio-on.svg",
+  radioOff: "assets/button-icons/radio-off.svg",
+  rgbMix: "assets/button-icons/rgbmix.svg",
+  colorPicker: "assets/button-icons/colours.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;
@@ -91,7 +97,8 @@ export class ActionButtonComponent {
     return this._actionSource;
   }
 
-  onClickInternal() {
+  onClickInternal(evt: any) {
+    evt.preventDefault();
     if (!this.disabled) {
       if (this.confirmText) {
         const dialogConfig = new MatDialogConfig();

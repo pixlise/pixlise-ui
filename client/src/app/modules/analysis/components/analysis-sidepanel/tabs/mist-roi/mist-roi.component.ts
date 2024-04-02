@@ -178,10 +178,10 @@ export class MistROIComponent implements OnInit {
 
   set selectedContextImage(widgetId: string) {
     // If the ROI is highlighted, update the widgetId
-    if (this._analysisLayoutService.highlightedROI$.value?.widgetId === this._selectedContextImage) {
-      this._analysisLayoutService.highlightedROI$.next({
+    if (this._analysisLayoutService.highlightedROIs$.value?.widgetId === this._selectedContextImage) {
+      this._analysisLayoutService.highlightedROIs$.next({
         widgetId,
-        roiId: this._analysisLayoutService.highlightedROI$.value?.roiId,
+        roiIds: this.highlightedROIIds,
         scanId: this.visibleScanId,
       });
     }
@@ -201,21 +201,37 @@ export class MistROIComponent implements OnInit {
     return this._selectedROIs.length;
   }
 
-  get highlightedROIId(): string {
-    return this._analysisLayoutService.highlightedROI$.value?.roiId || "";
+  get highlightedROIIds(): string[] {
+    return this._analysisLayoutService.highlightedROIs$.value?.roiIds || [];
   }
 
-  onROIVisibleToggle(roi: ROIItemSummary) {
-    if (this.highlightedROIId === roi.id) {
-      this._analysisLayoutService.highlightedROI$.next({
+  onToggleAllVisible() {
+    if (this.highlightedROIIds.length > 0) {
+      this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiId: "",
+        roiIds: [],
         scanId: this.visibleScanId,
       });
     } else {
-      this._analysisLayoutService.highlightedROI$.next({
+      this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiId: roi.id,
+        roiIds: this._selectedROIs.map(roi => roi.id),
+        scanId: this.visibleScanId,
+      });
+    }
+  }
+
+  onROIVisibleToggle(roi: ROIItemSummary) {
+    if (this.highlightedROIIds.includes(roi.id)) {
+      this._analysisLayoutService.highlightedROIs$.next({
+        widgetId: this.selectedContextImage,
+        roiIds: this.highlightedROIIds.filter(id => id !== roi.id),
+        scanId: this.visibleScanId,
+      });
+    } else {
+      this._analysisLayoutService.highlightedROIs$.next({
+        widgetId: this.selectedContextImage,
+        roiIds: [roi.id, ...this.highlightedROIIds],
         scanId: this.visibleScanId,
       });
     }

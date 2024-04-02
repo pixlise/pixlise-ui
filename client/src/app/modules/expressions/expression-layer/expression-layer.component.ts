@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, TemplateRef, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
@@ -13,7 +13,14 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ConfirmDialogComponent } from "../../pixlisecore/components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
 import { WidgetSettingsMenuComponent } from "../../pixlisecore/pixlisecore.module";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
-import { BINARY_WIDGET_OPTIONS, TERNARY_WIDGET_OPTIONS, widgetLayerPositions } from "../models/expression-widget-layer-configs";
+import {
+  BINARY_WIDGET_OPTIONS,
+  RGB_MIX_MODE_OPTIONS,
+  TERNARY_WIDGET_OPTIONS,
+  WidgetLayerPositionConfig,
+  WidgetLayerPositionConfigMap,
+  widgetLayerPositions,
+} from "../models/expression-widget-layer-configs";
 import { WidgetType } from "../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { UsersService } from "src/app/modules/settings/services/users.service";
@@ -52,6 +59,12 @@ export class ExpressionLayerComponent implements OnInit {
   @Input() isTriggerPosition: boolean = false;
 
   @Input() showActiveExpressionConfiguration: boolean = false;
+
+  @Input() showColourPicker: boolean = false;
+
+  @Input() monoSelectIcon: boolean = false;
+
+  private _showRGBMixMode: boolean = false;
 
   @Output() onCloseModal = new EventEmitter();
 
@@ -138,6 +151,10 @@ export class ExpressionLayerComponent implements OnInit {
     return this._expression;
   }
 
+  get isSharedWithOthers(): boolean {
+    return this._expression?.owner?.sharedWithOthers || false;
+  }
+
   @Input() set expression(expression: DataExpression | ExpressionGroup | null) {
     if (!expression) {
       return;
@@ -169,12 +186,29 @@ export class ExpressionLayerComponent implements OnInit {
     return this.selected || (this.selectIfValidPosition && !!this.widgetSelectionState && this.widgetSelectionState !== "Off");
   }
 
+  get showRGBMixMode(): boolean {
+    return this._showRGBMixMode;
+  }
+
+  @Input() set showRGBMixMode(show: boolean) {
+    this._showRGBMixMode = show;
+    this.widgetType = this._widgetType;
+  }
+
+  private _getWidgetLayerConfig(): WidgetLayerPositionConfigMap | null {
+    if (this.showRGBMixMode) {
+      return RGB_MIX_MODE_OPTIONS;
+    } else {
+      return widgetLayerPositions[this._widgetType] || null;
+    }
+  }
+
   @Input() set widgetType(type: string) {
     this._widgetType = type as WidgetType;
     this.widgetOptions = [];
     this.widgetOptionIcons = [];
 
-    let widgetLayerConfig = widgetLayerPositions[this.widgetType];
+    let widgetLayerConfig = this._getWidgetLayerConfig();
     if (widgetLayerConfig) {
       this.widgetOptions = Object.keys(widgetLayerConfig);
       this.widgetOptionIcons = Object.values(widgetLayerConfig).map(option => option.icon);
@@ -201,7 +235,7 @@ export class ExpressionLayerComponent implements OnInit {
     this.widgetSelectionState = state;
     let widgetPosition: number = -1;
 
-    let widgetLayerConfig = widgetLayerPositions[this.widgetType];
+    let widgetLayerConfig = this._getWidgetLayerConfig();
     if (widgetLayerConfig) {
       widgetPosition = widgetLayerConfig[state].position;
     }
@@ -385,13 +419,7 @@ export class ExpressionLayerComponent implements OnInit {
     }
   }
 
-  onAddExpressionGroup(): void {
-    if (this.onSelect) {
-      this.onSelect.emit();
-    }
-  }
-
-  onCheckboxClick(event: Event): void {
+  onCheckboxClick(): void {
     if (this.onSelect) {
       this.onSelect.emit();
     }

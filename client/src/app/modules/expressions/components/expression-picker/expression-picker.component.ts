@@ -30,12 +30,12 @@
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { Subscription } from "rxjs";
+import { combineLatest, filter, map, of, Subscription, switchMap } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -48,10 +48,13 @@ import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atom
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { widgetLayerPositions } from "../../models/expression-widget-layer-configs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { UsersService } from "src/app/modules/settings/services/users.service";
+import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group-msgs";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 export type ExpressionPickerResponse = {
-  selectedExpressions: (DataExpression | ExpressionGroup)[];
+  selectedGroup?: ExpressionGroup;
+  selectedExpressions: DataExpression[];
   scanId: string;
   quantId: string;
   persistDialog: boolean;
@@ -65,6 +68,7 @@ export type ExpressionPickerData = {
   quantId?: string;
   noActiveScreenConfig?: boolean;
   maxSelection?: number;
+  enforceMaxSelectionWhileEditing?: boolean;
   widgetType?: string;
   disableExpressionGroups?: boolean;
   expressionsOnly?: boolean;
@@ -72,6 +76,8 @@ export type ExpressionPickerData = {
   liveReload?: boolean;
   singleSelectionOption?: boolean;
   preserveGroupSelection?: boolean; // If user selects a group, don't select its component expressions, but keep the group id selected
+  showRGBMixMode?: boolean;
+  rgbMixModeActive?: boolean;
 };
 
 @Component({
@@ -86,9 +92,13 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
 
-  selectedExpressionIdOrder: string[] = [];
-  selectedExpressionIds: Set<string> = new Set();
-  selectedExpressions: (DataExpression | ExpressionGroup)[] = [];
+  private _selectedExpressionIdOrder: string[] = [];
+  private _selectedExpressionIds: Set<string> = new Set();
+  private _selectedExpressions: (DataExpression | ExpressionGroup)[] = [];
+
+  private _selectedRGBMixExpressionIdOrder: string[] = [];
+  private _selectedRGBMixExpressionIds: Set<string> = new Set();
+  private _selectedRGBMixExpressions: (DataExpression | ExpressionGroup)[] = [];
 
   recentExpressions: RecentExpression[] = [];
 
@@ -112,7 +122,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   browseSections = ExpressionBrowseSections.SECTIONS;
 
   editableExpressionGroups: ExpressionGroup[] = [];
-  private _selectedExpressionGroupId: string = "";
   overwriteExistingExpressionGroup: boolean = false;
 
   scanId: string = "";
@@ -122,9 +131,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _activeWidgetId: string = "";
   layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
 
-  newExpressionGroupName: string = "";
-  newExpressionGroupDescription: string = "";
-  newExpressionGroupTags: string[] = [];
+  private _selectedExpressionGroup: ExpressionGroup = ExpressionGroup.create();
+  private _selectedRGBMixGroup: ExpressionGroup = ExpressionGroup.create();
 
   maxSelection: number = 0;
   expressionTriggerPosition: number = -1;
@@ -133,6 +141,17 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   persistDialog: boolean = false;
   singleSelectionOption: boolean = false;
+
+  rgbMixModeGroupOptions = ["Expressions", "RGB Mix"];
+  private _activeRGBMixModeGroup: string = "Expressions";
+  private _showRGBMixMode: boolean = false;
+
+  expressionGroupType: ObjectType = ObjectType.OT_EXPRESSION_GROUP;
+
+  configuredScans: ScanItem[] = [];
+
+  selectedScanIdForQuantifiedElements: string = "";
+  private _activeQuantifiedElementDetector: "A" | "B" | "A&B" | "" = "";
 
   constructor(
     private _cachedDataSerivce: APICachedDataService,
@@ -152,15 +171,36 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this.draggable = this.data.draggable || false;
 
+    let widgetSpec: WidgetConfiguration = WIDGETS[this.data?.widgetType as keyof typeof WIDGETS];
+
+    if (this.data.showRGBMixMode === undefined) {
+      this.showRGBMixMode = widgetSpec?.showRGBMixExpressionPickerMode || false;
+    } else if (this.data.showRGBMixMode) {
+      this.showRGBMixMode = true;
+      this.activeRGBMixModeGroup = this.data.rgbMixModeActive ? "RGB Mix" : "Expressions";
+    }
+
     this._activeWidgetId = this.data.widgetId || "";
     this.expressionTriggerPosition = this.data?.expressionTriggerPosition ?? -1;
     this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
 
-    this.selectedExpressionIds = new Set(this.data.selectedIds || []);
-    this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
+    let expressionIds = (this.data.selectedIds || []).filter(id => id && !DataExpressionId.isExpressionGroupId(id));
+    this._selectedExpressionIds = new Set(expressionIds);
+    this._selectedExpressionIdOrder = Array.from(this._selectedExpressionIds);
+
+    if (this.showRGBMixMode) {
+      let groupId = (this.data.selectedIds || []).find(id => id && DataExpressionId.isExpressionGroupId(id));
+      if (groupId) {
+        this.selectedExpressionGroupId = groupId;
+        this.fetchAndLoadGroupAsRGBMix(groupId);
+      }
+    } else {
+      this.updateSelectedExpressions();
+    }
+
     if (this.data.widgetType) {
       this.widgetType = this.data.widgetType as WidgetType;
-      this.maxSelection = (WIDGETS[this.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0;
+      this.maxSelection = widgetSpec?.maxExpressions || 0;
     } else if (this.data?.maxSelection) {
       this.maxSelection = this.data.maxSelection;
     }
@@ -174,7 +214,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
 
     this.loadAnomalyExpressions();
-    this.updateSelectedExpressions();
     this.loadRecentExpressionsFromCache();
 
     this._subs.add(
@@ -197,9 +236,34 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             });
           });
 
-          this.layoutWidgets = widgetReferences;
+          // Filter out widgets that don't store expressions
+          this.layoutWidgets = widgetReferences.filter(widget => {
+            let spec: WidgetConfiguration = WIDGETS?.[widget.type as WidgetType];
+            return spec.hasExpressions || false;
+          });
         }
       })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$
+        .pipe(
+          filter(config => !!config),
+          switchMap(config =>
+            this._analysisLayoutService.availableScans$.pipe(
+              filter(scans => !!scans),
+              map(scans => {
+                let configuredScans = Object.entries(config.scanConfigurations).map(([scanId]) => {
+                  return scans.find(scan => scan.id === scanId);
+                });
+                return configuredScans.filter(scan => !!scan) as ScanItem[];
+              })
+            )
+          )
+        )
+        .subscribe(configuredScans => {
+          this.configuredScans = configuredScans;
+        })
     );
 
     this._subs.add(
@@ -232,8 +296,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._expressionService.lastWrittenExpressionGroupId$.subscribe(id => {
         if (id) {
-          this.overwriteExistingExpressionGroup = true;
-          this.selectedExpressionGroupId = id;
+          if (!this.isRGBMixModeActive) {
+            this.overwriteExistingExpressionGroup = true;
+            this.selectedExpressionGroupId = id;
+          }
         }
       })
     );
@@ -267,18 +333,18 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           this.updateSelectedExpressions();
         })
       );
-
-      this._subs.add(
-        this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
-          this.loadQuantifiedExpressions(availableScanQuants);
-          if (this._unmatchedExpressions) {
-            this.updateSelectedExpressions();
-          }
-        })
-      );
     }
 
-    this.selectedExpressionIds.forEach(id => {
+    this._subs.add(
+      this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
+        this.loadQuantifiedExpressions(availableScanQuants);
+        if (this._unmatchedExpressions) {
+          this.updateSelectedExpressions();
+        }
+      })
+    );
+
+    this._selectedExpressionIds.forEach(id => {
       if (!this._expressionService.expressions$.value[id] && !this.isExpressionBuiltin(id)) {
         this.fetchedAllSelectedExpressions = false;
         this._expressionService.fetchExpression(id);
@@ -290,13 +356,135 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
+  onClearRGBMix(): void {
+    this._selectedRGBMixGroup = ExpressionGroup.create();
+    this._selectedRGBMixExpressions = [];
+    this._selectedRGBMixExpressionIds = new Set();
+    this._selectedRGBMixExpressionIdOrder = [];
+    this.overwriteExistingExpressionGroup = false;
+  }
+
+  loadGroupAsRGBMix(group: ExpressionGroup): void {
+    this.overwriteExistingExpressionGroup = true;
+    this.activeRGBMixModeGroup = "RGB Mix";
+    this._selectedRGBMixGroup = ExpressionGroup.create(group);
+    this._selectedRGBMixExpressionIds = new Set(group.groupItems.map(groupItem => groupItem.expressionId));
+    this._selectedRGBMixExpressionIdOrder = group.groupItems.map(groupItem => groupItem.expressionId);
+    this.updateSelectedExpressions();
+  }
+
+  fetchAndLoadGroupAsRGBMix(groupId: string): void {
+    this._cachedDataSerivce.getExpressionGroup(ExpressionGroupGetReq.create({ id: groupId })).subscribe(group => {
+      if (group?.group) {
+        this.loadGroupAsRGBMix(group.group);
+      }
+    });
+  }
+
+  get selectedExpressionIdOrder(): string[] {
+    return this.isRGBMixModeActive ? this._selectedRGBMixExpressionIdOrder : this._selectedExpressionIdOrder;
+  }
+
+  set selectedExpressionIdOrder(order: string[]) {
+    if (this.isRGBMixModeActive) {
+      this._selectedRGBMixExpressionIdOrder = order;
+    } else {
+      this._selectedExpressionIdOrder = order;
+    }
+  }
+
+  get selectedExpressionIds(): Set<string> {
+    return this.isRGBMixModeActive ? this._selectedRGBMixExpressionIds : this._selectedExpressionIds;
+  }
+
+  set selectedExpressionIds(ids: Set<string>) {
+    if (this.isRGBMixModeActive) {
+      this._selectedRGBMixExpressionIds = ids;
+    } else {
+      this._selectedExpressionIds = ids;
+    }
+  }
+
+  get selectedExpressions(): (DataExpression | ExpressionGroup)[] {
+    return this.isRGBMixModeActive ? this._selectedRGBMixExpressions : this._selectedExpressions;
+  }
+
+  set selectedExpressions(expressions: (DataExpression | ExpressionGroup)[]) {
+    if (this.isRGBMixModeActive) {
+      this._selectedRGBMixExpressions = expressions;
+    } else {
+      this._selectedExpressions = expressions;
+    }
+  }
+
+  get activeRGBMixModeGroup(): string {
+    return this._activeRGBMixModeGroup;
+  }
+
+  set activeRGBMixModeGroup(group: string) {
+    this._activeRGBMixModeGroup = group;
+
+    this.updateSelectedExpressions();
+  }
+
+  get isRGBMixModeActive(): boolean {
+    return this.activeRGBMixModeGroup === "RGB Mix";
+  }
+
+  get showRGBMixMode(): boolean {
+    return this._showRGBMixMode;
+  }
+
+  set showRGBMixMode(show: boolean) {
+    this._showRGBMixMode = show;
+    if (!show) {
+      this.activeRGBMixModeGroup = "Expressions";
+    }
+
+    this.updateSelectedExpressions();
+  }
+
   onSingleSelectionToggle(): void {
     this.maxSelection = this.maxSelection === 1 ? 0 : 1;
     if (this.maxSelection === 1 && this.selectedExpressionIdOrder.length > 1) {
-      this.selectedExpressionIds = new Set([this.selectedExpressionIdOrder[0]]);
-      this.selectedExpressionIdOrder = [this.selectedExpressionIdOrder[0]];
-      this.updateSelectedExpressions();
+      if (this.showRGBMixMode && this.isRGBMixModeActive && this.selectedExpressionIdOrder.length >= 3) {
+        this.selectedExpressionIds = new Set(this.selectedExpressionIdOrder.slice(0, 3));
+        this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.slice(0, 3);
+        this.updateSelectedExpressions();
+      } else {
+        this.selectedExpressionIds = new Set([this.selectedExpressionIdOrder[0]]);
+        this.selectedExpressionIdOrder = [this.selectedExpressionIdOrder[0]];
+        this.updateSelectedExpressions();
+      }
     }
+  }
+
+  private _getWidgetData(widgetId: string): { data: any | null; spec: WidgetConfiguration | null; type: WidgetType | null } {
+    const widget = this.layoutWidgets.find(widget => widget.widget.id === widgetId);
+    if (!widget || !widget.type) {
+      return { spec: null, data: null, type: null };
+    }
+
+    let type = widget.type as WidgetType;
+    let spec = WIDGETS[type];
+    let data = (widget?.widget?.data?.[spec?.dataKey as keyof WidgetData] as any) || null;
+
+    return { spec, data, type };
+  }
+
+  private _expressionIdsFromWidgetData(widgetData: any): string[] {
+    const expressionIds: string[] = [];
+    if (widgetData?.expressionIDs) {
+      expressionIds.push(...widgetData.expressionIDs);
+    } else if (widgetData?.mapLayers && Array.isArray(widgetData.mapLayers)) {
+      widgetData.mapLayers.forEach((layer: any) => {
+        if (layer?.expressionID) {
+          expressionIds.push(layer.expressionID);
+        }
+      });
+    }
+
+    return expressionIds;
   }
 
   get activeWidgetId(): string {
@@ -308,18 +496,26 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._analysisLayoutService.highlightedWidgetId$.next(id);
     this.expressionTriggerPosition = -1;
 
-    const widget = this.layoutWidgets.find(widget => widget.widget.id === id);
-    if (widget) {
-      if (widget.type) {
-        this.widgetType = widget.type as WidgetType;
-        const widgetSpec = WIDGETS[widget.type as keyof typeof WIDGETS];
-        if (widgetSpec) {
-          this.selectedExpressionIds = new Set((widget.widget.data?.[widgetSpec.dataKey as keyof WidgetData] as any)?.expressionIDs || []);
-          this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
+    let { spec, data, type } = this._getWidgetData(id);
+    if (spec && data && type) {
+      this.widgetType = type;
+      let expressionIds = this._expressionIdsFromWidgetData(data);
 
-          this.maxSelection = (widgetSpec as WidgetConfiguration)?.maxExpressions || 0;
+      // Make sure we only store expression ids and not group ids here
+      let expressions = expressionIds.filter(id => !DataExpressionId.isExpressionGroupId(id));
+      this._selectedExpressionIds = new Set(expressions);
+      this._selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
+      this.maxSelection = spec.maxExpressions || 0;
+      this.showRGBMixMode = spec.showRGBMixExpressionPickerMode || false;
+
+      // Only load the group if we are in RGB Mix mode
+      if (this.showRGBMixMode) {
+        let groupId = (expressionIds || []).find(id => DataExpressionId.isExpressionGroupId(id));
+        if (groupId) {
+          this.fetchAndLoadGroupAsRGBMix(groupId);
         }
       }
+
       this.updateSelectedExpressions();
     }
   }
@@ -330,6 +526,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     anomalyExpressions.forEach(expression => {
       this._anomalyExpressions[expression.id] = expression;
     });
+  }
+
+  get activeQuantifiedElementDetector(): "A" | "B" | "A&B" | "" {
+    return this._activeQuantifiedElementDetector;
+  }
+
+  set activeQuantifiedElementDetector(detector: "A" | "B" | "A&B" | "") {
+    this._activeQuantifiedElementDetector = detector;
+    this.loadQuantifiedExpressions(this._analysisLayoutService.availableScanQuants$.value);
   }
 
   loadQuantifiedExpressions(availableScanQuants: Record<string, QuantificationSummary[]>): void {
@@ -343,12 +548,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       const currentQuant = quants.find(quant => quant.id === this.quantId);
       if (currentQuant) {
         currentQuant.elements.forEach(quantElement => {
-          let det = currentQuant?.params?.userParams?.quantMode || "";
-          if (det.length > 0 && det != "Combined") {
-            det = det.substring(0, 1);
+          let quantMode = currentQuant?.params?.userParams?.quantMode || "";
+          let defaultDetector = quantMode;
+          if (defaultDetector.length > 0 && defaultDetector != "Combined") {
+            defaultDetector = defaultDetector.substring(0, 1);
           }
 
-          const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", det);
+          if (!this.activeQuantifiedElementDetector) {
+            this.activeQuantifiedElementDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
+          }
+
+          let detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");
+
+          const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
           const expr = getPredefinedExpression(id);
           if (expr) {
             this._quantifiedExpressions[id] = expr;
@@ -386,6 +598,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           toSelect.push(this._quantifiedExpressions[id]);
         } else if (this._anomalyExpressions[id]) {
           toSelect.push(this._anomalyExpressions[id]);
+        } else if (DataExpressionId.isPredefinedExpression(id)) {
+          // Check if it's a predefined expression
+          const expr = getPredefinedExpression(id);
+          if (expr) {
+            toSelect.push(expr);
+          } else {
+            // If we dont have it, then we are waiting for it to load
+            toSelect.push(DataExpression.create({ id, name: `Loading (${id})...` }));
+            this._unmatchedExpressions = true;
+          }
         } else if (this.filteredExpressions) {
           // Check if we have it in filtered expressions
           const filteredItem = this.filteredExpressions.find(expression => expression.id === id);
@@ -411,7 +633,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             }
           } else {
             // If we dont have it in filtered expressions, then we are waiting for it to load
-            toSelect.push(DataExpression.create({ id: `loading-${id}`, name: `Loading (${id})...` }));
+            toSelect.push(DataExpression.create({ id, name: `Loading (${id})...` }));
             this._unmatchedExpressions = true;
           }
         }
@@ -424,36 +646,62 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onCloseExpressionGroupDialog() {
-    this.newExpressionGroupName = "";
-    this.newExpressionGroupDescription = "";
-    this.newExpressionGroupTags = [];
+  get selectedGroup(): ExpressionGroup {
+    return this.isRGBMixModeActive ? this._selectedRGBMixGroup : this._selectedExpressionGroup;
+  }
 
+  set selectedGroup(group: ExpressionGroup) {
+    if (this.isRGBMixModeActive) {
+      this._selectedRGBMixGroup = group;
+    } else {
+      this._selectedExpressionGroup = group;
+    }
+  }
+
+  onCloseExpressionGroupDialog() {
     if (this.saveExpressionGroupDialog && this.saveExpressionGroupDialog instanceof PushButtonComponent) {
       (this.saveExpressionGroupDialog as PushButtonComponent).closeDialog();
     }
   }
 
   onNewExpressionGroupTagSelectionChanged(tags: string[]) {
-    this.newExpressionGroupTags = tags;
+    this.selectedGroup.tags = tags;
   }
 
   onSaveNewExpressionGroup() {
     const expressionGroup = ExpressionGroup.create({
-      name: this.newExpressionGroupName,
-      description: this.newExpressionGroupDescription,
-      tags: this.newExpressionGroupTags,
+      name: this.selectedGroup.name,
+      description: this.selectedGroup.description,
+      tags: this.selectedGroup.tags,
     });
     expressionGroup.groupItems = this.selectedExpressionIdOrder.map(id => {
       return ExpressionGroupItem.create({ expressionId: id });
     });
 
-    if (this.overwriteExistingExpressionGroup && this.selectedExpressionGroupId) {
-      expressionGroup.id = this.selectedExpressionGroupId;
+    if (this.overwriteExistingExpressionGroup && this.selectedGroup.id) {
+      expressionGroup.id = this.selectedGroup.id;
     }
 
-    this._expressionService.writeExpressionGroup(expressionGroup);
-    this.onCloseExpressionGroupDialog();
+    this._expressionService.writeExpressionGroupAsync(expressionGroup).subscribe({
+      next: group => {
+        // this.loadGroupAsRGBMix(group);
+        this.selectedGroup.id = group.id;
+
+        this._analysisLayoutService.expressionPickerResponse$.next({
+          selectedGroup: group,
+          selectedExpressions: this._selectedExpressions as DataExpression[],
+          scanId: this.scanId,
+          quantId: this.quantId,
+          persistDialog: this.persistDialog,
+        });
+
+        this.onCloseExpressionGroupDialog();
+      },
+      error: err => {
+        this._snackBarService.openError("Error saving RGB Mix group", err);
+        this.onCloseExpressionGroupDialog();
+      },
+    });
   }
 
   trackById(index: number, item: DataExpression | ExpressionGroup): string {
@@ -461,7 +709,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   checkSelected(id: string): boolean {
-    return this.selectedExpressionIds.has(id);
+    if (this.showRGBMixMode && this.isRGBMixModeActive && this.activeBrowseGroup === "Expression Groups") {
+      return this.selectedGroup.id === id;
+    } else {
+      return this.selectedExpressionIds.has(id);
+    }
   }
 
   onSubSectionSelect(section: string, subSection: string) {
@@ -516,20 +768,20 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   get canSelectMore(): boolean {
-    return !this.maxSelection || this.selectedExpressionIds.size < this.maxSelection;
+    return !this.maxSelection || !this.data.enforceMaxSelectionWhileEditing || this.selectedExpressionIds.size < this.maxSelection;
   }
 
   get selectedExpressionGroupId(): string {
-    return this._selectedExpressionGroupId;
+    return this.selectedGroup.id;
   }
 
   set selectedExpressionGroupId(id: string) {
-    this._selectedExpressionGroupId = id;
-
     const expressionGroup = this.editableExpressionGroups.find(group => group.id === id);
-    this.newExpressionGroupName = expressionGroup?.name || "";
-    this.newExpressionGroupDescription = expressionGroup?.description || "";
-    this.newExpressionGroupTags = expressionGroup?.tags || [];
+    if (expressionGroup) {
+      this.selectedGroup = expressionGroup;
+    } else {
+      this.selectedGroup = ExpressionGroup.create();
+    }
   }
 
   loadRecentExpressionsFromCache(): void {
@@ -616,25 +868,50 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
       this.updateRecentExpression(expressionGroup);
 
+      if (this.maxSelection === 1 && this.showRGBMixMode && !this.isRGBMixModeActive) {
+        this.onClear();
+        this.updateSelectedExpressions();
+        this.activeRGBMixModeGroup = "RGB Mix";
+      }
+
+      if (this.isRGBMixModeActive) {
+        this.loadGroupAsRGBMix(expressionGroup);
+      }
+
       if (!this.data.preserveGroupSelection) {
         const groupItemIds = (expressionGroup?.groupItems || []).map(groupItem => groupItem.expressionId);
 
         this.selectedExpressionIds = new Set(groupItemIds);
         this.selectedExpressionIdOrder = groupItemIds;
 
-        groupItemIds.forEach(expressionId => {
-          this._expressionService.fetchExpression(expressionId);
+        let expressionRequests = groupItemIds.map(id =>
+          id && !DataExpressionId.isPredefinedExpression(id) ? this._expressionService.fetchCachedExpression(id) : of(null)
+        );
+        combineLatest(expressionRequests).subscribe(() => {
+          if (this.maxSelection === 1 && this.showRGBMixMode) {
+            this.selectedExpressionIdOrder = groupItemIds.slice(0, 3);
+            this.selectedExpressionIds = new Set(this.selectedExpressionIdOrder);
+            this.updateSelectedExpressions();
+
+            if (this.persistDialog) {
+              this.onConfirm();
+            }
+          } else {
+            this.loadGroupAsRGBMix(expressionGroup);
+            // Clear the last written expression because we're now working with a new group
+            this._expressionService.lastWrittenExpressionGroupId$.next("");
+            this.updateSelectedExpressions();
+          }
         });
-
-        this.overwriteExistingExpressionGroup = true;
-        this.selectedExpressionGroupId = expressionGroup.id;
-
-        // Clear the last written expression because we're now working with a new group
-        this._expressionService.lastWrittenExpressionGroupId$.next("");
       } else {
         this.toggleExpression(expressionGroup);
       }
     } else {
+      if (this.maxSelection === 1 && this.isRGBMixModeActive) {
+        this.activeRGBMixModeGroup = "Expressions";
+        this.onClearRGBMix();
+      }
+
       this.toggleExpression(expression as DataExpression);
     }
 
@@ -762,25 +1039,99 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.onConfirm();
   }
 
-  onConfirm(): void {
-    const selectedExpressions: (DataExpression | ExpressionGroup)[] = Array.from(this.selectedExpressionIdOrder)
-      .map(id => this.selectedExpressions.find(expression => expression?.id === id))
-      .filter(expression => expression) as (DataExpression | ExpressionGroup)[];
+  onConfirm(saveExpressionGroup: boolean = false): void {
+    const selectedExpressions: DataExpression[] = Array.from(this._selectedExpressionIdOrder)
+      .map(id => this._selectedExpressions.find(expression => expression?.id === id))
+      .filter(expression => expression) as DataExpression[];
 
-    this._analysisLayoutService.expressionPickerResponse$.next({
-      selectedExpressions,
-      scanId: this.scanId,
-      quantId: this.quantId,
-      persistDialog: this.persistDialog,
-    });
+    const rgbMixExpressions: DataExpression[] = this._selectedRGBMixExpressionIdOrder
+      .map(id => this._selectedRGBMixExpressions.find(expression => expression?.id === id))
+      .filter(group => group) as DataExpression[];
 
-    if (!this.persistDialog) {
-      this.dialogRef.close();
+    let selectedGroup = ExpressionGroup.create(this.selectedGroup);
+    if (rgbMixExpressions.length >= 3) {
+      selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
+
+      let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
+      if (activeWidgetRef) {
+        // A group wasn't specifically selected and info wasn't entered to create a new one, so save as auto-generated
+        if (!selectedGroup.id && !selectedGroup.name) {
+          let scanName = this.scanId;
+          let quantName = this.quantId;
+
+          let loadedScan = this._analysisLayoutService.getLoadedScan(this.scanId);
+          if (loadedScan) {
+            scanName = loadedScan.title;
+
+            let loadedQuant = this._analysisLayoutService.getLoadedQuant(this.scanId, this.quantId);
+            if (loadedQuant) {
+              quantName = loadedQuant.params?.userParams?.name || this.quantId;
+            }
+          }
+
+          let autoGroupName = `${scanName} ${activeWidgetRef.name} - RGB Mix (${quantName})`;
+          let existingId = this.editableExpressionGroups.find(group => group.name === autoGroupName)?.id;
+          if (existingId) {
+            selectedGroup.id = existingId;
+          }
+
+          selectedGroup.name = autoGroupName;
+          selectedGroup.description = `Auto-generated RGB Mix group for ${scanName} on the ${activeWidgetRef.name} plot with quant: ${quantName}\n\nIf you would like to save this group for future use, rename it to prevent it from being overwritten`;
+        }
+
+        // Invalidate the cached data for this group since we're updating it
+        this._cachedDataSerivce.invalidExpressionGroupIds.add(selectedGroup.id);
+
+        selectedGroup.owner = undefined;
+        this._expressionService.writeExpressionGroupAsync(selectedGroup, true).subscribe({
+          next: group => {
+            this.selectedGroup.id = group.id;
+            this.selectedGroup.name = group.name;
+            this.selectedGroup.description = group.description;
+
+            this._analysisLayoutService.expressionPickerResponse$.next({
+              selectedGroup: group,
+              selectedExpressions,
+              scanId: this.scanId,
+              quantId: this.quantId,
+              persistDialog: this.persistDialog,
+            });
+          },
+          error: err => {
+            this._snackBarService.openError("Error saving RGB Mix group", err);
+          },
+        });
+
+        if (!this.persistDialog) {
+          this.dialogRef.close();
+        }
+      }
+    } else {
+      this._analysisLayoutService.expressionPickerResponse$.next({
+        selectedExpressions,
+        scanId: this.scanId,
+        quantId: this.quantId,
+        persistDialog: this.persistDialog,
+      });
+
+      if (!this.persistDialog) {
+        this.dialogRef.close();
+      }
     }
   }
 
   onClear(): void {
-    this.selectedExpressionIds.clear();
-    this.selectedExpressionIdOrder = [];
+    this._selectedExpressionGroup = ExpressionGroup.create();
+    this._selectedRGBMixGroup = ExpressionGroup.create();
+
+    this._selectedExpressions = [];
+    this._selectedExpressionIds.clear();
+    this._selectedExpressionIdOrder = [];
+
+    this._selectedRGBMixExpressions = [];
+    this._selectedRGBMixExpressionIds.clear();
+    this._selectedRGBMixExpressionIdOrder = [];
+
+    this.overwriteExistingExpressionGroup = false;
   }
 }

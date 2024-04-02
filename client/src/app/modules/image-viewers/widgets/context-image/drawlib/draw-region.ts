@@ -45,6 +45,11 @@ export function drawRegion(
 }
 
 function drawPolygon(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, polygon: RegionDisplayPolygon): void {
+  // Don't draw polygons with less than 3 points
+  if (polygon.boundaryPoints.length < 3) {
+    return;
+  }
+
   ctx.beginPath();
 
   // Draw the polygon

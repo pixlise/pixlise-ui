@@ -219,8 +219,8 @@ export class MapColourScaleDrawer {
         screenContext.fill();
         screenContext.fillStyle = labelStyle;
 
-        // TODO: Hover value is not necessarily % at this point is it???
-        drawTextWithBackground(screenContext, `${mdl.hoverValue!.toFixed(2)}%`, xOffset + 12, y + lblYOffset - pos.fontSize / 2, pos.fontSize, padding);
+        let hoverText = mdl?.hoverValue ? this.getScaleValueStr(mdl.hoverValue, scaleRange) : "N/A";
+        drawTextWithBackground(screenContext, hoverText, xOffset + 12, y + lblYOffset - pos.fontSize / 2, pos.fontSize, padding);
       }
 
       // Draw histogram bar if there is one

@@ -19,13 +19,13 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
   // user-chosen "active" detector for the given quant
   let detectorId = DefaultDetectorId;
 
-  // We don't want to add -Combined or -Default to the expression name, only add if it's something else
-  const detectorSuffix = ["Combined", DefaultDetectorId].indexOf(detectorId) == -1 ? "-" + detectorId : "";
-
   const exprDetector = DataExpressionId.getPredefinedQuantExpressionDetector(id);
   if (exprDetector.length > 0) {
     detectorId = exprDetector;
   }
+
+  // We don't want to add -Combined or -Default to the expression name, only add if it's something else
+  const detectorSuffix = ["Combined", DefaultDetectorId].includes(detectorId) ? "" : `-${detectorId}`;
 
   const elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
   if (elem.length > 0) {

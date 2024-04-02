@@ -34,6 +34,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   onlyShowEditable: boolean = false;
 
   @Input() recentExpressions: RecentExpression[] = [];
+  private _selectedDetector: "A" | "B" | "A&B" | "" = "";
 
   @Output() onFilterChanged = new EventEmitter<ExpressionSearchFilter>();
 
@@ -170,13 +171,31 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 
   private refreshPseudointensities(scanId: string) {
     this._cachedDataSerivce.getPseudoIntensity(PseudoIntensityReq.create({ scanId })).subscribe((resp: PseudoIntensityResp) => {
-      this._pseudoIntensities = [];
+      let newPseudoIntensities = [];
       for (const label of resp.intensityLabels) {
         const id = DataExpressionId.makePredefinedPseudoIntensityExpression(label);
         const expr = getPredefinedExpression(id);
         if (expr) {
-          this._pseudoIntensities.push(expr);
+          newPseudoIntensities.push(expr);
         }
+      }
+
+      // Check if there was a change
+      let intensitiesChanged = newPseudoIntensities.length !== this._pseudoIntensities.length;
+      if (newPseudoIntensities.length === this._pseudoIntensities.length) {
+        for (let i = 0; i < newPseudoIntensities.length; i++) {
+          if (newPseudoIntensities[i].id !== this._pseudoIntensities[i].id) {
+            intensitiesChanged = true;
+            break;
+          }
+        }
+      }
+
+      if (intensitiesChanged) {
+        this._pseudoIntensities = newPseudoIntensities;
+
+        this.filterExpressionsForDisplay();
+        this.emitFilters();
       }
     });
   }
@@ -212,28 +231,49 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   set selectedQuantId(quantId: string) {
     this._selectedQuantId = quantId;
 
-    // Build the list of expressions for the quantified elements
-    this._quantifiedExpressions = [];
-    for (const quant of this.filteredQuants) {
-      if (quant.id === this._selectedQuantId) {
-        for (const elem of quant.elements) {
-          let det = quant.params?.userParams?.quantMode || "";
-          if (det.length > 0 && det != "Combined") {
-            det = det.substring(0, 1);
-          }
-
-          const id = DataExpressionId.makePredefinedQuantElementExpression(elem, "%", det);
-          const expr = getPredefinedExpression(id);
-          if (expr) {
-            this._quantifiedExpressions.push(expr);
-          }
-        }
-
-        this.filterExpressionsForDisplay();
-        break;
-      }
-    }
+    this.loadQuantifiedExpressions();
     this.emitFilters();
+  }
+
+  get selectedDetector(): "A" | "B" | "A&B" | "" {
+    return this._selectedDetector;
+  }
+
+  @Input() set selectedDetector(detector: "A" | "B" | "A&B" | "") {
+    this._selectedDetector = detector;
+    this.loadQuantifiedExpressions();
+    this.emitFilters();
+  }
+
+  loadQuantifiedExpressions(): void {
+    this._quantifiedExpressions = [];
+
+    let currentQuant = this.filteredQuants.find(quant => quant.id === this._selectedQuantId);
+    if (!currentQuant) {
+      return;
+    }
+
+    currentQuant.elements.forEach(quantElement => {
+      let quantMode = currentQuant?.params?.userParams?.quantMode || "";
+      let defaultDetector = quantMode;
+      if (defaultDetector.length > 0 && defaultDetector != "Combined") {
+        defaultDetector = defaultDetector.substring(0, 1);
+      }
+
+      if (!this.selectedDetector) {
+        this.selectedDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
+      }
+
+      let detector = this.selectedDetector.replace("A&B", "Combined");
+
+      const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
+      const expr = getPredefinedExpression(id);
+      if (expr) {
+        this._quantifiedExpressions.push(expr);
+      }
+    });
+
+    this.filterExpressionsForDisplay();
   }
 
   // This allows the parent component to set the quant ID without emitting a filter change

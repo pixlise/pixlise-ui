@@ -60,8 +60,16 @@
     opacity: 0.5;
   }
 
-  mat-icon,
-  .custom-icon {
+  mat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 4px;
+    border-radius: 50%;
+  }
+
+  &.custom {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -73,7 +81,7 @@
 
 .action-btn:not(.disabled) {
   mat-icon,
-  .custom-icon {
+  &.custom {
     &:hover {
       background-color: rgba(255, 255, 255, 0.05);
     }

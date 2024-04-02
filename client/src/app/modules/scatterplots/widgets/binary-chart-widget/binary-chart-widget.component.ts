@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { Subscription } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
 import {
@@ -28,6 +28,8 @@ import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { WidgetKeyDisplayComponent, WidgetKeyDisplayData } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
+import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -57,6 +59,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   mdl = new BinaryChartModel(new BinaryDrawModel());
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
+  exporter: BinaryChartExporter;
 
   scanId: string = "";
   quantId: string = "";
@@ -75,6 +78,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this.drawer = new BinaryChartDrawer(this.mdl);
     this.toolhost = new BinaryChartToolHost(this.mdl, this._selectionService);
+    this.exporter = new BinaryChartExporter(this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -96,8 +100,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           id: "export",
           type: "button",
           icon: "assets/button-icons/export.svg",
-          tooltip: "Export",
-          onClick: () => this.onExport(),
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
         },
         {
           id: "solo",
@@ -324,7 +328,13 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     return this.toolhost;
   }
 
-  onExport() {}
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this.mdl);
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return this.exporter.onExport(this.mdl, request);
+  }
 
   onSoloView() {
     if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {

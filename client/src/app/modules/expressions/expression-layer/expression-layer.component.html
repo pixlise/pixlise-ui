@@ -39,7 +39,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <img src="assets/button-icons/layout-split-bottom-view.svg" />
       <span class="option-label" [ngStyle]="{ 'margin-left': 0 }">Open in Split Screen</span>
     </div>
-    <!-- onSplitScreenCodeEditor -->
     <div class="option" (click)="onTriggerTagPicker()">
       <tag-picker
         [type]="isExpressionGroup ? 'expression-mix' : 'expression'"
@@ -56,7 +55,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <share-ownership-item-button
         [id]="expression?.id || ''"
         [triggerOpen]="isShareDialogOpen"
-        (onEmitOpenState)="onToggleShareDialog($event)"
         [type]="objectType"
         [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
       <span class="option-label">Share</span>
@@ -79,7 +77,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <img *ngIf="creatorIcon" [src]="creatorIcon" />
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
-    <div class="info" (click)="onCheckboxClick($event)">
+    <div class="info" (click)="onCheckboxClick()">
       <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip" [matTooltipShowDelay]="200">
         {{ name }}
         <span
@@ -96,7 +94,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="description">{{ description }}</span>
       </span>
     </div>
-    <div class="spacer-gap" (click)="onCheckboxClick($event)"></div>
+    <div class="spacer-gap" (click)="onCheckboxClick()"></div>
     <div class="buttons">
       <!-- <icon-button
         #tooltip="matTooltip"
@@ -133,6 +131,14 @@ POSSIBILITY OF SUCH DAMAGE.
         [editable]="expression?.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
+      <share-ownership-item-button
+        *ngIf="canEdit && isSharedWithOthers"
+        [id]="expression?.id || ''"
+        [triggerOpen]="isShareDialogOpen"
+        (onEmitOpenState)="onToggleShareDialog($event)"
+        [type]="objectType"
+        [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
+      <expression-color-scale-picker *ngIf="!isExpressionGroup && showColourPicker" [id]="expression?.id || ''"></expression-color-scale-picker>
       <!-- <two-state-icon-button
         *ngIf="showVisibilityButton"
         toolTip="Toggle visibility on Context Image"
@@ -144,19 +150,23 @@ POSSIBILITY OF SUCH DAMAGE.
     <widget-settings-menu [settingsDialog]="moreOptionsMenu" #moreOptionsButton>
       <action-button class="more-btn" action="ellipsis" color="#f8f8f8"></action-button>
     </widget-settings-menu>
-    <action-button *ngIf="isExpressionGroup" tooltipTitle="Select all expressions in group" action="add" (onClick)="onAddExpressionGroup()"></action-button>
+    <action-button
+      *ngIf="isExpressionGroup && !isSingleSelect && !monoSelectIcon"
+      tooltipTitle="Select all expressions in group"
+      action="add"
+      (onClick)="onCheckboxClick()"></action-button>
     <two-state-icon-button
-      *ngIf="isSelectable && !isWidgetExpression"
+      *ngIf="monoSelectIcon || (isSelectable && !isWidgetExpression) || (isExpressionGroup && isSingleSelect)"
       #tooltip="matTooltip"
       [matTooltip]="selectionDisabledMessage || 'Toggle Expression'"
-      [matTooltipShowDelay]="200"
-      [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
-      [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
+      [matTooltipShowDelay]="1000"
+      [activeIcon]="isSingleSelect || monoSelectIcon ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
+      [inactiveIcon]="isSingleSelect || monoSelectIcon ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"
       [active]="isLayerSelected"
-      (onToggle)="onCheckboxClick($event)">
+      (onToggle)="onCheckboxClick()">
     </two-state-icon-button>
-    <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick($event)" color="#f8f8f8"></action-button>
+    <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick()" color="#f8f8f8"></action-button>
   </div>
   <div *ngIf="isWidgetExpression && isSelectable && widgetOptions.length > 0" class="widget-selection-row">
     <!-- <div class="active-config" *ngIf="showActiveExpressionConfiguration">

@@ -53,6 +53,33 @@ export class APIEndpointsService {
     );
   }
 
+  loadImagePreviewForPath(imagePath: string, maxAge: number = 1000 * 60 * 60 * 24 * 2): Observable<string> {
+    if (!imagePath) {
+      throw new Error("No image path provided");
+    }
+
+    // loadImageForPath -> convert to data URL -> return
+    return this.loadImageForPath(imagePath, maxAge).pipe(
+      switchMap(img => {
+        return new Observable<string>(observer => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            observer.next(canvas.toDataURL());
+          }
+        });
+      }),
+      catchError(err => {
+        console.error(err);
+        return throwError(() => new Error(err));
+      }),
+      shareReplay(1)
+    );
+  }
+
   private loadImageFromURL(url: string, maxCacheSize: number = 10000000): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {

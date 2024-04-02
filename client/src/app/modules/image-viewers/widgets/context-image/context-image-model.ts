@@ -251,7 +251,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // If already added, remove it
     let found = false;
     for (let c = 0; c < scanMdl.maps.length; c++) {
-      if (scanMdl.maps[c].expressionId == layer.expressionId) {
+      if (scanMdl.maps[c].expressionId === layer.expressionId) {
         scanMdl.maps[c] = layer;
         found = true;
       }
@@ -262,7 +262,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     }
 
     // If we're the "top" expression (first one in the list), we have to update the colour scale
-    if (this.expressionIds[0] == layer.expressionId) {
+    if (this.expressionIds[0] === layer.expressionId) {
       this._colourScales = [];
       for (let c = 0; c < layer.valueRanges.length; c++) {
         this.rebuildColourScale(this.expressionIds[0], c, layer.valueRanges.length);
