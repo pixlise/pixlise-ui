@@ -25,7 +25,6 @@ import { WidgetType } from "../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserInfo } from "src/app/generated-protos/user";
-import { ColourRamp } from "src/app/utils/colours";
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",
@@ -60,6 +59,10 @@ export class ExpressionLayerComponent implements OnInit {
   @Input() isTriggerPosition: boolean = false;
 
   @Input() showActiveExpressionConfiguration: boolean = false;
+
+  @Input() showColourPicker: boolean = false;
+
+  @Input() monoSelectIcon: boolean = false;
 
   private _showRGBMixMode: boolean = false;
 

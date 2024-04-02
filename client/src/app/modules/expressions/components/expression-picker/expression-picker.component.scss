@@ -133,17 +133,12 @@
           background-color: transparent !important;
         }
 
-        multi-switch-button {
-          margin-left: auto;
-          flex: 1;
-          margin-right: 6px;
-
-          border: 1px solid #444c50;
-          border-radius: 4px;
-        }
-
         push-button {
           margin-left: auto;
+          margin-right: 6px;
+        }
+
+        .clear-group {
           margin-right: 6px;
         }
       }
@@ -287,19 +282,32 @@
 
   .layer-container {
     height: 482px;
-  }
 
-  .rgbmix-mode {
-    .layer-container {
-      height: 398px;
+    &.rgbmix-mode {
+      height: 438px;
     }
   }
+
+  // .rgbmix-mode {
+  //   .layer-container {
+  //     height: 398px;
+  //   }
+  // }
 
   .rgbmix-row {
     display: flex;
     flex-direction: column;
     padding: 8px;
     gap: 8px;
+
+    .rgbmix-toggle {
+      // margin-left: auto;
+      flex: 1;
+      // margin-right: 6px;
+
+      border: 1px solid #444c50;
+      border-radius: 4px;
+    }
 
     tag-picker {
       display: flex;

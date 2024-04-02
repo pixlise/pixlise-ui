@@ -47,7 +47,7 @@ export type ColourRampSelection = {
   styleUrls: ["./expression-color-scale-picker.component.scss"],
 })
 export class ExpressionColorScalePickerComponent {
-  @Input() id: string = "";
+  private _id: string = "";
 
   private _subs = new Subscription();
 
@@ -57,8 +57,6 @@ export class ExpressionColorScalePickerComponent {
     ColourRamp.SHADE_MONO_RED,
     ColourRamp.SHADE_MONO_GREEN,
     ColourRamp.SHADE_MONO_PURPLE,
-    ColourRamp.SHADE_MONO_FULL_RED,
-    ColourRamp.SHADE_MONO_FULL_GREEN,
     ColourRamp.SHADE_MONO_FULL_BLUE,
   ];
 
@@ -81,6 +79,21 @@ export class ExpressionColorScalePickerComponent {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  get id(): string {
+    return this._id;
+  }
+
+  @Input() set id(id: string) {
+    this._id = id;
+    this._subs.add(
+      this.expressionsSerivce.getUserExpressionDisplaySettings(id).subscribe(settings => {
+        if (settings) {
+          this.selectedColorScale = this._getColorRampSelection(settings.colourRamp as ColourRamp);
+        }
+      })
+    );
   }
 
   private _getColorRampSelection(colorScale: ColourRamp): ColourRampSelection {

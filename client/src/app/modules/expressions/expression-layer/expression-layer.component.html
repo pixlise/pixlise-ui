@@ -138,7 +138,7 @@ POSSIBILITY OF SUCH DAMAGE.
         (onEmitOpenState)="onToggleShareDialog($event)"
         [type]="objectType"
         [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
-      <expression-color-scale-picker *ngIf="!isExpressionGroup" [id]="expression?.id || ''"></expression-color-scale-picker>
+      <expression-color-scale-picker *ngIf="!isExpressionGroup && showColourPicker" [id]="expression?.id || ''"></expression-color-scale-picker>
       <!-- <two-state-icon-button
         *ngIf="showVisibilityButton"
         toolTip="Toggle visibility on Context Image"
@@ -151,17 +151,17 @@ POSSIBILITY OF SUCH DAMAGE.
       <action-button class="more-btn" action="ellipsis" color="#f8f8f8"></action-button>
     </widget-settings-menu>
     <action-button
-      *ngIf="isExpressionGroup && !isSingleSelect"
+      *ngIf="isExpressionGroup && !isSingleSelect && !monoSelectIcon"
       tooltipTitle="Select all expressions in group"
       action="add"
       (onClick)="onCheckboxClick()"></action-button>
     <two-state-icon-button
-      *ngIf="(isSelectable && !isWidgetExpression) || (isExpressionGroup && isSingleSelect)"
+      *ngIf="monoSelectIcon || (isSelectable && !isWidgetExpression) || (isExpressionGroup && isSingleSelect)"
       #tooltip="matTooltip"
       [matTooltip]="selectionDisabledMessage || 'Toggle Expression'"
-      [matTooltipShowDelay]="200"
-      [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
-      [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
+      [matTooltipShowDelay]="1000"
+      [activeIcon]="isSingleSelect || monoSelectIcon ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
+      [inactiveIcon]="isSingleSelect || monoSelectIcon ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"
       [active]="isLayerSelected"
       (onToggle)="onCheckboxClick()">

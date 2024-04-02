@@ -28,14 +28,14 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-
 <ng-template #saveExpressionGroupDialog>
   <div class="new-expression-group">
     <div class="header">
       <h1>Save Expression Group</h1>
       <tag-picker
         type="expression-mix"
-        [selectedTagIDs]="newExpressionGroupTags"
+        [additionalVisibleTagType]="['rgbmix']"
+        [selectedTagIDs]="selectedGroup.tags"
         [showCurrentTagsSection]="true"
         (onTagSelectionChanged)="onNewExpressionGroupTagSelectionChanged($event)">
       </tag-picker>
@@ -43,15 +43,15 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="fields">
       <mat-checkbox [(ngModel)]="overwriteExistingExpressionGroup" label>Overwrite existing expression group?</mat-checkbox>
 
-      <mat-select *ngIf="overwriteExistingExpressionGroup" [(ngModel)]="selectedExpressionGroupId" placeholder="Editable Groups ...">
+      <mat-select *ngIf="overwriteExistingExpressionGroup" [(ngModel)]="selectedGroup.id" placeholder="Editable Groups ...">
         <mat-option *ngFor="let group of editableExpressionGroups" [value]="group.id">{{ group.name }}</mat-option>
       </mat-select>
 
       <span class="input-label">Expression Group Name</span>
-      <input type="text" [(ngModel)]="newExpressionGroupName" placeholder="New Group Name ..." />
+      <input type="text" [(ngModel)]="selectedGroup.name" placeholder="New Group Name ..." />
 
       <span class="input-label">Group Description</span>
-      <textarea type="text" rows="3" [(ngModel)]="newExpressionGroupDescription" placeholder="Group Description ..."></textarea>
+      <textarea type="text" rows="7" [(ngModel)]="selectedGroup.description" placeholder="Group Description ..."></textarea>
     </div>
     <div class="gap-separated-horizontal-elements button-container">
       <push-button buttonStyle="outline" (onClick)="onCloseExpressionGroupDialog()">Cancel</push-button>
@@ -130,6 +130,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [isSingleSelect]="maxSelection === 1"
             [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
+            [monoSelectIcon]="showRGBMixMode && isRGBMixModeActive && activeBrowseGroup === 'Expression Groups'"
             [selected]="checkSelected(item.id)"
             [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
             (onSelect)="onSelect(item)"
@@ -142,23 +143,40 @@ POSSIBILITY OF SUCH DAMAGE.
         <mat-select [(ngModel)]="activeWidgetId" placeholder="Active Group">
           <mat-option *ngFor="let option of layoutWidgets; let i = index" [value]="option.widget.id">{{ option.name }}</mat-option>
         </mat-select>
-        <multi-switch-button
+        <!-- <multi-switch-button
           *ngIf="showRGBMixMode"
           [options]="rgbMixModeGroupOptions"
           [value]="activeRGBMixModeGroup"
-          (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button>
+          (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button> -->
         <push-button
-          *ngIf="!showRGBMixMode"
           buttonStyle="gray"
           #saveExpressionGroupDialogBtn
           [customDialog]="saveExpressionGroupDialog"
+          [disabled]="selectedExpressionIds.size === 0"
           #tooltip="matTooltip"
-          matTooltip="Edit Group ({{ newExpressionGroupName }})"
-          [matTooltipDisabled]="newExpressionGroupName.length === 0"
-          >Save As Group</push-button
+          matTooltip="Edit Group ({{ selectedGroup?.name }})"
+          [matTooltipDisabled]="selectedGroup.id.length === 0"
+          >{{ selectedGroup.id.length > 0 ? "Edit" : "Save As" }} Group</push-button
         >
+        <action-button
+          *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup"
+          class="clear-group"
+          #tooltip="matTooltip"
+          matTooltip="Remove the loaded RGB Mix"
+          [matTooltipDisabled]="!selectedGroup.id"
+          [disabled]="!selectedGroup.id"
+          action="close"
+          color="rgb(var(--clr-gray-30))"
+          (onClick)="onClearRGBMix()"></action-button>
       </div>
-      <div *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup" class="rgbmix-row">
+      <div class="rgbmix-row" *ngIf="showRGBMixMode">
+        <multi-switch-button
+          class="rgbmix-toggle"
+          [options]="rgbMixModeGroupOptions"
+          [value]="activeRGBMixModeGroup"
+          (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button>
+      </div>
+      <!-- <div *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup" class="rgbmix-row">
         <div class="title-row">
           <action-button
             #tooltip="matTooltip"
@@ -184,8 +202,8 @@ POSSIBILITY OF SUCH DAMAGE.
             [type]="expressionGroupType"
             [ownershipSummary]="selectedGroup.owner || null"></share-ownership-item-button>
         </div>
-      </div>
-      <section class="layer-container">
+      </div> -->
+      <section class="layer-container {{ showRGBMixMode ? 'rgbmix-mode' : 'expression-mode' }}">
         <cdk-virtual-scroll-viewport [itemSize]="activeLayerHeight" class="expressions-viewport">
           <expression-layer
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
@@ -196,6 +214,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [isWidgetExpression]="true"
             [widgetType]="widgetType || ''"
             [showRGBMixMode]="isRGBMixModeActive"
+            [showColourPicker]="!isRGBMixModeActive"
             [selectIfValidPosition]="true"
             [isTriggerPosition]="expressionTriggerPosition > -1 && expressionTriggerPosition === selectedExpressionIdOrder.indexOf(item.id)"
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
