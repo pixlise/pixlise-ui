@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, HostListener, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { forkJoin, mergeMap, Subscription, map, switchMap } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -256,6 +256,8 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
         }
       })
     );
+
+    this._analysisLayoutService.delayNotifyCanvasResize(500);
   }
 
   trackByPeakId(index: number, item: DiffractionPeak): string {
@@ -458,7 +460,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     if (this.isMapShown) {
       let exprData = this.formExpressionForSelection();
       if (exprData.error) {
-        console.error("Error forming expression for selection: " + exprData.error);
+        console.error("Error forming expression for selection: ", exprData.error);
         this.canSaveExpression = false;
       } else {
         this.canSaveExpression = true;
@@ -483,7 +485,8 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   onSaveAsExpressionMap() {
     let exprData = this.formExpressionForSelection(true);
     if (exprData.error) {
-      console.error("Error forming expression for selection: " + exprData.error);
+      console.error("Error forming expression for selection: ", exprData.error);
+
       this.canSaveExpression = false;
     } else {
       this.canSaveExpression = true;

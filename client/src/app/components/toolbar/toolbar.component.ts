@@ -135,6 +135,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   uiVersion: string = "";
 
   hasQuantConfiguredScan: boolean = false;
+  screenConfigLoaded: boolean = false;
 
   constructor(
     private router: Router,
@@ -180,6 +181,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
                 break;
               }
             }
+
+            this.screenConfigLoaded = true;
           }
 
           this.hasQuantConfiguredScan = hasQuantConfiguredScan;
@@ -384,7 +387,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this._isAnalysisTab = isAnalysisTab;
     if (!this._isAnalysisTab && this._analysisLayoutService.sidepanelOpen) {
       this._analysisLayoutService.sidepanelOpen$.next(false);
-    } else if (this._isAnalysisTab && !this._analysisLayoutService.sidepanelOpen) {
+    } else if (this._isAnalysisTab && !this._analysisLayoutService.sidepanelOpen && this.screenConfigLoaded) {
       setTimeout(() => this.openScanConfigurationTabForInvalidQuants(), 0);
     }
   }
