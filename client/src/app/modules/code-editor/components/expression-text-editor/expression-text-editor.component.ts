@@ -50,16 +50,22 @@ export class DataExpressionModule {
 
   printableVersion: string = "";
 
-  constructor(
-    public module: DataModule,
-    public reference: ModuleReference // public version: SemanticVersion = SemanticVersion.create(),
-  ) // public allVersions: string[] = []
-  {
+  private _module: DataModule;
+  private _reference: ModuleReference;
+
+  constructor(module: DataModule, reference: ModuleReference) {
+    this._module = module;
+    this._reference = reference;
+
+    this.updateVersions();
+  }
+
+  updateVersions() {
     let versions: SemanticVersion[] = [];
-    module.versions.forEach(version => {
+    this.module.versions.forEach(version => {
       if (version.version) {
         // Only show major/minor versions to users who don't own the module
-        if (version.version?.patch !== 0 && !module.creator?.canEdit) {
+        if (version.version?.patch !== 0 && !this.module.creator?.canEdit) {
           return;
         }
 
@@ -74,6 +80,26 @@ export class DataExpressionModule {
     if (this.reference.version) {
       this.printableVersion = `${this.reference.version.major}.${this.reference.version.minor}.${this.reference.version.patch}`;
     }
+  }
+
+  get module(): DataModule {
+    return this._module;
+  }
+
+  set module(module: DataModule) {
+    this._module = module;
+
+    this.updateVersions();
+  }
+
+  get reference(): ModuleReference {
+    return this._reference;
+  }
+
+  set reference(reference: ModuleReference) {
+    this._reference = reference;
+
+    this.updateVersions();
   }
 }
 
