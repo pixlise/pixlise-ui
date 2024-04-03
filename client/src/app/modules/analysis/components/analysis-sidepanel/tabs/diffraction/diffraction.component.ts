@@ -29,11 +29,10 @@
 
 import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { forkJoin, mergeMap, Subscription, map, from, switchMap, catchError } from "rxjs";
-import { PMCDataValues } from "src/app/expression-language/data-values";
+import { forkJoin, mergeMap, Subscription, map, switchMap } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import { DetectedDiffractionPeakStatuses, DetectedDiffractionPerLocation, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
+import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
@@ -54,7 +53,7 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { ExpressionDataSource } from "src/app/modules/pixlisecore/models/expression-data-source";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-import { SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -128,6 +127,8 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   userPeaksListOpen: boolean = false;
   userPeakEditing: boolean = false;
 
+  loading: boolean = false;
+
   visiblePeakId: string = "";
   private _barSelected: boolean[] = [];
   private _barSelectedCount: number = 0;
@@ -169,6 +170,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     private _userOptionsService: UserOptionsService,
     private _widgetDataService: WidgetDataService,
     private _expressionsService: ExpressionsService,
+    private _snackbarService: SnackbarService,
     public dialog: MatDialog
   ) {
     this._histogramMdl = new DiffractionHistogramModel(this);
@@ -250,6 +252,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
         if (this.selectedScanId) {
           this.peakStatuses = peakStatusesPerScan.get(this.selectedScanId) || DetectedDiffractionPeakStatuses.create();
           this.updateDisplayList();
+          this.updateRange();
         }
       })
     );
@@ -266,6 +269,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   onSwitchList(list: string) {
     this.activeList = list;
     this.updateDisplayList();
+    this.updateRange();
   }
 
   updateRange() {
@@ -364,6 +368,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   }
 
   private fetchDiffractionData(scanId: string) {
+    this.loading = true;
     const fetchManualPeaks$ = this._diffractionService.fetchManualPeaksForScanAsync(scanId);
     const fetchPeakStatuses$ = this._diffractionService.fetchPeakStatusesForScanAsync(scanId);
     const getCurrentCalibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
@@ -390,9 +395,18 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
             );
         })
       )
-      .subscribe(dataSource => {
-        this.peaks = dataSource.allPeaks;
-        this.updateDisplayList();
+      .subscribe({
+        next: dataSource => {
+          this.peaks = dataSource.allPeaks;
+          this.loading = false;
+          this.updateDisplayList();
+          this.updateRange();
+        },
+        error: err => {
+          this._snackbarService.openError("Error fetching diffraction data", err);
+          console.error("Error fetching diffraction data", err);
+          this.loading = false;
+        },
       });
   }
 
@@ -828,7 +842,10 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     let idx = this.getBarIdx(keVMidpoint);
     if (idx < this._barSelected.length) {
       return this._barSelected[idx];
+    } else if (this._barSelected.length === 0) {
+      return true;
     }
+
     return false;
   }
 
