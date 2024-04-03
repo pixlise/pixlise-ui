@@ -670,6 +670,8 @@ export class CodeEditorPageComponent implements OnInit {
       this.onToggleSplitScreen();
     } else if (!this.linkedModuleID && !this.bottomExpressionChanged) {
       this.onToggleSplitScreen();
+    } else {
+      this.openBottomModule(moduleID);
     }
 
     this.updateLinkedModule();

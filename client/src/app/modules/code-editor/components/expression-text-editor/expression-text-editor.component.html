@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <mat-select
               #tooltip="matTooltip"
               matTooltip="{{ module.module.id === linkedModuleID ? 'Linked to latest version' : 'Select a version for this module' }}"
+              [matTooltipShowDelay]="500"
               [value]="getVersionID(module.reference.version)"
               (selectionChange)="onModuleVersionChange($event, i)"
               class="module-version {{ module.module.id === linkedModuleID ? 'linked' : 'unlinked' }}"
@@ -66,6 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [ngStyle]="{ marginLeft: getVersionContainerWidthDifference(module.module.id) + 'px' }"
             #tooltip="matTooltip"
             matTooltip="{{ module.module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module' }}"
+            [matTooltipShowDelay]="500"
             src="{{ module.module.id === linkedModuleID ? 'assets/button-icons/blue-link.svg' : 'assets/button-icons/grey-link.svg' }}"
             (click)="onLinkModule(module.module.id === linkedModuleID ? '' : module.module.id)" />
         </span>
@@ -80,6 +82,7 @@ POSSIBILITY OF SUCH DAMAGE.
           #tooltip="matTooltip"
           class="{{ isHeaderOpen ? 'open' : 'closed' }}"
           [matTooltip]="toggleHeaderTooltip"
+          [matTooltipShowDelay]="500"
           icon="assets/button-icons/arrow-right.svg"
           [size]="16"
           (click)="onToggleHeader()">
