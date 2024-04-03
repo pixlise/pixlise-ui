@@ -134,6 +134,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   uiVersion: string = "";
 
+  hasQuantConfiguredScan: boolean = false;
+  screenConfigLoaded: boolean = false;
+
   constructor(
     private router: Router,
     private _route: ActivatedRoute,
@@ -178,13 +181,12 @@ export class ToolbarComponent implements OnInit, OnDestroy {
                 break;
               }
             }
+
+            this.screenConfigLoaded = true;
           }
 
-          if (this._isAnalysisTab && screenConfig.scanConfigurations && !hasQuantConfiguredScan) {
-            this._analysisLayoutService.activeTab = this._analysisLayoutService.sidebarTabs[0];
-            this._analysisLayoutService.sidepanelOpen$.next(true);
-            this._snackService.open("No scans configured for this workspace. Please configure scans.");
-          }
+          this.hasQuantConfiguredScan = hasQuantConfiguredScan;
+          this.openScanConfigurationTabForInvalidQuants();
         }
 
         this.updateToolbar();
@@ -383,6 +385,19 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     // We only show saving of view state on analysis tab
     this._isAnalysisTab = isAnalysisTab;
+    if (!this._isAnalysisTab && this._analysisLayoutService.sidepanelOpen) {
+      this._analysisLayoutService.sidepanelOpen$.next(false);
+    } else if (this._isAnalysisTab && !this._analysisLayoutService.sidepanelOpen && this.screenConfigLoaded) {
+      setTimeout(() => this.openScanConfigurationTabForInvalidQuants(), 0);
+    }
+  }
+
+  openScanConfigurationTabForInvalidQuants(): void {
+    if (this._isAnalysisTab && !this.hasQuantConfiguredScan && !this._analysisLayoutService.sidepanelOpen && this._analysisLayoutService.sidebarTabs.length > 0) {
+      this._analysisLayoutService.activeTab = this._analysisLayoutService.sidebarTabs[0];
+      this._analysisLayoutService.sidepanelOpen$.next(true);
+      this._snackService.open("No scans configured for this workspace. Please configure scans.");
+    }
   }
 
   onUserMenu(): void {

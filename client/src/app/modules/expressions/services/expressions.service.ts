@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, defaultIfEmpty, map, mergeMap, of } from "rxjs";
+import { BehaviorSubject, Observable, defaultIfEmpty, map, mergeMap, of, switchMap, throwError } from "rxjs";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import {
@@ -52,13 +52,40 @@ export class ExpressionsService {
     });
   }
 
-  getLatestModuleVersion(id: string): DataModuleVersion | null {
+  getLatestModuleVersion(id: string, isEditable: boolean = false): DataModuleVersion | null {
     let module = this.modules$.value[id];
     if (!module) {
       return null;
     }
 
-    return module.versions[module.versions.length - 1];
+    if (module.versions.length === 0) {
+      return null;
+    }
+
+    let latestVersion = module.versions[0];
+    module.versions.forEach(version => {
+      let currentMajorVersion = version.version?.major || 0;
+      let currentMinorVersion = version.version?.minor || 0;
+      let currentPatchVersion = version.version?.patch || 0;
+
+      let latestMajorVersion = latestVersion.version?.major || 0;
+      let latestMinorVersion = latestVersion.version?.minor || 0;
+      let latestPatchVersion = latestVersion.version?.patch || 0;
+
+      // If we're an editor, show latest version, else show latest major/minor versions
+      if (currentMajorVersion > latestMajorVersion || (currentMajorVersion === latestMajorVersion && currentMinorVersion > latestMinorVersion)) {
+        latestVersion = version;
+      } else if (
+        (!isEditable || module.creator?.canEdit) &&
+        currentMajorVersion === latestMajorVersion &&
+        currentMinorVersion === latestMinorVersion &&
+        currentPatchVersion > latestPatchVersion
+      ) {
+        latestVersion = version;
+      }
+    });
+
+    return latestVersion;
   }
 
   checkIsLatestModuleVersion(id: string, version: SemanticVersion): boolean {
@@ -83,6 +110,35 @@ export class ExpressionsService {
         this.modules$.next({ ...this.modules$.value, [id]: res.module });
       }
     });
+  }
+
+  fetchModuleVersionAsync(id: string, version: SemanticVersion | null): Observable<DataModuleVersion | null> {
+    let request = DataModuleGetReq.create({ id });
+
+    // If version isnt specified, get the latest version
+    if (version) {
+      request["version"] = version;
+    }
+    return this._dataService.sendDataModuleGetRequest(request).pipe(
+      map(res => {
+        if (res.module) {
+          this.modules$.next({ ...this.modules$.value, [id]: res.module });
+
+          let moduleVersion = res.module.versions.find(responseVersion => {
+            return (
+              version &&
+              version.major === responseVersion.version?.major &&
+              version.minor === responseVersion.version?.minor &&
+              version.patch === responseVersion.version?.patch
+            );
+          });
+
+          return moduleVersion || this.getLatestModuleVersion(id);
+        } else {
+          throw new WidgetError("Failed to fetch module version", `Module (${id}, ${version}) was not returned from the API`);
+        }
+      })
+    );
   }
 
   fetchExpressions() {
@@ -196,6 +252,30 @@ export class ExpressionsService {
       });
   }
 
+  createNewModuleAsync(expression: DataExpression): Observable<DataModule> {
+    return this._dataService
+      .sendDataModuleWriteRequest(
+        DataModuleWriteReq.create({
+          id: expression.id,
+          name: expression.name,
+          comments: expression.comments,
+          initialSourceCode: expression.sourceCode,
+          initialTags: expression.tags,
+        })
+      )
+      .pipe(
+        switchMap(res => {
+          if (res.module) {
+            this.lastSavedExpressionId = res.module.id;
+            this.modules$.next({ ...this.modules$.value, [res.module.id]: res.module });
+            return of(res.module);
+          } else {
+            return throwError(() => new Error("Failed to create new module"));
+          }
+        })
+      );
+  }
+
   writeModuleVersion(id: string, moduleToWrite: DataModuleVersion, versionUpdate: VersionField) {
     this._dataService
       .sendDataModuleAddVersionRequest(
@@ -215,11 +295,51 @@ export class ExpressionsService {
       });
   }
 
+  writeModuleVersionAsync(id: string, moduleToWrite: DataModuleVersion, versionUpdate: VersionField): Observable<DataModule> {
+    return this._dataService
+      .sendDataModuleAddVersionRequest(
+        DataModuleAddVersionReq.create({
+          moduleId: id,
+          versionUpdate,
+          sourceCode: moduleToWrite.sourceCode,
+          comments: moduleToWrite.comments,
+          tags: moduleToWrite.tags,
+        })
+      )
+      .pipe(
+        switchMap(res => {
+          if (res.module) {
+            this.lastSavedExpressionId = res.module.id;
+            this.modules$.next({ ...this.modules$.value, [res.module.id]: res.module });
+            return of(res.module);
+          } else {
+            return throwError(() => new Error("Failed to write module version"));
+          }
+        })
+      );
+  }
+
   writeModuleFromExpression(expressionToWrite: DataExpression, versionUpdate: VersionField) {
     if (!expressionToWrite.id) {
       this.createNewModule(expressionToWrite);
     } else {
       this.writeModuleVersion(
+        expressionToWrite.id,
+        DataModuleVersion.create({
+          sourceCode: expressionToWrite.sourceCode,
+          comments: expressionToWrite.comments,
+          tags: expressionToWrite.tags,
+        }),
+        versionUpdate
+      );
+    }
+  }
+
+  writeModuleFromExpressionAsync(expressionToWrite: DataExpression, versionUpdate: VersionField): Observable<DataModule> {
+    if (!expressionToWrite.id) {
+      return this.createNewModuleAsync(expressionToWrite);
+    } else {
+      return this.writeModuleVersionAsync(
         expressionToWrite.id,
         DataModuleVersion.create({
           sourceCode: expressionToWrite.sourceCode,

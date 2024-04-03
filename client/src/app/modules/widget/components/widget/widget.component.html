@@ -27,7 +27,7 @@
     <div class="widget-title" *ngIf="disableSwitch && title.length > 0" [title]="title">{{ title }}</div>
 
     <div class="buttons" #buttonsContainer>
-      <div class="top-toolbar {{ topToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #topToolbar>
+      <div class="top-toolbar {{ showTopToolbar ? 'visible' : 'hidden' }}" #topToolbar>
         <widget-configuration-button
           *ngFor="let button of topToolbarButtons"
           [buttonConfiguration]="button"
@@ -71,7 +71,7 @@
       [ngStyle]="bottomRightInsetButton?.margin ? { margin: bottomRightInsetButton?.margin } : {}"
       [buttonConfiguration]="bottomRightInsetButton"></widget-configuration-button>
   </div>
-  <div class="bottom-toolbar {{ bottomToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #bottomToolbar>
+  <div class="bottom-toolbar {{ showBottomToolbar ? 'visible' : 'hidden' }}" #bottomToolbar>
     <widget-configuration-button
       *ngFor="let button of bottomToolbarButtons"
       [buttonConfiguration]="button"

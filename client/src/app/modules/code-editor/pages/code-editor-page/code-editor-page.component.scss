@@ -371,6 +371,9 @@ $display-height: calc(100vh - 43px - 40px);
 }
 
 .layers {
+  max-height: calc(100vh - 117px);
+  overflow-y: auto;
+
   border-right: 1px solid rgb(var(--clr-gray-100));
   .group {
     .header {

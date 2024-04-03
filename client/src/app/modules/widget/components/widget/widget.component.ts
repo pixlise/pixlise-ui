@@ -1,5 +1,17 @@
-import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input, OnDestroy } from "@angular/core";
-import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetType } from "../../models/widgets.model";
+import {
+  Component,
+  OnInit,
+  ComponentRef,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  ViewContainerRef,
+  Input,
+  OnDestroy,
+  AfterContentInit,
+  ChangeDetectorRef,
+} from "@angular/core";
+import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "../../models/widgets.model";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
@@ -22,7 +34,7 @@ const getWidgetOptions = (): WidgetConfiguration[] => {
   templateUrl: "./widget.component.html",
   styleUrls: ["./widget.component.scss"],
 })
-export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   private _subs: Subscription = new Subscription();
 
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
@@ -64,9 +76,21 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private _exportDialogOpen: boolean = false;
 
+  showTopToolbar: boolean = false;
+  showBottomToolbar: boolean = false;
+
+  topToolbarButtons: WidgetToolbarButtonConfiguration[] = [];
+  bottomToolbarButtons: WidgetToolbarButtonConfiguration[] = [];
+  topLeftInsetButton?: WidgetToolbarButtonConfiguration;
+  topCenterInsetButton?: WidgetToolbarButtonConfiguration;
+  topRightInsetButton?: WidgetToolbarButtonConfiguration;
+  bottomLeftInsetButton?: WidgetToolbarButtonConfiguration;
+  bottomRightInsetButton?: WidgetToolbarButtonConfiguration;
+
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
-    private _dialog: MatDialog
+    private _dialog: MatDialog,
+    private _changeDetector: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -97,9 +121,9 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
     this._subs.unsubscribe();
   }
 
-  ngAfterViewChecked(): void {
+  ngAfterContentInit() {
     if (!this._currentWidgetRef) {
-      this.loadWidget();
+      setTimeout(() => this.loadWidget(), 0);
     }
   }
 
@@ -108,8 +132,18 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.hideOverflowedButtons();
   }
 
+  updateShowTopToolbar() {
+    let topToolbar = this.widgetConfiguration?.controlConfiguration?.topToolbar;
+    this.showTopToolbar = !!(topToolbar && topToolbar.length > 0);
+  }
+
+  updateShowBottomToolbar() {
+    let bottomToolbar = this.widgetConfiguration?.controlConfiguration?.bottomToolbar;
+    this.showBottomToolbar = !!(bottomToolbar && bottomToolbar.length > 0);
+  }
+
   initOverflowState() {
-    const buttonsContainerWidth = this.buttonsContainer.nativeElement.offsetWidth;
+    const buttonsContainerWidth = this.buttonsContainer?.nativeElement?.offsetWidth || 0;
     let topToolbarWidth = 0;
     if (this.widgetConfiguration?.controlConfiguration?.topToolbar) {
       let overflowed = false;
@@ -127,6 +161,9 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
 
       this.isOverflowed = overflowed;
     }
+
+    this.updateButtons();
+    this._changeDetector.detectChanges();
   }
 
   hideOverflowedButtons() {
@@ -163,6 +200,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
 
       this.isOverflowed = overflowed;
     }
+
+    this.updateButtons();
   }
 
   get settingsMenu() {
@@ -222,32 +261,17 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  get topToolbarButtons() {
-    return this.widgetConfiguration?.controlConfiguration?.topToolbar || [];
-  }
+  updateButtons() {
+    this.updateShowBottomToolbar();
+    this.updateShowTopToolbar();
 
-  get bottomToolbarButtons() {
-    return this.widgetConfiguration?.controlConfiguration?.bottomToolbar || [];
-  }
-
-  get topLeftInsetButton() {
-    return this.widgetConfiguration?.controlConfiguration?.topLeftInsetButton;
-  }
-
-  get topCenterInsetButton() {
-    return this.widgetConfiguration?.controlConfiguration?.topCenterInsetButton;
-  }
-
-  get topRightInsetButton() {
-    return this.widgetConfiguration?.controlConfiguration?.topRightInsetButton;
-  }
-
-  get bottomLeftInsetButton() {
-    return this.widgetConfiguration?.controlConfiguration?.bottomLeftInsetButton;
-  }
-
-  get bottomRightInsetButton() {
-    return this.widgetConfiguration?.controlConfiguration?.bottomRightInsetButton;
+    this.topToolbarButtons = this.widgetConfiguration?.controlConfiguration?.topToolbar || [];
+    this.bottomToolbarButtons = this.widgetConfiguration?.controlConfiguration?.bottomToolbar || [];
+    this.topLeftInsetButton = this.widgetConfiguration?.controlConfiguration?.topLeftInsetButton;
+    this.topCenterInsetButton = this.widgetConfiguration?.controlConfiguration?.topCenterInsetButton;
+    this.topRightInsetButton = this.widgetConfiguration?.controlConfiguration?.topRightInsetButton;
+    this.bottomLeftInsetButton = this.widgetConfiguration?.controlConfiguration?.bottomLeftInsetButton;
+    this.bottomRightInsetButton = this.widgetConfiguration?.controlConfiguration?.bottomRightInsetButton;
   }
 
   copyConfiguration() {
@@ -291,6 +315,11 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     this.widgetConfiguration = this.copyConfiguration();
+    if (!this.widgetConfiguration!.component || !this.currentWidget) {
+      console.warn("Widget component or container not found");
+      return;
+    }
+
     this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.component);
 
     if (this._currentWidgetRef?.instance) {
@@ -364,5 +393,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
         );
       }
     }
+
+    this._changeDetector.detectChanges();
   }
 }

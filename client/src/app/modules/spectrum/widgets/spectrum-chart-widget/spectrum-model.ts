@@ -140,8 +140,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _spectrumLines: SpectrumChartLine[] = [];
   private _xAxis: ChartAxis | null = null;
   private _yAxis: ChartAxis | null = null;
-  private _lineRangeX: MinMax = new MinMax();
-  private _lineRangeY: MinMax = new MinMax();
+  private _lineRangeX: MinMax = new MinMax(0, 0);
+  private _lineRangeY: MinMax = new MinMax(0, 0);
 
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
@@ -163,8 +163,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -865,16 +865,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private regenerateDrawModel(viewport: CanvasParams) {
     if (!this._drawTransform.canvasParams || this._drawTransform.canvasParams.width <= 0 || this._drawTransform.canvasParams.height <= 0) {
-      console.error("SpectrumChart regenerateDrawModel: failed because canvas dimensions not known");
+      console.warn("SpectrumChart regenerateDrawModel: failed because canvas dimensions not known");
       return;
     }
 
-    if (!this._lineRangeX.isValid()) {
-      console.error("SpectrumChart regenerateDrawModel: failed due to X axis range being invalid");
-      return;
-    }
-    if (!this._lineRangeY.isValid()) {
-      console.error("SpectrumChart regenerateDrawModel: failed due to Y axis range being invalid");
+    if (!this._lineRangeX.isValid() || !this._lineRangeY.isValid()) {
+      console.warn(`SpectrumChart regenerateDrawModel: failed due to an axis range being invalid`);
       return;
     }
 

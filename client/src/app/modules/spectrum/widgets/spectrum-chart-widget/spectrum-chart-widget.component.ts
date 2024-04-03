@@ -28,7 +28,6 @@ import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./s
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
-import { HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
 
