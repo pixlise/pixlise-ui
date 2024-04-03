@@ -46,7 +46,11 @@ import { DataExpressionModule, TextSelection } from "../../components/expression
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
-import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "../../components/module-release-dialog/module-release-dialog.component";
+import {
+  ModuleReleaseDialogComponent,
+  ModuleReleaseDialogData,
+  ModuleReleaseDialogResponse,
+} from "../../components/module-release-dialog/module-release-dialog.component";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import EditorConfig, { LocalStorageMetadata } from "src/app/modules/code-editor/models/editor-config";
@@ -209,8 +213,10 @@ export class CodeEditorPageComponent implements OnInit {
             }
           } else if (topModuleId) {
             this.isSplitScreen = false;
-            let version = params[EditorConfig.topModuleVersion] ? this.getSemanticVersionFromString(params[EditorConfig.topModuleVersion]) : null;
-            this._expressionsService.fetchModuleVersion(topModuleId, version);
+            if (params[EditorConfig.topModuleId] !== ExpressionsService.NewExpressionId) {
+              let version = params[EditorConfig.topModuleVersion] ? this.getSemanticVersionFromString(params[EditorConfig.topModuleVersion]) : null;
+              this._expressionsService.fetchModuleVersion(topModuleId, version);
+            }
           } else {
             this.topExpression = null;
           }
@@ -262,6 +268,9 @@ export class CodeEditorPageComponent implements OnInit {
     this._subs.add(
       this._expressionsService.modules$.subscribe(modules => {
         this.modules = Object.values(modules);
+        this.modules.sort((a, b) => {
+          return b.modifiedUnixSec - a.modifiedUnixSec;
+        });
 
         let topModuleId = this.queryParams[EditorConfig.topModuleId];
         let topModuleVersion = this.queryParams[EditorConfig.topModuleVersion];
@@ -298,44 +307,13 @@ export class CodeEditorPageComponent implements OnInit {
             if (topModuleVersion) {
               moduleVersion = module.versions.find(version => this.getVersionString(version.version) === topModuleVersion);
             } else {
-              moduleVersion = module.versions[module.versions.length - 1];
+              moduleVersion = this.getLatestModuleVersion(module);
             }
             if (moduleVersion) {
               this.loadedModule = module;
               this.loadedModuleVersion = moduleVersion;
-              this.loadedModuleVersions = [];
-
-              module.versions.forEach(version => {
-                // Only show major/minor versions to users who don't own the module
-                if (version.version?.patch !== 0 && !module.creator?.canEdit) {
-                  return;
-                }
-
-                let versionString = this.getVersionString(version.version);
-                this.loadedModuleVersions.push(versionString);
-              });
-
-              this.loadedModuleVersions.sort((a, b) => {
-                let aVersion = this.getSemanticVersionFromString(a);
-                let bVersion = this.getSemanticVersionFromString(b);
-
-                if (bVersion.major !== aVersion.major) {
-                  return bVersion.major - aVersion.major;
-                } else if (bVersion.minor !== aVersion.minor) {
-                  return bVersion.minor - aVersion.minor;
-                } else {
-                  return bVersion.patch - aVersion.patch;
-                }
-              });
-
-              this.topExpression = DataExpression.create({
-                id: module.id,
-                name: module.name,
-                sourceCode: moduleVersion.sourceCode,
-                comments: moduleVersion.comments,
-                sourceLanguage: EXPR_LANGUAGE_LUA,
-                tags: moduleVersion.tags,
-              });
+              this.loadedModuleVersions = this.getVisibleModuleVersions(module);
+              this.topExpression = this.moduleToExpression(module, moduleVersion);
               this.topExpressionChanged = false;
             }
           }
@@ -364,36 +342,13 @@ export class CodeEditorPageComponent implements OnInit {
           if (bottomModuleVersion) {
             moduleVersion = module.versions.find(version => this.getVersionString(version.version) === bottomModuleVersion);
           } else {
-            moduleVersion = module.versions[module.versions.length - 1];
+            moduleVersion = this.getLatestModuleVersion(module);
           }
 
           if (moduleVersion) {
             this.loadedModule = module;
             this.loadedModuleVersion = moduleVersion;
-            this.loadedModuleVersions = [];
-
-            module.versions.forEach(version => {
-              // Only show major/minor versions to users who don't own the module
-              if (version.version?.patch !== 0 && !module.creator?.canEdit) {
-                return;
-              }
-
-              let versionString = this.getVersionString(version.version);
-              this.loadedModuleVersions.push(versionString);
-            });
-
-            this.loadedModuleVersions.sort((a, b) => {
-              let aVersion = this.getSemanticVersionFromString(a);
-              let bVersion = this.getSemanticVersionFromString(b);
-
-              if (bVersion.major !== aVersion.major) {
-                return bVersion.major - aVersion.major;
-              } else if (bVersion.minor !== aVersion.minor) {
-                return bVersion.minor - aVersion.minor;
-              } else {
-                return bVersion.patch - aVersion.patch;
-              }
-            });
+            this.loadedModuleVersions = this.getVisibleModuleVersions(module);
 
             this.bottomExpression = DataExpression.create({
               id: module.id,
@@ -408,13 +363,14 @@ export class CodeEditorPageComponent implements OnInit {
         }
 
         if (!this.isTopModule && this.topExpression) {
-          this.topModules = [];
+          this.updateTopModules(modules);
+          // this.topModules = [];
 
-          this.topExpression.moduleReferences.forEach(moduleRef => {
-            if (modules[moduleRef.moduleId]) {
-              this.topModules.push(new DataExpressionModule(modules[moduleRef.moduleId], moduleRef));
-            }
-          });
+          // this.topExpression.moduleReferences.forEach(moduleRef => {
+          //   if (modules[moduleRef.moduleId]) {
+          //     this.topModules.push(new DataExpressionModule(modules[moduleRef.moduleId], moduleRef));
+          //   }
+          // });
         }
 
         this.updateLinkedModule();
@@ -454,6 +410,88 @@ export class CodeEditorPageComponent implements OnInit {
     );
   }
 
+  getVisibleModuleVersions(module: DataModule): string[] {
+    let visibleModuleVersions: string[] = [];
+
+    module.versions.forEach(version => {
+      // Only show major/minor versions to users who don't own the module
+      if (version.version?.patch !== 0 && !module.creator?.canEdit) {
+        return;
+      }
+
+      let versionString = this.getVersionString(version.version);
+      visibleModuleVersions.push(versionString);
+    });
+
+    visibleModuleVersions.sort((a, b) => {
+      let aVersion = this.getSemanticVersionFromString(a);
+      let bVersion = this.getSemanticVersionFromString(b);
+
+      if (bVersion.major !== aVersion.major) {
+        return bVersion.major - aVersion.major;
+      } else if (bVersion.minor !== aVersion.minor) {
+        return bVersion.minor - aVersion.minor;
+      } else {
+        return bVersion.patch - aVersion.patch;
+      }
+    });
+
+    return visibleModuleVersions;
+  }
+
+  getLatestModuleVersion(module: DataModule): DataModuleVersion | undefined {
+    if (module.versions.length === 0) {
+      return undefined;
+    }
+    let latestVersion = module.versions[0];
+    module.versions.forEach(version => {
+      let currentMajorVersion = version.version?.major || 0;
+      let currentMinorVersion = version.version?.minor || 0;
+      let currentPatchVersion = version.version?.patch || 0;
+
+      let latestMajorVersion = latestVersion.version?.major || 0;
+      let latestMinorVersion = latestVersion.version?.minor || 0;
+      let latestPatchVersion = latestVersion.version?.patch || 0;
+
+      // If we're an editor, show latest version, else show latest major/minor versions
+      if (currentMajorVersion > latestMajorVersion || (currentMajorVersion === latestMajorVersion && currentMinorVersion > latestMinorVersion)) {
+        latestVersion = version;
+      } else if (
+        module.creator?.canEdit &&
+        currentMajorVersion === latestMajorVersion &&
+        currentMinorVersion === latestMinorVersion &&
+        currentPatchVersion > latestPatchVersion
+      ) {
+        latestVersion = version;
+      }
+    });
+
+    return latestVersion;
+  }
+
+  updateTopModules(modules: Record<string, DataModule> | DataModule[] = this.modules) {
+    let moduleMap: Record<string, DataModule> = {};
+    if (Array.isArray(modules)) {
+      modules.forEach(module => {
+        moduleMap[module.id] = module;
+      });
+    } else {
+      moduleMap = modules;
+    }
+
+    if (!this.topExpression) {
+      return;
+    }
+
+    this.topModules = [];
+
+    this.topExpression.moduleReferences.forEach(moduleRef => {
+      if (moduleMap[moduleRef.moduleId]) {
+        this.topModules.push(new DataExpressionModule(moduleMap[moduleRef.moduleId], moduleRef));
+      }
+    });
+  }
+
   onToggleExpressionConsoleSolo() {
     this.isExpressionConsoleSolo = !this.isExpressionConsoleSolo;
     if (this.isExpressionConsoleSolo) {
@@ -475,14 +513,15 @@ export class CodeEditorPageComponent implements OnInit {
         }
 
         if (this.topExpression) {
-          this.topModules = [];
+          this.updateTopModules(this.modules);
+          // this.topModules = [];
 
-          this.topExpression.moduleReferences.forEach(moduleRef => {
-            let module = this.modules.find(module => module.id === moduleRef.moduleId);
-            if (module) {
-              this.topModules.push(new DataExpressionModule(module, moduleRef));
-            }
-          });
+          // this.topExpression.moduleReferences.forEach(moduleRef => {
+          //   let module = this.modules.find(module => module.id === moduleRef.moduleId);
+          //   if (module) {
+          //     this.topModules.push(new DataExpressionModule(module, moduleRef));
+          //   }
+          // });
         }
 
         this.updateLinkedModule();
@@ -631,6 +670,8 @@ export class CodeEditorPageComponent implements OnInit {
       this.onToggleSplitScreen();
     } else if (!this.linkedModuleID && !this.bottomExpressionChanged) {
       this.onToggleSplitScreen();
+    } else {
+      this.openBottomModule(moduleID);
     }
 
     this.updateLinkedModule();
@@ -651,14 +692,21 @@ export class CodeEditorPageComponent implements OnInit {
   set selectedModuleVersion(version: string) {
     let semanticVersion = this.getSemanticVersionFromString(version);
     if (this.loadedModule?.id && semanticVersion) {
-      this._expressionsService.fetchModuleVersion(this.loadedModule.id, semanticVersion);
-      let queryParams = { ...this.queryParams };
-      if (this.isTopModule) {
-        queryParams[EditorConfig.topModuleVersion] = version;
-      } else {
-        queryParams[EditorConfig.bottomModuleVersion] = version;
+      // Check if we already have this version loaded
+      if (this.getVersionString(this.loadedModuleVersion?.version) === version) {
+        return;
       }
-      this._router.navigate([], { queryParams });
+
+      this._expressionsService.fetchModuleVersionAsync(this.loadedModule.id, semanticVersion).subscribe({
+        next: moduleVersion => {
+          if (this.loadedModule && moduleVersion) {
+            this.loadModuleVersion(this.loadedModule, moduleVersion, this.isTopModule);
+          }
+        },
+        error: err => {
+          this._snackbarService.openError("Failed to change module versions", err);
+        },
+      });
     }
   }
 
@@ -799,16 +847,16 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   get isLoadedModuleVersionLatest(): boolean {
-    let latestVersion = this.loadedModule?.versions[this.loadedModule.versions.length - 1];
-    if (latestVersion) {
-      return (
-        this.loadedModuleVersion?.version?.major === latestVersion.version?.major &&
-        this.loadedModuleVersion?.version?.minor === latestVersion.version?.minor &&
-        this.loadedModuleVersion?.version?.patch === latestVersion.version?.patch
-      );
+    if (!this.loadedModule || !this.loadedModuleVersion?.version) {
+      return false;
     }
 
-    return false;
+    if (this.loadedModuleVersions.length === 0) {
+      return false;
+    }
+
+    let latestLoadedModuleVerison = this.loadedModuleVersions[0];
+    return this.getVersionString(this.loadedModuleVersion.version) === latestLoadedModuleVerison;
   }
 
   get isTopModuleReleased(): boolean {
@@ -914,17 +962,19 @@ export class CodeEditorPageComponent implements OnInit {
     this.topModules = [];
     this.topExpressionChanged = true;
     this.clearTopExpressionCache();
-
     this.clearExpressionQueryParams();
-    let queryParams: Record<string, string> = {
-      ...this.queryParams,
-      [EditorConfig.topModuleId]: ExpressionsService.NewExpressionId,
-      [EditorConfig.topModuleVersion]: "",
-    };
 
-    this.newModuleName = "";
-    this.closeNewModuleDialog();
-    this._router.navigate([], { queryParams });
+    this._expressionsService.writeModuleFromExpressionAsync(this.topExpression, VersionField.MV_PATCH).subscribe({
+      next: newModule => {
+        this.loadLatestModuleVersion(newModule, true);
+        this.newModuleName = "";
+        this.closeNewModuleDialog();
+      },
+      error: err => {
+        this._snackbarService.openError("Failed to create module", err);
+        this.closeNewModuleDialog();
+      },
+    });
   }
 
   private closeNewModuleDialog(): void {
@@ -1107,7 +1157,12 @@ export class CodeEditorPageComponent implements OnInit {
   updateLinkedModule() {
     if (this.linkedModuleID) {
       let linkedModule = this.modules.find(module => module.id === this.linkedModuleID);
-      let latestVersion = linkedModule?.versions[linkedModule.versions.length - 1];
+      if (!linkedModule) {
+        this._snackbarService.openError(`Failed to find linked module: ${this.linkedModuleID}`);
+        return;
+      }
+
+      let latestVersion = this.getLatestModuleVersion(linkedModule);
       if (linkedModule && latestVersion) {
         let topLinkedModule = this.topModules.find(module => module.module.id === linkedModule?.id);
         if (topLinkedModule && this.getVersionString(topLinkedModule.reference.version) !== this.getVersionString(latestVersion.version)) {
@@ -1117,24 +1172,90 @@ export class CodeEditorPageComponent implements OnInit {
         }
       }
     }
+
+    if (this.topExpression) {
+      // Refresh the top modules so they include the latest module versions
+      this.updateTopModules();
+      this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
+    }
+  }
+
+  moduleToExpression(module: DataModule, version: DataModuleVersion): DataExpression {
+    return DataExpression.create({
+      id: module.id,
+      name: module.name,
+      sourceCode: version.sourceCode,
+      comments: version.comments,
+      sourceLanguage: EXPR_LANGUAGE_LUA,
+      tags: version.tags,
+      owner: module.creator,
+      modifiedUnixSec: version.timeStampUnixSec,
+    });
+  }
+
+  loadModuleVersion(newModule: DataModule, moduleVersion: DataModuleVersion | null, isTop: boolean = true) {
+    this.loadedModule = newModule;
+    this.loadedModuleVersion = moduleVersion;
+    if (this.loadedModuleVersion) {
+      let newExpression = this.moduleToExpression(newModule, this.loadedModuleVersion);
+      if (isTop) {
+        // If we already have the data loaded, don't reload it as this causes cursor jumping
+        if (this.topExpression?.id === newExpression.id && this.topExpression?.sourceCode === newExpression.sourceCode) {
+          this.topExpression.name = newExpression.name;
+          this.topExpression.comments = newExpression.comments;
+          this.topExpression.modifiedUnixSec = newExpression.modifiedUnixSec;
+          this.topExpression.moduleReferences = newExpression.moduleReferences;
+        } else {
+          this.topExpression = newExpression;
+        }
+      } else {
+        if (this.bottomExpression?.id === newExpression.id && this.bottomExpression?.sourceCode === newExpression.sourceCode) {
+          this.bottomExpression.name = newExpression.name;
+          this.bottomExpression.comments = newExpression.comments;
+          this.bottomExpression.modifiedUnixSec = newExpression.modifiedUnixSec;
+          this.bottomExpression.moduleReferences = newExpression.moduleReferences;
+        } else {
+          this.bottomExpression = newExpression;
+        }
+      }
+      this.loadedModuleVersions = this.getVisibleModuleVersions(newModule);
+
+      let queryParams = {
+        ...this.queryParams,
+        [isTop ? EditorConfig.topModuleId : EditorConfig.bottomExpressionId]: newModule.id,
+        [isTop ? EditorConfig.topModuleVersion : EditorConfig.bottomModuleVersion]: this.getVersionString(this.loadedModuleVersion.version),
+      };
+
+      this._router.navigate([], { queryParams });
+    } else {
+      let attemptedVersion = this.getVersionString(moduleVersion?.version) || "";
+      this._snackbarService.openError(`Failed to load version ${attemptedVersion} of module: ${newModule.name}`);
+
+      let queryParams = {
+        ...this.queryParams,
+        [isTop ? EditorConfig.topModuleId : EditorConfig.bottomExpressionId]: newModule.id,
+      };
+      delete queryParams[EditorConfig.topModuleVersion];
+      this._router.navigate([], { queryParams });
+    }
+  }
+
+  loadLatestModuleVersion(newModule: DataModule, isTop: boolean = true) {
+    let latestVersion = this.getLatestModuleVersion(newModule) || null;
+    this.loadModuleVersion(newModule, latestVersion, isTop);
   }
 
   onSave(saveTop: boolean = this.isTopEditorActive) {
     if (saveTop && this.topExpression) {
       if (this.isTopModule) {
-        this._expressionsService.writeModuleFromExpression(this.topExpression, VersionField.MV_PATCH);
-        this.updateModuleWithActiveExpression();
-
-        // If the top module is new, then we need to fetch the modules
-        // New modules are always on top, so don't need to do this for the bottom module
-        if (!this.modules.find(module => module.id === this.topExpression?.id)) {
-          this._expressionsService.fetchModules();
-        }
-
-        // Clear module version from the query so the latest is used
-        let queryParams = { ...this.queryParams };
-        delete queryParams[EditorConfig.topModuleVersion];
-        this._router.navigate([], { queryParams });
+        this._expressionsService.writeModuleFromExpressionAsync(this.topExpression, VersionField.MV_PATCH).subscribe({
+          next: newModule => {
+            this.loadLatestModuleVersion(newModule, true);
+          },
+          error: err => {
+            this._snackbarService.openError("Failed to save module", err);
+          },
+        });
       } else {
         this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
         this._expressionsService.writeExpression(this.topExpression);
@@ -1147,14 +1268,18 @@ export class CodeEditorPageComponent implements OnInit {
       this.clearTopExpressionCache();
       this.topExpressionChanged = false;
     } else if (!saveTop && this.bottomExpression) {
-      this._expressionsService.writeModuleFromExpression(this.bottomExpression, VersionField.MV_PATCH);
-      this.updateModuleWithActiveExpression();
-      this.clearBottomExpressionCache();
-      this.bottomExpressionChanged = false;
-
-      let queryParams = { ...this.queryParams };
-      delete queryParams[EditorConfig.bottomModuleVersion];
-      this._router.navigate([], { queryParams });
+      // Bottom is always a module
+      this._expressionsService.writeModuleFromExpressionAsync(this.bottomExpression, VersionField.MV_PATCH).subscribe({
+        next: newModule => {
+          this.loadLatestModuleVersion(newModule, false);
+          this.updateLinkedModule();
+          this.clearBottomExpressionCache();
+          this.bottomExpressionChanged = false;
+        },
+        error: err => {
+          this._snackbarService.openError("Failed to save module", err);
+        },
+      });
     }
   }
 
@@ -1164,7 +1289,7 @@ export class CodeEditorPageComponent implements OnInit {
       return;
     }
 
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ModuleReleaseDialogData>();
 
     let { id, name } = this.loadedModule;
     let version = this.loadedModuleVersion.version;
@@ -1188,12 +1313,12 @@ export class CodeEditorPageComponent implements OnInit {
     );
 
     let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((newVersion: SemanticVersion) => {
-      if (!newVersion) {
+    dialogRef.afterClosed().subscribe((response: ModuleReleaseDialogResponse) => {
+      if (!response?.module) {
         return;
       }
 
-      this._expressionsService.fetchModuleVersion(id, newVersion);
+      this.loadLatestModuleVersion(response.module, this.isTopEditorActive);
     });
   }
 

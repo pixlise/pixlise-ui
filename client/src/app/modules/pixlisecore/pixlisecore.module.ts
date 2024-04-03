@@ -9,15 +9,13 @@ import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinn
 import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
 import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { PushButtonComponent } from "./components/atoms/buttons/push-button/push-button.component";
-// import { TwoStateEditButtonComponent } from "./components/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
+import { TwoStateEditButtonComponent } from "./components/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
 import { IconButtonComponent } from "./components/atoms/buttons/icon-button/icon-button.component";
 import { TwoStateButtonComponent } from "./components/atoms/buttons/two-state-button/two-state-button.component";
-// import { BulkSelectionSwitchComponent } from "./components/atoms/buttons/two-state-button/bulk-selection-switch.component";
 import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
 import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/switch-button.component";
 import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
-// import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
 import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
 import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
 
@@ -120,6 +118,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     ShareOwnershipItemButtonComponent,
     ImagePickerDialogComponent,
     PMCSelectorDialogComponent,
+    TwoStateEditButtonComponent,
     ClosableListComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule],
@@ -163,6 +162,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     ShareOwnershipItemButtonComponent,
     ImagePickerDialogComponent,
     PMCSelectorDialogComponent,
+    TwoStateEditButtonComponent,
     ClosableListComponent,
   ],
   providers: [

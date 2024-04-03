@@ -7,7 +7,7 @@ export class LocalStorageMetadata {
   public static topExpressionId = "topExpressionId";
   public static topExpressionSourceCode = "topExpressionSourceCode";
   public static topExpressionSourceLanguage = "topExpressionSourceLanguage";
-  public static bottomExpressionId = "bottomExpressionId";
+  public static bottomExpressionId = "bottomModuleId";
   public static bottomExpressionSourceCode = "bottomExpressionSourceCode";
   public static bottomExpressionSourceLanguage = "bottomExpressionSourceLanguage";
 

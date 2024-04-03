@@ -164,7 +164,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngIf="visiblePeaks.length === 0" class="empty-row">
         <span>No peaks to display</span>
       </div>
-      <cdk-virtual-scroll-viewport *ngIf="activeList === detectedPeaksLabel" [itemSize]="50" class="peaks-viewport">
+      <cdk-virtual-scroll-viewport *ngIf="activeList === detectedPeaksLabel" [itemSize]="48" class="peaks-viewport">
         <div
           class="peak-item"
           *cdkVirtualFor="let item of filteredPeaks; trackBy: trackByPeakId"
@@ -184,7 +184,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
         </div>
       </cdk-virtual-scroll-viewport>
-      <cdk-virtual-scroll-viewport *ngIf="activeList === userPeaksLabel" [itemSize]="50" class="peaks-viewport">
+      <cdk-virtual-scroll-viewport *ngIf="activeList === userPeaksLabel" [itemSize]="48" class="peaks-viewport">
         <div
           class="peak-item"
           *cdkVirtualFor="let item of filteredUserPeaks; trackBy: trackByUserId"

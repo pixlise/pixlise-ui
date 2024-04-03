@@ -34,7 +34,8 @@ import { ExpressionsService } from "src/app/modules/expressions/services/express
 import { DOIPublishData, DOIPublishDialog } from "../doi-publish-dialog/doi-publish-dialog.component";
 import { DOIMetadata } from "src/app/generated-protos/doi";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
-import { DataModuleVersion } from "src/app/generated-protos/modules";
+import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
+import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export class ModuleReleaseDialogData {
   constructor(
@@ -48,6 +49,10 @@ export class ModuleReleaseDialogData {
   ) {}
 }
 
+export type ModuleReleaseDialogResponse = {
+  module?: DataModule;
+};
+
 @Component({
   selector: "app-module-release-dialog",
   templateUrl: "./module-release-dialog.component.html",
@@ -60,14 +65,15 @@ export class ModuleReleaseDialogComponent {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ModuleReleaseDialogData,
-    public dialogRef: MatDialogRef<ModuleReleaseDialogComponent>,
+    public dialogRef: MatDialogRef<ModuleReleaseDialogComponent, ModuleReleaseDialogResponse>,
     public dialog: MatDialog,
-    private _expressionsService: ExpressionsService
+    private _expressionsService: ExpressionsService,
+    private _snackbarService: SnackbarService
   ) {
     this.releaseNotes = data?.moduleVersion?.comments || "";
   }
   onCancel(): void {
-    this.dialogRef.close(null);
+    this.dialogRef.close({});
   }
 
   openDOIFormDialog() {
@@ -80,32 +86,41 @@ export class ModuleReleaseDialogComponent {
     dialogConfig.data = new DOIPublishData(this.data.moduleAsExpression, true, this.newVersion);
     const dialogRef = this.dialog.open(DOIPublishDialog, dialogConfig);
 
-    dialogRef.afterClosed().subscribe(
-      (metadata: DOIMetadata) => {
+    dialogRef.afterClosed().subscribe({
+      next: (metadata: DOIMetadata) => {
         if (metadata) {
           // this.data.moduleAsExpression.doiMetadata = metadata;
         }
       },
-      err => {
+      error: err => {
         console.error(err);
-      }
-    );
+      },
+    });
   }
 
   onRelease(): void {
     let versionType = this.isMinorRelease ? VersionField.MV_MINOR : VersionField.MV_MAJOR;
     this.data.moduleVersion.comments = this.releaseNotes;
-    this._expressionsService.writeModuleVersion(this.data.id, this.data.moduleVersion, versionType);
-    let versionToFetch = this.data.moduleVersion.version;
-    if (this.data.currentVersion) {
-      let [major, minor] = this.newVersion.split(".");
-      versionToFetch = SemanticVersion.create({ major: parseInt(major), minor: parseInt(minor), patch: 0 });
-    }
+    this._expressionsService.writeModuleVersionAsync(this.data.id, this.data.moduleVersion, versionType).subscribe({
+      next: module => {
+        this._snackbarService.openSuccess("Module saved successfully");
+        this.dialogRef.close({ module });
+      },
+      error: err => {
+        this._snackbarService.openError("Failed to save module", err);
+        this.dialogRef.close({});
+      },
+    });
+    // let versionToFetch = this.data.moduleVersion.version;
+    // if (this.data.currentVersion) {
+    //   let [major, minor] = this.newVersion.split(".");
+    //   versionToFetch = SemanticVersion.create({ major: parseInt(major), minor: parseInt(minor), patch: 0 });
+    // }
 
-    if (!versionToFetch) {
-      versionToFetch = SemanticVersion.create({ major: 0, minor: 0, patch: 1 });
-    }
-    this.dialogRef.close(versionToFetch);
+    // if (!versionToFetch) {
+    //   versionToFetch = SemanticVersion.create({ major: 0, minor: 0, patch: 1 });
+    // }
+    // this.dialogRef.close(versionToFetch);
 
     // let doiMetadata = this.shouldUpdateDOI && this.data?.moduleAsExpression?.doiMetadata ? this.data.moduleAsExpression.doiMetadata : null;
     // if(this.isMinorRelease)
