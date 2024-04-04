@@ -58,7 +58,6 @@ export class APIEndpointsService {
       throw new Error("No image path provided");
     }
 
-    // loadImageForPath -> convert to data URL -> return
     return this.loadImageForPath(imagePath, maxAge).pipe(
       switchMap(img => {
         return new Observable<string>(observer => {
@@ -148,6 +147,29 @@ export class APIEndpointsService {
           let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
           if (generated?.image?.src) {
             observer.next(generated.image.src);
+          } else {
+            observer.error("Error generating RGB display image");
+            console.error("Error generating RGB display image", img?.path);
+          }
+        });
+      }),
+      catchError(err => {
+        console.error(err);
+        return throwError(() => new Error(err));
+      }),
+      tap(url => console.log(`Generated preview URL: ${url}`)),
+      mergeMap(url => of(url)),
+      shareReplay(1)
+    );
+  }
+
+  loadRGBTIFFDisplayImage(imagePath: string, maxAge: number = 3600): Observable<HTMLImageElement> {
+    return this.loadRGBUImageTIF(imagePath, maxAge).pipe(
+      switchMap(img => {
+        return new Observable<HTMLImageElement>(observer => {
+          let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
+          if (generated?.image) {
+            observer.next(generated.image);
           } else {
             observer.error("Error generating RGB display image");
             console.error("Error generating RGB display image", img?.path);
