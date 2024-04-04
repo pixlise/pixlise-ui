@@ -684,24 +684,19 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     if (!this.mdl.overlayImagePath) {
       this.mdl.overlayImage = null;
     } else {
-      // OLD CODE had this... what do we do about it (for loading RGBU overlay images)
-      /*
-      // Load the display image, it can be one of:
-      // * RGB (png or jpg format)
-      // * RGBU (tif format)
-      let img$: Observable<HTMLImageElement> = null;
-      if(info.downloadLink.toUpperCase().endsWith(".TIF") || info.downloadLink.toUpperCase().endsWith(".TIF?LOADCUSTOMTYPE=MATCHED"))
-      {
-          img$ = this.loadRGBUImageToRGBDisplay(info.downloadLink, imgName);
+      let path = (this.mdl?.overlayImagePath || "").toLowerCase().trim().split("?")[0];
+      if (path && path.endsWith(".tif")) {
+        this._endpointsService.loadRGBTIFFDisplayImage(this.mdl.overlayImagePath).subscribe(img => {
+          this.mdl.overlayImage = img;
+          this.reDraw();
+        });
+      } else {
+        this._endpointsService.loadImageForPath(this.mdl.overlayImagePath).subscribe((img: HTMLImageElement) => {
+          this.mdl.overlayImage = this.processOverlayImage(img);
+
+          this.reDraw();
+        });
       }
-
-      */
-
-      this._endpointsService.loadImageForPath(this.mdl.overlayImagePath).subscribe((img: HTMLImageElement) => {
-        this.mdl.overlayImage = this.processOverlayImage(img);
-
-        this.reDraw();
-      });
     }
   }
 
