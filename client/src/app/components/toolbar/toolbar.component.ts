@@ -274,6 +274,11 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onOpenTab(tab: NavigationTab): void {
     let strippedURL = this.router.url.split("?")[0];
+    if (strippedURL.endsWith(tab.url)) {
+      // Already on this tab
+      return;
+    }
+
     this.openTabs.forEach(openTab => {
       openTab.active = strippedURL.endsWith(tab.url);
     });
