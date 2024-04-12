@@ -148,14 +148,14 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
         name: scanSummary.title,
         type: "checkbox",
         description: `Include scan in export`,
-        selected: this.selectedScanIds.has(scanConfig.id),
+        selected: false,
         subOptions: [
           {
             id: `${scanConfig.id}_quant`,
             name: `Quantification:`,
             type: "dropdown",
             description: `Include quantification in export`,
-            selected: this.selectedScanIds.has(scanConfig.id),
+            selected: true,
             dropdownOptions: this.scanQuants[scanConfig.id].map(quant => ({ id: quant.id, name: quant.params?.userParams?.name || quant.id })),
             selectedOption: quantSummary.id,
           },
@@ -164,7 +164,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
             name: `Regions:`,
             type: "regions",
             description: `Include regions of interest in export (defaults to All Points)`,
-            selected: this.selectedScanIds.has(scanConfig.id),
+            selected: true,
             scanId: scanConfig.id,
             updateCounts: (selection, selected) => {
               this.mapAllDataProductCounts();
@@ -176,7 +176,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
             name: `Expressions:`,
             type: "expressions",
             description: "Include expressions in export",
-            selected: this.selectedScanIds.has(scanConfig.id),
+            selected: true,
             scanId: scanConfig.id,
             quantId: quantSummary.id,
             updateCounts: (selection, selected) => {
@@ -225,33 +225,33 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
       dataProducts: [
         {
           id: "rawSpectralDataPerPMC",
-          name: "Raw Spectral Data per PMC .csv",
+          name: "Raw Spectral Data per PMC by ROI .csv",
           type: "checkbox",
-          description: "Export the raw spectral data per PMC as a CSV (WARNING: Large file size)",
+          description: "Export the raw spectral data per PMC as a CSV for each ROI (WARNING: Large file size)",
           selected: false,
           updateCounts: (selection, selected) => {
-            let scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
-            let countMap: Record<string, number> = { rawSpectralDataPerPMC: scanOptions.length };
-
-            return countMap;
-          },
-        },
-        {
-          id: "rawSpectralDataPerROI",
-          name: "Raw Spectral Data per ROI .csv",
-          type: "checkbox",
-          description: "Export the aggregate raw spectral data per ROI as a CSV",
-          selected: false,
-          updateCounts: (selection, selected) => {
-            let countMap: Record<string, number> = { rawSpectralDataPerROI: 0 };
+            let countMap: Record<string, number> = { rawSpectralDataPerPMC: 0 };
 
             let scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
             scanOptions.forEach(scanOption => {
               let scanId = scanOption.id.replace("scan-", "");
               let roiIds = scanOption.subOptions?.find(subOption => subOption.id === scanId + "_rois")?.selectedRegions?.map(roi => roi.id) || [];
               // Adding 1 for All Points
-              countMap["rawSpectralDataPerROI"] += roiIds.length + 1;
+              countMap["rawSpectralDataPerPMC"] += roiIds.length + 1;
             });
+
+            return countMap;
+          },
+        },
+        {
+          id: "bulkSumMaxSpectra",
+          name: "Bulk Sum and Max Spectra .csv",
+          type: "checkbox",
+          description: "Export the bulk sum and max spectra for all points as a CSV",
+          selected: false,
+          updateCounts: (selection, selected) => {
+            let scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
+            let countMap: Record<string, number> = { bulkSumMaxSpectra: scanOptions.length };
 
             return countMap;
           },
@@ -451,11 +451,11 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
 
     let exportRequests: Observable<WidgetExportData>[] = [];
     if (request.dataProducts["rawSpectralDataPerPMC"]?.selected) {
-      exportRequests.push(this._exporterService.getRawSpectralDataPerPMC(scanId));
+      exportRequests.push(this._exporterService.getRawSpectralDataPerPMC(scanId, roiIds));
     }
 
-    if (request.dataProducts["rawSpectralDataPerROI"]?.selected) {
-      exportRequests.push(this._exporterService.getRawSpectralDataPerROI(scanId, roiIds));
+    if (request.dataProducts["bulkSumMaxSpectra"]?.selected) {
+      exportRequests.push(this._exporterService.getBulkSumMaxSpectra(scanId));
     }
 
     if (request.dataProducts["spectraMetadata"]?.selected) {

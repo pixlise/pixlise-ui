@@ -63,6 +63,8 @@ export type ROIPickerData = {
   selectedItems?: Map<string, string[]>;
 
   hideBuiltin?: boolean;
+
+  showSelectedPoints?: boolean;
 };
 
 @Component({

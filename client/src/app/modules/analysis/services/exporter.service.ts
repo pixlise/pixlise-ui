@@ -11,7 +11,7 @@ import { ImageGetReq, ImageListReq } from "../../../generated-protos/image-msgs"
 import { Coordinate2D } from "../../../generated-protos/image-beam-location";
 import { ImageBeamLocationsReq } from "../../../generated-protos/image-beam-location-msgs";
 import { SpectrumReq, SpectrumResp } from "../../../generated-protos/spectrum-msgs";
-import { spectrumTypeToJSON } from "../../../generated-protos/spectrum";
+import { Spectrum, spectrumTypeToJSON } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
 import { decodeIndexList } from "../../../utils/utils";
 import { DiffractionExporter } from "../components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
@@ -78,13 +78,30 @@ export class DataExporterService {
       );
   }
 
+  private getSpectrumPMCMetadata(spectrum: Spectrum, scanMeta: ScanMetaLabelsAndTypesResp, metaLabels: string[]) {
+    let meta: Record<string, any> = {};
+    metaLabels.forEach(label => {
+      let metaIdx = scanMeta.metaLabels.findIndex(metaLabel => metaLabel === label);
+      if (metaIdx >= 0 && spectrum.meta[metaIdx] !== undefined) {
+        let value = spectrum.meta[metaIdx].fvalue ?? spectrum.meta[metaIdx].ivalue ?? "";
+        meta[label] = value;
+      }
+    });
+
+    return meta;
+  }
+
   private makeExportForRawSpectraPerPMC(
     scanId: string,
     scanEntries: ScanEntryResp,
     beamLocations: ScanBeamLocationsResp,
-    spectrumResp: SpectrumResp
+    spectrumResp: SpectrumResp,
+    scanMeta: ScanMetaLabelsAndTypesResp,
+    roiName: string,
+    roiPMCs: Set<number> = new Set()
   ): WidgetExportFile | null {
-    let data = "PMC,X,Y,Z,Detector,Type,Max Count";
+    let metaLabels = ["SCLK", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
+    let data = `PMC,X,Y,Z,Detector,Type,${metaLabels.join(",")},Max Count`;
     for (let i = 0; i < spectrumResp.channelCount; i++) {
       data += `,Ch. ${i + 1}`;
     }
@@ -106,17 +123,26 @@ export class DataExporterService {
         continue;
       }
 
+      // If we have a list of PMCs to include from an ROI, skip if the PMC isn't in the list
+      if (roiPMCs.size > 0 && !roiPMCs.has(entry.id)) {
+        continue;
+      }
+
       // Round to 5 decimal places
       let location = beamLocations.beamLocations[i];
       let [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
       let spectraPerLocation = spectrumResp.spectraPerLocation[i];
+
       spectraPerLocation.spectra.forEach(spectra => {
         let typeName = spectrumTypeToJSON(spectra.type).replace("SPECTRUM_", "").toLowerCase();
         if (typeName && typeName.length > 0) {
           typeName = typeName.charAt(0).toUpperCase() + typeName.slice(1);
         }
 
-        let dataLine = `\n${entry.id},${x},${y},${z},${spectra.detector},${typeName},${spectra.maxCount}`;
+        let meta = this.getSpectrumPMCMetadata(spectra, scanMeta, metaLabels);
+        let metaValues = metaLabels.map(label => meta[label] ?? "").join(",");
+
+        let dataLine = `\n${entry.id},${x},${y},${z},${spectra.detector},${typeName},${metaValues},${spectra.maxCount}`;
         spectra.counts.forEach(count => {
           dataLine += `,${count ?? ""}`;
         });
@@ -124,29 +150,62 @@ export class DataExporterService {
         data += dataLine;
       });
     }
-    return { fileName: `${scanId}-raw-spectra-per-pmc.csv`, data };
+    return { fileName: `${scanId} Normal ROI ${roiName}.csv`, data };
   }
 
-  getRawSpectralDataPerPMC(scanId: string): Observable<WidgetExportData> {
-    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>] = [
+  getRawSpectralDataPerPMC(scanId: string, roiIds: string[]): Observable<WidgetExportData> {
+    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>, Observable<ScanMetaLabelsAndTypesResp>] = [
       this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
       this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
       this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })),
+      this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
     ];
     return combineLatest(requests).pipe(
-      map(([beamLocations, scanEntries, spectrumResp]) => {
+      switchMap(([beamLocations, scanEntries, spectrumResp, scanMeta]) => {
         let csvs: WidgetExportFile[] = [];
-        let rawSpectraPerPMC = this.makeExportForRawSpectraPerPMC(scanId, scanEntries, beamLocations, spectrumResp);
+
+        let rawSpectraPerPMC = this.makeExportForRawSpectraPerPMC(scanId, scanEntries, beamLocations, spectrumResp, scanMeta, "All Points");
         if (rawSpectraPerPMC) {
           csvs.push(rawSpectraPerPMC);
         }
 
-        return { csvs };
+        let roiRequests: Observable<RegionOfInterestGetResp | null>[] = roiIds.map(id =>
+          PredefinedROIID.isPredefined(id) ? of(null) : this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id }))
+        );
+
+        if (roiRequests.length === 0) {
+          roiRequests = [of(null)];
+        }
+        return combineLatest(roiRequests).pipe(
+          switchMap(rois => {
+            rois.forEach((roi, i) => {
+              if (!roi) {
+                return;
+              }
+
+              let pmcPoints = new Set(decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []));
+              let roiData = this.makeExportForRawSpectraPerPMC(
+                scanId,
+                scanEntries,
+                beamLocations,
+                spectrumResp,
+                scanMeta,
+                roi.regionOfInterest?.name || roiIds[i],
+                pmcPoints
+              );
+              if (roiData) {
+                csvs.push(roiData);
+              }
+            });
+
+            return of({ csvs });
+          })
+        );
       })
     );
   }
 
-  private makeExportForRawSpectraPerROI(scanId: string, roiName: string, spectrumResp: SpectrumResp): WidgetExportFile | null {
+  private makeExportForRawSpectraBulkSpectra(scanId: string, roiName: string, spectrumResp: SpectrumResp): WidgetExportFile | null {
     if (spectrumResp) {
       let spectraData = "ROI,Channel,Detector,Bulk Sum,Max Spectra";
       for (let i = 0; i < spectrumResp.channelCount; i++) {
@@ -168,7 +227,7 @@ export class DataExporterService {
         });
       }
 
-      return { fileName: `${scanId}-raw-spectra-roi-${roiName}.csv`, data: spectraData };
+      return { fileName: `${scanId} Normal-BulkSum ROI ${roiName}.csv`, data: spectraData };
     } else {
       console.error("Missing data for spectra export");
       this._snackService.openError("Error exporting data", "Missing data for spectra export");
@@ -176,62 +235,27 @@ export class DataExporterService {
     }
   }
 
-  getRawSpectralDataPerROI(scanId: string, roiIds: string[] = []): Observable<WidgetExportData> {
-    // First get ROIs, then get spectra for each ROI
-    let roiRequests: Observable<RegionOfInterestGetResp | null>[] = roiIds.map(id =>
-      PredefinedROIID.isPredefined(id) ? of(null) : this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id }))
-    );
+  getBulkSumMaxSpectra(scanId: string): Observable<WidgetExportData> {
+    let spectrumRequests: Observable<SpectrumResp>[] = [
+      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })), // All Points
+    ];
 
-    // If no ROIs, add a null observable to the array so we can still combineLatest
-    if (roiRequests.length === 0) {
-      roiRequests = [of(null)];
-    }
-    return combineLatest(roiRequests).pipe(
-      switchMap(rois => {
-        let spectrumRequests: Observable<SpectrumResp>[] = [
-          this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })), // All Points
-        ];
+    return combineLatest(spectrumRequests).pipe(
+      map(spectrumResp => {
+        let csvs: WidgetExportFile[] = [];
 
-        rois.forEach(roi => {
-          if (!roi) {
-            return;
-          }
+        let allPointsData = this.makeExportForRawSpectraBulkSpectra(scanId, "All Points", spectrumResp[0]);
+        if (allPointsData) {
+          csvs.push(allPointsData);
+        }
 
-          let scanEntries = decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []);
-          spectrumRequests.push(
-            this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, entries: { indexes: scanEntries }, bulkSum: true, maxValue: true }))
-          );
-        });
-
-        return combineLatest(spectrumRequests).pipe(
-          map(spectrumResp => {
-            let csvs: WidgetExportFile[] = [];
-
-            let allPointsData = this.makeExportForRawSpectraPerROI(scanId, "All Points", spectrumResp[0]);
-            if (allPointsData) {
-              csvs.push(allPointsData);
-            }
-
-            rois.forEach((roi, i) => {
-              if (!roi) {
-                return;
-              }
-
-              let roiData = this.makeExportForRawSpectraPerROI(scanId, roi.regionOfInterest?.name || roiIds[i], spectrumResp[i + 1]);
-              if (roiData) {
-                csvs.push(roiData);
-              }
-            });
-
-            return { csvs };
-          })
-        );
+        return { csvs };
       })
     );
   }
 
   /** Get metadata for each detector in the format {detector: {label: value}} */
-  getMetadataPerDetector(
+  getBulkSpectraMetadataPerDetector(
     spectrumResp: SpectrumResp,
     scanMeta: ScanMetaLabelsAndTypesResp,
     metaLabels: string[] = ["SCLK", "PMC", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"]
@@ -350,7 +374,7 @@ export class DataExporterService {
           let metaLabels = ["SCLK", "PMC", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
           let data = "Detector," + metaLabels.join(",");
 
-          let metadataPerDetector: Record<string, Record<string, string | number>> = this.getMetadataPerDetector(spectrumResp, scanMeta, metaLabels);
+          let metadataPerDetector: Record<string, Record<string, string | number>> = this.getBulkSpectraMetadataPerDetector(spectrumResp, scanMeta, metaLabels);
           let detectors = Object.keys(metadataPerDetector);
           detectors.forEach(detector => {
             let dataLine = `\n${detector}`;

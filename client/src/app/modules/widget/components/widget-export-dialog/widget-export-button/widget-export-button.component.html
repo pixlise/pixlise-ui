@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <action-button
     (onClick)="accordionOpen = !accordionOpen"
     *ngIf="option.subOptions && option.subOptions.length > 0"
+    [disabled]="!option.selected"
     [action]="accordionOpen ? 'closeAccordion' : 'openAccordion'">
   </action-button>
   <div *ngIf="option.type === 'checkbox'" class="option-type checkbox-option">
