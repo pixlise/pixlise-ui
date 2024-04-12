@@ -129,6 +129,12 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
   showMmol: boolean = false;
   selectModeExcludeROI: boolean = false;
 
+  public static readonly SELECT_ADD = "add";
+  public static readonly SELECT_SUBTRACT = "subtract";
+  public static readonly SELECT_RESET = "reset";
+
+  selectionMode: string = NaryChartModel.SELECT_RESET;
+
   // Some commonly used constants
   public static readonly OUTER_PADDING = 10;
   public static readonly LABEL_PADDING = 4;

@@ -23,6 +23,7 @@ export interface BaseChartModelWithLasso {
   cursorShown: string;
   drawModel: BaseChartDrawModelPoints;
   raw: BaseChartRawData | null;
+  selectionMode?: string;
 }
 
 export interface BaseChartRawData {

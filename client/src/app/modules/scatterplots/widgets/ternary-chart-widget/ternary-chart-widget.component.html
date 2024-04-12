@@ -2,6 +2,12 @@
   <div class="settings">
     <two-state-button leftLabel="Weight%" rightLabel="mmol" toolTip="Show results in mmol vs weight %" [active]="showMmol" (onToggle)="setShowMmol()">
     </two-state-button>
+    <multi-state-button
+      [stateNames]="selectionModes"
+      [items]="['assets/button-icons/minus-yellow.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus-white.svg']"
+      [activeState]="currentSelectionMode"
+      (onChange)="onChangeSelectionMode($event)">
+    </multi-state-button>
     <!-- <two-state-push-button
         [active]="selectModeExcludeROI"
         (onToggle)="onToggleSelectModeExcludeROI()"
