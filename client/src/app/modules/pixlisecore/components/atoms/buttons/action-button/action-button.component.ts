@@ -57,6 +57,7 @@ const customActionIcons = {
   radioOff: "assets/button-icons/radio-off.svg",
   rgbMix: "assets/button-icons/rgbmix.svg",
   colorPicker: "assets/button-icons/colours.svg",
+  export: "assets/button-icons/export.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;

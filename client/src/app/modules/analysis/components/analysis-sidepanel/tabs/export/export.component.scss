@@ -1,0 +1,25 @@
+.export-dialog {
+  width: inherit !important;
+}
+
+.loading-container {
+  position: absolute;
+  justify-content: center;
+
+  left: 0;
+  background: #2a3137e0;
+  width: 100%;
+  justify-content: flex-start;
+  z-index: 10;
+}
+
+.options {
+  .options-container {
+    max-height: 284px;
+    overflow-y: auto;
+
+    // This ensures count bubble is not cut off
+    padding-right: 6px;
+    margin-right: -6px;
+  }
+}

@@ -1,0 +1,168 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div *ngIf="option" class="option {{ option.selected ? 'selected' : '' }}">
+  <action-button
+    (onClick)="accordionOpen = !accordionOpen"
+    *ngIf="option.subOptions && option.subOptions.length > 0"
+    [action]="accordionOpen ? 'closeAccordion' : 'openAccordion'">
+  </action-button>
+  <div *ngIf="option.type === 'checkbox'" class="option-type checkbox-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled && option.count !== 0 ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && option.count !== 0 && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <action-button
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled && option.count !== 0 ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && option.count !== 0 && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+      [disabled]="option.disabled || option.count === 0"
+      [action]="option.selected ? 'checkOn' : 'checkOff'"
+      (onClick)="onToggleOption()"></action-button>
+  </div>
+  <div *ngIf="option.type === 'multiswitch'" class="option-type multiswitch-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <multi-switch-button
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+      [disabled]="!!option.disabled"
+      [options]="option.options || []"
+      [value]="option.selectedOption || ''"
+      (onChange)="onSelectOption($event)">
+    </multi-switch-button>
+  </div>
+  <div *ngIf="option.type === 'dropdown' && option.dropdownOptions" class="option-type dropdown-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <mat-select
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+      [disabled]="!!option.disabled"
+      [(ngModel)]="option.selectedOption"
+      (selectionChange)="onSelectDropdownOption($event)">
+      <mat-option *ngFor="let subOption of option.dropdownOptions" [value]="subOption.id">{{ subOption.name }}</mat-option>
+    </mat-select>
+  </div>
+  <div *ngIf="option.type === 'regions'" class="option-type button-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <push-button
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+      [disabled]="!!option.disabled"
+      (onClick)="onOpenRegionPicker()"
+      [notificationCount]="option?.selectedRegions?.length || 0"
+      >Select Regions
+    </push-button>
+  </div>
+  <div *ngIf="option.type === 'expressions'" class="option-type button-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <push-button
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+      [disabled]="!!option.disabled"
+      (onClick)="onOpenExpressionPicker()"
+      [notificationCount]="option?.selectedExpressions?.length || 0"
+      >Select Expressions
+    </push-button>
+  </div>
+  <div *ngIf="option.type === 'images'" class="option-type button-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <push-button
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+      [disabled]="!!option.disabled"
+      (onClick)="onOpenImagePicker()"
+      [notificationCount]="option?.selectedImagePaths?.length || 0"
+      >Select Images
+    </push-button>
+  </div>
+</div>
+<div *ngIf="accordionOpen && option?.subOptions" class="sub-options-container">
+  <widget-export-button
+    *ngFor="let subOption of option?.subOptions || []; trackBy: trackByFn"
+    [option]="subOption"
+    (toggleOption)="onToggleSubOption(subOption)"
+    (selectOption)="onSelectSubOption($event)"
+    (selectDropdownOption)="onSelectSubDropdownOption($event)"
+    (selectROIsOption)="onSelectSubRegionOption($event)"
+    (selectExpressionsOption)="onSelectSubExpressionOption($event)"
+    (selectImagesOption)="onSelectSubImageOption($event)">
+  </widget-export-button>
+</div>

@@ -79,6 +79,11 @@ export class APIEndpointsService {
     );
   }
 
+  loadRawImageFromURL(imagePath: string): Observable<ArrayBuffer> {
+    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    return this.http.get(apiUrl, { responseType: "arraybuffer" });
+  }
+
   private loadImageFromURL(url: string, maxCacheSize: number = 10000000): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
@@ -157,7 +162,7 @@ export class APIEndpointsService {
         console.error(err);
         return throwError(() => new Error(err));
       }),
-      tap(url => console.log(`Generated preview URL: ${url}`)),
+      tap(url => console.log(`Generated preview URL for ${imagePath} (${url.length} bytes)`)),
       mergeMap(url => of(url)),
       shareReplay(1)
     );

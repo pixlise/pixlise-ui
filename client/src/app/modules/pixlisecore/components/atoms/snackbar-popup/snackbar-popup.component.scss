@@ -60,7 +60,7 @@
   }
 
   .close-btn {
-    margin-left: auto;
+    // margin-left: auto;
     cursor: pointer;
     color: rgb(var(--mat-snack-bar-button-color));
 
@@ -144,10 +144,12 @@
       line-height: 14px;
       margin-bottom: 8px;
       text-transform: none;
+      word-break: break-word;
     }
 
     .details {
       font-size: 12px;
+      word-break: break-word;
     }
   }
 
@@ -156,5 +158,11 @@
     align-items: center;
     justify-content: flex-end;
     margin: 8px;
+  }
+}
+
+.snackbar {
+  .snack-btn:first-of-type {
+    margin-left: auto;
   }
 }

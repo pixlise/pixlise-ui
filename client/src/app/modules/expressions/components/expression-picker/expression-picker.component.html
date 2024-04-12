@@ -140,14 +140,9 @@ POSSIBILITY OF SUCH DAMAGE.
     </section>
     <section *ngIf="maxSelection !== 1" class="column active-expressions {{ showRGBMixMode && isRGBMixModeActive ? 'rgbmix-mode' : '' }}">
       <div class="title active-widget-selection">
-        <mat-select [(ngModel)]="activeWidgetId" placeholder="Active Group">
+        <mat-select *ngIf="!data.disableWidgetSwitching" [(ngModel)]="activeWidgetId" placeholder="Active Group">
           <mat-option *ngFor="let option of layoutWidgets; let i = index" [value]="option.widget.id">{{ option.name }}</mat-option>
         </mat-select>
-        <!-- <multi-switch-button
-          *ngIf="showRGBMixMode"
-          [options]="rgbMixModeGroupOptions"
-          [value]="activeRGBMixModeGroup"
-          (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button> -->
         <push-button
           buttonStyle="gray"
           #saveExpressionGroupDialogBtn

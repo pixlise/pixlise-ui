@@ -150,32 +150,21 @@ export class RoughnessComponent implements OnInit, OnDestroy {
     this.userPeakEditing = this._userOptionsService.hasFeatureAccess("editDiffractionPeak");
 
     this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
-        if (config) {
-          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
-          config.layouts.forEach((layout, i) => {
-            const widgetCounts: Record<string, number> = {};
-            layout.widgets.forEach((widget, widgetIndex) => {
-              if (widgetCounts[widget.type]) {
-                widgetCounts[widget.type]++;
-              } else {
-                widgetCounts[widget.type] = 1;
-              }
+      this._analysisLayoutService.activeScreenConfigWidgetReferences$.subscribe(widgetReferences => {
+        this.layoutWidgets = widgetReferences;
 
-              const widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
-              const widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
-
-              widgetReferences.push({ widget, name: widgetName, type: widget.type });
-            });
-          });
-
-          this.layoutWidgets = widgetReferences;
-
-          this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
+        this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
+        if (this.allContextImages.length > 0) {
           this.selectedContextImage = this.allContextImages[0].widget.id;
+        } else {
+          this.selectedContextImage = "";
+        }
 
-          this.allSpectrumCharts = this.layoutWidgets.filter(widget => widget.type === "spectrum-chart");
+        this.allSpectrumCharts = this.layoutWidgets.filter(widget => widget.type === "spectrum-chart");
+        if (this.allSpectrumCharts.length > 0) {
           this.selectedSpectrumChart = this.allSpectrumCharts[0].widget.id;
+        } else {
+          this.selectedSpectrumChart = "";
         }
       })
     );

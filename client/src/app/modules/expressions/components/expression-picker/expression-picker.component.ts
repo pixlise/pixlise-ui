@@ -35,7 +35,7 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -78,6 +78,7 @@ export type ExpressionPickerData = {
   preserveGroupSelection?: boolean; // If user selects a group, don't select its component expressions, but keep the group id selected
   showRGBMixMode?: boolean;
   rgbMixModeActive?: boolean;
+  disableWidgetSwitching?: boolean;
 };
 
 @Component({
@@ -1115,7 +1116,13 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       });
 
       if (!this.persistDialog) {
-        this.dialogRef.close();
+        // If we're not persisting the dialog, close it. Return results here for export
+        this.dialogRef.close({
+          selectedExpressions,
+          scanId: this.scanId,
+          quantId: this.quantId,
+          persistDialog: this.persistDialog,
+        });
       }
     }
   }

@@ -51,6 +51,7 @@ export class ROISearchControlsComponent {
   ngOnInit(): void {
     if (!this.showBuiltin) {
       this._selectedROITypes.splice(this._selectedROITypes.indexOf("builtin"), 1);
+      this.filterROIsForDisplay();
     }
 
     if (!this._visibleScanId) {
@@ -170,10 +171,6 @@ export class ROISearchControlsComponent {
     const filteredSummaries: ROIItemSummary[] = [];
     const searchString = this.roiSearchString.toLowerCase();
     for (const summary of this.summaries) {
-      // if (PredefinedROIID.isAllPointsROI(summary.id)) {
-      //   continue;
-      // }
-
       const summaryNameLower = summary.name.toLowerCase();
       if (this.visibleScanId.length > 0 && summary.scanId !== this.visibleScanId) {
         continue;
@@ -195,7 +192,7 @@ export class ROISearchControlsComponent {
         filteredSummaries.push(summary);
       } else if (this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary) && !summary.isMIST) {
         filteredSummaries.push(summary);
-      } else if (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)) {
+      } else if (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary) && !PredefinedROIID.isPredefined(summary.id) && !summary.isMIST) {
         filteredSummaries.push(summary);
       } else if (this.selectedROITypes.includes("mist-species") && summary.isMIST && checkMistFullyIdentified(summary)) {
         filteredSummaries.push(summary);
