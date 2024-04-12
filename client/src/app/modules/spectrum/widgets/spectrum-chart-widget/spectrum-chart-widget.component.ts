@@ -578,6 +578,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       selectedItems: this.mdl.getLineList(),
       scanId: this.scanId,
       title: "Spectrum Lines To Display",
+      showSelectedPoints: true,
     };
 
     dialogConfig.hasBackdrop = false;

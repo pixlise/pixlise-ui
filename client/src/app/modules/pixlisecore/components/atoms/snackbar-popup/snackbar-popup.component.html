@@ -52,8 +52,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <mat-icon>{{ icon }}</mat-icon>
   </span>
   <span class="message">{{ data.message }}</span>
-  <push-button *ngIf="data.details" buttonStyle="white-outline" [customDialog]="detailsPopup" #detailsModal class="details">Details</push-button>
-  <span class="close-btn {{ data.action ? 'rounded' : '' }}" (click)="close()">
+  <push-button *ngIf="data.details" buttonStyle="white-outline" [customDialog]="detailsPopup" #detailsModal class="details snack-btn">Details</push-button>
+  <span class="close-btn snack-btn {{ data.action ? 'rounded' : '' }}" (click)="close()">
     <span *ngIf="data.action">{{ data.action }}</span>
     <mat-icon *ngIf="!data.action">close</mat-icon>
   </span>

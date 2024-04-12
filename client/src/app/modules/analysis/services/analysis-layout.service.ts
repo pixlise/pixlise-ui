@@ -10,7 +10,7 @@ import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-proto
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { createDefaultScreenConfiguration } from "../models/screen-configuration.model";
+import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 import { WSError } from "../../pixlisecore/services/wsMessageHandler";
@@ -21,6 +21,7 @@ import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-proto
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 
 export class DefaultExpressions {
   constructor(
@@ -28,7 +29,6 @@ export class DefaultExpressions {
     public quantId: string
   ) {}
 }
-
 @Injectable({
   providedIn: "root",
 })
@@ -50,6 +50,7 @@ export class AnalysisLayoutService implements OnDestroy {
 
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
+  activeScreenConfigWidgetReferences$ = new BehaviorSubject<WidgetReference[]>([]);
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
 
@@ -105,6 +106,45 @@ export class AnalysisLayoutService implements OnDestroy {
         }
       })
     );
+
+    this._subs.add(
+      this.activeScreenConfiguration$.subscribe(config => {
+        if (config) {
+          let widgetCounts = new Map<string, number>();
+          let widgetReferences: WidgetReference[] = [];
+
+          config.layouts.forEach((layout, i) => {
+            layout.widgets.forEach(widget => {
+              const count = (widgetCounts.get(widget.type) || 0) + 1;
+              widgetCounts.set(widget.type, count);
+
+              const widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
+              const pageSuffix = config.layouts.length > 1 ? ` (page ${i + 1})` : "";
+              let widgetName = `${widgetTypeName} ${count}${pageSuffix}`;
+              widgetReferences.push({ widget, name: widgetName, type: widget.type, page: i });
+            });
+          });
+
+          widgetReferences = widgetReferences.map(widgetReference => {
+            const instanceCount = widgetCounts.get(widgetReference.widget.type);
+            if (instanceCount !== 1) {
+              return widgetReference;
+            }
+
+            // If there's only one instance of this widget type, don't include the count in the name
+            const widgetTypeName = WIDGETS[widgetReference.widget.type as keyof typeof WIDGETS].name;
+            const pageSuffix = config.layouts.length > 1 ? ` (page ${widgetReference.page + 1})` : "";
+            const widgetName = `${widgetTypeName}${pageSuffix}`;
+            return { ...widgetReference, name: widgetName };
+          });
+
+          const currentReferences = this.activeScreenConfigWidgetReferences$.value;
+          if (!currentReferences || JSON.stringify(widgetReferences) !== JSON.stringify(currentReferences)) {
+            this.activeScreenConfigWidgetReferences$.next(widgetReferences);
+          }
+        }
+      })
+    );
   }
 
   get isMapsPage(): boolean {
@@ -119,11 +159,6 @@ export class AnalysisLayoutService implements OnDestroy {
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
-      // Causes multiple calls to loadScreenConfigurationFromScan, probably best to reduce them so we don't
-      // reconfigure stuff multiple times on startup
-      // if (this.defaultScanId) {
-      //   this.loadScreenConfigurationFromScan(this.defaultScanId);
-      // }
     });
   }
 

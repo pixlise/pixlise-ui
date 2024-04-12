@@ -26,6 +26,7 @@ import { ScanConfiguration } from "src/app/generated-protos/screen-configuration
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
+import { NaryChartModel } from "../../base/model";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -66,6 +67,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   quantId: string = "";
 
   private _subs = new Subscription();
+
+  private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
+  private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
   constructor(
     public dialog: MatDialog,
@@ -341,6 +345,24 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     return this.exporter.onExport(this.mdl, request);
   }
 
+  get selectionModes(): string[] {
+    return this._selectionModes;
+  }
+
+  get currentSelectionMode(): string {
+    return this._selectionMode;
+  }
+
+  onChangeSelectionMode(mode: string): void {
+    // Check that it's one of the selected ones
+    if (this._selectionModes.indexOf(mode) >= 0) {
+      this._selectionMode = mode;
+
+      // Set on our model too so interaction class can see it
+      this.mdl.selectionMode = mode;
+    }
+  }
+
   onSoloView() {
     if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
       this._analysisLayoutService.soloViewWidgetId$.next("");
@@ -348,6 +370,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
     }
   }
+
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 

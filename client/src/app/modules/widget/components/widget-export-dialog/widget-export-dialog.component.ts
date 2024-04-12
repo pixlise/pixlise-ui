@@ -27,17 +27,22 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, OnInit, Output, SimpleChanges } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {
+  UpdateCountsFn,
   WidgetExportData,
   WidgetExportDialogData,
   WidgetExportFile,
   WidgetExportOption,
   WidgetExportRequest,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { MatSelectChange } from "@angular/material/select";
+import { ROIItemSummary } from "../../../../generated-protos/roi";
+import { DataExpression } from "../../../../generated-protos/expressions";
+import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 
 @Component({
   selector: "widget-export-dialog",
@@ -52,14 +57,21 @@ export class WidgetExportDialogComponent implements OnInit {
   loading: boolean = false;
   errorMessage: string = "";
 
-  options: WidgetExportOption[] = this.data.options;
-  dataProducts: WidgetExportOption[] = this.data.dataProducts;
+  // Initial state to restore from
+  initialOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.options);
+  initialDataProducts: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+
+  options: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.options);
+  dataProducts: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+
+  private _selectedDataProductsCount: number = 0;
 
   showPreview: boolean = false;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: WidgetExportDialogData,
-    public dialogRef: MatDialogRef<WidgetExportDialogComponent>
+    public dialogRef: MatDialogRef<WidgetExportDialogComponent> | null,
+    private _snackBarService: SnackbarService
   ) {
     if (data.title) {
       this.title = data.title;
@@ -74,20 +86,152 @@ export class WidgetExportDialogComponent implements OnInit {
     this.showPreview = !!data.showPreview;
   }
 
-  ngOnInit(): void {}
+  copyWidgetExportOptionsDefaultState(exportOptions: WidgetExportOption[]): WidgetExportOption[] {
+    return exportOptions.map(option => {
+      return JSON.parse(JSON.stringify(option)) as WidgetExportOption;
+    });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes["data"] || changes["dataProducts"] || changes["options"]) {
+      this.mapAllCounts();
+    }
+  }
+
+  ngOnInit(): void {
+    this.mapAllCounts();
+  }
+
+  trackByFn(index: number, item: WidgetExportOption): string {
+    return item.id;
+  }
+
+  updateDataProductsCount(): void {
+    this._selectedDataProductsCount = Math.ceil(this.dataProducts.filter(option => option.selected).reduce((a, b) => a + (b?.count ?? 1), 0));
+  }
 
   get selectedDataProductsCount(): number {
-    return this.dataProducts.filter(option => option.selected).length;
+    return this._selectedDataProductsCount;
   }
 
   onCancel(): void {
-    this.dialogRef.close();
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
   }
 
-  onConfirm(): void {
-    this.loading = true;
-    this.errorMessage = "";
+  onClear(): void {
+    let initialOptions = this.copyWidgetExportOptionsDefaultState(this.initialOptions);
+    let initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.initialDataProducts);
 
+    // We don't want to clear the updateCounts associated with options and dataProducts, so copy everything else
+    this.options = this.options.map((option, index) => ({ ...initialOptions[index], updateCounts: option.updateCounts }));
+    this.dataProducts = this.dataProducts.map((option, index) => ({ ...initialDataProducts[index], updateCounts: option.updateCounts }));
+
+    this.mapAllCounts();
+  }
+
+  mapAllCounts(): void {
+    this.options.forEach(option => {
+      if (option.updateCounts) {
+        this.mapNewDataProductCounts(option.updateCounts, option.selected);
+      }
+    });
+
+    this.dataProducts.forEach(option => {
+      if (option.updateCounts) {
+        this.mapNewDataProductCounts(option.updateCounts, option.selected);
+      }
+    });
+
+    this.updateDataProductsCount();
+  }
+
+  mapAllDataProductCounts(): void {
+    this.dataProducts.forEach(option => {
+      if (option.updateCounts) {
+        this.mapNewDataProductCounts(option.updateCounts, option.selected);
+      }
+    });
+
+    this.updateDataProductsCount();
+  }
+
+  mapNewDataProductCounts(updateCounts: UpdateCountsFn, selected: boolean): void {
+    if (!updateCounts) {
+      return;
+    }
+
+    let selection = this.formWidgetExportRequest();
+    let countMap = updateCounts(selection, selected);
+
+    Object.entries(countMap).forEach(([key, newCount]) => {
+      let product = this.dataProducts.find(product => product.id === key);
+      if (product) {
+        product.count = newCount;
+      }
+    });
+  }
+
+  toggleOption(option: WidgetExportOption): void {
+    option.selected = !option.selected;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  selectOption({ option, event }: { option: WidgetExportOption; event: string }): void {
+    option.selectedOption = event;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  selectDropdownOption({ option, event }: { option: WidgetExportOption; event: MatSelectChange }): void {
+    option.selectedOption = event.value;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  selectROIsOption({ option, event }: { option: WidgetExportOption; event: ROIItemSummary[] }): void {
+    option.selectedRegions = event;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  selectExpressionsOption({ option, event }: { option: WidgetExportOption; event: DataExpression[] }): void {
+    option.selectedExpressions = event;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  selectImagesOption({ option, event }: { option: WidgetExportOption; event: string[] }, isDataProduct: boolean = false): void {
+    option.selectedImagePaths = event;
+    option.selected = event.length > 0;
+
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    } else if (isDataProduct) {
+      this.mapNewDataProductCounts(() => ({ [option.id]: event.length }), option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  formWidgetExportRequest(): WidgetExportRequest {
     let options: Record<string, WidgetExportOption> = {};
     this.options.forEach(option => {
       options[option.id] = option;
@@ -98,10 +242,15 @@ export class WidgetExportDialogComponent implements OnInit {
       dataProducts[option.id] = option;
     });
 
-    this.requestExportData.emit({
-      options,
-      dataProducts,
-    });
+    return { options, dataProducts };
+  }
+
+  onConfirm(): void {
+    this.loading = true;
+    this.errorMessage = "";
+
+    let exportRequest = this.formWidgetExportRequest();
+    this.requestExportData.emit(exportRequest);
   }
 
   private addFilesToZip(zip: JSZip, folderName: string, files: WidgetExportFile[] | undefined, extension: string, base64: boolean = false): void {
@@ -121,26 +270,37 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   onDownload(data: WidgetExportData): void {
-    this.loading = false;
     this.errorMessage = "";
     let zipFileName = (this.zipFileName || this.data.defaultZipName).replace(".zip", "") + ".zip";
 
     let zip = new JSZip();
 
-    this.addFilesToZip(zip, "csvs", data.csvs, ".csv");
-    this.addFilesToZip(zip, "txts", data.txts, ".txt");
-    this.addFilesToZip(zip, "images", data.images, ".png", true);
+    this.addFilesToZip(zip, "Data Files", data.csvs, ".csv");
+    this.addFilesToZip(zip, "Data Files", data.txts, ".txt");
+    this.addFilesToZip(zip, "Data Files", data.msas, ".msa");
+    this.addFilesToZip(zip, "Images", data.images, ".png", true);
+    this.addFilesToZip(zip, "Images", data.tiffImages, ".tif", true);
 
     zip
       .generateAsync({ type: "blob" })
       .then(content => {
         saveAs(content, zipFileName);
+        this.onClear();
+        this.loading = false;
       })
       .catch(err => {
+        this.loading = false;
         console.error(err);
+        if (!this.errorMessage) {
+          this.errorMessage = "Failed to generate ZIP file.";
+        }
+
+        this._snackBarService.openError(this.errorMessage, err);
       });
 
-    this.dialogRef.close();
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
   }
 
   onExportError(err: any): void {

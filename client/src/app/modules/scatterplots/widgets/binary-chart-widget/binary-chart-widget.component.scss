@@ -16,6 +16,11 @@ interactive-canvas {
 .settings {
   display: flex;
   flex-direction: column;
+
+  multi-state-button {
+    display: flex;
+    justify-content: center;
+  }
 }
 
 .y-switcher {

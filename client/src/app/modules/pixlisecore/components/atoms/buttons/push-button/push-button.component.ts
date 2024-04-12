@@ -52,6 +52,7 @@ export type PushButtonStyle =
 })
 export class PushButtonComponent implements OnInit {
   @Input() buttonStyle: PushButtonStyle = "normal";
+  @Input() badgeBorderColor: string = "";
   @Input() active: boolean = false;
   @Input() disabled: boolean = false;
   @Input() notificationCount: number = 0;

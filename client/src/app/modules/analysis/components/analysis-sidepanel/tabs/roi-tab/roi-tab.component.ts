@@ -114,30 +114,10 @@ export class ROITabComponent implements OnInit {
     );
 
     this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
-        if (config) {
-          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
-          config.layouts.forEach((layout, i) => {
-            let widgetCounts: Record<string, number> = {};
-            layout.widgets.forEach((widget, widgetIndex) => {
-              if (widgetCounts[widget.type]) {
-                widgetCounts[widget.type]++;
-              } else {
-                widgetCounts[widget.type] = 1;
-              }
-
-              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
-              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
-
-              widgetReferences.push({ widget, name: widgetName, type: widget.type });
-            });
-          });
-
-          this.layoutWidgets = widgetReferences;
-
-          this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
-          this.selectedContextImage = this.allContextImages[0].widget.id;
-        }
+      this._analysisLayoutService.activeScreenConfigWidgetReferences$.subscribe(widgetReferences => {
+        this.layoutWidgets = widgetReferences;
+        this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
+        this.selectedContextImage = this.allContextImages?.[0]?.widget?.id || "";
       })
     );
   }

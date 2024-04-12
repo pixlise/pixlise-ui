@@ -61,7 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </h5>
         </div>
         <div class="selection">
-          <mat-checkbox class="image-option-checkbox" [checked]="image.path === selectedImagePath"></mat-checkbox>
+          <mat-checkbox class="image-option-checkbox" [checked]="checkSelected(image)"></mat-checkbox>
         </div>
       </div>
     </div>
@@ -93,6 +93,16 @@ POSSIBILITY OF SUCH DAMAGE.
       <wait-spinner *ngIf="waitingForImages.length > 0" #tooltip="matTooltip" [matTooltip]="waitingForImagesTooltip"></wait-spinner>
     </div>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onApply()">Confirm</push-button>
+    <push-button *ngIf="data.multipleSelection" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
+    <push-button
+      *ngIf="data.multipleSelection"
+      #tooltip="matTooltip"
+      matTooltip="Select all images in the currently visible scan"
+      [matTooltipShowDelay]="1000"
+      buttonStyle="outline"
+      (onClick)="onSelectAllForScan()"
+      >Select All</push-button
+    >
+    <push-button badgeBorderColor="#2a3137" [notificationCount]="selectedPaths.size" buttonStyle="yellow" (onClick)="onApply()">Confirm</push-button>
   </div>
 </div>

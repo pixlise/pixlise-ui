@@ -4,12 +4,7 @@ import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, Snackb
 import { Observable, Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
-import {
-  CanvasDrawNotifier,
-  CanvasDrawer,
-  CanvasInteractionHandler,
-  CanvasWorldTransform,
-} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -23,13 +18,12 @@ import {
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { WidgetKeyDisplayComponent, WidgetKeyDisplayData } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { NaryChartModel } from "../../base/model";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -65,6 +59,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   quantId: string = "";
 
   private _subs = new Subscription();
+
+  private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
+  private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
   constructor(
     public dialog: MatDialog,
@@ -334,6 +331,24 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
     return this.exporter.onExport(this.mdl, request);
+  }
+
+  get selectionModes(): string[] {
+    return this._selectionModes;
+  }
+
+  get currentSelectionMode(): string {
+    return this._selectionMode;
+  }
+
+  onChangeSelectionMode(mode: string): void {
+    // Check that it's one of the selected ones
+    if (this._selectionModes.indexOf(mode) >= 0) {
+      this._selectionMode = mode;
+
+      // Set on our model too so interaction class can see it
+      this.mdl.selectionMode = mode;
+    }
   }
 
   onSoloView() {

@@ -48,6 +48,7 @@
       height: 100%;
       display: flex;
       align-items: flex-end;
+      margin-top: 8px;
     }
 
     .prompt {
@@ -136,33 +137,6 @@
         gap: 8px;
 
         margin-top: 8px;
-
-        .option {
-          display: flex;
-          width: 100%;
-
-          color: rgb(var(--clr-gray-70));
-
-          &.selected {
-            .option-label {
-              color: rgb(var(--clr-gray-10));
-            }
-          }
-
-          .option-label {
-          }
-
-          .checkbox-option {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-          }
-
-          .multiswitch-option {
-            display: flex;
-            flex-direction: column;
-          }
-        }
       }
     }
   }

@@ -61,6 +61,10 @@ export type ROIPickerData = {
   subItemButtonName?: string;
 
   selectedItems?: Map<string, string[]>;
+
+  hideBuiltin?: boolean;
+
+  showSelectedPoints?: boolean;
 };
 
 @Component({
@@ -239,16 +243,6 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
 
   onFilterChanged({ filteredSummaries }: ROISearchFilter): void {
     this.filteredSummaries = filteredSummaries;
-
-    // Remove any ROIs from the selection that are no longer visible
-    // const newSelection: ROISummaries = {};
-    // this.filteredSummaries.forEach(summary => {
-    //   if (this.selectedROIs[summary.id]) {
-    //     newSelection[summary.id] = summary;
-    //   }
-    // });
-
-    // this.selectedROIs = newSelection;
   }
 
   onToggleSearch(): void {
@@ -279,14 +273,6 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
     let regionRequests = selectedROISummaries.map(summary => {
       return this._roiService.loadROI(summary.id);
     });
-
-    // const selectedROIs: ROIItem[] = selectedROISummaries.map(summary => {
-    //   const roi = this._roiService.roiItems$.value[summary.id];
-    //   if (!roi) {
-    //     this._snackBarService.openError(`ROI ${summary.id} was not found in the ROI cache`);
-    //   }
-    //   return roi;
-    // });
 
     combineLatest(regionRequests).subscribe({
       next: selectedROIs => {

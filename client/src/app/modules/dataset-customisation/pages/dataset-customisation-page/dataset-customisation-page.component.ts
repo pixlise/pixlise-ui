@@ -17,7 +17,7 @@ import {
   ImageSetMatchTransformResp,
 } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanGetReq } from "src/app/generated-protos/scan-msgs";
 import { ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
@@ -39,6 +39,9 @@ import { ImageUploadReq } from "src/app/generated-protos/image-msgs";
 import { ImageUploadResp } from "src/app/generated-protos/image-msgs";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
+import { ScanItem } from "../../../../generated-protos/scan";
+import { ObjectType } from "../../../../generated-protos/ownership-access";
+import { UserOptionsService } from "../../../settings/services/user-options.service";
 
 @Component({
   selector: "app-dataset-customisation-page",
@@ -53,6 +56,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   private _interaction: AlignmentInteraction;
 
   cursorShown: string = "";
+
+  scanItemType: ObjectType = ObjectType.OT_SCAN;
+  scanItem: ScanItem = ScanItem.create();
 
   title: string | null = null;
   description: string = "";
@@ -84,6 +90,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     private _imageModelService: DatasetCustomisationService,
     protected _endpointsService: APIEndpointsService,
     private _cachedDataService: APICachedDataService,
+    private _userOptionsService: UserOptionsService,
     public dialog: MatDialog
   ) {
     this.mdl = new DatasetCustomisationModel();
@@ -92,13 +99,13 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    const scanId = this.getScanId();
-    if (!scanId) {
+    this._scanId = this.getScanId();
+    if (!this.scanId) {
       return;
     }
 
     this._subs.add(
-      this._dataService.sendImageGetDefaultRequest(ImageGetDefaultReq.create({ scanIds: [this._analysisLayoutService.defaultScanId] })).subscribe({
+      this._dataService.sendImageGetDefaultRequest(ImageGetDefaultReq.create({ scanIds: [this.scanId] })).subscribe({
         next: (resp: ImageGetDefaultResp) => {
           this.defaultContextImage = "";
 
@@ -117,28 +124,21 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     );
 
     this._subs.add(
-      this._dataService
-        .sendScanListRequest(
-          ScanListReq.create({
-            searchFilters: { scanId: scanId },
-          })
-        )
-        .subscribe({
-          next: (resp: ScanListResp) => {
-            if (!resp.scans || resp.scans.length != 1 || resp.scans[0].id != scanId) {
-              this._snackService.openError("Failed to get scan title/description");
-              return;
-            }
-
-            this.title = resp.scans[0].title;
-            this.description = resp.scans[0].description;
-          },
-          error: err => {
-            this._snackService.openError(err);
-            this.title = ""; // To clear the spinner
-            this.description = "";
-          },
-        })
+      this._dataService.sendScanGetRequest(ScanGetReq.create({ id: this.scanId })).subscribe({
+        next: resp => {
+          let scanItem = resp?.scan;
+          if (scanItem) {
+            this.title = scanItem.title;
+            this.description = scanItem.description;
+            this.scanItem = scanItem;
+          }
+        },
+        error: err => {
+          this._snackService.openError(err);
+          this.title = ""; // To clear the spinner
+          this.description = "";
+        },
+      })
     );
 
     this.refreshImages();
@@ -405,20 +405,14 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onDeleteImage(imgType: string, img: ScanImage, event: any): void {
-    event.stopPropagation();
-
-    if (!confirm(`Are you sure you want to delete ${img.imagePath}?`)) {
-      return;
-    }
-
+  onDeleteImage(imgType: string, img: ScanImage): void {
     this._dataService.sendImageDeleteRequest(ImageDeleteReq.create({ name: img.imagePath })).subscribe({
       next: (resp: ImageDeleteResp) => {
         this._snackService.openSuccess("Image deleted", "Deleted image: " + img.imagePath);
         this.refreshImages();
       },
       error: err => {
-        this._snackService.openError(err);
+        this._snackService.openError(`Error deleting ${imgType} image: ${img?.imagePath}`, err);
       },
     });
   }
