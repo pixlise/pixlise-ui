@@ -28,8 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
-import { forkJoin, mergeMap, Subscription, map, switchMap } from "rxjs";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
@@ -38,6 +38,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { DiffractionExporter } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
 import { DiffractionHistogramDrawer } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/drawer";
 import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/interaction";
 import {
@@ -56,11 +57,14 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
 
@@ -100,6 +104,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   private _histogramMdl: DiffractionHistogramModel;
   transform: PanZoom = new PanZoom();
   interaction: HistogramInteraction;
+  exporter: DiffractionExporter;
 
   isMapShown: boolean = false;
 
@@ -176,46 +181,28 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._histogramMdl = new DiffractionHistogramModel(this);
     this.drawer = new DiffractionHistogramDrawer(this._histogramMdl);
     this.interaction = new HistogramInteraction(this._histogramMdl);
+    this.exporter = new DiffractionExporter(this._snackbarService, "Diffraction");
   }
 
   ngOnInit(): void {
     this.userPeakEditing = this._userOptionsService.hasFeatureAccess("editDiffractionPeak");
 
     this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
-        if (config) {
-          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
-          config.layouts.forEach((layout, i) => {
-            let widgetCounts: Record<string, number> = {};
-            layout.widgets.forEach((widget, widgetIndex) => {
-              if (widgetCounts[widget.type]) {
-                widgetCounts[widget.type]++;
-              } else {
-                widgetCounts[widget.type] = 1;
-              }
+      this._analysisLayoutService.activeScreenConfigWidgetReferences$.subscribe(widgetReferences => {
+        this.layoutWidgets = widgetReferences;
 
-              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
-              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
+        this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
+        if (this.allContextImages.length > 0) {
+          this.selectedContextImage = this.allContextImages[0].widget.id;
+        } else {
+          this.selectedContextImage = "";
+        }
 
-              widgetReferences.push({ widget, name: widgetName, type: widget.type });
-            });
-          });
-
-          this.layoutWidgets = widgetReferences;
-
-          this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
-          if (this.allContextImages.length > 0) {
-            this.selectedContextImage = this.allContextImages[0].widget.id;
-          } else {
-            this.selectedContextImage = "";
-          }
-
-          this.allSpectrumCharts = this.layoutWidgets.filter(widget => widget.type === "spectrum-chart");
-          if (this.allSpectrumCharts.length > 0) {
-            this.selectedSpectrumChart = this.allSpectrumCharts[0].widget.id;
-          } else {
-            this.selectedSpectrumChart = "";
-          }
+        this.allSpectrumCharts = this.layoutWidgets.filter(widget => widget.type === "spectrum-chart");
+        if (this.allSpectrumCharts.length > 0) {
+          this.selectedSpectrumChart = this.allSpectrumCharts[0].widget.id;
+        } else {
+          this.selectedSpectrumChart = "";
         }
       })
     );
@@ -373,7 +360,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this.loading = true;
     const fetchManualPeaks$ = this._diffractionService.fetchManualPeaksForScanAsync(scanId);
     const fetchPeakStatuses$ = this._diffractionService.fetchPeakStatusesForScanAsync(scanId);
-    const getCurrentCalibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
+    const getCurrentCalibration$ = this._energyCalibrationService.getScanCalibration(scanId);
     forkJoin({
       manualPeaks: fetchManualPeaks$,
       peakStatuses: fetchPeakStatuses$,
@@ -854,5 +841,33 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
 
   selectedRangeCount(): number {
     return this._barSelectedCount;
+  }
+
+  onExportData(data: WidgetExportDialogData): Observable<WidgetExportData> {
+    return of({});
+  }
+
+  onExport() {
+    let dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
+    dialogConfig.data = this.exporter.getExportOptions(this.selectedScanId);
+    const dialogRef = this.dialog.open(WidgetExportDialogComponent, dialogConfig);
+    this._subs.add(
+      dialogRef.componentInstance.requestExportData
+        .pipe(
+          switchMap(response => this.exporter.onExport(this.peaks, this.userPeaks, this.selectedScanId, response)),
+          tap(exportData => dialogRef.componentInstance.onDownload(exportData as WidgetExportData)),
+          catchError(err => {
+            if (dialogRef?.componentInstance?.onExportError) {
+              dialogRef.componentInstance.onExportError(err);
+            }
+            return throwError(() => new WidgetError("Failed to export", err));
+          })
+        )
+        .subscribe()
+    );
+
+    dialogRef.afterClosed().subscribe(() => {
+      // this._exportDialogOpen = false;
+    });
   }
 }

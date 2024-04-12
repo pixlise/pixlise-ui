@@ -39,11 +39,19 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="txt-widget-title">Customisations</div>
     </div>
     <div class="menu-section">
-      <div class="meta-entry column">
+      <div class="meta-entry column title-area">
         <div class="txt-dlg-heading">Scan Title & Description</div>
-        <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title..." />
+        <div class="title-row">
+          <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title..." />
+          <share-ownership-item-button
+            *ngIf="scanItem.id"
+            [id]="scanItem.id"
+            [ownershipSummary]="scanItem.owner || null"
+            [type]="scanItemType"></share-ownership-item-button>
+        </div>
+
         <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
-        <input *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." />
+        <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="3"></textarea>
         <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
       </div>
       <div *ngIf="scanId" class="meta-entry column">
@@ -65,7 +73,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
       <div *ngIf="mdl.overlayImagePath" class="meta-entry column">
         <div class="txt-dlg-heading">Align-To Image</div>
-        <span>{{ alignToImageLabel }}</span>
+        <span #tooltip="matTooltip" [matTooltip]="alignToImageLabel" [matTooltipShowDelay]="500" class="align-image-label">{{ alignToImageLabel }}</span>
         <!-- <image-picker [scanIds]="[scanId]" [currentImage]="alignToImage" [includeHideOption]="false" [onlyInstrumentImages]="true" (selectedImage)="onChangeAlignToImage($event)"></image-picker> -->
       </div>
       <ng-container *ngIf="mdl.imageName">
@@ -95,8 +103,11 @@ POSSIBILITY OF SUCH DAMAGE.
         <span>Beam Matched Images</span>
       </div>
       <div *ngFor="let item of matchedImages" class="image-item clickable" (click)="onSelectImage('matched', item)">
-        <span [title]="item.imagePath">{{ justName(item.imagePath) }}</span>
-        <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('matched', item, $event)"></icon-button>
+        <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ justName(item.imagePath) }}</span>
+        <action-button
+          [confirmText]="'Are you sure you want to delete' + item.imagePath + '?'"
+          action="delete"
+          (onClick)="onDeleteImage('matched', item)"></action-button>
       </div>
       <mat-spinner *ngIf="matchedImages === null" [diameter]="24" color="accent"></mat-spinner>
       <div *ngIf="matchedImages !== null && matchedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
@@ -106,8 +117,11 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
 
       <div *ngFor="let item of unalignedImages" class="image-item clickable" (click)="onSelectImage('unaligned', item)">
-        <span [title]="item.imagePath">{{ item.imagePath }}</span>
-        <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('unaligned', item, $event)"></icon-button>
+        <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ item.imagePath }}</span>
+        <action-button
+          action="delete"
+          [confirmText]="'Are you sure you want to delete' + item.imagePath + '?'"
+          (onClick)="onDeleteImage('unaligned', item)"></action-button>
       </div>
       <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
       <div *ngIf="unalignedImages !== null && unalignedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>

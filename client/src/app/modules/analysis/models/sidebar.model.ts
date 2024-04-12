@@ -5,6 +5,7 @@ import { DiffractionTabComponent } from "../components/analysis-sidepanel/tabs/d
 import { SelectionComponent } from "../components/analysis-sidepanel/tabs/selection/selection.component";
 import { MultiQuantComponent } from "../components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
 import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
+import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
 
 export interface SidebarTabItem {
   title: string;
@@ -62,7 +63,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     title: "Diffraction",
     icon: "assets/icons/diffraction.svg",
     component: DiffractionTabComponent,
-    width: "350px",
+    width: "375px",
     tooltip: "Diffraction",
     shortcut: ["Cmd", "Shift", "5"],
   },
@@ -70,7 +71,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     title: "Roughness",
     icon: "assets/icons/roughness.svg",
     component: RoughnessComponent,
-    width: "350px",
+    width: "375px",
     tooltip: "Roughness",
     shortcut: ["Cmd", "Shift", "6"],
   },
@@ -80,6 +81,13 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     component: MultiQuantComponent,
     tooltip: "Multi-Quant",
     shortcut: ["Cmd", "Shift", "7"],
+  },
+  {
+    title: "Export",
+    icon: "assets/icons/export.svg",
+    component: ExportTabComponent,
+    tooltip: "Export data from the workspace",
+    shortcut: ["Cmd", "Shift", "8"],
   },
 ];
 

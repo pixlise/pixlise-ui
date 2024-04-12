@@ -10,8 +10,17 @@ import {
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PointDrawer } from "src/app/utils/drawing";
+import { ROIItemSummary } from "../../../../generated-protos/roi";
+import { DataExpression } from "../../../../generated-protos/expressions";
 
-export type WidgetExportOptionType = "checkbox" | "multiswitch";
+export type WidgetExportOptionType = "checkbox" | "multiswitch" | "dropdown" | "regions" | "expressions" | "images";
+
+export type UpdateCountsFn = (selection: WidgetExportRequest, selected: boolean) => Record<string, number>;
+
+export type DropdownOption = {
+  id: string;
+  name: string;
+};
 
 export type WidgetExportOption = {
   id: string;
@@ -26,6 +35,26 @@ export type WidgetExportOption = {
   // Only for multiswitch
   options?: string[];
   selectedOption?: string;
+
+  // Only for dropdown
+  dropdownOptions?: DropdownOption[];
+
+  // For nested accordion options - main option applies to all subOptions
+  subOptions?: WidgetExportOption[];
+
+  // For regions & expressions
+  scanId?: string;
+  quantId?: string;
+
+  // For image picker
+  selectedImagePaths?: string[];
+
+  selectedRegions?: ROIItemSummary[];
+  selectedExpressions?: DataExpression[];
+
+  // For counts that aren't 1
+  count?: number;
+  updateCounts?: UpdateCountsFn;
 };
 
 export type WidgetExportDialogData = {
@@ -50,10 +79,13 @@ export type WidgetExportFile = {
   data: any;
 };
 
+export const WIDGET_EXPORT_DATA_KEYS = ["csvs", "txts", "images", "tiffImages", "msas"];
 export type WidgetExportData = {
   csvs?: WidgetExportFile[];
   txts?: WidgetExportFile[];
   images?: WidgetExportFile[];
+  tiffImages?: WidgetExportFile[];
+  msas?: WidgetExportFile[];
 };
 
 const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: WidgetKeyItem[], viewport: CanvasParams, lightMode: boolean): void => {

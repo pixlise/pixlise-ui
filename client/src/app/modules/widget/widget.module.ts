@@ -10,6 +10,7 @@ import { CdkAccordionModule } from "@angular/cdk/accordion";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ROIModule } from "src/app/modules/roi/roi.module";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+import { WidgetExportButtonComponent } from "./components/widget-export-dialog/widget-export-button/widget-export-button.component";
 
 @NgModule({
   declarations: [
@@ -19,9 +20,17 @@ import { WidgetExportDialogComponent } from "src/app/modules/widget/components/w
     WidgetConfigurationButtonComponent,
     InteractiveCanvasComponent,
     WidgetExportDialogComponent,
+    WidgetExportButtonComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, ScrollingModule, ROIModule],
-  exports: [WidgetComponent, BaseWidgetModel, WidgetConfigurationButtonComponent, InteractiveCanvasComponent, WidgetExportDialogComponent],
+  exports: [
+    WidgetComponent,
+    BaseWidgetModel,
+    WidgetConfigurationButtonComponent,
+    InteractiveCanvasComponent,
+    WidgetExportDialogComponent,
+    WidgetExportButtonComponent,
+  ],
   providers: [],
 })
 export class WidgetModule {}

@@ -29,18 +29,16 @@
 
 import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { Observable, Subscription } from "rxjs";
-import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { ImageGetReq, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { catchError, from, mergeMap, Subscription, tap, toArray } from "rxjs";
+import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
+import { ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { RGBUImage } from "src/app/models/RGBUImage";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { makeImageTooltip } from "src/app/utils/image-details";
-import { SDSFields } from "src/app/utils/utils";
+import { getScanIdFromImagePath, SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 
 export class ImageChoice {
@@ -52,6 +50,10 @@ export class ImageChoice {
     public marsViewerURL: string = "",
     public isTiff: boolean = false
   ) {}
+
+  copy(): ImageChoice {
+    return new ImageChoice(this.name, this.path, this.scanIds, this.url, this.marsViewerURL, this.isTiff);
+  }
 }
 
 export class ImagePickerDialogData {
@@ -61,11 +63,14 @@ export class ImagePickerDialogData {
     public scanIds: string[],
     public selectedImagePath: string,
     public selectedImageDetails: string = "",
-    public defaultScanId?: string
+    public defaultScanId?: string,
+    public multipleSelection?: boolean,
+    public selectedPaths?: string[] // Only used if multipleSelection is true
   ) {}
 }
 
 export interface ImagePickerDialogResponse {
+  selectedPaths: string[]; // Only used if multipleSelection is true
   selectedImagePath: string;
   selectedImageName: string | null;
   selectedImageScanId?: string | null;
@@ -79,6 +84,9 @@ export interface ImagePickerDialogResponse {
 export class ImagePickerDialogComponent implements OnInit {
   public imageChoices: ImageChoice[] = [];
   public filteredImageChoices: ImageChoice[] = [];
+
+  // If multipleSelection is true, then the user can select multiple images
+  public selectedPaths: Set<string> = new Set<string>();
 
   public selectedImagePath: string = "";
   public selectedChoice: ImageChoice | null = null;
@@ -105,6 +113,14 @@ export class ImagePickerDialogComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    if (this.data.multipleSelection && this.data.selectedPaths && this.data.selectedPaths.length > 0) {
+      this.selectedPaths = new Set<string>(this.data.selectedPaths);
+      if (!this.data.selectedImagePath) {
+        this.selectedImagePath = Array.from(this.selectedPaths)[this.selectedPaths.size - 1];
+        this.filterScanId = getScanIdFromImagePath(this.selectedImagePath);
+      }
+    }
+
     if (this.data.selectedImagePath) {
       this.selectedImagePath = this.data.selectedImagePath;
     }
@@ -115,6 +131,8 @@ export class ImagePickerDialogComponent implements OnInit {
 
     if (this.data.scanIds && this.data.scanIds.length > 0) {
       this.filterScanId = this.data.defaultScanId ? this.data.defaultScanId : this.data.scanIds[0];
+    } else if (this.data.defaultScanId) {
+      this.filterScanId = this.data.defaultScanId;
     }
 
     this._subs.add(
@@ -122,122 +140,110 @@ export class ImagePickerDialogComponent implements OnInit {
         this.allScans = scans;
         if (this._analysisLayoutService.activeScreenConfiguration$.value) {
           this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
+          if (this.configuredScans && (!this.data.scanIds || this.data.scanIds.length === 0)) {
+            if (!this.filterScanId) {
+              this.filterScanId = this.configuredScans[0].id;
+            }
+          }
         } else {
           this.configuredScans = scans;
         }
       })
     );
 
+    if (this.data.scanIds) {
+      this.fetchImagesForScans(this.data.scanIds);
+    }
+  }
+
+  fetchImagesForScans(scanIds: string[]): void {
+    if (scanIds.length === 0) {
+      return;
+    }
+
     this._subs.add(
-      this._cachedDataService.getImageList(ImageListReq.create({ scanIds: this.data.scanIds })).subscribe((resp: ImageListResp) => {
-        this.imageChoices = [];
-        this.filteredImageChoices = [];
+      this._cachedDataService
+        .getImageList(ImageListReq.create({ scanIds }))
+        .pipe(
+          tap(resp => {
+            this.filteredImageChoices = [];
+            this.processImages(resp.images);
+          })
+        )
+        .subscribe()
+    );
+  }
 
-        // Check if all have the same prefix, because then we don't want to show it as part of the name field
-        let prefix = "";
-        let allSamePrefix = true;
-        for (const img of resp.images) {
-          if (prefix.length <= 0) {
-            const pos = img.imagePath.indexOf("/");
-            prefix = img.imagePath.substring(0, pos + 1);
-          } else {
-            if (!img.imagePath.startsWith(prefix)) {
-              allSamePrefix = false;
-              break;
-            }
-          }
-        }
+  private processImages(images: ScanImage[]): void {
+    let loadedImageChoiceIds: Set<string> = new Set<string>();
+    this.imageChoices.forEach(imgChoice => {
+      loadedImageChoiceIds.add(imgChoice.path);
+    });
+    from(images)
+      .pipe(
+        //
+        mergeMap(img => {
+          // NOTE: We are passing this image choice by reference, not value, so any changes to it will be reflected in multiple
+          // locations
+          let imageChoice = this.makeImageChoice(img);
 
-        for (const responseImage of resp.images.sort((a, b) => b.imagePath.localeCompare(a.imagePath))) {
-          if (this.data.purpose === ScanImagePurpose.SIP_UNKNOWN || responseImage.purpose === this.data.purpose) {
-            let marsViewerURL = this.makeMarsViewerURL(responseImage.imagePath);
-            this.waitingForImages.push(
-              new ImageChoice(
-                responseImage.imagePath,
-                responseImage.imagePath,
-                responseImage.associatedScanIds,
-                "",
-                marsViewerURL,
-                responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL
-              )
-            );
-
-            let imageChoice = new ImageChoice(
-              responseImage.imagePath,
-              responseImage.imagePath,
-              responseImage.associatedScanIds,
-              "loading",
-              marsViewerURL,
-              responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL
-            );
-
-            if (allSamePrefix) {
-              imageChoice.name = imageChoice.name.substring(prefix.length);
-            }
-
+          if (!loadedImageChoiceIds.has(imageChoice.path)) {
             this.imageChoices.push(imageChoice);
-            if (responseImage.associatedScanIds.includes(this.filterScanId)) {
+          }
+
+          if (img.associatedScanIds.includes(this.filterScanId)) {
+            if (!this.filteredImageChoices.find(imgChoice => imgChoice.path === img.imagePath)) {
               this.filteredImageChoices.push(imageChoice);
             }
-
-            if (this.selectedImagePath === responseImage.imagePath) {
-              this.selectedChoice = imageChoice;
-            }
-
-            if (imageChoice.isTiff) {
-              this._endpointsService.loadRGBUImageTIFPreview(responseImage.imagePath).subscribe({
-                next: (url: string) => {
-                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                  if (imgChoice) {
-                    imgChoice.url = url;
-                    if (this.selectedImagePath === responseImage.imagePath) {
-                      this.selectedChoice = imgChoice;
-                    }
-                    this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-                  }
-                },
-                error: (err: any) => {
-                  console.error(err);
-
-                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                  if (imgChoice) {
-                    imgChoice.url = "error";
-                    if (this.selectedImagePath === responseImage.imagePath) {
-                      this.selectedChoice = imgChoice;
-                    }
-                  }
-                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-                },
-              });
-            } else {
-              this._endpointsService.loadImageForPath(responseImage.imagePath).subscribe({
-                next: (img: HTMLImageElement) => {
-                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                  if (imgChoice) {
-                    imgChoice.url = img.src;
-                    if (this.selectedImagePath === responseImage.imagePath) {
-                      this.selectedChoice = imgChoice;
-                    }
-                  }
-                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-                },
-                error: (err: any) => {
-                  console.error(err);
-                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                  if (imgChoice) {
-                    imgChoice.url = "error";
-                    if (this.selectedImagePath === responseImage.imagePath) {
-                      this.selectedChoice = imgChoice;
-                    }
-                  }
-                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-                },
-              });
-            }
           }
-        }
-      })
-    );
+
+          if (this.selectedImagePath === img.imagePath) {
+            this.selectedChoice = imageChoice;
+          }
+
+          return this.loadImagePreview(imageChoice);
+        }),
+        catchError(err => {
+          console.error("Error processing image", err);
+          return err;
+        }),
+        toArray()
+      )
+      .subscribe();
+  }
+
+  private makeImageChoice(image: ScanImage): ImageChoice {
+    let imageName = image.imagePath.replace(/^\d+\//, "");
+    let marsViewerURL = this.makeMarsViewerURL(imageName);
+    let isTiff = image.imagePath.toLowerCase().endsWith(".tif") || image.imagePath.toLowerCase().endsWith(".tiff");
+
+    return new ImageChoice(imageName, image.imagePath, image.associatedScanIds, "loading", marsViewerURL, isTiff);
+  }
+
+  private loadImagePreview(imgChoice: ImageChoice) {
+    if (imgChoice.isTiff) {
+      return this._endpointsService.loadRGBUImageTIFPreview(imgChoice.path).pipe(
+        tap(url => {
+          imgChoice.url = url;
+        }),
+        catchError(err => {
+          console.error("Error loading TIFF preview image", imgChoice.path, err);
+          imgChoice.url = "error";
+          return err;
+        })
+      );
+    } else {
+      return this._endpointsService.loadImageForPath(imgChoice.path).pipe(
+        tap(img => {
+          imgChoice.url = img.src;
+        }),
+        catchError(err => {
+          console.error("Error loading preview image", imgChoice.path, err);
+          imgChoice.url = "error";
+          return err;
+        })
+      );
+    }
   }
 
   ngOnDestroy() {
@@ -255,6 +261,10 @@ export class ImagePickerDialogComponent implements OnInit {
   set filterScanId(scanId: string) {
     this._filterScanId = scanId;
     this.filteredImageChoices = this.imageChoices.filter(img => img.scanIds.includes(scanId));
+
+    if (this.filteredImageChoices.length === 0) {
+      this.fetchImagesForScans([scanId]);
+    }
   }
 
   get scanIds(): string[] {
@@ -318,22 +328,79 @@ export class ImagePickerDialogComponent implements OnInit {
     return environment.marsViewerUrlRoot + "/?FS_ocs_name=" + mvName;
   }
 
-  onSelectImage(image: ImageChoice): void {
-    this.selectedImagePath = image.path;
-    this.selectedChoice = image;
-
+  loadSelectedImageDetails(): void {
     this.selectedImageDetails = "Loading...";
-    this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: image.path })).subscribe((resp: any) => {
+    this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: this.selectedImagePath })).subscribe((resp: any) => {
       this.selectedImageDetails = makeImageTooltip(resp.image);
     });
+  }
 
-    if (this.data.liveUpdate) {
-      this.onSelectedImageChange.emit(image.path);
+  onSelectImage(image: ImageChoice): void {
+    // Toggle select unless we're live updating, in which case we only want to broadcast the new image
+    if (this.selectedImagePath === image.path && !this.data.liveUpdate) {
+      if (this.data.multipleSelection) {
+        this.selectedPaths.delete(image.path);
+      }
+      if (this.data.multipleSelection && this.selectedPaths.size > 0) {
+        this.selectedImagePath = Array.from(this.selectedPaths)[this.selectedPaths.size - 1];
+        this.selectedChoice = this.imageChoices.find(img => img.path === this.selectedImagePath) || null;
+        this.loadSelectedImageDetails();
+      } else {
+        this.selectedImagePath = "";
+        this.selectedChoice = null;
+        this.selectedImageDetails = "";
+      }
+    } else if (this.selectedImagePath !== image.path) {
+      this.selectedImagePath = image.path;
+      this.selectedChoice = image;
+
+      this.loadSelectedImageDetails();
+      if (this.data.liveUpdate) {
+        this.onSelectedImageChange.emit(image.path);
+      }
+
+      if (this.data.multipleSelection) {
+        if (this.selectedPaths.has(image.path)) {
+          this.selectedPaths.delete(image.path);
+        } else {
+          this.selectedPaths.add(image.path);
+        }
+      }
     }
   }
 
+  checkSelected(image: ImageChoice): boolean {
+    return this.data?.multipleSelection ? this.selectedPaths.has(image.path) : this.selectedImagePath === image.path;
+  }
+
+  onSelectAllForScan(): void {
+    this.filteredImageChoices.forEach(img => {
+      if (!this.selectedPaths.has(img.path)) {
+        this.selectedPaths.add(img.path);
+      }
+    });
+
+    if (this.selectedPaths.size > 0) {
+      this.selectedImagePath = Array.from(this.selectedPaths)[this.selectedPaths.size - 1];
+      this.selectedChoice = this.imageChoices.find(img => img.path === this.selectedImagePath) || null;
+      this.loadSelectedImageDetails();
+    }
+  }
+
+  onClear(): void {
+    this.selectedPaths.clear();
+    this.selectedImagePath = "";
+    this.selectedChoice = null;
+    this.selectedImageDetails = "";
+  }
+
   onApply(): void {
-    this.dialogRef.close({ selectedImagePath: this.selectedImagePath, selectedImageName: this.selectedChoice?.name || "", selectedImageScanId: this.filterScanId });
+    this.dialogRef.close({
+      selectedPaths: Array.from(this.selectedPaths),
+      selectedImagePath: this.selectedImagePath,
+      selectedImageName: this.selectedChoice?.name || "",
+      selectedImageScanId: this.filterScanId,
+    });
   }
 
   onCancel(): void {

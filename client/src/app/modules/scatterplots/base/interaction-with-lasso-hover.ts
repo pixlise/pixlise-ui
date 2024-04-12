@@ -44,6 +44,7 @@ import { HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { invalidPMC, SentryHelper } from "src/app/utils/utils";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BaseChartModelWithLasso } from "./model-interfaces";
+import { NaryChartModel } from "./model";
 
 const DRAG_THRESHOLD = 2; // how many pixels mouse can drift before we assume we're drawing a lasso
 
@@ -173,28 +174,35 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
     if (!this._mdl.raw) {
       return;
     }
-    /*
-    const blockedPMCs = new Set<number>();
-    if (this._mdl.selectModeExcludeROI) {
-      for (const region of this._widgetDataService.regions.values()) {
-        if (region.id != PredefinedROIID.AllPoints && region.id != PredefinedROIID.SelectedPoints && this._mdl.raw.visibleROIs.indexOf(region.id) > -1) {
-          for (const usedPMC of region.pmcs) {
-            blockedPMCs.add(usedPMC);
-          }
-        }
-      }
-    }
 
-    const set = new Set<number>();
-    for (const pmc of pmcs) {
-      // If we're only selecting points that are not in any ROIs, do the filtering here:
-      if (!this._mdl.selectModeExcludeROI || !blockedPMCs.has(pmc)) {
-        const idx = dataset.pmcToLocationIndex.get(pmc);
-        set.add(idx);
-      }
+    if (this._mdl.selectionMode && this._mdl.selectionMode === NaryChartModel.SELECT_ADD) {
+      let currrentBeamSelection = this._selectionService.getCurrentSelection().beamSelection;
+
+      let combinedScanEntryPMCs = scanEntryPMCs;
+      let scanIds = currrentBeamSelection.getScanIds();
+      scanIds.forEach(scanId => {
+        let existingPMCs = currrentBeamSelection.getSelectedScanEntryPMCs(scanId);
+        let newPMCs = scanEntryPMCs.get(scanId) || new Set<number>();
+        combinedScanEntryPMCs.set(scanId, new Set([...existingPMCs, ...newPMCs]));
+      });
+
+      this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(combinedScanEntryPMCs), PixelSelection.makeEmptySelection());
+    } else if (this._mdl.selectionMode && this._mdl.selectionMode === NaryChartModel.SELECT_SUBTRACT) {
+      let currrentBeamSelection = this._selectionService.getCurrentSelection().beamSelection;
+
+      let combinedScanEntryPMCs = scanEntryPMCs;
+      let scanIds = currrentBeamSelection.getScanIds();
+      scanIds.forEach(scanId => {
+        let existingPMCs = currrentBeamSelection.getSelectedScanEntryPMCs(scanId);
+        let newPMCs = scanEntryPMCs.get(scanId) || new Set<number>();
+        combinedScanEntryPMCs.set(scanId, new Set([...existingPMCs].filter(pmc => !newPMCs.has(pmc))));
+      });
+
+      this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(combinedScanEntryPMCs), PixelSelection.makeEmptySelection());
+    } else {
+      // Replace the current selection
+      this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(scanEntryPMCs), PixelSelection.makeEmptySelection());
     }
-*/
-    this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(scanEntryPMCs), PixelSelection.makeEmptySelection());
   }
 
   private getIndexforPoint(pt: Point): MouseHoverPoint | null {

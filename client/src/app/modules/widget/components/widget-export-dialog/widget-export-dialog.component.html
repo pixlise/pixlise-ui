@@ -41,32 +41,16 @@ POSSIBILITY OF SUCH DAMAGE.
         <h5 class="options-label">Options</h5>
       </span>
       <div class="options-container">
-        <div *ngFor="let option of options" class="option {{ option.selected ? 'selected' : '' }}">
-          <div *ngIf="option.type === 'checkbox'" class="checkbox-option">
-            <span class="option-label">{{ option.name }}</span>
-            <action-button
-              #tooltip="matTooltip"
-              [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-              [matTooltipShowDelay]="200"
-              [disabled]="!!option.disabled"
-              [action]="option.selected ? 'checkOn' : 'checkOff'"
-              (onClick)="option.selected = !option.selected"></action-button>
-          </div>
-          <div *ngIf="option.type === 'multiswitch'" class="multiswitch-option">
-            <span class="option-label">{{ option.name }}</span>
-            <multi-switch-button
-              #tooltip="matTooltip"
-              [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-              [matTooltipShowDelay]="200"
-              [disabled]="!!option.disabled"
-              [options]="option.options || []"
-              [value]="option.selectedOption || ''"
-              (onChange)="option.selectedOption = $event">
-            </multi-switch-button>
-          </div>
-        </div>
+        <widget-export-button
+          *ngFor="let option of options; trackBy: trackByFn"
+          [option]="option"
+          (toggleOption)="toggleOption($event)"
+          (selectOption)="selectOption($event)"
+          (selectDropdownOption)="selectDropdownOption($event)"
+          (selectROIsOption)="selectROIsOption($event)"
+          (selectExpressionsOption)="selectExpressionsOption($event)"
+          (selectImagesOption)="selectImagesOption($event)">
+        </widget-export-button>
       </div>
     </div>
     <div *ngIf="dataProducts && dataProducts.length > 0" class="export-options data-products">
@@ -74,32 +58,16 @@ POSSIBILITY OF SUCH DAMAGE.
         <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
       </span>
       <div class="options-container">
-        <div *ngFor="let option of dataProducts" class="option {{ option.selected ? 'selected' : '' }}">
-          <div *ngIf="option.type === 'checkbox'" class="checkbox-option">
-            <span class="option-label">{{ option.name }}:</span>
-            <action-button
-              #tooltip="matTooltip"
-              [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-              [matTooltipShowDelay]="200"
-              [disabled]="!!option.disabled"
-              [action]="option.selected ? 'checkOn' : 'checkOff'"
-              (onClick)="option.selected = !option.selected"></action-button>
-          </div>
-          <div *ngIf="option.type === 'multiswitch'" class="multiswitch-option">
-            <span class="option-label">{{ option.name }}</span>
-            <multi-switch-button
-              #tooltip="matTooltip"
-              [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-              [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-              [matTooltipShowDelay]="200"
-              [disabled]="!!option.disabled"
-              [options]="option.options || []"
-              [value]="option.selectedOption || ''"
-              (onChange)="option.selectedOption = $event">
-            </multi-switch-button>
-          </div>
-        </div>
+        <widget-export-button
+          *ngFor="let option of dataProducts; trackBy: trackByFn"
+          [option]="option"
+          (toggleOption)="toggleOption($event)"
+          (selectOption)="selectOption($event)"
+          (selectDropdownOption)="selectDropdownOption($event)"
+          (selectROIsOption)="selectROIsOption($event)"
+          (selectExpressionsOption)="selectExpressionsOption($event)"
+          (selectImagesOption)="selectImagesOption($event, true)">
+        </widget-export-button>
       </div>
     </div>
     <div *ngIf="data.preview" class="export-options preview">
@@ -121,7 +89,8 @@ POSSIBILITY OF SUCH DAMAGE.
           <h5 class="error">Error exporting</h5>
         </div>
       </div>
-      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+      <push-button *ngIf="dialogRef" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+      <push-button *ngIf="!dialogRef" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
       <push-button
         buttonStyle="yellow"
         [disabled]="selectedDataProductsCount === 0"

@@ -1,4 +1,11 @@
-import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+
+export type WidgetReference = {
+  widget: WidgetLayoutConfiguration;
+  name: string;
+  type: string;
+  page: number;
+};
 
 export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
   id: "",

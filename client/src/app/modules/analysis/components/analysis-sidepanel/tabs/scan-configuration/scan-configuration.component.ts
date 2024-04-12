@@ -178,6 +178,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   onRemoveConfiguration(scanId: string) {
     this.scanConfigurations = this.scanConfigurations.filter(config => config.id !== scanId);
     this.selectedScanIds.delete(scanId);
+    this.hasConfigChanged = true;
   }
 
   updateConfig(config: ScanConfiguration) {
