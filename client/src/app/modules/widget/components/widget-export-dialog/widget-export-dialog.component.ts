@@ -121,8 +121,12 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   onClear(): void {
-    this.options = this.copyWidgetExportOptionsDefaultState(this.initialOptions);
-    this.dataProducts = this.copyWidgetExportOptionsDefaultState(this.initialDataProducts);
+    let initialOptions = this.copyWidgetExportOptionsDefaultState(this.initialOptions);
+    let initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.initialDataProducts);
+
+    // We don't want to clear the updateCounts associated with options and dataProducts, so copy everything else
+    this.options = this.options.map((option, index) => ({ ...initialOptions[index], updateCounts: option.updateCounts }));
+    this.dataProducts = this.dataProducts.map((option, index) => ({ ...initialDataProducts[index], updateCounts: option.updateCounts }));
 
     this.mapAllCounts();
   }

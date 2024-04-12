@@ -194,8 +194,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
 
     this.options = options;
     this.loadGlobalConfigOptions();
-    this.initialOptions = this.copyWidgetExportOptionsDefaultState(this.options);
     this.mapAllCounts();
+    this.initialOptions = this.copyWidgetExportOptionsDefaultState(this.options);
   }
 
   loadGlobalConfigOptions(): void {
