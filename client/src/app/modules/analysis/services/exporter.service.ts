@@ -649,7 +649,29 @@ export class DataExporterService {
     return { fileName: `${scanId}-${roiName}-${expressionName}-expression-values.csv`, data };
   }
 
-  getROIExpressionValues(scanId: string, quantId: string, roiIds: string[], expressionIds: string[]): Observable<WidgetExportData> {
+  private makeAggregatedExpressionValuesCSV(scanId: string, roiName: string, pmcs: number[], expressions: Record<string, PMCDataValues>): WidgetExportFile {
+    let expressionHeaders = Object.keys(expressions);
+    let data = `ROI,PMC,${expressionHeaders.join(",")}`;
+
+    pmcs.forEach(pmc => {
+      data += `\n${roiName},${pmc}`;
+      expressionHeaders.forEach(expressionName => {
+        let pmcDataValue = expressions[expressionName].values[pmc];
+        let value = pmcDataValue?.value ?? "";
+        data += `,${value}`;
+      });
+    });
+
+    return { fileName: `${scanId}-${roiName}-expression-values.csv`, data };
+  }
+
+  getROIExpressionValues(
+    scanId: string,
+    quantId: string,
+    roiIds: string[],
+    expressionIds: string[],
+    singleCSVPerRegion: boolean = false
+  ): Observable<WidgetExportData> {
     let roiRequests: Observable<RegionOfInterestGetResp | null>[] = roiIds.map(id =>
       PredefinedROIID.isPredefined(id) ? of(null) : this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id }))
     );
@@ -681,6 +703,8 @@ export class DataExporterService {
             return combineLatest(expressionRunResults).pipe(
               switchMap(results => {
                 let csvs: WidgetExportFile[] = [];
+
+                let expressions: Record<string, PMCDataValues> = {};
                 results.forEach((result, i) => {
                   if (!result?.expression) {
                     return;
@@ -689,10 +713,33 @@ export class DataExporterService {
                   let expressionName = result.expression?.name || expressionIds[i];
                   let expressionValues: PMCDataValues = result.resultValues;
 
-                  // Make an all points CSV
-                  let allPMCs = expressionValues.values.map(value => value.pmc);
-                  let allPointsCSV = this.makeExpressionValuesCSV(scanId, "All Points", expressionName, allPMCs, expressionValues);
-                  csvs.push(allPointsCSV);
+                  if (singleCSVPerRegion) {
+                    expressions[expressionName] = expressionValues;
+                  } else {
+                    // Make an all points CSV
+                    let allPMCs = expressionValues.values.map(value => value.pmc);
+                    let allPointsCSV = this.makeExpressionValuesCSV(scanId, "All Points", expressionName, allPMCs, expressionValues);
+                    csvs.push(allPointsCSV);
+
+                    // Make a CSV for each ROI
+                    rois.forEach((roi, j) => {
+                      if (!roi?.regionOfInterest) {
+                        return;
+                      }
+                      let roiName = roi.regionOfInterest?.name || roiIds[j];
+                      let roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
+
+                      let expressionValuesCSV = this.makeExpressionValuesCSV(scanId, roiName, expressionName, roiPMCs, expressionValues);
+                      csvs.push(expressionValuesCSV);
+                    });
+                  }
+                });
+
+                if (singleCSVPerRegion) {
+                  // Make a CSV with all expressions for each PMC
+                  let allPMCs = Object.values(expressions)[0].values.map(value => value.pmc);
+                  let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, "All Points", allPMCs, expressions);
+                  csvs.push(aggregatedCSV);
 
                   // Make a CSV for each ROI
                   rois.forEach((roi, j) => {
@@ -702,10 +749,10 @@ export class DataExporterService {
                     let roiName = roi.regionOfInterest?.name || roiIds[j];
                     let roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
 
-                    let expressionValuesCSV = this.makeExpressionValuesCSV(scanId, roiName, expressionName, roiPMCs, expressionValues);
-                    csvs.push(expressionValuesCSV);
+                    let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, roiName, roiPMCs, expressions);
+                    csvs.push(aggregatedCSV);
                   });
-                });
+                }
 
                 return of({ csvs });
               })
