@@ -22,6 +22,7 @@ import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 
 export class DefaultExpressions {
   constructor(
@@ -159,6 +160,19 @@ export class AnalysisLayoutService implements OnDestroy {
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
+    });
+  }
+
+  deleteQuant(quantId: string) {
+    this._dataService.sendQuantDeleteRequest(QuantDeleteReq.create({ quantId })).subscribe(res => {
+      // Remove the quant from the available quants
+      const availableScanQuants = this.availableScanQuants$.value;
+      for (const scanId in availableScanQuants) {
+        const quants = availableScanQuants[scanId].filter(quant => quant.id !== quantId);
+        availableScanQuants[scanId] = quants;
+      }
+
+      this.availableScanQuants$.next(availableScanQuants);
     });
   }
 

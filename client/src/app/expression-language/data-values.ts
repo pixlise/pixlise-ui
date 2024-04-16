@@ -123,7 +123,7 @@ export class PMCDataValues {
     return result;
   }
 
-  static filterToCommonPMCsOnly(values: PMCDataValues[]): (PMCDataValues | null)[] {
+  static filterToCommonPMCsOnly(values: (PMCDataValues | null | undefined)[]): (PMCDataValues | null)[] {
     const result: (PMCDataValues | null)[] = [];
     if (values.length === 0) {
       return result;

@@ -202,7 +202,7 @@ export class ContextImageDataService {
       throw new Error(results.error);
     }
 
-    if (results.queryResults.length != query.length) {
+    if (results.queryResults.length !== query.length) {
       throw new Error(`processQueryResults: expected ${query.length} results, received ${results.queryResults.length}`);
     }
 
@@ -224,10 +224,10 @@ export class ContextImageDataService {
 
     // Result lengths may differ due to holes in data, so find the minimum overlap if shouldFilterToCommonPMCs
     if (shouldFilterToCommonPMCs) {
-      let pmcDataValues = adjustedQueryResults.map(result => PMCDataValues.makeWithValues(result.values.values));
+      let pmcDataValues = adjustedQueryResults.map(result => PMCDataValues.makeWithValues(result?.values?.values));
       let filteredPMCs = PMCDataValues.filterToCommonPMCsOnly(pmcDataValues);
-      adjustedQueryResults = adjustedQueryResults.map((result, idx) => {
-        result.exprResult.resultValues = filteredPMCs[idx];
+      adjustedQueryResults = adjustedQueryResults.map((result, i) => {
+        result.exprResult.resultValues = filteredPMCs[i];
         return result;
       });
     }

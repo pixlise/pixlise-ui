@@ -83,18 +83,30 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
 
     if (this.isSharedWithOthers) {
       let counts = [
-        `${this.ownershipSummary?.editorGroupCount || 0} group editors`,
-        `${this.ownershipSummary?.viewerGroupCount || 0} group viewers`,
-        `${this.ownershipSummary?.editorUserCount || 0} user editors`,
-        `${this.ownershipSummary?.viewerUserCount || 0} user viewers`,
+        this.ownershipSummary?.editorGroupCount && `${this.ownershipSummary?.editorGroupCount} group editors`,
+        this.ownershipSummary?.viewerGroupCount && `${this.ownershipSummary?.viewerGroupCount} group viewers`,
+        this.ownershipSummary?.editorUserCount && `${this.ownershipSummary?.editorUserCount} user editors`,
+        this.ownershipSummary?.viewerUserCount && `${this.ownershipSummary?.viewerUserCount} user viewers`,
       ];
 
-      tooltip = `Shared With:\n${counts.join("\n")}`;
+      tooltip = `Shared With:\n${counts.filter(count => count).join("\n")}`;
     } else {
       tooltip = "This item is not shared with others.";
     }
 
     return tooltip;
+  }
+
+  getItemTypeName(): string {
+    let typeName = objectTypeToJSON(this.type).replace("OT_", "");
+    if (typeName.length > 0) {
+      typeName = typeName
+        .split("_")
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+    }
+
+    return typeName || "Item";
   }
 
   onOpenShareDialog(): void {
@@ -110,18 +122,11 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
             return of(null);
           }
 
-          let typeName = objectTypeToJSON(this.type).replace("OT_", "");
-          if (typeName.length > 0) {
-            typeName = typeName
-              .split("_")
-              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-              .join(" ");
-          }
-
           const dialogConfig = new MatDialogConfig<ShareDialogData>();
           dialogConfig.data = {
+            ownershipSummary: this.ownershipSummary,
             ownershipItem: res.ownership,
-            typeName,
+            typeName: this.getItemTypeName(),
           };
 
           const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
@@ -164,7 +169,8 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
 
         this.isSharedWithOthers = shareCount > 1;
 
-        this._snackbarService.openSuccess(`Item shared successfully!`);
+        let typeName = this.getItemTypeName();
+        this._snackbarService.openSuccess(`${typeName} shared successfully!`);
       });
   }
 }

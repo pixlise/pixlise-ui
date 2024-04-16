@@ -32,7 +32,7 @@ import { MatOptionSelectionChange } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MatSelectChange } from "@angular/material/select";
 import { Subscription } from "rxjs";
-import { OwnershipItem, UserGroupList } from "src/app/generated-protos/ownership-access";
+import { OwnershipItem, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
 import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { UserGroupInfo } from "src/app/generated-protos/user-group";
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
@@ -40,6 +40,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { UsersService } from "src/app/modules/settings/services/users.service";
 
 export type ShareDialogData = {
+  ownershipSummary: OwnershipSummary | null;
   ownershipItem: OwnershipItem;
   typeName: string;
 };
@@ -150,6 +151,10 @@ export class ShareDialogComponent implements OnInit {
     if (!this.isChanged) {
       this.resetMembers();
     }
+  }
+
+  get canEdit(): boolean {
+    return this.data?.ownershipSummary?.canEdit || false;
   }
 
   get isSearchingGroups(): boolean {
