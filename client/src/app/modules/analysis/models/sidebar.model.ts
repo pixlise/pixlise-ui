@@ -111,12 +111,12 @@ export const SIDEBAR_VIEWS: SidebarViewShortcut[] = [
 ];
 
 export const SIDEBAR_ADMIN_SHORTCUTS: SidebarViewShortcut[] = [
-  {
-    title: "Import View State",
-    icon: "assets/button-icons/upload.svg",
-    tooltip: "Import View State",
-    action: () => {
-      console.log("Import View State");
-    },
-  },
+  // {
+  //   title: "Import View State",
+  //   icon: "assets/button-icons/upload.svg",
+  //   tooltip: "Import View State",
+  //   action: () => {
+  //     console.log("Import View State");
+  //   },
+  // },
 ];

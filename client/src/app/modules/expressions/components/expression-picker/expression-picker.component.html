@@ -150,8 +150,8 @@ POSSIBILITY OF SUCH DAMAGE.
           [disabled]="selectedExpressionIds.size === 0"
           #tooltip="matTooltip"
           matTooltip="Edit Group ({{ selectedGroup?.name }})"
-          [matTooltipDisabled]="selectedGroup.id.length === 0"
-          >{{ selectedGroup.id.length > 0 ? "Edit" : "Save As" }} Group</push-button
+          [matTooltipDisabled]="selectedGroup.id.length === 0 || !selectedGroup?.owner?.canEdit"
+          >{{ selectedGroup?.owner?.canEdit && selectedGroup.id.length > 0 ? "Edit" : "Save As" }} Group</push-button
         >
         <action-button
           *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup"
