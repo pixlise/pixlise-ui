@@ -91,16 +91,51 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
       </div>
     </div>
-  </div>
-  <div class="gap-separated-horizontal-elements button-container">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button
-      [disabled]="!canEdit"
-      buttonStyle="yellow"
-      (onClick)="onConfirm()"
-      #tooltip="matTooltip"
-      [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
-      >Confirm</push-button
-    >
+
+    <div class="sub-items" *ngIf="subItems.length > 0">
+      <div class="title">
+        <h1>Sub Items</h1>
+        <div class="share-subitems">
+          <span class="share-sub-label">Share with Sub Items:</span>
+          <action-button [action]="shareWithSubItems ? 'checkOn' : 'checkOff'" (onClick)="shareWithSubItems = !shareWithSubItems"></action-button>
+        </div>
+      </div>
+      <div class="sub-item-list">
+        <div *ngFor="let subItem of subItems" class="sub-item">
+          <div class="icon">
+            <img
+              *ngIf="!subItem.ownershipSummary.canEdit"
+              #tooltip="matTooltip"
+              [matTooltip]="
+                'You don\'t have edit permission on this expression.\nPlease make a copy of it or ask the owner to make you an editor to share this group with others.'
+              "
+              class="sharing-warning"
+              src="assets/icons/error-triangle.svg" />
+            <img [src]="subItem.ownershipSummary.creatorUser?.iconURL" />
+            <span *ngIf="!subItem.ownershipSummary.creatorUser?.iconURL" class="user-icon">{{
+              subItem?.ownershipSummary?.creatorUser?.name?.[0] ? subItem.ownershipSummary.creatorUser!.name[0].toUpperCase() : "N/A"
+            }}</span>
+          </div>
+          <div class="details">
+            <h2>{{ subItem.name }}</h2>
+            <h5>{{ subItem.typeName }}</h5>
+          </div>
+          <div class="right-menu">
+            <share-ownership-item-button [id]="subItem.id" [ownershipSummary]="subItem.ownershipSummary" [type]="subItem.type"></share-ownership-item-button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+      <push-button
+        [disabled]="!canEdit"
+        buttonStyle="yellow"
+        (onClick)="onConfirm()"
+        #tooltip="matTooltip"
+        [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
+        >Confirm</push-button
+      >
+    </div>
   </div>
 </div>

@@ -148,6 +148,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _showRGBMixMode: boolean = false;
 
   expressionGroupType: ObjectType = ObjectType.OT_EXPRESSION_GROUP;
+  expressionType: ObjectType = ObjectType.OT_EXPRESSION;
 
   configuredScans: ScanItem[] = [];
 

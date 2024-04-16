@@ -27,13 +27,18 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ShareDialogComponent, ShareDialogData, ShareDialogResponse } from "./share-dialog/share-dialog.component";
+import { ShareDialogComponent, ShareDialogData, ShareDialogResponse, SharingSubItem } from "./share-dialog/share-dialog.component";
 import { ObjectType, OwnershipSummary, objectTypeToJSON } from "src/app/generated-protos/ownership-access";
 import { APIDataService, SnackbarService } from "../../../pixlisecore.module";
 import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
-import { catchError, of, switchMap } from "rxjs";
+import { catchError, combineLatest, map, Observable, of, switchMap } from "rxjs";
+import { ExpressionGroupGetReq } from "../../../../../generated-protos/expression-group-msgs";
+import { APICachedDataService } from "../../../services/apicacheddata.service";
+import { ExpressionGetReq, ExpressionGetResp } from "../../../../../generated-protos/expression-msgs";
+import { DataExpression } from "../../../../../generated-protos/expressions";
+import { DataExpressionId } from "../../../../../expression-language/expression-id";
 
 @Component({
   selector: "share-ownership-item-button",
@@ -52,11 +57,43 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
   constructor(
     private _apiDataService: APIDataService,
     private _snackbarService: SnackbarService,
+    private _apiCachedDataService: APICachedDataService,
     public dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
     this.isSharedWithOthers = this.ownershipSummary?.sharedWithOthers || false;
+  }
+
+  fetchExpressionGroupSubExpressions(): Observable<DataExpression[]> {
+    if (!this.id || this.type !== ObjectType.OT_EXPRESSION_GROUP) {
+      return of([]);
+    }
+
+    return this._apiCachedDataService.getExpressionGroup(ExpressionGroupGetReq.create({ id: this.id })).pipe(
+      switchMap(group => {
+        let expressionRequests: Observable<ExpressionGetResp>[] = [];
+        if (group?.group?.groupItems && group.group?.groupItems.length > 0) {
+          group.group.groupItems.forEach(item => {
+            if (!DataExpressionId.isPredefinedExpression(item.expressionId)) {
+              expressionRequests.push(this._apiCachedDataService.getExpression(ExpressionGetReq.create({ id: item.expressionId })));
+            }
+          });
+
+          if (expressionRequests.length === 0) {
+            return of([]);
+          }
+
+          return combineLatest(expressionRequests).pipe(
+            map(expressions => {
+              return expressions.map(expression => expression.expression).filter(expression => expression !== undefined);
+            })
+          );
+        } else {
+          return of([]);
+        }
+      })
+    );
   }
 
   @Input() set triggerOpen(open: boolean) {
@@ -118,21 +155,43 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
           return of(null);
         }),
         switchMap(res => {
-          if (!res || !res.ownership) {
-            return of(null);
-          }
+          return this.fetchExpressionGroupSubExpressions().pipe(
+            switchMap(subExpressions => {
+              if (!res || !res.ownership) {
+                return of(null);
+              }
 
-          const dialogConfig = new MatDialogConfig<ShareDialogData>();
-          dialogConfig.data = {
-            ownershipSummary: this.ownershipSummary,
-            ownershipItem: res.ownership,
-            typeName: this.getItemTypeName(),
-          };
+              let subItems: SharingSubItem[] = [];
+              if (subExpressions.length > 0) {
+                subExpressions.forEach(expression => {
+                  if (!expression.owner) {
+                    return;
+                  }
 
-          const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
-          return dialogRef.afterClosed();
+                  subItems.push({
+                    id: expression.id,
+                    name: expression.name,
+                    type: ObjectType.OT_EXPRESSION,
+                    typeName: "Expression",
+                    ownershipSummary: expression.owner,
+                  });
+                });
+              }
+
+              const dialogConfig = new MatDialogConfig<ShareDialogData>();
+              dialogConfig.data = {
+                ownershipSummary: this.ownershipSummary,
+                ownershipItem: res.ownership,
+                typeName: this.getItemTypeName(),
+                subItems,
+              };
+
+              const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
+              return dialogRef.afterClosed();
+            })
+          );
         }),
-        switchMap(sharingChangeResponse => {
+        switchMap((sharingChangeResponse: ShareDialogResponse) => {
           if (!sharingChangeResponse) {
             return of(null);
           }
