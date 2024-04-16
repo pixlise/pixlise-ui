@@ -78,6 +78,10 @@
       border-radius: 4px;
       border-top-left-radius: 0;
       border-bottom-left-radius: 0;
+
+      &.disabled {
+        background: #2a3137;
+      }
     }
   }
 
