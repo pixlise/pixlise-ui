@@ -626,7 +626,7 @@ export class DataExporterService {
               if (roi) {
                 let roiPMCs = decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []);
                 let roiName = roi.regionOfInterest?.name || roiIds[i];
-                csvs.push(this.makeROIPMCMembershipCSV(scanId, roiName, roiPMCs));
+                csvs.push(this.makeROIPMCMembershipCSV(scanId, roiName.replace("/", "_"), roiPMCs));
               }
             });
 
@@ -729,7 +729,7 @@ export class DataExporterService {
                       let roiName = roi.regionOfInterest?.name || roiIds[j];
                       let roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
 
-                      let expressionValuesCSV = this.makeExpressionValuesCSV(scanId, roiName, expressionName, roiPMCs, expressionValues);
+                      let expressionValuesCSV = this.makeExpressionValuesCSV(scanId, roiName.replace("/", "_"), expressionName, roiPMCs, expressionValues);
                       csvs.push(expressionValuesCSV);
                     });
                   }
@@ -749,7 +749,7 @@ export class DataExporterService {
                     let roiName = roi.regionOfInterest?.name || roiIds[j];
                     let roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
 
-                    let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, roiName, roiPMCs, expressions);
+                    let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, roiName.replace("/", "_"), roiPMCs, expressions);
                     csvs.push(aggregatedCSV);
                   });
                 }

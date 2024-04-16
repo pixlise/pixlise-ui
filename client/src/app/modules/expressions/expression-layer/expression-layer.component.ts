@@ -52,16 +52,13 @@ export class ExpressionLayerComponent implements OnInit {
   @Input() selectAuthorToFilter: boolean = true;
 
   @Input() showVisibilityButton: boolean = false;
-
   @Input() isWidgetExpression?: boolean = false;
 
   @Input() selectIfValidPosition: boolean = false;
   @Input() isTriggerPosition: boolean = false;
 
   @Input() showActiveExpressionConfiguration: boolean = false;
-
   @Input() showColourPicker: boolean = false;
-
   @Input() monoSelectIcon: boolean = false;
 
   private _showRGBMixMode: boolean = false;
@@ -85,7 +82,7 @@ export class ExpressionLayerComponent implements OnInit {
   @Output() onSelect = new EventEmitter();
   @Output() onChangeWidgetPosition = new EventEmitter<number>();
 
-  objectType: ObjectType = ObjectType.OT_EXPRESSION;
+  private _objectType: ObjectType = ObjectType.OT_EXPRESSION;
 
   configuredScan: string = "";
   idToName: Record<string, string> = {};
@@ -137,6 +134,14 @@ export class ExpressionLayerComponent implements OnInit {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  get objectType(): ObjectType {
+    return this._objectType;
+  }
+
+  @Input() set objectType(type: ObjectType) {
+    this._objectType = type;
   }
 
   get isModule(): boolean {

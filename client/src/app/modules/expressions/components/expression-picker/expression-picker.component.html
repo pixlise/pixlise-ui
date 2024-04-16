@@ -131,6 +131,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
             [monoSelectIcon]="showRGBMixMode && isRGBMixModeActive && activeBrowseGroup === 'Expression Groups'"
+            [objectType]="activeBrowseGroup === 'Expression Groups' ? expressionGroupType : expressionType"
             [selected]="checkSelected(item.id)"
             [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
             (onSelect)="onSelect(item)"
