@@ -10,7 +10,7 @@ import { UserGroupCreateReq, UserGroupCreateResp, UserGroupDeleteReq } from "src
 import { UserGroupAddAdminReq, UserGroupDeleteAdminReq } from "src/app/generated-protos/user-group-admins-msgs";
 import { UserGroupListJoinableReq, UserGroupListReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupJoinSummaryInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
-import { ReplaySubject } from "rxjs";
+import { map, Observable, of, ReplaySubject } from "rxjs";
 import { UserGroupReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroupIgnoreJoinReq, UserGroupJoinListReq, UserGroupJoinReq } from "src/app/generated-protos/user-group-joining-msgs";
 import { UserOptionsService } from "./user-options.service";
@@ -321,6 +321,14 @@ export class GroupsService {
         this._snackBar.openError(err);
       },
     });
+  }
+
+  fetchGroupsAsync(): Observable<UserGroupInfo[]> {
+    if (this.groups.length > 0) {
+      return of(this.groups);
+    } else {
+      return this._dataService.sendUserGroupListRequest(UserGroupListReq.create()).pipe(map(res => res.groupInfos));
+    }
   }
 
   fetchGroupAccessRequests(groupId: string) {
