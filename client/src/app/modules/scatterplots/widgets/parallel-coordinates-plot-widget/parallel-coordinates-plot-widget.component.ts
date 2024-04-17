@@ -550,14 +550,14 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             catchError(err => {
               this.isWidgetDataLoading = false;
               console.error("Error loading image: ", err);
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             })
           );
         }),
         catchError(err => {
           this.isWidgetDataLoading = false;
           console.error("Error loading image: ", err);
-          return throwError(() => new Error(err));
+          return throwError(() => err);
         })
       )
       .subscribe({
