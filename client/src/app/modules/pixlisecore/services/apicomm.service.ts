@@ -2,19 +2,20 @@ import { Injectable, OnDestroy } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
-import { Observable, switchMap, map, retry, catchError } from "rxjs";
+import { Observable, switchMap, map, retry, catchError, throwError } from "rxjs";
 
 import { environment } from "src/environments/environment";
 
 import { WSMessage } from "../../../generated-protos/websocket";
 import { BeginWSConnectionResponse } from "../../../generated-protos/restmsgs";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { SentryHelper, randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
+import { SentryHelper, isFirefox, randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
 import { getMessageName } from "./wsMessageHandler";
 
 import * as Sentry from "@sentry/browser";
 import { AuthService } from "@auth0/auth0-angular";
 import { SnackbarService } from "./snackbar.service";
+import { Router } from "@angular/router";
 
 @Injectable({
   providedIn: "root",
@@ -27,11 +28,13 @@ export class APICommService implements OnDestroy {
   private _id = randomString(6);
 
   public hasDisconnected = false;
+  public initialised = false;
 
   constructor(
     private http: HttpClient,
+    private _router: Router,
     private _authService: AuthService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
   ) {
     console.log(`APICommService [${this._id}] created`);
 
@@ -43,6 +46,25 @@ export class APICommService implements OnDestroy {
         Sentry.setUser({ id: user.id, username: user.username, email: user.email });
       }
     });
+
+    // At this point too, we should tell users if they're on the wrong browser
+    if (typeof OffscreenCanvas === "undefined" || !HTMLCanvasElement.prototype.transferControlToOffscreen) {
+      this._snackService.openError(
+        "Please use the latest version of Chrome browser, otherwise you may encounter errors",
+        "Your browser doesn't correctly support OffscreenCanvas which is used in PIXLISE."
+      );
+      return;
+    } else {
+      if (isFirefox(navigator?.userAgent || "")) {
+        this._snackService.openError(
+          "Please use Chrome. Firefox browser is currently not supported.",
+          "Firefox currently has issues with login, and has much slower context image rendering than Chrome."
+        );
+        return;
+      }
+    }
+
+    this.initialised = true;
   }
 
   ngOnDestroy() {
@@ -58,11 +80,18 @@ export class APICommService implements OnDestroy {
         return res.connToken;
       }),
       catchError(err => {
-        console.error(`APICommService [${this._id}] beginConnect error: ${err?.message || err}`);
-        this._snackService.openError(
-          `Failed to connect to PIXLISE server. Retrying...`,
-          `You may need to refresh this tab to try to reconnect. Error details: ${err?.message || err}`
-        );
+        // For some reason Firefox seems to (mostly locally, but seen it on prod too) end up failing to login somehow, and it
+        // then sits in a loop saying error: Login required. To break this cycle, we navigate to the root page, because our token
+        // must've failed to renew or something. Not getting a useful error message back from auth0 makes this hard to diagnose!
+        const errMsg = `${err?.message || err}`;
+        if (errMsg != "Login required") {
+          console.error(`APICommService [${this._id}] beginConnect error: ${errMsg}`);
+          this._snackService.openError(
+            `Failed to connect to PIXLISE server. Retrying...`,
+            `You may need to refresh this tab to try to reconnect. Error details: ${errMsg}`
+          );
+        }
+
         this.hasDisconnected = true;
         throw err;
       })
