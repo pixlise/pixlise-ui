@@ -77,6 +77,7 @@
 
     .buttons {
       display: flex;
+      align-items: center;
 
       &.unconfigured-display {
         margin-left: auto;

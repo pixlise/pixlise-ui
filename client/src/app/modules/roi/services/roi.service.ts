@@ -13,7 +13,7 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, map, of, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, map, of, shareReplay, switchMap } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
@@ -34,6 +34,7 @@ import { SelectionHistoryItem } from "../../pixlisecore/services/selection.servi
 import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "../../analysis/analysis.module";
+import { UserGroupList } from "../../../generated-protos/ownership-access";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -170,36 +171,46 @@ export class ROIService {
   }
 
   searchROIs(searchParams: SearchParams, isMIST: boolean = false) {
-    // Check if selection ROI exists for this scan and if not, create an empty one
-    // if (searchParams.scanId && searchParams.scanId.length > 0) {
-    //   if (!this.roiItems$.value[PredefinedROIID.getSelectedPointsForScan(searchParams.scanId)]) {
-    //     const selectedPointsROI = this.getSelectedPointsROI(searchParams.scanId);
-    //     if (selectedPointsROI) {
-    //       this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
-    //       this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
-    //       this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
-    //       this.roiItems$.next(this.roiItems$.value);
-    //       this.displaySettingsMap$.next(this.displaySettingsMap$.value);
-    //     }
-    //   }
-    // }
+    this.createScanAllPointsROI(searchParams.scanId)
+      .pipe(
+        switchMap(allPointsROI => {
+          return this.searchROIsAsync(searchParams, isMIST);
+        })
+      )
+      .subscribe();
+  }
 
-    // Check if all points ROI exists for this scan and if not, fetch it
-    const allPointsROIID = PredefinedROIID.getAllPointsForScan(searchParams.scanId);
-    if (searchParams.scanId && searchParams.scanId.length > 0 && !this.roiSummaries$.value[allPointsROIID]) {
-      this.getAllPointsROI(searchParams.scanId).subscribe(allPointsROI => {
-        if (allPointsROI) {
-          this.roiItems$.value[allPointsROI.id] = allPointsROI;
-          this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
-          this.displaySettingsMap$.value[allPointsROI.id] = { colour: Colours.GRAY_10, shape: DEFAULT_ROI_SHAPE };
-          this.roiItems$.next(this.roiItems$.value);
-          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
-        }
-      });
+  createScanAllPointsROI(scanId: string): Observable<ROIItem | null> {
+    if (scanId && scanId.length > 0) {
+      // Check if all points ROI exists for this scan and if not, fetch it
+      const allPointsROIID = PredefinedROIID.getAllPointsForScan(scanId);
+      if (this.roiItems$.value[allPointsROIID]) {
+        return of(this.roiItems$.value[allPointsROIID]);
+      } else {
+        return this.getAllPointsROI(scanId).pipe(
+          map(allPointsROI => {
+            if (allPointsROI) {
+              this.roiItems$.value[allPointsROI.id] = allPointsROI;
+              this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
+              this.displaySettingsMap$.value[allPointsROI.id] = { colour: Colours.GRAY_10, shape: DEFAULT_ROI_SHAPE };
+              this.roiItems$.next(this.roiItems$.value);
+              this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+
+              return allPointsROI;
+            } else {
+              return null;
+            }
+          })
+        );
+      }
+    } else {
+      return of(null);
     }
+  }
 
-    this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({ searchParams, isMIST })).subscribe({
-      next: async res => {
+  searchROIsAsync(searchParams: SearchParams, isMIST: boolean = false): Observable<Record<string, ROIItemSummary>> {
+    return this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({ searchParams, isMIST })).pipe(
+      map(res => {
         this.roiSummaries$.next({ ...this.roiSummaries$.value, ...res.regionsOfInterest });
 
         let displaySettingsUpdated = false;
@@ -217,11 +228,10 @@ export class ROIService {
           this.mistROIsByScanId$.value[searchParams.scanId] = res.regionsOfInterest;
           this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
         }
-      },
-      error: err => {
-        this._snackBarService.openError(err);
-      },
-    });
+
+        return res.regionsOfInterest;
+      })
+    );
   }
 
   getSelectedPointsRegionSettings(scanId: string): Observable<RegionSettings> {
@@ -516,6 +526,7 @@ export class ROIService {
     }
 
     let roiToWrite = ROIItem.create(newROI);
+    let isMIST = roiToWrite.mistROIItem ? true : false;
 
     // Have to remove owner field to write
     roiToWrite.owner = undefined;
@@ -531,12 +542,15 @@ export class ROIService {
       .sendRegionOfInterestWriteRequest(
         RegionOfInterestWriteReq.create({
           regionOfInterest: roiToWrite,
-          isMIST: roiToWrite.mistROIItem ? true : false,
+          isMIST,
         })
       )
       .subscribe({
         next: res => {
           if (res.regionOfInterest) {
+            if (isMIST) {
+              res.regionOfInterest.mistROIItem = roiToWrite.mistROIItem;
+            }
             res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
             res.regionOfInterest.pixelIndexesEncoded = decodeIndexList(res.regionOfInterest.pixelIndexesEncoded);
 
@@ -574,7 +588,15 @@ export class ROIService {
       });
   }
 
-  bulkWriteROIs(regionsOfInterest: ROIItem[], overwrite: boolean, skipDuplicates: boolean, isMIST: boolean, mistROIScanIdsToDelete: string[] = []) {
+  bulkWriteROIs(
+    regionsOfInterest: ROIItem[],
+    overwrite: boolean,
+    skipDuplicates: boolean,
+    isMIST: boolean,
+    mistROIScanIdsToDelete: string[] = [],
+    editors: UserGroupList | undefined = undefined,
+    viewers: UserGroupList | undefined = undefined
+  ) {
     let writableROIs = regionsOfInterest.map(roi => {
       let newROI = ROIItem.create(roi);
       newROI.owner = undefined;
@@ -587,12 +609,34 @@ export class ROIService {
 
     this._dataService
       .sendRegionOfInterestBulkWriteRequest(
-        RegionOfInterestBulkWriteReq.create({ regionsOfInterest: writableROIs, overwrite, skipDuplicates, isMIST, mistROIScanIdsToDelete })
+        RegionOfInterestBulkWriteReq.create({ regionsOfInterest: writableROIs, overwrite, skipDuplicates, isMIST, mistROIScanIdsToDelete, editors, viewers })
       )
       .subscribe({
         next: res => {
           if (res.regionsOfInterest) {
-            res.regionsOfInterest.forEach(roi => {
+            // Remove MIST scans that were deleted
+            mistROIScanIdsToDelete.forEach(scanId => {
+              if (this.mistROIsByScanId$.value[scanId]) {
+                this.mistROIsByScanId$.value[scanId] = {};
+              }
+            });
+
+            res.regionsOfInterest.forEach((roi, i) => {
+              if (isMIST) {
+                let matchingROI = writableROIs[i];
+
+                // Extra verification check to make sure order didnt change
+                if (matchingROI && matchingROI.mistROIItem?.classificationTrail === roi.description) {
+                  roi.mistROIItem = matchingROI.mistROIItem;
+                } else {
+                  // Order changed, so lets try to find it by classification trail (this shouldn't happen)
+                  let trailMatchedROI = writableROIs.find(writableROI => writableROI.mistROIItem?.classificationTrail === roi.description);
+                  if (trailMatchedROI) {
+                    roi.mistROIItem = trailMatchedROI.mistROIItem;
+                  }
+                }
+              }
+
               this.roiItems$.value[roi.id] = roi;
 
               if (isMIST) {
@@ -630,7 +674,24 @@ export class ROIService {
   }
 
   editROISummary(newROISummary: ROIItemSummary) {
-    this.writeROI(ROIItem.create(newROISummary), false, true);
+    this.loadROI(newROISummary.id)
+      .pipe(
+        map(roi => {
+          roi.name = newROISummary.name;
+          roi.description = newROISummary.description;
+          roi.tags = newROISummary.tags;
+          roi.isMIST = newROISummary.isMIST;
+          if (roi.isMIST) {
+            roi.mistROIItem = newROISummary.mistROIItem;
+          }
+          this.writeROI(roi, false, true);
+        })
+      )
+      .subscribe({
+        error: err => {
+          this._snackBarService.openError(err);
+        },
+      });
   }
 
   createROI(newROI: ROIItem) {

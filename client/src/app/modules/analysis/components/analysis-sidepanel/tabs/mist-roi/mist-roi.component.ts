@@ -41,6 +41,7 @@ import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { UserGroupList } from "../../../../../../generated-protos/ownership-access";
 
 @Component({
   selector: "app-mist-roi",
@@ -78,6 +79,9 @@ export class MistROIComponent implements OnInit {
   layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
   allContextImages: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
   private _selectedContextImage: string = "";
+
+  canEditAllMIST: boolean = false;
+  canEditSelected: boolean = false;
 
   constructor(
     private _roiService: ROIService,
@@ -226,6 +230,7 @@ export class MistROIComponent implements OnInit {
     }
 
     this.mistROIs = Object.values(this.mistROIByScanId[this.visibleScanId]).sort((roiA, roiB) => roiA.name.localeCompare(roiB.name));
+    this.canEditAllMIST = this.mistROIs.length > 0 && this.mistROIs.every(roi => roi.owner?.canEdit);
 
     this.fullyIdentifiedMistROIs = this.mistROIs
       .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth >= 5)
@@ -304,6 +309,8 @@ export class MistROIComponent implements OnInit {
       this._selectedROIs = [...this._selectedROIs, ...allFullMistROIs];
       this.isAllFullyIdentifiedMistROIsChecked = true;
     }
+
+    this.canEditSelected = this._selectedROIs.length > 0 && this._selectedROIs.every(roi => roi.owner?.canEdit);
   }
 
   toggleGroupIdentifiedMistROIs(event: any) {
@@ -315,6 +322,8 @@ export class MistROIComponent implements OnInit {
       this._selectedROIs = [...this._selectedROIs, ...allPartialMistROIs];
       this.isAllGroupIdentifiedMistROIsChecked = true;
     }
+
+    this.canEditSelected = this._selectedROIs.length > 0 && this._selectedROIs.every(roi => roi.owner?.canEdit);
   }
 
   checkSelected(region: ROIItemSummary): boolean {
@@ -342,10 +351,13 @@ export class MistROIComponent implements OnInit {
         this.isAllGroupIdentifiedMistROIsChecked = this.groupIdentifiedMistROIs.every(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) >= 0);
       }
     }
+
+    this.canEditSelected = this._selectedROIs.length > 0 && this._selectedROIs.every(roi => roi.owner?.canEdit);
   }
 
   clearSelection() {
     this._selectedROIs = [];
+    this.canEditSelected = false;
     this.isAllFullyIdentifiedMistROIsChecked = false;
     this.isAllGroupIdentifiedMistROIsChecked = false;
   }
