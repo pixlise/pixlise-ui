@@ -46,9 +46,9 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
       ctx.lineWidth = i == 0 ? 2 : 1;
 
       const end = 1;
-      const start = i == 0 ? 0.25 : 0.125;
+      const start = i == 0 ? 0.2 : 0.1;
 
-      for (let t = start; t < end; t += 0.25) {
+      for (let t = start; t < end; t += 0.2) {
         // Horizontal
         ctx.beginPath();
         ctx.moveTo(drawData.triangleA.x + (t * width) / 2, drawData.triangleA.y + t * height);
