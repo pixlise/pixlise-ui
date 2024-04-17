@@ -32,7 +32,7 @@
           (click)="onOpenView(viewShortcut)"></icon-button>
       </div>
     </div>
-    <hr *ngIf="isAdmin" class="panel-break" />
+    <hr *ngIf="isAdmin && adminShortcuts.length > 0" class="panel-break" />
     <div *ngIf="isAdmin" class="tab-shortcuts">
       <div *ngFor="let adminBtn of adminShortcuts" class="view-btn-container">
         <icon-button

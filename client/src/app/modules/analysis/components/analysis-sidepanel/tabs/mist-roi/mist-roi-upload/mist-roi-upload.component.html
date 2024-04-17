@@ -46,6 +46,18 @@ POSSIBILITY OF SUCH DAMAGE. -->
       </mat-select>
     </div>
     <div class="upload-option">
+      <h5>Group to share with:</h5>
+      <mat-select
+        [(ngModel)]="groupIdToShareWith"
+        class="share-with-group"
+        placeholder="Group ..."
+        #tooltip="matTooltip"
+        matTooltip="Share MIST ROIs with this group"
+        [matTooltipShowDelay]="500">
+        <mat-option *ngFor="let group of editableGroups" [value]="group.id">{{ group.name }}</mat-option>
+      </mat-select>
+    </div>
+    <div class="upload-option">
       <h5>Choose .CSV:</h5>
       <input type="file" style="display: none" #csvFile (change)="onBrowse($event)" accept=".csv" />
       <push-button #tooltip="matTooltip" [matTooltip]="browseTooltip" [matTooltipShowDelay]="500" class="browse-btn" buttonStyle="normal" (onClick)="csvFile.click()"

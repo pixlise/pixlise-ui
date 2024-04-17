@@ -1,12 +1,12 @@
 import { Injectable } from "@angular/core";
 
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { BehaviorSubject, ReplaySubject, Subject } from "rxjs";
+import { APIDataService } from "../../pixlisecore/pixlisecore.module";
+import { BehaviorSubject, Observable, of, ReplaySubject, switchMap } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
 import { UserListReq } from "src/app/generated-protos/user-management-msgs";
 import { Auth0UserDetails, UserInfo } from "src/app/generated-protos/user";
-import { UserSearchReq } from "src/app/generated-protos/user-msgs";
+import { UserDetailsReq, UserSearchReq } from "src/app/generated-protos/user-msgs";
 
 @Injectable({
   providedIn: "root",
@@ -30,6 +30,26 @@ export class UsersService {
         console.error(err);
       },
     });
+  }
+
+  fetchUserInfo(userId: string): Observable<UserInfo> {
+    if (this.cachedUsers[userId]) {
+      return of(this.cachedUsers[userId]);
+    } else {
+      return this._dataService.sendUserSearchRequest(UserSearchReq.create({ searchString: "" })).pipe(
+        switchMap(res => {
+          res.users.forEach(user => {
+            this.cachedUsers[user.id] = user;
+          });
+
+          if (this.cachedUsers[userId]) {
+            return of(this.cachedUsers[userId]);
+          } else {
+            return of(UserInfo.create({}));
+          }
+        })
+      );
+    }
   }
 
   searchUsers(searchString: string) {

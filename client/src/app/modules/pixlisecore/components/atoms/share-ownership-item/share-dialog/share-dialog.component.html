@@ -30,11 +30,11 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="share-dialog">
-  <h1>Share {{ data.typeName }}</h1>
+  <h1>Share {{ data.typeName }}{{ !canEdit ? " (Read Only)" : "" }}</h1>
   <div class="fields">
     <div class="search-field">
       <div class="auto-container" *ngIf="isSearchingGroups">
-        <input type="text" placeholder="Search Groups..." matInput [matAutocomplete]="groupAuto" [(ngModel)]="searchField" />
+        <input [disabled]="!canEdit" type="text" placeholder="Search Groups..." matInput [matAutocomplete]="groupAuto" [(ngModel)]="searchField" />
         <mat-autocomplete #groupAuto="matAutocomplete">
           <mat-option
             [disabled]="memberIds.has(group.id)"
@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </mat-autocomplete>
       </div>
       <div class="auto-container" *ngIf="!isSearchingGroups">
-        <input type="text" placeholder="Search Users..." matInput [matAutocomplete]="userAuto" [(ngModel)]="searchField" />
+        <input [disabled]="!canEdit" type="text" placeholder="Search Users..." matInput [matAutocomplete]="userAuto" [(ngModel)]="searchField" />
         <mat-autocomplete #userAuto="matAutocomplete">
           <mat-option [disabled]="memberIds.has(user.id)" (onSelectionChange)="onSelectUser(user, $event)" *ngFor="let user of filteredUsers" [value]="user.id">{{
             user.name
@@ -54,8 +54,8 @@ POSSIBILITY OF SUCH DAMAGE.
         </mat-autocomplete>
       </div>
 
-      <div class="search-type">
-        <mat-select [(ngModel)]="isSearchingGroups">
+      <div class="search-type {{ canEdit ? '' : 'disabled' }}">
+        <mat-select [disabled]="!canEdit" [(ngModel)]="isSearchingGroups">
           <mat-option [value]="true">Groups</mat-option>
           <mat-option [value]="false">Users</mat-option>
         </mat-select>
@@ -78,11 +78,12 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="name">{{ member.name }}</div>
         <div class="access-type">
-          <mat-select [(ngModel)]="member.isEditor" (selectionChange)="onAccessChange('', $event)">
+          <mat-select [disabled]="!canEdit" [(ngModel)]="member.isEditor" (selectionChange)="onAccessChange('', $event)">
             <mat-option [value]="true">Editor</mat-option>
             <mat-option [value]="false">Viewer</mat-option>
           </mat-select>
           <action-button
+            *ngIf="canEdit"
             action="close"
             color="rgb(var(--clr-gray-30))"
             confirmText="Are you sure you want to remove {{ member.name }}?"
@@ -90,9 +91,51 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
       </div>
     </div>
-  </div>
-  <div class="gap-separated-horizontal-elements button-container">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onConfirm()" #tooltip="matTooltip" [matTooltip]="confirmButtonTooltip">Confirm</push-button>
+
+    <div class="sub-items" *ngIf="subItems.length > 0">
+      <div class="title">
+        <h1>Sub Items</h1>
+        <div class="share-subitems">
+          <span class="share-sub-label">Share with Sub Items:</span>
+          <action-button [action]="shareWithSubItems ? 'checkOn' : 'checkOff'" (onClick)="shareWithSubItems = !shareWithSubItems"></action-button>
+        </div>
+      </div>
+      <div class="sub-item-list">
+        <div *ngFor="let subItem of subItems" class="sub-item">
+          <div class="icon">
+            <img
+              *ngIf="!subItem.ownershipSummary.canEdit"
+              #tooltip="matTooltip"
+              [matTooltip]="
+                'You don\'t have edit permission on this expression.\nPlease make a copy of it or ask the owner to make you an editor to share this group with others.'
+              "
+              class="sharing-warning"
+              src="assets/icons/error-triangle.svg" />
+            <img [src]="subItem.ownershipSummary.creatorUser?.iconURL" />
+            <span *ngIf="!subItem.ownershipSummary.creatorUser?.iconURL" class="user-icon">{{
+              subItem?.ownershipSummary?.creatorUser?.name?.[0] ? subItem.ownershipSummary.creatorUser!.name[0].toUpperCase() : "N/A"
+            }}</span>
+          </div>
+          <div class="details">
+            <h2>{{ subItem.name }}</h2>
+            <h5>{{ subItem.typeName }}</h5>
+          </div>
+          <div class="right-menu">
+            <share-ownership-item-button [id]="subItem.id" [ownershipSummary]="subItem.ownershipSummary" [type]="subItem.type"></share-ownership-item-button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+      <push-button
+        [disabled]="!canEdit"
+        buttonStyle="yellow"
+        (onClick)="onConfirm()"
+        #tooltip="matTooltip"
+        [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
+        >Confirm</push-button
+      >
+    </div>
   </div>
 </div>

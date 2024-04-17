@@ -36,9 +36,9 @@
   justify-content: center;
   height: 18px;
   font-family: "Roboto";
+  gap: $sz-unit;
 
   .icon {
-    margin-right: $sz-unit;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -56,7 +56,7 @@
     overflow: hidden;
     white-space: pre;
     text-overflow: ellipsis;
-    margin-right: 4px;
+    margin-right: auto;
   }
 
   .close-btn {
@@ -158,11 +158,5 @@
     align-items: center;
     justify-content: flex-end;
     margin: 8px;
-  }
-}
-
-.snackbar {
-  .snack-btn:first-of-type {
-    margin-left: auto;
   }
 }

@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="gap-separated-horizontal-elements quant-info">
     <div class="quant-info-header">
       <div>{{ quantItem?.quant?.params?.userParams?.name }}{{ roiMatched ? " (ROI MATCH)" : "" }}</div>
-      <div *ngIf="quantItem?.quant?.owner?.canEdit" class="obj-creator">By {{ quantItem?.quant?.owner?.creatorUser?.name }}</div>
+      <div class="obj-creator">By {{ quantItem?.quant?.owner?.creatorUser?.name }}</div>
       <div class="detectors">{{ quantItem?.detectorType }}, {{ (quantItem?.quant?.params?.startUnixTimeSec || 0) * 1000 | date: "mediumDate" }}</div>
       <!-- <div
                 *ngIf="quantItem.quant.blessDetails"
@@ -54,7 +54,17 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="elem-states">{{ quantItem?.stateLabel }}</div>
       </div>
 
-      <ng-content select="[controlButtons]"></ng-content>
+      <div class="shared-control-btns left-gap gap-separated-horizontal-elements">
+        <share-ownership-item-button [id]="quantItem?.quant?.id || ''" [ownershipSummary]="quantItem?.quant?.owner || null" [type]="objectType">
+        </share-ownership-item-button>
+        <action-button
+          [disabled]="!quantItem?.quant?.owner?.canEdit"
+          action="delete"
+          [tooltipTitle]="quantItem?.quant?.owner?.canEdit ? 'Delete Quantification' : 'You do not have permission to delete this quantification.'"
+          [confirmText]="'Are you sure you want to delete the quantification: ' + (quantItem?.quant?.params?.userParams?.name || quantItem?.quant?.id) + '?'"
+          (onClick)="onDeleteQuant()">
+        </action-button>
+      </div>
     </div>
   </div>
 </div>

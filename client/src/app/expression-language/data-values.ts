@@ -123,62 +123,40 @@ export class PMCDataValues {
     return result;
   }
 
-  static filterToCommonPMCsOnly(values: PMCDataValues[]): (PMCDataValues | null)[] {
+  static filterToCommonPMCsOnly(values: (PMCDataValues | null | undefined)[]): (PMCDataValues | null)[] {
     const result: (PMCDataValues | null)[] = [];
+    if (values.length === 0) {
+      return result;
+    }
 
     // Find all the PMCs which they have in common
-    // Many ways to do this, for now it seems easy to run through each array and add to a map of PMC->count, filter
-    // out the ones that are < number of value arrays
-    const pmcCounts: Map<number, number> = new Map<number, number>();
+    let overlappingPMCs = new Set<number>();
     for (const vals of values) {
-      if (vals) {
-        // could have nulls in values array!
-        for (const val of vals.values) {
-          const lastCount = pmcCounts.get(val.pmc);
-          if (lastCount == undefined) {
-            pmcCounts.set(val.pmc, 1);
-          } else {
-            pmcCounts.set(val.pmc, lastCount + 1);
-          }
-        }
+      if (!vals) {
+        continue;
       }
-    }
 
-    /* Map lookups should be quicker!
-        // Find the set of PMCs to remove
-        let pmcsToRemove: number[] = [];
-
-        for(let [pmc, count] of pmcCounts)
-        {
-            if(count < values.length)
-            {
-                pmcsToRemove.push(pmc);
-            }
-        }
-*/
-
-    // Now we copy the original array with only the PMCs that have data across all... this is getting slow and ugly :(
-    // TODO: optimise, surely there's a better way, just not at 9pm...
-    for (const vals of values) {
-      if (vals) {
-        // could have nulls in values array!
-        const valsToSave: PMCDataValue[] = [];
-        for (const val of vals.values) {
-          //if(pmcsToRemove.indexOf(val.pmc) == -1)
-          const count = pmcCounts.get(val.pmc);
-          if (count == values.length) {
-            // NOT removing this, so add it...
-            valsToSave.push(val);
-          }
-        }
-
-        result.push(PMCDataValues.makeWithValues(valsToSave));
+      const currentPMCs = new Set(vals.values.map(value => value.pmc));
+      if (overlappingPMCs.size === 0) {
+        overlappingPMCs = currentPMCs;
       } else {
-        result.push(null);
+        overlappingPMCs = new Set([...overlappingPMCs].filter(existingPMC => currentPMCs.has(existingPMC)));
+      }
+
+      if (overlappingPMCs.size === 0) {
+        break;
       }
     }
 
-    return result;
+    // Filter results to only include overlapping PMCs
+    return values.map(vals => {
+      if (!vals) {
+        return null;
+      }
+
+      const filteredValues = vals.values.filter(value => overlappingPMCs.has(value.pmc));
+      return PMCDataValues.makeWithValues(filteredValues);
+    });
   }
 
   private setValues(values: PMCDataValue[]) {
