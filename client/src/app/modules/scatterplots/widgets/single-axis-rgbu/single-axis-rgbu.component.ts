@@ -202,12 +202,12 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
         if (state && state.imageName) {
           this.mdl.roiStackedOverlap = state.roiStackedOverlap || false;
           this.mdl.mineralsShown = state.minerals || [];
-          this.mdl.selectedMinXValue = state.selectedMinValue || null;
-          this.mdl.selectedMaxXValue = state.selectedMaxValue || null;
+          this.mdl.selectedMinXValue = state.selectedMinValue ?? null;
+          this.mdl.selectedMaxXValue = state.selectedMaxValue ?? null;
           this.mdl.showAllMineralLabels = state.showAllMineralLabels ?? true;
 
           let channelA = RGBUPlotModel.channelToIdx(state.channelA || "R");
-          let channelB = RGBUPlotModel.channelToIdx(state.channelB || "G");
+          let channelB = RGBUPlotModel.channelToIdx(state.channelB ?? "G");
 
           this.mdl.xAxisUnit = new RGBUAxisUnit(channelA, channelB);
 

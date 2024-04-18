@@ -31,6 +31,7 @@ import { Component, Inject, OnInit } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { RGBUAxisUnit } from "../rgbu-plot-data";
 import { MinMax } from "src/app/models/BasicTypes";
+import { SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
 
 export type RatioPickerData = {
   axis: RGBUAxisUnit;
@@ -43,16 +44,19 @@ export type RatioPickerData = {
   styleUrls: ["./rgbuaxis-ratio-picker.component.scss"],
 })
 export class RGBUAxisRatioPickerComponent implements OnInit {
+  public static NoChannel = "None";
+
   numeratorChannel: string = "";
   denominatorChannel: string = "";
 
   channels: string[] = ["Near-IR", "Green", "Blue", "UV"];
-  channelsWithNone: string[] = ["Near-IR", "Green", "Blue", "UV", "None"];
+  channelsWithNone: string[] = ["Near-IR", "Green", "Blue", "UV", RGBUAxisRatioPickerComponent.NoChannel];
 
   valueRange: MinMax = new MinMax(0, 1);
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: RatioPickerData,
+    private _snackService: SnackbarService,
     public dialogRef: MatDialogRef<RGBUAxisRatioPickerComponent>
   ) {}
 
@@ -64,6 +68,8 @@ export class RGBUAxisRatioPickerComponent implements OnInit {
         }
         if (this.data.axis.denominatorChannelIdx >= 0) {
           this.denominatorChannel = this.channelsWithNone[this.data.axis.denominatorChannelIdx];
+        } else if (this.data.axis.denominatorChannelIdx === -1) {
+          this.denominatorChannel = RGBUAxisRatioPickerComponent.NoChannel;
         }
       }
 
@@ -89,7 +95,7 @@ export class RGBUAxisRatioPickerComponent implements OnInit {
 
   onOK(): void {
     if (this.numeratorChannel == "" || this.denominatorChannel == "") {
-      alert("Please configure both channel selectors");
+      this._snackService.openError("Please configure both detectors");
       return;
     }
 
@@ -99,13 +105,7 @@ export class RGBUAxisRatioPickerComponent implements OnInit {
   }
 
   private channelNameToIdx(name: string): number {
-    for (let c = 0; c < this.channels.length; c++) {
-      if (name == this.channels[c]) {
-        return c;
-      }
-    }
-
-    return -1;
+    return this.channels.findIndex(channel => channel === name);
   }
 
   onCancel(): void {
