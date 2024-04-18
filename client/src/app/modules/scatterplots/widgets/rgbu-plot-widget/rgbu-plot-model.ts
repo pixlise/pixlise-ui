@@ -655,19 +655,22 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
 
   private static getRatioValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number {
     // Verify channels are valid, if not return -1 so these values can be filtered out
-    if (!channel || !channel[numeratorChannel] || !channel[denominatorChannel]) {
+    if (!channel || (!channel[numeratorChannel] && !channel[denominatorChannel])) {
       return -1;
     }
 
-    const numeratorValue = channel[numeratorChannel]?.values[pixelIdx];
-    const denominatorValue = channel[denominatorChannel]?.values[pixelIdx];
-
-    // Numerator can be any number, denominator must be a non-zero number
-    if (typeof numeratorValue === "number" && denominatorValue) {
-      return numeratorValue / denominatorValue;
-    } else {
-      return -1;
+    let value = channel[numeratorChannel]?.values[pixelIdx];
+    if (denominatorChannel > -1) {
+      const denominatorValue = channel[denominatorChannel]?.values[pixelIdx];
+      // Numerator can be any number, denominator must be a non-zero number
+      if (!isNaN(denominatorValue)) {
+        value /= denominatorValue;
+      } else {
+        return -1;
+      }
     }
+
+    return value;
   }
 
   private static getMineralPointsForAxes(xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit): RGBUMineralPoint[] {
@@ -677,11 +680,17 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       let xVal = RGBUMineralRatios.ratioValues[c][xAxisUnit.numeratorChannelIdx];
       if (xAxisUnit.denominatorChannelIdx > -1) {
         xVal /= RGBUMineralRatios.ratioValues[c][xAxisUnit.denominatorChannelIdx];
+      } else if (xAxisUnit.denominatorChannelIdx === -1) {
+        // De-normalize mineral point if we're not showing a ratio
+        xVal *= 255;
       }
 
       let yVal = RGBUMineralRatios.ratioValues[c][yAxisUnit.numeratorChannelIdx];
       if (yAxisUnit.denominatorChannelIdx > -1) {
         yVal /= RGBUMineralRatios.ratioValues[c][yAxisUnit.denominatorChannelIdx];
+      } else if (yAxisUnit.denominatorChannelIdx === -1) {
+        // De-normalize mineral point if we're not showing a ratio
+        yVal *= 255;
       }
 
       minerals.push(new RGBUMineralPoint(new Point(xVal, yVal), RGBUMineralRatios.names[c]));
@@ -695,8 +704,11 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     // Look up the value for each
     for (const mineralValues of RGBUMineralRatios.ratioValues) {
       let value = mineralValues[numeratorChannelIdx];
-      if (denominatorChannelIdx >= 0) {
+      if (denominatorChannelIdx > -1) {
         value /= mineralValues[denominatorChannelIdx];
+      } else if (denominatorChannelIdx === -1) {
+        // Mineral values are normalized, so if we're only showing one channel, we need to de-normalize them
+        value *= 255;
       }
 
       result.expand(value);
@@ -706,6 +718,10 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   }
 
   public static channelToIdx(ch: string): number {
+    if (ch === "None") {
+      return -1;
+    }
+
     let idx = RGBUImage.channels.indexOf(ch);
     if (idx < 0) {
       console.log("channelToIdx: invalid channel: " + ch);
@@ -715,6 +731,10 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   }
 
   public static idxToChannel(idx: number): string {
+    if (idx === -1) {
+      return "None";
+    }
+
     if (idx < 0 || idx >= RGBUImage.channels.length) {
       console.log("idxToChannel: invalid index: " + idx);
       return RGBUImage.channels[0];

@@ -179,10 +179,14 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         drawMonochrome: this.mdl.drawMonochrome,
         imageName: this.mdl.imageName,
         minerals: this.mdl.mineralsShown,
-        selectedMinXValue: this.mdl.selectedMinXValue || undefined,
-        selectedMaxXValue: this.mdl.selectedMaxXValue || undefined,
-        selectedMinYValue: this.mdl.selectedMinYValue || undefined,
-        selectedMaxYValue: this.mdl.selectedMaxYValue || undefined,
+        selectedMinXValue: this.mdl.selectedMinXValue ?? undefined,
+        selectedMaxXValue: this.mdl.selectedMaxXValue ?? undefined,
+        selectedMinYValue: this.mdl.selectedMinYValue ?? undefined,
+        selectedMaxYValue: this.mdl.selectedMaxYValue ?? undefined,
+        xChannelA: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.numeratorChannelIdx),
+        xChannelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
+        yChannelA: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.numeratorChannelIdx),
+        yChannelB: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.denominatorChannelIdx),
       })
     );
   }
@@ -194,10 +198,14 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         if (state && state.imageName) {
           this.mdl.drawMonochrome = state.drawMonochrome;
           this.mdl.mineralsShown = state.minerals || [];
-          this.mdl.selectedMinXValue = state.selectedMinXValue || null;
-          this.mdl.selectedMaxXValue = state.selectedMaxXValue || null;
-          this.mdl.selectedMinYValue = state.selectedMinYValue || null;
-          this.mdl.selectedMaxYValue = state.selectedMaxYValue || null;
+          this.mdl.selectedMinXValue = state.selectedMinXValue ?? null;
+          this.mdl.selectedMaxXValue = state.selectedMaxXValue ?? null;
+          this.mdl.selectedMinYValue = state.selectedMinYValue ?? null;
+          this.mdl.selectedMaxYValue = state.selectedMaxYValue ?? null;
+
+          this.mdl.xAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.xChannelA || "R"), RGBUPlotModel.channelToIdx(state.xChannelB ?? "G"));
+          this.mdl.yAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.yChannelA || "B"), RGBUPlotModel.channelToIdx(state.yChannelB ?? "U"));
+
           // TODO: fill in other vars here...
           this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
         } else {

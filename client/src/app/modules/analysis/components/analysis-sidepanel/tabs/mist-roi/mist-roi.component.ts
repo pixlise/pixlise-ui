@@ -39,9 +39,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { UserGroupList } from "../../../../../../generated-protos/ownership-access";
 
 @Component({
   selector: "app-mist-roi",
