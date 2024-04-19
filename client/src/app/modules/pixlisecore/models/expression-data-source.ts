@@ -90,17 +90,12 @@ export class ExpressionDataSource
 
     this._cachedDataService = cachedDataService;
 
-    if (PredefinedROIID.isSelectedPointsROI(roiId)) {
-      // || PredefinedROIID.isRemainingPoints(roiId)) {
-      throw new Error("Cannot ExpressionDataSource with roiId: " + roiId);
-    }
-
     this._spectrumEnergyCalibration = spectrumEnergyCalibration;
 
     // Firstly, request the ROI if there is one
     let indexes: Observable<number[]>;
 
-    if (roiId.length > 0 && !PredefinedROIID.isAllPointsROI(roiId)) {
+    if (roiId.length > 0 && !PredefinedROIID.isAllPointsROI(roiId) && !PredefinedROIID.isSelectedPointsROI(roiId)) {
       // We're looking up the ROI specified to find the list of location indexes to process BUT we still need
       // the full list of scan entries!
       indexes = cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(

@@ -30,6 +30,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { QuantModes, getQuantifiedElements } from "src/app/models/Quantification";
+import { ObjectType } from "../../../../../../../generated-protos/ownership-access";
+import { AnalysisLayoutService } from "../../../../../../analysis/analysis.module";
 
 export class QuantificationItemInfo {
   quantifiedAtomicNumbers: number[] = [];
@@ -62,11 +64,19 @@ export class QuantificationItemComponent implements OnInit {
 
   @Output() onQuantSelected = new EventEmitter();
 
-  constructor() {}
+  objectType: ObjectType = ObjectType.OT_QUANTIFICATION;
+
+  constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {}
 
   onClickQuant(): void {
     this.onQuantSelected.emit();
+  }
+
+  onDeleteQuant(): void {
+    if (this.quantItem?.quant?.id) {
+      this._analysisLayoutService.deleteQuant(this.quantItem.quant.id);
+    }
   }
 }

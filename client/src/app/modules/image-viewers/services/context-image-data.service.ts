@@ -23,6 +23,7 @@ import { ContextImageItemTransform } from "../image-viewers.module";
 import { Point } from "src/app/models/Geometry";
 import { WidgetError } from "../../pixlisecore/services/widget-data.service";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
+import { PMCDataValues } from "../../../expression-language/data-values";
 
 export type SyncedTransform = {
   scale: Point;
@@ -201,7 +202,7 @@ export class ContextImageDataService {
       throw new Error(results.error);
     }
 
-    if (results.queryResults.length != query.length) {
+    if (results.queryResults.length !== query.length) {
       throw new Error(`processQueryResults: expected ${query.length} results, received ${results.queryResults.length}`);
     }
 
@@ -211,21 +212,36 @@ export class ContextImageDataService {
     let subExpressionShading: ColourRamp[] = [colourRamp];
     const isBinary: boolean[] = [];
 
+    let shouldFilterToCommonPMCs = false;
+
     // If we have 3 query results, assume RGB colouring
-    if (results.queryResults.length == 3) {
+    if (results.queryResults.length === 3) {
       subExpressionShading = [ColourRamp.SHADE_MONO_FULL_RED, ColourRamp.SHADE_MONO_FULL_GREEN, ColourRamp.SHADE_MONO_FULL_BLUE];
+      shouldFilterToCommonPMCs = true;
     }
 
-    for (let c = 0; c < results.queryResults.length; c++) {
-      const result = results.queryResults[c];
+    let adjustedQueryResults = results.queryResults;
+
+    // Result lengths may differ due to holes in data, so find the minimum overlap if shouldFilterToCommonPMCs
+    if (shouldFilterToCommonPMCs) {
+      let pmcDataValues = adjustedQueryResults.map(result => PMCDataValues.makeWithValues(result?.values?.values));
+      let filteredPMCs = PMCDataValues.filterToCommonPMCsOnly(pmcDataValues);
+      adjustedQueryResults = adjustedQueryResults.map((result, i) => {
+        result.exprResult.resultValues = filteredPMCs[i];
+        return result;
+      });
+    }
+
+    for (let c = 0; c < adjustedQueryResults.length; c++) {
+      const result = adjustedQueryResults[c];
       const expr = result.expression?.name ? `${result.expression?.name} (${expressionId})` : `id=${expressionId}`;
       if (result.error) {
         throw new WidgetError(`processQueryResults: expression ${expr} had error: ${result.error}`, result.error.description);
       }
 
-      if (c > 0 && results.queryResults[0].values.values.length != result.values.values.length) {
+      if (c > 0 && adjustedQueryResults[0].values.values.length != result.values.values.length) {
         throw new Error(
-          `processQueryResults: expression ${expr} results differed in length, ${results.queryResults[0].values.values.length} vs ${result.values.values.length}`
+          `processQueryResults: expression ${expr} results differed in length, ${adjustedQueryResults[0].values.values.length} vs ${result.values.values.length}`
         );
       }
 
@@ -240,7 +256,7 @@ export class ContextImageDataService {
 
         if (idx !== undefined) {
           if (c == 0) {
-            const drawParams = getDrawParamsForRawValue(colourRamp, item.value, results.queryResults[0].values.valueRange);
+            const drawParams = getDrawParamsForRawValue(colourRamp, item.value, adjustedQueryResults[0].values.valueRange);
             pts.push(new MapPoint(item.pmc, idx, [item.value], drawParams));
           } else {
             if (pts[i].scanEntryId == item.pmc && pts[i].scanEntryIndex == idx) {
@@ -261,7 +277,7 @@ export class ContextImageDataService {
       quantId,
       roiId,
       false,
-      results.queryResults[0].expression?.name || expressionId,
+      adjustedQueryResults[0].expression?.name || expressionId,
       1, // TODO: Map opacity
       colourRamp,
       subExpressionNames,

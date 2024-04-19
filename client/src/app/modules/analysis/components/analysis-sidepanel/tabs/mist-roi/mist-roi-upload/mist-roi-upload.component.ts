@@ -35,6 +35,10 @@ import { ROIItem } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { GroupsService } from "../../../../../../settings/services/groups.service";
+import { UserGroupInfo, UserGroupRelationship } from "../../../../../../../generated-protos/user-group";
+import { UserOptionsService } from "../../../../../../settings/services/user-options.service";
+import { UserGroupList } from "../../../../../../../generated-protos/ownership-access";
 
 export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
@@ -61,8 +65,12 @@ export type ROIUploadSummary = {
   styleUrls: ["./mist-roi-upload.component.scss"],
 })
 export class MistRoiUploadComponent implements OnInit {
+  public static readonly OVERWRITE_ALL = "Over-Write All";
+  public static readonly OVERWRITE_SAME_NAME = "Over-Write ROIs With the Same Name";
+  public static readonly DO_NOT_OVERWRITE = "Do Not Over-Write";
+
   public overwriteOption: string = "Over-Write All";
-  public overwriteOptions: string[] = ["Over-Write All", "Over-Write ROIs With the Same Name", "Do Not Over-Write"];
+  public overwriteOptions: string[] = [MistRoiUploadComponent.OVERWRITE_ALL, MistRoiUploadComponent.OVERWRITE_SAME_NAME, MistRoiUploadComponent.DO_NOT_OVERWRITE];
   public csvFile: File | null = null;
   public mistROIs: ROIItem[] = [];
   public uploadToSubDatasets: boolean = false;
@@ -83,18 +91,39 @@ export class MistRoiUploadComponent implements OnInit {
   public uploadSummaries: ROIUploadSummary[] = [];
   public mistROIsByDatasetID: Map<string, ROIItem[]> = new Map<string, ROIItem[]>();
 
+  public editableGroups: UserGroupInfo[] = [];
+  public groupIdToShareWith: string = "";
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: MistROIUploadData,
     public dialogRef: MatDialogRef<MistRoiUploadComponent>,
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _roiService: ROIService
+    private _roiService: ROIService,
+    private _groupsService: GroupsService,
+    private _userOptionsService: UserOptionsService
   ) {}
 
   ngOnInit(): void {
     this.selectedScanId = this.data.scanId || this._analysisLayoutService.defaultScanId;
     this.configuredScans = this.data.configuredScans;
     this.allScans = this.data.allScans;
+
+    this._groupsService.fetchGroupsAsync().subscribe(groups => {
+      if (!groups || groups.length === 0) {
+        return;
+      }
+
+      this.editableGroups = groups.filter(
+        group => group.relationshipToUser >= UserGroupRelationship.UGR_MEMBER || this._userOptionsService.hasFeatureAccess("admin")
+      );
+      let groupToShareWith = groups.find(group => group.name === "MIST");
+      if (!groupToShareWith) {
+        groupToShareWith = groups[0];
+      }
+
+      this.groupIdToShareWith = groupToShareWith?.id || "";
+    });
   }
 
   get browseTooltip(): string {
@@ -223,15 +252,19 @@ export class MistRoiUploadComponent implements OnInit {
 
   onUpload(): void {
     if (this.isValidMistROIFile) {
-      let deleteExisting = this.overwriteOption === "Over-Write All";
-      let overwrite = deleteExisting || this.overwriteOption === "Over-Write ROIs With the Same Name";
-      let skipDuplicates = this.overwriteOption === "Do Not Over-Write";
+      let deleteExisting = this.overwriteOption === MistRoiUploadComponent.OVERWRITE_ALL;
+      let overwrite = deleteExisting || this.overwriteOption === MistRoiUploadComponent.OVERWRITE_SAME_NAME;
+      let skipDuplicates = this.overwriteOption === MistRoiUploadComponent.DO_NOT_OVERWRITE;
 
       let idsToDelete = deleteExisting ? this.uploadedScanIds : [];
-
       let filteredROIs = Object.values(this.uniqueROIs).filter(roi => this.uploadSummaries.some(summary => summary.scanId === roi.scanId && summary.upload));
 
-      this._roiService.bulkWriteROIs(filteredROIs, overwrite, skipDuplicates, true, idsToDelete);
+      let editors: UserGroupList | undefined = undefined;
+      if (this.groupIdToShareWith) {
+        editors = UserGroupList.create({ groupIds: [this.groupIdToShareWith] });
+      }
+
+      this._roiService.bulkWriteROIs(filteredROIs, overwrite, skipDuplicates, true, idsToDelete, editors);
 
       this.dialogRef.close({
         deleteExisting,

@@ -212,6 +212,18 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
       },
     });
 
+    options.push({
+      id: "singleROICSV",
+      name: "Single CSV for per Region",
+      type: "checkbox",
+      description: "Combine expression data into a single CSV per region",
+      selected: true,
+      updateCounts: (selection, selected) => {
+        this.mapAllDataProductCounts();
+        return {};
+      },
+    });
+
     this.options.push(...options);
   }
 
@@ -483,7 +495,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     }
 
     if (request.dataProducts["roiExpressionValues"]?.selected) {
-      exportRequests.push(this._exporterService.getROIExpressionValues(scanId, quantId, roiIds, expressionIds));
+      let singleCSV = request.options["singleROICSV"]?.selected || false;
+      exportRequests.push(this._exporterService.getROIExpressionValues(scanId, quantId, roiIds, expressionIds, singleCSV));
     }
 
     if (exportRequests.length === 0) {

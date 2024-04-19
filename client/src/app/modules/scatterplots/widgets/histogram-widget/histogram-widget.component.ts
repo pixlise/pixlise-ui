@@ -5,7 +5,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { DataSourceParams, DataUnit, RegionDataResults, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { HistogramModel } from "./histogram-model";
 import { HistogramDrawer } from "./histogram-drawer";
@@ -42,7 +42,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     public dialog: MatDialog,
     private _widgetData: WidgetDataService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _selectionService: SelectionService
   ) {
     super();
 
@@ -197,6 +198,35 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         } else {
           this.setInitialConfig();
         }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe(selection => {
+        for (const [scanId, ids] of this.mdl.dataSourceIds) {
+          let dataSource = this.mdl.dataSourceIds.get(scanId);
+          dataSource!.roiIds = dataSource!.roiIds.filter(id => !PredefinedROIID.isSelectedPointsROI(id));
+        }
+
+        let scanIds = selection?.beamSelection?.getScanIds() || [];
+        if (selection && scanIds.length > 0) {
+          scanIds.forEach(scanId => {
+            let pointsSelected = selection.beamSelection.getSelectedScanEntryPMCs(scanId);
+            if (pointsSelected.size === 0) {
+              return;
+            }
+
+            let selectionPoints = PredefinedROIID.getSelectedPointsForScan(scanId);
+            let dataSource = this.mdl.dataSourceIds.get(scanId);
+            if (dataSource) {
+              dataSource.roiIds = Array.from(new Set([...dataSource.roiIds, selectionPoints]));
+            } else {
+              this.mdl.dataSourceIds.set(scanId, new ScanDataIds(this._analysisLayoutService.getQuantIdForScan(scanId), [selectionPoints]));
+            }
+          });
+        }
+
+        this.update();
       })
     );
 

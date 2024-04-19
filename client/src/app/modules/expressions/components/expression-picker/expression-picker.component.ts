@@ -148,6 +148,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _showRGBMixMode: boolean = false;
 
   expressionGroupType: ObjectType = ObjectType.OT_EXPRESSION_GROUP;
+  expressionType: ObjectType = ObjectType.OT_EXPRESSION;
 
   configuredScans: ScanItem[] = [];
 
@@ -1056,7 +1057,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
       if (activeWidgetRef) {
         // A group wasn't specifically selected and info wasn't entered to create a new one, so save as auto-generated
-        if (!selectedGroup.id && !selectedGroup.name) {
+        if ((!selectedGroup.id && !selectedGroup.name) || !selectedGroup?.owner?.canEdit) {
           let scanName = this.scanId;
           let quantName = this.quantId;
 
@@ -1077,7 +1078,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           }
 
           selectedGroup.name = autoGroupName;
-          selectedGroup.description = `Auto-generated RGB Mix group for ${scanName} on the ${activeWidgetRef.name} plot with quant: ${quantName}\n\nIf you would like to save this group for future use, rename it to prevent it from being overwritten`;
+          if (!selectedGroup.description) {
+            selectedGroup.description = `Auto-generated RGB Mix group for ${scanName} on the ${activeWidgetRef.name} plot with quant: ${quantName}\n\nIf you would like to save this group for future use, rename it to prevent it from being overwritten`;
+          }
         }
 
         // Invalidate the cached data for this group since we're updating it
@@ -1089,6 +1092,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             this.selectedGroup.id = group.id;
             this.selectedGroup.name = group.name;
             this.selectedGroup.description = group.description;
+            this.selectedGroup.tags = group.tags;
+            this.selectedGroup.owner = group.owner;
 
             this._analysisLayoutService.expressionPickerResponse$.next({
               selectedGroup: group,

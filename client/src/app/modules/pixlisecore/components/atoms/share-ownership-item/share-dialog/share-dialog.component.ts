@@ -31,17 +31,29 @@ import { Component, Inject, OnInit } from "@angular/core";
 import { MatOptionSelectionChange } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MatSelectChange } from "@angular/material/select";
-import { Subscription } from "rxjs";
-import { OwnershipItem, UserGroupList } from "src/app/generated-protos/ownership-access";
+import { combineLatest, Observable, of, Subscription } from "rxjs";
+import { ObjectType, OwnershipItem, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
 import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { UserGroupInfo } from "src/app/generated-protos/user-group";
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UsersService } from "src/app/modules/settings/services/users.service";
+import { ObjectEditAccessReq, ObjectEditAccessResp } from "../../../../../../generated-protos/ownership-access-msgs";
+import { APIDataService, SnackbarService } from "../../../../pixlisecore.module";
+
+export type SharingSubItem = {
+  id: string;
+  type: ObjectType;
+  typeName: string;
+  name: string;
+  ownershipSummary: OwnershipSummary;
+};
 
 export type ShareDialogData = {
+  ownershipSummary: OwnershipSummary | null;
   ownershipItem: OwnershipItem;
   typeName: string;
+  subItems?: SharingSubItem[];
 };
 
 export type ShareDialogResponse = {
@@ -105,17 +117,27 @@ export class ShareDialogComponent implements OnInit {
 
   currentUser: UserDetails = UserDetails.create();
 
+  shareWithSubItems: boolean = true;
+
+  subItems: SharingSubItem[] = [];
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ShareDialogData,
     public dialogRef: MatDialogRef<ShareDialogComponent, ShareDialogResponse>,
     private _groupsService: GroupsService,
     private _usersService: UsersService,
-    private _userOptionsSerivce: UserOptionsService
+    private _userOptionsSerivce: UserOptionsService,
+    private _apiDataService: APIDataService,
+    private _snackbarService: SnackbarService
   ) {}
 
   ngOnInit(): void {
     this._groupsService.fetchGroups();
     this._usersService.searchUsers("");
+
+    if (this.data?.subItems && this.data.subItems.length > 0) {
+      this.subItems = this.data.subItems;
+    }
 
     this._subs.add(
       this._userOptionsSerivce.userOptionsChanged$.subscribe(() => {
@@ -139,6 +161,17 @@ export class ShareDialogComponent implements OnInit {
       this._usersService.searchedUsers$.subscribe(searchedUsers => {
         this.users = searchedUsers;
 
+        if (this.subItems.length > 0) {
+          this.subItems.forEach(subItem => {
+            if (subItem.ownershipSummary.creatorUser) {
+              let user = this._usersService.cachedUsers[subItem.ownershipSummary.creatorUser.id];
+              if (user) {
+                subItem.ownershipSummary.creatorUser = user;
+              }
+            }
+          });
+        }
+
         if (!this.isChanged) {
           this.resetMembers();
         }
@@ -150,6 +183,10 @@ export class ShareDialogComponent implements OnInit {
     if (!this.isChanged) {
       this.resetMembers();
     }
+  }
+
+  get canEdit(): boolean {
+    return this.data?.ownershipSummary?.canEdit || false;
   }
 
   get isSearchingGroups(): boolean {
@@ -416,9 +453,45 @@ export class ShareDialogComponent implements OnInit {
     this.formConfirmButtonTooltip();
   }
 
-  onConfirm(): void {
-    this.calculateChanges();
+  updateSubExpressions(): Observable<ObjectEditAccessResp[]> {
+    if (this.subItems.length === 0 || !this.shareWithSubItems) {
+      return of([]);
+    }
 
+    let editAccessUpdateRequests: Observable<ObjectEditAccessResp>[] = [];
+    this.subItems.forEach(subItem => {
+      if (!subItem.ownershipSummary.canEdit) {
+        this._snackbarService.openWarning(`You do not have permission to edit sub-expression ${subItem.name}.`);
+        console.error(`User does not have permission to edit sub-expression ${subItem.name}.`);
+        return;
+      }
+
+      editAccessUpdateRequests.push(
+        this._apiDataService.sendObjectEditAccessRequest(
+          ObjectEditAccessReq.create({
+            objectId: subItem.id,
+            objectType: subItem.type,
+            addEditors: UserGroupList.create({
+              userIds: Array.from(this.newUserEditors),
+              groupIds: Array.from(this.newGroupEditors),
+            }),
+            addViewers: UserGroupList.create({
+              userIds: Array.from(this.newUserViewers),
+              groupIds: Array.from(this.newGroupViewers),
+            }),
+          })
+        )
+      );
+    });
+
+    if (editAccessUpdateRequests.length === 0) {
+      return of([]);
+    }
+
+    return combineLatest(editAccessUpdateRequests);
+  }
+
+  closeWithResult() {
     this.dialogRef.close({
       addEditors: UserGroupList.create({
         userIds: Array.from(this.newUserEditors),
@@ -436,6 +509,24 @@ export class ShareDialogComponent implements OnInit {
         userIds: Array.from(this.removedUserViewers),
         groupIds: Array.from(this.removedGroupViewers),
       }),
+    });
+  }
+
+  onConfirm(): void {
+    this.calculateChanges();
+
+    this.updateSubExpressions().subscribe({
+      next: res => {
+        if (this.shareWithSubItems && this.subItems.length !== res.length) {
+          return;
+        } else {
+          this.closeWithResult();
+        }
+      },
+      error: err => {
+        console.error(err);
+        this._snackbarService.openError("Could not update sub-expressions", err);
+      },
     });
   }
 }
