@@ -33,6 +33,14 @@ import { Subscription } from "rxjs";
 import { SpectrumChartModel } from "../spectrum-model";
 import { AuthService } from "@auth0/auth0-angular";
 import { Permissions } from "src/app/utils/permissions";
+import { SpectrumService } from "../../../services/spectrum.service";
+import { httpErrorToString } from "src/app/utils/utils";
+import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { QuantCreateReq, QuantCreateResp } from "src/app/generated-protos/quantification-create";
+import { QuantLastOutputGetReq, QuantLastOutputGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import saveAs from "file-saver";
+import { QuantOutputType } from "src/app/generated-protos/quantification-retrieval-msgs";
 
 export class SpectrumFitData {
   constructor(
@@ -54,26 +62,16 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
   quantificationEnabled: boolean = false;
 
   constructor(
-    /*private _spectrumService: SpectrumChartService,
-    private _loadingSvc: LoadingIndicatorService,
-    private _quantService: QuantificationService,*/
+    private _spectrumService: SpectrumService,
+    private _dataService: APIDataService,
     private _authService: AuthService,
+    private _snackBarService: SnackbarService,
     public dialogRef: MatDialogRef<SpectrumFitContainerComponent>,
     @Inject(MAT_DIALOG_DATA) public data: SpectrumFitData
   ) {}
 
   ngOnInit(): void {
     // When we're shown, we set the chart to fit mode
-    /*this._subs.add(
-      this._spectrumService.mdl$.subscribe(
-        () => {
-          this.gotModel();
-        },
-        err => {
-          console.error(err);
-        }
-      )
-    );*/
     this._subs.add(
       this._authService.idTokenClaims$.subscribe(idToken => {
         if (idToken) {
@@ -81,35 +79,10 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
         }
       })
     );
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
-    /*if (this._spectrumService.mdl) {
-      this._spectrumService.mdl.setFitLineMode(false);
-    }*/
-  }
-
-  /*
-  gotModel(): void {
-    // Try load the last fit if there isn't one
-    if (!this._spectrumService.mdl.fitRawCSV) {
-      this._quantService.getPiquantLastCommandOutput("quant", "output").subscribe(
-        (csv: string) => {
-          if (csv) {
-            this._spectrumService.mdl.setFitLineData(csv);
-            this._spectrumService.mdl.recalcSpectrumLines();
-          }
-        },
-        err => {
-          console.log(httpErrorToString(err, "Failed to retrieve last fit CSV, maybe there wasn't one"));
-        }
-      );
-    }
 
     this._subs.add(
-      this._spectrumService.mdl.fitLineSources$.subscribe(
-        () => {
+      this._spectrumService.mdl.fitLineSources$.subscribe({
+        next: () => {
           if (this._spectrumService.mdl.fitLineSources.length <= 0) {
             this.message = NoFitYetMessage;
           } else {
@@ -118,14 +91,57 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
 
           this._spectrumService.mdl.setFitLineMode(!this.message);
         },
-        err => {}
-      )
+        // error: err => {},
+      })
     );
+
+    if (!this._spectrumService.mdl.fitRawCSV) {
+      const scanId = this.getSingleScanId();
+      if (scanId.length <= 0) {
+        return;
+      }
+
+      this._dataService
+        .sendQuantLastOutputGetRequest(
+          QuantLastOutputGetReq.create({
+            scanId: scanId,
+            outputType: QuantOutputType.QO_DATA,
+            piquantCommand: "quant",
+          })
+        )
+        .subscribe({
+          next: (resp: QuantLastOutputGetResp) => {
+            const csv = resp.output;
+            this._spectrumService.mdl.setFitLineData(scanId, csv);
+            this._spectrumService.mdl.recalcSpectrumLines();
+          },
+          error: err => {
+            console.log(httpErrorToString(err, "Failed to retrieve last fit CSV, maybe there wasn't one"));
+          },
+        });
+    }
   }
-*/
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+    this._spectrumService.mdl.setFitLineMode(false);
+  }
 
   onClose() {
     this.dialogRef.close();
+  }
+
+  private getSingleScanId(): string {
+    const scanIds = new Set<string>();
+    for (const line of this._spectrumService.mdl.spectrumLines) {
+      scanIds.add(line.scanId);
+    }
+
+    if (scanIds.size <= 0) {
+      return "";
+    }
+
+    return scanIds.keys().next().value;
   }
 
   get hasFitData(): boolean {
@@ -134,41 +150,49 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
   }
 
   onViewLogs(): void {
-    /*
-    this._quantService.getPiquantLastCommandOutput("quant", "log").subscribe(
-      (log: string) => {
-        let blob = new Blob([log], {
-          type: "text/csv",
-        });
-
-        saveAs(blob, "SpectrumFit.log");
-      },
-      err => {
-        let msg = httpErrorToString(err, "Failed to retrieve log");
-        alert(msg);
-      }
-    );*/
-  }
-
-  onExport(): void {
-    /*
-    if (!this._spectrumService.mdl || !this._spectrumService.mdl.fitRawCSV) {
-      alert("No data to export");
+    const scanId = this.getSingleScanId();
+    if (scanId.length <= 0) {
       return;
     }
 
-    let blob = new Blob([this._spectrumService.mdl.fitRawCSV], {
+    this._dataService
+      .sendQuantLastOutputGetRequest(
+        QuantLastOutputGetReq.create({
+          scanId: scanId,
+          piquantCommand: "quant",
+          outputType: QuantOutputType.QO_LOG,
+        })
+      )
+      .subscribe({
+        next: (resp: QuantLastOutputGetResp) => {
+          const blob = new Blob([resp.output], {
+            type: "text/csv",
+          });
+
+          saveAs(blob, "SpectrumFit.log");
+        },
+        error: err => {
+          this._snackBarService.openError("Failed to retrieve log", err);
+        },
+      });
+  }
+
+  onExport(): void {
+    if (!this._spectrumService.mdl || !this._spectrumService.mdl.fitRawCSV) {
+      this._snackBarService.openError("No data to export", "Please run a quant fit so there is something to be exported");
+      return;
+    }
+
+    const blob = new Blob([this._spectrumService.mdl.fitRawCSV], {
       type: "text/csv",
     });
 
     saveAs(blob, "SpectrumFit.csv");
-    */
   }
 
   onReQuantify(): void {
-    /*
     // Warn if there is an existing fit already
-    if (this._spectrumService.mdl && this._spectrumService.mdl.fitLineSources.length > 0) {
+    if (this._spectrumService.mdl.fitLineSources.length > 0) {
       if (!confirm("This will replace the existing fit. Are you sure you want to continue?")) {
         return;
       }
@@ -177,31 +201,40 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
     // Get the list of elements
     const atomicNumbers: Set<number> = new Set<number>(this._spectrumService.mdl.fitSelectedElementZs);
 
-    this._quantService.showQuantificationDialog("Fit", atomicNumbers).subscribe((params: QuantCreateParameters) => {
-      if (params) {
-        // We've got the params, now pass to PIQUANT
-        let loadID = this._loadingSvc.add("Generating fit with PIQUANT quant command... (may take 1-2 minutes)");
+    const scanIds = new Set<string>();
+    for (const line of this._spectrumService.mdl.spectrumLines) {
+      scanIds.add(line.scanId);
+    }
 
-        this._quantService.createQuantification(params).subscribe(
-          (csv: string) => {
-            this._loadingSvc.remove(loadID);
+    this._spectrumService.showQuantificationDialog(Array.from(scanIds), "Fit", atomicNumbers).subscribe((createdParams: QuantCreateParams) => {
+      if (!createdParams) {
+        return;
+      }
 
-            // The returned data is a CSV, so don't print it!
-            console.log("PIQUANT returned " + csv.length + " bytes");
+      // We've got the params, now pass to PIQUANT
+      this._snackBarService.openSuccess("Generating fit with PIQUANT quant command... (may take 1-2 minutes)");
 
-            if (this._spectrumService.mdl) {
-              this._spectrumService.mdl.setFitLineData(csv);
+      this._dataService.sendQuantCreateRequest(QuantCreateReq.create({ params: createdParams })).subscribe({
+        next: (resp: QuantCreateResp) => {
+          if (!resp.status) {
+            this._snackBarService.openError("Fit start did not return job status");
+          } else {
+            if (!resp.resultData || resp.resultData.byteLength <= 0) {
+              this._snackBarService.openError("Fit did not return result data");
+            } else {
+              // The returned data is a CSV, so don't print it!
+              console.log("PIQUANT returned " + resp.resultData.byteLength + " bytes");
+
+              const csv = new TextDecoder().decode(resp.resultData);
+              this._spectrumService.mdl.setFitLineData(createdParams.scanId, csv);
               this._spectrumService.mdl.recalcSpectrumLines();
             }
-          },
-          err => {
-            this._loadingSvc.remove(loadID);
-
-            let msg = httpErrorToString(err, "Failed to generate fit lines with PIQUANT. See logs. Error");
-            alert(msg);
           }
-        );
-      }
-    });*/
+        },
+        error: err => {
+          this._snackBarService.openError("Failed to generate fit lines with PIQUANT. See logs", err);
+        },
+      });
+    });
   }
 }
