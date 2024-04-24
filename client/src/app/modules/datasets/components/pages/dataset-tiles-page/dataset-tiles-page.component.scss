@@ -37,74 +37,10 @@ h2 {
   color: $clr-gray-30;
 }
 
-.search-panel {
-  background-color: $ui-panel-title-colour;
-  padding: $large-gap;
-  margin-bottom: $tiny-gap;
-}
-
-.meta-summary {
-  background-color: $clr-gray-80;
-  width: 25vw;
-  min-width: 250px;
-  overflow-y: auto;
-}
-
 .scrollable {
   margin-top: 2px;
   overflow-y: auto;
   max-height: calc(100vh - 103px);
-}
-
-.meta-title {
-  padding: 0px $sz-double;
-}
-
-.meta-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.meta-image-container {
-  height: 260px;
-}
-
-.meta-open-row {
-  color: $clr-gray-10;
-  font-weight: 900;
-  font-size: 16px;
-  padding: $sz-unit;
-}
-
-.meta-heading {
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  font-weight: 400;
-  font-size: 12px;
-  padding: $sz-unit;
-}
-
-.meta-area {
-  background-color: $clr-gray-70;
-  line-height: 16px;
-  font-size: 12px;
-  padding: $sz-unit;
-}
-
-.meta-name {
-  color: $clr-gray-30;
-  width: 35%;
-}
-
-.meta-value {
-  color: $clr-gray-10;
-  width: 50%;
-}
-
-.description {
-  color: $clr-gray-10;
-  white-space:pre-wrap;
 }
 
 input {
@@ -142,6 +78,10 @@ input {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+
+    background-color: $ui-panel-title-colour;
+    padding: $large-gap;
+    margin-bottom: $tiny-gap;
 
     .dataset-search {
       display: flex;
@@ -187,6 +127,25 @@ input {
     border-radius: 8px 0 0 0;
     margin-top: 2px;
 
+    background-color: $clr-gray-80;
+    width: 25vw;
+    min-width: 250px;
+    overflow-y: auto;
+
+    .meta-title {
+      padding: 0px $sz-double;
+    }
+
+    .meta-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .meta-image-container {
+      height: 260px;
+    }
+
     .info-panel {
       display: flex;
       flex-direction: column;
@@ -212,13 +171,31 @@ input {
         justify-content: space-between;
         align-items: center;
 
+        color: $clr-gray-10;
+        font-weight: 900;
+        font-size: 16px;
+        padding: $sz-unit;
+
         .meta-buttons {
           display: flex;
           flex-direction: row;
         }
       }
 
+      .meta-heading {
+        color: $clr-gray-30;
+        text-transform: uppercase;
+        font-weight: 400;
+        font-size: 12px;
+        padding: $sz-unit;
+      }
+
       .meta-area {
+        background-color: $clr-gray-70;
+        line-height: 16px;
+        font-size: 12px;
+        padding: $sz-unit;
+
         &.align-start {
           align-items: flex-start;
         }
@@ -226,11 +203,26 @@ input {
         display: flex;
         flex-direction: column;
 
+        .description {
+          color: $clr-gray-10;
+          white-space:pre-wrap;
+        }
+
         .summary-item {
           display: flex;
           flex-direction: row;
           flex: 1 1 100%;
           width: 100%;
+
+          .meta-name {
+            color: $clr-gray-30;
+            width: 35%;
+          }
+          
+          .meta-value {
+            color: $clr-gray-10;
+            width: 50%;
+          } 
         }
       }
     }
