@@ -252,7 +252,17 @@ export class ROIService {
       }
       this.roiItems$.next(this.roiItems$.value);
 
-      return of(new RegionSettings(selectedPointsROI, this.displaySettingsMap$.value[selectedPointsROI.id], new Set<number>(selectedPointsROI.pixelIndexesEncoded)));
+      let selectionRegion = new RegionSettings(
+        selectedPointsROI,
+        this.displaySettingsMap$.value[selectedPointsROI.id],
+        new Set<number>(selectedPointsROI.pixelIndexesEncoded)
+      );
+
+      this._regionMap.set(selectedPointsROI.id, of(selectionRegion));
+
+      return of(selectionRegion);
+    } else {
+      this._regionMap.delete(PredefinedROIID.getSelectedPointsForScan(scanId));
     }
 
     return of(createDefaultSelectedPointsRegionSettings(scanId, DEFAULT_ROI_SHAPE));

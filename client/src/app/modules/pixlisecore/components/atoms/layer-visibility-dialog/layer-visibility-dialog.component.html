@@ -1,0 +1,43 @@
+<div class="layer-visibility-dialog">
+  <div class="layers-container">
+    <div *ngFor="let section of sections" class="layer-section">
+      <div class="section-title">
+        <action-button class="menu-open" [action]="section.isOpen ? 'closeAccordion' : 'openAccordion'" (onClick)="section.isOpen = !section.isOpen"></action-button>
+        <h2>{{ section.title }}</h2>
+        <action-button
+          class="visibility-toggle"
+          [action]="section.isVisible ? 'visibleOn' : 'visibleOff'"
+          (onClick)="section.isVisible = !section.isVisible"></action-button>
+      </div>
+      <div *ngIf="section.isOpen" class="sub-layers">
+        <div *ngFor="let layer of section.options" class="layer-item">
+          <div class="section-title">
+            <img class="drag-handle" src="assets/button-icons/drag-handle.svg" />
+            <action-button
+              *ngIf="layer.subOptions && layer.subOptions.length > 0"
+              class="menu-open"
+              [action]="layer.isSubMenuOpen ? 'closeAccordion' : 'openAccordion'"
+              (onClick)="layer.isSubMenuOpen = !layer.isSubMenuOpen"></action-button>
+            <h2>{{ layer.name }}</h2>
+            <action-button class="visibility-toggle" [action]="layer.visible ? 'visibleOn' : 'visibleOff'" (onClick)="layer.visible = !layer.visible"></action-button>
+          </div>
+          <div *ngIf="layer.isSubMenuOpen && layer.subOptions && layer.subOptions.length > 0" class="sub-layers">
+            <div *ngFor="let subLayer of layer.subOptions" class="layer-item">
+              <div class="section-title">
+                <img class="drag-handle" src="assets/button-icons/drag-handle.svg" />
+                <h2>{{ subLayer.name }}</h2>
+                <action-button
+                  class="visibility-toggle"
+                  [action]="subLayer.visible ? 'visibleOn' : 'visibleOff'"
+                  (onClick)="subLayer.visible = !subLayer.visible"></action-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-buttons">
+      <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
+    </div>
+  </div>
+</div>

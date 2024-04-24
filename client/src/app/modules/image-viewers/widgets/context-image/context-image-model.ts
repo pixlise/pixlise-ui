@@ -273,6 +273,19 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
   }
 
+  getMapLayers(scanId: string): ContextImageMapLayer[] {
+    if (!this._raw) {
+      return [];
+    }
+
+    const scanMdl = this._raw.scanModels.get(scanId);
+    if (!scanMdl) {
+      return [];
+    }
+
+    return scanMdl.maps;
+  }
+
   private rebuildColourScale(forExpressionId: string, forValuesIdx: number, totalScales: number) {
     if (!this._raw) {
       return;

@@ -1,0 +1,85 @@
+.layer-visibility-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+
+  background: #222829;
+
+  .layers-container {
+    display: flex;
+    flex-direction: column;
+
+    .layer-section {
+      display: flex;
+      flex-direction: column;
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        gap: 4px;
+        border-bottom: 1px solid #545f64;
+        flex: 1;
+
+        .drag-handle {
+          cursor: grab;
+          -webkit-user-drag: none;
+
+          width: 16px;
+          padding: 4px;
+          display: flex;
+        }
+
+        h2 {
+          color: #fff;
+
+          font-feature-settings:
+            "clig" off,
+            "liga" off;
+          font-family: Inter;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: 16px;
+          text-transform: none;
+        }
+
+        .visibility-toggle {
+          margin-left: auto;
+        }
+      }
+
+      .sub-layers {
+        display: flex;
+        flex-direction: column;
+
+        .section-title {
+          padding-left: 24px;
+        }
+
+        .sub-layers {
+          .section-title {
+            padding-left: 48px;
+          }
+        }
+
+        .layer-item {
+          display: flex;
+          flex-direction: column;
+          background: #293137;
+
+          .sub-layers {
+            display: flex;
+            flex-direction: column;
+          }
+        }
+      }
+    }
+  }
+
+  .bottom-buttons {
+    display: flex;
+    padding: 8px;
+    justify-content: flex-end;
+  }
+}
