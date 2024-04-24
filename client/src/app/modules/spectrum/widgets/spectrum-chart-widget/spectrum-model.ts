@@ -675,6 +675,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return new SpectrumValues(vals, maxVal, "", 0);
   }
 
+  recalcSpectrumLines(): void {
+  }
+
   getLineList(): Map<string, string[]> {
     return this._linesShown;
   }

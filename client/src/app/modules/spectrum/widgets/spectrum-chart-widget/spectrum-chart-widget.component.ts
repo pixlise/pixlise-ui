@@ -30,6 +30,7 @@ import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/wid
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
+import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -46,6 +47,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   private _shownDisplaySpectra: MatDialogRef<ROIPickerComponent> | null = null;
   private _shownPiquant: MatDialogRef<SpectrumPeakIdentificationComponent> | null = null;
+  private _shownFit: MatDialogRef<SpectrumFitContainerComponent> | null = null;
 
   scanId: string = "";
 
@@ -149,9 +151,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Display Fit",
           value: false,
-          disabled: true,
-          tooltip: "Not implemented yet",
-          onClick: () => {},
+          tooltip: "Use PIQUANTs fit feature to see components that make up the modelled spectrum line",
+          onClick: (value, trigger) => this.onFit(trigger),
         },
         {
           id: "piquant",
@@ -194,8 +195,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._analysisLayoutService.resizeCanvas$.subscribe(() => {
         // Reposition the key so it's always under the mini-zoom menu
         if (this.widgetControlConfiguration.topRightInsetButton) {
-          let clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
-          let offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 12);
+          const clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+          const offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 12);
           this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
         }
       })
@@ -228,7 +229,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           });
 
           // Remove any selection ROI from the list
-          let selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+          const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
           lines.delete(selectionROI);
 
           // If new widgetData is coming in, we need to update the calibration
@@ -248,8 +249,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.updateLines();
 
           if (this.widgetControlConfiguration.topRightInsetButton) {
-            let clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
-            let offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
+            const clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+            const offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
             this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
@@ -318,16 +319,16 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
-        let hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
+        const hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
 
         // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
         // updateLines will grab the actual selection data and update the display
-        let selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+        const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
         if (!this.mdl.spectrumLines.find(line => line.roiId === selectionROI) && hasSelection) {
-          let existingLines = this.mdl.getLineList();
+          const existingLines = this.mdl.getLineList();
           this.mdl.setLineList(existingLines.set(selectionROI, [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]));
         } else if (!hasSelection) {
-          let existingLines = this.mdl.getLineList();
+          const existingLines = this.mdl.getLineList();
           existingLines.delete(selectionROI);
           this.mdl.setLineList(existingLines);
         }
@@ -544,7 +545,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         // Set the overall flag
         this.mdl.xAxisEnergyScale = result.useCalibration;
 
-        let button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "calibration");
+        const button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "calibration");
         if (button) {
           button.value = result.useCalibration;
         }
@@ -661,6 +662,38 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this._shownPiquant.afterClosed().subscribe((result: PeakIdentificationData) => {
       this._shownPiquant = null;
+    });
+  }
+
+  onFit(trigger: Element | undefined) {
+    if (this._shownFit) {
+      // Hide it
+      this._shownFit.close();
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+
+    dialogConfig.data = {
+      mdl: this.mdl,
+      draggable: true,
+    };
+
+    dialogConfig.viewContainerRef = this._viewRef; // Ensure our spectrum service can be injected...
+    dialogConfig.hasBackdrop = false;
+
+    if (this._chartRef && this._chartRef.nativeElement && trigger) {
+      const widgetRect = this._chartRef.nativeElement.getBoundingClientRect();
+      const triggerRect = trigger.getBoundingClientRect();
+      dialogConfig.position = { left: Math.floor(widgetRect.left) + "px", top: this.ensureNotBelowScreen(Math.floor(triggerRect.bottom + 12)) + "px" };
+    }
+
+    this._shownFit = this.dialog.open(SpectrumFitContainerComponent, dialogConfig);
+    //this._shownFit.componentInstance.onChange.subscribe((result: SpectrumFitData) => {});
+
+    this._shownFit.afterClosed().subscribe((result: SpectrumFitData) => {
+      this._shownFit = null;
     });
   }
 
