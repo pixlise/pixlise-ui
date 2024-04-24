@@ -637,7 +637,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       }),
       catchError(err => {
         console.error(err);
-        return throwError(() => new Error(err));
+        return throwError(() => err);
       })
     );
   }
@@ -694,7 +694,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           return this.loadMapLayers(setViewToExperiment);
         }),
         catchError((err: any) => {
-          return throwError(() => new Error(err));
+          return throwError(() => err);
         })
       )
       .subscribe({

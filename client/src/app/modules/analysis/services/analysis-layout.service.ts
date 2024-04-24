@@ -22,6 +22,7 @@ import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 
 export class DefaultExpressions {
@@ -364,7 +365,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   get isFirefox(): boolean {
-    return !!navigator.userAgent.match(/firefox|fxios/i);
+    return isFirefox(navigator?.userAgent || "");
   }
 
   get defaultScanId(): string {

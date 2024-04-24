@@ -35,7 +35,7 @@ export class APIEndpointsService {
         } else {
           return this.loadImageFromURL(apiUrl).pipe(
             catchError(err => {
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             })
           );
         }
@@ -45,7 +45,7 @@ export class APIEndpointsService {
         return this.loadImageFromURL(apiUrl).pipe(
           catchError(err => {
             console.error(err);
-            return throwError(() => new Error(err));
+            return throwError(() => err);
           })
         );
       }),
@@ -73,7 +73,7 @@ export class APIEndpointsService {
       }),
       catchError(err => {
         console.error(err);
-        return throwError(() => new Error(err));
+        return throwError(() => err);
       }),
       shareReplay(1)
     );
@@ -160,7 +160,7 @@ export class APIEndpointsService {
       }),
       catchError(err => {
         console.error(err);
-        return throwError(() => new Error(err));
+        return throwError(() => err);
       }),
       tap(url => console.log(`Generated preview URL for ${imagePath} (${url.length} bytes)`)),
       mergeMap(url => of(url)),
@@ -183,7 +183,7 @@ export class APIEndpointsService {
       }),
       catchError(err => {
         console.error(err);
-        return throwError(() => new Error(err));
+        return throwError(() => err);
       }),
       tap(url => console.log(`Generated preview URL: ${url}`)),
       mergeMap(url => of(url)),
@@ -202,7 +202,7 @@ export class APIEndpointsService {
         } else {
           return this._generatedTIFFPreview(imagePath, maxAge).pipe(
             catchError(err => {
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             }),
             switchMap(url => {
               this.localStorageService.storeImage(url, tiffPreviewKey, tiffPreviewKey, 0, 0, url.length);
@@ -216,7 +216,7 @@ export class APIEndpointsService {
         return this._generatedTIFFPreview(imagePath, maxAge).pipe(
           catchError(err => {
             console.error(err);
-            return throwError(() => new Error(err));
+            return throwError(() => err);
           })
         );
       })
@@ -251,7 +251,7 @@ export class APIEndpointsService {
           return this.loadRGBUImageTIFFromAPI(imagePath).pipe(
             catchError(err => {
               console.error(err);
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             })
           );
         }

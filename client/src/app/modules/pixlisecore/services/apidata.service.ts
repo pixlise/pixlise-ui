@@ -20,7 +20,12 @@ export class APIDataService extends WSMessageHandler {
   constructor(private _apiComms: APICommService) {
     super();
     console.log(`APIDataService [${this._id}] created`);
-    this.connect();
+
+    if (this._apiComms.initialised) {
+      // Only auto-connect if the layer below us is happy. This is just to prevent putting another
+      // reference in here to SnackbarService really...
+      this.connect();
+    }
   }
 
   private connect() {
