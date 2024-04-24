@@ -7,6 +7,7 @@ import { WidgetModule } from "../widget/widget.module";
 import { ImageViewersModule } from "../image-viewers/image-viewers.module";
 import { AddCustomImageComponent } from "./components/add-custom-image/add-custom-image.component";
 import { NgxDropzoneModule } from "ngx-dropzone";
+import { TagsModule } from "../tags/tags.module";
 
 const APP_ROUTES: Routes = [
   {
@@ -17,7 +18,7 @@ const APP_ROUTES: Routes = [
 
 @NgModule({
   declarations: [DatasetCustomisationPageComponent, AddCustomImageComponent],
-  imports: [CommonModule, PIXLISECoreModule, WidgetModule, ImageViewersModule, NgxDropzoneModule, RouterModule.forChild(APP_ROUTES)],
+  imports: [CommonModule, PIXLISECoreModule, TagsModule, WidgetModule, ImageViewersModule, NgxDropzoneModule, RouterModule.forChild(APP_ROUTES)],
   exports: [DatasetCustomisationPageComponent]
 })
 export class DatasetCustomisationModule {}

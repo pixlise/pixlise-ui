@@ -105,14 +105,26 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="meta-open-row">
           <div>{{ selectedScan.title }}</div>
-          <div class="meta-buttons gap-separated-horizontal-elements">
+          <div class="meta-buttons">
+            <!-- For now, we only display tags here, editing is done on dataset edit screen -->
+            <tag-picker
+              type="scan"
+              placeholderText="Search Scan Tags ..."
+              [selectedTagIDs]="selectedScan.tags"
+              [showCurrentTagsSection]="true"
+              [editable]="false">
+            </tag-picker>
             <push-button (onClick)="onOpen(false)" buttonStyle="yellow" title="Open the dataset with views as you last used them">Open</push-button>
             <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
               <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
             </widget-settings-menu>
           </div>
         </div>
-        <div class="meta-heading">Dataset</div>
+        <div class="meta-heading">Description</div>
+        <div class="meta-area">
+          <div class="description">{{description}}</div>
+        </div>
+        <div class="meta-heading">Details</div>
         <div *ngIf="selectedIsIncomplete" class="incomplete">{{ selectedMissingData }}</div>
         <div class="meta-area">
           <div *ngFor="let item of selectedScanSummaryItems" class="summary-item">
