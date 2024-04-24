@@ -51,7 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
 
         <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
-        <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="3"></textarea>
+        <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="10"></textarea>
         <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
       </div>
       <div *ngIf="scanId" class="meta-entry column">

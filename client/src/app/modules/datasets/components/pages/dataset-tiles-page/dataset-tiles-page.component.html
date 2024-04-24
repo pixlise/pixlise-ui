@@ -112,7 +112,11 @@ POSSIBILITY OF SUCH DAMAGE.
             </widget-settings-menu>
           </div>
         </div>
-        <div class="meta-heading">Dataset</div>
+        <div class="meta-heading">Description</div>
+        <div class="meta-area">
+          <div class="description">{{description}}</div>
+        </div>
+        <div class="meta-heading">Details</div>
         <div *ngIf="selectedIsIncomplete" class="incomplete">{{ selectedMissingData }}</div>
         <div class="meta-area">
           <div *ngFor="let item of selectedScanSummaryItems" class="summary-item">
