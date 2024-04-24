@@ -43,6 +43,14 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="txt-dlg-heading">Scan Title & Description</div>
         <div class="title-row">
           <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title..." />
+          <tag-picker
+            type="scan"
+            placeholderText="Search Scan Tags ..."
+            [selectedTagIDs]="tags"
+            [showCurrentTagsSection]="true"
+            [editable]="true"
+            (onTagSelectionChanged)="onTagSelectionChanged($event)">
+          </tag-picker>
           <share-ownership-item-button
             *ngIf="scanItem.id"
             [id]="scanItem.id"

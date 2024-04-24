@@ -181,6 +181,7 @@ input {
         .meta-buttons {
           display: flex;
           flex-direction: row;
+          gap: $sz-unit;
         }
       }
 
