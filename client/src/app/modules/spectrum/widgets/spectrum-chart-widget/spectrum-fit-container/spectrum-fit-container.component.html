@@ -30,24 +30,26 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="fit-container">
-    <div class="fit-header">
-        <h1
-          mat-dialog-title
-          cdkDrag
-          cdkDragRootElement=".cdk-overlay-pane"
-          cdkDragHandle
-          [cdkDragDisabled]="!data.draggable"
-          class="title {{ data.draggable ? 'drag' : '' }}">Spectrum Fit</h1>
-    </div>
-
-    <div class="fit-tabs-container">
-        <fit-line-config *ngIf="!message"></fit-line-config>
-        <div *ngIf="message" class="fit-message">
-            <app-widget-display-message
-                [message]="message"
-                [large]="false">
-            </app-widget-display-message>
+    <div class="fit-sections">
+        <div class="fit-display">
+            <div class="fit-header">
+                <h1
+                  mat-dialog-title
+                  cdkDrag
+                  cdkDragRootElement=".cdk-overlay-pane"
+                  cdkDragHandle
+                  [cdkDragDisabled]="!data.draggable"
+                  class="title {{ data.draggable ? 'drag' : '' }}">Spectrum Fit</h1>
+            </div>
+            <fit-line-config *ngIf="!message"></fit-line-config>
+            <div *ngIf="message" class="fit-message">
+                <app-widget-display-message
+                    [message]="message"
+                    [large]="false">
+                </app-widget-display-message>
+            </div>
         </div>
+
         <fit-element-selection><!-- fxFlex --></fit-element-selection>
         <fit-elements></fit-elements>
     </div>

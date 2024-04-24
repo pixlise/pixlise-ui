@@ -39,12 +39,13 @@
     display: flex;
     min-width: 220px;
 
-    .sel-heading {
+    .top-toolbar {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
+        align-items: center;
 
-        padding: $sz-unit;
+        padding-left: $sz-unit;
     }
 
     .scrollable {
