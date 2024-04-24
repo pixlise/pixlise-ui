@@ -132,6 +132,8 @@ input {
     min-width: 250px;
     overflow-y: auto;
 
+    max-height: calc(100vh - 103px);
+
     .meta-title {
       padding: 0px $sz-double;
     }
