@@ -32,6 +32,7 @@ export class HttpInterceptorService {
       req.url.startsWith("./") ||
       req.url.endsWith("/version-binary") ||
       req.url.endsWith("/version-json") ||
+      req.url.endsWith("/agreement-version.json") ||
       !req.url.startsWith(APIPaths.apiURL) ||
       !this._authService.isAuthenticated$
     ) {
@@ -52,7 +53,7 @@ export class HttpInterceptorService {
         if (errorStr.indexOf("Login required") >= 0) {
           this._snackService.openError(
             "Auto-login failed, please use Chrome without ad blocking",
-            "Maybe your browser/ad-blocker is preventing PIXLISE to auto-login",
+            "Maybe your browser/ad-blocker is preventing PIXLISE from logging in",
             "",
             600000 // 10 minute rate limit
           );

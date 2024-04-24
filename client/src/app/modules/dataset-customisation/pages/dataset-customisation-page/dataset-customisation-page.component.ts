@@ -62,6 +62,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   title: string | null = null;
   description: string = "";
+  tags: string[] = [];
   defaultContextImage: string = "";
   selectedQuantId: string = "";
   quantifiedElements: string[] = [];
@@ -130,6 +131,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           if (scanItem) {
             this.title = scanItem.title;
             this.description = scanItem.description;
+            this.tags = scanItem.tags;
             this.scanItem = scanItem;
           }
         },
@@ -137,6 +139,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           this._snackService.openError(err);
           this.title = ""; // To clear the spinner
           this.description = "";
+          this.tags = [];
         },
       })
     );
@@ -229,6 +232,16 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this.mdl.needsDraw$.next();
   }
 
+  onTagSelectionChanged(tags: string[]) {
+    this.tags = tags;
+
+    this._snackService.open("Don't forget to click Save Title/Description to save edited tags");
+
+    // Save the scan item with the new tags
+    //this.selectedTagIDs = tagIDs;
+    //this._roiService.editROISummary(this.summary);
+  }
+
   onSaveTitleDescription() {
     const scanId = this.getScanId();
     if (!scanId) {
@@ -246,6 +259,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           scanId: scanId,
           title: this.title,
           description: this.description,
+          tags: this.tags,
         })
       )
       .subscribe({

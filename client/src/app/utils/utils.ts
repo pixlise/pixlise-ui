@@ -1101,3 +1101,7 @@ export function replaceAsDateIfTestSOL(sol: string): string {
 
   return sol;
 }
+
+export function isFirefox(userAgent: string): boolean {
+  return !!userAgent.match(/firefox|fxios/i);
+}
