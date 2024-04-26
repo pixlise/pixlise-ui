@@ -63,12 +63,12 @@ export class FitElementSelectionComponent implements OnInit, OnDestroy {
 
     // Listen to what layers exist...
     this._subs.add(
-      this.mdl.fitLineSources$.subscribe(
-        () => {
+      this.mdl.fitLineSources$.subscribe({
+        next: () => {
           this.rebuildPeriodicTable();
         },
-        err => {}
-      )
+        //error: err => {}
+      })
     );
 
     this._subs.add(
@@ -180,7 +180,7 @@ export class FitElementSelectionComponent implements OnInit, OnDestroy {
 
     this._spectrumService.mdl.setFitSelectedElementZs(selectedZs);
     if (needsRecalc) {
-      this._spectrumService.mdl.recalcSpectrumLines();
+      this._spectrumService.mdl.recalcFitLines();
     }
   }
 

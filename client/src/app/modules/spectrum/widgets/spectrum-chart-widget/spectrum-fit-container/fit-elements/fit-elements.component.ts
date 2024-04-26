@@ -48,12 +48,12 @@ export class FitElementsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Listen to what layers exist...
     this._subs.add(
-      this.mdl.fitLineSources$.subscribe(
-        () => {
+      this.mdl.fitLineSources$.subscribe({
+        next: () => {
           this.refresh();
         },
-        err => {}
-      )
+        //err => {}
+      })
     );
 
     this._subs.add(
@@ -92,7 +92,7 @@ export class FitElementsComponent implements OnInit, OnDestroy {
     for (const Z of selectedElems) {
       const elem = periodicTableDB.getElementByAtomicNumber(Z);
       if (elem !== null) {
-        this.sources.push(new SpectrumSource("", elem.symbol, false, null, [], false, Colours.WHITE, [], [], Z));
+        this.sources.push(new SpectrumSource("", "", elem.symbol, false, null, [], false, Colours.WHITE, [], [], Z));
       }
     }
 
@@ -193,7 +193,7 @@ export class FitElementsComponent implements OnInit, OnDestroy {
     }
 
     if (this._spectrumService.mdl) {
-      this._spectrumService.mdl.recalcSpectrumLines();
+      this._spectrumService.mdl.recalcFitLines();
       this.refreshShowAllKLMFlags();
     }
   }
@@ -202,7 +202,7 @@ export class FitElementsComponent implements OnInit, OnDestroy {
     line.enabled = !line.enabled;
 
     if (this._spectrumService.mdl) {
-      this._spectrumService.mdl.recalcSpectrumLines();
+      this._spectrumService.mdl.recalcFitLines();
       this.refreshShowAllKLMFlags();
     }
   }
@@ -239,7 +239,7 @@ export class FitElementsComponent implements OnInit, OnDestroy {
 
     this._spectrumService.mdl.setFitSelectedElementZs(selectedZs);
     if (needsRecalc) {
-      this._spectrumService.mdl.recalcSpectrumLines();
+      this._spectrumService.mdl.recalcFitLines();
     }
   }
 

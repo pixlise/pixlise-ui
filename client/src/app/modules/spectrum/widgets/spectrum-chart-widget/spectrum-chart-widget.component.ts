@@ -21,7 +21,7 @@ import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } f
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
+import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
@@ -31,6 +31,8 @@ import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
 import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
+import { SpectrumChannels } from "src/app/utils/utils";
+import { Colours } from "src/app/utils/colours";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -303,6 +305,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         if (complete) {
           this.saveState();
         }
+      })
+    );
+
+    this._subs.add(
+      this.mdl.fitLineSources$.subscribe(() => {
+        this.updateLines();
       })
     );
 
@@ -797,6 +805,11 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
                 this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
               }
 
+              // Add any fit lines we may need
+              if (this.mdl.showFitLines) {
+                this.addFitLines();
+              }
+
               this.mdl.updateRangesAndKey();
               if (this.widgetControlConfiguration.topRightInsetButton) {
                 this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
@@ -811,6 +824,83 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         })
       );
     }
+  }
+
+  private addFitLines() {
+    /*const t0 = performance.now();
+
+    // Get min/max data values
+    let maxX = SpectrumChannels;
+    if (this.mdl.xAxisEnergyScale) {
+      const aEnergy = this.mdl.channelTokeV(maxX, "A");
+      const bEnergy = this.mdl.channelTokeV(maxX, "B");
+      if (aEnergy === null || bEnergy === null) {
+        console.error("addFitLines: Failed to convert channel to energy");
+        return;
+      }
+
+      maxX = Math.max(aEnergy, bEnergy);
+    }
+
+    const lineRangeX = new MinMax(0, maxX);
+    const lineRangeY = new MinMax(0, 0);
+*/
+    //const lineSources = this.mdl.showFitLines ? this.mdl.fitLineSources : []; //this._spectrumSources;
+
+    for (const source of this.mdl.fitLineSources) {
+      for (const line of source.lineChoices) {
+        // If there are no location indexes, we allow this if it's AllPoints ROI, but for any others (eg selection)
+        // we don't want to add a line as that would default to looking like the all points ROI
+        if (line.enabled && source.colourRGBA && (PredefinedROIID.isAllPointsROI(source.roiId) || source.locationIndexes.length > 0) && line.values !== null) {
+          this.mdl.addLineDataForLine(
+            source.roiId,
+            line.lineExpression,
+            source.scanId,
+            "scanName",
+            "roi.region.name",
+            Colours.BLUE, //line.roi.displaySettings.colour,
+            new Map<string, SpectrumValues>([[line.label, line.values]]),
+            line.lineWidth,
+            line.opacity,
+            line.drawFilled
+          );
+/*
+          // Update the max value
+          const idx = this._spectrumLines.length - 1;
+          if (idx >= 0) {
+            this._lineRangeY.expand(this._spectrumLines[idx].maxValue);
+          }*/
+        }
+      }
+    }
+/*
+    this._keyItems = [];
+
+    // Run through and regenerate key items from all lines
+    let lastROI = "";
+    for (const line of this._spectrumLines) {
+      if (lastROI != line.roiId) {
+        this._keyItems.push(new WidgetKeyItem("", line.roiName, line.color));
+        lastROI = line.roiId;
+      }
+      this._keyItems.push(new WidgetKeyItem("", line.expressionLabel, line.color, line.dashPattern));
+    }
+
+    const t1 = performance.now();
+
+    this.needsDraw$.next();
+
+    const t2 = performance.now();
+
+    console.log(
+      "  Spectrum recalcSpectrumLines for " +
+        this._spectrumLines.length +
+        " lines took: " +
+        (t1 - t0).toLocaleString() +
+        "ms, needsDraw$ took: " +
+        (t2 - t1).toLocaleString() +
+        "ms"
+    );*/
   }
 }
 

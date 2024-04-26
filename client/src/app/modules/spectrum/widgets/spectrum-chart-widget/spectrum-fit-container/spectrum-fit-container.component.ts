@@ -58,6 +58,7 @@ const NoFitYetMessage = "Please generate a fit first from Run PIQUANT tab via th
 })
 export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
+
   message: string = NoFitYetMessage;
   quantificationEnabled: boolean = false;
 
@@ -113,7 +114,6 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
           next: (resp: QuantLastOutputGetResp) => {
             const csv = resp.output;
             this._spectrumService.mdl.setFitLineData(scanId, csv);
-            this._spectrumService.mdl.recalcSpectrumLines();
           },
           error: err => {
             console.log(httpErrorToString(err, "Failed to retrieve last fit CSV, maybe there wasn't one"));
@@ -227,7 +227,6 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
 
               const csv = new TextDecoder().decode(resp.resultData);
               this._spectrumService.mdl.setFitLineData(createdParams.scanId, csv);
-              this._spectrumService.mdl.recalcSpectrumLines();
             }
           }
         },

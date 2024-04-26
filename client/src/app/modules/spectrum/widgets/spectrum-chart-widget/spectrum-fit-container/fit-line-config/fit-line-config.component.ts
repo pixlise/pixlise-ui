@@ -46,8 +46,8 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Listen to what layers exist...
     this._subs.add(
-      this.mdl.fitLineSources$.subscribe(
-        () => {
+      this.mdl.fitLineSources$.subscribe({
+        next: () => {
           const interestingSources = [
             SpectrumChartModel.fitMeasuredSpectrum,
             SpectrumChartModel.fitCaclulatedTotalSpectrum,
@@ -74,8 +74,8 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
             }
           }
         },
-        err => {}
-      )
+        //error: err => {}
+      })
     );
   }
 
@@ -157,7 +157,7 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
 
     // Force a refresh
     if (event.finish && this._spectrumService.mdl) {
-      this._spectrumService.mdl.recalcSpectrumLines();
+      this._spectrumService.mdl.recalcFitLines();
     }
   }
 
