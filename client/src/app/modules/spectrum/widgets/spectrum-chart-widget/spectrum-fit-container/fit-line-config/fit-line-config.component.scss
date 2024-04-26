@@ -38,12 +38,8 @@
     box-sizing: border-box;
     display: flex;
     min-width: 220px;
-
-    .heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+    overflow-y: auto;
+    max-height: calc(35vh - 82px);
 
     .setting-row {
         display: flex;
