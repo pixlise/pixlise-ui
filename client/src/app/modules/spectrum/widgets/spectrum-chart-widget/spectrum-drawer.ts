@@ -36,7 +36,7 @@ import { SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
-import { SpectrumChartModel } from "./spectrum-model";
+import { SpectrumChartModel, fitElementLinePrefix } from "./spectrum-model";
 
 export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
   protected _dbg: string = "";
@@ -76,7 +76,13 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
 
     for (let c = 0; c < this._mdl.spectrumLines.length; c++) {
       const spectrum = this._mdl.spectrumLines[c];
-      this.drawSpectrum(screenContext, spectrum, this._mdl.spectrumLineDarkenIdxs.indexOf(c) > -1, this._mdl.xAxis, this._mdl.yAxis);
+      this.drawSpectrum(
+        screenContext,
+        spectrum,
+        this._mdl.highlightedLineExpr.length > 0 && this._mdl.highlightedLineExpr != spectrum.expression && !spectrum.expression.startsWith(fitElementLinePrefix),
+        this._mdl.xAxis,
+        this._mdl.yAxis
+      );
     }
 
     screenContext.restore();

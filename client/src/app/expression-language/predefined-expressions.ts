@@ -3,6 +3,7 @@ import { DataExpression } from "../generated-protos/expressions";
 import { DataExpressionId } from "./expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "./expression-language";
 import { UserInfo } from "src/app/generated-protos/user";
+import { SpectrumChannels } from "../utils/utils";
 
 export const DefaultDetectorId = "Default";
 
@@ -47,7 +48,7 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
       expr = "roughness()";
       name = "Roughness";
     } else if (id === DataExpressionId.predefinedDiffractionCountDataExpression) {
-      expr = "diffractionPeaks(0,4096)";
+      expr = "diffractionPeaks(0," + SpectrumChannels + ")";
       name = "Diffraction Count";
     } else {
       const pseudoElem = DataExpressionId.getPredefinedPseudoIntensityExpressionElement(id);

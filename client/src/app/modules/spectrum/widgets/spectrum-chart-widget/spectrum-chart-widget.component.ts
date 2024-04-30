@@ -21,7 +21,7 @@ import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } f
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
+import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
@@ -30,6 +30,9 @@ import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/wid
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
+import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
+import { SpectrumChannels } from "src/app/utils/utils";
+import { Colours } from "src/app/utils/colours";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -46,6 +49,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   private _shownDisplaySpectra: MatDialogRef<ROIPickerComponent> | null = null;
   private _shownPiquant: MatDialogRef<SpectrumPeakIdentificationComponent> | null = null;
+  private _shownFit: MatDialogRef<SpectrumFitContainerComponent> | null = null;
 
   scanId: string = "";
 
@@ -149,9 +153,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Display Fit",
           value: false,
-          disabled: true,
-          tooltip: "Not implemented yet",
-          onClick: () => {},
+          tooltip: "Use PIQUANTs fit feature to see components that make up the modelled spectrum line",
+          onClick: (value, trigger) => this.onFit(trigger),
         },
         {
           id: "piquant",
@@ -194,8 +197,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._analysisLayoutService.resizeCanvas$.subscribe(() => {
         // Reposition the key so it's always under the mini-zoom menu
         if (this.widgetControlConfiguration.topRightInsetButton) {
-          let clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
-          let offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 12);
+          const clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+          const offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 12);
           this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
         }
       })
@@ -228,7 +231,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           });
 
           // Remove any selection ROI from the list
-          let selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+          const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
           lines.delete(selectionROI);
 
           // If new widgetData is coming in, we need to update the calibration
@@ -248,8 +251,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.updateLines();
 
           if (this.widgetControlConfiguration.topRightInsetButton) {
-            let clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
-            let offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
+            const clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+            const offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
             this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
@@ -306,6 +309,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     );
 
     this._subs.add(
+      this.mdl.fitLineSources$.subscribe(() => {
+        this.updateLines();
+      })
+    );
+
+    this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
         this.mdl.spectrumLines.forEach(chartLine => {
           if (displaySettings[chartLine.roiId]) {
@@ -318,16 +327,16 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
-        let hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
+        const hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
 
         // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
         // updateLines will grab the actual selection data and update the display
-        let selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+        const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
         if (!this.mdl.spectrumLines.find(line => line.roiId === selectionROI) && hasSelection) {
-          let existingLines = this.mdl.getLineList();
+          const existingLines = this.mdl.getLineList();
           this.mdl.setLineList(existingLines.set(selectionROI, [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]));
         } else if (!hasSelection) {
-          let existingLines = this.mdl.getLineList();
+          const existingLines = this.mdl.getLineList();
           existingLines.delete(selectionROI);
           this.mdl.setLineList(existingLines);
         }
@@ -544,7 +553,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         // Set the overall flag
         this.mdl.xAxisEnergyScale = result.useCalibration;
 
-        let button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "calibration");
+        const button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "calibration");
         if (button) {
           button.value = result.useCalibration;
         }
@@ -664,6 +673,38 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     });
   }
 
+  onFit(trigger: Element | undefined) {
+    if (this._shownFit) {
+      // Hide it
+      this._shownFit.close();
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+
+    dialogConfig.data = {
+      mdl: this.mdl,
+      draggable: true,
+    };
+
+    dialogConfig.viewContainerRef = this._viewRef; // Ensure our spectrum service can be injected...
+    dialogConfig.hasBackdrop = false;
+
+    if (this._chartRef && this._chartRef.nativeElement && trigger) {
+      const widgetRect = this._chartRef.nativeElement.getBoundingClientRect();
+      const triggerRect = trigger.getBoundingClientRect();
+      dialogConfig.position = { left: Math.floor(widgetRect.left) + "px", top: this.ensureNotBelowScreen(Math.floor(triggerRect.bottom + 12)) + "px" };
+    }
+
+    this._shownFit = this.dialog.open(SpectrumFitContainerComponent, dialogConfig);
+    //this._shownFit.componentInstance.onChange.subscribe((result: SpectrumFitData) => {});
+
+    this._shownFit.afterClosed().subscribe((result: SpectrumFitData) => {
+      this._shownFit = null;
+    });
+  }
+
   private ensureNotBelowScreen(y: number): number {
     if (y > window.innerHeight * 0.8) {
       return window.innerHeight * 0.5;
@@ -764,6 +805,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
                 this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
               }
 
+              // Add any fit lines we may need
+              this.mdl.clearLines(true);
+              if (this.mdl.showFitLines) {
+                this.addFitLines();
+              }
+
               this.mdl.updateRangesAndKey();
               if (this.widgetControlConfiguration.topRightInsetButton) {
                 this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
@@ -778,6 +825,84 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         })
       );
     }
+  }
+
+  private addFitLines() {
+    this.mdl.clearLines(false);
+    /*const t0 = performance.now();
+
+    // Get min/max data values
+    let maxX = SpectrumChannels;
+    if (this.mdl.xAxisEnergyScale) {
+      const aEnergy = this.mdl.channelTokeV(maxX, "A");
+      const bEnergy = this.mdl.channelTokeV(maxX, "B");
+      if (aEnergy === null || bEnergy === null) {
+        console.error("addFitLines: Failed to convert channel to energy");
+        return;
+      }
+
+      maxX = Math.max(aEnergy, bEnergy);
+    }
+
+    const lineRangeX = new MinMax(0, maxX);
+    const lineRangeY = new MinMax(0, 0);
+*/
+    //const lineSources = this.mdl.showFitLines ? this.mdl.fitLineSources : []; //this._spectrumSources;
+
+    for (const source of this.mdl.fitLineSources) {
+      for (const line of source.lineChoices) {
+        // If there are no location indexes, we allow this if it's AllPoints ROI, but for any others (eg selection)
+        // we don't want to add a line as that would default to looking like the all points ROI
+        if (line.enabled && source.colourRGBA && (PredefinedROIID.isAllPointsROI(source.roiId) || source.locationIndexes.length > 0) && line.values !== null) {
+          this.mdl.addLineDataForLine(
+            source.roiId,
+            line.lineExpression,
+            source.scanId,
+            "scanName",
+            "roi.region.name",
+            source.colourRGBA,
+            new Map<string, SpectrumValues>([[line.label, line.values]]),
+            line.lineWidth,
+            line.opacity,
+            line.drawFilled
+          );
+/*
+          // Update the max value
+          const idx = this._spectrumLines.length - 1;
+          if (idx >= 0) {
+            this._lineRangeY.expand(this._spectrumLines[idx].maxValue);
+          }*/
+        }
+      }
+    }
+/*
+    this._keyItems = [];
+
+    // Run through and regenerate key items from all lines
+    let lastROI = "";
+    for (const line of this._spectrumLines) {
+      if (lastROI != line.roiId) {
+        this._keyItems.push(new WidgetKeyItem("", line.roiName, line.color));
+        lastROI = line.roiId;
+      }
+      this._keyItems.push(new WidgetKeyItem("", line.expressionLabel, line.color, line.dashPattern));
+    }
+
+    const t1 = performance.now();
+
+    this.needsDraw$.next();
+
+    const t2 = performance.now();
+
+    console.log(
+      "  Spectrum recalcSpectrumLines for " +
+        this._spectrumLines.length +
+        " lines took: " +
+        (t1 - t0).toLocaleString() +
+        "ms, needsDraw$ took: " +
+        (t2 - t1).toLocaleString() +
+        "ms"
+    );*/
   }
 }
 
