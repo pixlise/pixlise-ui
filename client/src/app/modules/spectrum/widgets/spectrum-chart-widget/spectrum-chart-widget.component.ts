@@ -806,6 +806,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               }
 
               // Add any fit lines we may need
+              this.mdl.clearLines(true);
               if (this.mdl.showFitLines) {
                 this.addFitLines();
               }
@@ -827,6 +828,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   private addFitLines() {
+    this.mdl.clearLines(false);
     /*const t0 = performance.now();
 
     // Get min/max data values
@@ -858,7 +860,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             source.scanId,
             "scanName",
             "roi.region.name",
-            Colours.BLUE, //line.roi.displaySettings.colour,
+            source.colourRGBA,
             new Map<string, SpectrumValues>([[line.label, line.values]]),
             line.lineWidth,
             line.opacity,

@@ -217,6 +217,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         this._spectrumLineDarkenIdxs.push(c);
       }
     }
+
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
   }
 
   get fitLineSources(): SpectrumSource[] {
@@ -486,6 +489,17 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   get showFitLines(): boolean {
     return this._showFitLines;
+  }
+
+  // Clears fit lines or non-fit lines
+  clearLines(fitLines: boolean): void {
+    const linesLeft: SpectrumChartLine[] = [];
+    for (let c = 0; c < this._spectrumLines.length; c++) {
+      if (fitLines != this._spectrumLines[c].expression.startsWith(fitLinePrefix)) {
+        linesLeft.push(this._spectrumLines[c]);
+      }
+    }
+    this._spectrumLines = linesLeft;
   }
 
   setFitLineData(scanId: string, csv: string): void {
