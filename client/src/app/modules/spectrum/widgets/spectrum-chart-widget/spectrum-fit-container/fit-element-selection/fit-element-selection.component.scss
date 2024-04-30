@@ -27,33 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-export const environment = {
-  production: true,
-  route_dbg: false,
-  configName: "pixlise-config.json",
-  expressionResultCacheThresholdMs: 100, // Don't cache things unless they take over an hour to run
-  luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
-  initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
-  initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
-  newLuaPerExpression: false, // Should we create a new Lua WASM instance per expression run?
-  expressionLanguageCompareSkipLines: 1, // How many lines to skip when doing line-by-line comparison
-  expressionLanguageCompareDiffAllowed: 0.0000001, // Absolute difference allowed between output values of Lua vs PIXLISE expressions
-  expressionExecStatSaveIntervalSec: 600, // How long to wait before we save exec stats for an expression again
-  luaTimeoutMs: 240000, // Max time we allow a Lua call to take to run
-  authTarget: "/datasets",
-  authorizationParams: {
-    audience: "pixlise-backend",
-    redirect_uri: `${window.location.origin}/authenticate`,
-  },
-  largeMessageLogThresholdBytes: 1024 * 1024,
-  marsViewerUrlRoot: "https://marsviewer.sops.m20.jpl.nasa.gov",
-};
+@import 'variables.scss';
 
-/*
- * For easier debugging in development mode, you can import the following file
- * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
- *
- * This import should be commented out in production mode because it will have a negative impact
- * on performance if an error is thrown.
- */
-import "zone.js/dist/zone-error"; // Included with Angular CLI.
+.fit-selection-container {
+    height: 100%;
+    min-height: 100%;
+    min-width: 100%;
+    width: 100%;
+    flex-direction: column;
+    box-sizing: border-box;
+    display: flex;
+    min-width: 220px;
+
+    .top-toolbar {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+
+        padding-left: $sz-unit;
+    }
+
+    .scrollable {
+        overflow-y: auto;
+
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 1e-9px;
+    }
+}
+
+span {
+    color: $clr-gray-30;
+    font-weight: normal;
+}

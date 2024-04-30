@@ -29,18 +29,40 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="app-container">
-  <main>
-    <app-toolbar *ngIf="!isPublicPage">
-      <h1 class="page-title">
-        <ng-content select=".page-title"></ng-content>
-      </h1>
-      <!-- <ng-contaziner [ngTemplateOutlet]="title" [ngTemplateOutletContext]="">
-      </ng-contaziner> -->
-    </app-toolbar>
-    <router-outlet></router-outlet>
-  </main>
-  <aside *ngIf="!isPublicPage">
-    <app-settings-sidebar></app-settings-sidebar>
-  </aside>
+<div class="fit-container">
+    <div class="fit-sections">
+        <div class="fit-display">
+            <div class="fit-header">
+                <h1
+                  mat-dialog-title
+                  cdkDrag
+                  cdkDragRootElement=".cdk-overlay-pane"
+                  cdkDragHandle
+                  [cdkDragDisabled]="!data.draggable"
+                  class="title {{ data.draggable ? 'drag' : '' }}">Spectrum Fit</h1>
+            </div>
+            <fit-line-config *ngIf="!message"></fit-line-config>
+            <div *ngIf="message" class="fit-message">
+                <app-widget-display-message
+                    [message]="message"
+                    [large]="false">
+                </app-widget-display-message>
+            </div>
+        </div>
+
+        <fit-element-selection><!-- fxFlex --></fit-element-selection>
+        <fit-elements></fit-elements>
+    </div>
+    <div class="fit-bottom-buttons">
+        <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+
+        <div class="group">
+            <ng-container *ngIf="quantificationEnabled">
+                <push-button buttonStyle="outline" (onClick)="onViewLogs()" [disabled]="!hasFitData">Logs</push-button>
+                <push-button buttonStyle="outline" (onClick)="onExport()" [disabled]="!hasFitData">Export Fit</push-button>
+                <push-button buttonStyle="yellow" (onClick)="onReQuantify()">Re-Quantify</push-button>
+            </ng-container>
+            <div *ngIf="!quantificationEnabled" class="quant-disabled">Quantification Disabled</div>
+        </div>
+    </div>
 </div>

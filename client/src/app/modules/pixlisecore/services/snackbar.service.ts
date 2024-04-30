@@ -120,7 +120,7 @@ export class SnackbarService {
       data: { message: messageText, details, action, type: "error" },
       horizontalPosition: "left",
       panelClass: ["pixlise-error"],
-      duration: details ? 10000 : 5000,
+      duration: details ? undefined : 5000,
     });
   }
 

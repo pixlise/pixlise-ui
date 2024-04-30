@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { BehaviorSubject, ReplaySubject, Subject, scan } from "rxjs";
+import { BehaviorSubject, ReplaySubject, Subject } from "rxjs";
 import { ObjectCreator, MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -35,7 +35,6 @@ import { ChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/module
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom, PanRestrictorToCanvas } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
-import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { RGBA, Colours } from "src/app/utils/colours";
@@ -63,7 +62,8 @@ export class SpectrumLineChoice {
 export class SpectrumSource {
   constructor(
     // Region info:
-    public roiID: string,
+    public scanId: string,
+    public roiId: string,
     public roiName: string,
     public shared: boolean,
     public creator: ObjectCreator | null,
@@ -96,6 +96,7 @@ export class spectrumLines {
 }
 
 const fitLinePrefix = "fit_";
+export const fitElementLinePrefix = fitLinePrefix + "_elem_";
 
 export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -146,11 +147,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
 
-  // Indexes of which lines which we darken relative to others
-  // This was added as part of spectrum fit line changes. If an index is invalid
-  // this should be ignored. Can be set on the model, and the drawer picks it up while
-  // drawing the lines
-  private _spectrumLineDarkenIdxs: number[] = [];
+  // If this is blank, draw normally. If it's not, we draw the line with this expression on it
+  // normally, while all other lines are drawn dimmed
+  private _spectrumHighlightedLineExpr: string = "";
 
   private _keyItems: WidgetKeyItem[] = [];
 
@@ -205,18 +204,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this.needsDraw$.next();
   }
 
-  get spectrumLineDarkenIdxs(): number[] {
-    return this._spectrumLineDarkenIdxs;
+  get highlightedLineExpr(): string {
+    return this._spectrumHighlightedLineExpr;
   }
 
-  setSpectrumLineDarken(lineExprs: string[]): void {
-    this._spectrumLineDarkenIdxs = [];
-    for (let c = 0; c < this._spectrumLines.length; c++) {
-      const line = this._spectrumLines[c];
-      if (lineExprs.indexOf(line.expression) > -1) {
-        this._spectrumLineDarkenIdxs.push(c);
-      }
-    }
+  darkenOtherLines(lineExpr: string): void {
+    this._spectrumHighlightedLineExpr = lineExpr;
+
+    // Force a recalc
+    this._fitLineSources$.next();
   }
 
   get fitLineSources(): SpectrumSource[] {
@@ -471,14 +467,53 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   setFitLineMode(enabled: boolean): void {
+    if (this._showFitLines == enabled) {
+      return;
+    }
+
     this._showFitLines = enabled;
-    //this.recalcSpectrumLines();
+    // Trigger redraw
+    this._fitLineSources$.next();
+  }
+
+  recalcFitLines(): void {
+    this._fitLineSources$.next();
+  }
+
+  get showFitLines(): boolean {
+    return this._showFitLines;
+  }
+
+  // Clears fit lines or non-fit lines
+  clearLines(fitLines: boolean): void {
+    const linesLeft: SpectrumChartLine[] = [];
+    for (let c = 0; c < this._spectrumLines.length; c++) {
+      const isElem = this._spectrumLines[c].expression.startsWith(fitElementLinePrefix);
+
+      if (isElem && this._showFitLines) {
+        linesLeft.push(this._spectrumLines[c]);
+      } else {
+        // If we're hiding non-fit lines, just do it
+        if (!fitLines && this._spectrumLines[c].expression.startsWith(fitLinePrefix)) {
+          linesLeft.push(this._spectrumLines[c]);
+          // If we're hiding fit lines, hide only fit lines that aren't showing an element
+        } else if (fitLines && !this._spectrumLines[c].expression.startsWith(fitLinePrefix)) {
+          linesLeft.push(this._spectrumLines[c]);
+        }
+      }
+    }
+    this._spectrumLines = linesLeft;
   }
 
   setFitLineData(scanId: string, csv: string): void {
     this._fitRawCSV = csv;
     this._fitLineSources = [];
     //this._fitSelectedElementZs = [];
+
+    if (csv.length <= 0) {
+      // No data, nothing more to do...
+      return;
+    }
 
     // Run through CSV columns and build sources for each line
     const lines = csv.split("\n");
@@ -487,11 +522,14 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // Get the data values as numbers
     const csvNumbersByRow: number[][] = [];
     for (let c = 2; c < lines.length; c++) {
-      csvNumbersByRow.push([]);
+      // Skip blank lines (should be one at the end of the file, maybe there are others?)
+      if (lines[c].length > 0) {
+        csvNumbersByRow.push([]);
 
-      const lineData = lines[c].split(",");
-      for (const item of lineData) {
-        csvNumbersByRow[c - 2].push(Number.parseFloat(item.trim()));
+        const lineData = lines[c].split(",");
+        for (const item of lineData) {
+          csvNumbersByRow[c - 2].push(Number.parseFloat(item.trim()));
+        }
       }
     }
 
@@ -534,6 +572,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       } else if (header == "meas") {
         this._fitLineSources.push(
           new SpectrumSource(
+            scanId,
             roiId,
             SpectrumChartModel.fitMeasuredSpectrum,
             false,
@@ -548,6 +587,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       } else if (header == "calc") {
         this._fitLineSources.push(
           new SpectrumSource(
+            scanId,
             roiId,
             SpectrumChartModel.fitCaclulatedTotalSpectrum,
             false,
@@ -562,6 +602,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       } else if (header == "residual") {
         this._fitLineSources.push(
           new SpectrumSource(
+            scanId,
             roiId,
             SpectrumChartModel.fitResiduals,
             false,
@@ -576,6 +617,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       } else if (header == "Pileup") {
         this._fitLineSources.push(
           new SpectrumSource(
+            scanId,
             roiId,
             SpectrumChartModel.fitPileupPeaks,
             false,
@@ -589,7 +631,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         );
       } else if (header == "DetCE" || header == "bkg" || header == "SNIP bkg" || header == "calc bkg0") {
         if (!backgroundSrc) {
-          backgroundSrc = new SpectrumSource(roiId, SpectrumChartModel.fitBackground, false, null, [], false, Colours.PURPLE, [], []);
+          backgroundSrc = new SpectrumSource(scanId, roiId, SpectrumChartModel.fitBackground, false, null, [], false, Colours.PURPLE, [], []);
         }
 
         // Add this to the background sources group
@@ -628,14 +670,14 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
             if (info && info.isElement) {
               // Make sure this element has a source defined
               if (!perElementSources.has(elem)) {
-                perElementSources.set(elem, new SpectrumSource(roiId, elem, false, null, [], false, Colours.YELLOW, [], [], info.Z));
+                perElementSources.set(elem, new SpectrumSource(scanId, roiId, elem, false, null, [], false, Colours.YELLOW, [], [], info.Z));
               }
 
               // Add this peak line to the element it belongs to
               // NOTE: we add element peak lines as NOT enabled
               const src = perElementSources.get(elem);
               if (src) {
-                src.lineChoices.push(new SpectrumLineChoice(fitLinePrefix + header, header, false, this.readFitColumn(c, csvNumbersByRow)));
+                src.lineChoices.push(new SpectrumLineChoice(fitElementLinePrefix + header, header, false, this.readFitColumn(c, csvNumbersByRow)));
               }
             }
           }
@@ -722,7 +764,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         this._keyItems.push(new WidgetKeyItem(line.roiId, line.roiName, line.color));
         lastROI = line.roiId;
       }
-      let key = new WidgetKeyItem(`${line.roiId}-${line.expressionLabel}`, line.expressionLabel, line.color, line.dashPattern);
+      const key = new WidgetKeyItem(`${line.roiId}-${line.expressionLabel}`, line.expressionLabel, line.color, line.dashPattern);
       this._keyItems.push(key);
     }
 
@@ -745,7 +787,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // Find the line and get its index (need this for dash pattern generation)
     const roiLines = this._linesShown.get(roiId);
     const roiIdx = roiLines ? roiLines.indexOf(lineExpression) : -1;
-    if (!roiLines || roiIdx < 0) {
+    if (!roiLines || (!lineExpression.startsWith("fit_") && roiIdx < 0)) {
       throw new Error(`addLineDataForLine called for non-existant line: ${roiId}-${lineExpression}`);
     }
 
@@ -758,7 +800,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     }
 
     const lineDashPatterns = [[], [6, 2], [2, 2], [1, 2, 1, 2, 1, 2, 8, 2]];
-    const dashPattern = lineDashPatterns[roiIdx % lineDashPatterns.length];
+    const dashPattern = lineDashPatterns[(roiIdx < 0 ? 0 : roiIdx) % lineDashPatterns.length];
 
     // It's actually stored in a separate list for drawing, so delete any existing entry
     for (let c = 0; c < this._spectrumLines.length; c++) {
@@ -975,6 +1017,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     }
 
     return cal.keVsToChannel([keV])[0];
+  }
+
+  channelTokeV(channel: number, scanId: string, detector: string): number | null {
+    const cal = this._calibration.get(scanId + "-" + detector);
+    if (!cal) {
+      return null;
+    }
+
+    return cal.channelsTokeV([channel])[0];
   }
 
   public static readonly lineExpressionBulkA = "bulk(A)";

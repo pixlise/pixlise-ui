@@ -29,18 +29,40 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="app-container">
-  <main>
-    <app-toolbar *ngIf="!isPublicPage">
-      <h1 class="page-title">
-        <ng-content select=".page-title"></ng-content>
-      </h1>
-      <!-- <ng-contaziner [ngTemplateOutlet]="title" [ngTemplateOutletContext]="">
-      </ng-contaziner> -->
-    </app-toolbar>
-    <router-outlet></router-outlet>
-  </main>
-  <aside *ngIf="!isPublicPage">
-    <app-settings-sidebar></app-settings-sidebar>
-  </aside>
+<div class="fit-line-container">
+    <div class="scrollable">
+        <div
+            *ngFor="let src of sources"
+            class="setting-row"
+            [ngClass]="getColourClass(src)"
+            (mouseover)="onHoverSpectrum(src)"
+            (mouseleave)="onHoverFinish()">
+            <div>{{src.roiName}}:</div>
+            <!-- If more than 1 checkbox, make it end up on new line -->
+            <div class="source-item" [ngClass]="{'flex100': src.lineChoices.length>1}">
+                <!-- Only include a slider for measured spectrum -->
+                <slider
+                    *ngIf="src.roiName===measuredName"
+                    [value]="getMeasuredOpacity(src)"
+                    [minValue]="0.1"
+                    [maxValue]="1"
+                    [pxLength]="80"
+                    (onChange)="onChangeMeasuredOpacity(src, $event)">
+                </slider>
+                <div
+                    *ngFor="let line of src.lineChoices"
+                    class="line-choice"
+                    (mouseover)="onHoverSpectrumLine(src, line)">
+                    <div *ngIf="src.lineChoices.length > 1">{{getLineLabel(line.label)}}</div>
+                    <two-state-icon-button
+                        activeIcon="assets/button-icons/check-on.svg"
+                        inactiveIcon="assets/button-icons/check-off.svg"
+                        [active]="line.enabled"
+                        (onToggle)="onToggleLine(line)">
+                    </two-state-icon-button>
+                </div>
+            </div>
+        </div>
+    <div class="chosen-list-footer">
+    </div>
 </div>

@@ -47,6 +47,6 @@ export class AppComponent {
   }
 
   get isPublicPage(): boolean {
-    return this._router.url.includes("/public/");
+    return this._router.url == "/" || this._router.url.includes("/public/");
   }
 }
