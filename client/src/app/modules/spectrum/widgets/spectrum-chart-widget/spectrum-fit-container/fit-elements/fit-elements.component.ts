@@ -283,33 +283,13 @@ export class FitElementsComponent implements OnInit, OnDestroy {
 
   onHover(lineExpr: string) {
     if (this._spectrumService.mdl) {
-      // Run through all lines we have, darken them all except this one
-      let lineExprs = [];
-      let exprFound = false;
-      for (const src of this.sources) {
-        for (const line of src.lineChoices) {
-          if (line.enabled) {
-            if (line.lineExpression != lineExpr) {
-              lineExprs.push(line.lineExpression);
-            } else {
-              exprFound = true;
-            }
-          }
-        }
-      }
-
-      // If the line we're hovering over is not found to be a visible line, we don't darken anything
-      if (!exprFound) {
-        lineExprs = [];
-      }
-
-      this._spectrumService.mdl.setSpectrumLineDarken(lineExprs);
+      this._spectrumService.mdl.darkenOtherLines(lineExpr);
     }
   }
 
   onHoverFinish() {
     if (this._spectrumService.mdl) {
-      this._spectrumService.mdl.setSpectrumLineDarken([]);
+      this._spectrumService.mdl.darkenOtherLines("");
     }
   }
 }

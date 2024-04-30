@@ -95,7 +95,7 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
     // If there is only one line, it's easy... otherwise we only hover if user points to the actual line
     if (src.lineChoices.length != 1) {
       // Do nothing here, it may be handled by an individual line checkbox hover in onHoverSpectrumLine()
-      //this._spectrumService.mdl.setSpectrumLineDarken([]);
+      //this._spectrumService.mdl.darkenOtherLines("");
       return;
     }
 
@@ -104,31 +104,11 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
 
   onHoverSpectrumLine(theSrc: SpectrumSource | null, line: SpectrumLineChoice): void {
     if (!line.enabled) {
-      this._spectrumService.mdl.setSpectrumLineDarken([]);
+      this._spectrumService.mdl.darkenOtherLines("");
       return;
     }
 
-    // Run through all lines we have, darken them all except this one
-    let lineExprs = [];
-    let exprFound = false;
-    for (const src of this.sources) {
-      for (const srcLines of src.lineChoices) {
-        if (srcLines.enabled) {
-          if (srcLines.lineExpression != line.lineExpression) {
-            lineExprs.push(srcLines.lineExpression);
-          } else {
-            exprFound = true;
-          }
-        }
-      }
-    }
-
-    // If the line we're hovering over is not found to be a visible line, we don't darken anything
-    if (!exprFound) {
-      lineExprs = [];
-    }
-
-    this._spectrumService.mdl.setSpectrumLineDarken(lineExprs);
+    this._spectrumService.mdl.darkenOtherLines(line.lineExpression);
   }
 
   onToggleLine(line: SpectrumLineChoice): void {
@@ -162,7 +142,7 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
   }
 
   onHoverFinish(): void {
-    this._spectrumService.mdl.setSpectrumLineDarken([]);
+    this._spectrumService.mdl.darkenOtherLines("");
   }
 
   getColourClass(src: SpectrumSource): string[] {

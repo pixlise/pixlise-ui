@@ -96,6 +96,7 @@ export class spectrumLines {
 }
 
 const fitLinePrefix = "fit_";
+export const fitElementLinePrefix = fitLinePrefix + "_elem_";
 
 export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -146,11 +147,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
 
-  // Indexes of which lines which we darken relative to others
-  // This was added as part of spectrum fit line changes. If an index is invalid
-  // this should be ignored. Can be set on the model, and the drawer picks it up while
-  // drawing the lines
-  private _spectrumLineDarkenIdxs: number[] = [];
+  // If this is blank, draw normally. If it's not, we draw the line with this expression on it
+  // normally, while all other lines are drawn dimmed
+  private _spectrumHighlightedLineExpr: string = "";
 
   private _keyItems: WidgetKeyItem[] = [];
 
@@ -163,8 +162,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -205,21 +204,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this.needsDraw$.next();
   }
 
-  get spectrumLineDarkenIdxs(): number[] {
-    return this._spectrumLineDarkenIdxs;
+  get highlightedLineExpr(): string {
+    return this._spectrumHighlightedLineExpr;
   }
 
-  setSpectrumLineDarken(lineExprs: string[]): void {
-    this._spectrumLineDarkenIdxs = [];
-    for (let c = 0; c < this._spectrumLines.length; c++) {
-      const line = this._spectrumLines[c];
-      if (lineExprs.indexOf(line.expression) > -1) {
-        this._spectrumLineDarkenIdxs.push(c);
-      }
-    }
+  darkenOtherLines(lineExpr: string): void {
+    this._spectrumHighlightedLineExpr = lineExpr;
 
-    this._recalcNeeded = true;
-    this.needsDraw$.next();
+    // Force a recalc
+    this._fitLineSources$.next();
   }
 
   get fitLineSources(): SpectrumSource[] {
@@ -495,8 +488,18 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   clearLines(fitLines: boolean): void {
     const linesLeft: SpectrumChartLine[] = [];
     for (let c = 0; c < this._spectrumLines.length; c++) {
-      if (fitLines != this._spectrumLines[c].expression.startsWith(fitLinePrefix)) {
+      const isElem = this._spectrumLines[c].expression.startsWith(fitElementLinePrefix);
+
+      if (isElem && this._showFitLines) {
         linesLeft.push(this._spectrumLines[c]);
+      } else {
+        // If we're hiding non-fit lines, just do it
+        if (!fitLines && this._spectrumLines[c].expression.startsWith(fitLinePrefix)) {
+          linesLeft.push(this._spectrumLines[c]);
+          // If we're hiding fit lines, hide only fit lines that aren't showing an element
+        } else if (fitLines && !this._spectrumLines[c].expression.startsWith(fitLinePrefix)) {
+          linesLeft.push(this._spectrumLines[c]);
+        }
       }
     }
     this._spectrumLines = linesLeft;
@@ -506,6 +509,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._fitRawCSV = csv;
     this._fitLineSources = [];
     //this._fitSelectedElementZs = [];
+
+    if (csv.length <= 0) {
+      // No data, nothing more to do...
+      return;
+    }
 
     // Run through CSV columns and build sources for each line
     const lines = csv.split("\n");
@@ -669,7 +677,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
               // NOTE: we add element peak lines as NOT enabled
               const src = perElementSources.get(elem);
               if (src) {
-                src.lineChoices.push(new SpectrumLineChoice(fitLinePrefix + header, header, false, this.readFitColumn(c, csvNumbersByRow)));
+                src.lineChoices.push(new SpectrumLineChoice(fitElementLinePrefix + header, header, false, this.readFitColumn(c, csvNumbersByRow)));
               }
             }
           }

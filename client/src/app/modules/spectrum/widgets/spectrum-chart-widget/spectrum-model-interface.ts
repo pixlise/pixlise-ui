@@ -84,7 +84,7 @@ export interface ISpectrumChartModel {
   recalcDisplayDataIfNeeded(viewport: CanvasParams): void;
 
   spectrumLines: SpectrumChartLine[];
-  spectrumLineDarkenIdxs: number[];
+  highlightedLineExpr: string;
 
   xAxis: ChartAxis | null;
   yAxis: ChartAxis | null;
