@@ -67,6 +67,7 @@ import { WidgetExportDialogComponent } from "src/app/modules/widget/components/w
 import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
+import { SpectrumChannels } from "src/app/utils/utils";
 
 export type DiffractionExpressionResponse = {
   title?: string;
@@ -410,7 +411,10 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this.updateDisplayList();
     this.mdl.needsDraw$.next();
 
-    this.runExpression({ title: "All Diffraction Peaks", expression: "diffractionPeaks(0,4096)", description: "All diffraction peaks" }, this.isMapShown);
+    this.runExpression(
+      { title: "All Diffraction Peaks", expression: "diffractionPeaks(0," + SpectrumChannels + ")", description: "All diffraction peaks" },
+      this.isMapShown
+    );
   }
 
   runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {

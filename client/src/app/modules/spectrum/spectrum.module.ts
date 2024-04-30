@@ -21,6 +21,10 @@ import { PickedElementsComponent } from "./widgets/spectrum-chart-widget/spectru
 import { ElementListItemComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/element-list-item/element-list-item.component";
 import { QuantificationStartOptionsComponent } from "./widgets/spectrum-chart-widget/quantification-start-options/quantification-start-options.component";
 import { WidgetModule } from "../widget/widget.module";
+import { SpectrumFitContainerComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
+import { FitLineConfigComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-line-config/fit-line-config.component";
+import { FitElementsComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-elements/fit-elements.component";
+import { FitElementSelectionComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
 
 export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 
@@ -38,6 +42,10 @@ export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/sp
     PickedElementsComponent,
     ElementListItemComponent,
     QuantificationStartOptionsComponent,
+    SpectrumFitContainerComponent,
+    FitLineConfigComponent,
+    FitElementsComponent,
+    FitElementSelectionComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],

@@ -1105,3 +1105,5 @@ export function replaceAsDateIfTestSOL(sol: string): string {
 export function isFirefox(userAgent: string): boolean {
   return !!userAgent.match(/firefox|fxios/i);
 }
+
+export const SpectrumChannels = 4096; // We don't want to hard-code this but for now it is
