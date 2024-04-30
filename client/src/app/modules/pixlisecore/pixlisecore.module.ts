@@ -59,6 +59,7 @@ import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/componen
 import { ClosableListComponent } from "src/app/modules/pixlisecore/components/atoms/closable-list/closable-list.component";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -124,7 +125,7 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     ClosableListComponent,
     LayerVisibilityDialogComponent,
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule],
+  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,

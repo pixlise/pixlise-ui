@@ -1,43 +1,103 @@
 <div class="layer-visibility-dialog">
-  <div class="layers-container">
-    <div *ngFor="let section of sections" class="layer-section">
+  <section class="title-bar">
+    <h2 cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>Layers</h2>
+  </section>
+  <section class="layers-container">
+    <div *ngFor="let section of sections" class="layer-section {{ section.isVisible ? '' : 'not-showing' }}">
       <div class="section-title">
         <action-button class="menu-open" [action]="section.isOpen ? 'closeAccordion' : 'openAccordion'" (onClick)="section.isOpen = !section.isOpen"></action-button>
-        <h2>{{ section.title }}</h2>
-        <action-button
-          class="visibility-toggle"
-          [action]="section.isVisible ? 'visibleOn' : 'visibleOff'"
-          (onClick)="section.isVisible = !section.isVisible"></action-button>
+        <div *ngIf="section.icon" class="icon" [ngStyle]="{ 'mask-image': 'url(' + section.icon + ')', 'background-color': section.scanColor || '#fff' }"></div>
+        <h2 #tooltip="matTooltip" [matTooltip]="section.title" [matTooltipShowDelay]="500" [matTooltipDisabled]="section.title.length < 50" class="layer-name">
+          {{ section.title }}
+        </h2>
+        <div *ngIf="section.scanId" class="scan-tag">
+          <div class="scan-color" [ngStyle]="{ 'background-color': section.scanColor || 'grey' }"></div>
+          <span class="scan-name">{{ section.scanName }}</span>
+        </div>
+        <div class="right-group">
+          <action-button class="visibility-toggle" [action]="section.isVisible ? 'openEye' : 'closedEye'" (onClick)="toggleSection(section)"></action-button>
+        </div>
       </div>
-      <div *ngIf="section.isOpen" class="sub-layers">
-        <div *ngFor="let layer of section.options" class="layer-item">
+      <div *ngIf="section.isOpen" class="sub-layers" cdkDropList (cdkDropListDropped)="dropLayer(section, $event)">
+        <div [cdkDragData]="layer" cdkDrag cdkDragLockAxis="y" *ngFor="let layer of section.options" class="layer-item {{ layer.visible ? '' : 'not-showing' }}">
           <div class="section-title">
-            <img class="drag-handle" src="assets/button-icons/drag-handle.svg" />
+            <img cdkDragHandle class="drag-handle" src="assets/button-icons/drag-handle.svg" />
             <action-button
               *ngIf="layer.subOptions && layer.subOptions.length > 0"
               class="menu-open"
               [action]="layer.isSubMenuOpen ? 'closeAccordion' : 'openAccordion'"
               (onClick)="layer.isSubMenuOpen = !layer.isSubMenuOpen"></action-button>
-            <h2>{{ layer.name }}</h2>
-            <action-button class="visibility-toggle" [action]="layer.visible ? 'visibleOn' : 'visibleOff'" (onClick)="layer.visible = !layer.visible"></action-button>
+            <div
+              *ngIf="layer.icon && layer.color"
+              class="icon"
+              [ngStyle]="{ 'mask-image': 'url(' + layer.icon + ')', 'background-color': layer.color || '#fff' }"></div>
+            <img *ngIf="layer.icon && !layer.color" class="icon" [src]="layer.icon" />
+            <div *ngIf="!layer.icon && layer.color" class="gradient">
+              <div class="gradient-color" [ngStyle]="{ background: layer.color }"></div>
+            </div>
+            <h2 #tooltip="matTooltip" [matTooltip]="layer.name" [matTooltipShowDelay]="500" [matTooltipDisabled]="layer.name.length < 50" class="layer-name">
+              {{ layer.name }}
+            </h2>
+            <div class="right-group">
+              <slider
+                class="opacity-slider"
+                *ngIf="layer.showOpacity"
+                [value]="layer.opacity"
+                [minValue]="0"
+                [maxValue]="1"
+                [pxLength]="140"
+                (onChange)="onChangeLayerOpacity(layer, $event)">
+              </slider>
+              <action-button
+                class="visibility-toggle"
+                [action]="layer.visible ? 'openEye' : 'closedEye'"
+                (onClick)="onLayerVisibilityChanged(section, layer, !layer.visible)"></action-button>
+            </div>
           </div>
-          <div *ngIf="layer.isSubMenuOpen && layer.subOptions && layer.subOptions.length > 0" class="sub-layers">
-            <div *ngFor="let subLayer of layer.subOptions" class="layer-item">
-              <div class="section-title">
-                <img class="drag-handle" src="assets/button-icons/drag-handle.svg" />
-                <h2>{{ subLayer.name }}</h2>
-                <action-button
-                  class="visibility-toggle"
-                  [action]="subLayer.visible ? 'visibleOn' : 'visibleOff'"
-                  (onClick)="subLayer.visible = !subLayer.visible"></action-button>
+          <div
+            *ngIf="layer.isSubMenuOpen && layer.subOptions && layer.subOptions.length > 0"
+            cdkDropList
+            (cdkDropListDropped)="dropSubLayer(layer, $event)"
+            class="sub-layers">
+            <div
+              *ngFor="let subLayer of layer.subOptions"
+              class="layer-item {{ subLayer.visible ? '' : 'not-showing' }}"
+              cdkDrag
+              [cdkDragData]="subLayer"
+              cdkDragLockAxis="y">
+              <div class="section-title" [ngStyle]="{ 'padding-left.px': 24 }">
+                <img cdkDragHandle class="drag-handle" src="assets/button-icons/drag-handle.svg" [ngStyle]="{ 'padding-left.px': 12 }" />
+                <div
+                  *ngIf="subLayer.icon && subLayer.color"
+                  class="icon"
+                  [ngStyle]="{ 'mask-image': 'url(' + subLayer.icon + ')', 'background-color': subLayer.color || '#fff' }"></div>
+                <img *ngIf="subLayer.icon && !subLayer.color" class="icon" [src]="subLayer.icon" />
+                <div *ngIf="!subLayer.icon && subLayer.color" class="gradient">
+                  <div class="gradient-color" [ngStyle]="{ background: subLayer.color }"></div>
+                </div>
+                <h2
+                  #tooltip="matTooltip"
+                  [matTooltip]="subLayer.name"
+                  [matTooltipShowDelay]="500"
+                  [matTooltipDisabled]="subLayer.name.length < 50"
+                  class="layer-name">
+                  {{ subLayer.name }}
+                </h2>
+                <div class="right-group">
+                  <action-button
+                    *ngIf="!subLayer.isVisibilityLocked"
+                    class="visibility-toggle"
+                    [action]="subLayer.visible ? 'openEye' : 'closedEye'"
+                    (onClick)="onSubLayerVisibilityChanged(section, layer, subLayer, !subLayer.visible)"></action-button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="bottom-buttons">
-      <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
-    </div>
+  </section>
+  <div class="bottom-buttons">
+    <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
   </div>
 </div>

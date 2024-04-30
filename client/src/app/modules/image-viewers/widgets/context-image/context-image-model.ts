@@ -252,6 +252,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     let found = false;
     for (let c = 0; c < scanMdl.maps.length; c++) {
       if (scanMdl.maps[c].expressionId === layer.expressionId) {
+        layer.mapPoints.forEach(pt => {
+          pt.drawParams.colour.a = 255 * layer.opacity;
+        });
         scanMdl.maps[c] = layer;
         found = true;
       }
@@ -300,7 +303,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     for (const [scanId, scanMdl] of this._raw.scanModels) {
       for (const mapLayer of scanMdl.maps) {
-        if (mapLayer.expressionId == forExpressionId) {
+        if (mapLayer.expressionId === forExpressionId) {
           // This has to be included
           scaleData.addMapValues(mapLayer.mapPoints, forValuesIdx, mapLayer.valueRanges[forValuesIdx], mapLayer.isBinary[forValuesIdx]);
           scaleScanIds.push(scanId);
@@ -708,7 +711,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
                     displayRanges[0].getAsPercentageOfRange(pt.values[0], true) * 255,
                     displayRanges[1].getAsPercentageOfRange(pt.values[1], true) * 255,
                     displayRanges[2].getAsPercentageOfRange(pt.values[2], true) * 255,
-                    255
+                    255 * layerMap.opacity
                   ),
                   MapPointState.IN_RANGE,
                   MapPointShape.POLYGON

@@ -51,6 +51,8 @@ const customActionIcons = {
   verticalEllipsis: "assets/button-icons/vertical-ellipsis.svg",
   visibleOn: "assets/button-icons/visible-on.svg",
   visibleOff: "assets/button-icons/visible-off.svg",
+  openEye: "assets/button-icons/eye-open.svg",
+  closedEye: "assets/button-icons/eye-closed.svg",
   checkOn: "assets/button-icons/check-on.svg",
   checkOff: "assets/button-icons/check-off.svg",
   radioOn: "assets/button-icons/radio-on.svg",

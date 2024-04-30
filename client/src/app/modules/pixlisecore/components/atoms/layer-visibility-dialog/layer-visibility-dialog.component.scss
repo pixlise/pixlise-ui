@@ -5,75 +5,13 @@
 
   background: #222829;
 
-  .layers-container {
-    display: flex;
-    flex-direction: column;
+  .title-bar {
+    padding: 8px 16px;
+    border-bottom: 1px solid #545f64;
+    cursor: grab;
 
-    .layer-section {
-      display: flex;
-      flex-direction: column;
-
-      .section-title {
-        display: flex;
-        align-items: center;
-        padding: 8px;
-        gap: 4px;
-        border-bottom: 1px solid #545f64;
-        flex: 1;
-
-        .drag-handle {
-          cursor: grab;
-          -webkit-user-drag: none;
-
-          width: 16px;
-          padding: 4px;
-          display: flex;
-        }
-
-        h2 {
-          color: #fff;
-
-          font-feature-settings:
-            "clig" off,
-            "liga" off;
-          font-family: Inter;
-          font-size: 12px;
-          font-style: normal;
-          font-weight: 400;
-          line-height: 16px;
-          text-transform: none;
-        }
-
-        .visibility-toggle {
-          margin-left: auto;
-        }
-      }
-
-      .sub-layers {
-        display: flex;
-        flex-direction: column;
-
-        .section-title {
-          padding-left: 24px;
-        }
-
-        .sub-layers {
-          .section-title {
-            padding-left: 48px;
-          }
-        }
-
-        .layer-item {
-          display: flex;
-          flex-direction: column;
-          background: #293137;
-
-          .sub-layers {
-            display: flex;
-            flex-direction: column;
-          }
-        }
-      }
+    h2 {
+      text-transform: none;
     }
   }
 
@@ -82,4 +20,169 @@
     padding: 8px;
     justify-content: flex-end;
   }
+}
+
+.layer-item {
+  display: flex;
+  flex-direction: column;
+  background: #293137;
+
+  .sub-layers {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.layers-container {
+  display: flex;
+  flex-direction: column;
+
+  max-height: 400px;
+  overflow-y: auto;
+
+  .layer-section {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.sub-layers {
+  display: flex;
+  flex-direction: column;
+  background: #293137;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  padding-left: 4px;
+  gap: 4px;
+  border-bottom: 1px solid #545f64;
+  flex: 1;
+
+  .drag-handle {
+    cursor: grab;
+    -webkit-user-drag: none;
+    user-select: none;
+
+    width: 16px;
+    padding: 4px;
+    display: flex;
+  }
+
+  .icon {
+    mask-size: 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    width: 16px;
+    height: 16px;
+    margin: 4px;
+  }
+
+  .scan-tag {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    margin-left: 4px;
+
+    border-radius: 16px;
+    background: #444c50;
+
+    .scan-color {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .scan-name {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 16px;
+      color: #fff;
+    }
+  }
+
+  h2 {
+    color: #fff;
+
+    font-feature-settings:
+      "clig" off,
+      "liga" off;
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 16px;
+    text-transform: none;
+  }
+
+  .right-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+  .visibility-toggle {
+    // margin-left: auto;
+  }
+}
+
+.not-showing {
+  opacity: 0.5;
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.2),
+    0 8px 10px 1px rgba(0, 0, 0, 0.14),
+    0 3px 14px 2px rgba(0, 0, 0, 0.12);
+
+  .sub-layers {
+    .section-title {
+      padding-left: 24px;
+    }
+  }
+
+  .section-title {
+    border-bottom: none;
+  }
+}
+
+.cdk-drag-placeholder {
+  border-bottom: 1px solid #545f64;
+  background-color: lighten(#293137, 5%);
+  .section-title {
+    opacity: 0;
+    border-bottom: none;
+  }
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.gradient {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  margin-right: 4px;
+
+  border-radius: 4px;
+  border: 1px solid white;
+
+  .gradient-color {
+    flex: 1;
+    border-radius: 4px;
+  }
+}
+
+.layer-name {
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
 }

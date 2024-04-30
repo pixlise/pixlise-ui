@@ -77,6 +77,11 @@
     padding: 4px;
     border-radius: 50%;
   }
+
+  img {
+    user-select: none;
+    -webkit-user-drag: none;
+  }
 }
 
 .action-btn:not(.disabled) {

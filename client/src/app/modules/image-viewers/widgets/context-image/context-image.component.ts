@@ -3,7 +3,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { catchError, combineLatest, map, mergeMap, Observable, of, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { ContextImageModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
+import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
 import { ContextImageState, MapLayerVisibility, ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
@@ -11,7 +11,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
-import { ContextImageDataService, SyncedTransform } from "../../services/context-image-data.service";
+import { ContextImageDataService } from "../../services/context-image-data.service";
 import { Point, Rect } from "src/app/models/Geometry";
 import { LayerVisibilityDialogComponent, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
@@ -24,7 +24,6 @@ import {
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageMapLayer } from "../../models/map-layer";
-import { SelectedOptions, SubItemOptionSection } from "src/app/modules/pixlisecore/components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePickerResult } from "./image-options/image-options.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
@@ -35,7 +34,12 @@ import { ExpressionsService } from "src/app/modules/expressions/services/express
 import { ContextImageExporter } from "src/app/modules/image-viewers/widgets/context-image/context-image-exporter";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { LayerVisibilitySection, LayerVisiblilityData } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+import {
+  LayerOpacityChange,
+  LayerVisibilityChange,
+  LayerVisibilitySection,
+  LayerVisiblilityData,
+} from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -770,52 +774,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   onToggleShowPoints(trigger: Element | undefined) {
-    // const options: SubItemOptionSection[] = [
-    //   {
-    //     title: "Points",
-    //     options: [],
-    //   },
-    //   {
-    //     title: "Footprints",
-    //     options: [],
-    //   },
-    //   {
-    //     title: "Map Data",
-    //     options: [],
-    //   },
-    // ];
-
-    // // Find scan titles
-    // const scanTitles = new Map<string, string>();
-    // for (const scanId of this.mdl.scanIds) {
-    //   const mdl = this.mdl.getScanModelFor(scanId);
-    //   scanTitles.set(scanId, mdl?.scanTitle || scanId);
-    // }
-
-    // // Add options for showing/hiding all scan footprints, maps and points
-    // const allOptions = new Set<string>();
-    // const appendage = ["-points", "-footprints", "-maps"];
-    // for (const scanId of this.mdl.scanIds) {
-    //   for (let c = 0; c < appendage.length; c++) {
-    //     const opt = `${scanId}${appendage[c]}`;
-    //     options[c].options.push({ title: `${scanTitles.get(scanId)}`, value: opt });
-    //     allOptions.add(opt);
-    //   }
-    // }
-
-    // // NOTE: model only stores items in lists that need to be hidden, so here we build selected options
-    // // but as an inverse, these are visible if picked
-    // const selection: string[] = [];
-    // const source: string[][] = [this.mdl.hidePointsForScans, this.mdl.hideFootprintsForScans, this.mdl.hideMapsForScans];
-    // for (let c = 0; c < source.length; c++) {
-    //   for (const scanId of this.mdl.scanIds) {
-    //     // If this is in the list, it means it's hidden, so it's NOT selected
-    //     if (source[c].indexOf(scanId) == -1) {
-    //       selection.push(scanId + appendage[c]);
-    //     }
-    //   }
-    // }
-
     let datasetLayersSection: LayerVisibilitySection = {
       id: "dataset-layers",
       title: "Dataset Layers",
@@ -825,6 +783,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         {
           id: "footprints",
           name: "Footprints",
+          icon: "assets/icons/footprint.svg",
           opacity: 1,
           visible: true,
           subOptions: [],
@@ -832,6 +791,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         {
           id: "points",
           name: "Points",
+          icon: "assets/icons/scan-points.svg",
           opacity: 1,
           visible: true,
           subOptions: [],
@@ -850,6 +810,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       footprintsSection!.subOptions!.push({
         id: `${scanId}-footprints`,
         name: scanName,
+        scanId: scanId,
+        icon: "assets/icons/footprint.svg",
+        showOpacity: true,
         opacity: 1,
         visible: true,
       });
@@ -857,6 +820,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       pointsSection!.subOptions!.push({
         id: `${scanId}-points`,
         name: scanName,
+        scanId: scanId,
+        icon: "assets/icons/scan-points.svg",
+        showOpacity: true,
         opacity: 1,
         visible: true,
       });
@@ -864,9 +830,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       let mapLayers = this.mdl.getMapLayers(scanId);
       if (mapLayers) {
         let mapLayerSection: LayerVisibilitySection = {
-          id: scanId,
+          id: `map-layers-${scanId}`,
           title: "Map Data",
           scanId: scanId,
+          scanName: scanName,
           isOpen: true,
           isVisible: true,
           options: [],
@@ -876,6 +843,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           mapLayerSection.options.push({
             id: layer.expressionId,
             name: layer.expressionName,
+            gradient: layer.shading,
+            showOpacity: true,
             opacity: 1,
             visible: true,
           });
@@ -885,45 +854,112 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       }
     });
 
+    let imagesSection: LayerVisibilitySection = {
+      id: "images",
+      title: "Images",
+      isOpen: false,
+      isVisible: true,
+      options: [
+        {
+          id: "context-image",
+          name: this.mdl.imageName,
+          icon: "assets/icons/image.svg",
+          opacity: 1,
+          visible: true,
+        },
+      ],
+    };
+
     const dialogConfig = new MatDialogConfig<LayerVisiblilityData>();
     dialogConfig.data = {
-      sections: [datasetLayersSection, ...mapLayersSection],
-      // selectionOptions: options,
-      // selectedOptions: selection,
+      sections: [datasetLayersSection, ...mapLayersSection, imagesSection],
     };
 
     dialogConfig.hasBackdrop = false;
-    //dialogConfig.disableClose = true;
     const rect = trigger?.parentElement?.getBoundingClientRect();
     if (rect) {
       dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, rect.height, rect.width);
     }
 
     const dialogRef = this.dialog.open(LayerVisibilityDialogComponent, dialogConfig);
-    dialogRef.componentInstance.selectionChanged.subscribe((sel: SelectedOptions) => {
-      // if (sel && sel.selectedOptions) {
-      //   // If it's selected, make sure it is NOT in the hidden list, otherwise it should be there...
-      //   const hiddenOptions = new Set(allOptions);
-      //   for (const opt of sel.selectedOptions) {
-      //     hiddenOptions.delete(opt);
-      //   }
-      //   // Fill our lists
-      //   const newHiddenLists: string[][] = [];
-      //   for (let c = 0; c < appendage.length; c++) {
-      //     newHiddenLists.push([]);
-      //   }
-      //   for (const opt of hiddenOptions) {
-      //     for (let c = 0; c < appendage.length; c++) {
-      //       if (opt.endsWith(appendage[c])) {
-      //         newHiddenLists[c].push(opt.substring(0, opt.length - appendage[c].length));
-      //       }
-      //     }
-      //   }
-      //   this.mdl.hidePointsForScans = newHiddenLists[0];
-      //   this.mdl.hideFootprintsForScans = newHiddenLists[1];
-      //   this.mdl.hideMapsForScans = newHiddenLists[2];
-      //   this.reDraw();
-      // }
+
+    dialogRef.componentInstance.visibilityToggle.subscribe((change: LayerVisibilityChange) => {
+      if (change) {
+        if (change.sectionId === "dataset-layers") {
+          if (change.layerId === "footprints" && change.subLayerId) {
+            let scanId = change.subLayerId.split("-")[0];
+            this.mdl.hideFootprintsForScans = change.visible
+              ? this.mdl.hideFootprintsForScans.filter(id => id !== scanId)
+              : [...this.mdl.hideFootprintsForScans, scanId];
+          } else if (change.layerId === "points" && change.subLayerId) {
+            let scanId = change.subLayerId.split("-")[0];
+            this.mdl.hidePointsForScans = change.visible ? this.mdl.hidePointsForScans.filter(id => id !== scanId) : [...this.mdl.hidePointsForScans, scanId];
+          }
+        } else if (change.sectionId.startsWith("map-layers-")) {
+          let scanId = change.sectionId.split("-")[2];
+          if (scanId && change.layerId) {
+            if (change.visible) {
+              if (!this.mdl.expressionIds.includes(change.layerId)) {
+                if (change.index !== undefined) {
+                  this.mdl.expressionIds = [...this.mdl.expressionIds.slice(0, change.index), change.layerId, ...this.mdl.expressionIds.slice(change.index)];
+                } else {
+                  this.mdl.expressionIds.push(change.layerId);
+                }
+              }
+            } else {
+              this.mdl.expressionIds = this.mdl.expressionIds.filter(id => id !== change.layerId);
+            }
+            this.reloadModel();
+          } else {
+            this.mdl.hideMapsForScans = change.visible ? this.mdl.hideMapsForScans.filter(id => id !== scanId) : [...this.mdl.hideMapsForScans, scanId];
+          }
+        } else if (change.sectionId === "images") {
+          if (change.layerId === "context-image") {
+            this.mdl.drawImage = change.visible;
+            this.reloadModel();
+          }
+        }
+
+        this.reDraw();
+      }
+    });
+
+    dialogRef.componentInstance.onReorder.subscribe((change: LayerVisibilitySection[]) => {
+      let newExpressionIdOrder: string[] = [];
+      change.forEach(section => {
+        if (!section.scanId) {
+          return;
+        }
+
+        section.options.forEach(option => {
+          if (option.visible) {
+            newExpressionIdOrder.push(option.id);
+          }
+        });
+      });
+
+      this.mdl.expressionIds = newExpressionIdOrder;
+
+      this.reloadModel();
+    });
+
+    dialogRef.componentInstance.opacityChange.subscribe((change: LayerOpacityChange) => {
+      if (change) {
+        this.mdl.scanIds.forEach(scanId => {
+          let mapLayers = this.mdl.getMapLayers(scanId);
+          if (mapLayers) {
+            let layer = mapLayers.find(layer => layer.expressionId === change.layer.id);
+            if (layer) {
+              layer.opacity = change.opacity;
+              layer.mapPoints.forEach(point => {
+                point.drawParams.colour.a = 255 * change.opacity;
+              });
+            }
+          }
+        });
+
+        this.reDraw();
+      }
     });
   }
 
