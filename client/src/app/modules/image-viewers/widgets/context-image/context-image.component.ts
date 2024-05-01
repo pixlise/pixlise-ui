@@ -306,6 +306,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         } else if (contextData) {
           let validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
           this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          this.mdl.roiIds = contextData.roiLayers;
 
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
@@ -879,7 +880,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             name: region.roi.name,
             color: region.roi.displaySettings?.colour,
             showOpacity: true,
-            opacity: 1,
+            opacity: roi.opacity ?? 1,
             visible: true,
             canDelete: true,
           });
@@ -967,6 +968,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
         }
 
+        this.saveState();
         this.reDraw();
       }
     });
@@ -999,8 +1001,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         return this.mdl.roiIds.find(roi => roi.id === id) || ROILayerVisibility.create({ id, visible: true, opacity: 1, scanId: this.scanId });
       });
 
+      this.saveState();
       this.reDraw();
-
       this.reloadModel();
     });
 
@@ -1030,6 +1032,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
         }
 
+        this.saveState();
         this.reDraw();
       }
     });
@@ -1144,6 +1147,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.cachedExpressionIds = this.mdl.expressionIds.slice();
     this.cachedROIs = this.mdl.roiIds.slice();
 
+    // TODO: Find better way of storing layer visbility settings
     let allMapLayers: MapLayerVisibility[] = [];
     this.mdl.scanIds.forEach(scanId => {
       let mapLayers = this.mdl.getMapLayers(scanId);
