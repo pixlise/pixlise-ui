@@ -60,6 +60,8 @@ export class SliderComponent implements OnInit, OnDestroy {
   @Input() minValue: number = 0;
   @Input() maxValue: number = 100;
 
+  @Input() onlyShowTrackOnHover: boolean = false;
+
   @Input() pxLength: number = 86;
 
   @Input() histogramPctValues: number[] = [];
@@ -72,10 +74,10 @@ export class SliderComponent implements OnInit, OnDestroy {
 
   @Output() onChange = new EventEmitter();
 
-  private _mouseDownX: number = null;
-  private _mouseSliderX: number = null;
-  private _lastPublished: number = null;
-  private _minMaxValue: MinMax = null;
+  private _mouseDownX: number | null = null;
+  private _mouseSliderX: number | null = null;
+  private _lastPublished: number | null = null;
+  private _minMaxValue: MinMax | null = null;
 
   barWidth: number = 0;
   histogram: SliderHistogramBar[] = [];
@@ -111,6 +113,10 @@ export class SliderComponent implements OnInit, OnDestroy {
   }
 
   get sliderXPos(): number {
+    if (this._minMaxValue === null) {
+      return 0;
+    }
+
     const pos = ThumbRadius + (this.pxLength - 2 * ThumbRadius) * this._minMaxValue.getAsPercentageOfRange(this.value, false);
     return pos;
   }
@@ -123,7 +129,7 @@ export class SliderComponent implements OnInit, OnDestroy {
     return w;
   }
 
-  onMouseDown(event): void {
+  onMouseDown(event: any): void {
     //console.log('onMouseDown');
     event.preventDefault();
 
@@ -149,7 +155,7 @@ export class SliderComponent implements OnInit, OnDestroy {
   }
 
   //@HostListener('window:mousemove', ['$event'])
-  onMouseMove(event): void {
+  onMouseMove(event: any): void {
     //console.log('onMouseMove');
     if (this._mouseDownX !== null) {
       event.preventDefault();
@@ -159,7 +165,7 @@ export class SliderComponent implements OnInit, OnDestroy {
   }
 
   //@HostListener('window:mouseup', ['$event'])
-  onMouseUp(event): void {
+  onMouseUp(event: any): void {
     //console.log('onMouseUp');
     if (this._mouseDownX !== null) {
       event.preventDefault();
@@ -176,6 +182,10 @@ export class SliderComponent implements OnInit, OnDestroy {
   }
 
   private adjust(clientX: number, finish: boolean): void {
+    if (this._minMaxValue === null || this._mouseSliderX === null || this._mouseDownX === null) {
+      return;
+    }
+
     let currX = this._mouseSliderX;
     let offsetX = clientX - this._mouseDownX;
     let newX = currX + offsetX;

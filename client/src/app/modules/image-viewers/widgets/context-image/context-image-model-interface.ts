@@ -5,7 +5,7 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { ContextImageDrawModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
 import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
-import { VisibleROI } from "src/app/generated-protos/widget-data";
+import { ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
 
 // Over time this has probably become a little redundant, but it's an interface that the tools and UI elements use to access
 // the model, and therefore describes what these parts of the system need to interact with
@@ -16,7 +16,7 @@ export interface IContextImageModel {
   rgbuChannels: string; // String of what channels to show for R,G,B or a division of 2 channels. Can contain R,G,B,U. Examples: RGB, RBU, R/G
 
   expressionIds: string[];
-  roiIds: VisibleROI[];
+  roiIds: (VisibleROI | ROILayerVisibility)[];
 
   transform: PanZoom;
   selectionModeAdd: boolean;

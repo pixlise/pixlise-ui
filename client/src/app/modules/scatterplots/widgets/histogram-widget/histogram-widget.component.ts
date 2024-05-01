@@ -19,6 +19,8 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
+import { ROIService } from "../../../roi/services/roi.service";
+import { RegionSettings } from "../../../roi/models/roi-region";
 
 @Component({
   selector: "histogram-widget",
@@ -43,7 +45,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     private _widgetData: WidgetDataService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _roiService: ROIService
   ) {
     super();
 
@@ -226,6 +229,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           });
         }
 
+        // Ensure we have the region settings for the selected points
+        this._roiService.getSelectedPointsRegionSettings(this.scanId).subscribe();
         this.update();
       })
     );

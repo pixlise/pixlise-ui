@@ -58,6 +58,8 @@ import { ImagePickerDialogComponent } from "src/app/modules/pixlisecore/componen
 import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 import { ClosableListComponent } from "src/app/modules/pixlisecore/components/atoms/closable-list/closable-list.component";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -71,6 +73,7 @@ export { SelectionService } from "./services/selection.service";
 export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
 export { SliderComponent } from "./components/atoms/slider/slider.component";
 export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
+export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 
 @NgModule({
   declarations: [
@@ -120,8 +123,9 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     PMCSelectorDialogComponent,
     TwoStateEditButtonComponent,
     ClosableListComponent,
+    LayerVisibilityDialogComponent,
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule],
+  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,
@@ -164,6 +168,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     PMCSelectorDialogComponent,
     TwoStateEditButtonComponent,
     ClosableListComponent,
+    LayerVisibilityDialogComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

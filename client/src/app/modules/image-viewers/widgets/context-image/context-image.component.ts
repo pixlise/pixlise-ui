@@ -3,7 +3,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { catchError, combineLatest, map, mergeMap, Observable, of, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { ContextImageModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
+import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
 import { ContextImageState, MapLayerVisibility, ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
@@ -11,7 +11,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
-import { ContextImageDataService, SyncedTransform } from "../../services/context-image-data.service";
+import { ContextImageDataService } from "../../services/context-image-data.service";
 import { Point, Rect } from "src/app/models/Geometry";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
@@ -24,23 +24,23 @@ import {
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageMapLayer } from "../../models/map-layer";
-import {
-  SectionedSelectDialogComponent,
-  SectionedSelectDialogInputs,
-  SelectedOptions,
-  SubItemOptionSection,
-} from "src/app/modules/pixlisecore/components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePickerResult } from "./image-options/image-options.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { ContextImageExporter } from "src/app/modules/image-viewers/widgets/context-image/context-image-exporter";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import {
+  LayerOpacityChange,
+  LayerVisibilityChange,
+  LayerVisibilityDialogComponent,
+  LayerVisibilitySection,
+  LayerVisiblilityData,
+} from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -59,7 +59,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   // For saving and restoring
   cachedExpressionIds: string[] = [];
-  cachedROIs: VisibleROI[] = [];
+  cachedROIs: ROILayerVisibility[] = [];
 
   cursorShown: string = "";
 
@@ -306,6 +306,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         } else if (contextData) {
           let validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
           this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          this.mdl.roiIds = contextData.roiLayers;
 
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
@@ -420,7 +421,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (highlighted.roiIds.length > 0) {
           this.mdl.roiIds = [];
-          let highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(VisibleROI.create({ id, scanId: highlighted.scanId }), true));
+          let highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(ROILayerVisibility.create({ id, scanId: highlighted.scanId }), true));
           combineLatest(highlightRequests).subscribe({
             next: () => {
               this.reloadModel();
@@ -456,8 +457,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             }
           }
 
-          this.reloadModel();
           this.saveState();
+          this.reloadModel();
         }
 
         if (!result?.persistDialog) {
@@ -642,7 +643,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     );
   }
 
-  private loadROIRegion(roi: VisibleROI, setROIVisible: boolean = false): Observable<ROIItem> {
+  private loadROIRegion(roi: ROILayerVisibility, setROIVisible: boolean = false): Observable<ROIItem> {
     // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
     return this._roiService.loadROI(roi.id).pipe(
       tap({
@@ -775,92 +776,263 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   onToggleShowPoints(trigger: Element | undefined) {
-    const options: SubItemOptionSection[] = [
-      {
-        title: "Points",
-        options: [],
-      },
-      {
-        title: "Footprints",
-        options: [],
-      },
-      {
-        title: "Map Data",
-        options: [],
-      },
-    ];
+    let datasetLayersSection: LayerVisibilitySection = {
+      id: "dataset-layers",
+      title: "Dataset Layers",
+      isOpen: true,
+      isVisible: true,
+      options: [
+        {
+          id: "footprints",
+          name: "Footprints",
+          icon: "assets/icons/footprint.svg",
+          opacity: 1,
+          visible: true,
+          subOptions: [],
+        },
+        {
+          id: "points",
+          name: "Points",
+          icon: "assets/icons/scan-points.svg",
+          opacity: 1,
+          visible: true,
+          subOptions: [],
+        },
+      ],
+    };
 
-    // Find scan titles
-    const scanTitles = new Map<string, string>();
-    for (const scanId of this.mdl.scanIds) {
-      const mdl = this.mdl.getScanModelFor(scanId);
-      scanTitles.set(scanId, mdl?.scanTitle || scanId);
-    }
+    let mapLayersSection: LayerVisibilitySection[] = [];
+    let regionLayersSection: LayerVisibilitySection[] = [];
 
-    // Add options for showing/hiding all scan footprints, maps and points
-    const allOptions = new Set<string>();
-    const appendage = ["-points", "-footprints", "-maps"];
-    for (const scanId of this.mdl.scanIds) {
-      for (let c = 0; c < appendage.length; c++) {
-        const opt = `${scanId}${appendage[c]}`;
-        options[c].options.push({ title: `${scanTitles.get(scanId)}`, value: opt });
-        allOptions.add(opt);
+    this.mdl.scanIds.forEach(scanId => {
+      let scanName = this.mdl.getScanModelFor(scanId)?.scanTitle || scanId;
+
+      let footprintsSection = datasetLayersSection.options.find(opt => opt.name === "Footprints");
+      let pointsSection = datasetLayersSection.options.find(opt => opt.name === "Points");
+
+      footprintsSection!.subOptions!.push({
+        id: `${scanId}-footprints`,
+        name: scanName,
+        scanId: scanId,
+        icon: "assets/icons/footprint.svg",
+        showOpacity: true,
+        opacity: 1,
+        visible: true,
+      });
+
+      pointsSection!.subOptions!.push({
+        id: `${scanId}-points`,
+        name: scanName,
+        scanId: scanId,
+        icon: "assets/icons/scan-points.svg",
+        showOpacity: true,
+        opacity: 1,
+        visible: true,
+      });
+
+      let mapLayers = this.mdl.getMapLayers(scanId);
+      if (mapLayers) {
+        let mapLayerSection: LayerVisibilitySection = {
+          id: `map-layers-${scanId}`,
+          title: "Map Data",
+          scanId: scanId,
+          scanName: scanName,
+          isOpen: true,
+          isVisible: true,
+          options: [],
+        };
+
+        mapLayers.forEach(layer => {
+          mapLayerSection.options.push({
+            id: layer.expressionId,
+            name: layer.expressionName,
+            gradient: layer.shading,
+            showOpacity: true,
+            opacity: 1,
+            visible: true,
+            canDelete: true,
+          });
+        });
+
+        mapLayersSection.push(mapLayerSection);
       }
-    }
 
-    // NOTE: model only stores items in lists that need to be hidden, so here we build selected options
-    // but as an inverse, these are visible if picked
-    const selection: string[] = [];
-    const source: string[][] = [this.mdl.hidePointsForScans, this.mdl.hideFootprintsForScans, this.mdl.hideMapsForScans];
-    for (let c = 0; c < source.length; c++) {
-      for (const scanId of this.mdl.scanIds) {
-        // If this is in the list, it means it's hidden, so it's NOT selected
-        if (source[c].indexOf(scanId) == -1) {
-          selection.push(scanId + appendage[c]);
-        }
+      let regionLayers = this.mdl.roiIds.filter(roi => roi.scanId === scanId);
+      if (regionLayers.length > 0) {
+        let regionLayerSection: LayerVisibilitySection = {
+          id: `region-layers-${scanId}`,
+          title: "Region Data",
+          scanId: scanId,
+          scanName: scanName,
+          isOpen: true,
+          isVisible: true,
+          options: [],
+        };
+
+        regionLayers.forEach(roi => {
+          let region = this.mdl.getRegion(roi.id);
+          if (!region) {
+            return;
+          }
+
+          regionLayerSection.options.push({
+            id: roi.id,
+            name: region.roi.name,
+            color: region.roi.displaySettings?.colour,
+            showOpacity: true,
+            opacity: roi.opacity ?? 1,
+            visible: true,
+            canDelete: true,
+          });
+        });
+
+        regionLayersSection.push(regionLayerSection);
       }
-    }
+    });
 
-    const dialogConfig = new MatDialogConfig<SectionedSelectDialogInputs>();
+    let imagesSection: LayerVisibilitySection = {
+      id: "images",
+      title: "Images",
+      isOpen: false,
+      isVisible: true,
+      options: [
+        {
+          id: "context-image",
+          name: this.mdl.imageName,
+          icon: "assets/icons/image.svg",
+          opacity: 1,
+          visible: true,
+        },
+      ],
+    };
+
+    const dialogConfig = new MatDialogConfig<LayerVisiblilityData>();
     dialogConfig.data = {
-      selectionOptions: options,
-      selectedOptions: selection,
+      sections: [datasetLayersSection, ...mapLayersSection, ...regionLayersSection, imagesSection],
     };
 
     dialogConfig.hasBackdrop = false;
-    //dialogConfig.disableClose = true;
     const rect = trigger?.parentElement?.getBoundingClientRect();
     if (rect) {
       dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, rect.height, rect.width);
     }
 
-    const dialogRef = this.dialog.open(SectionedSelectDialogComponent, dialogConfig);
-    dialogRef.componentInstance.selectionChanged.subscribe((sel: SelectedOptions) => {
-      if (sel && sel.selectedOptions) {
-        // If it's selected, make sure it is NOT in the hidden list, otherwise it should be there...
-        const hiddenOptions = new Set(allOptions);
-        for (const opt of sel.selectedOptions) {
-          hiddenOptions.delete(opt);
+    const dialogRef = this.dialog.open(LayerVisibilityDialogComponent, dialogConfig);
+
+    dialogRef.componentInstance.visibilityToggle.subscribe((change: LayerVisibilityChange) => {
+      if (change) {
+        if (change.sectionId === "dataset-layers") {
+          if (change.layerId === "footprints" && change.subLayerId) {
+            let scanId = change.subLayerId.split("-")[0];
+            this.mdl.hideFootprintsForScans = change.visible
+              ? this.mdl.hideFootprintsForScans.filter(id => id !== scanId)
+              : [...this.mdl.hideFootprintsForScans, scanId];
+          } else if (change.layerId === "points" && change.subLayerId) {
+            let scanId = change.subLayerId.split("-")[0];
+            this.mdl.hidePointsForScans = change.visible ? this.mdl.hidePointsForScans.filter(id => id !== scanId) : [...this.mdl.hidePointsForScans, scanId];
+          }
+        } else if (change.sectionId.startsWith("map-layers-")) {
+          let scanId = change.sectionId.split("-")[2];
+          if (scanId && change.layerId) {
+            if (change.visible) {
+              if (!this.mdl.expressionIds.includes(change.layerId)) {
+                if (change.index !== undefined) {
+                  this.mdl.expressionIds = [...this.mdl.expressionIds.slice(0, change.index), change.layerId, ...this.mdl.expressionIds.slice(change.index)];
+                } else {
+                  this.mdl.expressionIds.push(change.layerId);
+                }
+              }
+            } else {
+              this.mdl.expressionIds = this.mdl.expressionIds.filter(id => id !== change.layerId);
+            }
+            this.reloadModel();
+          } else {
+            this.mdl.hideMapsForScans = change.visible ? this.mdl.hideMapsForScans.filter(id => id !== scanId) : [...this.mdl.hideMapsForScans, scanId];
+          }
+        } else if (change.sectionId.startsWith("region-layers-")) {
+          let scanId = change.sectionId.split("-")[2];
+          if (scanId && change.layerId) {
+            if (change.visible) {
+              if (!this.mdl.roiIds.find(roi => roi.id === change.layerId)) {
+                this.mdl.roiIds = [ROILayerVisibility.create({ id: change.layerId, opacity: 1, visible: true, scanId }), ...this.mdl.roiIds];
+              }
+            } else {
+              this.mdl.roiIds = this.mdl.roiIds.filter(roi => roi.id !== change.layerId);
+            }
+            this.reloadModel();
+          }
+        } else if (change.sectionId === "images") {
+          if (change.layerId === "context-image") {
+            this.mdl.drawImage = change.visible;
+            this.reloadModel();
+          }
         }
 
-        // Fill our lists
-        const newHiddenLists: string[][] = [];
-        for (let c = 0; c < appendage.length; c++) {
-          newHiddenLists.push([]);
+        this.saveState();
+        this.reDraw();
+      }
+    });
+
+    dialogRef.componentInstance.onReorder.subscribe((change: LayerVisibilitySection[]) => {
+      let newExpressionIdOrder: string[] = [];
+      let newRegionIdOrder: string[] = [];
+      change.forEach(section => {
+        if (!section.scanId) {
+          return;
         }
 
-        for (const opt of hiddenOptions) {
-          for (let c = 0; c < appendage.length; c++) {
-            if (opt.endsWith(appendage[c])) {
-              newHiddenLists[c].push(opt.substring(0, opt.length - appendage[c].length));
+        if (section.id.startsWith("map-layers-")) {
+          section.options.forEach(option => {
+            if (option.visible) {
+              newExpressionIdOrder.push(option.id);
+            }
+          });
+        } else if (section.id.startsWith("region-layers-")) {
+          section.options.forEach(option => {
+            if (option.visible) {
+              newRegionIdOrder.push(option.id);
+            }
+          });
+        }
+      });
+
+      this.mdl.expressionIds = newExpressionIdOrder;
+      this.mdl.roiIds = newRegionIdOrder.map(id => {
+        return this.mdl.roiIds.find(roi => roi.id === id) || ROILayerVisibility.create({ id, visible: true, opacity: 1, scanId: this.scanId });
+      });
+
+      this.saveState();
+      this.reDraw();
+      this.reloadModel();
+    });
+
+    dialogRef.componentInstance.opacityChange.subscribe((change: LayerOpacityChange) => {
+      if (change) {
+        this.mdl.scanIds.forEach(scanId => {
+          let mapLayers = this.mdl.getMapLayers(scanId);
+          if (mapLayers) {
+            let layer = mapLayers.find(layer => layer.expressionId === change.layer.id);
+            if (layer) {
+              layer.opacity = change.opacity;
+              layer.mapPoints.forEach(point => {
+                point.drawParams.colour.a = 255 * change.opacity;
+              });
+            }
+          }
+        });
+        let region = this.mdl.roiIds.find(roi => roi.id === change.layer.id);
+        if (region) {
+          region.opacity = change.opacity;
+          let scanDrawModel = this.mdl.drawModel.scanDrawModels.get(region.scanId);
+          if (scanDrawModel) {
+            let regionDrawModel = scanDrawModel.regions.find(roi => roi.roiId === region.id);
+            if (regionDrawModel) {
+              regionDrawModel.opacity = change.opacity;
             }
           }
         }
 
-        this.mdl.hidePointsForScans = newHiddenLists[0];
-        this.mdl.hideFootprintsForScans = newHiddenLists[1];
-        this.mdl.hideMapsForScans = newHiddenLists[2];
-
+        this.saveState();
         this.reDraw();
       }
     });
@@ -956,12 +1128,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
           for (const roiId of roiIds) {
-            this.mdl.roiIds.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+            this.mdl.roiIds.push(ROILayerVisibility.create({ id: roiId, scanId: scanId, opacity: 1, visible: true }));
           }
         }
 
-        this.reloadModel();
         this.saveState();
+        this.reloadModel();
       }
     });
   }
@@ -975,6 +1147,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.cachedExpressionIds = this.mdl.expressionIds.slice();
     this.cachedROIs = this.mdl.roiIds.slice();
 
+    // TODO: Find better way of storing layer visbility settings
     this.onSaveWidgetData.emit(
       ContextImageState.create({
         panX: this.mdl.transform.pan.x,
@@ -985,7 +1158,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         pointBBoxColourScheme: this.mdl.pointBBoxColourScheme,
         contextImage: this.mdl.imageName,
         contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
-        roiLayers: this.mdl.roiIds.map(roi => ROILayerVisibility.create({ roiID: roi.id, opacity: 1, visible: true })),
+        roiLayers: this.mdl.roiIds,
         elementRelativeShading: this.mdl.elementRelativeShading,
         brightness: this.mdl.imageBrightness,
         rgbuChannels: this.mdl.rgbuChannels,
@@ -995,7 +1168,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         colourRatioMax: this.mdl.colourRatioMax ?? undefined,
         removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
-        mapLayers: this.mdl.expressionIds.map(layer => MapLayerVisibility.create({ expressionID: layer })),
+        mapLayers: this.mdl.expressionIds.map(id => MapLayerVisibility.create({ expressionID: id, visible: true, opacity: 1 })),
       })
     );
   }
