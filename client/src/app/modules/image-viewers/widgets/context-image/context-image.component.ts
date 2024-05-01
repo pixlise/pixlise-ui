@@ -13,7 +13,7 @@ import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-proto
 import { ContextImageToolId } from "./tools/base-context-image-tool";
 import { ContextImageDataService } from "../../services/context-image-data.service";
 import { Point, Rect } from "src/app/models/Geometry";
-import { LayerVisibilityDialogComponent, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import {
@@ -37,6 +37,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import {
   LayerOpacityChange,
   LayerVisibilityChange,
+  LayerVisibilityDialogComponent,
   LayerVisibilitySection,
   LayerVisiblilityData,
 } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
@@ -58,7 +59,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   // For saving and restoring
   cachedExpressionIds: string[] = [];
-  cachedROIs: VisibleROI[] = [];
+  cachedROIs: ROILayerVisibility[] = [];
 
   cursorShown: string = "";
 
@@ -419,7 +420,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (highlighted.roiIds.length > 0) {
           this.mdl.roiIds = [];
-          let highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(VisibleROI.create({ id, scanId: highlighted.scanId }), true));
+          let highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(ROILayerVisibility.create({ id, scanId: highlighted.scanId }), true));
           combineLatest(highlightRequests).subscribe({
             next: () => {
               this.reloadModel();
@@ -641,7 +642,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     );
   }
 
-  private loadROIRegion(roi: VisibleROI, setROIVisible: boolean = false): Observable<ROIItem> {
+  private loadROIRegion(roi: ROILayerVisibility, setROIVisible: boolean = false): Observable<ROIItem> {
     // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
     return this._roiService.loadROI(roi.id).pipe(
       tap({
@@ -800,6 +801,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     };
 
     let mapLayersSection: LayerVisibilitySection[] = [];
+    let regionLayersSection: LayerVisibilitySection[] = [];
 
     this.mdl.scanIds.forEach(scanId => {
       let scanName = this.mdl.getScanModelFor(scanId)?.scanTitle || scanId;
@@ -847,10 +849,43 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             showOpacity: true,
             opacity: 1,
             visible: true,
+            canDelete: true,
           });
         });
 
         mapLayersSection.push(mapLayerSection);
+      }
+
+      let regionLayers = this.mdl.roiIds.filter(roi => roi.scanId === scanId);
+      if (regionLayers.length > 0) {
+        let regionLayerSection: LayerVisibilitySection = {
+          id: `region-layers-${scanId}`,
+          title: "Region Data",
+          scanId: scanId,
+          scanName: scanName,
+          isOpen: true,
+          isVisible: true,
+          options: [],
+        };
+
+        regionLayers.forEach(roi => {
+          let region = this.mdl.getRegion(roi.id);
+          if (!region) {
+            return;
+          }
+
+          regionLayerSection.options.push({
+            id: roi.id,
+            name: region.roi.name,
+            color: region.roi.displaySettings?.colour,
+            showOpacity: true,
+            opacity: 1,
+            visible: true,
+            canDelete: true,
+          });
+        });
+
+        regionLayersSection.push(regionLayerSection);
       }
     });
 
@@ -872,7 +907,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     const dialogConfig = new MatDialogConfig<LayerVisiblilityData>();
     dialogConfig.data = {
-      sections: [datasetLayersSection, ...mapLayersSection, imagesSection],
+      sections: [datasetLayersSection, ...mapLayersSection, ...regionLayersSection, imagesSection],
     };
 
     dialogConfig.hasBackdrop = false;
@@ -913,6 +948,18 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           } else {
             this.mdl.hideMapsForScans = change.visible ? this.mdl.hideMapsForScans.filter(id => id !== scanId) : [...this.mdl.hideMapsForScans, scanId];
           }
+        } else if (change.sectionId.startsWith("region-layers-")) {
+          let scanId = change.sectionId.split("-")[2];
+          if (scanId && change.layerId) {
+            if (change.visible) {
+              if (!this.mdl.roiIds.find(roi => roi.id === change.layerId)) {
+                this.mdl.roiIds = [ROILayerVisibility.create({ id: change.layerId, opacity: 1, visible: true, scanId }), ...this.mdl.roiIds];
+              }
+            } else {
+              this.mdl.roiIds = this.mdl.roiIds.filter(roi => roi.id !== change.layerId);
+            }
+            this.reloadModel();
+          }
         } else if (change.sectionId === "images") {
           if (change.layerId === "context-image") {
             this.mdl.drawImage = change.visible;
@@ -926,19 +973,33 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     dialogRef.componentInstance.onReorder.subscribe((change: LayerVisibilitySection[]) => {
       let newExpressionIdOrder: string[] = [];
+      let newRegionIdOrder: string[] = [];
       change.forEach(section => {
         if (!section.scanId) {
           return;
         }
 
-        section.options.forEach(option => {
-          if (option.visible) {
-            newExpressionIdOrder.push(option.id);
-          }
-        });
+        if (section.id.startsWith("map-layers-")) {
+          section.options.forEach(option => {
+            if (option.visible) {
+              newExpressionIdOrder.push(option.id);
+            }
+          });
+        } else if (section.id.startsWith("region-layers-")) {
+          section.options.forEach(option => {
+            if (option.visible) {
+              newRegionIdOrder.push(option.id);
+            }
+          });
+        }
       });
 
       this.mdl.expressionIds = newExpressionIdOrder;
+      this.mdl.roiIds = newRegionIdOrder.map(id => {
+        return this.mdl.roiIds.find(roi => roi.id === id) || ROILayerVisibility.create({ id, visible: true, opacity: 1, scanId: this.scanId });
+      });
+
+      this.reDraw();
 
       this.reloadModel();
     });
@@ -957,6 +1018,17 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             }
           }
         });
+        let region = this.mdl.roiIds.find(roi => roi.id === change.layer.id);
+        if (region) {
+          region.opacity = change.opacity;
+          let scanDrawModel = this.mdl.drawModel.scanDrawModels.get(region.scanId);
+          if (scanDrawModel) {
+            let regionDrawModel = scanDrawModel.regions.find(roi => roi.roiId === region.id);
+            if (regionDrawModel) {
+              regionDrawModel.opacity = change.opacity;
+            }
+          }
+        }
 
         this.reDraw();
       }
@@ -1053,12 +1125,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
           for (const roiId of roiIds) {
-            this.mdl.roiIds.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+            this.mdl.roiIds.push(ROILayerVisibility.create({ id: roiId, scanId: scanId, opacity: 1, visible: true }));
           }
         }
 
-        this.reloadModel();
         this.saveState();
+        this.reloadModel();
       }
     });
   }
@@ -1072,6 +1144,16 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.cachedExpressionIds = this.mdl.expressionIds.slice();
     this.cachedROIs = this.mdl.roiIds.slice();
 
+    let allMapLayers: MapLayerVisibility[] = [];
+    this.mdl.scanIds.forEach(scanId => {
+      let mapLayers = this.mdl.getMapLayers(scanId);
+      if (mapLayers) {
+        mapLayers.forEach(layer => {
+          allMapLayers.push(MapLayerVisibility.create({ expressionID: layer.expressionId, visible: true, opacity: layer.opacity }));
+        });
+      }
+    });
+
     this.onSaveWidgetData.emit(
       ContextImageState.create({
         panX: this.mdl.transform.pan.x,
@@ -1082,7 +1164,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         pointBBoxColourScheme: this.mdl.pointBBoxColourScheme,
         contextImage: this.mdl.imageName,
         contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
-        roiLayers: this.mdl.roiIds.map(roi => ROILayerVisibility.create({ roiID: roi.id, opacity: 1, visible: true })),
+        roiLayers: this.mdl.roiIds,
         elementRelativeShading: this.mdl.elementRelativeShading,
         brightness: this.mdl.imageBrightness,
         rgbuChannels: this.mdl.rgbuChannels,
@@ -1092,7 +1174,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         colourRatioMax: this.mdl.colourRatioMax ?? undefined,
         removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
-        mapLayers: this.mdl.expressionIds.map(layer => MapLayerVisibility.create({ expressionID: layer })),
+        mapLayers: allMapLayers,
       })
     );
   }

@@ -38,6 +38,7 @@ export type LayerVisibilityOption = {
   showOpacity?: boolean;
   visible: boolean;
   isVisibilityLocked?: boolean;
+  canDelete?: boolean;
 
   isSubMenuOpen?: boolean;
   subOptions?: LayerVisibilityOption[];
@@ -205,6 +206,18 @@ export class LayerVisibilityDialogComponent {
         sectionId: section.id,
         visible: section.isVisible,
       });
+    }
+  }
+
+  onLayerOptionsClick(option: string, section: LayerVisibilitySection, layer: LayerVisibilityOption) {
+    if (option === "Delete") {
+      this.visibilityToggle.emit({
+        sectionId: section.id,
+        layerId: layer.id,
+        visible: false,
+      });
+
+      section.options = section.options.filter(opt => opt.id !== layer.id);
     }
   }
 

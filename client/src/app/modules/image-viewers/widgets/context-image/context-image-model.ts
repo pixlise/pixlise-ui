@@ -18,7 +18,7 @@ import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map
 import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
-import { VisibleROI } from "src/app/generated-protos/widget-data";
+import { ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIItem } from "src/app/generated-protos/roi";
 
 export class ContextImageModelLoadedData {
@@ -69,7 +69,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   imageName: string = "";
 
   expressionIds: string[] = [];
-  roiIds: VisibleROI[] = [];
+  roiIds: ROILayerVisibility[] = [];
 
   hidePointsForScans: string[] = [];
   hideFootprintsForScans: string[] = [];
@@ -732,7 +732,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       for (const roi of from.roiIds) {
         const mdl = this.scanDrawModels.get(roi.scanId);
         if (mdl) {
-          mdl.regions.push(this.makeRegion(roi.scanId, roi.id, from));
+          mdl.regions.push(this.makeRegion(roi.scanId, roi.id, from, roi.opacity));
         }
       }
     }
@@ -754,8 +754,9 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     return alphaBytesToImage(maskBytes, width, height, roiColour);
   }
 
-  private makeRegion(scanId: string, roiId: string, from: ContextImageModel): ContextImageRegionLayer {
+  private makeRegion(scanId: string, roiId: string, from: ContextImageModel, opacity: number = 1): ContextImageRegionLayer {
     const roiLayer = new ContextImageRegionLayer(roiId, "");
+    roiLayer.opacity = opacity;
 
     // Get the region info
     const roi = from.getRegion(roiId);
@@ -786,6 +787,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     if (roi.roi.displaySettings) {
       roiLayer.colour = RGBA.fromString(roi.roi.displaySettings.colour);
+      roiLayer.colour.a = 255 * opacity;
     }
 
     // If we have pixel indexes, we can generate a mask image

@@ -49,6 +49,12 @@
                 (onChange)="onChangeLayerOpacity(layer, $event)">
               </slider>
               <action-button
+                *ngIf="layer.canDelete"
+                action="verticalEllipsis"
+                [customMenuOptions]="['Delete']"
+                (onCustomMenuItemClick)="onLayerOptionsClick($event, section, layer)">
+              </action-button>
+              <action-button
                 class="visibility-toggle"
                 [action]="layer.visible ? 'openEye' : 'closedEye'"
                 (onClick)="onLayerVisibilityChanged(section, layer, !layer.visible)"></action-button>

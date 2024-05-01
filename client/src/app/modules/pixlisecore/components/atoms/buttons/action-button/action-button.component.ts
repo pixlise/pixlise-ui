@@ -76,7 +76,9 @@ export class ActionButtonComponent {
   @Input() buttonBackground: boolean = false;
   @Input() confirmText: string = "";
   @Input() customDialog: TemplateRef<any> | null = null;
+  @Input() customMenuOptions: string[] | null = null;
 
+  @Output() onCustomMenuItemClick = new EventEmitter<string>();
   @Output() onClick = new EventEmitter();
 
   private _actionSource: keyof typeof matActionIcons | string = "close";
