@@ -46,7 +46,8 @@
                 [minValue]="0"
                 [maxValue]="1"
                 [pxLength]="140"
-                (onChange)="onChangeLayerOpacity(layer, $event)">
+                (onChange)="onChangeLayerOpacity(layer, $event)"
+                [onlyShowTrackOnHover]="true">
               </slider>
               <action-button
                 *ngIf="layer.canDelete"
