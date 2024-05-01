@@ -457,8 +457,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             }
           }
 
-          this.reloadModel();
           this.saveState();
+          this.reloadModel();
         }
 
         if (!result?.persistDialog) {
@@ -1148,16 +1148,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.cachedROIs = this.mdl.roiIds.slice();
 
     // TODO: Find better way of storing layer visbility settings
-    let allMapLayers: MapLayerVisibility[] = [];
-    this.mdl.scanIds.forEach(scanId => {
-      let mapLayers = this.mdl.getMapLayers(scanId);
-      if (mapLayers) {
-        mapLayers.forEach(layer => {
-          allMapLayers.push(MapLayerVisibility.create({ expressionID: layer.expressionId, visible: true, opacity: layer.opacity }));
-        });
-      }
-    });
-
     this.onSaveWidgetData.emit(
       ContextImageState.create({
         panX: this.mdl.transform.pan.x,
@@ -1178,7 +1168,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         colourRatioMax: this.mdl.colourRatioMax ?? undefined,
         removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
-        mapLayers: allMapLayers,
+        mapLayers: this.mdl.expressionIds.map(id => MapLayerVisibility.create({ expressionID: id, visible: true, opacity: 1 })),
       })
     );
   }
