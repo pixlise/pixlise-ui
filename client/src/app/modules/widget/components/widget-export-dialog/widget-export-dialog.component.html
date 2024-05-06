@@ -80,13 +80,13 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngIf="loading && !errorMessage" class="loading-container">
         <wait-spinner></wait-spinner>
         <div class="prompt">
-          <h5 class="loading-message">Exporting Data</h5>
+          <h5 *ngIf="!hideProgressLabels" class="loading-message">Exporting Data</h5>
         </div>
       </div>
-      <div *ngIf="errorMessage" class="loading-container" #tooltip="matTooltip" [matTooltip]="errorMessage">
+      <div *ngIf="errorMessage" class="loading-container" #tooltip="matTooltip" [matTooltip]="hideProgressLabels ? 'Error exporting: ' + errorMessage : errorMessage">
         <img src="assets/icons/error-triangle-yellow.svg" />
         <div class="prompt">
-          <h5 class="error">Error exporting</h5>
+          <h5 *ngIf="!hideProgressLabels" class="error">Error exporting</h5>
         </div>
       </div>
       <push-button *ngIf="dialogRef" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>

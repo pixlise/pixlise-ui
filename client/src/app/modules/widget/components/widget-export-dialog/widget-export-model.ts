@@ -63,6 +63,8 @@ export type WidgetExportDialogData = {
   options: WidgetExportOption[];
   dataProducts: WidgetExportOption[];
 
+  hideProgressLabels?: boolean;
+
   // Preview Options
   showPreview: boolean;
   preview?: ElementRef;
