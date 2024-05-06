@@ -67,6 +67,7 @@ export class WidgetExportDialogComponent implements OnInit {
   private _selectedDataProductsCount: number = 0;
 
   showPreview: boolean = false;
+  hideProgressLabels: boolean = false;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: WidgetExportDialogData,
@@ -84,6 +85,7 @@ export class WidgetExportDialogComponent implements OnInit {
     }
 
     this.showPreview = !!data.showPreview;
+    this.hideProgressLabels = !!data.hideProgressLabels;
   }
 
   copyWidgetExportOptionsDefaultState(exportOptions: WidgetExportOption[]): WidgetExportOption[] {
@@ -115,12 +117,14 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   onCancel(): void {
+    this.errorMessage = "";
     if (this.dialogRef) {
       this.dialogRef.close();
     }
   }
 
   onClear(): void {
+    this.errorMessage = "";
     let initialOptions = this.copyWidgetExportOptionsDefaultState(this.initialOptions);
     let initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.initialDataProducts);
 
@@ -174,6 +178,8 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   toggleOption(option: WidgetExportOption): void {
+    this.errorMessage = "";
+
     option.selected = !option.selected;
     if (option.updateCounts) {
       this.mapNewDataProductCounts(option.updateCounts, option.selected);
@@ -183,6 +189,8 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   selectOption({ option, event }: { option: WidgetExportOption; event: string }): void {
+    this.errorMessage = "";
+
     option.selectedOption = event;
     if (option.updateCounts) {
       this.mapNewDataProductCounts(option.updateCounts, option.selected);
@@ -192,6 +200,8 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   selectDropdownOption({ option, event }: { option: WidgetExportOption; event: MatSelectChange }): void {
+    this.errorMessage = "";
+
     option.selectedOption = event.value;
     if (option.updateCounts) {
       this.mapNewDataProductCounts(option.updateCounts, option.selected);
@@ -201,6 +211,8 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   selectROIsOption({ option, event }: { option: WidgetExportOption; event: ROIItemSummary[] }): void {
+    this.errorMessage = "";
+
     option.selectedRegions = event;
     if (option.updateCounts) {
       this.mapNewDataProductCounts(option.updateCounts, option.selected);
@@ -210,6 +222,8 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   selectExpressionsOption({ option, event }: { option: WidgetExportOption; event: DataExpression[] }): void {
+    this.errorMessage = "";
+
     option.selectedExpressions = event;
     if (option.updateCounts) {
       this.mapNewDataProductCounts(option.updateCounts, option.selected);
@@ -219,6 +233,8 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   selectImagesOption({ option, event }: { option: WidgetExportOption; event: string[] }, isDataProduct: boolean = false): void {
+    this.errorMessage = "";
+
     option.selectedImagePaths = event;
     option.selected = event.length > 0;
 

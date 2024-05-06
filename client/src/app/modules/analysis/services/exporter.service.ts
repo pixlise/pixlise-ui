@@ -643,7 +643,7 @@ export class DataExporterService {
       let pmcDataValue = expressionValues.values[pmc];
       let value = pmcDataValue?.value ?? "";
       let isUndefined = pmcDataValue?.isUndefined ?? true;
-      data += `\n${roiName},${expressionName},${pmc},${value},${isUndefined}`;
+      data += `\n"${roiName}","${expressionName}",${pmc},${value},${isUndefined}`;
     });
 
     return { fileName: `${scanId}-${roiName}-${expressionName}-expression-values.csv`, data };
@@ -651,7 +651,7 @@ export class DataExporterService {
 
   private makeAggregatedExpressionValuesCSV(scanId: string, roiName: string, pmcs: number[], expressions: Record<string, PMCDataValues>): WidgetExportFile {
     let expressionHeaders = Object.keys(expressions);
-    let data = `ROI,PMC,${expressionHeaders.join(",")}`;
+    let data = `"ROI","PMC",${expressionHeaders.map(expressionName => `"${expressionName}"`).join(",")}`;
 
     pmcs.forEach(pmc => {
       data += `\n${roiName},${pmc}`;
