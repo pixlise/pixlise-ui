@@ -51,6 +51,8 @@ const customActionIcons = {
   verticalEllipsis: "assets/button-icons/vertical-ellipsis.svg",
   visibleOn: "assets/button-icons/visible-on.svg",
   visibleOff: "assets/button-icons/visible-off.svg",
+  openEye: "assets/button-icons/eye-open.svg",
+  closedEye: "assets/button-icons/eye-closed.svg",
   checkOn: "assets/button-icons/check-on.svg",
   checkOff: "assets/button-icons/check-off.svg",
   radioOn: "assets/button-icons/radio-on.svg",
@@ -74,7 +76,9 @@ export class ActionButtonComponent {
   @Input() buttonBackground: boolean = false;
   @Input() confirmText: string = "";
   @Input() customDialog: TemplateRef<any> | null = null;
+  @Input() customMenuOptions: string[] | null = null;
 
+  @Output() onCustomMenuItemClick = new EventEmitter<string>();
   @Output() onClick = new EventEmitter();
 
   private _actionSource: keyof typeof matActionIcons | string = "close";

@@ -18,7 +18,7 @@ import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map
 import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
-import { VisibleROI } from "src/app/generated-protos/widget-data";
+import { ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIItem } from "src/app/generated-protos/roi";
 
 export class ContextImageModelLoadedData {
@@ -69,7 +69,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   imageName: string = "";
 
   expressionIds: string[] = [];
-  roiIds: VisibleROI[] = [];
+  roiIds: ROILayerVisibility[] = [];
 
   hidePointsForScans: string[] = [];
   hideFootprintsForScans: string[] = [];
@@ -252,6 +252,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     let found = false;
     for (let c = 0; c < scanMdl.maps.length; c++) {
       if (scanMdl.maps[c].expressionId === layer.expressionId) {
+        layer.mapPoints.forEach(pt => {
+          pt.drawParams.colour.a = 255 * layer.opacity;
+        });
         scanMdl.maps[c] = layer;
         found = true;
       }
@@ -273,6 +276,19 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
   }
 
+  getMapLayers(scanId: string): ContextImageMapLayer[] {
+    if (!this._raw) {
+      return [];
+    }
+
+    const scanMdl = this._raw.scanModels.get(scanId);
+    if (!scanMdl) {
+      return [];
+    }
+
+    return scanMdl.maps;
+  }
+
   private rebuildColourScale(forExpressionId: string, forValuesIdx: number, totalScales: number) {
     if (!this._raw) {
       return;
@@ -287,7 +303,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     for (const [scanId, scanMdl] of this._raw.scanModels) {
       for (const mapLayer of scanMdl.maps) {
-        if (mapLayer.expressionId == forExpressionId) {
+        if (mapLayer.expressionId === forExpressionId) {
           // This has to be included
           scaleData.addMapValues(mapLayer.mapPoints, forValuesIdx, mapLayer.valueRanges[forValuesIdx], mapLayer.isBinary[forValuesIdx]);
           scaleScanIds.push(scanId);
@@ -695,7 +711,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
                     displayRanges[0].getAsPercentageOfRange(pt.values[0], true) * 255,
                     displayRanges[1].getAsPercentageOfRange(pt.values[1], true) * 255,
                     displayRanges[2].getAsPercentageOfRange(pt.values[2], true) * 255,
-                    255
+                    255 * layerMap.opacity
                   ),
                   MapPointState.IN_RANGE,
                   MapPointShape.POLYGON
@@ -716,7 +732,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       for (const roi of from.roiIds) {
         const mdl = this.scanDrawModels.get(roi.scanId);
         if (mdl) {
-          mdl.regions.push(this.makeRegion(roi.scanId, roi.id, from));
+          mdl.regions.push(this.makeRegion(roi.scanId, roi.id, from, roi.opacity));
         }
       }
     }
@@ -738,8 +754,9 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     return alphaBytesToImage(maskBytes, width, height, roiColour);
   }
 
-  private makeRegion(scanId: string, roiId: string, from: ContextImageModel): ContextImageRegionLayer {
+  private makeRegion(scanId: string, roiId: string, from: ContextImageModel, opacity: number = 1): ContextImageRegionLayer {
     const roiLayer = new ContextImageRegionLayer(roiId, "");
+    roiLayer.opacity = opacity;
 
     // Get the region info
     const roi = from.getRegion(roiId);
@@ -770,6 +787,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     if (roi.roi.displaySettings) {
       roiLayer.colour = RGBA.fromString(roi.roi.displaySettings.colour);
+      roiLayer.colour.a = 255 * opacity;
     }
 
     // If we have pixel indexes, we can generate a mask image

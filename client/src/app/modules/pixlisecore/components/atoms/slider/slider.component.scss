@@ -1,0 +1,27 @@
+.slider {
+  .track {
+    cursor: pointer;
+  }
+
+  &.track-hover-only {
+    .track {
+      opacity: 0;
+    }
+
+    .progress-outside {
+      fill: #444c50 !important;
+    }
+
+    &:not(:hover) {
+      .progress-bar {
+        fill: #bec0c2 !important;
+      }
+    }
+
+    &:hover {
+      .track {
+        opacity: 1;
+      }
+    }
+  }
+}

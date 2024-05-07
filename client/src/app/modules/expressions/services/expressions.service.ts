@@ -26,6 +26,7 @@ import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ColourRamp } from "src/app/utils/colours";
+import { getPredefinedExpression } from "../../../expression-language/predefined-expressions";
 
 @Injectable({
   providedIn: "root",
@@ -167,6 +168,15 @@ export class ExpressionsService {
   fetchCachedExpression(id: string): Observable<ExpressionGetResp> {
     if (id === ExpressionsService.NewExpressionId) {
       return of(ExpressionGetResp.create({}));
+    }
+
+    if (DataExpressionId.isPredefinedExpression(id)) {
+      let predefinedExpression = getPredefinedExpression(id);
+      if (predefinedExpression) {
+        return of(ExpressionGetResp.create({ expression: predefinedExpression }));
+      } else {
+        return throwError(() => new Error(`Failed to fetch predefined expression (${id})`));
+      }
     }
 
     return this._cacheService.getExpression(ExpressionGetReq.create({ id })).pipe(
