@@ -355,6 +355,11 @@ export class SelectionService {
 
   // Mouse hovering over scan entries - we update listeners when this is called
   setHoverEntryPMC(scanId: string, entryPMC: number) {
+    if (entryPMC === invalidPMC) {
+      this.clearHoverEntry();
+      return;
+    }
+
     this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, [entryPMC]).subscribe({
       next: (conversionResults: PMCConversionResult) => {
         this._hoverScanId = scanId;
@@ -413,7 +418,7 @@ export class SelectionService {
   get chordClicks$(): ReplaySubject<string[]> {
     return this._chordClicks$;
   }
-/*
+  /*
   // Central place where UI can come to ask for user entry of selected PMCs
   promptUserForPMCSelection(dialog: MatDialog, scanIds: string[]): void {
     let promptMsg = "You can enter PMCs in a comma-separated list, and ranges are also allowed.\n\nFor example: 10,11,13-17";
@@ -474,7 +479,7 @@ export class SelectionService {
     this._dialog.open(PMCSelectorDialogComponent, new MatDialogConfig());
   }
 
-  newROIFromSelection(defaultScanId: string): void {
+  newROIFromSelection(defaultScanId: string = ""): void {
     const dialogConfig = new MatDialogConfig<NewROIDialogData>();
 
     dialogConfig.data = {

@@ -12,6 +12,7 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
+import { UserOptionsService } from "../../../../../settings/services/user-options.service";
 
 const emptySelectionDescription = "Empty";
 
@@ -30,8 +31,6 @@ class DisplayPMC {
 export class SelectionComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
-  private _scanId: string = "";
-
   private _selectedPMCs: Map<string, number[]> = new Map<string, number[]>();
   private _displayPMCs: DisplayPMC[] = [];
 
@@ -41,17 +40,14 @@ export class SelectionComponent implements OnInit, OnDestroy {
   hoverScanId: string = "";
   expandedIndices: number[] = [0, 1];
   subDataSetIDs: string[] = [];
-  isPublicUser: boolean = false;
+  hasEditAccess: boolean = false;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cacheDataService: APICachedDataService,
     protected _endpointsService: APIEndpointsService,
-    //private _datasetService: DataSetService,
-    private _roiService: ROIService,
+    private _userOptionsService: UserOptionsService,
     private _selectionService: SelectionService,
-    //private _contextImageService: ContextImageService,
-    //private _authService: AuthenticationService,
     public dialog: MatDialog
   ) {}
 
@@ -59,6 +55,7 @@ export class SelectionComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._selectionService.selection$.subscribe((selection: SelectionHistoryItem) => {
         this._selectedPMCs.clear();
+        this._averageRGBURatios = [];
         for (const scanId of selection.beamSelection.getScanIds()) {
           this._selectedPMCs.set(
             scanId,
@@ -94,13 +91,10 @@ export class SelectionComponent implements OnInit, OnDestroy {
         this.hoverScanId = this._selectionService.hoverScanId;
       })
     );
-    /*
-        this._subs.add(this._authService.isPublicUser$.subscribe(
-            (isPublicUser)=>
-            {
-                this.isPublicUser = isPublicUser;
-            }
-        ));*/
+
+    this._userOptionsService.userOptionsChanged$.subscribe(() => {
+      this.hasEditAccess = this._userOptionsService.hasFeatureAccess("editROI");
+    });
   }
 
   ngOnDestroy() {
@@ -114,8 +108,7 @@ export class SelectionComponent implements OnInit, OnDestroy {
     const req$ = [];
     for (const scanId of selection.beamSelection.getScanIds()) {
       req$.push(
-        this._cacheDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: scanId } })).pipe(
-          //).getScanEntry(ScanEntryReq.create({scanId: scanId})).pipe(
+        this._cacheDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })).pipe(
           map((resp: ScanListResp) => {
             if (resp.scans && resp.scans.length == 1) {
               return resp.scans[0].contentCounts["NormalSpectra"];
@@ -124,28 +117,33 @@ export class SelectionComponent implements OnInit, OnDestroy {
           })
         )
       );
-
-      combineLatest(req$).subscribe((perScanNormalCount: number[]) => {
-        let locationsWithNormalSpectra = 0;
-        for (const count of perScanNormalCount) {
-          locationsWithNormalSpectra += count;
-        }
-
-        const percentSelected = Math.round((selection.beamSelection.getSelectedEntryCount() / locationsWithNormalSpectra) * 10000) / 100;
-        this._summary += `${selection.beamSelection.getSelectedEntryCount().toLocaleString()} PMCs (${percentSelected}%)`;
-
-        // Also do some pixel selection calculations
-        if (selection.pixelSelection.selectedPixels.size > 0) {
-          if (this._summary.length > 0) {
-            this._summary += ",\n";
-          }
-          this._summary += selection.pixelSelection.selectedPixels.size.toLocaleString() + " pixels";
-        }
-        if (this.summary.length <= 0) {
-          this._summary = emptySelectionDescription;
-        }
-      });
     }
+
+    if (req$.length === 0) {
+      this._summary = emptySelectionDescription;
+      return;
+    }
+
+    combineLatest(req$).subscribe((perScanNormalCount: number[]) => {
+      let locationsWithNormalSpectra = 0;
+      for (const count of perScanNormalCount) {
+        locationsWithNormalSpectra += count;
+      }
+
+      const percentSelected = Math.round((selection.beamSelection.getSelectedEntryCount() / locationsWithNormalSpectra) * 10000) / 100;
+      this._summary += `${selection.beamSelection.getSelectedEntryCount().toLocaleString()} PMCs (${percentSelected}%)`;
+
+      // Also do some pixel selection calculations
+      if (selection.pixelSelection.selectedPixels.size > 0) {
+        if (this._summary.length > 0) {
+          this._summary += ",\n";
+        }
+        this._summary += selection.pixelSelection.selectedPixels.size.toLocaleString() + " pixels";
+      }
+      if (this.summary.length <= 0) {
+        this._summary = emptySelectionDescription;
+      }
+    });
 
     // If there are pixels selected, respond to those too
     if (selection.pixelSelection.imageName) {
@@ -210,10 +208,7 @@ export class SelectionComponent implements OnInit, OnDestroy {
   }
 
   onNewROI() {
-    if (!this._scanId) {
-      return;
-    }
-    this._selectionService.newROIFromSelection(this._scanId);
+    this._selectionService.newROIFromSelection();
   }
 
   onAddNearbyPixels() {

@@ -30,62 +30,65 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="selection-tab">
-    <!-- <push-button (onClick)="onDriftCorrection()" buttonStyle="outline" fxFlex="50%">Correct Drift?</push-button> -->
+  <!-- <push-button (onClick)="onDriftCorrection()" buttonStyle="outline" fxFlex="50%">Correct Drift?</push-button> -->
 
-    <div class="summary panel-row">
-         <span>{{summary}}</span>
+  <div class="summary panel-row">
+    <span>{{ summary }}</span>
 
-         <div class="summary-buttons">
-              <push-button (onClick)="onUndo()" [disabled]="!canUndo" buttonStyle="outline">Undo</push-button>
-              <push-button (onClick)="onRedo()" [disabled]="!canRedo" buttonStyle="outline">Redo</push-button>
-         </div>
+    <div class="summary-buttons">
+      <push-button (onClick)="onUndo()" [disabled]="!canUndo" buttonStyle="outline">Undo</push-button>
+      <push-button (onClick)="onRedo()" [disabled]="!canRedo" buttonStyle="outline">Redo</push-button>
     </div>
+  </div>
 
-    <div class="selection-buttons panel-row">
-       <div class="selection-button-row">
-           <push-button (onClick)="onSelectAll()" buttonStyle="outline" class="half">Select All</push-button>
-           <push-button (onClick)="onClearSelection()" buttonStyle="outline" class="half">Clear</push-button>
-       </div>
-       <div class="selection-button-row">
-           <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" class="half">Select Dwells</push-button>
-           <push-button (onClick)="onEnterSelection()" buttonStyle="outline" class="half">Enter PMCs</push-button>
-       </div>
-       <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline">All Points for Dataset: {{id}}</push-button>
-       <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="beamSelection.getSelectedEntryCount() <= 0">Add Nearby Pixels From PMC Locations</push-button>
-       <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="beamSelection.getSelectedEntryCount() <= 0 || isPublicUser">Save selection as ROI</push-button>
+  <div class="selection-buttons panel-row">
+    <div class="selection-button-row">
+      <push-button (onClick)="onSelectAll()" buttonStyle="outline" class="half">Select All</push-button>
+      <push-button (onClick)="onClearSelection()" buttonStyle="outline" class="half">Clear</push-button>
     </div>
+    <div class="selection-button-row">
+      <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" class="half">Select Dwells</push-button>
+      <push-button (onClick)="onEnterSelection()" buttonStyle="outline" class="half">Enter PMCs</push-button>
+    </div>
+    <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline">All Points for Dataset: {{ id }}</push-button>
+    <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="beamSelection.getSelectedEntryCount() <= 0"
+      >Add Nearby Pixels From PMC Locations</push-button
+    >
+    <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="!hasEditAccess">Save selection as ROI</push-button>
+  </div>
 
-    <cdk-accordion class="selection-accordion">
-           <cdk-accordion-item role="button" tabindex="0">
-               <div class="accordion-title" (click)="onToggleExpand(0)">
-                   <span>RGBU Averages</span>
-                   <mat-icon aria-hidden="false" aria-label="Toggle RGBU Averages">{{expandedIndices.includes(0) ? 'arrow_drop_up' : 'arrow_drop_down'}}</mat-icon>
-               </div>
-               <div [style.display]="expandedIndices.includes(0) ? '' : 'none'">
-                   <div
-                       *ngFor="let averageRGBURatio of averageRGBURatios"
-                       class="average-rgbu-ratio">
-                       <span class="ratio-title">{{averageRGBURatio.name}}</span>
-                       <span class="ratio-value">{{averageRGBURatio.ratio|number:'1.0-2'}}</span>
-                   </div>
-               </div>
-           </cdk-accordion-item>
-       <cdk-accordion-item role="button" tabindex="1" class="pmcs-container">
-           <div class="accordion-title" (click)="onToggleExpand(1)">
-               <span>PMC List</span>
-               <mat-icon aria-hidden="false" aria-label="Toggle PMC List">{{expandedIndices.includes(1) ? 'arrow_drop_up' : 'arrow_drop_down'}}</mat-icon>
-           </div>
-           <cdk-virtual-scroll-viewport itemSize="25" class="full" [style.display]="expandedIndices.includes(1) ? '' : 'none'">
-               <div
-                   *cdkVirtualFor="let item of displaySelectedPMCs"
-                   class="pmc"
-                   [ngClass]="{'pmc-highlight': item.scanId===hoverScanId && item.pmc >= 0 && item.pmc===hoverPMC, 'pmc-dataset-heading': item.pmc < 0}"
-                   (mouseenter)="onPMCEnter(item)"
-                   (mouseleave)="onPMCLeave(item)">
-                   <div>{{item.pmc < 0 ? "Dataset: " + item.scanId : item.pmc}}</div>
-                   <img *ngIf="item.pmc >= 0" (click)="onUnselectPMC(item)" class="clickable" src="assets/button-icons/close-cross-gray.svg">
-               </div>
-           </cdk-virtual-scroll-viewport>
-       </cdk-accordion-item>
-    </cdk-accordion>
+  <cdk-accordion class="selection-accordion">
+    <cdk-accordion-item role="button" tabindex="0">
+      <div class="accordion-title" (click)="onToggleExpand(0)">
+        <span>RGBU Averages</span>
+        <mat-icon aria-hidden="false" aria-label="Toggle RGBU Averages">{{ expandedIndices.includes(0) ? "arrow_drop_up" : "arrow_drop_down" }}</mat-icon>
+      </div>
+      <div [style.display]="expandedIndices.includes(0) ? '' : 'none'">
+        <div *ngFor="let averageRGBURatio of averageRGBURatios" class="average-rgbu-ratio">
+          <span class="ratio-title">{{ averageRGBURatio.name }}</span>
+          <span class="ratio-value">{{ averageRGBURatio.ratio | number: "1.0-2" }}</span>
+        </div>
+      </div>
+    </cdk-accordion-item>
+    <cdk-accordion-item
+      role="button"
+      tabindex="1"
+      class="pmcs-container {{ expandedIndices.includes(0) && averageRGBURatios.length > 0 ? 'split-pmcs' : 'full-pmcs' }}">
+      <div class="accordion-title" (click)="onToggleExpand(1)">
+        <span>PMC List</span>
+        <mat-icon aria-hidden="false" aria-label="Toggle PMC List">{{ expandedIndices.includes(1) ? "arrow_drop_up" : "arrow_drop_down" }}</mat-icon>
+      </div>
+      <cdk-virtual-scroll-viewport itemSize="25" class="full" [style.display]="expandedIndices.includes(1) ? '' : 'none'">
+        <div
+          *cdkVirtualFor="let item of displaySelectedPMCs"
+          class="pmc"
+          [ngClass]="{ 'pmc-highlight': item.scanId === hoverScanId && item.pmc >= 0 && item.pmc === hoverPMC, 'pmc-dataset-heading': item.pmc < 0 }"
+          (mouseenter)="onPMCEnter(item)"
+          (mouseleave)="onPMCLeave(item)">
+          <div>{{ item.pmc < 0 ? "Dataset: " + item.scanId : item.pmc }}</div>
+          <img *ngIf="item.pmc >= 0" (click)="onUnselectPMC(item)" class="clickable" src="assets/button-icons/close-cross-gray.svg" />
+        </div>
+      </cdk-virtual-scroll-viewport>
+    </cdk-accordion-item>
+  </cdk-accordion>
 </div>
