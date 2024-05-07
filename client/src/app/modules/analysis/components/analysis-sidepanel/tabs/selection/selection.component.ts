@@ -92,9 +92,11 @@ export class SelectionComponent implements OnInit, OnDestroy {
       })
     );
 
-    this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      this.hasEditAccess = this._userOptionsService.hasFeatureAccess("editROI");
-    });
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this.hasEditAccess = this._userOptionsService.hasFeatureAccess("editROI");
+      })
+    );
   }
 
   ngOnDestroy() {
