@@ -640,7 +640,7 @@ export class DataExporterService {
   private makeExpressionValuesCSV(scanId: string, roiName: string, expressionName: string, pmcs: number[], expressionValues: PMCDataValues): WidgetExportFile {
     let data = "ROI,Expression,PMC,Value,Undefined";
     pmcs.forEach(pmc => {
-      let pmcDataValue = expressionValues.values[pmc];
+      let pmcDataValue = expressionValues.values.find(value => value.pmc === pmc);
       let value = pmcDataValue?.value ?? "";
       let isUndefined = pmcDataValue?.isUndefined ?? true;
       data += `\n"${roiName}","${expressionName}",${pmc},${value},${isUndefined}`;
@@ -656,7 +656,7 @@ export class DataExporterService {
     pmcs.forEach(pmc => {
       data += `\n${roiName},${pmc}`;
       expressionHeaders.forEach(expressionName => {
-        let pmcDataValue = expressions[expressionName].values[pmc];
+        let pmcDataValue = expressions[expressionName].values.find(value => value.pmc === pmc);
         let value = pmcDataValue?.value ?? "";
         data += `,${value}`;
       });
@@ -735,7 +735,7 @@ export class DataExporterService {
                   }
                 });
 
-                if (singleCSVPerRegion) {
+                if (singleCSVPerRegion && Object.keys(expressions).length > 0) {
                   // Make a CSV with all expressions for each PMC
                   let allPMCs = Object.values(expressions)[0].values.map(value => value.pmc);
                   let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, "All Points", allPMCs, expressions);
