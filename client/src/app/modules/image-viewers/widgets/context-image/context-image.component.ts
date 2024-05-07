@@ -512,8 +512,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           if (img) {
             // Set this as our default image
             this.mdl.imageName = img;
-            this.reloadModel(setViewToExperiment);
+          } else {
+            this.mdl.imageName = "";
           }
+          this.reloadModel(setViewToExperiment);
         },
         error: err => {
           this._snackService.openError("Failed to get default image for scan: " + scanId, err);
@@ -682,8 +684,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   private reloadModel(setViewToExperiment: boolean = false) {
     this.isWidgetDataLoading = true;
 
-    this._contextDataService
-      .getModelData(this.mdl.imageName, this._widgetId)
+    const obs: Observable<ContextImageModelLoadedData> =
+      this.mdl.imageName.length <= 0 && this.scanId.length > 0
+        ? this._contextDataService.getWithoutImage(this.scanId)
+        : this._contextDataService.getModelData(this.mdl.imageName, this._widgetId);
+
+    obs
       .pipe(
         switchMap((data: ContextImageModelLoadedData) => {
           if (data.scanModels.size > 0) {

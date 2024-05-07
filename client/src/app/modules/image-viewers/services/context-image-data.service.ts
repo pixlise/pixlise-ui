@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, Subject, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, Subject, combineLatest, concatMap, map, of, shareReplay, switchMap } from "rxjs";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -370,6 +370,32 @@ export class ContextImageDataService {
             );
           })
         );
+      })
+    );
+  }
+
+  getWithoutImage(scanId: string): Observable<ContextImageModelLoadedData> {
+    return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ generateForScanId: scanId })).pipe(
+      map((imgBeamResp: ImageBeamLocationsResp) => {
+        if (!imgBeamResp.locations) {
+          throw new Error("No image beam locations returned for image-less scan: " + scanId);
+        }
+
+        if (imgBeamResp.locations.imageName.length > 0) {
+          throw new Error(`Expected beams for image-less scan: ${scanId} but received unexpected image name: ${imgBeamResp.locations.imageName}`);
+        }
+
+        // Find the one for this scan
+        for (const locs of imgBeamResp.locations.locationPerScan) {
+          if (locs.scanId == scanId) {
+            this.buildScanModel(scanId, "", locs.locations);
+            const scanModels = new Map<string, ContextImageScanModel>();
+            return new ContextImageModelLoadedData(null, null, scanModels, null);
+          }
+        }
+
+        // Location not found!
+        throw new Error(`No beams returned in response for image-less scan: ${scanId}`);
       })
     );
   }
