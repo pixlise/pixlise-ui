@@ -466,10 +466,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   // and set function for the UI inputs, any code that touches the UI inputs should go through here. This way we can recalculate
   // the transform however it makes more sense to the user
   private setTransformInputs(xOffset: number, yOffset: number, xScale: number, yScale: number) {
-    this.xOffset = (xOffset / xScale).toLocaleString();
-    this.yOffset = (yOffset / yScale).toLocaleString();
-    this.xScale = (1 / xScale).toLocaleString();
-    this.yScale = (1 / yScale).toLocaleString();
+    this.xOffset = (xOffset / xScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+    this.yOffset = (yOffset / yScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+    this.xScale = (1 / xScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+    this.yScale = (1 / yScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
   }
 
   private getTransformInputs(): ContextImageItemTransform {
