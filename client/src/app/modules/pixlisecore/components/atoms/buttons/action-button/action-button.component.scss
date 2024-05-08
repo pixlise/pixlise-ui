@@ -77,6 +77,11 @@
     padding: 4px;
     border-radius: 50%;
   }
+
+  img {
+    user-select: none;
+    -webkit-user-drag: none;
+  }
 }
 
 .action-btn:not(.disabled) {
@@ -92,5 +97,19 @@
     }
 
     transition: all 0.2s ease;
+  }
+}
+
+.menu-options {
+  margin: -8px;
+  width: 200px;
+
+  .menu-option {
+    padding: 8px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
   }
 }

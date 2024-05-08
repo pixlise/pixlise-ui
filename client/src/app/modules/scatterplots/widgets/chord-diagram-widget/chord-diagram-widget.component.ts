@@ -357,9 +357,10 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   onChangeThreshold(value: SliderValue) {
     this.mdl.threshold = value.value;
 
+    this.reDraw();
+    this.update();
+
     if (value.finish) {
-      this.reDraw();
-      this.update();
       this.saveState();
     }
   }

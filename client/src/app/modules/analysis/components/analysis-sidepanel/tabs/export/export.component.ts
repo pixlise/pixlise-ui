@@ -43,6 +43,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
       options: [],
       dataProducts: [],
       showPreview: false,
+      hideProgressLabels: true,
     };
 
     super(data, null, _snackService);

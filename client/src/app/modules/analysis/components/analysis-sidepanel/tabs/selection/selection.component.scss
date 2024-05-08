@@ -42,6 +42,8 @@
   width: 100%;
 
   .summary {
+    height: 45px;
+
     white-space: pre;
     display: flex;
     flex-direction: row;
@@ -89,6 +91,9 @@
     flex: 1;
     padding: 0 8px;
 
+    display: flex;
+    flex-direction: column;
+
     .accordion-title {
       margin: 5px 0;
       display: flex;
@@ -104,7 +109,14 @@
     .pmcs-container {
       display: flex;
       flex-direction: column;
-      height: 100%;
+
+      &.split-pmcs {
+        flex: 1;
+      }
+
+      &.full-pmcs {
+        height: calc(100vh - 270px);
+      }
 
       .pmc {
         display: flex;

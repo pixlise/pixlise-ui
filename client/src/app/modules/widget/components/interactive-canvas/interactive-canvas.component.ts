@@ -545,7 +545,7 @@ console.log(canvasElem);
     // image would not clear properly leaving a trail behind the context image. After multiplying by dpi
     // it was still not clearing the top line. This may be an introduced bug but for the time being
     // clearing slightly larger than the canvas does seem to fix it
-    screenContext.clearRect(-1, -1, viewport.width * viewport.dpi + 2, viewport.height * viewport.dpi + 2);
+    screenContext.clearRect(-1, -1, Math.max(viewport.width, viewport.width * viewport.dpi) + 2, Math.max(viewport.height, viewport.height * viewport.dpi) + 2);
 
     // Set a transform that will scale all points we generate by the dpi value, thereby giving us
     // native scaling on a high res monitor, for eg macbook pros 3000x2000-ish monitor, if we ignore
