@@ -376,7 +376,7 @@ export class ContextImageDataService {
 
   getWithoutImage(scanId: string): Observable<ContextImageModelLoadedData> {
     return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ generateForScanId: scanId })).pipe(
-      map((imgBeamResp: ImageBeamLocationsResp) => {
+      concatMap((imgBeamResp: ImageBeamLocationsResp) => {
         if (!imgBeamResp.locations) {
           throw new Error("No image beam locations returned for image-less scan: " + scanId);
         }
@@ -388,9 +388,13 @@ export class ContextImageDataService {
         // Find the one for this scan
         for (const locs of imgBeamResp.locations.locationPerScan) {
           if (locs.scanId == scanId) {
-            this.buildScanModel(scanId, "", locs.locations);
-            const scanModels = new Map<string, ContextImageScanModel>();
-            return new ContextImageModelLoadedData(null, null, scanModels, null);
+            return this.buildScanModel(scanId, "", locs.locations).pipe(
+              map((mdl: ContextImageScanModel) => {
+                const scanModels = new Map<string, ContextImageScanModel>();
+                scanModels.set(mdl.scanId, mdl);
+                return new ContextImageModelLoadedData(null, null, scanModels, null);
+              })
+            );
           }
         }
 

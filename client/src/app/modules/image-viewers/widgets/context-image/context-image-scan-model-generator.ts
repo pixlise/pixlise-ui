@@ -58,8 +58,12 @@ export class ContextImageScanModelGenerator {
 
     // Work out what units we're in, original test data had mm but at one point in about 2020 we switched to meters
     // and FM delivers it that way since
-    const beamUnitsInMeters = ContextImageScanModelGenerator.decideBeamUnitsIsMeters(scanItem.instrument, this._locationPointZMax);
+    let beamUnitsInMeters = ContextImageScanModelGenerator.decideBeamUnitsIsMeters(scanItem.instrument, this._locationPointZMax);
 
+    if (!imageName) {
+      // If we don't have an image, we don't scale down
+      beamUnitsInMeters = false;
+    }
     const beamRadius_mm = detectorConfig?.config?.mmBeamRadius || this._beamRadius_mm; // If we don't get one, use the default
     const contextPixelsTommConversion = this.calcImagePixelsToPhysicalmm(beamUnitsInMeters);
     console.log("  Conversion factor for image pixels to mm: " + contextPixelsTommConversion);

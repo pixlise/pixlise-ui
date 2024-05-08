@@ -62,6 +62,11 @@ export class PhysicalScale extends BaseUIElement {
   }
 
   override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
+    if (!this._ctx.imageName) {
+      // No physical scale to draw if we don't have an image to calculate scale with
+      return CanvasInteractionResult.neither;
+    }
+
     // If the mouse is over us, we hijack any drag events
     if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
       const pos = this.getPosition(event.canvasParams, this._ctx.transform);
@@ -102,6 +107,11 @@ export class PhysicalScale extends BaseUIElement {
   }
 
   override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (!this._ctx.imageName) {
+      // No physical scale to draw if we don't have an image to calculate scale with
+      return;
+    }
+
     // Draw the physical image scale (mm)
     this.drawPhysicalScale(screenContext, drawParams.drawViewport, drawParams.worldTransform);
   }
