@@ -180,11 +180,11 @@ export class EnergyCalibrationService {
           let eVStartSum = 0;
           let eVPerChannelSum = 0;
 
-          for (const evStartItem of eVStartValues) {
+          for (const evStartItem of eVStartValues.values) {
             eVStartSum += evStartItem.value;
           }
 
-          for (const evPerChannelItem of eVPerChannelValues) {
+          for (const evPerChannelItem of eVPerChannelValues.values) {
             eVPerChannelSum += evPerChannelItem.value;
           }
 

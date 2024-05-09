@@ -665,7 +665,8 @@ end
       throw new Error("Expression returned incomplete map data: number of PMCs did not match number of values");
     }
 
-    const values: PMCDataValue[] = [];
+    const result = new PMCDataValues();
+    result.isBinary = true; // pre-set for detection in addValue
     let c = 0;
     for (const pmc of table[0]) {
       let value: number = table[1][c];
@@ -675,11 +676,11 @@ end
         isUndef = true;
       }
 
-      values.push(new PMCDataValue(pmc, value, isUndef));
+      result.addValue(new PMCDataValue(pmc, value, isUndef));
       c++;
     }
 
-    return PMCDataValues.makeWithValues(values);
+    return result;
   }
 
   /*private makeLuaTable(tableSource: string, data: PMCDataValues): any {

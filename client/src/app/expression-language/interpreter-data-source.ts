@@ -36,6 +36,7 @@ import {
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { MinMax } from "../models/BasicTypes";
 
 export class InterpreterDataSource {
   constructor(
@@ -103,7 +104,7 @@ export class InterpreterDataSource {
       formula = formula.substring(0, formula.length - 2);
     }
 
-    let mass = periodicTableDB.getMolecularMass(formula);
+    const mass = periodicTableDB.getMolecularMass(formula);
     if (mass > 0) {
       // Success parsing it, work out the conversion factor:
       // This came from an email from Joel Hurowitz:
@@ -113,6 +114,7 @@ export class InterpreterDataSource {
       conversion *= 10 / mass; // AKA: 1/100/mass*1000;
     }
 
+    const range = new MinMax();
     for (let c = 0; c < values.values.length; c++) {
       let valToSave = 0;
       if (!values.values[c].isUndefined) {
@@ -120,9 +122,10 @@ export class InterpreterDataSource {
       }
 
       result.push(new PMCDataValue(values.values[c].pmc, valToSave, values.values[c].isUndefined));
+      range.expand(valToSave);
     }
 
-    return PMCDataValues.makeWithValues(result);
+    return PMCDataValues.makeWithValuesMinMax(result, range, false);
   }
 
   // Expects: %, A for example, calls element() for each element there is, and returns the sum of the values
@@ -270,13 +273,14 @@ export class InterpreterDataSource {
     const mapValue = argList[0];
 
     return this.quantDataSource.getPMCList().then((pmcs: number[]) => {
-      const values: PMCDataValue[] = [];
+      const result = new PMCDataValues();
+      result.isBinary = true; // pre-set for detection in addValue
 
       for (const pmc of pmcs) {
-        values.push(new PMCDataValue(pmc, mapValue));
+        result.addValue(new PMCDataValue(pmc, mapValue));
       }
 
-      return PMCDataValues.makeWithValues(values);
+      return result;
     });
   }
 
