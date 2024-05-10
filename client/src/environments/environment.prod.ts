@@ -39,7 +39,7 @@ export const environment = {
   expressionLanguageCompareSkipLines: 1, // How many lines to skip when doing line-by-line comparison
   expressionLanguageCompareDiffAllowed: 0.0000001, // Absolute difference allowed between output values of Lua vs PIXLISE expressions
   expressionExecStatSaveIntervalSec: 600, // How long to wait before we save exec stats for an expression again
-  luaTimeoutMs: 240000, // Max time we allow a Lua call to take to run
+  luaTimeoutMs: 600000, // Max time we allow a Lua call to take to run
   authTarget: "/datasets",
   authorizationParams: {
     audience: "pixlise-backend",
