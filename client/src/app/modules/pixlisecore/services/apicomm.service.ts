@@ -22,7 +22,7 @@ import { Router } from "@angular/router";
 })
 export class APICommService implements OnDestroy {
   connection$: WebSocketSubject<any> | null = null;
-  WS_RETRY_ATTEMPTS = 30;
+  WS_RETRY_ATTEMPTS = 100;
   WS_RETRY_DELAY_MS = 5000;
 
   private _id = randomString(6);
@@ -217,7 +217,7 @@ export class APICommService implements OnDestroy {
     }
 
     // For verbose debugging purposes...
-    console.log("Sending: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
+    console.log("-->Send: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
     this.connection$.next(wsmsg);
   }
 
