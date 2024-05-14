@@ -30,6 +30,8 @@ export class APICommService implements OnDestroy {
   public hasDisconnected = false;
   public initialised = false;
 
+  private _connectTime: number = 0;
+
   constructor(
     private http: HttpClient,
     private _router: Router,
@@ -159,6 +161,7 @@ export class APICommService implements OnDestroy {
           },
           openObserver: {
             next: () => {
+              this._connectTime = performance.now();
               console.log(`APICommService [${this._id}] beginConnect: CONNECTED`);
 
               // Only show the connected message if we have previously disconnected
@@ -178,8 +181,11 @@ export class APICommService implements OnDestroy {
               console.log(`APICommService [${this._id}] beginConnect: Websocket Closed. Close event:`);
               console.log(closeEvent);
 
+              const connTime = this._connectTime - performance.now();
+              const connTimeStr = connTime > 0 ? `after ${(connTime / 1000).toLocaleString()}sec` : "";
+
               this._snackService.openError(
-                `Disconnected from PIXLISE server (error code: ${closeEvent.code}). Refresh this page to reconnect!`,
+                `Disconnected from PIXLISE server ${connTimeStr} (error code: ${closeEvent.code}). Refresh this page to reconnect!`,
                 "Check your internet connection. You may need to log in again."
               );
 
