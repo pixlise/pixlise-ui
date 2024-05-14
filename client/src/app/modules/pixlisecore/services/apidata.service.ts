@@ -12,7 +12,6 @@ import * as _m0 from "protobufjs/minimal";
   providedIn: "root",
 })
 export class APIDataService extends WSMessageHandler {
-  private _sendQueue: WSMessage[] = [];
   private _isConnected = false;
 
   private _id = randomString(6);
@@ -50,20 +49,19 @@ export class APIDataService extends WSMessageHandler {
   }
 
   private onConnected() {
-    console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${this._sendQueue.length} items`);
+    // Find all outstanding requests
+    const reqs = [];
+    for (const outstanding of this._outstandingRequests.values()) {
+      reqs.push(outstanding.req);
+    }
+
+    console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${reqs.length} items`);
     this._isConnected = true;
 
     // Send everything in the queue
-    for (const msg of this._sendQueue) {
+    for (const msg of reqs) {
       this._apiComms.send(msg);
     }
-
-    this._sendQueue = [];
-    /*
-        // We're connected, request user details
-        let req = WSMessage.create({userDetailsReq: UserDetailsReq.create()});
-        this.sendRequest(req);
-*/
   }
 
   protected sendRequest(wsmsg: WSMessage): void {
@@ -71,7 +69,6 @@ export class APIDataService extends WSMessageHandler {
     if (!this._isConnected) {
       const jsonMsg = WSMessage.toJSON(wsmsg);
       console.log(`APIDataService [${this._id}] sendRequest while not yet connected. Queued up: ${JSON.stringify(jsonMsg)}`);
-      this._sendQueue.push(wsmsg);
     } else {
       this._apiComms.send(wsmsg);
     }
@@ -84,14 +81,8 @@ export class APIDataService extends WSMessageHandler {
       if (!this.dispatchUpdate(wsmsg)) {
         console.error(`APIDataService [${this._id}] Failed to dispatch message: ` + JSON.stringify(WSMessage.toJSON(wsmsg), null, 4));
       }
+    } else {
+      console.log("<--Recd for msgId:" + wsmsg.msgId);
     }
   }
 }
-/*
-export function mapArrayBufferToProto<T extends { decode: (input: _m0.Reader | Uint8Array, length?: number)=>T}>(buf: ArrayBuffer, msg: T): T
-{
-    const arr = new Uint8Array(buf);
-    const res = msg.decode(arr);
-    return res; 
-}
-*/
