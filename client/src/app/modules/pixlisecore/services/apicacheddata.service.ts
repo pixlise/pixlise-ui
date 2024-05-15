@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, shareReplay, map } from "rxjs";
+import { Observable, shareReplay, map, toArray } from "rxjs";
 import { APIDataService } from "./apidata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -194,9 +194,18 @@ export class APICachedDataService {
     if (result === undefined) {
       // Have to request it!
       result = this._dataService.sendSpectrumRequest(req).pipe(
-        map((resp: SpectrumResp) => {
-          this.decompressSpectra(resp);
-          return resp;
+        toArray(),
+        map((resps: SpectrumResp[]) => {
+          for (const resp of resps) {
+            this.decompressSpectra(resp);
+          }
+
+          // Assemble a final response containing all spectra in it
+          for (let c = 1; c < resps.length; c++) {
+            resps[0].spectraPerLocation.push(...resps[c].spectraPerLocation);
+          }
+
+          return resps[0];
         }),
         shareReplay(1)
       );
