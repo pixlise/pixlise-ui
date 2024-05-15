@@ -3,10 +3,11 @@ import { Injectable } from "@angular/core";
 import { APICommService } from "./apicomm.service";
 
 import { WSMessage } from "../../../generated-protos/websocket";
-import { WSMessageHandler } from "./wsMessageHandler";
+import { WSMessageHandler, WSOustandingReq } from "./wsMessageHandler";
 import { randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
+import { Subject } from "rxjs";
 
 @Injectable({
   providedIn: "root",
@@ -15,6 +16,21 @@ export class APIDataService extends WSMessageHandler {
   private _isConnected = false;
 
   private _id = randomString(6);
+
+  // Generating message IDs:
+  // These are what we send up, API generates reply with same ID in it to specify what it's replying to. This can be
+  // any number, and we can re-send a request and expect a reply to it (even after a reconnection - id sequence
+  // doesnt have to restart). If it overflows MAX_INT, it loops around, that's ok! We just make sure our counter
+  // also restarts at MAX_INT
+  private _lastMsgId = 1;
+
+  protected nextMsgId() {
+    this._lastMsgId++;
+    if (this._lastMsgId > 2147483647) {
+      this._lastMsgId = 0;
+    }
+    return this._lastMsgId;
+  }
 
   constructor(private _apiComms: APICommService) {
     super();
@@ -64,7 +80,10 @@ export class APIDataService extends WSMessageHandler {
     }
   }
 
-  protected sendRequest(wsmsg: WSMessage): void {
+  protected sendRequest(wsmsg: WSMessage, subj: Subject<any>): void {
+    wsmsg.msgId = this.nextMsgId();
+    this._outstandingRequests.set(wsmsg.msgId, new WSOustandingReq(wsmsg, subj));
+
     // If we're not yet connected, queue this up
     if (!this._isConnected) {
       const jsonMsg = WSMessage.toJSON(wsmsg);
