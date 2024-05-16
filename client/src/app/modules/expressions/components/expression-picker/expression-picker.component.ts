@@ -58,12 +58,14 @@ export type ExpressionPickerResponse = {
   scanId: string;
   quantId: string;
   persistDialog: boolean;
+  subId?: string;
 };
 
 export type ExpressionPickerData = {
   selectedIds?: string[];
   expressionTriggerPosition?: number;
   widgetId?: string;
+  subId?: string;
   scanId?: string;
   quantId?: string;
   noActiveScreenConfig?: boolean;
@@ -79,6 +81,7 @@ export type ExpressionPickerData = {
   showRGBMixMode?: boolean;
   rgbMixModeActive?: boolean;
   disableWidgetSwitching?: boolean;
+  onlyShowItemsWithTagType?: string[];
 };
 
 @Component({
@@ -695,6 +698,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           scanId: this.scanId,
           quantId: this.quantId,
           persistDialog: this.persistDialog,
+          subId: this.data.subId,
         });
 
         this.onCloseExpressionGroupDialog();
@@ -1101,6 +1105,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               scanId: this.scanId,
               quantId: this.quantId,
               persistDialog: this.persistDialog,
+              subId: this.data.subId,
             });
           },
           error: err => {
@@ -1118,6 +1123,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         scanId: this.scanId,
         quantId: this.quantId,
         persistDialog: this.persistDialog,
+        subId: this.data.subId,
       });
 
       if (!this.persistDialog) {
@@ -1127,6 +1133,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           scanId: this.scanId,
           quantId: this.quantId,
           persistDialog: this.persistDialog,
+          subId: this.data.subId,
         });
       }
     }
