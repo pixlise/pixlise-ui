@@ -27,8 +27,7 @@ export class APICommService implements OnDestroy {
 
   private _id = randomString(6);
 
-  public hasDisconnected = false;
-  public initialised = false;
+  public isConnected = false;
 
   private _connectTime: number = 0;
 
@@ -65,8 +64,6 @@ export class APICommService implements OnDestroy {
         return;
       }
     }
-
-    this.initialised = true;
   }
 
   ngOnDestroy() {
@@ -94,7 +91,7 @@ export class APICommService implements OnDestroy {
           );
         }
 
-        this.hasDisconnected = true;
+        this.isConnected = false;
         throw err;
       })
     );
@@ -165,9 +162,9 @@ export class APICommService implements OnDestroy {
               console.log(`APICommService [${this._id}] beginConnect: CONNECTED`);
 
               // Only show the connected message if we have previously disconnected
-              if (this.hasDisconnected) {
+              if (!this.isConnected) {
                 this._snackService.openSuccess(`Connected to PIXLISE server!`);
-                this.hasDisconnected = false;
+                this.isConnected = true;
               }
               connectEvent();
             },
@@ -189,23 +186,23 @@ export class APICommService implements OnDestroy {
                 "Check your internet connection. You may need to log in again."
               );
 
-              this.hasDisconnected = true;
+              this.isConnected = false;
               this.connection$ = null;
               //this.connect({ reconnect: true });
             },
             error: err => {
-              this.hasDisconnected = true;
+              this.isConnected = false;
               console.error("APICommService: Close error\n", err);
             },
           },
           closingObserver: {
             next: () => {
               console.log(`APICommService [${this._id}] beginConnect: Websocket closing...`);
-              this.hasDisconnected = true;
+              this.isConnected = false;
             },
             error: err => {
               console.error("APICommService: Closing error\n", err);
-              this.hasDisconnected = true;
+              this.isConnected = false;
             },
           },
         });
