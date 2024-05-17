@@ -757,17 +757,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           // mitigate this, if the ROI has no members, we set an empty entries array, but if there is anything in the ROI, we have to download them all
           // anyway (so location indexes can access the returned spectra!). Caching is also going to be better if we download all or nothing...
           // THIS MAY have issues with scans that don't have a stored bulk+max though. Maybe we should always just download all :(
-          const spectrumReq = SpectrumReq.create({
-            scanId: roi.region.scanId,
-            bulkSum: true,
-            maxValue: true,
-          });
-          if (roi.region.scanEntryIndexesEncoded.length <= 0) {
-            spectrumReq.entries = ScanEntryRange.create({ indexes: [] });
-          }
 
           combineLatest([
-            this._spectrumDataService.getSpectrum(spectrumReq),
+            this._spectrumDataService.getSpectrum(
+              roi.region.scanId,
+              roi.region.scanEntryIndexesEncoded.length > 0 ? roi.region.scanEntryIndexesEncoded : [],
+              true,
+              true
+            ),
             this._cachedDataService.getScanList(
               ScanListReq.create({
                 searchFilters: { scanId: roi.region.scanId },

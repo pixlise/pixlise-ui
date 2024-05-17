@@ -159,9 +159,10 @@ export class DataExporterService {
     const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>, Observable<ScanMetaLabelsAndTypesResp>] = [
       this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
       this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
-      this._spectrumDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })),
+      this._spectrumDataService.getSpectrum(scanId, null, true, true),
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
     ];
+
     return combineLatest(requests).pipe(
       switchMap(([beamLocations, scanEntries, spectrumResp, scanMeta]) => {
         let csvs: WidgetExportFile[] = [];
@@ -239,7 +240,7 @@ export class DataExporterService {
 
   getBulkSumMaxSpectra(scanId: string): Observable<WidgetExportData> {
     let spectrumRequests: Observable<SpectrumResp>[] = [
-      this._spectrumDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })), // All Points
+      this._spectrumDataService.getSpectrum(scanId, null, true, true), // All Points
     ];
 
     return combineLatest(spectrumRequests).pipe(
@@ -365,7 +366,7 @@ export class DataExporterService {
   getSpectraMetadata(scanId: string): Observable<WidgetExportData> {
     const requests: [Observable<ScanMetaLabelsAndTypesResp>, Observable<SpectrumResp>] = [
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
-      this._spectrumDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, entries: { indexes: [] } })),
+      this._spectrumDataService.getSpectrum(scanId, [], true, false),
     ];
 
     return combineLatest(requests).pipe(
