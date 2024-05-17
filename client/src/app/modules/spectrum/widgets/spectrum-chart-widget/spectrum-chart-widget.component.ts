@@ -33,6 +33,7 @@ import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/
 import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
 import { SpectrumChannels } from "src/app/utils/utils";
 import { Colours } from "src/app/utils/colours";
+import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -62,6 +63,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _viewRef: ViewContainerRef,
     private _analysisLayoutService: AnalysisLayoutService,
     private _spectrumService: SpectrumService,
+    private _spectrumDataService: SpectrumDataService,
     private _snackService: SnackbarService,
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService,
@@ -765,7 +767,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           }
 
           combineLatest([
-            this._cachedDataService.getSpectrum(spectrumReq),
+            this._spectrumDataService.getSpectrum(spectrumReq),
             this._cachedDataService.getScanList(
               ScanListReq.create({
                 searchFilters: { scanId: roi.region.scanId },

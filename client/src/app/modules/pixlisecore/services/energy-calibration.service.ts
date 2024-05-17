@@ -8,6 +8,7 @@ import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-m
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { AnalysisLayoutService } from "../../analysis/analysis.module";
+import { SpectrumDataService } from "./spectrum-data.service";
 
 @Injectable({
   providedIn: "root",
@@ -18,7 +19,8 @@ export class EnergyCalibrationService {
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
-    private _cachedDataService: APICachedDataService
+    private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
   ) {
     if (this._currentCalibration.size === 0) {
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
@@ -86,7 +88,7 @@ export class EnergyCalibrationService {
   getScanCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
     return combineLatest([
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
-      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId, bulkSum: true, entries: { indexes: [] } })),
+      this._spectrumDataService.getSpectrum(SpectrumReq.create({ scanId: scanId, bulkSum: true, entries: { indexes: [] } })),
     ]).pipe(
       map(values => {
         const metaResp = values[0] as ScanMetaLabelsAndTypesResp;

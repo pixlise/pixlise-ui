@@ -59,6 +59,7 @@ import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
 import { ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
+import { SpectrumDataService } from "./spectrum-data.service";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -165,6 +166,7 @@ export class WidgetDataService {
   constructor(
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _memoisationService: MemoisationService
@@ -623,7 +625,7 @@ export class WidgetDataService {
         const querier = new DataQuerier();
         const dataSource = new ExpressionDataSource();
 
-        return dataSource.prepare(this._cachedDataService, scanId, quantId, roiId, calibration).pipe(
+        return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
             const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
 

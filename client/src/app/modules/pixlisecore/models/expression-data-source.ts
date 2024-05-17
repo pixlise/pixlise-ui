@@ -29,6 +29,7 @@ import { APICachedDataService } from "../services/apicacheddata.service";
 import { DefaultDetectorId } from "src/app/expression-language/predefined-expressions";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
+import { SpectrumDataService } from "../services/spectrum-data.service";
 
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
@@ -72,6 +73,7 @@ export class ExpressionDataSource
 
   // And where to turn to get it:
   private _cachedDataService: APICachedDataService | null = null;
+  private _spectrumDataService: SpectrumDataService | null = null;
 
   private _debug = false;
   private _prepTime = performance.now();
@@ -80,6 +82,7 @@ export class ExpressionDataSource
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
     cachedDataService: APICachedDataService,
+    spectrumService: SpectrumDataService,
     scanId: string,
     quantId: string,
     roiId: string,
@@ -89,6 +92,7 @@ export class ExpressionDataSource
     this._quantId = quantId;
 
     this._cachedDataService = cachedDataService;
+    this._spectrumDataService = spectrumService;
 
     this._spectrumEnergyCalibration = spectrumEnergyCalibration;
 
@@ -239,12 +243,12 @@ export class ExpressionDataSource
   }
 
   private getSpectrum(): Observable<SpectrumResp> {
-    if (!this._cachedDataService) {
+    if (!this._spectrumDataService) {
       return throwError(() => new Error("getSpectrum: no data available"));
     }
 
     // NOTE: We need ALL spectra because the functions that access this sum across all spectra
-    return this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: this._scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ }));
+    return this._spectrumDataService.getSpectrum(SpectrumReq.create({ scanId: this._scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ }));
   }
 
   private getDiffractionPeakManualList(): Observable<DiffractionPeakManualListResp> {
