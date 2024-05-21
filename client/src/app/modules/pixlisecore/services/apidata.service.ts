@@ -8,9 +8,10 @@ import { randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
 import { Subject, Subscription, interval } from "rxjs";
+import { environment } from "src/environments/environment";
 
 const TIMEOUT_CHECK_INTERVAL_MS = 3000;
-const MESSAGE_TIMEOUT_MS = 10000;
+const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
 
 @Injectable({
   providedIn: "root",

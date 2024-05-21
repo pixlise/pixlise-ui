@@ -752,19 +752,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             }
           }
 
-          // Now we know the scan Id for this one, request spectra and find the scan name
-          // KNOWN ISSUE: this downloads all spectra along with bulk+max, so for only displaying say bulk A+B this is a huuuuge extra download. To
-          // mitigate this, if the ROI has no members, we set an empty entries array, but if there is anything in the ROI, we have to download them all
-          // anyway (so location indexes can access the returned spectra!). Caching is also going to be better if we download all or nothing...
-          // THIS MAY have issues with scans that don't have a stored bulk+max though. Maybe we should always just download all :(
+          let idxs: number[] | null = [];
 
+          // If it's not allpoints, we want actual spectra, so make sure we download them
+          if (!PredefinedROIID.isAllPointsROI(roi.region.id)) {
+            // If the ROI is empty, still download all
+            if (roi.region.scanEntryIndexesEncoded.length <= 0) {
+              idxs = null; // null means get ALL
+            } else {
+              // Don't JUST request the ones needed, request all!
+              //idxs = roi.region.scanEntryIndexesEncoded;
+              idxs = null;
+            }
+          }
           combineLatest([
-            this._spectrumDataService.getSpectrum(
-              roi.region.scanId,
-              roi.region.scanEntryIndexesEncoded.length > 0 ? roi.region.scanEntryIndexesEncoded : [],
-              true,
-              true
-            ),
+            this._spectrumDataService.getSpectrum(roi.region.scanId, idxs, true, true),
             this._cachedDataService.getScanList(
               ScanListReq.create({
                 searchFilters: { scanId: roi.region.scanId },

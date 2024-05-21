@@ -248,7 +248,7 @@ export class ExpressionDataSource
     }
 
     // NOTE: We need ALL spectra because the functions that access this sum across all spectra
-    return this._spectrumDataService.getSpectrum(this._scanId, [], false, false);
+    return this._spectrumDataService.getSpectrum(this._scanId, null, false, false);
   }
 
   private getDiffractionPeakManualList(): Observable<DiffractionPeakManualListResp> {
