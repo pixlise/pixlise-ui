@@ -57,6 +57,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
@@ -171,6 +172,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     private _analysisLayoutService: AnalysisLayoutService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
     private _selectionService: SelectionService,
     private _diffractionService: DiffractionService,
     private _userOptionsService: UserOptionsService,
@@ -374,6 +376,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
           return dataSource
             .prepare(
               this._cachedDataService,
+              this._spectrumDataService,
               scanId,
               this._analysisLayoutService.getQuantIdForScan(scanId),
               PredefinedROIID.getAllPointsForScan(scanId),
