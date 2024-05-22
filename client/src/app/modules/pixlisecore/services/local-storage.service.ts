@@ -1,10 +1,13 @@
 import { Injectable } from "@angular/core";
-import { CachedImageItem, CachedRGBUImageItem, db } from "../models/local-storage-db";
+import { CachedImageItem, CachedRGBUImageItem, CachedSpectraItem, db } from "../models/local-storage-db";
 import { liveQuery } from "dexie";
 import { SnackbarDataItem } from "./snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { UINotification } from "src/app/modules/settings/services/notifications.service";
+import { ScanSpectrumData } from "./spectrum-data.service";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { Spectra } from "src/app/generated-protos/spectrum";
 
 @Injectable({
   providedIn: "root",
@@ -74,13 +77,13 @@ export class LocalStorageService {
   async getMemoData(key: string): Promise<MemoisedItem | undefined> {
     return await db.memoData.get(key);
   }
-
+/*
   async clearMemoData() {
     await db.memoData.clear();
-  }
+  }*/
 
   async storeImage(data: string, key: string, url: string, height: number, width: number, size: number) {
-    let item: CachedImageItem = { data, key, url, height, width, size, timestamp: Date.now() };
+    const item: CachedImageItem = { data, key, url, height, width, size, timestamp: Date.now() };
     await db.images.put(item, url);
   }
 
@@ -93,20 +96,62 @@ export class LocalStorageService {
   }
 
   async storeRGBUImage(data: ArrayBuffer, key: string, url: string) {
-    let item: CachedRGBUImageItem = { data, key, url, timestamp: Date.now() };
+    const item: CachedRGBUImageItem = { data, key, url, timestamp: Date.now() };
     await db.rgbuImages.put(item, url);
   }
 
   async getRGBUImage(url: string): Promise<CachedRGBUImageItem | undefined> {
     return await db.rgbuImages.get(url);
   }
-
+/*
   async clearRGBUImages() {
     await db.rgbuImages.clear();
-  }
+  }*/
 
   async clearImagesBySubstring(substring: string) {
     await db.images.filter(item => item.url.includes(substring)).delete();
     await db.rgbuImages.filter(item => item.url.includes(substring)).delete();
   }
+
+  async deleteSpectraForKey(scanId: string) {
+    await db.spectra.delete(scanId);
+  }
+
+  async storeSpectra(scanId: string, spectra: ScanSpectrumData) {
+    // We encode the response messages as protobuf, save the binary into cache
+    const resp = SpectrumResp.create({
+      bulkSpectra: spectra.bulkSum,
+      maxSpectra: spectra.maxValue,
+      spectraPerLocation: [],
+      channelCount: spectra.channelCount,
+      normalSpectraForScan: spectra.normalSpectraForScan,
+      dwellSpectraForScan: spectra.dwellSpectraForScan,
+      liveTimeMetaIndex: spectra.liveTimeMetaIndex,
+    });
+
+    for (const item of spectra.pmcSpectra) {
+      resp.spectraPerLocation.push(Spectra.create({ spectra: item }));
+    }
+
+    const data = SpectrumResp.encode(resp).finish();
+    const key = scanId;
+    const item: CachedSpectraItem = {
+      data,
+      key,
+      timestamp: Date.now(),
+      loadedAllPMCs: spectra.loadedAllPMCs,
+      loadedBulkSum: spectra.loadedBulkSum,
+      loadedMaxValue: spectra.loadedMaxValue,
+    };
+
+    await db.spectra.put(item, scanId);
+  }
+
+  async getSpectraForKey(scanId: string): Promise<CachedSpectraItem | undefined> {
+    return await db.spectra.get(scanId);
+  }
+/*
+  async clearSpectra() {
+    await db.spectra.clear();
+  }*/
 }

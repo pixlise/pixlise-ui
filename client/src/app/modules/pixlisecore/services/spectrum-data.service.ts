@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, map, of, shareReplay, switchMap, toArray } from "rxjs";
+import { Observable, catchError, concatMap, from, map, of, shareReplay, switchMap, toArray } from "rxjs";
 import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 import { APIDataService } from "./apidata.service";
@@ -9,9 +9,10 @@ import { Spectra, Spectrum } from "src/app/generated-protos/spectrum";
 import { APICachedDataService } from "./apicacheddata.service";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
-import { index } from "mathjs";
+import { LocalStorageService } from "./local-storage.service";
+import { CachedSpectraItem } from "../models/local-storage-db";
 
-class ScanSpectrumData {
+export class ScanSpectrumData {
   constructor(
     public scanTimeStampUnixSec: number,
     public bulkSum: Spectrum[],
@@ -36,7 +37,8 @@ export class SpectrumDataService {
 
   constructor(
     private _dataService: APIDataService,
-    private _cachedDataService: APICachedDataService
+    private _cachedDataService: APICachedDataService,
+    private _localStorageService: LocalStorageService
   ) {
     this._dataService.notificationUpd$.subscribe((upd: NotificationUpd) => {
       // When we get a data change notification we clear caches relevant to that
@@ -60,25 +62,28 @@ export class SpectrumDataService {
           throw new Error(`Failed to retrieve scan: ${scanId}`);
         }
 
-        // If we've already got a request we're waiting for, wait for that and then do our
-        // lookup, it might already answer what we're requesting
-        if (this._outstandingReq !== null) {
-          return this._outstandingReq.pipe(
-            switchMap(result => {
-              return this.getSpectrum(scanId, indexes, bulkSum, maxValue);
-            })
-          );
-        }
-        // else: Process it from what we have
-
         // Now that we have the number of PMCs, we can work out what we're doing
-        const cachedValue = this.serviceFromCache(scanId, scanListResp.scans[0].timestampUnixSec, indexes, bulkSum, maxValue);
-        if (cachedValue !== null) {
-          return cachedValue;
-        }
+        return this.serviceFromCache(scanId, scanListResp.scans[0].timestampUnixSec, indexes, bulkSum, maxValue).pipe(
+          switchMap((cachedValue: SpectrumResp | null) => {
+            if (cachedValue !== null) {
+              return of(cachedValue);
+            }
 
-        // Don't have it cached, so request it
-        return this.requestSpectra(scanId, scanListResp.scans[0].timestampUnixSec, 0, indexes, bulkSum, maxValue);
+            // If we've already got a request we're waiting for, wait for that and then do our
+            // lookup, it might already answer what we're requesting
+            if (this._outstandingReq !== null) {
+              return this._outstandingReq.pipe(
+                switchMap(result => {
+                  return this.getSpectrum(scanId, indexes, bulkSum, maxValue);
+                })
+              );
+            }
+            // else: Process it from what we have
+
+            // Don't have it cached, so request it
+            return this.requestSpectra(scanId, scanListResp.scans[0].timestampUnixSec, 0, indexes, bulkSum, maxValue);
+          })
+        );
       })
     );
   }
@@ -145,6 +150,9 @@ export class SpectrumDataService {
 
         this._spectrumCache.set(scanId, updatedCachedData);
 
+        // Also save in index DB
+        this._localStorageService.storeSpectra(scanId, updatedCachedData);
+
         // No longer outstanding!
         this._outstandingReq = null;
 
@@ -162,61 +170,106 @@ export class SpectrumDataService {
     indexes: number[] | null,
     bulkSum: boolean,
     maxValue: boolean
-  ): Observable<SpectrumResp> | null {
-    let cached = this._spectrumCache.get(scanId);
+  ): Observable<SpectrumResp | null> {
+    // Try read it from memory cache
+    const memCached = this._spectrumCache.get(scanId);
 
+    if (memCached) {
+      // Read this item
+      return of(this.processCachedSpectra(memCached, scanId, scanTimeStampUnixSec, indexes, bulkSum, maxValue));
+    }
+
+    // Wasn't in memory, try read it from index DB
+    return from(this._localStorageService.getSpectraForKey(scanId)).pipe(
+      map((storedCachedItem: CachedSpectraItem | undefined) => {
+        if (!storedCachedItem) {
+          // Wasn't in index DB either
+          return null;
+        }
+
+        // Found it in index DB, store it in memory cache
+        const cachedResp = SpectrumResp.decode(storedCachedItem.data);
+
+        const pmcSpectra: Spectrum[][] = [];
+        for (const item of cachedResp.spectraPerLocation) {
+          pmcSpectra.push(item.spectra);
+        }
+
+        const cachedItem = new ScanSpectrumData(
+          storedCachedItem.timestamp,
+          cachedResp.bulkSpectra,
+          cachedResp.maxSpectra,
+          pmcSpectra,
+          cachedResp.channelCount,
+          cachedResp.normalSpectraForScan,
+          cachedResp.dwellSpectraForScan,
+          cachedResp.liveTimeMetaIndex,
+          storedCachedItem.loadedAllPMCs,
+          storedCachedItem.loadedBulkSum,
+          storedCachedItem.loadedMaxValue
+        );
+        this._spectrumCache.set(scanId, cachedItem);
+        return this.processCachedSpectra(cachedItem, scanId, scanTimeStampUnixSec, indexes, bulkSum, maxValue);
+      })
+    );
+  }
+
+  private processCachedSpectra(
+    cached: ScanSpectrumData,
+    scanId: string,
+    scanTimeStampUnixSec: number,
+    indexes: number[] | null,
+    bulkSum: boolean,
+    maxValue: boolean
+  ): SpectrumResp | null {
     // If we have a cached value AND it's too old, clear it
     if (cached && scanTimeStampUnixSec > cached.scanTimeStampUnixSec) {
       this._spectrumCache.delete(scanId);
-      cached = undefined;
+      this._localStorageService.deleteSpectraForKey(scanId);
+      return null;
     }
 
-    // If we have a usable cached value, try to read everything from it!
-    if (cached) {
-      const resp = SpectrumResp.create({
-        bulkSpectra: [],
-        maxSpectra: [],
-        spectraPerLocation: [],
-        channelCount: cached.channelCount,
-        normalSpectraForScan: cached.normalSpectraForScan,
-        dwellSpectraForScan: cached.dwellSpectraForScan,
-        liveTimeMetaIndex: cached.liveTimeMetaIndex,
-      });
+    const resp = SpectrumResp.create({
+      bulkSpectra: [],
+      maxSpectra: [],
+      spectraPerLocation: [],
+      channelCount: cached.channelCount,
+      normalSpectraForScan: cached.normalSpectraForScan,
+      dwellSpectraForScan: cached.dwellSpectraForScan,
+      liveTimeMetaIndex: cached.liveTimeMetaIndex,
+    });
 
-      // Fill in what's required
-      if (bulkSum) {
-        if (cached.loadedBulkSum) {
-          resp.bulkSpectra = cached.bulkSum;
-        } else {
-          // We need bulk but don't have it, so stop here
-          return null;
-        }
+    // Fill in what's required
+    if (bulkSum) {
+      if (cached.loadedBulkSum) {
+        resp.bulkSpectra = cached.bulkSum;
+      } else {
+        // We need bulk but don't have it, so stop here
+        return null;
       }
-
-      if (maxValue) {
-        if (cached.loadedMaxValue) {
-          resp.maxSpectra = cached.maxValue;
-        } else {
-          // We need max but don't have it, so stop here
-          return null;
-        }
-      }
-
-      if (indexes === null || indexes.length > 0) {
-        if (cached.loadedAllPMCs) {
-          for (const spectra of cached.pmcSpectra) {
-            resp.spectraPerLocation.push(Spectra.create({ spectra: spectra }));
-          }
-        } else {
-          // We needed spectra for some PMCs, but haven't loaded them, stop here
-          return null;
-        }
-      }
-
-      return of(resp);
     }
 
-    return null;
+    if (maxValue) {
+      if (cached.loadedMaxValue) {
+        resp.maxSpectra = cached.maxValue;
+      } else {
+        // We need max but don't have it, so stop here
+        return null;
+      }
+    }
+
+    if (indexes === null || indexes.length > 0) {
+      if (cached.loadedAllPMCs) {
+        for (const spectra of cached.pmcSpectra) {
+          resp.spectraPerLocation.push(Spectra.create({ spectra: spectra }));
+        }
+      } else {
+        // We needed spectra for some PMCs, but haven't loaded them, stop here
+        return null;
+      }
+    }
+
+    return resp;
   }
 
   private decompressSpectra(spectrumData: SpectrumResp) {

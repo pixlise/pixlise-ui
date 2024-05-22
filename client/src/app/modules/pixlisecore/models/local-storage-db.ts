@@ -2,6 +2,7 @@ import Dexie, { Table } from "dexie";
 import { SnackbarDataItem } from "../services/snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { UINotification } from "src/app/modules/settings/services/notifications.service";
+import { ScanSpectrumData } from "../services/spectrum-data.service";
 
 export type CachedImageItem = {
   data: string;
@@ -20,21 +21,32 @@ export type CachedRGBUImageItem = {
   timestamp: number;
 };
 
+export type CachedSpectraItem = {
+  data: Uint8Array;
+  key: string;
+  timestamp: number;
+  loadedAllPMCs: boolean;
+  loadedBulkSum: boolean;
+  loadedMaxValue: boolean;
+};
+
 export class LocalStorageDB extends Dexie {
   eventHistory!: Table<SnackbarDataItem, number>;
   memoData!: Table<MemoisedItem, string>;
   images!: Table<CachedImageItem, string>;
   rgbuImages!: Table<CachedRGBUImageItem, string>;
   notifications!: Table<UINotification, string>;
+  spectra!: Table<CachedSpectraItem, string>;
 
   constructor() {
     super("pixlise");
-    this.version(6).stores({
+    this.version(7).stores({
       eventHistory: "++id",
       notifications: "id",
       memoData: "key",
       images: "key",
       rgbuImages: "key",
+      spectra: "key",
     });
 
     this.on("populate", transaction => {
@@ -68,6 +80,10 @@ export class LocalStorageDB extends Dexie {
 
     await db.transaction("rw", "rgbuImages", () => {
       this.rgbuImages.clear();
+    });
+
+    await db.transaction("rw", "spectra", () => {
+      this.spectra.clear();
     });
   }
 }
