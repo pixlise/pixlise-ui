@@ -43,7 +43,8 @@ export type PushButtonStyle =
   | "light-right-outline"
   | "orange"
   | "dark-outline"
-  | "hover-yellow";
+  | "hover-yellow"
+  | "v3Button";
 
 @Component({
   selector: "push-button",
@@ -83,6 +84,7 @@ export class PushButtonComponent implements OnInit {
       "orange",
       "dark-outline",
       "hover-yellow",
+      "v3Button",
     ];
     if (validStyles.indexOf(this.buttonStyle) == -1) {
       console.warn("Invalid style for push-button: " + this.buttonStyle);
