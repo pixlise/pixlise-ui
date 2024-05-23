@@ -300,7 +300,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
         // Only update if we have the right expression count otherwise this will just trigger an error
-        if (this.mdl.expressionIds.length == 2) {
+        if (this.mdl.expressionIds.length === 2) {
           this.update();
         }
       })

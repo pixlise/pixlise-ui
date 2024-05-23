@@ -27,78 +27,42 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+import { MinMax } from "src/app/models/BasicTypes";
+import { RGBA } from "src/app/utils/colours";
 
-.quant-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-
-  &:hover {
-    background-color: rgb(var(--clr-gray-60));
-  }
-
-  .quant-info {
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-
-    .quant-info-header {
-      display: flex;
-      flex-direction: column;
-    }
-  }
-
-  .quant-element-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-
-    .quant-elem-list {
-      display: flex;
-      flex-direction: column;
-
-      .element-row {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-      }
-    }
-  }
+export class VariogramPoint {
+  constructor(
+    public distance: number,
+    public sum: number,
+    public count: number,
+    public meanValue: number | null
+  ) {}
 }
 
-.detectors {
-  margin-top: $sz-qtr;
-  color: $clr-gray-30;
+export class VariogramPointGroup {
+  constructor(
+    public colour: RGBA,
+    public shape: string,
+    public points: VariogramPoint[],
+    public valueRange: MinMax
+  ) {}
 }
 
-.elem-states {
-  color: $clr-gray-40;
-  font-size: 12px;
-  margin-top: $sz-qtr;
+export class VariogramData {
+  constructor(
+    public title: string,
+    public pointGroups: VariogramPointGroup[],
+    public valueRange: MinMax,
+    public errorMsg: string
+  ) {}
 }
 
-.obj-creator {
-  margin-top: $sz-half;
-}
-
-.quant-elem-list {
-  max-width: 448px; // 14 element tiles across
-}
-
-.blessed {
-  margin-top: $sz-qtr;
-  color: $clr-yellow;
-}
-
-.control-btns {
-  display: flex;
-}
-
-.shared-control-btns {
-  display: flex;
+export class VariogramScanMetadata {
+  constructor(
+    public minXYDistance_mm: number,
+    public locationPointXSize: number,
+    public locationPointYSize: number,
+    public beamUnitsInMeters: boolean,
+    public locationCount: number
+  ) {}
 }

@@ -28,77 +28,99 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import "variables.scss";
-@import "atoms.scss";
+@import "cursors.scss";
 
-.quant-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-
-  &:hover {
-    background-color: rgb(var(--clr-gray-60));
-  }
-
-  .quant-info {
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-
-    .quant-info-header {
-      display: flex;
-      flex-direction: column;
-    }
-  }
-
-  .quant-element-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-
-    .quant-elem-list {
-      display: flex;
-      flex-direction: column;
-
-      .element-row {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-      }
-    }
-  }
-}
-
-.detectors {
-  margin-top: $sz-qtr;
-  color: $clr-gray-30;
-}
-
-.elem-states {
-  color: $clr-gray-40;
+h3 {
   font-size: 12px;
-  margin-top: $sz-qtr;
 }
 
-.obj-creator {
-  margin-top: $sz-half;
+span {
+  color: $clr-gray-10;
 }
 
-.quant-elem-list {
-  max-width: 448px; // 14 element tiles across
+.slider-val {
+  color: $clr-gray-10;
+  font-size: 12px;
+  margin-right: $sz-unit;
 }
 
-.blessed {
-  margin-top: $sz-qtr;
-  color: $clr-yellow;
+.settings-menu {
+  min-width: 275px;
 }
 
-.control-btns {
+.label {
+  color: $clr-gray-30;
+  font-size: 12px;
+  margin-right: $sz-unit;
+}
+
+.settings-menu {
+  .model-options {
+    display: flex;
+    flex-direction: column;
+
+    .model-option {
+      display: flex;
+      align-items: center;
+      padding: 4px;
+      cursor: pointer;
+    }
+  }
+
+  .setting-option {
+    display: flex;
+    align-items: center;
+
+    .slider-control {
+      margin-left: auto;
+    }
+
+    .algorithm-switch {
+      margin-left: auto;
+      white-space: pre;
+    }
+  }
+
+  .algorithm-label {
+    margin-bottom: 8px;
+  }
+
+  .expressions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.canvas-container {
+  height: 100%;
+}
+
+.bottom-buttons {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+  gap: 4px;
 }
 
-.shared-control-btns {
+.live-update {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  .label {
+    cursor: pointer;
+  }
+}
+
+.algorithm-option-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .expression-selector {
+    width: 228px;
+    margin-left: auto;
+  }
 }

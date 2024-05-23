@@ -11,6 +11,7 @@ import {
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 import { QuantificationTableComponent } from "../../table-views/table-views.module";
+import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-widget/variogram-widget.component";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -164,6 +165,13 @@ export const WIDGETS = {
     description: "Quantification Table",
     component: QuantificationTableComponent,
     dataKey: "table",
+    controlConfiguration: {},
+  },
+  variogram: {
+    name: "Variogram",
+    description: "Variogram",
+    component: VariogramWidgetComponent,
+    dataKey: "variogram",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;

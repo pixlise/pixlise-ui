@@ -47,6 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
         [editable]="expression?.owner?.canEdit || false"
+        [allowAdminBuiltin]="true"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
       <span class="option-label">Tags</span>

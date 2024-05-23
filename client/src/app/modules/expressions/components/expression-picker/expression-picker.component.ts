@@ -58,12 +58,14 @@ export type ExpressionPickerResponse = {
   scanId: string;
   quantId: string;
   persistDialog: boolean;
+  subId?: string;
 };
 
 export type ExpressionPickerData = {
   selectedIds?: string[];
   expressionTriggerPosition?: number;
   widgetId?: string;
+  subId?: string;
   scanId?: string;
   quantId?: string;
   noActiveScreenConfig?: boolean;
@@ -79,6 +81,7 @@ export type ExpressionPickerData = {
   showRGBMixMode?: boolean;
   rgbMixModeActive?: boolean;
   disableWidgetSwitching?: boolean;
+  onlyShowItemsWithTag?: string[];
 };
 
 @Component({
@@ -172,6 +175,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.scanId = this.data.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this.draggable = this.data.draggable || false;
+    this._enforceRequiredManualFilterTags();
 
     let widgetSpec: WidgetConfiguration = WIDGETS[this.data?.widgetType as keyof typeof WIDGETS];
 
@@ -695,6 +699,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           scanId: this.scanId,
           quantId: this.quantId,
           persistDialog: this.persistDialog,
+          subId: this.data.subId,
         });
 
         this.onCloseExpressionGroupDialog();
@@ -715,6 +720,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       return this.selectedGroup.id === id;
     } else {
       return this.selectedExpressionIds.has(id);
+    }
+  }
+
+  private _enforceRequiredManualFilterTags() {
+    if (!this.manualFilters) {
+      this.manualFilters = {};
+    }
+
+    if (this.data.onlyShowItemsWithTag && this.data.onlyShowItemsWithTag.length > 0) {
+      if (!this.manualFilters.tagIDs) {
+        this.manualFilters.tagIDs = [];
+      }
+      this.manualFilters.tagIDs = Array.from(new Set([...this.manualFilters.tagIDs, ...this.data.onlyShowItemsWithTag]));
     }
   }
 
@@ -739,6 +757,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     if (subSection === ExpressionBrowseSections.RECENT) {
       this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: section, onlyShowRecent: true };
     }
+
+    this._enforceRequiredManualFilterTags();
 
     this.activeBrowseGroup = section;
     this.activeBrowseSection = subSection;
@@ -928,6 +948,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     } else {
       this.manualFilters = { authors: [author] };
     }
+
+    this._enforceRequiredManualFilterTags();
   }
 
   onFilterChanged({ filteredExpressions, scanId, quantId, valueChanged }: ExpressionSearchFilter) {
@@ -1004,6 +1026,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     if (this.activeBrowseSection === ExpressionBrowseSections.RECENT) {
       this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: this.activeBrowseGroup, onlyShowRecent: true };
+      this._enforceRequiredManualFilterTags();
     }
   }
 
@@ -1101,6 +1124,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               scanId: this.scanId,
               quantId: this.quantId,
               persistDialog: this.persistDialog,
+              subId: this.data.subId,
             });
           },
           error: err => {
@@ -1118,6 +1142,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         scanId: this.scanId,
         quantId: this.quantId,
         persistDialog: this.persistDialog,
+        subId: this.data.subId,
       });
 
       if (!this.persistDialog) {
@@ -1127,6 +1152,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           scanId: this.scanId,
           quantId: this.quantId,
           persistDialog: this.persistDialog,
+          subId: this.data.subId,
         });
       }
     }
