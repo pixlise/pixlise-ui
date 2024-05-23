@@ -27,6 +27,7 @@ import { QuantGetReq } from "../../../generated-protos/quantification-retrieval-
 import { DataExpressionId } from "../../../expression-language/expression-id";
 import { PMCDataValues } from "../../../expression-language/data-values";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
+import { SpectrumDataService } from "../../pixlisecore/services/spectrum-data.service";
 
 @Injectable({
   providedIn: "root",
@@ -36,6 +37,7 @@ export class DataExporterService {
     private _snackService: SnackbarService,
     private _apiService: APIDataService,
     private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
     private _endpointsService: APIEndpointsService,
     private _widgetDataService: WidgetDataService,
     private _diffractionService: DiffractionService,
@@ -157,9 +159,10 @@ export class DataExporterService {
     const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>, Observable<ScanMetaLabelsAndTypesResp>] = [
       this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
       this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
-      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })),
+      this._spectrumDataService.getSpectrum(scanId, null, true, true),
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
     ];
+
     return combineLatest(requests).pipe(
       switchMap(([beamLocations, scanEntries, spectrumResp, scanMeta]) => {
         let csvs: WidgetExportFile[] = [];
@@ -237,7 +240,7 @@ export class DataExporterService {
 
   getBulkSumMaxSpectra(scanId: string): Observable<WidgetExportData> {
     let spectrumRequests: Observable<SpectrumResp>[] = [
-      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, maxValue: true })), // All Points
+      this._spectrumDataService.getSpectrum(scanId, null, true, true), // All Points
     ];
 
     return combineLatest(spectrumRequests).pipe(
@@ -363,7 +366,7 @@ export class DataExporterService {
   getSpectraMetadata(scanId: string): Observable<WidgetExportData> {
     const requests: [Observable<ScanMetaLabelsAndTypesResp>, Observable<SpectrumResp>] = [
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
-      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId, bulkSum: true, entries: { indexes: [] } })),
+      this._spectrumDataService.getSpectrum(scanId, [], true, false),
     ];
 
     return combineLatest(requests).pipe(
@@ -511,10 +514,12 @@ export class DataExporterService {
     }).pipe(
       mergeMap(({ manualPeaks, currentCalibrations }) => {
         const dataSource = new ExpressionDataSource();
-        return dataSource.prepare(this._cachedDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), currentCalibrations).pipe(
-          switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
-          map(() => ({ manualPeaks, currentCalibrations, dataSource }))
-        );
+        return dataSource
+          .prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), currentCalibrations)
+          .pipe(
+            switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
+            map(() => ({ manualPeaks, currentCalibrations, dataSource }))
+          );
       })
     );
   }

@@ -47,6 +47,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
@@ -139,6 +140,7 @@ export class RoughnessComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
     private _selectionService: SelectionService,
     private _diffractionService: DiffractionService,
     private _userOptionsService: UserOptionsService,
@@ -313,6 +315,7 @@ export class RoughnessComponent implements OnInit, OnDestroy {
             return dataSource
               .prepare(
                 this._cachedDataService,
+                this._spectrumDataService,
                 this.selectedScanId,
                 this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
                 PredefinedROIID.getAllPointsForScan(this.selectedScanId),

@@ -1,31 +1,51 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 
 import { APICommService } from "./apicomm.service";
 
-import { WSMessage } from "../../../generated-protos/websocket";
-import { WSMessageHandler } from "./wsMessageHandler";
+import { ResponseStatus, WSMessage } from "../../../generated-protos/websocket";
+import { WSError, WSMessageHandler, WSOustandingReq } from "./wsMessageHandler";
 import { randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
+import { Subject, Subscription, interval } from "rxjs";
+import { environment } from "src/environments/environment";
+
+const TIMEOUT_CHECK_INTERVAL_MS = 3000;
+const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
 
 @Injectable({
   providedIn: "root",
 })
-export class APIDataService extends WSMessageHandler {
-  private _sendQueue: WSMessage[] = [];
+export class APIDataService extends WSMessageHandler implements OnDestroy {
+  private _subs = new Subscription();
   private _isConnected = false;
 
   private _id = randomString(6);
+
+  // Generating message IDs:
+  // These are what we send up, API generates reply with same ID in it to specify what it's replying to. This can be
+  // any number, and we can re-send a request and expect a reply to it (even after a reconnection - id sequence
+  // doesnt have to restart). If it overflows MAX_INT, it loops around, that's ok! We just make sure our counter
+  // also restarts at MAX_INT
+  private _lastMsgId = 1;
+
+  protected nextMsgId() {
+    this._lastMsgId++;
+    if (this._lastMsgId > 2147483647) {
+      this._lastMsgId = 0;
+    }
+    return this._lastMsgId;
+  }
 
   constructor(private _apiComms: APICommService) {
     super();
     console.log(`APIDataService [${this._id}] created`);
 
-    if (this._apiComms.initialised) {
-      // Only auto-connect if the layer below us is happy. This is just to prevent putting another
-      // reference in here to SnackbarService really...
-      this.connect();
-    }
+    this.connect();
+  }
+
+  ngOnDestroy() {
+    this.stopTimeoutChecks();
   }
 
   private connect() {
@@ -41,40 +61,58 @@ export class APIDataService extends WSMessageHandler {
           console.error("APIDataService connect error:");
           console.error(err); // Called if at any point WebSocket API signals some kind of error.
           // Not sure what we should do at this point...
+
+          this.stopTimeoutChecks();
         },
         complete: () => {
           console.log(`APIDataService [${this._id}] connect received complete event`); // Called when connection is closed (for whatever reason).
           // At this point we have to clear subscriptions or something...
+
+          this.stopTimeoutChecks();
         },
       });
   }
 
+  private stopTimeoutChecks() {
+    this._subs.unsubscribe();
+  }
+
   private onConnected() {
-    console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${this._sendQueue.length} items`);
+    // Find all outstanding requests
+    const reqs = [];
+    for (const outstanding of this._outstandingRequests.values()) {
+      reqs.push(outstanding.req);
+      outstanding.resetCreateTime(); // Reset its creation time because we're about to send it to our new connection!
+    }
+
+    console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${reqs.length} items`);
     this._isConnected = true;
 
     // Send everything in the queue
-    for (const msg of this._sendQueue) {
+    for (const msg of reqs) {
       this._apiComms.send(msg);
     }
 
-    this._sendQueue = [];
-    /*
-        // We're connected, request user details
-        let req = WSMessage.create({userDetailsReq: UserDetailsReq.create()});
-        this.sendRequest(req);
-*/
+    // Start a timeout checking mechanism
+    this._subs.add(
+      interval(TIMEOUT_CHECK_INTERVAL_MS).subscribe(() => {
+        this.checkTimeouts();
+      })
+    );
   }
 
-  protected sendRequest(wsmsg: WSMessage): void {
+  protected sendRequest(wsmsg: WSMessage, subj: Subject<any>): void {
+    wsmsg.msgId = this.nextMsgId();
+    this._outstandingRequests.set(wsmsg.msgId, new WSOustandingReq(wsmsg, subj));
+
     // If we're not yet connected, queue this up
-    if (!this._isConnected) {
+    if (!this._apiComms.isConnected) {
       const jsonMsg = WSMessage.toJSON(wsmsg);
       console.log(`APIDataService [${this._id}] sendRequest while not yet connected. Queued up: ${JSON.stringify(jsonMsg)}`);
-      this._sendQueue.push(wsmsg);
-    } else {
-      this._apiComms.send(wsmsg);
+      return;
     }
+
+    this._apiComms.send(wsmsg);
   }
 
   private dispatchMessage(wsmsg: WSMessage) {
@@ -84,14 +122,24 @@ export class APIDataService extends WSMessageHandler {
       if (!this.dispatchUpdate(wsmsg)) {
         console.error(`APIDataService [${this._id}] Failed to dispatch message: ` + JSON.stringify(WSMessage.toJSON(wsmsg), null, 4));
       }
+    } else {
+      console.log("<--Recd for msgId:" + wsmsg.msgId);
+    }
+  }
+
+  private checkTimeouts() {
+    if (!this._apiComms.isConnected) {
+      this.stopTimeoutChecks();
+      return;
+    }
+
+    const tooOld = performance.now() - MESSAGE_TIMEOUT_MS;
+
+    for (const req of this._outstandingRequests.values()) {
+      if (req.createTime < tooOld) {
+        // This has timed out, error out or retry or something
+        req.sub.error(new WSError(ResponseStatus.WS_TIMEOUT, "Request timed out", "Try reloading the PIXLISE tab"));
+      }
     }
   }
 }
-/*
-export function mapArrayBufferToProto<T extends { decode: (input: _m0.Reader | Uint8Array, length?: number)=>T}>(buf: ArrayBuffer, msg: T): T
-{
-    const arr = new Uint8Array(buf);
-    const res = msg.decode(arr);
-    return res; 
-}
-*/
