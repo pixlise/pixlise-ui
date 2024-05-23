@@ -5,4 +5,6 @@ export class BuiltInTags {
   static readonly type = "builtin";
 
   static readonly exampleTag = "builtin-example";
+  static readonly variogramComparisonAlgorithm = "variogram-comparison-algorithm";
+  static readonly variogramMap = "variogram-map";
 }

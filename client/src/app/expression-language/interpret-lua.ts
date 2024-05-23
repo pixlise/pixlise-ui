@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, combineLatest, from } from "rxjs";
+import { Observable, combineLatest, firstValueFrom, from, lastValueFrom, of } from "rxjs";
 import { map, mergeMap, concatMap, catchError, finalize, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -58,6 +58,7 @@ export class LuaDataQuerier {
   private _runtimeStdErr = "";
 
   private _dataSource: InterpreterDataSource | null = null;
+  private _customInjectFunctionData: Map<string, any> | null = null;
 
   constructor(
     private _debug: boolean //private _luaUseReplay: boolean,
@@ -188,76 +189,83 @@ export class LuaDataQuerier {
       "element_async",
       async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
-        return this.makeLuaTableAsync(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
+        return this.makeLuaTableAsync(`elem-${a}-${b}-${c}`, this._dataSource!.readElement([a, b, c]));
       },
     ],
     [
       "elementSum_async",
       async (a: any, b: any) => {
         // Dont save runtime stat here, this works for any quant
-        return this.makeLuaTableAsync(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
+        return this.makeLuaTableAsync(`elemSum-${a}-${b}`, this._dataSource!.readElementSum([a, b]));
       },
     ],
     [
       "data_async",
       async (a: any, b: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-        return this.makeLuaTableAsync(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
+        return this.makeLuaTableAsync(`data-${a}-${b}`, this._dataSource!.readMap([a, b]));
       },
     ],
     [
       "spectrum_async",
       async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-        return this.makeLuaTableAsync(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
+        return this.makeLuaTableAsync(`spectrum-${a}-${b}-${c}`, this._dataSource!.readSpectrum([a, b, c]));
       },
     ],
     [
       "spectrumDiff_async",
       async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-        return this.makeLuaTableAsync(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
+        return this.makeLuaTableAsync(`spectrumDiff-${a}-${b}-${c}`, this._dataSource!.readSpectrumDifferences([a, b, c]));
       },
     ],
     [
       "pseudo_async",
       async (a: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
-        return this.makeLuaTableAsync(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
+        return this.makeLuaTableAsync(`pseudo-${a}`, this._dataSource!.readPseudoIntensity([a]));
       },
     ],
     [
       "housekeeping_async",
       async (a: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + a);
-        return this.makeLuaTableAsync(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
+        return this.makeLuaTableAsync(`housekeeping-${a}`, this._dataSource!.readHousekeepingData([a]));
       },
     ],
     [
       "diffractionPeaks_async",
       async (a: any, b: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
-        return this.makeLuaTableAsync(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
+        return this.makeLuaTableAsync(`diffractionPeaks-${a}-${b}`, this._dataSource!.readDiffractionData([a, b]));
       },
     ],
     [
       "roughness_async",
       async () => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
-        return this.makeLuaTableAsync("roughness", this._dataSource.readRoughnessData([]));
+        return this.makeLuaTableAsync("roughness", this._dataSource!.readRoughnessData([]));
       },
     ],
     [
       "position_async",
       async (a: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
-        return this.makeLuaTableAsync(`position-${a}`, this._dataSource.readPosition([a]));
+        return this.makeLuaTableAsync(`position-${a}`, this._dataSource!.readPosition([a]));
       },
     ],
     [
       "makeMap_async",
       async (a: any) => {
-        return this.makeLuaTableAsync(`makeMap-${a}`, this._dataSource.makeMap([a]));
+        return this.makeLuaTableAsync(`makeMap-${a}`, this._dataSource!.makeMap([a]));
+      },
+    ],
+    [
+      "getVariogramInputs",
+      async (a: any) => {
+        console.log("getVariogramInputs", a);
+        return firstValueFrom(of(this._customInjectFunctionData?.get("getVariogramInputs") || []));
       },
     ],
   ]);
@@ -298,10 +306,12 @@ export class LuaDataQuerier {
     cleanupLua: boolean,
     allowAnyResponse: boolean,
     //recordExpressionInputs: boolean
-    maxTimeoutMs: number = environment.luaTimeoutMs
+    maxTimeoutMs: number = environment.luaTimeoutMs,
+    customInjectFunctionData: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
     this._execCount++;
     this._dataSource = dataSource;
+    this._customInjectFunctionData = customInjectFunctionData;
 
     const t0 = performance.now();
     this._makeLuaTableTime = 0;
@@ -366,6 +376,19 @@ export class LuaDataQuerier {
     );
   }
 
+  private cleanupInjectedFunctions(injectedFunctions: Set<string>): void {
+    if (!this._lua || !injectedFunctions || injectedFunctions.size === 0) {
+      return;
+    }
+
+    for (const funcName of injectedFunctions) {
+      let prefix = this._debug ? "P" : "";
+      let prefixFuncName = prefix + funcName;
+
+      this._lua.global.set(prefixFuncName, lastValueFrom(of([])));
+    }
+  }
+
   private runLuaCodeSync(sourceCode: string, timeoutMs: number): any {
     if (!this._lua) {
       return null;
@@ -382,7 +405,7 @@ export class LuaDataQuerier {
     t0: number,
     allowAnyResponse: boolean,
     maxTimeoutMs: number = environment.luaTimeoutMs
-    //recordExpressionInputs: boolean
+    //recordExpressionInputs: boolean,
   ): Observable<DataQueryResult> {
     // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
     this._runtimeDataRequired.clear();
@@ -448,6 +471,9 @@ export class LuaDataQuerier {
         throw parsedErr;
       }),
       finalize(() => {
+        // Clean up injected functions
+        let injectedFunctionNames = new Set<string>(Array.from(this._customInjectFunctionData?.keys() || []));
+        this.cleanupInjectedFunctions(injectedFunctionNames);
         /*
                     NOTE: we used to clear the func name we just ran but it's now a local variable so Lua automatically cleans it up
                     this._lua.global.set(exprFuncName, null);

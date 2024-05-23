@@ -69,17 +69,19 @@ export class DataQuerier {
     dataSource: InterpreterDataSource,
     allowAnyResponse: boolean,
     recordExpressionInputs: boolean,
-    maxTimeoutMs: number = environment.luaTimeoutMs
+    maxTimeoutMs: number = environment.luaTimeoutMs,
+    injectedFunctions: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
     // Decide which interperter to run it in
-    if (expressionLanguage == EXPR_LANGUAGE_LUA) {
+    if (expressionLanguage === EXPR_LANGUAGE_LUA) {
       return this._interpretLua.runQuery(
         expression,
         modules,
         dataSource,
         environment.newLuaPerExpression,
         allowAnyResponse /*, recordExpressionInputs*/,
-        maxTimeoutMs
+        maxTimeoutMs,
+        injectedFunctions
       );
     } else {
       if (this._luaTranspiler) {

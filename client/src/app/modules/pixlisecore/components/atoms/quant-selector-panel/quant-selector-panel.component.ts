@@ -28,15 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { OverlayRef } from "@angular/cdk/overlay";
-import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
+import { Component, Inject, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription, timer } from "rxjs";
 import { PANEL_CHILD_DATA } from "src/app/modules/pixlisecore/components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
-// import { QuantificationSelectionService } from "src/app/services/quantification-selection.service";
-// import { AuthenticationService } from "src/app/services/authentication.service";
-// import { ViewStateService } from "src/app/services/view-state.service";
-// import { PANEL_CHILD_DATA } from "src/app/UI/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
-// import { QuantificationUploadDialogComponent } from "src/app/UI/quantification-upload-dialog/quantification-upload-dialog.component";
 
 export class QuantSelection {
   constructor(

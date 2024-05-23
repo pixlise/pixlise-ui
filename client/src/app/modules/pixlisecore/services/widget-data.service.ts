@@ -79,7 +79,8 @@ export class DataSourceParams {
     public exprId: string,
     public quantId: string,
     public roiId: string,
-    public units: DataUnit = DataUnit.UNIT_DEFAULT
+    public units: DataUnit = DataUnit.UNIT_DEFAULT,
+    public injectedFunctions: Map<string, any> | null = null
   ) {}
 }
 
@@ -174,11 +175,11 @@ export class WidgetDataService {
   // amount of items as the input parameters array (what). This is required because code calling this can then know which
   // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
   // should equal "what.length". There are also error values that can be returned.
-  getData(what: DataSourceParams[] /*, continueOnError: boolean*/): Observable<RegionDataResults> {
+  getData(what: DataSourceParams[], allowAnyResponse: boolean = false): Observable<RegionDataResults> {
     // Query each one separately and combine results at the end
     const exprResult$: Observable<DataQueryResult>[] = [];
     for (const query of what) {
-      exprResult$.push(this.getDataSingle(query, false));
+      exprResult$.push(this.getDataSingle(query, allowAnyResponse));
     }
 
     // Now wait for all expressions to complete
@@ -206,11 +207,19 @@ export class WidgetDataService {
   }
 
   private makeCacheKey(query: DataSourceParams, allowAnyResponse: boolean): Observable<string> {
+    // We need to strip out anything that doesn't affect the result of the query
+    let strippedQuery = {
+      scanId: query.scanId,
+      exprId: query.exprId,
+      quantId: query.quantId,
+      roiId: query.roiId,
+      units: query.units,
+    };
     // We need to get time stamps for each item to make this cache key unique to only this specific version of
     // the quant, scan, ROI, etc
 
     // Get the cache key so far
-    let cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+    let cacheKeyStart = JSON.stringify(strippedQuery) + ",Resp:" + allowAnyResponse;
 
     // If it's an unsaved expression, make this prominent so it's easier to filter out
     if (DataExpressionId.isUnsavedExpressionId(query.exprId)) {
@@ -378,7 +387,16 @@ export class WidgetDataService {
     // special handling here that ends up just returning an expression!
     return this.getExpression(query.exprId).pipe(
       concatMap((expr: DataExpression) => {
-        return this.runExpression(expr, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
+        return this.runExpression(
+          expr,
+          query.scanId,
+          query.quantId,
+          query.roiId,
+          allowAnyResponse,
+          false,
+          environment.luaTimeoutMs,
+          query.injectedFunctions || null
+        ).pipe(
           mergeMap((result: DataQueryResult) => {
             return this._roiService.getRegionSettings(query.roiId).pipe(
               map((roiSettings: RegionSettings) => {
@@ -394,7 +412,7 @@ export class WidgetDataService {
                 this._inFluxSingleQueryResultCache.delete(cacheKey);
 
                 // Also, add to memoisation cache
-                if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+                if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
                   const encodedResult = this.toMemoised(result);
                   this._memoisationService.memoise(cacheKey, encodedResult);
                 }
@@ -458,6 +476,7 @@ export class WidgetDataService {
     // We copy to protobuf structs which then serialise to binary
     // NOTE: This is an experiment, if it works, maybe we'll switch all code to use these structs!
     const memValues = [];
+
     for (const val of result.resultValues.values) {
       memValues.push(
         MemPMCDataValue.create({
@@ -593,7 +612,8 @@ export class WidgetDataService {
     // TODO: calibration as a parameter?
     allowAnyResponse: boolean,
     isUnsaved: boolean = false,
-    maxTimeoutMs: number = environment.luaTimeoutMs
+    maxTimeoutMs: number = environment.luaTimeoutMs,
+    injectedFunctions: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
     console.log(
       `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
@@ -627,56 +647,58 @@ export class WidgetDataService {
           concatMap(() => {
             const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
 
-            return querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs).pipe(
-              map((queryResult: DataQueryResult) => {
-                console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs.toLocaleString()}ms`);
+            return querier
+              .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)
+              .pipe(
+                map((queryResult: DataQueryResult) => {
+                  console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs.toLocaleString()}ms`);
 
-                // Save runtime stats for this expression if we haven't done this recently (don't spam)
-                const nowMs = Date.now();
-                const lastNotify = this._exprRunStatLastNotificationTime.get(expression.id);
-                if (!lastNotify || nowMs - lastNotify > 60000) {
-                  // Also, normalise it for runtime for 1000 points!
-                  let runtimePer1000 = 0;
+                  // Save runtime stats for this expression if we haven't done this recently (don't spam)
+                  const nowMs = Date.now();
+                  const lastNotify = this._exprRunStatLastNotificationTime.get(expression.id);
+                  if (!lastNotify || nowMs - lastNotify > 60000) {
+                    // Also, normalise it for runtime for 1000 points!
+                    let runtimePer1000 = 0;
 
-                  // Need to account for allowAnyResponse edge case
-                  const values = queryResult?.resultValues?.values || [];
-                  if (queryResult.runtimeMs > 0 && values.length > 0) {
-                    runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
-                  }
+                    // Need to account for allowAnyResponse edge case
+                    const values = queryResult?.resultValues?.values || [];
+                    if (queryResult.runtimeMs > 0 && values.length > 0) {
+                      runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
+                    }
 
-                  // Remember when we notified, so we don't spam
-                  this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
+                    // Remember when we notified, so we don't spam
+                    this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
 
-                  if (
-                    !DataExpressionId.isPredefinedExpression(expression.id) &&
-                    !DataExpressionId.isUnsavedExpressionId(expression.id) &&
-                    queryResult.dataRequired.length > 0
-                  ) {
-                    this._dataService
-                      .sendExpressionWriteExecStatRequest(
-                        ExpressionWriteExecStatReq.create({
-                          id: expression.id,
-                          stats: {
-                            dataRequired: queryResult.dataRequired,
-                            runtimeMsPer1000Pts: runtimePer1000,
-                            // timeStampUnixSec - filled out by API
+                    if (
+                      !DataExpressionId.isPredefinedExpression(expression.id) &&
+                      !DataExpressionId.isUnsavedExpressionId(expression.id) &&
+                      queryResult.dataRequired.length > 0
+                    ) {
+                      this._dataService
+                        .sendExpressionWriteExecStatRequest(
+                          ExpressionWriteExecStatReq.create({
+                            id: expression.id,
+                            stats: {
+                              dataRequired: queryResult.dataRequired,
+                              runtimeMsPer1000Pts: runtimePer1000,
+                              // timeStampUnixSec - filled out by API
+                            },
+                          })
+                        )
+                        .subscribe({
+                          error: err => {
+                            console.error(httpErrorToString(err, "sendExpressionWriteExecStatRequest"));
                           },
-                        })
-                      )
-                      .subscribe({
-                        error: err => {
-                          console.error(httpErrorToString(err, "sendExpressionWriteExecStatRequest"));
-                        },
-                      }); // we don't really do anything different if this passes or fails
+                        }); // we don't really do anything different if this passes or fails
+                    }
                   }
-                }
 
-                // Add the other stuff we loaded along the way
-                queryResult.expression = expression;
+                  // Add the other stuff we loaded along the way
+                  queryResult.expression = expression;
 
-                return queryResult;
-              })
-            );
+                  return queryResult;
+                })
+              );
           })
         );
       })
@@ -750,9 +772,11 @@ export class WidgetDataService {
     const pmcValues = result?.resultValues as PMCDataValues;
     if (result.errorMsg || !Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))) {
       let msg = result.errorMsg;
+      let isValidError = result?.isPMCTable && msg;
       if (!msg) {
         msg = "Result is not a PMC array!";
       }
+
       return new RegionDataResultItem(
         new DataQueryResult(
           result.resultValues,
@@ -763,7 +787,7 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Expression failed to complete", msg),
+        isValidError ? new WidgetError("Expression failed to complete", msg) : null,
         "", // warning
         result.expression,
         result.region,
