@@ -32,23 +32,6 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #settingsMenu>
   <div class="settings-menu">
     <h2>Settings</h2>
-    <!-- <multi-switch-button [options]="drawingModes" [value]="activeDrawMode" (onChange)="setDrawMode($event)"></multi-switch-button>
-
-    <h3>Model</h3>
-    <div class="model-options">
-      <div class="model-option" (click)="onModelExponential()">
-        <action-button [action]="varioModelIsExponential ? 'radioOn' : 'radioOff'"></action-button>
-        <span>Exponential</span>
-      </div>
-      <div class="model-option" (click)="onModelSpherical()">
-        <action-button [action]="varioModelIsSpherical ? 'radioOn' : 'radioOff'"></action-button>
-        <span>Spherical</span>
-      </div>
-      <div class="model-option" (click)="onModelGaussian()">
-        <action-button [action]="varioModelIsGaussian ? 'radioOn' : 'radioOff'"></action-button>
-        <span>Gaussian</span>
-      </div>
-    </div> -->
 
     <h3>Max Distance</h3>
     <div class="setting-option">
@@ -76,13 +59,6 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="algorithm-option-container">
           <div class="setting-option">
             <div class="label" title="{{ expressions[0].name }}">{{ expressions[0].name }}</div>
-            <!-- <two-state-button
-          leftLabel="Subtract"
-          rightLabel="XOR-Sum"
-          toolTip="Selection of combining algorithm"
-          [active]="xorLeft"
-          (onToggle)="setCombiningAlgorithm($event, true)">
-        </two-state-button> -->
             <multi-switch-button
               class="algorithm-switch"
               [options]="crossCombiningAlgorithms"
@@ -98,13 +74,6 @@ POSSIBILITY OF SUCH DAMAGE.
           <div class="algorithm-option-container">
             <div class="setting-option">
               <div class="label" title="{{ expressions[1].name }}">{{ expressions[1].name }}</div>
-              <!-- <two-state-button
-            leftLabel="Subtract"
-            rightLabel="XOR-Sum"
-            toolTip="Selection of combining algorithm"
-            [active]="xorRight"
-            (onToggle)="setCombiningAlgorithm($event, false)">
-          </two-state-button> -->
               <multi-switch-button
                 class="algorithm-switch"
                 [options]="crossCombiningAlgorithms"
@@ -113,36 +82,24 @@ POSSIBILITY OF SUCH DAMAGE.
               </multi-switch-button>
             </div>
             <div *ngIf="activeRightCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
-              <push-button (onClick)="onCustomAlgorithm(false)">{{ customLeftAlgorithm?.name || "Select Combining Algorithm" }}</push-button>
+              <push-button (onClick)="onCustomAlgorithm(false)">{{ customRightAlgorithm?.name || "Select Combining Algorithm" }}</push-button>
             </div>
           </div>
         </ng-container>
       </div>
     </ng-container>
-    <div class="live-update" (click)="liveUpdate = !liveUpdate">
-      <action-button [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
-      <span class="label">Live Update</span>
+
+    <div class="bottom-buttons">
+      <div class="live-update" (click)="liveUpdate = !liveUpdate">
+        <action-button [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
+        <span class="label">Live Update</span>
+      </div>
+      <push-button [disabled]="liveUpdate" (onClick)="update()">Update</push-button>
     </div>
   </div>
 </ng-template>
 
 <div class="canvas-container">
-  <!-- <div class="panel-title">
-    <widget-switcher [activeSelector]="thisSelector" [widgetPosition]="widgetPosition"></widget-switcher>
-    <div class="gap-separated-horizontal-elements">
-      <icon-button (click)="onToggleSolo()" title="Toggle Solo View" icon="assets/button-icons/widget-solo.svg" [state]="isSolo"> </icon-button>
-
-      <push-button (onClick)="onExpressions()" title="Choose elements/expressions to display">Elements</push-button>
-      <push-button (onClick)="onRegions($event)" title="Choose regions to display">Regions</push-button>
-
-      <widget-settings-menu [settingsDialog]="variogramSettingsMenu">
-        <icon-button title="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>
-      </widget-settings-menu>
-    </div>
-  </div> -->
-
-  <!-- <app-widget-display-message *ngIf="errorMsg" [message]="errorMsg" fxFlex="100%"></app-widget-display-message> -->
-
   <interactive-canvas
     *ngIf="drawer && !errorMsg"
     [ngClass]="cursorShown"
@@ -151,6 +108,4 @@ POSSIBILITY OF SUCH DAMAGE.
     [interactionHandler]="interaction"
     [transform]="transform">
   </interactive-canvas>
-
-  <!-- <widget-key-display [items]="keyItems" class="key-location-top-right-below-title"></widget-key-display> -->
 </div>

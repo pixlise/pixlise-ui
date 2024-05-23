@@ -7,4 +7,8 @@ export class BuiltInTags {
   static readonly exampleTag = "builtin-example";
   static readonly variogramComparisonAlgorithm = "variogram-comparison-algorithm";
   static readonly variogramMap = "variogram-map";
+
+  static hasAllowAnyExpressionResponseTag(tags: string[]): boolean {
+    return tags.includes(BuiltInTags.variogramMap);
+  }
 }

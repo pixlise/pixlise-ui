@@ -59,6 +59,7 @@ import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
 import { ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
+import { BuiltInTags } from "../../tags/models/tag.model";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -387,6 +388,7 @@ export class WidgetDataService {
     // special handling here that ends up just returning an expression!
     return this.getExpression(query.exprId).pipe(
       concatMap((expr: DataExpression) => {
+        allowAnyResponse = allowAnyResponse || BuiltInTags.hasAllowAnyExpressionResponseTag(expr.tags);
         return this.runExpression(
           expr,
           query.scanId,

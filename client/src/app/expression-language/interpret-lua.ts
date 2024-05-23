@@ -263,9 +263,53 @@ export class LuaDataQuerier {
     ],
     [
       "getVariogramInputs",
-      async (a: any) => {
-        console.log("getVariogramInputs", a);
-        return firstValueFrom(of(this._customInjectFunctionData?.get("getVariogramInputs") || []));
+      (useTestData: any) => {
+        let values = this._customInjectFunctionData?.get("getVariogramInputs") || [];
+        if (values.length === 0 && useTestData) {
+          values = [
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 8, value: 3, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 9, value: 9, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 10, value: 13, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 11, value: 13, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 12, value: 6, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 13, value: 2, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 14, value: 1, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 15, value: 1, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 16, value: 0.8, isUndefined: false, label: "" },
+            ],
+            [
+              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+              { pmc: 17, value: 0.85, isUndefined: false, label: "" },
+            ],
+          ];
+        }
+        return values;
       },
     ],
   ]);

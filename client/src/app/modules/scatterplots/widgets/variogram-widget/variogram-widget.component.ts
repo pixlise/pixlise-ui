@@ -29,7 +29,7 @@
 
 import { Component, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { combineLatest, forkJoin, map, Observable, of, shareReplay, Subject, Subscription, switchMap } from "rxjs";
+import { catchError, combineLatest, forkJoin, map, Observable, of, shareReplay, Subject, Subscription, switchMap } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { distanceBetweenPoints, distanceSquaredBetweenPoints, Point } from "src/app/models/Geometry";
@@ -253,18 +253,23 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         if (result.subId === "elements") {
           if (result && result.selectedExpressions?.length > 0) {
             this._expressionIds = result.selectedExpressions.map(expr => expr.id);
-            this.update();
-            this.saveState();
+            if (this.liveUpdate) {
+              this.saveAndUpdate();
+            }
           }
         } else if (result.subId === "left-algorithm") {
           if (result.selectedExpressions.length > 0) {
             this.customLeftAlgorithm = result.selectedExpressions[0];
-            this.update();
+            if (this.liveUpdate) {
+              this.saveAndUpdate();
+            }
           }
         } else if (result.subId === "right-algorithm") {
           if (result.selectedExpressions.length > 0) {
             this.customRightAlgorithm = result.selectedExpressions[0];
-            this.update();
+            if (this.liveUpdate) {
+              this.saveAndUpdate();
+            }
           }
         }
 
@@ -348,19 +353,24 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     return this._variogramModel.binCount;
   }
 
+  saveAndUpdate(): void {
+    this.saveState();
+    this.update();
+  }
+
   onChangeDistance(event: SliderValue) {
     this._variogramModel.maxDistance = event.value;
 
     if (this.liveUpdate) {
       this.update();
     }
-    if (event.finish) {
-      if (!this.liveUpdate) {
-        this.update();
-      }
+    // if (event.finish) {
+    //   if (!this.liveUpdate) {
+    //     this.update();
+    //   }
 
-      this.saveState();
-    }
+    //   this.saveState();
+    // }
   }
 
   onChangeBins(event: SliderValue) {
@@ -369,12 +379,12 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     if (this.liveUpdate) {
       this.update();
     }
-    if (event.finish) {
-      if (!this.liveUpdate) {
-        this.update();
-      }
-      this.saveState();
-    }
+    // if (event.finish) {
+    //   if (!this.liveUpdate) {
+    //     this.update();
+    //   }
+    //   this.saveState();
+    // }
   }
 
   get errorMsg(): string {
@@ -393,8 +403,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   setDrawModeVector(drawVector: boolean): void {
     this.drawModeVector = drawVector;
 
-    this.saveState();
-    this.update();
+    if (this.liveUpdate) {
+      this.saveAndUpdate();
+    }
   }
 
   setActiveCrossCombiningAlgorithm(left: boolean, algorithm: string): void {
@@ -418,8 +429,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       this.xorRight = xor;
     }
 
-    this.saveState();
-    this.update();
+    if (this.liveUpdate) {
+      this.saveAndUpdate();
+    }
   }
 
   private saveState(): void {
@@ -475,8 +487,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
           });
         }
 
-        this.update();
-        this.saveState();
+        if (this.liveUpdate) {
+          this.saveAndUpdate();
+        }
       }
     });
   }
@@ -484,11 +497,15 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   onCustomAlgorithm(left: boolean) {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
+
+    let selectedId = left ? this.customLeftAlgorithm?.id : this.customRightAlgorithm?.id;
+    let selectedIds = selectedId ? [selectedId] : [];
+
     dialogConfig.data = {
       widgetId: this._widgetId,
       scanId: this._analysisLayoutService.defaultScanId,
       quantId: this._analysisLayoutService.getQuantIdForScan(this._analysisLayoutService.defaultScanId) || "",
-      selectedIds: this.customLeftAlgorithm?.id ? [this.customLeftAlgorithm.id] : [],
+      selectedIds,
       maxSelection: 1,
       enforceMaxSelectionWhileEditing: true,
       disableWidgetSwitching: true,
@@ -516,7 +533,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     this.dialog.open(ExpressionPickerComponent, dialogConfig);
   }
 
-  private update(): void {
+  update(): void {
     // Get the slider bounds, these are dataset dependent
     let t0 = performance.now();
 
@@ -543,34 +560,38 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   }
 
   private fetchVariogramPointsWithError(queryData: RegionDataResults | null): Observable<{ errorStr: string; varioPoints: VariogramPoint[][] }> {
-    // let varioPoints: VariogramPoint[][] = [];
     let errorStr = "";
 
     if (!this._variogramModel.binCount || this._variogramModel.binCount < this.binSliderMin) {
-      errorStr = "invalid bin count";
+      errorStr = "Invalid bin count";
     } else {
       if (!queryData) {
-        errorStr = "invalid expressions or ROIs selected";
+        errorStr = "Invalid expressions or ROIs selected";
       } else {
         if (queryData.error) {
-          errorStr = "error: " + queryData.error;
+          errorStr = "Error: " + queryData.error;
         } else {
           let valsOnly: PMCDataValues[] = [];
           for (let result of queryData.queryResults) {
-            valsOnly.push(result.values);
+            if (result.values) {
+              valsOnly.push(result.values);
+            } else {
+              errorStr = `Failed to get expression data for ${result.expression?.name || result.expression?.id || "expression"}`;
+              this._snackService.openError(errorStr);
+            }
           }
-          // varioPoints = this.calcAllVariogramPoints(valsOnly);
-          // if (varioPoints.length <= 0) {
-          //   errorStr = "failed to get expression data";
-          // }
 
           return this.calcAllVariogramPoints(valsOnly).pipe(
             map(varioPoints => {
               if (varioPoints.length <= 0) {
-                errorStr = "failed to get expression data";
+                errorStr = "Failed to get expression data";
               }
 
               return { errorStr, varioPoints };
+            }),
+            catchError(err => {
+              errorStr = "Failed to get expression data: " + err?.message || err || "Unknown error";
+              return of({ errorStr, varioPoints: [] });
             })
           );
         }
@@ -581,107 +602,60 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   }
 
   private prepareDrawData(queryData: RegionDataResults | null, title: string = "", t0: number = 0): void {
-    // let varioPoints: VariogramPoint[][] = [];
-    // let errorStr = "";
-
-    this.fetchVariogramPointsWithError(queryData).subscribe(({ errorStr, varioPoints }) => {
-      // Decide what to draw
-      let dispPoints: VariogramPointGroup[] = [];
-      let dispMinMax = new MinMax();
-      let queryIdx = 0;
-      for (let pts of varioPoints) {
-        let region = queryData?.queryResults[queryIdx].region;
-        if (!region?.displaySettings.colour) {
-          continue;
-        }
-
-        // Find the minmax
-        let ptValueRange = new MinMax();
-        for (let pt of pts) {
-          if (pt.meanValue !== null) {
-            ptValueRange.expand(pt.meanValue);
+    this.isWidgetDataLoading = true;
+    this.fetchVariogramPointsWithError(queryData).subscribe({
+      next: ({ errorStr, varioPoints }) => {
+        // Decide what to draw
+        let dispPoints: VariogramPointGroup[] = [];
+        let dispMinMax = new MinMax();
+        let queryIdx = 0;
+        for (let pts of varioPoints) {
+          let region = queryData?.queryResults[queryIdx].region;
+          if (!region?.displaySettings.colour) {
+            continue;
           }
+
+          // Find the minmax
+          let ptValueRange = new MinMax();
+          for (let pt of pts) {
+            if (pt.meanValue !== null) {
+              ptValueRange.expand(pt.meanValue);
+            }
+          }
+
+          let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange);
+          dispPoints.push(ptGroup);
+          dispMinMax.expandByMinMax(ptValueRange);
+
+          queryIdx++;
         }
 
-        let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange);
-        dispPoints.push(ptGroup);
-        dispMinMax.expandByMinMax(ptValueRange);
+        if (errorStr.length > 0) {
+          this.widgetErrorMessage = errorStr;
+        } else {
+          this.widgetErrorMessage = "";
+        }
 
-        queryIdx++;
-      }
+        let variogramData: VariogramData = new VariogramData(title, dispPoints, dispMinMax, errorStr);
 
-      let variogramData: VariogramData = new VariogramData(title, dispPoints, dispMinMax, errorStr);
+        this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
+        this.drawer = new VariogramDrawer(this._variogramModel);
 
-      this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
-      this.drawer = new VariogramDrawer(this._variogramModel);
+        this._variogramModel.raw = variogramData;
 
-      this._variogramModel.raw = variogramData;
+        let t1 = performance.now();
+        this.needsDraw$.next();
+        let t2 = performance.now();
 
-      let t1 = performance.now();
-      this.needsDraw$.next();
-      let t2 = performance.now();
-
-      console.log("  Variogram update took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+        this.isWidgetDataLoading = false;
+        console.log("  Variogram update took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+      },
+      error: err => {
+        this.isWidgetDataLoading = false;
+        this.widgetErrorMessage = "Failed to form points: " + err?.message || err || "Unknown error";
+        this._snackService.openError(err);
+      },
     });
-
-    // if (!this._variogramModel.binCount || this._variogramModel.binCount < this.binSliderMin) {
-    //   errorStr = "invalid bin count";
-    // } else {
-    //   if (!queryData) {
-    //     errorStr = "invalid expressions or ROIs selected";
-    //   } else {
-    //     if (queryData.error) {
-    //       errorStr = "error: " + queryData.error;
-    //     } else {
-    //       let valsOnly: PMCDataValues[] = [];
-    //       for (let result of queryData.queryResults) {
-    //         valsOnly.push(result.values);
-    //       }
-    //       varioPoints = this.calcAllVariogramPoints(valsOnly);
-    //       if (varioPoints.length <= 0) {
-    //         errorStr = "failed to get expression data";
-    //       }
-    //     }
-    //   }
-    // }
-
-    // // Decide what to draw
-    // let dispPoints: VariogramPointGroup[] = [];
-    // let dispMinMax = new MinMax();
-    // let queryIdx = 0;
-    // for (let pts of varioPoints) {
-    //   let region = queryData?.queryResults[queryIdx].region;
-    //   if (!region?.displaySettings.colour) {
-    //     continue;
-    //   }
-
-    //   // Find the minmax
-    //   let ptValueRange = new MinMax();
-    //   for (let pt of pts) {
-    //     if (pt.meanValue !== null) {
-    //       ptValueRange.expand(pt.meanValue);
-    //     }
-    //   }
-
-    //   let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange);
-    //   dispPoints.push(ptGroup);
-    //   dispMinMax.expandByMinMax(ptValueRange);
-
-    //   queryIdx++;
-    // }
-
-    // let variogramData: VariogramData = new VariogramData(title, dispPoints, dispMinMax, errorStr);
-
-    // this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
-    // this.drawer = new VariogramDrawer(this._variogramModel);
-
-    // this._variogramModel.raw = variogramData;
-
-    // let t1 = performance.now();
-    // this.needsDraw$.next();
-    // let t2 = performance.now();
-
-    // console.log("  Variogram update took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
   }
 
   private processQueryResult(t0: number, queryData: RegionDataResults | null) {
@@ -710,68 +684,6 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         this.prepareDrawData(queryData, title, t0);
       }
     }
-
-    // let varioPoints: VariogramPoint[][] = [];
-    // let errorStr = "";
-
-    // if (!this._variogramModel.binCount || this._variogramModel.binCount < this.binSliderMin) {
-    //   errorStr = "invalid bin count";
-    // } else {
-    //   if (!queryData) {
-    //     errorStr = "invalid expressions or ROIs selected";
-    //   } else {
-    //     if (queryData.error) {
-    //       errorStr = "error: " + queryData.error;
-    //     } else {
-    //       let valsOnly: PMCDataValues[] = [];
-    //       for (let result of queryData.queryResults) {
-    //         valsOnly.push(result.values);
-    //       }
-    //       varioPoints = this.calcAllVariogramPoints(valsOnly);
-    //       if (varioPoints.length <= 0) {
-    //         errorStr = "failed to get expression data";
-    //       }
-    //     }
-    //   }
-    // }
-
-    // // Decide what to draw
-    // let dispPoints: VariogramPointGroup[] = [];
-    // let dispMinMax = new MinMax();
-    // let queryIdx = 0;
-    // for (let pts of varioPoints) {
-    //   let region = queryData?.queryResults[queryIdx].region;
-    //   if (!region?.displaySettings.colour) {
-    //     continue;
-    //   }
-
-    //   // Find the minmax
-    //   let ptValueRange = new MinMax();
-    //   for (let pt of pts) {
-    //     if (pt.meanValue !== null) {
-    //       ptValueRange.expand(pt.meanValue);
-    //     }
-    //   }
-
-    //   let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange);
-    //   dispPoints.push(ptGroup);
-    //   dispMinMax.expandByMinMax(ptValueRange);
-
-    //   queryIdx++;
-    // }
-
-    // let variogramData: VariogramData = new VariogramData(title, dispPoints, dispMinMax, errorStr);
-
-    // this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
-    // this.drawer = new VariogramDrawer(this._variogramModel);
-
-    // this._variogramModel.raw = variogramData;
-
-    // let t1 = performance.now();
-    // this.needsDraw$.next();
-    // let t2 = performance.now();
-
-    // console.log("  Variogram update took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
   }
 
   private calcAllVariogramPoints(queryData: PMCDataValues[]): Observable<VariogramPoint[][]> {
@@ -899,9 +811,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     let quantId = this._analysisLayoutService.getQuantIdForScan(scanId) || "";
     let allPointsId = PredefinedROIID.getAllPointsForScan(scanId);
 
-    let injectedFunctions: Map<string, number[][]> = new Map<string, number[][]>([["getVariogramInputs", values.slice(0, 10)]]);
+    let injectedFunctions: Map<string, number[][]> = new Map<string, number[][]>([["getVariogramInputs", values]]);
     query.push(new DataSourceParams(scanId, expr.id, quantId, allPointsId, DataUnit.UNIT_DEFAULT, injectedFunctions));
-
     return this._widgetDataService.getData(query, true).pipe(
       map(queryData => {
         if (queryData.error || !queryData.queryResults || queryData.queryResults.length <= 0) {
@@ -1028,8 +939,6 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         }
       }
     }
-
-    console.log("LEFT INPUTS SIZE", leftInputs.length);
 
     if (!leftCombiningFunction || !rightCombiningFunction) {
       return forkJoin([this.runBulkCombiningFunction(true, leftInputs), this.runBulkCombiningFunction(false, rightInputs)]).pipe(

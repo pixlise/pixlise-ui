@@ -96,11 +96,18 @@ span {
   height: 100%;
 }
 
-.live-update {
+.bottom-buttons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   margin-top: 8px;
+  gap: 4px;
+}
+
+.live-update {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 
   .label {
     cursor: pointer;
