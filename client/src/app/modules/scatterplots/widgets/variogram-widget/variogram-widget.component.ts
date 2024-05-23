@@ -204,6 +204,14 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
             this._expressionIds = variogramData.expressionIDs;
           }
 
+          if (variogramData.comparisonAlgorithms) {
+            this.loadComparisonAlgorithms(variogramData.comparisonAlgorithms);
+          }
+
+          if (variogramData.liveUpdate !== undefined) {
+            this.liveUpdate = variogramData.liveUpdate;
+          }
+
           if (variogramData.visibleROIs) {
             this._variogramModel.visibleROIs = [];
             variogramData.visibleROIs.forEach(roi => {
@@ -434,10 +442,69 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     }
   }
 
+  private formComparisonAlgorithms(): string[] {
+    let comparisonAlgorithms = [];
+    if (this.activeLeftCrossCombiningAlgorithm === "Custom") {
+      comparisonAlgorithms.push(this.customLeftAlgorithm?.id || "");
+    } else {
+      comparisonAlgorithms.push(this.activeLeftCrossCombiningAlgorithm);
+    }
+
+    if (this.activeRightCrossCombiningAlgorithm === "Custom") {
+      comparisonAlgorithms.push(this.customRightAlgorithm?.id || "");
+    } else {
+      comparisonAlgorithms.push(this.activeRightCrossCombiningAlgorithm);
+    }
+
+    return comparisonAlgorithms;
+  }
+
+  private loadComparisonAlgorithms(comparisonAlgorithms: string[]): void {
+    let leftAlgorithm = null;
+    let rightAlgorithm = null;
+    if (comparisonAlgorithms.length >= 1) {
+      leftAlgorithm = comparisonAlgorithms[0];
+    }
+
+    if (comparisonAlgorithms.length >= 2) {
+      rightAlgorithm = comparisonAlgorithms[1];
+    }
+
+    if (leftAlgorithm && !this.crossCombiningAlgorithms.includes(leftAlgorithm)) {
+      // Algorithm is an expression ID, so we need to fetch it
+      let expressionId = leftAlgorithm;
+      this.activeLeftCrossCombiningAlgorithm = "Custom";
+
+      this._expressionsService.fetchCachedExpression(expressionId).subscribe(expr => {
+        if (expr?.expression) {
+          this.customLeftAlgorithm = expr.expression;
+        }
+      });
+    } else if (leftAlgorithm) {
+      this.activeLeftCrossCombiningAlgorithm = leftAlgorithm;
+    }
+
+    if (rightAlgorithm && !this.crossCombiningAlgorithms.includes(rightAlgorithm)) {
+      // Algorithm is an expression ID, so we need to fetch it
+      let expressionId = rightAlgorithm;
+      this.activeRightCrossCombiningAlgorithm = "Custom";
+
+      this._expressionsService.fetchCachedExpression(expressionId).subscribe(expr => {
+        if (expr?.expression) {
+          this.customRightAlgorithm = expr.expression;
+        }
+      });
+    } else if (rightAlgorithm) {
+      this.activeRightCrossCombiningAlgorithm = rightAlgorithm;
+    }
+  }
+
   private saveState(): void {
     this.onSaveWidgetData.emit(
       VariogramState.create({
         expressionIDs: this._expressionIds,
+        comparisonAlgorithms: this.formComparisonAlgorithms(),
+        liveUpdate: this.liveUpdate,
         visibleROIs: this._variogramModel.visibleROIs,
         varioModel: this._variogramModel.varioModel,
         maxDistance: this._variogramModel.maxDistance,
