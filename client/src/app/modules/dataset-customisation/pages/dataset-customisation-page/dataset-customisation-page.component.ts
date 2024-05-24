@@ -17,7 +17,7 @@ import {
   ImageSetMatchTransformResp,
 } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanGetReq } from "src/app/generated-protos/scan-msgs";
+import { ScanGetReq, ScanTriggerAutoQuantReq } from "src/app/generated-protos/scan-msgs";
 import { ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
@@ -127,7 +127,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._dataService.sendScanGetRequest(ScanGetReq.create({ id: this.scanId })).subscribe({
         next: resp => {
-          let scanItem = resp?.scan;
+          const scanItem = resp?.scan;
           if (scanItem) {
             this.title = scanItem.title;
             this.description = scanItem.description;
@@ -306,8 +306,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     //dialogConfig.autoFocus = true;
     //dialogConfig.width = '1200px';
 
-    let title = "Add Image";
-    let acceptTypes = "image/jpeg,image/png,image/tiff";
+    const title = "Add Image";
+    const acceptTypes = "image/jpeg,image/png,image/tiff";
 
     dialogConfig.data = new AddCustomImageParameters(acceptTypes, true, title, scanId);
     const dialogRef = this.dialog.open(AddCustomImageComponent, dialogConfig);
@@ -636,6 +636,12 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  onRunAutoQuant() {
+    this._dataService.sendScanTriggerAutoQuantRequest(ScanTriggerAutoQuantReq.create({ scanId: this._scanId })).subscribe(() => {
+      alert("Auto-quantification started");
+    });
+  }
+
   private reloadModel() {
     if (!this.mdl.imageName) {
       this._snackService.openError("No image selected!");
@@ -692,7 +698,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     if (!this.mdl.overlayImagePath) {
       this.mdl.overlayImage = null;
     } else {
-      let path = (this.mdl?.overlayImagePath || "").toLowerCase().trim().split("?")[0];
+      const path = (this.mdl?.overlayImagePath || "").toLowerCase().trim().split("?")[0];
       if (path && path.endsWith(".tif")) {
         this._endpointsService.loadRGBTIFFDisplayImage(this.mdl.overlayImagePath).subscribe(img => {
           this.mdl.overlayImage = img;
