@@ -301,7 +301,7 @@ export class WidgetExportDialogComponent implements OnInit {
       .generateAsync({ type: "blob" })
       .then(content => {
         saveAs(content, zipFileName);
-        this.onClear();
+        // this.onClear();
         this.loading = false;
       })
       .catch(err => {
