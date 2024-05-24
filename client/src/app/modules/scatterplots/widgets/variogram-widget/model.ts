@@ -105,6 +105,7 @@ export class VariogramModel {
   maxDistance: number = 0;
   binCount: number = 1;
   drawBestFit: boolean = true;
+  lineOfBestFitEquation: string = "";
 
   visibleROIs: VisibleROI[] = [];
 
