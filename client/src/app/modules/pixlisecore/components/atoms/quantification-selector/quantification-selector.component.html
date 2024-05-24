@@ -44,7 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
   #panelFoldoutButton>
   <div class="quant-dropdown {{ !isQuantSelected ? 'no-quant' : '' }}">
     <img *ngIf="!isQuantSelected" class="no-quant-warning" src="assets/icons/error-triangle-yellow.svg" />
-    <div *ngIf="selectedQuantDetectors" class="quant-detectors">{{ selectedQuantDetectors }}</div>
+    <div *ngIf="isQuantSelected && selectedQuantDetectors" class="quant-detectors">{{ selectedQuantDetectors }}</div>
     <div class="name-container">
       <span class="quant-name" [title]="selectedQuant">{{ selectedQuant }}</span>
     </div>

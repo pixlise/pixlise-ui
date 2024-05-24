@@ -47,6 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <mat-icon *ngIf="isMatIcon">{{ action }}</mat-icon>
   <img *ngIf="!isMatIcon" [src]="action" class="custom-icon" />
 </span>
+
 <widget-settings-menu *ngIf="customMenuOptions" [settingsDialog]="customOptionsMenu">
   <span
     class="action-btn {{ buttonBackground ? 'btn-bg' : '' }} {{ action }} {{ disabled ? 'disabled' : '' }} {{ !isMatIcon ? 'custom' : '' }}"

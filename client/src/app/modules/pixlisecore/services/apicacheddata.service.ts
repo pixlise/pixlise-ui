@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, shareReplay, map } from "rxjs";
+import { Observable, shareReplay, map, toArray } from "rxjs";
 import { APIDataService } from "./apidata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -40,7 +40,6 @@ export class APICachedDataService {
 
   // With these, we request the whole thing, so they're easy to cache for future...
   private _quantReqMap = new Map<string, Observable<QuantGetResp>>();
-  private _spectrumReqMap = new Map<string, Observable<SpectrumResp>>();
   private _scanMetaLabelsReqMap = new Map<string, Observable<ScanMetaLabelsAndTypesResp>>();
   private _manualDiffractionReqMap = new Map<string, Observable<DiffractionPeakManualListResp>>();
   private _scanEntryMap = new Map<string, Observable<ScanEntryResp>>();
@@ -121,7 +120,6 @@ export class APICachedDataService {
       for (const id of ids) {
         this._scanEntryMap.delete(id);
         this._scanEntryMetaReqMap.delete(id);
-        this._spectrumReqMap.delete(id);
         this._scanMetaLabelsReqMap.delete(id);
         //this._defaultImageReqMap.delete(id);
         this._pseudoIntensityReqMap.delete(id);
@@ -186,49 +184,6 @@ export class APICachedDataService {
     }
 
     return result;
-  }
-
-  getSpectrum(req: SpectrumReq): Observable<SpectrumResp> {
-    const cacheId = JSON.stringify(SpectrumReq.toJSON(req));
-    let result = this._spectrumReqMap.get(cacheId);
-    if (result === undefined) {
-      // Have to request it!
-      result = this._dataService.sendSpectrumRequest(req).pipe(
-        map((resp: SpectrumResp) => {
-          this.decompressSpectra(resp);
-          return resp;
-        }),
-        shareReplay(1)
-      );
-
-      // Add it to the map too so a subsequent request will get this
-      this._spectrumReqMap.set(cacheId, result);
-      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
-    }
-
-    return result;
-  }
-
-  private decompressSpectra(spectrumData: SpectrumResp) {
-    // We get spectra with runs of 0's run-length encoded. Here we decode them to have the full spectrum channel list in memory
-    // and this way we also don't double up on storage in memory
-    for (const loc of spectrumData.spectraPerLocation) {
-      for (const spectrum of loc.spectra) {
-        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
-      }
-    }
-
-    if (spectrumData.bulkSpectra) {
-      for (const spectrum of spectrumData.bulkSpectra) {
-        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
-      }
-    }
-
-    if (spectrumData.maxSpectra) {
-      for (const spectrum of spectrumData.maxSpectra) {
-        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
-      }
-    }
   }
 
   getScanMetaLabelsAndTypes(req: ScanMetaLabelsAndTypesReq): Observable<ScanMetaLabelsAndTypesResp> {

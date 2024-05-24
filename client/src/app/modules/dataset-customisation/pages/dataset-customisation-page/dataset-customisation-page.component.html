@@ -61,6 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
         <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="10"></textarea>
         <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
+        <push-button (onClick)="onRunAutoQuant()" buttonStyle="yellow">Run Auto-Quantification</push-button>
       </div>
       <div *ngIf="scanId" class="meta-entry column">
         <div class="txt-dlg-heading">Default Image</div>

@@ -79,7 +79,7 @@ export class ActionButtonComponent {
   @Input() customMenuOptions: string[] | null = null;
 
   @Output() onCustomMenuItemClick = new EventEmitter<string>();
-  @Output() onClick = new EventEmitter();
+  @Output() onClick = new EventEmitter<void>();
 
   private _actionSource: keyof typeof matActionIcons | string = "close";
   isMatIcon = false;

@@ -63,6 +63,7 @@ export class QuantificationItemComponent implements OnInit {
   @Input() roiMatched: boolean = false;
 
   @Output() onQuantSelected = new EventEmitter();
+  @Output() onClearSelection = new EventEmitter();
 
   objectType: ObjectType = ObjectType.OT_QUANTIFICATION;
 
@@ -77,6 +78,9 @@ export class QuantificationItemComponent implements OnInit {
   onDeleteQuant(): void {
     if (this.quantItem?.quant?.id) {
       this._analysisLayoutService.deleteQuant(this.quantItem.quant.id);
+      if (this.quantItem.selected) {
+        this.onClearSelection.emit();
+      }
     }
   }
 }

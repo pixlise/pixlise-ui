@@ -89,7 +89,7 @@ export class TagPickerComponent implements OnInit {
             !this.filterToTagType ||
             tag.type === this.type ||
             this.additionalVisibleTagType.includes(tag.type) ||
-            (this.isAdmin && this.allowAdminBuiltin && tag.type === BuiltInTags.type)
+            ((this.isAdmin || this.allowAdminBuiltin) && tag.type === BuiltInTags.type)
         );
 
         if (this._newTagSelected) {

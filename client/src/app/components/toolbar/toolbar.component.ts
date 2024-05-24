@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from "@angular/cdk/overlay";
-import { Component, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ElementRef, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
 import { ActivatedRoute, NavigationEnd, Params, ResolveEnd, Router } from "@angular/router";
 import { Subscription } from "rxjs";
@@ -49,6 +49,8 @@ import {
 } from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { VERSION } from "src/environments/version";
+import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { SentryHelper } from "../../utils/utils";
 
 export type NavigationTab = {
   icon: string;
@@ -95,6 +97,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   @Input() darkBackground: boolean = false;
 
   @ViewChild(CdkOverlayOrigin) _overlayOrigin!: CdkOverlayOrigin;
+  @ViewChild("submitIssue") submitIssueDialog!: ElementRef;
 
   private _userMenuOverlayHost!: OverlayHost;
   private _notificationsMenuOverlayHost!: OverlayHost;
@@ -109,6 +112,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   private _currTab: string = "";
   private _dataSetLoadedName = "";
+
+  public userIssue: string = "";
 
   public isVisible: boolean = true;
 
@@ -588,5 +593,24 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   get discussLink(): string {
     return "https://discuss." + EnvConfigurationInitService.appConfig.appDomain;
+  }
+
+  private closeIssueDialog(): void {
+    if (this.submitIssueDialog && this.submitIssueDialog instanceof PushButtonComponent) {
+      (this.submitIssueDialog as PushButtonComponent).closeDialog();
+    }
+  }
+
+  onSubmitIssue(leftPage: boolean): void {
+    let strippedIssue = this.userIssue.trim();
+    if (strippedIssue.length > 0) {
+      this._snackService.openSuccess("Thanks for the feedback!");
+      this.userIssue = "";
+      SentryHelper.logMsg(false, "User Feedback (Back to V3): \n" + strippedIssue);
+    } else if (leftPage) {
+      SentryHelper.logMsg(false, "User Feedback (Back to V3): No feedback given");
+    }
+
+    this.closeIssueDialog();
   }
 }

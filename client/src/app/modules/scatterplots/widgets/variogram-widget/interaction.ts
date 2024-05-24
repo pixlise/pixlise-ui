@@ -27,78 +27,31 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+// import { DataSetService } from "src/app/services/data-set.service";
+// import { SelectionService } from "src/app/services/selection.service";
+// import { CanvasInteractionHandler, CanvasInteractionResult, CanvasKeyEvent, CanvasMouseEvent } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
+import { SelectionService } from "../../../pixlisecore/pixlisecore.module";
+import {
+  CanvasInteractionHandler,
+  CanvasInteractionResult,
+  CanvasKeyEvent,
+  CanvasMouseEvent,
+} from "../../../widget/components/interactive-canvas/interactive-canvas.component";
+import { VariogramModel } from "./model";
 
-.quant-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+export class VariogramInteraction implements CanvasInteractionHandler {
+  //axisClick$: Subject<string> = new Subject<string>();
 
-  &:hover {
-    background-color: rgb(var(--clr-gray-60));
+  constructor(
+    private _mdl: VariogramModel,
+    private _selectionService: SelectionService
+  ) {}
+
+  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
+    return CanvasInteractionResult.neither;
   }
 
-  .quant-info {
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-
-    .quant-info-header {
-      display: flex;
-      flex-direction: column;
-    }
+  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
+    return CanvasInteractionResult.neither;
   }
-
-  .quant-element-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-
-    .quant-elem-list {
-      display: flex;
-      flex-direction: column;
-
-      .element-row {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-      }
-    }
-  }
-}
-
-.detectors {
-  margin-top: $sz-qtr;
-  color: $clr-gray-30;
-}
-
-.elem-states {
-  color: $clr-gray-40;
-  font-size: 12px;
-  margin-top: $sz-qtr;
-}
-
-.obj-creator {
-  margin-top: $sz-half;
-}
-
-.quant-elem-list {
-  max-width: 448px; // 14 element tiles across
-}
-
-.blessed {
-  margin-top: $sz-qtr;
-  color: $clr-yellow;
-}
-
-.control-btns {
-  display: flex;
-}
-
-.shared-control-btns {
-  display: flex;
 }
