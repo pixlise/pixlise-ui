@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, shareReplay, map, toArray } from "rxjs";
+import { Observable, shareReplay, map, toArray, of, catchError } from "rxjs";
 import { APIDataService } from "./apidata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -23,6 +23,9 @@ import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/gene
 import { NotificationType } from "src/app/generated-protos/notification";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
+import { VariogramPoint } from "../../scatterplots/widgets/variogram-widget/vario-data";
+import { MemoiseGetReq, MemoiseWriteReq } from "../../../generated-protos/memoisation-msgs";
+import { MemoisationService } from "./memoisation.service";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -75,7 +78,13 @@ export class APICachedDataService {
   private _expressionReqMap = new Map<string, Observable<ExpressionGetResp>>();
   private _dataModuleReqMap = new Map<string, Observable<DataModuleGetResp>>();
 
-  constructor(private _dataService: APIDataService) {
+  // Chart data
+  private _variogramPointsMap = new Map<string, VariogramPoint[][]>();
+
+  constructor(
+    private _dataService: APIDataService,
+    private _memoisationService: MemoisationService
+  ) {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
         // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
@@ -532,5 +541,51 @@ export class APICachedDataService {
     }
 
     return result;
+  }
+
+  private convertVariogramPointsToMemoized(points: VariogramPoint[][]): Uint8Array {
+    let stringifiedData = JSON.stringify(points);
+    let bytes = new TextEncoder().encode(stringifiedData);
+    return bytes;
+  }
+
+  private convertMemoizedToVariogramPoints(data: Uint8Array): VariogramPoint[][] {
+    let stringifiedData = new TextDecoder().decode(data);
+    let parsedData = JSON.parse(stringifiedData);
+    if (!parsedData || !Array.isArray(parsedData) || parsedData.length === 0) {
+      return [];
+    }
+
+    return parsedData.map((varioPointArrays: any[]) => {
+      return varioPointArrays.map((varioPoint: any) => {
+        return new VariogramPoint(varioPoint.distance, varioPoint.sum, varioPoint.count, varioPoint.meanValue);
+      });
+    });
+  }
+
+  getCachedVariogramPoints(cacheKey: string): Observable<{ found: boolean; varioPoints: VariogramPoint[][] }> {
+    let result = this._variogramPointsMap.get(cacheKey);
+    if (result === undefined) {
+      return this._memoisationService.get(cacheKey).pipe(
+        map(response => {
+          if (response) {
+            let varioPoints = this.convertMemoizedToVariogramPoints(response.data);
+            this._variogramPointsMap.set(cacheKey, varioPoints);
+            return { found: true, varioPoints };
+          } else {
+            return { found: false, varioPoints: [] };
+          }
+        }),
+        catchError(() => of({ found: false, varioPoints: [] })),
+        shareReplay(1)
+      );
+    }
+    return of({ found: !!result && result.length > 0, varioPoints: result || [] });
+  }
+
+  cacheVariogramPoints(cacheKey: string, varioPoints: VariogramPoint[][]) {
+    this._variogramPointsMap.set(cacheKey, varioPoints);
+    let memoizedData = this.convertVariogramPointsToMemoized(varioPoints);
+    this._memoisationService.memoise(cacheKey, memoizedData).subscribe();
   }
 }

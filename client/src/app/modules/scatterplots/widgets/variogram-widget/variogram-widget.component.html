@@ -31,8 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #settingsMenu>
   <div class="settings-menu">
-    <h2>Settings</h2>
-
     <h3>Max Distance</h3>
     <div class="setting-option">
       <div class="slider-val">{{ maxDistance | number: "1.4-4" }}mm</div>
@@ -40,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
         class="slider-control"
         [minValue]="distanceSliderMin"
         [maxValue]="distanceSliderMax"
-        [pxLength]="88"
+        [pxLength]="225"
         [value]="maxDistance"
         (onChange)="onChangeDistance($event)">
       </slider>
@@ -49,9 +47,14 @@ POSSIBILITY OF SUCH DAMAGE.
     <h3>Number Of Bins</h3>
     <div class="setting-option">
       <div class="slider-val">{{ binNumber }}</div>
-      <slider class="slider-control" [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="88" [value]="binNumber" (onChange)="onChangeBins($event)">
+      <slider class="slider-control" [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="225" [value]="binNumber" (onChange)="onChangeBins($event)">
       </slider>
     </div>
+
+    <h3 class="line-of-best-fit">
+      Line of Best Fit
+      <switch-button class="toggle" [active]="bestFitLineShowing" (onToggle)="toggleBestFitLine()"></switch-button>
+    </h3>
 
     <ng-container *ngIf="expressions.length > 0">
       <h3 class="algorithm-label">Cross-Combining Algorithm</h3>
@@ -94,7 +97,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <action-button [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
         <span class="label">Live Update</span>
       </div>
-      <push-button [disabled]="liveUpdate" (onClick)="update()">Update</push-button>
+      <push-button [disabled]="liveUpdate" (onClick)="saveAndUpdate()">Update</push-button>
     </div>
   </div>
 </ng-template>
