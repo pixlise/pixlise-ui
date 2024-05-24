@@ -51,6 +51,11 @@ POSSIBILITY OF SUCH DAMAGE.
       </slider>
     </div>
 
+    <h3 class="line-of-best-fit">
+      Line of Best Fit
+      <switch-button class="toggle" [active]="bestFitLineShowing" (onToggle)="toggleBestFitLine()"></switch-button>
+    </h3>
+
     <ng-container *ngIf="expressions.length > 0">
       <h3 class="algorithm-label">Cross-Combining Algorithm</h3>
       <div class="expressions-container">

@@ -104,6 +104,7 @@ export class VariogramModel {
   varioModel: string = VariogramModel.varioModelExponential;
   maxDistance: number = 0;
   binCount: number = 1;
+  drawBestFit: boolean = true;
 
   visibleROIs: VisibleROI[] = [];
 

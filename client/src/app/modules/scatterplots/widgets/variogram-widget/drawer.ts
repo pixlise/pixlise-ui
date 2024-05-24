@@ -93,22 +93,63 @@ export class VariogramDrawer implements CanvasDrawer {
     screenContext.fillText(title, titlePos.x, titlePos.y);
   }
 
+  private calculateLineOfBestFit(points: Point[]): { m: number; b: number } {
+    const length = points.length;
+    if (length === 0) {
+      return { m: 0, b: 0 };
+    }
+
+    let sums = { x: 0, y: 0, xy: 0, x2: 0 };
+    points.forEach(point => {
+      sums.x += point.x;
+      sums.y += point.y;
+      sums.xy += point.x * point.y;
+      sums.x2 += point.x * point.x;
+    });
+
+    const m = (length * sums.xy - sums.x * sums.y) / (length * sums.x2 - sums.x * sums.x);
+    const b = (sums.y - m * sums.x) / length;
+
+    return { m, b };
+  }
+
   private drawData(screenContext: CanvasRenderingContext2D, mdl: VariogramModel): void {
     if (!mdl.drawData || !mdl.raw) {
       return;
     }
-    //let alpha = PointDrawer.getOpacity(drawData.points.length);
-    let idx = 0;
-    for (let ptGroup of mdl.drawData.points) {
-      let drawer = new PointDrawer(
-        screenContext,
-        /*PLOT_POINTS_AS_CIRCLES,*/ PLOT_POINTS_SIZE,
-        mdl.raw.pointGroups[idx].colour,
-        null,
-        mdl.raw.pointGroups[idx].shape
-      );
+
+    let combinedPoints: Point[] = [];
+    mdl.drawData.points.forEach((ptGroup, idx) => {
+      let drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, mdl.raw!.pointGroups[idx].colour, null, mdl.raw!.pointGroups[idx].shape);
       drawer.drawPoints(ptGroup, 1);
-      idx++;
+      if (mdl.drawBestFit) {
+        combinedPoints = combinedPoints.concat(ptGroup);
+      }
+    });
+
+    if (mdl.drawBestFit && combinedPoints.length > 0) {
+      const { m, b } = this.calculateLineOfBestFit(combinedPoints);
+
+      let minX = combinedPoints[0].x;
+      let maxX = combinedPoints[0].x;
+      combinedPoints.forEach(point => {
+        if (point.x < minX) {
+          minX = point.x;
+        }
+        if (point.x > maxX) {
+          maxX = point.x;
+        }
+      });
+
+      const startY = m * minX + b;
+      const endY = m * maxX + b;
+
+      screenContext.beginPath();
+      screenContext.moveTo(minX, startY);
+      screenContext.lineTo(maxX, endY);
+      screenContext.strokeStyle = Colours.CONTEXT_PURPLE.asString();
+      screenContext.lineWidth = 3;
+      screenContext.stroke();
     }
   }
 }

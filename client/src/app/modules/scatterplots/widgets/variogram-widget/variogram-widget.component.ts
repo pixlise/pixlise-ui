@@ -375,6 +375,17 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     return this._variogramModel.binCount;
   }
 
+  get bestFitLineShowing(): boolean {
+    return this._variogramModel.drawBestFit;
+  }
+
+  toggleBestFitLine(): void {
+    this._variogramModel.drawBestFit = !this._variogramModel.drawBestFit;
+    if (this.liveUpdate) {
+      this.saveAndUpdate();
+    }
+  }
+
   saveAndUpdate(): void {
     this.saveState();
     this.update();
