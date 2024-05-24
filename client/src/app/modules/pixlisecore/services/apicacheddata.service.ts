@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, shareReplay, map, toArray } from "rxjs";
+import { Observable, shareReplay, map, toArray, of } from "rxjs";
 import { APIDataService } from "./apidata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -23,6 +23,7 @@ import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/gene
 import { NotificationType } from "src/app/generated-protos/notification";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
+import { VariogramPoint } from "../../scatterplots/widgets/variogram-widget/vario-data";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -74,6 +75,9 @@ export class APICachedDataService {
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
   private _expressionReqMap = new Map<string, Observable<ExpressionGetResp>>();
   private _dataModuleReqMap = new Map<string, Observable<DataModuleGetResp>>();
+
+  // Chart data
+  private _variogramPointsMap = new Map<string, VariogramPoint[][]>();
 
   constructor(private _dataService: APIDataService) {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
@@ -532,5 +536,14 @@ export class APICachedDataService {
     }
 
     return result;
+  }
+
+  getCachedVariogramPoints(cacheKey: string): Observable<{ found: boolean; varioPoints: VariogramPoint[][] }> {
+    let result = this._variogramPointsMap.get(cacheKey);
+    return of({ found: result !== undefined, varioPoints: result || [] });
+  }
+
+  cacheVariogramPoints(cacheKey: string, varioPoints: VariogramPoint[][]) {
+    this._variogramPointsMap.set(cacheKey, varioPoints);
   }
 }
