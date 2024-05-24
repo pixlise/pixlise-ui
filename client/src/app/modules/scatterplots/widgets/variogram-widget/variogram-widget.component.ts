@@ -253,6 +253,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
             this.drawModeVector = variogramData.drawModeVector;
           }
 
+          if (variogramData.drawBestFit !== undefined) {
+            this._variogramModel.drawBestFit = variogramData.drawBestFit;
+          }
+
           this.setDrawMode(this.drawModeVector ? "Vector" : "Isotropic");
           this.rebuildScanModel().subscribe(metadata => {
             this.update();
@@ -518,6 +522,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         distanceSliderMax: this.distanceSliderMax,
         binSliderMin: this.binSliderMin,
         binSliderMax: this.binSliderMax,
+        drawBestFit: this._variogramModel.drawBestFit,
       })
     );
   }
