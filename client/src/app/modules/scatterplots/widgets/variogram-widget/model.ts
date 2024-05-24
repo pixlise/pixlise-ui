@@ -40,6 +40,8 @@ import { ChartAxis, LinearChartAxis } from "../../../widget/components/interacti
 import { CursorId } from "../../../widget/components/interactive-canvas/cursor-id";
 import { PanZoom } from "../../../widget/components/interactive-canvas/pan-zoom";
 import { VisibleROI } from "../../../../generated-protos/widget-data";
+import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
+import { ScanDataIds, WidgetDataIds } from "../../../pixlisecore/models/widget-data-source";
 
 // Recalc the scales
 const xMargin = 60;

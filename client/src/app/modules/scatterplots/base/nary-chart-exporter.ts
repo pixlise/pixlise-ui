@@ -12,6 +12,8 @@ import {
   WidgetExportRequest,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
+export type NaryModelType = TernaryChartModel | BinaryChartModel;
+
 export class NaryChartExporter {
   constructor(
     private _snackService: SnackbarService,
@@ -19,11 +21,11 @@ export class NaryChartExporter {
     private transform: PanZoom
   ) {}
 
-  exportPlotData(mdl: TernaryChartModel | BinaryChartModel): Observable<string> {
+  exportPlotData(mdl: NaryModelType): Observable<string> {
     return of("");
   }
 
-  getJoinedScanIds(mdl: TernaryChartModel | BinaryChartModel): string {
+  getJoinedScanIds(mdl: NaryModelType): string {
     let scanIds = [];
     for (let scanId of mdl.dataSourceIds.keys()) {
       scanIds.push(scanId);
@@ -32,7 +34,7 @@ export class NaryChartExporter {
     return scanIds.join(" - ") || "No Scan";
   }
 
-  getNaryExportOptions(mdl: TernaryChartModel | BinaryChartModel, widgetTypeName: string = "Chart"): WidgetExportDialogData {
+  getNaryExportOptions(mdl: NaryModelType, widgetTypeName: string = "Chart"): WidgetExportDialogData {
     let joinedScanIds = this.getJoinedScanIds(mdl);
 
     return {
@@ -83,7 +85,7 @@ export class NaryChartExporter {
     };
   }
 
-  onNaryExport(mdl: TernaryChartModel | BinaryChartModel, widgetTypeName: string = "Chart", request: WidgetExportRequest): Observable<WidgetExportData> {
+  onNaryExport(mdl: NaryModelType, widgetTypeName: string = "Chart", request: WidgetExportRequest): Observable<WidgetExportData> {
     return new Observable<WidgetExportData>(observer => {
       if (request.dataProducts) {
         let joinedScanIds = this.getJoinedScanIds(mdl);

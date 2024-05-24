@@ -30,6 +30,29 @@
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBA } from "src/app/utils/colours";
 
+export type VariogramExportRawPoint = {
+  currentPMC: number;
+  comparingPMC: number;
+  expressions: string;
+  comparisonAlgorithms: string;
+  firstExpressionComparisonValue: number;
+  secondExpressionComparisonValue: number;
+  combinedValue: number;
+  distance: number;
+  binIdx: number;
+};
+
+export type VariogramExportPoint = {
+  roiId: string;
+  roiName: string;
+  comparisonAlgorithm: string;
+  title: string;
+  distance: number;
+  sum: number;
+  count: number;
+  meanValue: number | null;
+};
+
 export class VariogramPoint {
   constructor(
     public distance: number,
