@@ -73,6 +73,9 @@ export class WidgetExportButtonComponent {
     if (this.option?.selectedExpressions) {
       this.selectedExpressions = this.option.selectedExpressions;
     }
+    if (this.option?.selected && this.option?.subOptions && this.option.subOptions.length > 0) {
+      this.accordionOpen = this.option.selected;
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {

@@ -69,6 +69,8 @@ export class WidgetExportDialogComponent implements OnInit {
   showPreview: boolean = false;
   hideProgressLabels: boolean = false;
 
+  allDataProductsSelected: boolean = false;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: WidgetExportDialogData,
     public dialogRef: MatDialogRef<WidgetExportDialogComponent> | null,
@@ -110,6 +112,7 @@ export class WidgetExportDialogComponent implements OnInit {
 
   updateDataProductsCount(): void {
     this._selectedDataProductsCount = Math.ceil(this.dataProducts.filter(option => option.selected).reduce((a, b) => a + (b?.count ?? 1), 0));
+    this.updateAllDataProductsSelected();
   }
 
   get selectedDataProductsCount(): number {
@@ -175,6 +178,39 @@ export class WidgetExportDialogComponent implements OnInit {
         product.count = newCount;
       }
     });
+  }
+
+  updateAllDataProductsSelected(): void {
+    let isSomeDataProductSelected = false;
+    this.allDataProductsSelected = this.dataProducts.every(option => {
+      if (option.selected) {
+        isSomeDataProductSelected = true;
+      }
+
+      return option.selected || option.disabled || option.count === 0;
+    });
+
+    if (!isSomeDataProductSelected) {
+      this.allDataProductsSelected = false;
+    }
+  }
+
+  toggleAllDataProducts(): void {
+    this.errorMessage = "";
+
+    this.allDataProductsSelected = !this.allDataProductsSelected;
+    this.dataProducts.forEach(option => {
+      if (option.disabled || option.count === 0) {
+        return;
+      }
+
+      option.selected = this.allDataProductsSelected;
+      if (option.updateCounts) {
+        this.mapNewDataProductCounts(option.updateCounts, option.selected);
+      }
+    });
+
+    this.updateDataProductsCount();
   }
 
   toggleOption(option: WidgetExportOption): void {

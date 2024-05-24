@@ -149,7 +149,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
         name: scanSummary.title,
         type: "checkbox",
         description: `Include scan in export`,
-        selected: false,
+        selected: true,
         subOptions: [
           {
             id: `${scanConfig.id}_quant`,

@@ -56,6 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="dataProducts && dataProducts.length > 0" class="export-options data-products">
       <span class="options-label-container">
         <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
+        <action-button [action]="allDataProductsSelected ? 'checkOn' : 'checkOff'" (onClick)="toggleAllDataProducts()"></action-button>
       </span>
       <div class="options-container">
         <widget-export-button
