@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
         class="slider-control"
         [minValue]="distanceSliderMin"
         [maxValue]="distanceSliderMax"
-        [pxLength]="88"
+        [pxLength]="225"
         [value]="maxDistance"
         (onChange)="onChangeDistance($event)">
       </slider>
@@ -47,7 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <h3>Number Of Bins</h3>
     <div class="setting-option">
       <div class="slider-val">{{ binNumber }}</div>
-      <slider class="slider-control" [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="88" [value]="binNumber" (onChange)="onChangeBins($event)">
+      <slider class="slider-control" [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="225" [value]="binNumber" (onChange)="onChangeBins($event)">
       </slider>
     </div>
 

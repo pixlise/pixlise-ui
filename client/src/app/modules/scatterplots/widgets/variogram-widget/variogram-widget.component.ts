@@ -615,8 +615,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   }
 
   private checkChartDataCache(): Observable<{ found: boolean; cacheKey: string; varioPoints: VariogramPoint[][] }> {
-    // Get expression ids, get comparison expressions, get visible ROIs
-    // Need to hash source code of expressions
+    // If neither are custom, it's faster to just run
+    if (this.activeLeftCrossCombiningAlgorithm !== "Custom" && this.activeRightCrossCombiningAlgorithm !== "Custom") {
+      return of({ found: false, cacheKey: "", varioPoints: [] });
+    }
 
     let expressionRequests$ = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpressionHash(exprId));
     let comparisonRequests$ = this.formComparisonAlgorithms().map(algorithm => {
@@ -679,7 +681,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
                     errorStr = "Failed to get expression data";
                   }
 
-                  this._cachedDataService.cacheVariogramPoints(cache.cacheKey, varioPoints);
+                  if (errorStr.length <= 0 && varioPoints.length > 0 && cache.cacheKey) {
+                    this._cachedDataService.cacheVariogramPoints(cache.cacheKey, varioPoints);
+                  }
                   return { errorStr, varioPoints };
                 }),
                 catchError(err => {
