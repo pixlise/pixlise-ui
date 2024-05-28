@@ -63,13 +63,6 @@ export interface DrawModelWithPointGroup extends BaseChartDrawModel {
   selectedPointGroupCoords: PointWithRayLabel[][];
 }
 
-class SelPoint {
-  constructor(
-    public item: NaryChartDataItem,
-    public coord: PointWithRayLabel
-  ) {}
-}
-
 export function makeDrawablePointGroups(
   fromPointGroups: NaryChartDataGroup[] | undefined,
   forDrawModel: DrawModelWithPointGroup,
