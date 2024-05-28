@@ -20,7 +20,6 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -120,7 +119,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         id: "selection",
         type: "selection-changer",
         tooltip: "Selection changer",
-        style: { "margin-top": "24px" },
+        //style: { "margin-top": "24px" },
         onClick: () => {},
       },
       topRightInsetButton: {
