@@ -29,39 +29,6 @@
 
 @import "variables.scss";
 
-.confirm-back {
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  gap: 8px;
-
-  .confirm-back-text {
-    font-size: 20px;
-    font-weight: bold;
-  }
-
-  .confirm-back-text-description {
-    font-size: 12px;
-    color: rgb(var(--clr-gray-30));
-    max-width: 500px;
-  }
-
-  .bottom-buttons {
-    display: flex;
-  }
-
-  .submit-and-stay {
-    &:hover {
-      color: rgb(var(--clr-yellow));
-      text-decoration: none;
-    }
-  }
-
-  .link-to-v3 {
-    margin-left: auto;
-  }
-}
-
 .toolbar {
   height: 40px;
   margin-bottom: $ui-border-size;
@@ -259,28 +226,5 @@ user-icon {
 
   .title-text {
     margin-right: 8px;
-  }
-}
-
-.link-to-v3 {
-  color: #f8f8f8;
-  text-align: center;
-  font-feature-settings:
-    "clig" off,
-    "liga" off;
-  font-family: Inter;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 16px;
-  border-radius: 4px;
-  background: #444c50;
-  padding: 4px 8px;
-  margin-right: 4px;
-  cursor: pointer;
-
-  &:hover {
-    color: rgb(var(--clr-yellow));
-    text-decoration: none;
   }
 }
