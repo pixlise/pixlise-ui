@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 </ng-template>
 
-<div class="datasets-container">
+<div class="datasets-container" aria-label="Datasets">
   <!-- TODO: <notification-banner></notification-banner> -->
   <!-- <app-toolbar titleToShow="Select Dataset"></app-toolbar> -->
 
@@ -80,7 +80,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <app-widget-display-message *ngIf="errorString" [showSpinner]="loading" [message]="errorString" [large]="true" class="fx-flex"> </app-widget-display-message>
 
-    <div *ngIf="datasetListingAllowed" class="meta-summary">
+    <div *ngIf="datasetListingAllowed" class="meta-summary" aria-label="DatasetMetaSummary">
       <h2 class="meta-title">Metadata</h2>
 
       <app-widget-display-message *ngIf="!selectedScan" [message]="noselectedScanMsg"> </app-widget-display-message>
