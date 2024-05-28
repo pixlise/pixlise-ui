@@ -1,0 +1,14 @@
+<div class="feedback">
+  <div class="feedback-text">
+    How can we improve v4?
+    <action-button (click)="onCancel()" class="close-button" action="close" color="rgb(var(--clr-gray-30))"></action-button>
+  </div>
+  <div class="feedback-text-description">
+    {{ description }}
+  </div>
+  <textarea [(ngModel)]="userIssue" [rows]="10" class="feedback-textarea" placeholder="Type your issue here"></textarea>
+  <div class="bottom-buttons">
+    <push-button class="submit-and-stay" buttonStyle="v3Button" (click)="onSubmitIssue(false)" #submitIssue>Submit feedback</push-button>
+    <a (click)="onSubmitIssue(true)" class="link-to-v3" href="https://v3.pixlise.org" target="_blank">Open v3</a>
+  </div>
+</div>
