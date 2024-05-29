@@ -29,18 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 <ng-template #v3ConfirmDialog>
-  <div class="confirm-back">
-    <div class="confirm-back-text">How can we improve v4?</div>
-    <div class="confirm-back-text-description">
-      We'd love to hear if you're having any issues! Feel free to reach out to us on Mattermost, by email, or type the problem here and we'll try our best to get back
-      to you.
-    </div>
-    <textarea [(ngModel)]="userIssue" [rows]="10" class="confirm-back-textarea" placeholder="Type your issue here"></textarea>
-    <div class="bottom-buttons">
-      <push-button class="submit-and-stay" buttonStyle="v3Button" (click)="onSubmitIssue(false)" #submitIssue>Submit and stay on v4</push-button>
-      <a (click)="onSubmitIssue(true)" class="link-to-v3" href="https://v3.pixlise.org" target="_blank">Back to v3</a>
-    </div>
-  </div>
+  <feedback-dialog></feedback-dialog>
 </ng-template>
 
 <div *ngIf="isVisible" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }" aria-label="TopToolbar">
@@ -80,7 +69,6 @@ POSSIBILITY OF SUCH DAMAGE.
   <div *ngIf="isLoggedIn" class="authenticated-buttons">
     <span class="buttons">
       <span class="version"> Pixlise {{ uiVersion }}</span>
-      <!-- <a class="link-to-v3" href="https://v3.pixlise.org" target="_blank">Back to v3</a> -->
       <push-button [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button>
       <icon-button (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
       <icon-button (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
