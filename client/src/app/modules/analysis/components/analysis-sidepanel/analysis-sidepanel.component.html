@@ -1,4 +1,4 @@
-<aside class="sidebar {{ sidepanelOpen ? 'open' : 'closed' }}" [ngStyle]="{ width: sidepanelOpen ? (activeTab ? activeTab.width || '350px' : '350px') : '40px' }">
+<aside class="sidebar {{ sidepanelOpen ? 'open' : 'closed' }}" [ngStyle]="{ width: sidepanelOpen ? (activeTab ? activeTab.width || '350px' : '350px') : '40px' }" aria-label="Sidebar">
   <section class="button-container">
     <div class="tab-btn-wrapper">
       <span class="clickable open-btn" (click)="onToggleSidePanel()" #tooltip="matTooltip" matTooltip="Toggle Sidepanel" [matTooltipShowDelay]="500">

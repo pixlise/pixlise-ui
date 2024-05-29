@@ -30,7 +30,7 @@
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from "@angular/cdk/overlay";
 import { Component, ElementRef, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
-import { ActivatedRoute, NavigationEnd, Params, ResolveEnd, Router } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, ResolveEnd, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
@@ -42,12 +42,7 @@ import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/noti
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import {
-  ScanConfigurationDialog,
-  ScanConfigurationDialogData,
-} from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { MatDialog } from "@angular/material/dialog";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SentryHelper } from "../../utils/utils";
@@ -450,15 +445,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   get showScanConfigurator(): boolean {
     return this.router.url.includes(ToolbarComponent.CodeEditorTabURL) || this._isAnalysisTab;
-  }
-
-  onScanConfiguration(): void {
-    const dialogConfig = new MatDialogConfig<ScanConfigurationDialogData>();
-    dialogConfig.disableClose = true;
-    dialogConfig.autoFocus = true;
-    dialogConfig.width = "1200px";
-
-    this._matDialog.open(ScanConfigurationDialog, dialogConfig);
   }
 
   onNavigate(tab: TabNav, event: any): void {

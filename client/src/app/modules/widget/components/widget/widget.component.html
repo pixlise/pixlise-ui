@@ -9,7 +9,7 @@
   <div class="default-overflow"></div>
 </ng-template>
 
-<div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }} {{ isWidgetTargeted ? 'targeted' : '' }}">
+<div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }} {{ isWidgetTargeted ? 'targeted' : '' }}" [attr.aria-label]="_activeWidget">
   <header>
     <mat-select
       *ngIf="!disableSwitch"
