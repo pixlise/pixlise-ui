@@ -81,6 +81,8 @@ export class NumberButtonComponent implements OnInit {
   @Input() showArrow: boolean = false;
   @Input() showArrowSeparator: boolean = false;
 
+  styles: string[] = [];
+
   constructor(
     // private _authService: AuthenticationService,
     private _authService: AuthService,
@@ -91,14 +93,11 @@ export class NumberButtonComponent implements OnInit {
     if (!this.params) {
       this.params = new NumberButtonParams(this.theNumber, this.theLabel, this.colourStyle, this.showArrow, this.showArrowSeparator, this.link);
     }
-  }
 
-  get styles(): string[] {
-    const styles = [this.params.colourStyle];
+    this.styles = [this.params.colourStyle];
     if (this.params.link) {
-      styles.push("clickable");
+      this.styles.push("clickable");
     }
-    return styles;
   }
 
   onClick() {
