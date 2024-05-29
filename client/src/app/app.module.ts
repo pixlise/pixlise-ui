@@ -98,6 +98,16 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
                   }
                 }
 
+                if (target.attributes["mattooltip"] && target.attributes["mattooltip"].length > 0) {
+                  descriptors.push(`"${target.attributes["mattooltip"].nodeValue}"`);
+                }
+                if (target.attributes["ng-reflect-message"] && target.attributes["ng-reflect-message"].length > 0) {
+                  descriptors.push(`"${target.attributes["ng-reflect-message"].nodeValue}"`);
+                }
+                if (target.attributes["title"] && target.attributes["title"].length > 0) {
+                  descriptors.push(`"${target.attributes["title"].nodeValue}"`);
+                }
+
                 target = target.parentNode;
                 parentsVisited++;
               }
