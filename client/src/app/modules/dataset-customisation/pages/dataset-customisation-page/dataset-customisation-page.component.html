@@ -114,7 +114,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngFor="let item of matchedImages" class="image-item clickable" (click)="onSelectImage('matched', item)">
         <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ justName(item.imagePath) }}</span>
         <action-button
-          [confirmText]="'Are you sure you want to delete' + item.imagePath + '?'"
+          [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
           action="delete"
           (onClick)="onDeleteImage('matched', item)"></action-button>
       </div>
@@ -129,7 +129,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ item.imagePath }}</span>
         <action-button
           action="delete"
-          [confirmText]="'Are you sure you want to delete' + item.imagePath + '?'"
+          [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
           (onClick)="onDeleteImage('unaligned', item)"></action-button>
       </div>
       <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
