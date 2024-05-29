@@ -15,7 +15,6 @@ import { TagsModule } from "../tags/tags.module";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ExpressionModule } from "../expressions/expressions.module";
 import { WidgetModule } from "../widget/widget.module";
-import { ScanConfigurationDialog } from "./components/scan-configuration-dialog/scan-configuration-dialog.component";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ReactiveFormsModule } from "@angular/forms";
@@ -51,7 +50,6 @@ const APP_ROUTES: Routes = [
     MistROIComponent,
     MistRoiConvertComponent,
     MistRoiUploadComponent,
-    ScanConfigurationDialog,
     ScanConfigurationTabComponent,
     ScanConfigurationItemComponent,
     DiffractionTabComponent,
@@ -79,7 +77,7 @@ const APP_ROUTES: Routes = [
     MatButtonModule,
     MatMenuModule,
   ],
-  exports: [AnalysisPageComponent, ScanConfigurationDialog, AnalysisSidepanelComponent],
+  exports: [AnalysisPageComponent, AnalysisSidepanelComponent],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
 })
 export class AnalysisModule {}
