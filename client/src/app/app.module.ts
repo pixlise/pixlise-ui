@@ -98,14 +98,28 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
                   }
                 }
 
-                if (target.attributes["mattooltip"] && target.attributes["mattooltip"].length > 0) {
+                if (target.localName.indexOf("panel") > -1 || (target.localName.indexOf("dialog") > -1 && target.localName != "mat-dialog-container")) {
+                  descriptors.unshift(target.localName);
+                }
+
+                if (target.localName == "input") {
+                  descriptors.push(target.localName);
+                  if (target?.placeholder?.length > 0) {
+                    descriptors.push(`"${target.placeholder}"`);
+                  }
+                  if (target?.accept?.length > 0) {
+                    descriptors.push(`"${target.accept}"`);
+                  }
+                }
+
+                if (target?.attributes["mattooltip"]?.nodeValue && target.attributes["mattooltip"].nodeValue.length > 0) {
                   descriptors.push(`"${target.attributes["mattooltip"].nodeValue}"`);
                 }
-                if (target.attributes["ng-reflect-message"] && target.attributes["ng-reflect-message"].length > 0) {
+                if (target?.attributes["ng-reflect-message"]?.nodeValue && target.attributes["ng-reflect-message"].nodeValue.length > 0) {
                   descriptors.push(`"${target.attributes["ng-reflect-message"].nodeValue}"`);
                 }
-                if (target.attributes["title"] && target.attributes["title"].length > 0) {
-                  descriptors.push(`"${target.attributes["title"].nodeValue}"`);
+                if (target?.title?.length > 0) {
+                  descriptors.push(`"${target.title}"`);
                 }
 
                 target = target.parentNode;
