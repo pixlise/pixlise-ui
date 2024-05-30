@@ -130,7 +130,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
                 breadcrumb.message = ariaLabel + "[" + descriptors.join(",") + "], origmsg=" + breadcrumb.message;
               }
             }
-            console.log("BREADCRUMB: " + breadcrumb.message);
+            //console.log("BREADCRUMB: " + breadcrumb.message);
             return breadcrumb;
           },
         });

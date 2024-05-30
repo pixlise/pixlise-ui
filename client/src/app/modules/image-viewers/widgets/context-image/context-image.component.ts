@@ -295,7 +295,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         const contextData = data as ContextImageState;
 
         if (this._analysisLayoutService.isMapsPage && contextData.mapLayers.length > 0) {
-          let validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
+          const validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
           this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
           this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.cachedROIs = this.mdl.roiIds.slice();
@@ -304,7 +304,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.hidePointsForScans = [this.scanId];
           // this.setInitialConfig(true);
         } else if (contextData) {
-          let validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
+          const validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
           this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
           this.mdl.roiIds = contextData.roiLayers;
 
@@ -421,7 +421,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (highlighted.roiIds.length > 0) {
           this.mdl.roiIds = [];
-          let highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(ROILayerVisibility.create({ id, scanId: highlighted.scanId }), true));
+          const highlightRequests = highlighted.roiIds.map(id => this.loadROIRegion(ROILayerVisibility.create({ id, scanId: highlighted.scanId }), true));
           combineLatest(highlightRequests).subscribe({
             next: () => {
               this.reloadModel();
@@ -566,8 +566,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
       const quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
 
-      let defaultShading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
-      let modelRequests = expressionIds.map(exprId => {
+      const defaultShading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
+      const modelRequests = expressionIds.map(exprId => {
         return this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), defaultShading, pmcToIndexLookup);
       });
 
@@ -613,13 +613,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
 
     // Queue up region requests
-    let regionRequests = this.mdl.roiIds.map(roi => this.loadROIRegion(roi));
+    const regionRequests = this.mdl.roiIds.map(roi => this.loadROIRegion(roi));
 
     return combineLatest(layerRequests).pipe(
       mergeMap(layerRequest => layerRequest),
       toArray(),
       mergeMap(scanLayers => {
-        let mapLayers = new Map<string, ContextImageMapLayer[]>();
+        const mapLayers = new Map<string, ContextImageMapLayer[]>();
         scanLayers.forEach((layers, i) => {
           mapLayers.set(this.mdl.scanIds[i], layers);
         });
@@ -628,12 +628,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           mergeMap(regionRequest => regionRequest),
           toArray(),
           map(regions => {
-            let regionsMap: RegionMap = new Map<string, ROIItem>();
+            const regionsMap: RegionMap = new Map<string, ROIItem>();
             regions.forEach(region => {
               regionsMap.set(region.id, region);
             });
 
-            let contextLayers: ContextImageLayers = { mapLayers, regions: regionsMap };
+            const contextLayers: ContextImageLayers = { mapLayers, regions: regionsMap };
             return contextLayers;
           })
         );
@@ -698,6 +698,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
 
           this.mdl.setData(data);
+
           return this.loadMapLayers(setViewToExperiment);
         }),
         catchError((err: any) => {
@@ -707,6 +708,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       .subscribe({
         next: (layers: ContextImageLayers) => {
           this.isWidgetDataLoading = false;
+
           this.reDraw();
         },
         error: err => {
@@ -782,7 +784,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   onToggleShowPoints(trigger: Element | undefined) {
-    let datasetLayersSection: LayerVisibilitySection = {
+    const datasetLayersSection: LayerVisibilitySection = {
       id: "dataset-layers",
       title: "Dataset Layers",
       isOpen: true,
@@ -807,14 +809,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       ],
     };
 
-    let mapLayersSection: LayerVisibilitySection[] = [];
-    let regionLayersSection: LayerVisibilitySection[] = [];
+    const mapLayersSection: LayerVisibilitySection[] = [];
+    const regionLayersSection: LayerVisibilitySection[] = [];
 
     this.mdl.scanIds.forEach(scanId => {
-      let scanName = this.mdl.getScanModelFor(scanId)?.scanTitle || scanId;
+      const scanName = this.mdl.getScanModelFor(scanId)?.scanTitle || scanId;
 
-      let footprintsSection = datasetLayersSection.options.find(opt => opt.name === "Footprints");
-      let pointsSection = datasetLayersSection.options.find(opt => opt.name === "Points");
+      const footprintsSection = datasetLayersSection.options.find(opt => opt.name === "Footprints");
+      const pointsSection = datasetLayersSection.options.find(opt => opt.name === "Points");
 
       footprintsSection!.subOptions!.push({
         id: `${scanId}-footprints`,
@@ -836,9 +838,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         visible: true,
       });
 
-      let mapLayers = this.mdl.getMapLayers(scanId);
+      const mapLayers = this.mdl.getMapLayers(scanId);
       if (mapLayers) {
-        let mapLayerSection: LayerVisibilitySection = {
+        const mapLayerSection: LayerVisibilitySection = {
           id: `map-layers-${scanId}`,
           title: "Map Data",
           scanId: scanId,
@@ -863,9 +865,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         mapLayersSection.push(mapLayerSection);
       }
 
-      let regionLayers = this.mdl.roiIds.filter(roi => roi.scanId === scanId);
+      const regionLayers = this.mdl.roiIds.filter(roi => roi.scanId === scanId);
       if (regionLayers.length > 0) {
-        let regionLayerSection: LayerVisibilitySection = {
+        const regionLayerSection: LayerVisibilitySection = {
           id: `region-layers-${scanId}`,
           title: "Region Data",
           scanId: scanId,
@@ -876,7 +878,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         };
 
         regionLayers.forEach(roi => {
-          let region = this.mdl.getRegion(roi.id);
+          const region = this.mdl.getRegion(roi.id);
           if (!region) {
             return;
           }
@@ -896,7 +898,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       }
     });
 
-    let imagesSection: LayerVisibilitySection = {
+    const imagesSection: LayerVisibilitySection = {
       id: "images",
       title: "Images",
       isOpen: false,
@@ -929,16 +931,16 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       if (change) {
         if (change.sectionId === "dataset-layers") {
           if (change.layerId === "footprints" && change.subLayerId) {
-            let scanId = change.subLayerId.split("-")[0];
+            const scanId = change.subLayerId.split("-")[0];
             this.mdl.hideFootprintsForScans = change.visible
               ? this.mdl.hideFootprintsForScans.filter(id => id !== scanId)
               : [...this.mdl.hideFootprintsForScans, scanId];
           } else if (change.layerId === "points" && change.subLayerId) {
-            let scanId = change.subLayerId.split("-")[0];
+            const scanId = change.subLayerId.split("-")[0];
             this.mdl.hidePointsForScans = change.visible ? this.mdl.hidePointsForScans.filter(id => id !== scanId) : [...this.mdl.hidePointsForScans, scanId];
           }
         } else if (change.sectionId.startsWith("map-layers-")) {
-          let scanId = change.sectionId.split("-")[2];
+          const scanId = change.sectionId.split("-")[2];
           if (scanId && change.layerId) {
             if (change.visible) {
               if (!this.mdl.expressionIds.includes(change.layerId)) {
@@ -956,7 +958,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             this.mdl.hideMapsForScans = change.visible ? this.mdl.hideMapsForScans.filter(id => id !== scanId) : [...this.mdl.hideMapsForScans, scanId];
           }
         } else if (change.sectionId.startsWith("region-layers-")) {
-          let scanId = change.sectionId.split("-")[2];
+          const scanId = change.sectionId.split("-")[2];
           if (scanId && change.layerId) {
             if (change.visible) {
               if (!this.mdl.roiIds.find(roi => roi.id === change.layerId)) {
@@ -980,8 +982,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     });
 
     dialogRef.componentInstance.onReorder.subscribe((change: LayerVisibilitySection[]) => {
-      let newExpressionIdOrder: string[] = [];
-      let newRegionIdOrder: string[] = [];
+      const newExpressionIdOrder: string[] = [];
+      const newRegionIdOrder: string[] = [];
       change.forEach(section => {
         if (!section.scanId) {
           return;
@@ -1015,9 +1017,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     dialogRef.componentInstance.opacityChange.subscribe((change: LayerOpacityChange) => {
       if (change) {
         this.mdl.scanIds.forEach(scanId => {
-          let mapLayers = this.mdl.getMapLayers(scanId);
+          const mapLayers = this.mdl.getMapLayers(scanId);
           if (mapLayers) {
-            let layer = mapLayers.find(layer => layer.expressionId === change.layer.id);
+            const layer = mapLayers.find(layer => layer.expressionId === change.layer.id);
             if (layer) {
               layer.opacity = change.opacity;
               layer.mapPoints.forEach(point => {
@@ -1026,12 +1028,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             }
           }
         });
-        let region = this.mdl.roiIds.find(roi => roi.id === change.layer.id);
+        const region = this.mdl.roiIds.find(roi => roi.id === change.layer.id);
         if (region) {
           region.opacity = change.opacity;
-          let scanDrawModel = this.mdl.drawModel.scanDrawModels.get(region.scanId);
+          const scanDrawModel = this.mdl.drawModel.scanDrawModels.get(region.scanId);
           if (scanDrawModel) {
-            let regionDrawModel = scanDrawModel.regions.find(roi => roi.roiId === region.id);
+            const regionDrawModel = scanDrawModel.regions.find(roi => roi.roiId === region.id);
             if (regionDrawModel) {
               regionDrawModel.opacity = change.opacity;
             }
@@ -1244,7 +1246,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       this.saveState();
 
       if (this._shownImageOptions?.componentInstance?.loadOptions) {
-        let params = this.getImagePickerParams();
+        const params = this.getImagePickerParams();
         this._shownImageOptions.componentInstance.loadOptions(params.options);
       }
     });
