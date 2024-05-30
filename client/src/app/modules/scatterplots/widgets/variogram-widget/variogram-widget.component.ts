@@ -38,7 +38,7 @@ import { xor_sum } from "src/app/utils/utils";
 import { VariogramDrawer } from "./drawer";
 import { VariogramInteraction } from "./interaction";
 import { VariogramModel } from "./model";
-import { VariogramData, VariogramPoint, VariogramPointGroup, VariogramScanMetadata } from "./vario-data";
+import { VariogramData, VariogramExportPoint, VariogramExportRawPoint, VariogramPoint, VariogramPointGroup, VariogramScanMetadata } from "./vario-data";
 import { PanZoom } from "../../../widget/components/interactive-canvas/pan-zoom";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "../../../widget/components/interactive-canvas/interactive-canvas.component";
 import { SliderValue } from "../../../pixlisecore/components/atoms/slider/slider.component";
@@ -77,6 +77,8 @@ import { PredefinedROIID } from "../../../../models/RegionOfInterest";
 import { DefaultExpressions } from "../../../analysis/services/analysis-layout.service";
 import { ContextImageScanModelGenerator } from "../../../image-viewers/widgets/context-image/context-image-scan-model-generator";
 import { BuiltInTags } from "../../../tags/models/tag.model";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "../../../widget/components/widget-export-dialog/widget-export-model";
+import { VariogramChartExporter } from "./variogram-chart-exporter";
 
 export type ScanLocation = {
   id: number;
@@ -98,6 +100,11 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   private _expressionIds: string[] = [];
 
   private _lastRunExpressionIds: string[] = [];
+  private _lastRunTitle: string = "";
+  private _lastRunFullTitle: string = "";
+
+  private _binnedPointDataForExport: VariogramExportPoint[] = [];
+  private _rawPointDataForExport: VariogramExportRawPoint[] = [];
 
   expressions: DataExpression[] = [];
 
@@ -108,6 +115,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   transform: PanZoom = new PanZoom();
   interaction: CanvasInteractionHandler;
   drawer: CanvasDrawer;
+  exporter: VariogramChartExporter;
 
   keyItems: WidgetKeyItem[] = [];
 
@@ -149,6 +157,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
     this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
     this.drawer = new VariogramDrawer(this._variogramModel);
+    this.exporter = new VariogramChartExporter(this._snackService, this.drawer, this.transform);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -227,6 +236,11 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
             this._variogramModel.varioModel = variogramData.varioModel;
           }
 
+          this.distanceSliderMin = variogramData?.distanceSliderMin || 0;
+          this.distanceSliderMax = variogramData?.distanceSliderMax || 0;
+          this.binSliderMin = variogramData?.binSliderMin || 1;
+          this.binSliderMax = variogramData?.binSliderMax || 1;
+
           if (variogramData.maxDistance) {
             this._variogramModel.maxDistance = variogramData.maxDistance;
           }
@@ -237,6 +251,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
           if (variogramData.drawModeVector !== undefined) {
             this.drawModeVector = variogramData.drawModeVector;
+          }
+
+          if (variogramData.drawBestFit !== undefined) {
+            this._variogramModel.drawBestFit = variogramData.drawBestFit;
           }
 
           this.setDrawMode(this.drawModeVector ? "Vector" : "Isotropic");
@@ -340,17 +358,17 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
   onModelExponential(): void {
     this._variogramModel.varioModel = VariogramModel.varioModelExponential;
-    this.update();
+    this.saveAndUpdate();
   }
 
   onModelSpherical(): void {
     this._variogramModel.varioModel = VariogramModel.varioModelSpherical;
-    this.update();
+    this.saveAndUpdate();
   }
 
   onModelGaussian(): void {
     this._variogramModel.varioModel = VariogramModel.varioModelGaussian;
-    this.update();
+    this.saveAndUpdate();
   }
 
   get maxDistance(): number {
@@ -359,6 +377,17 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
   get binNumber(): number {
     return this._variogramModel.binCount;
+  }
+
+  get bestFitLineShowing(): boolean {
+    return this._variogramModel.drawBestFit;
+  }
+
+  toggleBestFitLine(): void {
+    this._variogramModel.drawBestFit = !this._variogramModel.drawBestFit;
+    if (this.liveUpdate) {
+      this.saveAndUpdate();
+    }
   }
 
   saveAndUpdate(): void {
@@ -371,14 +400,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
     if (this.liveUpdate) {
       this.update();
+      if (event.finish) {
+        this.saveState();
+      }
     }
-    // if (event.finish) {
-    //   if (!this.liveUpdate) {
-    //     this.update();
-    //   }
-
-    //   this.saveState();
-    // }
   }
 
   onChangeBins(event: SliderValue) {
@@ -386,13 +411,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
     if (this.liveUpdate) {
       this.update();
+      if (event.finish) {
+        this.saveState();
+      }
     }
-    // if (event.finish) {
-    //   if (!this.liveUpdate) {
-    //     this.update();
-    //   }
-    //   this.saveState();
-    // }
   }
 
   get errorMsg(): string {
@@ -425,20 +447,6 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
     if (algorithm === "Custom") {
       this.liveUpdate = false;
-    }
-
-    this.setCombiningAlgorithm(algorithm === "XOR-Sum", left);
-  }
-
-  setCombiningAlgorithm(xor: boolean, left: boolean): void {
-    if (left) {
-      this.xorLeft = xor;
-    } else {
-      this.xorRight = xor;
-    }
-
-    if (this.liveUpdate) {
-      this.saveAndUpdate();
     }
   }
 
@@ -510,6 +518,11 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         maxDistance: this._variogramModel.maxDistance,
         binCount: this._variogramModel.binCount,
         drawModeVector: this.drawModeVector,
+        distanceSliderMin: this.distanceSliderMin,
+        distanceSliderMax: this.distanceSliderMax,
+        binSliderMin: this.binSliderMin,
+        binSliderMax: this.binSliderMax,
+        drawBestFit: this._variogramModel.drawBestFit,
       })
     );
   }
@@ -601,10 +614,12 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   }
 
   update(): void {
-    // Get the slider bounds, these are dataset dependent
+    this.updateAsync().subscribe();
+  }
+
+  updateAsync(shouldStoreBinnedDataForExport: boolean = false, shouldStoreRawDataForExport: boolean = false): Observable<void> {
     let t0 = performance.now();
 
-    // Use widget data service to rebuild our data model
     let query: DataSourceParams[] = [];
 
     // Query each region for both expressions if we have any...
@@ -618,68 +633,143 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
       let allowAnyResponse = this.activeLeftCrossCombiningAlgorithm === "Custom" || this.activeRightCrossCombiningAlgorithm === "Custom";
 
-      this._widgetDataService.getData(query, allowAnyResponse).subscribe(queryData => {
-        this.processQueryResult(t0, queryData);
-      });
+      return this._widgetDataService.getData(query, allowAnyResponse).pipe(
+        map(queryData => {
+          this.processQueryResult(t0, queryData, shouldStoreBinnedDataForExport, shouldStoreRawDataForExport);
+        })
+      );
     } else {
-      this.processQueryResult(t0, null);
+      return of(this.processQueryResult(t0, null));
     }
   }
 
-  private fetchVariogramPointsWithError(queryData: RegionDataResults | null): Observable<{ errorStr: string; varioPoints: VariogramPoint[][] }> {
+  private checkChartDataCache(): Observable<{ found: boolean; cacheKey: string; varioPoints: VariogramPoint[][] }> {
+    // If neither are custom, it's faster to just run
+    if (this.activeLeftCrossCombiningAlgorithm !== "Custom" && this.activeRightCrossCombiningAlgorithm !== "Custom") {
+      return of({ found: false, cacheKey: "", varioPoints: [] });
+    }
+
+    let expressionRequests$ = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpressionHash(exprId));
+    let comparisonRequests$ = this.formComparisonAlgorithms().map(algorithm => {
+      if (this.crossCombiningAlgorithms.includes(algorithm)) {
+        return of(algorithm);
+      } else {
+        return this._expressionsService.fetchCachedExpressionHash(algorithm);
+      }
+    });
+
+    return combineLatest([...expressionRequests$, ...comparisonRequests$]).pipe(
+      switchMap(results => {
+        let cacheKey = JSON.stringify({
+          expressionHashes: results,
+          visibleROIs: this._variogramModel.visibleROIs.map(roi => roi.id),
+          minDistance: this._variogramModel.maxDistance,
+          binCount: this._variogramModel.binCount,
+        });
+
+        return this._cachedDataService.getCachedVariogramPoints(cacheKey).pipe(
+          map(data => {
+            return { ...data, cacheKey };
+          })
+        );
+      })
+    );
+  }
+
+  private fetchVariogramPointsWithError(
+    queryData: RegionDataResults | null,
+    shouldStoreRawDataForExport: boolean = false
+  ): Observable<{ errorStr: string; varioPoints: VariogramPoint[][] }> {
     let errorStr = "";
 
-    if (!this._variogramModel.binCount || this._variogramModel.binCount < this.binSliderMin) {
-      errorStr = "Invalid bin count";
-    } else {
-      if (!queryData) {
-        errorStr = "Invalid expressions or ROIs selected";
-      } else {
-        if (queryData.error) {
-          errorStr = "Error: " + queryData.error;
-        } else {
-          let valsOnly: PMCDataValues[] = [];
-          for (let result of queryData.queryResults) {
-            if (result.values) {
-              valsOnly.push(result.values);
-            } else {
-              errorStr = `Failed to get expression data for ${result.expression?.name || result.expression?.id || "expression"}`;
-              this._snackService.openError(errorStr);
-            }
-          }
+    return this.checkChartDataCache().pipe(
+      switchMap(cache => {
+        if (cache.found && !shouldStoreRawDataForExport) {
+          return of({ errorStr, varioPoints: cache.varioPoints });
+        }
 
-          return this.calcAllVariogramPoints(valsOnly).pipe(
-            map(varioPoints => {
-              if (varioPoints.length <= 0) {
-                errorStr = "Failed to get expression data";
+        if (!this._variogramModel.binCount || this._variogramModel.binCount < this.binSliderMin) {
+          errorStr = "Invalid bin count";
+        } else {
+          if (!queryData) {
+            errorStr = "Invalid expressions or ROIs selected";
+          } else {
+            if (queryData.error) {
+              errorStr = "Error: " + queryData.error;
+            } else {
+              let valsOnly: PMCDataValues[] = [];
+              for (let result of queryData.queryResults) {
+                if (result.values) {
+                  valsOnly.push(result.values);
+                } else {
+                  errorStr = `Failed to get expression data for ${result.expression?.name || result.expression?.id || "expression"}`;
+                  this._snackService.openError(errorStr);
+                }
               }
 
-              return { errorStr, varioPoints };
-            }),
-            catchError(err => {
-              errorStr = "Failed to get expression data: " + err?.message || err || "Unknown error";
-              return of({ errorStr, varioPoints: [] });
-            })
-          );
-        }
-      }
-    }
+              return this.calcAllVariogramPoints(valsOnly, shouldStoreRawDataForExport).pipe(
+                map(varioPoints => {
+                  if (varioPoints.length <= 0) {
+                    errorStr = "Failed to get expression data";
+                  }
 
-    return of({ errorStr, varioPoints: [] });
+                  if (errorStr.length <= 0 && varioPoints.length > 0 && cache.cacheKey) {
+                    this._cachedDataService.cacheVariogramPoints(cache.cacheKey, varioPoints);
+                  }
+                  return { errorStr, varioPoints };
+                }),
+                catchError(err => {
+                  errorStr = "Failed to get expression data: " + err?.message || err || "Unknown error";
+                  return of({ errorStr, varioPoints: [] });
+                })
+              );
+            }
+          }
+        }
+
+        return of({ errorStr, varioPoints: [] });
+      })
+    );
   }
 
-  private prepareDrawData(queryData: RegionDataResults | null, title: string = "", t0: number = 0): void {
+  private getExportableAlgorithmNames(): string {
+    let leftAlgorithm = this._expressionIds.length > 0 ? this.activeLeftCrossCombiningAlgorithm : "";
+    let rightAlgorithm = this._expressionIds.length > 1 ? this.activeRightCrossCombiningAlgorithm : "";
+
+    if (leftAlgorithm === "Custom") {
+      leftAlgorithm = this.customLeftAlgorithm?.name || "Custom";
+    }
+
+    if (rightAlgorithm === "Custom") {
+      rightAlgorithm = this.customRightAlgorithm?.name || "Custom";
+    }
+
+    return [leftAlgorithm, rightAlgorithm].join(" / ");
+  }
+
+  private prepareDrawData(
+    queryData: RegionDataResults | null,
+    title: string = "",
+    t0: number = 0,
+    shouldStoreBinnedPointDataForExport: boolean = false,
+    shouldStoreRawDataForExport: boolean = false
+  ): void {
     this.isWidgetDataLoading = true;
-    this.fetchVariogramPointsWithError(queryData).subscribe({
+    this.fetchVariogramPointsWithError(queryData, shouldStoreRawDataForExport).subscribe({
       next: ({ errorStr, varioPoints }) => {
         // Decide what to draw
         let dispPoints: VariogramPointGroup[] = [];
         let dispMinMax = new MinMax();
-        let queryIdx = 0;
-        for (let pts of varioPoints) {
-          let region = queryData?.queryResults[queryIdx].region;
+
+        this._binnedPointDataForExport = [];
+
+        let pointsForExport: VariogramExportPoint[] = [];
+        let comparisonAlgorithm = this.getExportableAlgorithmNames();
+
+        varioPoints.forEach((pts, i) => {
+          let region = queryData?.queryResults[i].region;
           if (!region?.displaySettings.colour) {
-            continue;
+            return;
           }
 
           // Find the minmax
@@ -687,14 +777,29 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
           for (let pt of pts) {
             if (pt.meanValue !== null) {
               ptValueRange.expand(pt.meanValue);
+
+              if (shouldStoreBinnedPointDataForExport) {
+                pointsForExport.push({
+                  roiId: region.region.id,
+                  roiName: region.region.name,
+                  comparisonAlgorithm,
+                  title: this._lastRunFullTitle,
+                  distance: pt.distance,
+                  meanValue: pt.meanValue,
+                  sum: pt.sum,
+                  count: pt.count,
+                });
+              }
             }
           }
 
           let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange);
           dispPoints.push(ptGroup);
           dispMinMax.expandByMinMax(ptValueRange);
+        });
 
-          queryIdx++;
+        if (shouldStoreBinnedPointDataForExport) {
+          this._binnedPointDataForExport = pointsForExport;
         }
 
         if (errorStr.length > 0) {
@@ -725,8 +830,12 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     });
   }
 
-  private processQueryResult(t0: number, queryData: RegionDataResults | null) {
-    let title = "";
+  private processQueryResult(
+    t0: number,
+    queryData: RegionDataResults | null,
+    storeBinnedPointDataForExport: boolean = false,
+    storeRawDataForExport: boolean = false
+  ) {
     if (queryData && !queryData.hasQueryErrors() && this._expressionIds.length > 0) {
       if (this._expressionIds.length !== this._lastRunExpressionIds.length || this._expressionIds.some((id, i) => id !== this._lastRunExpressionIds[i])) {
         this._lastRunExpressionIds = this._expressionIds;
@@ -734,26 +843,32 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         this.expressions = [];
         let expressionRequests = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpression(exprId));
         combineLatest(expressionRequests).subscribe(expressions => {
+          let title = "";
+          let fullTitle = "";
           for (let expr of expressions) {
             if (expr?.expression) {
               this.expressions.push(expr.expression);
-              let label = getExpressionShortDisplayName(12, expr.expression.id, expr.expression.name).shortName;
+              let displayName = getExpressionShortDisplayName(24, expr.expression.id, expr.expression.name);
               if (title.length > 0) {
                 title += " / ";
+                fullTitle += " / ";
               }
-              title += label;
+              title += displayName.shortName;
+              fullTitle += displayName.name;
             }
           }
 
-          this.prepareDrawData(queryData, title, t0);
+          this._lastRunTitle = title;
+          this._lastRunFullTitle = fullTitle;
+          this.prepareDrawData(queryData, title, t0, storeBinnedPointDataForExport, storeRawDataForExport);
         });
       } else {
-        this.prepareDrawData(queryData, title, t0);
+        this.prepareDrawData(queryData, this._lastRunTitle, t0, storeBinnedPointDataForExport, storeRawDataForExport);
       }
     }
   }
 
-  private calcAllVariogramPoints(queryData: PMCDataValues[]): Observable<VariogramPoint[][]> {
+  private calcAllVariogramPoints(queryData: PMCDataValues[], shouldStoreRawDataForExport: boolean = false): Observable<VariogramPoint[][]> {
     if (this.scanLocations.size <= 0) {
       return of([]);
     }
@@ -803,6 +918,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     }
 
     let crossVariogramPointsRequests: Observable<VariogramPoint[]>[] = [];
+    this._rawPointDataForExport = [];
     for (let c = 0; c < queryData.length; c++) {
       const data = queryData[c];
       if (!data) {
@@ -818,7 +934,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         data2 = queryData[c + 1];
         c++; // consume the next one!
       }
-      crossVariogramPointsRequests.push(this.calcCrossVariogramPoints(data, data2, pts));
+      crossVariogramPointsRequests.push(this.calcCrossVariogramPoints(data, data2, pts, shouldStoreRawDataForExport));
     }
 
     return combineLatest(crossVariogramPointsRequests);
@@ -944,7 +1060,12 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     return { minDist, maxDist };
   }
 
-  private calcCrossVariogramPoints(elem1: PMCDataValues, elem2: PMCDataValues, coords: (Point | null)[]): Observable<VariogramPoint[]> {
+  private calcCrossVariogramPoints(
+    elem1: PMCDataValues,
+    elem2: PMCDataValues,
+    coords: (Point | null)[],
+    shouldStoreRawDataForExport: boolean = false
+  ): Observable<VariogramPoint[]> {
     let result: VariogramPoint[] = [];
 
     const binWidth = this._variogramModel.maxDistance / this._variogramModel.binCount;
@@ -987,7 +1108,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
           // Find the right bin
           let binIdx = Math.floor(Math.sqrt(distSquared) / binWidth);
 
-          if (!leftCombiningFunction || !rightCombiningFunction) {
+          if (!leftCombiningFunction || !rightCombiningFunction || shouldStoreRawDataForExport) {
             // We're using a custom function, so we'll handle this externally
             leftInputs.push([elem1.values[c], elem1.values[i]]);
             rightInputs.push([elem2.values[c], elem2.values[i]]);
@@ -1007,13 +1128,28 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       }
     }
 
-    if (!leftCombiningFunction || !rightCombiningFunction) {
+    if (!leftCombiningFunction || !rightCombiningFunction || shouldStoreRawDataForExport) {
       return forkJoin([this.runBulkCombiningFunction(true, leftInputs), this.runBulkCombiningFunction(false, rightInputs)]).pipe(
         map(([leftValues, rightValues]) => {
+          let comparisonAlgorithmName = this.getExportableAlgorithmNames();
           for (let c = 0; c < leftValues.length; c++) {
             let binIdx = outputBinIndexes[c];
             result[binIdx].sum += leftValues[c] * rightValues[c];
             result[binIdx].count++;
+
+            if (shouldStoreRawDataForExport) {
+              this._rawPointDataForExport.push({
+                currentPMC: leftInputs[c][0].pmc,
+                comparingPMC: leftInputs[c][1].pmc,
+                expressions: this._lastRunFullTitle,
+                comparisonAlgorithms: comparisonAlgorithmName,
+                firstExpressionComparisonValue: leftValues[c],
+                secondExpressionComparisonValue: rightValues[c],
+                combinedValue: leftValues[c] * rightValues[c],
+                distance: result[binIdx].distance,
+                binIdx,
+              });
+            }
           }
 
           for (let c = 0; c < result.length; c++) {
@@ -1106,21 +1242,12 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       map(metadata => {
         // If slider values were invalid, we reset it here to 1/2
         let valuesWereDefaults = false;
-        if (this.distanceSliderMin == 0 && this.distanceSliderMax == 0 && this.binSliderMin == 1 && this.binSliderMax == 1) {
+        if (this.distanceSliderMin === 0 && this.distanceSliderMax === 0 && this.binSliderMin === 1 && this.binSliderMax === 1) {
           valuesWereDefaults = true;
         }
 
-        // Min distance is actually the point display radius, though we can go a bit smaller
-
-        // this.distanceSliderMin = metadata.minXYDistance_mm;
-        // this.distanceSliderMax = Math.max(metadata.locationPointXSize, metadata.locationPointYSize);
-
-        // if (metadata.beamUnitsInMeters) {
-        //   this.distanceSliderMax *= 1000.0;
-        // }
-
         this.binSliderMax = metadata.locationCount;
-        if (valuesWereDefaults) {
+        if (valuesWereDefaults || this._variogramModel.maxDistance > this.distanceSliderMax || this._variogramModel.maxDistance < this.distanceSliderMin) {
           // Start off with some reasonable defaults
           this._variogramModel.maxDistance = (this.distanceSliderMin + this.distanceSliderMax) / 2;
           this._variogramModel.binCount = Math.floor((this.binSliderMin + this.binSliderMax) / 2);
@@ -1128,6 +1255,21 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
         this.variogramMetadata = metadata;
         return metadata;
+      })
+    );
+  }
+
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this._variogramModel);
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    let requestBinnedCSVData = request.dataProducts["binnedCSVData"]?.selected;
+    let requestRawCSVData = request.dataProducts["rawCSVData"]?.selected;
+
+    return this.updateAsync(requestBinnedCSVData, requestRawCSVData).pipe(
+      switchMap(() => {
+        return this.exporter.onExport(this._variogramModel, this._binnedPointDataForExport, this._rawPointDataForExport, request);
       })
     );
   }

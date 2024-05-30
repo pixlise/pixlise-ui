@@ -107,6 +107,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   private _rois = new Map<string, ContextImageRawRegion>();
 
   private _currentPixelSelection: PixelSelection | null = null;
+  private _currentBeamSelection: BeamSelection | null = null;
+  private _hoverEntryIdx = -1;
 
   // If nothing else, somewhere to put a breakpoint!
   constructor() {
@@ -159,6 +161,13 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       this._currentPixelSelection = pixelSel;
       this._recalcNeeded = true;
     }
+
+    if (!this._currentBeamSelection || !this._currentBeamSelection.isEqualTo(beamSel)) {
+      this._currentBeamSelection = beamSel;
+      this._recalcNeeded = true;
+    }
+
+    this._hoverEntryIdx = hoverEntryIdx;
 
     // We don't want to regenerate everything when selection (and especially hover) changes, so here we just update the existing model
     // if we have one
@@ -423,6 +432,14 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     return this._currentPixelSelection;
   }
 
+  get currentBeamSelection(): BeamSelection | null {
+    return this._currentBeamSelection;
+  }
+
+  get hoverEntryIdx(): number {
+    return this._hoverEntryIdx;
+  }
+
   get rgbuSourceImage(): RGBUImage | null {
     if (this._raw) {
       return this._raw.rgbuSourceImage;
@@ -659,16 +676,13 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         const footprintColours = getSchemeColours(from.pointBBoxColourScheme);
         const footprint = new Footprint(scanMdl.footprint, footprintColours[0], footprintColours[1]);
 
-        // Look up existing draw model (if there is one) and preserve selection info for PMCs
         let selPMCs = new Set<number>(); // Assume we don't have selection info at this point
         let selLocIdxs = new Set<number>(); // Assume we don't have selection info at this point
-        let hoverIdx = -1;
 
-        const existingDrawMdl = this.scanDrawModels.get(scanId);
-        if (existingDrawMdl) {
-          selPMCs = existingDrawMdl.selectedPointPMCs;
-          selLocIdxs = existingDrawMdl.selectedPointIndexes;
-          hoverIdx = existingDrawMdl.hoverEntryIdx;
+        // Check if we have a selection stored
+        if (from.currentBeamSelection) {
+          selPMCs = from.currentBeamSelection.getSelectedScanEntryPMCs(scanId);
+          selLocIdxs = from.currentBeamSelection.getSelectedScanEntryIndexes(scanId);
         }
 
         const scanDrawMdl = new ContextImageScanDrawModel(
@@ -677,7 +691,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
           footprint,
           selPMCs,
           selLocIdxs,
-          hoverIdx,
+          from.hoverEntryIdx,
           scanId == from.scanIdForColourOverrides ? from.scanPointColourOverrides : new Map<number, RGBA>(),
           scanMdl.scanPointDisplayRadius,
           scanMdl.beamRadius_pixels,

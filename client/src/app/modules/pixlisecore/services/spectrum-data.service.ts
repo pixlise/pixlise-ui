@@ -98,6 +98,10 @@ export class SpectrumDataService {
   ): Observable<SpectrumResp> {
     const cached = this._spectrumCache.get(scanId);
 
+    // Back up what we ACTUALLY require (we don't necessarily load what's requested because we may have it cached)
+    const origBulkSum = bulkSum;
+    const origMaxValue = maxValue;
+
     if (cached) {
       // Don't request stuff we already have
       if (bulkSum && cached.loadedBulkSum) {
@@ -156,7 +160,12 @@ export class SpectrumDataService {
         // No longer outstanding!
         this._outstandingReq = null;
 
-        return resp;
+        const constructedResp = this.processCachedSpectra(updatedCachedData, scanId, scanTimeStampUnixSec, indexes, origBulkSum, origMaxValue);
+        if (!constructedResp) {
+          // Unlikely scenario - our cached item is somehow now too old... in this case at least return something!
+          return resp;
+        }
+        return constructedResp;
       }),
       shareReplay(1)
     );

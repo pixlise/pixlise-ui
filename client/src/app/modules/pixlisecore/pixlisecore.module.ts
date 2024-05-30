@@ -60,6 +60,7 @@ import { ClosableListComponent } from "src/app/modules/pixlisecore/components/at
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { DragDropModule } from "@angular/cdk/drag-drop";
+import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -74,6 +75,7 @@ export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./mo
 export { SliderComponent } from "./components/atoms/slider/slider.component";
 export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 
 @NgModule({
   declarations: [
@@ -124,6 +126,7 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     TwoStateEditButtonComponent,
     ClosableListComponent,
     LayerVisibilityDialogComponent,
+    FeedbackDialogComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
@@ -169,6 +172,7 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     TwoStateEditButtonComponent,
     ClosableListComponent,
     LayerVisibilityDialogComponent,
+    FeedbackDialogComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

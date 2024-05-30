@@ -71,6 +71,68 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
             }
             return event;
           },
+          beforeBreadcrumb(breadcrumb, hint) {
+            if (hint && breadcrumb.category === "ui.click") {
+              let target = undefined;
+              if (hint["event"]) {
+                target = hint["event"]["target"];
+              }
+
+              let ariaLabel = "";
+              const descriptors = [];
+              let parentsVisited = 0;
+
+              // Loop up the chain of parents until we find either an arialabel. We record inner text along the way
+              while (target && parentsVisited < 10) {
+                if (target.ariaLabel) { // We put aria-label on some HTML elements that are key to identifying what the interaction is
+                  ariaLabel = target.ariaLabel;
+                  break;
+                }
+
+                // Otherwise, look at the node name. If it contains something recognised, save it
+                if (target.localName && (target.localName == "a" || target.localName.indexOf("button") > -1)) {
+                  // Collect inner text, to try to identify the button
+                  descriptors.push(target.localName);
+                  if (target.innerText) {
+                    descriptors.push(`"${target.innerText}"`);
+                  }
+                }
+
+                if (target.localName.indexOf("panel") > -1 || (target.localName.indexOf("dialog") > -1 && target.localName != "mat-dialog-container")) {
+                  descriptors.unshift(target.localName);
+                }
+
+                if (target.localName == "input") {
+                  descriptors.push(target.localName);
+                  if (target?.placeholder?.length > 0) {
+                    descriptors.push(`"${target.placeholder}"`);
+                  }
+                  if (target?.accept?.length > 0) {
+                    descriptors.push(`"${target.accept}"`);
+                  }
+                }
+
+                if (target?.attributes["mattooltip"]?.nodeValue && target.attributes["mattooltip"].nodeValue.length > 0) {
+                  descriptors.push(`"${target.attributes["mattooltip"].nodeValue}"`);
+                }
+                if (target?.attributes["ng-reflect-message"]?.nodeValue && target.attributes["ng-reflect-message"].nodeValue.length > 0) {
+                  descriptors.push(`"${target.attributes["ng-reflect-message"].nodeValue}"`);
+                }
+                if (target?.title?.length > 0) {
+                  descriptors.push(`"${target.title}"`);
+                }
+
+                target = target.parentNode;
+                parentsVisited++;
+              }
+
+              if (ariaLabel.length > 0 || descriptors.length > 0) {
+                breadcrumb.message = ariaLabel + "[" + descriptors.join(",") + "], origmsg=" + breadcrumb.message;
+              }
+            }
+            //console.log("BREADCRUMB: " + breadcrumb.message);
+            return breadcrumb;
+          },
         });
 
         const version = (VERSION as any)["raw"];

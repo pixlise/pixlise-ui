@@ -55,6 +55,8 @@ export class TagPickerComponent implements OnInit {
   _tagSearchValue: string = "";
   private _newTagSelected: boolean = false;
 
+  private _selectedTags: Tag[] = [];
+
   filteredTags: Tag[] = [];
   tagsByAuthor: AuthorTags[] = [];
 
@@ -93,11 +95,13 @@ export class TagPickerComponent implements OnInit {
         );
 
         if (this._newTagSelected) {
-          let selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
+          const selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
           if (selectedTag) {
             this.selectedTagIDs.push(selectedTag.id);
             this.onTagSelectionChanged.emit(this.selectedTagIDs);
             this.focusOnInput();
+
+            this.updateSelectedTags();
 
             this._newTagSelected = false;
             this._tagSearchValue = "";
@@ -145,6 +149,10 @@ export class TagPickerComponent implements OnInit {
     this.groupTags();
   }
 
+  private updateSelectedTags() {
+    this._selectedTags = this.tags.filter(tag => this.selectedTagIDs.includes(tag.id));
+  }
+
   onTagEnter(): void {
     if (!this.editable) {
       return;
@@ -163,7 +171,7 @@ export class TagPickerComponent implements OnInit {
   }
 
   focusOnInput(): void {
-    let tagInput = document.querySelector(".tag-search-container input") as any;
+    const tagInput = document.querySelector(".tag-search-container input") as any;
     if (tagInput && tagInput.focus) {
       tagInput.focus({ focusVisible: true });
     }
@@ -183,7 +191,7 @@ export class TagPickerComponent implements OnInit {
       return;
     }
 
-    let filteredTagIDs = this.validSelectedTagIDs.filter(id => id !== tagID);
+    const filteredTagIDs = this.validSelectedTagIDs.filter(id => id !== tagID);
 
     // If the tag is selected, unselect it before deleting
     if (this.selectedTagIDs.includes(tagID)) {
@@ -191,11 +199,12 @@ export class TagPickerComponent implements OnInit {
     }
 
     this.selectedTagIDs = filteredTagIDs;
+    this.updateSelectedTags();
     this._taggingService.deleteTag(tagID);
   }
 
   get selectedTags(): Tag[] {
-    return this.tags.filter(tag => this.selectedTagIDs.includes(tag.id));
+    return this._selectedTags;
   }
 
   get validSelectedTagIDs(): string[] {
@@ -205,16 +214,16 @@ export class TagPickerComponent implements OnInit {
   groupTags(): void {
     this.filteredTags = this.tags.filter((tag: Tag) => tag.name.toLowerCase().includes(this.tagSearchValue.trim().toLowerCase()));
 
-    let creators: Record<string, string> = {};
+    const creators: Record<string, string> = {};
     creators[this.currentAuthorName] = this.currentAuthorName;
 
-    let creatorMap: Record<string, Tag[]> = {};
+    const creatorMap: Record<string, Tag[]> = {};
     if (this.filteredTags.length === 0) {
       creatorMap[this.currentAuthorName] = [];
     }
 
     this.filteredTags.forEach(tag => {
-      let userID = tag.owner?.email === this.user.info?.email ? this.currentAuthorName : tag.owner?.id;
+      const userID = tag.owner?.email === this.user.info?.email ? this.currentAuthorName : tag.owner?.id;
       if (userID && tag.owner && !creatorMap[userID]) {
         creatorMap[userID] = [];
         creators[userID] = tag.owner.name || tag.owner.id;
@@ -248,6 +257,7 @@ export class TagPickerComponent implements OnInit {
 
     this._tagSelectionChanged = true;
     this.selectedTagIDs = newTags;
+    this.updateSelectedTags();
 
     if (!this.showCurrentTagsSection) {
       // Prune non-existing tags on edit

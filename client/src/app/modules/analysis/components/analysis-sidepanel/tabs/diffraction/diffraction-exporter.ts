@@ -24,6 +24,7 @@ export class DiffractionExporter {
     let exportedData = { detected: "", manual: "", combined: "", roughness: "" };
 
     let headersToLabels: Record<string, string> = {
+      id: "ID",
       pmc: "PMC",
       keV: "Energy (keV)",
       kevStart: "Energy Start (keV)",

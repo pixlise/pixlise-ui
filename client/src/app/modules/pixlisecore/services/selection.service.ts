@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 // Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
 // Government sponsorship acknowledged.
 // All rights reserved.
@@ -33,26 +34,20 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { BeamSelection } from "../models/beam-selection";
 import { PixelSelection } from "../models/pixel-selection";
-import { invalidPMC, encodeIndexList, httpErrorToString } from "src/app/utils/utils";
+import { invalidPMC, encodeIndexList, httpErrorToString, decodeIndexList } from "src/app/utils/utils";
 
-import {
-  UserPromptDialogComponent,
-  UserPromptDialogParams,
-  UserPromptDialogResult,
-  UserPromptDialogStringItem,
-} from "../components/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { APIDataService } from "./apidata.service";
-import { SelectedScanEntriesWriteReq } from "src/app/generated-protos/selection-entry-msgs";
-import { SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
+import { SelectedScanEntriesReq, SelectedScanEntriesResp, SelectedScanEntriesWriteReq } from "src/app/generated-protos/selection-entry-msgs";
+import { SelectedImagePixelsReq, SelectedImagePixelsResp, SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { PMCConversionResult, ScanIdConverterService } from "./scan-id-converter.service";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "./apicacheddata.service";
-import { Dialog } from "@angular/cdk/dialog";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { NewROIDialogData, NewROIDialogComponent } from "../../roi/components/new-roi-dialog/new-roi-dialog.component";
 import { PMCSelectorDialogComponent } from "../components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
+import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 
 // The Selection service. It should probably be named something like CrossViewLinkingService though!
 //
@@ -176,6 +171,53 @@ export class SelectionService {
         this.setSelectionInternal(scanIds, allScanIndexes, beams, pixels, persist);
       });
     }
+  }
+
+  restoreSavedSelection(scanIds: string[], imageName: string) {
+    const reads = [];
+    let entryIdx = -1;
+    let pixelIdx = -1;
+    let imgIdx = -1;
+
+    if (scanIds.length > 0) {
+      entryIdx = reads.length;
+      reads.push(this._dataService.sendSelectedScanEntriesRequest(SelectedScanEntriesReq.create({ scanIds: scanIds })));
+    }
+    if (imageName.length > 0) {
+      pixelIdx = reads.length;
+      reads.push(this._dataService.sendSelectedImagePixelsRequest(SelectedImagePixelsReq.create({ image: imageName })));
+      imgIdx = reads.length;
+      reads.push(this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: imageName })));
+    }
+
+    combineLatest(reads).subscribe(results => {
+      let beamSel = BeamSelection.makeEmptySelection();
+      let pixelSel = PixelSelection.makeEmptySelection();
+
+      if (entryIdx > -1) {
+        const scanEntries = results[entryIdx] as SelectedScanEntriesResp;
+
+        const selPMCs = new Map<string, Set<number>>();
+        for (const scanId in scanEntries.scanIdEntryIndexes) {
+          selPMCs.set(scanId, new Set<number>(decodeIndexList(scanEntries.scanIdEntryIndexes[scanId].indexes)));
+        }
+
+        beamSel = BeamSelection.makeSelectionFromScanEntryPMCSets(selPMCs);
+      }
+
+      if (pixelIdx > -1 && imgIdx > -1) {
+        const pixelEntries = results[pixelIdx] as SelectedImagePixelsResp;
+        const imgResp = results[imgIdx] as ImageGetResp;
+
+        if (pixelEntries.pixelIndexes && (pixelEntries?.pixelIndexes?.indexes.length || 0) > 0 && imgResp.image) {
+          pixelSel = new PixelSelection(new Set<number>(decodeIndexList(pixelEntries.pixelIndexes.indexes)), imgResp.image?.width, imgResp.image?.height, imageName);
+        }
+      }
+
+      console.log("Restoring selection to saved " + beamSel.getSelectedEntryCount() + " PMCs, " + pixelSel.selectedPixels.size + " pixels...");
+
+      this.setSelection(beamSel, pixelSel, false, false);
+    });
   }
 
   private setSelectionInternal(scanIds: string[], allScanIndexes: number[][], beams: BeamSelection, pixels: PixelSelection, persist: boolean) {

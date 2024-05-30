@@ -165,6 +165,19 @@ export class ExpressionsService {
     });
   }
 
+  fetchCachedExpressionHash(id: string): Observable<string> {
+    return this.fetchCachedExpression(id).pipe(
+      map(res => {
+        if (!res?.expression) {
+          return id;
+        } else {
+          let modifiedUnixSec = res.expression.modifiedUnixSec || res.expression.owner?.createdUnixSec || 0;
+          return `${id}-${modifiedUnixSec}`;
+        }
+      })
+    );
+  }
+
   fetchCachedExpression(id: string): Observable<ExpressionGetResp> {
     if (id === ExpressionsService.NewExpressionId) {
       return of(ExpressionGetResp.create({}));
