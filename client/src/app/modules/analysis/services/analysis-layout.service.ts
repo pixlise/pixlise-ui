@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
@@ -77,7 +77,8 @@ export class AnalysisLayoutService implements OnDestroy {
     private _router: Router,
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _selectionService: SelectionService
   ) {
     this.fetchAvailableScans();
     this.fetchLastLoadedScreenConfigurationId();
@@ -214,6 +215,10 @@ export class AnalysisLayoutService implements OnDestroy {
 
           // Store the screen configuration
           this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+
+          // Restore selections for each of the scans
+          const scanIds = Object.keys(res.screenConfiguration.scanConfigurations);
+          this._selectionService.restoreSavedSelection(scanIds, "" /* TODO: Get the image name!! */);
         }
       },
       error: err => {
