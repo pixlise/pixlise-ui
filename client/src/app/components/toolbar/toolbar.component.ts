@@ -46,6 +46,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SentryHelper } from "../../utils/utils";
+import { VersionUpdateCheckerService } from "src/app/services/version-update-checker.service";
 
 export type NavigationTab = {
   icon: string;
@@ -148,6 +149,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
+    private _versionCheckerService: VersionUpdateCheckerService,
     private _matDialog: MatDialog
   ) {}
 
