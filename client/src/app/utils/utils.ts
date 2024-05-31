@@ -581,8 +581,8 @@ export class SDSFields {
     public compression: string,
     public producer: string,
     public versionStr: string // .
-  ) // EXT
-  {}
+    // EXT
+  ) {}
 
   static makeFromFileName(name: string): SDSFields | null {
     if (name.length !== 58) {
@@ -1107,3 +1107,19 @@ export function isFirefox(userAgent: string): boolean {
 }
 
 export const SpectrumChannels = 4096; // We don't want to hard-code this but for now it is
+
+export function doesVersionDiffer(versionA: string, versionB: string): boolean {
+  if (versionA.length <= 0 || versionB.length <= 0) {
+    console.error('Invalid version information present: deployed version="' + versionB + '", this build="' + versionA + '"');
+    return false; // don't do anything drastic in this case!
+  }
+
+  if (versionA[0] == "v") {
+    versionA = versionA.substring(1);
+  }
+  if (versionB[0] == "v") {
+    versionB = versionB.substring(1);
+  }
+
+  return versionB != versionA;
+}
