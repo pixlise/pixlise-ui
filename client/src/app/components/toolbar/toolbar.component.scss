@@ -144,6 +144,22 @@
 
         margin-right: 8px;
       }
+
+      .changelog-btn {
+        margin-right: 4px;
+
+        .changelog-icon {
+          margin-right: 4px;
+        }
+
+        &:not(:hover) {
+          .changelog-icon {
+            &.viewed {
+              filter: grayscale(1);
+            }
+          }
+        }
+      }
     }
   }
 }

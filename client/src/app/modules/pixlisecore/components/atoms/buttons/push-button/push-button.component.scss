@@ -80,7 +80,7 @@
   }
 }
 
-.btn-change-log-btn {
+.btn-changelog-new {
   display: flex;
   align-items: center;
 
@@ -104,6 +104,12 @@
     color: rgb(var(--clr-yellow));
     text-decoration: none;
   }
+}
+
+.btn-changelog-viewed {
+  @extend .btn-changelog-new;
+
+  color: $clr-gray-10;
 }
 
 .btn-hover-yellow {

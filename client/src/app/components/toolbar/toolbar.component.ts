@@ -94,6 +94,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   @ViewChild(CdkOverlayOrigin) _overlayOrigin!: CdkOverlayOrigin;
   @ViewChild("submitIssue") submitIssueDialog!: ElementRef;
+  @ViewChild("changeLogBtn") changeLogBtn!: ElementRef;
 
   private _userMenuOverlayHost!: OverlayHost;
   private _notificationsMenuOverlayHost!: OverlayHost;
@@ -112,6 +113,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   public userIssue: string = "";
 
   public isVisible: boolean = true;
+  public hasViewedLatestVersion: boolean = false;
 
   title = "";
   tabs: TabNav[] = [];
@@ -158,6 +160,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this.uiVersion = (VERSION as any)?.raw || "(Local build)";
     this.uiVersionLastCommitDate = (VERSION as any)?.lastCommitDate || 0;
+    this.checkHasViewedLatestVersion();
 
     // // If user changes tabs, etc, we want to know
     this._subs.add(
@@ -601,5 +604,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     }
 
     this.closeIssueDialog();
+  }
+
+  closeChangeLogDialog(): void {
+    if (this.changeLogBtn && this.changeLogBtn instanceof PushButtonComponent) {
+      (this.changeLogBtn as PushButtonComponent).closeDialog();
+    }
+  }
+
+  checkHasViewedLatestVersion() {
+    this.hasViewedLatestVersion = localStorage?.getItem("latestUIVersionViewed") === this.uiVersionLastCommitDate.toString();
+  }
+
+  markLatestVersionViewed() {
+    localStorage?.setItem("latestUIVersionViewed", this.uiVersionLastCommitDate.toString());
+    this.hasViewedLatestVersion = true;
   }
 }
