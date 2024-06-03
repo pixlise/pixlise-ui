@@ -77,7 +77,7 @@ export class VersionUpdateCheckerService implements OnDestroy {
     // Request with a different URL so doesn't get cached
     this.http.get<DeployedVersion>(EnvConfigurationInitService.appConfig.versionPollUrl + "?checktime=" + Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
       (version: DeployedVersion) => {
-        const thisBuildVersion = VERSION?.raw || "";
+        const thisBuildVersion = (VERSION as any)?.raw || "(Local build)";
         const recvVersion = version.version;
 
         if (doesVersionDiffer(thisBuildVersion, recvVersion)) {
