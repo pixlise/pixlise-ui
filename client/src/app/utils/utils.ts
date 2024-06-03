@@ -581,8 +581,8 @@ export class SDSFields {
     public compression: string,
     public producer: string,
     public versionStr: string // .
-    // EXT
-  ) {}
+  ) // EXT
+  {}
 
   static makeFromFileName(name: string): SDSFields | null {
     if (name.length !== 58) {

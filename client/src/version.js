@@ -19,6 +19,7 @@ const { gitDescribeSync } = require('git-describe');
 const { version } = require('../package.json');
 const { resolve, relative } = require('path');
 const { writeFileSync } = require('fs-extra');
+const { execSync } = require('child_process');
 
 const gitInfo = gitDescribeSync({
     dirtyMark: false,
@@ -27,6 +28,9 @@ const gitInfo = gitDescribeSync({
 
 gitInfo.version = version;
 var pversion = process.argv.slice(2);
+
+const lastCommitDate = Number(execSync('git log -1 --format=%ct').toString().trim() || 0);
+
 var v = {
     "raw": pversion[0],
     "hash": gitInfo.hash,
@@ -34,7 +38,8 @@ var v = {
     "semver": {
         "raw": pversion[0],
         "version": pversion[0]
-    }
+    },
+    "lastCommitDate": lastCommitDate
 }
 const file = resolve(__dirname, '..', 'src', 'environments', 'version.ts');
 writeFileSync(file,

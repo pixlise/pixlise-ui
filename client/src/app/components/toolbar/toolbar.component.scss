@@ -144,6 +144,22 @@
 
         margin-right: 8px;
       }
+
+      .changelog-btn {
+        margin-right: 4px;
+
+        .changelog-icon {
+          margin-right: 4px;
+        }
+
+        &:not(:hover) {
+          .changelog-icon {
+            &.viewed {
+              filter: grayscale(1);
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -226,5 +242,31 @@ user-icon {
 
   .title-text {
     margin-right: 8px;
+  }
+}
+
+.change-log-container {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 8px;
+  font-family: Inter;
+
+  h1 {
+    display: flex;
+    align-items: center;
+
+    action-button {
+      margin-left: auto;
+    }
+  }
+
+  .change-log {
+    height: 400px;
+    width: 600px;
+    overflow-y: scroll;
+    margin-right: -16px;
+    margin-bottom: -16px;
+    padding-right: 16px;
   }
 }
