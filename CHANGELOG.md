@@ -42,3 +42,6 @@
 - **Auto-Quantifications:** Fixed auto-quantification errors for "Old Faithful Geyser" caused by incorrect parameters (e.g., oxide elements instead of expected elements).
   
 - **Quant Deletion:** Fixed a bug affecting the deletion of quantifications.
+
+
+View the [full changelog](https://github.com/pixlise/pixlise-ui/releases) for more details.
