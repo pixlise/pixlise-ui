@@ -26,7 +26,9 @@ export type UINotification = {
   providedIn: "root",
 })
 export class NotificationsService {
-  private _notifications: UINotification[] = [];
+  private _allNotifications: UINotification[] = [];
+  private _savedNotifications: UINotification[] = [];
+  private _nonPersistantNotifications: UINotification[] = [];
 
   constructor(
     private _localStorageService: LocalStorageService,
@@ -57,16 +59,28 @@ export class NotificationsService {
     });
 
     this._localStorageService.notifications$.subscribe(notifications => {
-      this._notifications = notifications;
+      this._savedNotifications = notifications;
+      this.updateNotifications();
     });
   }
 
   get notifications(): UINotification[] {
-    return this._notifications;
+    return this._allNotifications;
   }
 
-  addNotification(notification: UINotification) {
-    this._localStorageService.addNotification(notification);
+  private updateNotifications() {
+    this._allNotifications = [];
+    this._allNotifications.push(...this._savedNotifications);
+    this._allNotifications.push(...this._nonPersistantNotifications);
+  }
+
+  addNotification(notification: UINotification, persist: boolean = true) {
+    if (persist) {
+      this._localStorageService.addNotification(notification);
+    } else {
+      this._nonPersistantNotifications.push(notification);
+      this.updateNotifications();
+    }
   }
 
   dismissNotification(notification: UINotification | string) {
