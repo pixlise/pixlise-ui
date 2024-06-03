@@ -46,6 +46,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SentryHelper } from "../../utils/utils";
+import { MarkdownModule } from "ngx-markdown";
 
 export type NavigationTab = {
   icon: string;
@@ -80,7 +81,7 @@ class TabNav {
   templateUrl: "./toolbar.component.html",
   styleUrls: ["./toolbar.component.scss"],
   standalone: true,
-  imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule],
+  imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
   public static BrowseTabURL: string = "/datasets";
@@ -133,6 +134,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   isPublicUser: boolean = false;
 
   uiVersion: string = "";
+  uiVersionLastCommitDate: number = 0;
 
   hasQuantConfiguredScan: boolean = false;
   screenConfigLoaded: boolean = false;
@@ -155,6 +157,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this.updateToolbar();
 
     this.uiVersion = (VERSION as any)?.raw || "(Local build)";
+    this.uiVersionLastCommitDate = (VERSION as any)?.lastCommitDate || 0;
 
     // // If user changes tabs, etc, we want to know
     this._subs.add(

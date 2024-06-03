@@ -32,6 +32,18 @@ POSSIBILITY OF SUCH DAMAGE.
   <feedback-dialog></feedback-dialog>
 </ng-template>
 
+<ng-template #changeLogDialog>
+  <div class="change-log-container">
+    <h1>
+      Change Log
+      <action-button action="close" color="rgb(var(--clr-gray-30))"></action-button>
+    </h1>
+    <div class="change-log">
+      <markdown lineHighlight [line]="'6, 10-16'" [lineOffset]="5" src="/assets/CHANGELOG.md"> </markdown>
+    </div>
+  </div>
+</ng-template>
+
 <div *ngIf="isVisible" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }" aria-label="TopToolbar">
   <div class="logo-title">
     <img
@@ -69,6 +81,10 @@ POSSIBILITY OF SUCH DAMAGE.
   <div *ngIf="isLoggedIn" class="authenticated-buttons">
     <span class="buttons">
       <span class="version"> Pixlise {{ uiVersion }}</span>
+      <push-button *ngIf="uiVersionLastCommitDate > 0" [customDialog]="changeLogDialog" buttonStyle="change-log-btn">
+        <img src="assets/button-icons/change-log-lightning.svg" />
+        <span>Updated {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }}</span>
+      </push-button>
       <push-button [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button>
       <icon-button (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
       <icon-button (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
