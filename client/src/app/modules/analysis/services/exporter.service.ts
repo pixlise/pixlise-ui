@@ -1,7 +1,6 @@
 import { Injectable } from "@angular/core";
 import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap } from "rxjs";
 import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "../../../generated-protos/scan-beam-location-msgs";
@@ -10,7 +9,7 @@ import { ScanEntryReq, ScanEntryResp } from "../../../generated-protos/scan-entr
 import { ImageGetReq, ImageListReq } from "../../../generated-protos/image-msgs";
 import { Coordinate2D } from "../../../generated-protos/image-beam-location";
 import { ImageBeamLocationsReq } from "../../../generated-protos/image-beam-location-msgs";
-import { SpectrumReq, SpectrumResp } from "../../../generated-protos/spectrum-msgs";
+import { SpectrumResp } from "../../../generated-protos/spectrum-msgs";
 import { Spectrum, spectrumTypeToJSON } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
 import { decodeIndexList } from "../../../utils/utils";
@@ -407,8 +406,8 @@ export class DataExporterService {
 
   getBeamLocationsForScan(scanId: string): Observable<WidgetExportData> {
     const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<Map<string, Coordinate2D[]>>] = [
-      this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
-      this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
+      this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId })),
+      this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })),
       this.getAllImagesIJ(scanId),
     ];
     return combineLatest(requests).pipe(
@@ -467,28 +466,40 @@ export class DataExporterService {
       switchMap(images => {
         let imagesIJ: Map<string, Coordinate2D[]> = new Map();
         if (images.images) {
+          // Filter out all matched images because these don't have beam locations
           let imagePaths = images.images.map(image => image.imagePath);
 
           let metaRequests = imagePaths.map(imagePath => this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imagePath })));
-          return combineLatest(metaRequests).pipe(
+          return forkJoin(metaRequests).pipe(
             switchMap(imageMetadataResponses => {
               let beamRequests = imageMetadataResponses.map((imageMeta, i) => {
                 const beamFileName = imageMeta.image?.matchInfo?.beamImageFileName || imagePaths[i];
-                return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName }));
+
+                return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName })).pipe(
+                  catchError(err => {
+                    console.error("Failed to get beam locations for image", beamFileName, err);
+                    return of(null);
+                  })
+                );
               });
 
-              return combineLatest(beamRequests).pipe(
+              return forkJoin(beamRequests).pipe(
                 map(beamResponses => {
                   beamResponses.forEach((beamResponse, i) => {
-                    // Find the beam locations for the requested scan
-                    const locations = beamResponse.locations?.locationPerScan.find(loc => loc.scanId === scanId);
-                    if (locations) {
-                      let imageName = imagePaths[i];
-                      imagesIJ.set(imageName, locations.locations);
+                    if (beamResponse) {
+                      // Find the beam locations for the requested scan
+                      const locations = beamResponse.locations?.locationPerScan.find(loc => loc.scanId === scanId);
+                      if (locations) {
+                        let imageName = imagePaths[i];
+                        imagesIJ.set(imageName, locations.locations);
+                      }
                     }
                   });
 
                   return imagesIJ;
+                }),
+                catchError(() => {
+                  return of(imagesIJ);
                 })
               );
             })
