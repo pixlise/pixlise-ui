@@ -6,7 +6,7 @@
 
 ### Bug Fixes
 
-- 
+- Fixes bug exporting beam locations for matched images
 
 ## 4.20.0 (2024-05-29)
 
