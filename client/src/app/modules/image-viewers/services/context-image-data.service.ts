@@ -239,6 +239,14 @@ export class ContextImageDataService {
         throw new WidgetError(`processQueryResults: expression ${expr} had error: ${result.error}`, result.error.description);
       }
 
+      if (!result.isPMCTable) {
+        throw new WidgetError(`processQueryResults: expression ${expr} did not return a valid map to display`, "Unknown error happened");
+      }
+
+      if (!result.values) {
+        throw new WidgetError(`processQueryResults: expression ${expr} did not any values to display`, "Unknown error happened");
+      }
+
       if (c > 0 && adjustedQueryResults[0].values.values.length != result.values.values.length) {
         throw new Error(
           `processQueryResults: expression ${expr} results differed in length, ${adjustedQueryResults[0].values.values.length} vs ${result.values.values.length}`
