@@ -1,6 +1,40 @@
-.centered {
+
+@import "variables.scss";
+
+.ml-container {
     display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    margin-top: 50px;
+    flex-direction: column;
+    flex: 1;
+
+    .panel-row {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      justify-content: space-around;
+      //align-items: stretch;
+    
+      padding: 8px;
+    }
+    .panel-column {
+      margin: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .flex-fill {
+        flex: 1 1 100%;
+    }
+    .scan-selector {
+      display: flex;
+      justify-content: space-between;
+
+      mat-select {
+        width: 100% !important;
+        margin: 8px;
+        margin-bottom: 0;
+      }
+    }
+}
+
+.gray-background {
+    background-color: $clr-gray-90;
 }

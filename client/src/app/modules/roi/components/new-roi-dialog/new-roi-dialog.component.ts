@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Subscription, scan } from "rxjs";
 import { ROIItem } from "src/app/generated-protos/roi";
@@ -36,6 +36,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 export type NewROIDialogData = {
   defaultScanId?: string;
+  pmcs?: number[]; // If PMCs are specified, dialog will just create the ROI using these, otherwise it will subscribe to selection
 };
 
 @Component({
@@ -43,7 +44,7 @@ export type NewROIDialogData = {
   templateUrl: "./new-roi-dialog.component.html",
   styleUrls: ["./new-roi-dialog.component.scss"],
 })
-export class NewROIDialogComponent implements OnInit {
+export class NewROIDialogComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   newROIName: string = "";
@@ -65,13 +66,15 @@ export class NewROIDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this._subs.add(
-      this._selectionService.selection$.subscribe(selection => {
-        this.selectedScanIds = selection.beamSelection.getScanIds();
-        this.pixelCount = selection.pixelSelection.selectedPixels.size;
-        this.entryCount = selection.beamSelection.getSelectedEntryCount();
-      })
-    );
+    if (this.data.pmcs === undefined) {
+      this._subs.add(
+        this._selectionService.selection$.subscribe(selection => {
+          this.selectedScanIds = selection.beamSelection.getScanIds();
+          this.pixelCount = selection.pixelSelection.selectedPixels.size;
+          this.entryCount = selection.beamSelection.getSelectedEntryCount();
+        })
+      );
+    }
   }
 
   ngOnDestroy() {
@@ -79,13 +82,26 @@ export class NewROIDialogComponent implements OnInit {
   }
 
   onSaveNewROI() {
-    let selection = this._selectionService.getCurrentSelection();
+    if (this.data.pmcs) {
+      this._roiService.createROI(
+        ROIItem.create({
+          name: this.newROIName,
+          description: this.newROIDescription,
+          tags: this.newROITags,
+          scanId: this.defaultScanId,
+          scanEntryIndexesEncoded: this.data.pmcs,
+        })
+      );
+      return;
+    }
+
+    const selection = this._selectionService.getCurrentSelection();
     let scanIds = selection.beamSelection.getScanIds();
 
     // We don't have a beam selection to tell us the scan Ids, so attempt to resolve it from the image name
     // and if this fails, then resort to the default scan id
     if (scanIds.length === 0) {
-      let imageNameWithScan = selection.pixelSelection.imageName.match(/^(?<ScanId>[0-9]{9})\/.+\.[a-zA-Z]{3,5}$/);
+      const imageNameWithScan = selection.pixelSelection.imageName.match(/^(?<ScanId>[0-9]{9})\/.+\.[a-zA-Z]{3,5}$/);
       if (imageNameWithScan && imageNameWithScan?.groups?.["ScanId"]) {
         scanIds = [imageNameWithScan.groups["ScanId"]];
       } else if (this.defaultScanId) {
