@@ -42,6 +42,7 @@ import {
   encodeIndexList,
   decompressZeroRunLengthEncoding,
   replaceAsDateIfTestSOL,
+  doesVersionDiffer,
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation

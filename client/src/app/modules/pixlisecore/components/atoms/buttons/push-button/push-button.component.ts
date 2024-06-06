@@ -44,7 +44,9 @@ export type PushButtonStyle =
   | "orange"
   | "dark-outline"
   | "hover-yellow"
-  | "v3Button";
+  | "v3Button"
+  | "changelog-new"
+  | "changelog-viewed";
 
 @Component({
   selector: "push-button",
@@ -85,6 +87,8 @@ export class PushButtonComponent implements OnInit {
       "dark-outline",
       "hover-yellow",
       "v3Button",
+      "changelog-new",
+      "changelog-viewed",
     ];
     if (validStyles.indexOf(this.buttonStyle) == -1) {
       console.warn("Invalid style for push-button: " + this.buttonStyle);
@@ -110,6 +114,10 @@ export class PushButtonComponent implements OnInit {
         });
       } else if (this.customDialog) {
         this._dialogRef = this.dialog.open(this.customDialog, {});
+        if (this.onClick) {
+          // Still emit the onClick event if it's also registered
+          this.onClick.emit(event);
+        }
       } else {
         this.onClick.emit(event);
       }
