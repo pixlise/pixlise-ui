@@ -190,7 +190,7 @@ export class WidgetDataService {
       map((results: DataQueryResult[]) => {
         const resultItems = [];
         for (let c = 0; c < results.length; c++) {
-          resultItems.push(this.processGetDataResult(results[c], what[c]));
+          resultItems.push(this.processGetDataResult(results[c], what[c], allowAnyResponse));
         }
         return new RegionDataResults(resultItems, "");
       }),
@@ -771,11 +771,14 @@ export class WidgetDataService {
     );
   }
 
-  private processGetDataResult(result: DataQueryResult, query: DataSourceParams): RegionDataResultItem {
+  private processGetDataResult(result: DataQueryResult, query: DataSourceParams, allowAnyResponse: boolean): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
-    if (result.errorMsg || !Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))) {
+    // If we have an error OR we require a PMC table as a result and didn't receive one...
+    if (
+      result.errorMsg ||
+      (!allowAnyResponse && (!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))))
+    ) {
       let msg = result.errorMsg;
-      let isValidError = result?.isPMCTable && msg;
       if (!msg) {
         msg = "Result is not a PMC array!";
       }
@@ -790,7 +793,7 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        isValidError ? new WidgetError("Expression failed to complete", msg) : null,
+        new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,
@@ -799,24 +802,21 @@ export class WidgetDataService {
       );
     }
 
-    // Apply unit conversion if needed
-    const unitConverted = this.applyUnitConversion(query.exprId, pmcValues, query.units);
+    let valuesToWrite: any = null;
+    if (!allowAnyResponse) {
+      // We're dealing with PMC table data, in which case we support unit conversion
+      // Apply unit conversion if needed
+      valuesToWrite = this.applyUnitConversion(query.exprId, pmcValues, query.units);
+    }
 
     const resultItem = new RegionDataResultItem(
-      new DataQueryResult(
-        unitConverted, // Put this in the result
-        result.isPMCTable,
-        result.dataRequired,
-        result.runtimeMs,
-        result.stderr,
-        result.stderr,
-        result.recordedExpressionInputs
-      ),
+      new DataQueryResult(valuesToWrite, result.isPMCTable, result.dataRequired, result.runtimeMs, result.stderr, result.stderr, result.recordedExpressionInputs),
       null,
-      unitConverted.warning,
+      valuesToWrite?.warning || "",
       result.expression,
       result.region,
-      query
+      query,
+      !allowAnyResponse // NOT allowing any response, and getting this far implies we DO have a valid PMC table!
     );
 
     return resultItem;
