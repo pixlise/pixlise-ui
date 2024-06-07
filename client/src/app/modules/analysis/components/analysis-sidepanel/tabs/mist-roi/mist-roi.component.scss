@@ -63,6 +63,29 @@ input {
   display: flex;
   flex-direction: column;
 
+  margin-left: 8px;
+
+  border-left: 1px solid #000;
+  background-color: #222829;
+  height: 100%;
+  border-top-right-radius: 8px;
+
+  header {
+    display: flex;
+    align-items: center;
+
+    border-bottom: 1px solid #000;
+    padding: 8px 0px;
+
+    h5 {
+      font-family: Inter;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0;
+      margin-left: 8px;
+    }
+  }
+
   .upload-btn {
     display: flex;
     justify-content: center;

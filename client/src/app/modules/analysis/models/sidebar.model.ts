@@ -6,6 +6,7 @@ import { SelectionComponent } from "../components/analysis-sidepanel/tabs/select
 import { MultiQuantComponent } from "../components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
 import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
 import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
+import { WorkspaceConfigurationTabComponent } from "../components/analysis-sidepanel/tabs/workspace-configuration/workspace-configuration.component";
 
 export interface SidebarTabItem {
   title: string;
@@ -36,12 +37,21 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     showSearchButton: true,
   },
   {
+    title: "Workspaces",
+    icon: "assets/icons/workspaces-tab.svg",
+    component: WorkspaceConfigurationTabComponent,
+    width: "350px",
+    tooltip: "Configure the workspace metadata",
+    shortcut: ["Cmd", "Shift", "2"],
+    showSearchButton: true,
+  },
+  {
     title: "Regions of Interest",
     icon: "assets/icons/roi.svg",
     component: ROITabComponent,
     width: "400px",
     tooltip: "Regions of Interest",
-    shortcut: ["Cmd", "Shift", "2"],
+    shortcut: ["Cmd", "Shift", "3"],
     showSearchButton: true,
   },
   {
@@ -50,14 +60,14 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     component: MistROIComponent,
     width: "500px",
     tooltip: "MIST ROIs",
-    shortcut: ["Cmd", "Shift", "3"],
+    shortcut: ["Cmd", "Shift", "4"],
   },
   {
     title: "Selection",
     icon: "assets/icons/selection-lasso.svg",
     component: SelectionComponent,
     tooltip: "Selection",
-    shortcut: ["Cmd", "Shift", "4"],
+    shortcut: ["Cmd", "Shift", "5"],
   },
   {
     title: "Diffraction",
@@ -65,7 +75,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     component: DiffractionTabComponent,
     width: "375px",
     tooltip: "Diffraction",
-    shortcut: ["Cmd", "Shift", "5"],
+    shortcut: ["Cmd", "Shift", "6"],
   },
   {
     title: "Roughness",
@@ -73,21 +83,21 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     component: RoughnessComponent,
     width: "375px",
     tooltip: "Roughness",
-    shortcut: ["Cmd", "Shift", "6"],
+    shortcut: ["Cmd", "Shift", "7"],
   },
   {
     title: "Multi-Quant",
     icon: "assets/icons/multiquant.svg",
     component: MultiQuantComponent,
     tooltip: "Multi-Quant",
-    shortcut: ["Cmd", "Shift", "7"],
+    shortcut: ["Cmd", "Shift", "8"],
   },
   {
     title: "Export",
     icon: "assets/icons/export.svg",
     component: ExportTabComponent,
     tooltip: "Export data from the workspace",
-    shortcut: ["Cmd", "Shift", "8"],
+    shortcut: ["Cmd", "Shift", "9"],
   },
 ];
 

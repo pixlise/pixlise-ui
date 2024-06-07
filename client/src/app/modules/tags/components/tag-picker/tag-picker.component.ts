@@ -94,6 +94,7 @@ export class TagPickerComponent implements OnInit {
             ((this.isAdmin || this.allowAdminBuiltin) && tag.type === BuiltInTags.type)
         );
 
+        this.updateSelectedTags();
         if (this._newTagSelected) {
           const selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
           if (selectedTag) {

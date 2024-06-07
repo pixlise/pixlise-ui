@@ -581,8 +581,8 @@ export class SDSFields {
     public compression: string,
     public producer: string,
     public versionStr: string // .
-  ) // EXT
-  {}
+    // EXT
+  ) {}
 
   static makeFromFileName(name: string): SDSFields | null {
     if (name.length !== 58) {
@@ -931,6 +931,11 @@ export class SDSFields {
 
 export function getScanIdFromImagePath(imagePath: string): string {
   const match = imagePath.match(/^(?<scanId>\d+)\//);
+  return match ? match.groups!["scanId"] : "";
+}
+
+export function getScanIdFromWorkspaceId(imagePath: string): string {
+  const match = imagePath.match(/-(?<scanId>\d+)/);
   return match ? match.groups!["scanId"] : "";
 }
 
