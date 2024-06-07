@@ -171,6 +171,8 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     }
 
     combineLatest(tables$).subscribe((results: TableData[]) => {
+      this.regionDataTables = [];
+
       for (const table of results) {
         this.regionDataTables.push(table);
       }
