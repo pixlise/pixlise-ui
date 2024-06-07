@@ -86,6 +86,14 @@
       .description-field {
         overflow-y: auto;
       }
+
+      .markdown-container {
+        .description-field {
+          display: flex;
+          flex-direction: column;
+          height: calc(100vh - 270px);
+        }
+      }
     }
 
     .description-field {
