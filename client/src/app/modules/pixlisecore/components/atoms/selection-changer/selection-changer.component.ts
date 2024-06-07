@@ -29,10 +29,9 @@
 
 import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription, combineLatest } from "rxjs";
-import { UNICODE_CARET_DOWN, httpErrorToString } from "src/app/utils/utils";
-import { BeamSelection } from "../../../models/beam-selection";
-import { SelectionService, SnackbarService } from "../../../pixlisecore.module";
+import { Subscription } from "rxjs";
+import { UNICODE_CARET_DOWN } from "src/app/utils/utils";
+import { SelectionService } from "../../../pixlisecore.module";
 import { SelectionHistoryItem } from "../../../services/selection.service";
 import {
   SelectionOptionsDialogData,
@@ -40,20 +39,10 @@ import {
   SelectionOptionsDialogResult,
   SelectionOption,
 } from "./selection-options/selection-options.component";
-import { AuthService } from "@auth0/auth0-angular";
-import { Permissions } from "src/app/utils/permissions";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "../../../services/apicacheddata.service";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
-import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
-import { PixelSelection } from "../../../models/pixel-selection";
-import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { ROIItem } from "src/app/generated-protos/roi";
-import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
-import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 
 @Component({
   selector: "selection-changer",
