@@ -27,40 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { QuantCombineItem } from "src/app/generated-protos/quantification-multi";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
-h1 {
-    display: flex;
-    align-items: center;
-
-    tag-picker {
-        margin-left: auto;
-    }
+export class ZStackItemForDisplay {
+  constructor(
+    public scanId: string,
+    public roiName: string,
+    public sharer: string,
+    public colour: string,
+    public zStackItem: QuantCombineItem
+  ) {}
 }
 
-.user-prompt-dlg {
-    min-width: 360px;
-}
+@Component({
+  selector: "zstack-item",
+  templateUrl: "./zstack-item.component.html",
+  styleUrls: ["./zstack-item.component.scss"],
+})
+export class ZStackItemComponent implements OnInit {
+  @Input() item: ZStackItemForDisplay = new ZStackItemForDisplay("", "", "", "", QuantCombineItem.create());
+  @Output() onSelectQuant = new EventEmitter();
+  isRemainingPointsItem: boolean = false;
 
-.bottom-button-gap {
-    margin-top: 24px;
-}
+  constructor() {}
 
-h3 {
-    font-size: 12px;
-    line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
-}
+  ngOnInit(): void {
+    this.isRemainingPointsItem = this.item.zStackItem.roiId == PredefinedROIID.RemainingPoints;
+  }
 
-.info-text {
-    color: $clr-gray-30;
-    white-space: pre-wrap;
-}
-
-.mat-select {
-    min-width: 200px !important;
-
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
+  onSelectQuantForScan(quantId: string) {
+    this.onSelectQuant.emit(quantId);
+  }
 }

@@ -79,6 +79,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     title: "Multi-Quant",
     icon: "assets/icons/multiquant.svg",
     component: MultiQuantComponent,
+    width: "400px",
     tooltip: "Multi-Quant",
     shortcut: ["Cmd", "Shift", "7"],
   },

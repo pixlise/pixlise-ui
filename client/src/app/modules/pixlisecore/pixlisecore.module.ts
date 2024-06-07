@@ -61,6 +61,7 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { DragDropModule } from "@angular/cdk/drag-drop";
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
+import { TableComponent } from "./components/atoms/table/table.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -76,6 +77,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
 export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
+export { TableComponent } from "./components/atoms/table/table.component";
 
 @NgModule({
   declarations: [
@@ -127,6 +129,7 @@ export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-d
     ClosableListComponent,
     LayerVisibilityDialogComponent,
     FeedbackDialogComponent,
+    TableComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
@@ -173,6 +176,7 @@ export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-d
     ClosableListComponent,
     LayerVisibilityDialogComponent,
     FeedbackDialogComponent,
+    TableComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

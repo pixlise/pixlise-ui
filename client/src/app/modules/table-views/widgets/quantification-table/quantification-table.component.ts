@@ -7,7 +7,7 @@ import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/w
 import { WidgetDataService, SnackbarService, DataSourceParams, RegionDataResults, DataUnit, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerData, ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { TableData, TableHeaderItem, TableRow } from "../../components/table/table.component";
+import { TableData, TableHeaderItem, TableRow } from "src/app/modules/pixlisecore/components/atoms/table/table.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { TableState, VisibleROI } from "src/app/generated-protos/widget-data";
@@ -15,7 +15,6 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
-import { COLOURS } from "src/app/modules/roi/models/roi-colors";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 @Component({
