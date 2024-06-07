@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from "@angular/core";
+import { Component, ElementRef, OnDestroy, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, map } from "rxjs";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
@@ -10,12 +10,6 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import {
-  UserPromptDialogParams,
-  UserPromptDialogStringItem,
-  UserPromptDialogComponent,
-  UserPromptDialogResult,
-} from "src/app/modules/pixlisecore/components/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { httpErrorToString } from "src/app/utils/utils";
 import { QuantCombineReq, QuantCombineResp } from "src/app/generated-protos/quantification-multi-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
@@ -25,6 +19,7 @@ import { NewROIDialogData, NewROIDialogComponent } from "src/app/modules/roi/com
 import { RemainingPointsColour } from "src/app/modules/roi/models/roi-region";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 
 @Component({
   selector: "app-multi-quant",
@@ -32,6 +27,8 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
   styleUrls: ["./multi-quant.component.scss"],
 })
 export class MultiQuantComponent implements OnDestroy {
+  @ViewChild("createMQModal") createMQModal!: ElementRef;
+
   configuredScans: ScanItem[] = [];
   private _allScans: ScanItem[] = [];
   private _selectedScanId: string = "";
@@ -44,6 +41,9 @@ export class MultiQuantComponent implements OnDestroy {
   summaryTableData: TableData | null = TableData.makeEmpty();
 
   waitingForCreate: boolean = false;
+
+  createName = "";
+  createDescription = "";
 
   constructor(
     public dialog: MatDialog,
@@ -119,6 +119,8 @@ export class MultiQuantComponent implements OnDestroy {
 
     // Closing the side-bar panel hides the special PMC colouring on context image
     this.resetContextImageColouring();
+
+    this.closeCreateMQModal();
   }
 
   get selectedScanId() {
@@ -198,48 +200,46 @@ export class MultiQuantComponent implements OnDestroy {
     });
   }
 
-  onCreate(): void {
+  onCreateConfirm() {
+    this.closeCreateMQModal();
+
     if (!this._selectedScanId) {
       this._snackService.openError("Select a scan first", "Multi-Quant requires a selected scan to work");
       return;
     }
 
-    // Ask user for extra parameters
-    const dialogConfig = new MatDialogConfig();
-    dialogConfig.data = new UserPromptDialogParams("Multi-Quant Details", "Create", "Cancel", [
-      new UserPromptDialogStringItem("Name", (val: string) => {
-        return val.length > 0;
-      }),
-      new UserPromptDialogStringItem("Description", (val: string) => {
-        return true;
-      }),
-    ]);
+    const zStack = this.makeZStackForAPI();
 
-    const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
+    this.waitingForCreate = true;
+    this.summaryTableData = TableData.makeEmpty();
+    this.message = "Creating multi-quant, please wait...";
 
-    dialogRef.afterClosed().subscribe((result: UserPromptDialogResult) => {
-      if (result) {
-        // could've cancelled
-        const zStack = this.makeZStackForAPI();
+    this.resetContextImageColouring();
 
-        this.waitingForCreate = true;
-        this.summaryTableData = TableData.makeEmpty();
-        this.message = "Creating multi-quant, please wait...";
+    this._dataService
+      .sendQuantCombineRequest(
+        QuantCombineReq.create({ name: this.createName, description: this.createDescription, scanId: this._selectedScanId, roiZStack: zStack })
+      )
+      .subscribe({
+        next: (resp: QuantCombineResp) => {
+          this.waitingForCreate = false;
+          this.message = "Multi-quant created with id: " + resp.jobId;
+        },
+        error: err => {
+          this.waitingForCreate = false;
+          this.message = httpErrorToString(err, "Multi-quant creation failed");
+        },
+        complete: () => {
+          this.createName = "";
+          this.createDescription = "";
+        },
+      });
+  }
 
-        this.resetContextImageColouring();
-
-        this._dataService.sendQuantCombineRequest(QuantCombineReq.create({ scanId: this._selectedScanId, roiZStack: zStack })).subscribe(
-          (resp: QuantCombineResp) => {
-            this.waitingForCreate = false;
-            this.message = "Multi-quant created with id: " + resp.jobId;
-          },
-          err => {
-            this.waitingForCreate = false;
-            this.message = httpErrorToString(err, "Multi-quant creation failed");
-          }
-        );
-      }
-    });
+  onCreateCancel() {
+    this.closeCreateMQModal();
+    this.createName = "";
+    this.createDescription = "";
   }
 
   // Make z-stack for saving to API. Adds remaining points ROI if z-stack is not empty AND if there is one defined
@@ -362,6 +362,7 @@ export class MultiQuantComponent implements OnDestroy {
 
       dialogConfig.data = {
         defaultScanId: this.selectedScanId,
+        pmcs: pmcs,
       };
 
       const dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
@@ -480,5 +481,11 @@ export class MultiQuantComponent implements OnDestroy {
 
     this.summaryTableData = new TableData("Element Totals for Multi Quant", "", "%", headers, rows, totalsRow);
     this.message = "";
+  }
+
+  private closeCreateMQModal(): void {
+    if (this.createMQModal && this.createMQModal instanceof PushButtonComponent) {
+      (this.createMQModal as PushButtonComponent).closeDialog();
+    }
   }
 }

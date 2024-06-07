@@ -74,6 +74,8 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
           this.entryCount = selection.beamSelection.getSelectedEntryCount();
         })
       );
+    } else {
+      this.entryCount = this.data.pmcs.length;
     }
   }
 
@@ -92,40 +94,39 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
           scanEntryIndexesEncoded: this.data.pmcs,
         })
       );
-      return;
-    }
+    } else {
+      const selection = this._selectionService.getCurrentSelection();
+      let scanIds = selection.beamSelection.getScanIds();
 
-    const selection = this._selectionService.getCurrentSelection();
-    let scanIds = selection.beamSelection.getScanIds();
-
-    // We don't have a beam selection to tell us the scan Ids, so attempt to resolve it from the image name
-    // and if this fails, then resort to the default scan id
-    if (scanIds.length === 0) {
-      const imageNameWithScan = selection.pixelSelection.imageName.match(/^(?<ScanId>[0-9]{9})\/.+\.[a-zA-Z]{3,5}$/);
-      if (imageNameWithScan && imageNameWithScan?.groups?.["ScanId"]) {
-        scanIds = [imageNameWithScan.groups["ScanId"]];
-      } else if (this.defaultScanId) {
-        scanIds = [this.defaultScanId];
+      // We don't have a beam selection to tell us the scan Ids, so attempt to resolve it from the image name
+      // and if this fails, then resort to the default scan id
+      if (scanIds.length === 0) {
+        const imageNameWithScan = selection.pixelSelection.imageName.match(/^(?<ScanId>[0-9]{9})\/.+\.[a-zA-Z]{3,5}$/);
+        if (imageNameWithScan && imageNameWithScan?.groups?.["ScanId"]) {
+          scanIds = [imageNameWithScan.groups["ScanId"]];
+        } else if (this.defaultScanId) {
+          scanIds = [this.defaultScanId];
+        }
       }
-    }
 
-    // TODO: There's a weird edge case here if we have PMCs from multiple scans selected AND pixels selected
-    // In this case, the pixels will be duplicated to each scan, which is probably not what we want
-    // However, this edge case can currently only be manually crafted and would require changing PixelSelection
-    // to include a scan id, which is too big of an undertaking for now.
-    scanIds.forEach(scanId => {
-      this._roiService.createROI(
-        ROIItem.create({
-          name: this.newROIName,
-          description: this.newROIDescription,
-          tags: this.newROITags,
-          scanId,
-          pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
-          imageName: selection.pixelSelection.imageName,
-          scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId)),
-        })
-      );
-    });
+      // TODO: There's a weird edge case here if we have PMCs from multiple scans selected AND pixels selected
+      // In this case, the pixels will be duplicated to each scan, which is probably not what we want
+      // However, this edge case can currently only be manually crafted and would require changing PixelSelection
+      // to include a scan id, which is too big of an undertaking for now.
+      scanIds.forEach(scanId => {
+        this._roiService.createROI(
+          ROIItem.create({
+            name: this.newROIName,
+            description: this.newROIDescription,
+            tags: this.newROITags,
+            scanId,
+            pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+            imageName: selection.pixelSelection.imageName,
+            scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId)),
+          })
+        );
+      });
+    }
 
     this.dialogRef.close(true);
   }

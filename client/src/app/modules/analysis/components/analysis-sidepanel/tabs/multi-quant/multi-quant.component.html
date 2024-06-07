@@ -29,45 +29,70 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="ml-container">
-    <div class="scan-selector">
-      <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
-        <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
-      </mat-select>
+<ng-template #createMQPopup>
+    <div class="details-container">
+        <header>
+            <h1>Multi-Quant Details</h1>
+        </header>
+        <section class="content">
+            <span>Name</span>
+            <input [(ngModel)]="createName" type="text" placeholder="Name">
+            <span>Description</span>
+            <input [(ngModel)]="createDescription" type="text" placeholder="Description">
+        </section>
+        <div class="buttons">
+            <push-button buttonStyle="outline" (onClick)="onCreateConfirm()">Create</push-button>
+            <push-button buttonStyle="outline" (onClick)="onCreateCancel()">Close</push-button>
+        </div>
     </div>
+</ng-template>
 
-    <div class="panel-row gray-background">
-        <push-button buttonStyle='outline' (onClick)="onShowUI()" title="Show panels to help with multi-quantification">Show UI for Multi-Quant</push-button>
-    </div>
+<div class="mq-container">
+    <div class="mq-column">
+        <div class="scan-selector">
+        <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
+            <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+        </mat-select>
+        </div>
 
-    <div class="panel-row top-shadow">
-        <push-button buttonStyle='outline' (onClick)="onReset()" title="Clears regions" fxFlex="50%">Clear Regions</push-button>
-        <push-button buttonStyle='outline' (onClick)="onRegions()" title="Choose regions to include" fxFlex="50%">Add Regions</push-button>
-    </div>
+        <div class="panel-row gray-background">
+            <push-button buttonStyle='outline' (onClick)="onShowUI()" title="Show panels to help with multi-quantification">Show UI for Multi-Quant</push-button>
+        </div>
 
-    <quant-combine-zstack
-        [items]="zStack"
-        (onZStackChanged)="onZStackChanged()">
-        <push-button (onClick)="onMakeROIFromRemainingPoints()" remainingArea>Make ROI</push-button>
-    </quant-combine-zstack>
+        <div class="panel-row top-shadow">
+            <push-button buttonStyle='outline' (onClick)="onReset()" title="Clears regions" fxFlex="50%">Clear Regions</push-button>
+            <push-button buttonStyle='outline' (onClick)="onRegions()" title="Choose regions to include" fxFlex="50%">Add Regions</push-button>
+        </div>
 
-    <div class="panel-row gray-background">
-        <push-button buttonStyle='yellow' (onClick)="onCreate()" [disabled]="zStack.length <= 0">Assemble Multi-Quant</push-button>
-    </div>
+        <quant-combine-zstack
+            [items]="zStack"
+            (onZStackChanged)="onZStackChanged()">
+            <push-button (onClick)="onMakeROIFromRemainingPoints()" remainingArea>Make ROI</push-button>
+        </quant-combine-zstack>
 
-    <table-view
-        *ngIf="!waitingForCreate && summaryTableData && summaryTableData.rows.length > 0"
-        [tables]="[summaryTableData]"
-        class="panel-column flex-fill gray-background">
-    </table-view>
+        <div class="panel-row gray-background">
+            <push-button buttonStyle='yellow' [customDialog]="createMQPopup" #createMQModal [disabled]="zStack.length <= 0">Assemble Multi-Quant</push-button>
+        </div>
 
-    <div
-        class="panel-column flex-fill gray-background">
+        <table-view
+            *ngIf="!waitingForCreate && summaryTableData && summaryTableData.rows.length > 0"
+            [tables]="[summaryTableData]"
+            class="panel-column flex-fill gray-background">
+        </table-view>
+
         <app-widget-display-message
+            *ngIf="message"
             [message]="message"
             [showSpinner]="waitingForCreate || !summaryTableData" 
             [large]="false"
-            class="flex-fill">
+            class="flex-fill panel-column flex-fill msg-area gray-background">
         </app-widget-display-message>
+    </div>
+    <div class="mq-column mq-roi-table-container">
+        <table-view
+            *ngIf="!waitingForCreate && summaryTableData && summaryTableData.rows.length > 0"
+            [tables]="[summaryTableData]"
+            class="panel-column flex-fill gray-background">
+        </table-view>
     </div>
 </div>

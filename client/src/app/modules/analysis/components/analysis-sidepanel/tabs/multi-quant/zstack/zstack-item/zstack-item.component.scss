@@ -40,10 +40,10 @@
     padding-right: $sz-unit;
 
     // We are also darker...
-    background-color: $clr-gray-80;
+    background-color: $clr-gray-90;
 
     // So our border needs to be too
-    border-bottom-color: $clr-gray-100;
+    border-bottom: 1px solid $clr-gray-100;
 
     .roi-colour {
         width: $sz-half;
@@ -67,6 +67,10 @@
 
             .quant-picker {
                 padding-left: $sz-unit;
+            }
+
+            quantification-selector {
+                width: 260px;
             }
         }
     }
