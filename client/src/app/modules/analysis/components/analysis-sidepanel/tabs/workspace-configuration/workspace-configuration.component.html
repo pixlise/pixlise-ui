@@ -48,14 +48,17 @@ POSSIBILITY OF SUCH DAMAGE.
         Description
         <multi-switch-button [options]="descriptionModes" [value]="descriptionMode" (onChange)="descriptionMode = $event"></multi-switch-button>
       </div>
-      <markdown
-        *ngIf="descriptionMode === 'View'"
-        (dblclick)="descriptionMode = 'Edit'"
-        class="text-field description-field"
-        [lineOffset]="5"
-        [data]="workspaceDescription || '## Workspace Description'"></markdown>
+      <div class="markdown-container">
+        <markdown
+          *ngIf="descriptionMode === 'View'"
+          (dblclick)="switchToEditMode()"
+          class="text-field description-field"
+          [lineOffset]="5"
+          [data]="workspaceDescription || '## Workspace Description'"></markdown>
+      </div>
       <textarea
         *ngIf="descriptionMode === 'Edit'"
+        #descriptionEditMode
         class="text-field description-field"
         [(ngModel)]="workspaceDescription"
         type="text"

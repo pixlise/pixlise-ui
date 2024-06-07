@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { map, Subscription, switchMap } from "rxjs";
@@ -43,6 +43,8 @@ import { SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
   styleUrls: ["./workspace-configuration.component.scss"],
 })
 export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
+  @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
+
   private _subs: Subscription = new Subscription();
 
   public objectType: ObjectType = ObjectType.OT_SCREEN_CONFIG;
@@ -103,6 +105,19 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
+  switchToEditMode(): void {
+    this.descriptionMode = "Edit";
+    setTimeout(() => this.setCursorToEnd(), 0);
+  }
+
+  setCursorToEnd() {
+    if (this.descriptionEditMode && this.descriptionEditMode.nativeElement) {
+      const textarea = this.descriptionEditMode.nativeElement;
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  }
+
   onTagChange(tags: string[]): void {
     this._tagsChanged = this.workspaceTags.length !== tags.length || this.workspaceTags.some((tag, i) => tag !== tags[i]);
     this.workspaceTags = tags;
@@ -124,6 +139,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       this._tagsChanged = false;
 
       this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+      this.descriptionMode = "View";
       this._snackbarService.openSuccess("Workspace configuration saved!");
     }
   }
