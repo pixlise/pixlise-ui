@@ -79,6 +79,9 @@ export class MapColourScaleInteraction {
   protected checkAndHandleTagClickEvent(event: CanvasMouseEvent): boolean {
     let isClickEvent = false;
 
+    let allowUnclampedMin = false;
+    let allowUnclampedMax = false;
+
     // If we're dragging, check how far we've moved. If it's not far, we'll treat it as a click
     const distanceMoved = getVectorBetweenPoints(event.canvasMouseDown, event.canvasPoint);
     const distance = Math.sqrt(distanceMoved.x * distanceMoved.x + distanceMoved.y * distanceMoved.y);
@@ -86,11 +89,14 @@ export class MapColourScaleInteraction {
       const displayValueRange = new MinMax(this._mdl.displayValueRange.min, this._mdl.displayValueRange.max);
       if (this._mdl.mouseMode === MouseMode.DRAG_TOP_TAG) {
         isClickEvent = true;
-        const newMax = prompt("Enter new max value", this._mdl.tagRawValue.toString());
+
+        let roundedTagRawValue = Math.round(this._mdl.tagRawValue * 100) / 100;
+        const newMax = prompt("Enter new max value", roundedTagRawValue.toString());
         if (newMax !== null) {
           const newMaxNum = parseFloat(newMax);
           if (!isNaN(newMaxNum)) {
             displayValueRange.setMax(newMaxNum);
+            allowUnclampedMax = true;
           } else {
             const scaleRange = this._mdl.valueRange;
             if (scaleRange.max !== null) {
@@ -101,11 +107,14 @@ export class MapColourScaleInteraction {
         }
       } else if (this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
         isClickEvent = true;
-        const newMin = prompt("Enter new min value", this._mdl.tagRawValue.toString());
+
+        let roundedTagRawValue = Math.round(this._mdl.tagRawValue * 100) / 100;
+        const newMin = prompt("Enter new min value", roundedTagRawValue.toString());
         if (newMin !== null) {
           const newMinNum = parseFloat(newMin);
           if (!isNaN(newMinNum)) {
             displayValueRange.setMin(newMinNum);
+            allowUnclampedMin = true;
           } else {
             const scaleRange = this._mdl.valueRange;
             if (scaleRange.min !== null) {
@@ -117,7 +126,7 @@ export class MapColourScaleInteraction {
       }
 
       // Set it back on the model
-      this._mdl.setDisplayValueRange(displayValueRange);
+      this._mdl.setDisplayValueRange(displayValueRange, allowUnclampedMin, allowUnclampedMax);
     }
 
     return isClickEvent;

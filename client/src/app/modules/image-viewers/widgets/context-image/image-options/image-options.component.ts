@@ -56,8 +56,8 @@ export class ImageDisplayOptions {
     public selectedScanId: string,
     public specularRemovedValueRange?: MinMax,
     public valueRange?: MinMax // public colourRatioRangeMin?: number,
-  ) // public colourRatioRangeMax?: number
-  {}
+    // public colourRatioRangeMax?: number
+  ) {}
 
   copy(): ImageDisplayOptions {
     return new ImageDisplayOptions(

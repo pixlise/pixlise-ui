@@ -108,7 +108,9 @@
 <div
   class="roi-container"
   [ngStyle]="{
-    'border-left-color': colour.colour || 'transparent',
+    'border-left-color':
+      colour.colour ||
+      (lightVariant ? (selected ? 'rgb(var(--clr-gray-60))' : 'rgb(var(--clr-gray-70))') : selected ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))'),
     'border-left-width': '4px',
     'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))'
   }">

@@ -31,6 +31,8 @@ import { ZStackItemComponent } from "./components/analysis-sidepanel/tabs/multi-
 import { SelectionComponent } from "./components/analysis-sidepanel/tabs/selection/selection.component";
 import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
 import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
+import { WorkspaceConfigurationTabComponent } from "./components/analysis-sidepanel/tabs/workspace-configuration/workspace-configuration.component";
+import { MarkdownModule } from "ngx-markdown";
 
 // export { ContextImageDataService } from "./services/context-image-data.service";
 export { DataExporterService } from "./services/exporter.service";
@@ -60,6 +62,7 @@ const APP_ROUTES: Routes = [
     ZStackItemComponent,
     SelectionComponent,
     ExportTabComponent,
+    WorkspaceConfigurationTabComponent,
   ],
   imports: [
     CommonModule,
@@ -79,6 +82,7 @@ const APP_ROUTES: Routes = [
     MatCheckboxModule,
     MatButtonModule,
     MatMenuModule,
+    MarkdownModule,
   ],
   exports: [AnalysisPageComponent, AnalysisSidepanelComponent],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
