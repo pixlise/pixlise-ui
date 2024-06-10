@@ -3,10 +3,14 @@
 ### Features
 
 - Introduced a new changelog to display differences between versions.
+- Allows colour mapping ranges to be manually set past max bounds from dataset for cross-dataset comparisons.
+- Introduces new "Workspace" tab that allows you to customize the name, description, and tags of your workspace.
+  - The description field supports markdown for rich text formatting.
 
 ### Bug Fixes
 
 - Fixes bug exporting beam locations for matched images
+- Fixes bug where tag count wasn't properly showing by items
 
 ## 4.20.0 (2024-05-29)
 
