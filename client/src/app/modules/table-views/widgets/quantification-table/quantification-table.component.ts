@@ -3,7 +3,6 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, concatMap, map } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import {
   WidgetDataService,
   SnackbarService,
@@ -18,7 +17,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { TableData, TableHeaderItem, TableRow } from "src/app/modules/pixlisecore/components/atoms/table/table.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { TableState, VisibleROI } from "src/app/generated-protos/widget-data";
+import { TableState, VisibleROIAndQuant } from "src/app/generated-protos/widget-data";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
@@ -35,13 +34,14 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
   // We store our ids with a scanId lookup first, and for each scan, a lookup by quantId
   dataSourceIds = new Map<string, Map<string, string[]>>();
 
-  scanId: string = "";
+  private _scanId: string = "";
   private _usePureElement: boolean = false;
   private _orderByAbundance: boolean = false;
 
   private _availableQuants: QuantificationSummary[] = [];
 
   private _subs = new Subscription();
+  private _quantsAvailableSubs = new Subscription();
 
   regionDataTables: TableData[] = [];
   helpMessage: string = "";
@@ -100,7 +100,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           this._orderByAbundance = tableData.order == "abundance"; // TODO: is this right?
           this._usePureElement = tableData.showPureElements;
 
-          if (tableData.visibleROIs) {
+          if (tableData.visibleROIs && tableData.visibleROIs.length > 0) {
             this.dataSourceIds.clear();
 
             for (const roi of tableData.visibleROIs) {
@@ -110,17 +110,23 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
                 this.dataSourceIds.set(roi.scanId, innerMap);
               }
 
-              // Make sure there's a copy of this ROI for each quant
-              if (innerMap.size > 0) {
-                for (const quantId of innerMap.keys()) {
-                  innerMap.set(quantId, [roi.id]);
+              // If we have a quant id set, use it, otehrwise use the default one
+              let quantId = roi.quantId;
+              if (quantId.length <= 0) {
+                quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
+              }
+
+              if (quantId.length > 0) {
+                // Add to existing rois if there were any
+                let rois = innerMap.get(quantId);
+                if (rois === undefined) {
+                  rois = [];
                 }
+                rois.push(roi.id);
+
+                innerMap.set(quantId, rois);
               } else {
-                // Store ROIs for the default quant for this one
-                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
-                if (quantId && quantId.length > 0) {
-                  innerMap.set(quantId, [roi.id]);
-                }
+                console.warn("Quant Table did not restore state because no quant ID was found");
               }
 
               if (this.scanId.length <= 0) {
@@ -129,6 +135,8 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
             }
 
             this.updateTable();
+          } else {
+            this.setInitialConfig();
           }
         } else {
           this.setInitialConfig();
@@ -141,19 +149,11 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
         this.updateTable();
       })
     );
-
-    this._subs.add(
-      this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
-        const quants = availableScanQuants[this.scanId];
-        if (quants) {
-          this._availableQuants = quants;
-        }
-      })
-    );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+    this._quantsAvailableSubs.unsubscribe();
   }
 
   onSoloView() {
@@ -162,6 +162,30 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     } else {
       this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
     }
+  }
+
+  get scanId(): string {
+    return this._scanId;
+  }
+
+  set scanId(id: string) {
+    if (this._scanId == id) {
+      return; // ignore, already set, don't request stuff
+    }
+
+    this._scanId = id;
+
+    // Subscribe for quants now that we know what our scan id is
+    this._quantsAvailableSubs.unsubscribe();
+
+    this._quantsAvailableSubs.add(
+      this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
+        const quants = availableScanQuants[this.scanId];
+        if (quants) {
+          this._availableQuants = quants;
+        }
+      })
+    );
   }
 
   private setInitialConfig() {
@@ -181,12 +205,12 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
   }
 
   private saveState(): void {
-    const visibleROIs: VisibleROI[] = [];
+    const visibleROIs: VisibleROIAndQuant[] = [];
 
     for (const [scanId, items] of this.dataSourceIds.entries()) {
-      for (const roiIds of items.values()) {
+      for (const [quantId, roiIds] of items.entries()) {
         for (const roiId of roiIds) {
-          visibleROIs.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+          visibleROIs.push(VisibleROIAndQuant.create({ id: roiId, scanId: scanId, quantId: quantId }));
         }
       }
     }
@@ -585,11 +609,10 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
         }
 
         this.updateTable();
+        this.saveState();
       } else {
         this.setInitialConfig();
       }
-
-      this.saveState();
     });
   }
 
