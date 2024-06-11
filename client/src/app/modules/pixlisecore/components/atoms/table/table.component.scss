@@ -85,6 +85,15 @@
         font-weight: 400;
     }
 
+    .table-subtitle {
+        color: $clr-gray-30;
+        font-size: 14px;
+        font-family: Roboto;
+        font-weight: 400;
+
+        padding-top: 4px;
+    }
+
     .obj-colour {
         margin-left: $sz-unit;
     }
