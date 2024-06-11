@@ -51,6 +51,7 @@ export class TableRow {
 export class TableData {
   constructor(
     public title: string,
+    public subtitle: string,
     public circleColourStr: string,
     public valueSuffix: string | string[],
     public headers: TableHeaderItem[],
@@ -67,7 +68,7 @@ export class TableData {
   }
 
   static makeEmpty(): TableData {
-    return new TableData("", "", "", [], [], TableRow.makeEmpty());
+    return new TableData("", "", "", "", [], [], TableRow.makeEmpty());
   }
 }
 

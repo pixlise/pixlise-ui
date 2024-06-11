@@ -479,7 +479,7 @@ export class MultiQuantComponent implements OnDestroy {
 
     const totalsRow = new TableRow("Total:", totalValues, []);
 
-    this.summaryTableData = new TableData("Element Totals for Multi Quant", "", "%", headers, rows, totalsRow);
+    this.summaryTableData = new TableData("Element Totals for Multi Quant", "", "", "%", headers, rows, totalsRow);
     this.message = "";
   }
 
