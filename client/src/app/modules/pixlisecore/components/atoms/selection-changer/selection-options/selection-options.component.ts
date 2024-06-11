@@ -70,16 +70,18 @@ export class SelectionOptionsComponent implements AfterViewInit {
   ngAfterViewInit() {
     // Move to be near the element that opened us
     if (this.data.triggerElementRef) {
-      const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
-      const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
-      //console.log('window: '+window.innerWidth+'x'+window.innerHeight+', rect height: '+ourWindowRect.height);
+      if (this.data.triggerElementRef.nativeElement) {
+        const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
+        const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
+        //console.log('window: '+window.innerWidth+'x'+window.innerHeight+', rect height: '+ourWindowRect.height);
 
-      const windowPos = new Rect(openerRect.left, openerRect.bottom, ourWindowRect.width, ourWindowRect.height);
+        const windowPos = new Rect(openerRect.left, openerRect.bottom, ourWindowRect.width, ourWindowRect.height);
 
-      // Adjust so it's always on screen still...
+        // Adjust so it's always on screen still...
 
-      const pos = { left: windowPos.x + "px", top: windowPos.y + "px" };
-      this.dialogRef.updatePosition(pos);
+        const pos = { left: windowPos.x + "px", top: windowPos.y + "px" };
+        this.dialogRef.updatePosition(pos);
+      }
     }
   }
 
