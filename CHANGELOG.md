@@ -2,15 +2,21 @@
 
 ### Features
 
-- Introduced a new changelog to display differences between versions.
-- Allows colour mapping ranges to be manually set past max bounds from dataset for cross-dataset comparisons.
-- Introduces new "Workspace" tab that allows you to customize the name, description, and tags of your workspace.
+- **Change Log** Introduced a new changelog to display differences between versions.
+- **Version Checking** PIXLISE now checks for the released version and shows a notification if the current version running in your browser is not the latest (requiring a page refresh)
+- **Colour remapping range** Allows colour mapping ranges to be manually set past max bounds from dataset for cross-dataset comparisons.
+- **Multi-Quantification** Multi-quantification has been brought back in the side-bar
+  - Quantification table widget now doubles as the "ROI Quant Table" from v3 - it can be configured with multiple quants and ROIs, and shows the same list of elements on all tables allowing comparison between quantifications
+- **Workspaces** Introduces new "Workspace" tab that allows you to customize the name, description, and tags of your workspace.
   - The description field supports markdown for rich text formatting.
 
 ### Bug Fixes
 
 - Fixes bug exporting beam locations for matched images
 - Fixes bug where tag count wasn't properly showing by items
+- Auto-quantifications are now auto-shared with the same group that sees data from the default PIXL-FM pipeline
+- Fixed issue where datasets which don't contain XRF spectra (like Garde) weren't able to be viewed
+- Fixed issue with viewing data from multi-quants (and sum-then-quantify quants) where instead of viewing them as "Combined" they came up as detector "C"
 
 ## 4.20.0 (2024-05-29)
 
