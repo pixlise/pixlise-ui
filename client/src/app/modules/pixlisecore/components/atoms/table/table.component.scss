@@ -29,38 +29,88 @@
 
 @import 'variables.scss';
 
-h1 {
+
+.tables-container {
     display: flex;
-    align-items: center;
+    flex-direction: row;
+    gap: $sz-unit;
 
-    tag-picker {
-        margin-left: auto;
+    background-color: $clr-gray-100;
+
+    .column-centered {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
-}
 
-.user-prompt-dlg {
-    min-width: 360px;
-}
+    table {
+        border-collapse: collapse;
+        font-size: 12px;
+        font-family: Inter, Roboto;
+        border-right: 1px solid black;
 
-.bottom-button-gap {
-    margin-top: 24px;
-}
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        width:100%;
+    }
 
-h3 {
-    font-size: 12px;
-    line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
-}
+    th {
+        font-weight: 700;
+        color: $clr-gray-50;
+        text-align: left;
+        padding: 10px $sz-unit $sz-unit $sz-unit;
+    }
 
-.info-text {
-    color: $clr-gray-30;
-    white-space: pre-wrap;
-}
+    td {
+        padding: $sz-unit;
+    }
 
-.mat-select {
-    min-width: 200px !important;
+    tbody > tr:nth-child(odd) {
+        background-color: $clr-gray-90;
+    }
 
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
+    tbody > tr:nth-child(even) {
+        background-color: $clr-gray-100;
+    }
+
+    thead {
+        background-color: $clr-gray-100;
+        border-bottom: 1px solid black;
+    }
+
+    .table-title {
+        color: $clr-gray-10;
+        font-size: 14px;
+        font-family: Roboto;
+        font-weight: 400;
+    }
+
+    .table-subtitle {
+        color: $clr-gray-30;
+        font-size: 14px;
+        font-family: Roboto;
+        font-weight: 400;
+
+        padding-top: 4px;
+    }
+
+    .obj-colour {
+        margin-left: $sz-unit;
+    }
+
+    .row-label {
+        color: $clr-gray-40;
+    }
+
+    .row-value {
+        color: $clr-gray-10;
+    }
+
+    .right-align {
+        text-align: right;
+    }
+
+    .total-row {
+        font-weight: bold;
+    }
 }

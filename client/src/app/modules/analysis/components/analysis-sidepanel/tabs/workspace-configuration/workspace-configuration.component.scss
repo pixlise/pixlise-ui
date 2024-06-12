@@ -1,0 +1,126 @@
+.workspace-configuration-container {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-left: 8px;
+  border-left: 1px solid #000;
+  background-color: #222829;
+  height: 100%;
+
+  border-top-right-radius: 8px;
+
+  header {
+    display: flex;
+    align-items: center;
+
+    border-bottom: 1px solid #000;
+    padding: 8px 0px;
+    border-top-right-radius: 8px;
+
+    h5 {
+      font-family: Inter;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0;
+      margin-left: 8px;
+    }
+
+    action-button {
+      margin-left: auto;
+      margin-right: 4px;
+    }
+  }
+
+  .workspace-info {
+    margin-left: 8px;
+    gap: 16px;
+
+    display: flex;
+    flex-direction: column;
+
+    height: 100%;
+
+    .workspace-field {
+      display: flex;
+      flex-direction: column;
+      margin-right: 8px;
+
+      gap: 4px;
+
+      .field-label {
+        color: #bcbcbc;
+        font-feature-settings:
+          "clig" off,
+          "liga" off;
+        font-family: Inter;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 16px;
+      }
+
+      .name-line {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 4px;
+
+        .text-field {
+          width: 100%;
+        }
+      }
+
+      .text-field {
+        background-color: #293137;
+
+        border: none;
+        padding: 8px;
+      }
+
+      // textarea {
+      //   resize: vertical;
+      // }
+
+      .description-field {
+        overflow-y: auto;
+      }
+
+      .markdown-container {
+        .description-field {
+          display: flex;
+          flex-direction: column;
+          height: calc(100vh - 270px);
+        }
+      }
+    }
+
+    .description-field {
+      flex: 1;
+    }
+  }
+
+  .button-container {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px;
+    gap: 8px;
+
+    .save-btn {
+    }
+  }
+}
+
+.search-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  .scan-search {
+    width: calc(100% - 6px);
+    min-width: 258px;
+    height: 24px;
+    border-radius: 0;
+  }
+}

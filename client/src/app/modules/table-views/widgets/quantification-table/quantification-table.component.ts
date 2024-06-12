@@ -1,22 +1,29 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, concatMap, map } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { WidgetDataService, SnackbarService, DataSourceParams, RegionDataResults, DataUnit, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  WidgetDataService,
+  SnackbarService,
+  DataSourceParams,
+  RegionDataResults,
+  DataUnit,
+  SelectionService,
+  PickerDialogComponent,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerData, ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { TableData, TableHeaderItem, TableRow } from "../../components/table/table.component";
+import { TableData, TableHeaderItem, TableRow } from "src/app/modules/pixlisecore/components/atoms/table/table.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { TableState, VisibleROI } from "src/app/generated-protos/widget-data";
+import { TableState, VisibleROIAndQuant } from "src/app/generated-protos/widget-data";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
-import { COLOURS } from "src/app/modules/roi/models/roi-colors";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 
 @Component({
   selector: "app-quantification-table",
@@ -24,14 +31,17 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
   styleUrls: ["./quantification-table.component.scss"],
 })
 export class QuantificationTableComponent extends BaseWidgetModel implements OnInit, OnDestroy {
-  // The scan and quantification the data will come from
-  dataSourceIds: WidgetDataIds = new Map<string, ScanDataIds>();
+  // We store our ids with a scanId lookup first, and for each scan, a lookup by quantId
+  dataSourceIds = new Map<string, Map<string, string[]>>();
 
-  scanId: string = "";
+  private _scanId: string = "";
   private _usePureElement: boolean = false;
   private _orderByAbundance: boolean = false;
 
+  private _availableQuants: QuantificationSummary[] = [];
+
   private _subs = new Subscription();
+  private _quantsAvailableSubs = new Subscription();
 
   regionDataTables: TableData[] = [];
   helpMessage: string = "";
@@ -56,6 +66,13 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
         //   tooltip: "Choose reference areas to display",
         //   onClick: () => this.onReferences(),
         // },
+        {
+          id: "quants",
+          type: "button",
+          title: "Quantifications",
+          tooltip: "Choose quantifications to display",
+          onClick: (val, event) => this.onQuants(event),
+        },
         {
           id: "regions",
           type: "button",
@@ -83,24 +100,43 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           this._orderByAbundance = tableData.order == "abundance"; // TODO: is this right?
           this._usePureElement = tableData.showPureElements;
 
-          if (tableData.visibleROIs) {
+          if (tableData.visibleROIs && tableData.visibleROIs.length > 0) {
             this.dataSourceIds.clear();
-            tableData.visibleROIs.forEach(roi => {
-              if (this.dataSourceIds.has(roi.scanId)) {
-                const dataSource = this.dataSourceIds.get(roi.scanId);
-                dataSource!.roiIds.push(roi.id);
-                this.dataSourceIds.set(roi.scanId, dataSource!);
-              } else {
-                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
-                this.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
+
+            for (const roi of tableData.visibleROIs) {
+              let innerMap = this.dataSourceIds.get(roi.scanId);
+              if (!innerMap) {
+                innerMap = new Map<string, string[]>();
+                this.dataSourceIds.set(roi.scanId, innerMap);
               }
 
-              if (this.scanId !== roi.scanId) {
+              // If we have a quant id set, use it, otehrwise use the default one
+              let quantId = roi.quantId;
+              if (quantId.length <= 0) {
+                quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
+              }
+
+              if (quantId.length > 0) {
+                // Add to existing rois if there were any
+                let rois = innerMap.get(quantId);
+                if (rois === undefined) {
+                  rois = [];
+                }
+                rois.push(roi.id);
+
+                innerMap.set(quantId, rois);
+              } else {
+                console.warn("Quant Table did not restore state because no quant ID was found");
+              }
+
+              if (this.scanId.length <= 0) {
                 this.scanId = roi.scanId;
               }
-            });
+            }
 
             this.updateTable();
+          } else {
+            this.setInitialConfig();
           }
         } else {
           this.setInitialConfig();
@@ -117,6 +153,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+    this._quantsAvailableSubs.unsubscribe();
   }
 
   onSoloView() {
@@ -127,26 +164,54 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     }
   }
 
+  get scanId(): string {
+    return this._scanId;
+  }
+
+  set scanId(id: string) {
+    if (this._scanId == id) {
+      return; // ignore, already set, don't request stuff
+    }
+
+    this._scanId = id;
+
+    // Subscribe for quants now that we know what our scan id is
+    this._quantsAvailableSubs.unsubscribe();
+
+    this._quantsAvailableSubs.add(
+      this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
+        const quants = availableScanQuants[this.scanId];
+        if (quants) {
+          this._availableQuants = quants;
+        }
+      })
+    );
+  }
+
   private setInitialConfig() {
     // TODO: needed? this.dataSourceIds.clear();
     this.scanId = this._analysisLayoutService.defaultScanId;
     if (this.scanId.length > 0) {
       const quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
-      this.dataSourceIds.set(
-        this.scanId,
-        new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(this.scanId), PredefinedROIID.getSelectedPointsForScan(this.scanId)])
-      );
+      if (quantId.length > 0) {
+        this.dataSourceIds.set(
+          this.scanId,
+          new Map<string, string[]>([[quantId, [PredefinedROIID.getAllPointsForScan(this.scanId), PredefinedROIID.getSelectedPointsForScan(this.scanId)]]])
+        );
+      }
 
       this.updateTable();
     }
   }
 
   private saveState(): void {
-    const visibleROIs: VisibleROI[] = [];
+    const visibleROIs: VisibleROIAndQuant[] = [];
 
-    for (const [scanId, item] of this.dataSourceIds.entries()) {
-      for (const roiId of item.roiIds) {
-        visibleROIs.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+    for (const [scanId, items] of this.dataSourceIds.entries()) {
+      for (const [quantId, roiIds] of items.entries()) {
+        for (const roiId of roiIds) {
+          visibleROIs.push(VisibleROIAndQuant.create({ id: roiId, scanId: scanId, quantId: quantId }));
+        }
       }
     }
 
@@ -165,15 +230,58 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     this.helpMessage = "";
 
     const tables$: Observable<TableData>[] = [];
-    for (const [scanId, ids] of this.dataSourceIds) {
-      for (const roiId of ids.roiIds) {
-        tables$.push(this.makeTable(scanId, roiId, ids.quantId));
+    for (const [scanId, items] of this.dataSourceIds.entries()) {
+      for (const [quantId, roiIds] of items.entries()) {
+        for (const roiId of roiIds) {
+          tables$.push(this.makeTable(scanId, roiId, quantId));
+        }
       }
     }
 
     combineLatest(tables$).subscribe((results: TableData[]) => {
+      this.regionDataTables = [];
+
       for (const table of results) {
         this.regionDataTables.push(table);
+      }
+
+      // Ensure each table has the same element list
+      let emptyValues = [];
+      const uniqueLabels = new Set<string>();
+      for (const table of this.regionDataTables) {
+        for (const r of table.rows) {
+          uniqueLabels.add(r.label);
+          if (r.values.length > emptyValues.length) {
+            emptyValues = [];
+            for (let c = 0; c < r.values.length; c++) {
+              emptyValues.push(0);
+            }
+          }
+        }
+      }
+
+      const allLabels = [];
+      for (const label of Array.from(uniqueLabels).sort()) {
+        allLabels.push(label);
+      }
+
+      for (const table of this.regionDataTables) {
+        const rowLookup = new Map<string, TableRow>();
+        for (const row of table.rows) {
+          rowLookup.set(row.label, row);
+        }
+
+        const rows: TableRow[] = [];
+        for (const label of allLabels) {
+          const existingRow = rowLookup.get(label);
+          if (existingRow) {
+            rows.push(existingRow);
+          } else {
+            rows.push(new TableRow(label, emptyValues, []));
+          }
+        }
+
+        table.rows = rows;
       }
     });
     // TODO: handle errors?
@@ -195,7 +303,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
         const rows: TableRow[] = [];
         const rowItemToQueryIdx: number[][] = [];
-        const totalValues: number[] = [];
+        //const totalValues: number[] = [];
         const headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];
 
         for (const detector of detectors) {
@@ -226,7 +334,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
         return this._widgetData.getData(query).pipe(
           map((results: RegionDataResults) => {
-            return this.formTableData(scanId, roiId, results, headers, rows, rowItemToQueryIdx);
+            return this.formTableData(scanId, resp.summary?.params?.userParams?.name || "?", roiId, results, headers, rows, rowItemToQueryIdx);
           })
         );
       })
@@ -235,6 +343,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   private formTableData(
     scanId: string,
+    quantName: string,
     roiId: string,
     data: RegionDataResults,
     headers: TableHeaderItem[],
@@ -244,14 +353,14 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     // Show any errors...
     if (data.error) {
       this._snackService.openError(data.error);
-      return new TableData("", "", "", [], [], new TableRow(`Error: ${data.error}`, [], []));
+      return new TableData("", "", "", "", [], [], new TableRow(`Error: ${data.error}`, [], []));
     }
 
     if (data.hasQueryErrors()) {
       for (const queryResult of data.queryResults) {
         if (queryResult.error) {
           this._snackService.openError(queryResult.error.message, queryResult.error.description);
-          return new TableData("", "", "", [], [], new TableRow(`Error: ${queryResult.error.message}`, [], []));
+          return new TableData("", "", "", "", [], [], new TableRow(`Error: ${queryResult.error.message}`, [], []));
         }
       }
     }
@@ -273,7 +382,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
         if (queryIdx >= data.queryResults.length) {
           const err = `Failed to read data for cell, queryIdx=${queryIdx}, queryResults length=${data.queryResults.length}`;
           this._snackService.openError(err);
-          return new TableData("", "", "", [], [], new TableRow(err, [], []));
+          return new TableData("", "", "", "", [], [], new TableRow(err, [], []));
         }
 
         const queryResult = data.queryResults[queryIdx];
@@ -283,7 +392,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           } else if (region != queryResult.region) {
             const err = `Differing regions returned for table: ${region.region.name} vs: ${queryResult.region?.region.name}`;
             this._snackService.openError(err);
-            return new TableData("", "", "", [], [], new TableRow(err, [], []));
+            return new TableData("", "", "", "", [], [], new TableRow(err, [], []));
           }
 
           let weightTotal = 0;
@@ -328,7 +437,8 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
       }
 
       const table = new TableData(
-        region?.region.name || "",
+        `Region: ${region?.region.name}`, // Title: Region name
+        `Quant: ${quantName}`, // Sub-title: Quant name
         region?.displaySettings.colour.asString() || "",
         " Wt.%",
         headers,
@@ -340,7 +450,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
       if (PredefinedROIID.isSelectedPointsROI(roiId)) {
         const roi = this._roiService.getSelectedPointsROI(scanId);
         if (roi) {
-          table.title = roi.name;
+          table.title = `Region: ${roi.name}`;
           table.circleColourStr = roi.displaySettings?.colour || "";
         }
       }
@@ -348,7 +458,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
       return table;
     }
 
-    return new TableData("", "", "", [], [], new TableRow("", [], []));
+    return new TableData("", "", "", "", [], [], new TableRow("", [], []));
   }
 
   /*
@@ -429,25 +539,108 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   onReferences() {}
 
+  onQuants(event): void {
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+
+    const userQuants: PickerDialogItem[] = [];
+    userQuants.push(new PickerDialogItem("", "My Quantifications", "", true));
+
+    const sharedQuants: PickerDialogItem[] = [];
+    sharedQuants.push(new PickerDialogItem("", "Shared Quantifications", "", true));
+
+    for (const quant of this._availableQuants) {
+      // Only interested in completed, combined quantifications, we can't view the others...
+      //if (/*quant.status == "complete" &&*/ quant.params?.userParams?.quantMode == "Combined") {
+      if (quant.params && quant.params.userParams) {
+        const item = new PickerDialogItem(quant.id, quant.params.userParams.name, "", true);
+        if (quant.owner?.sharedWithOthers) {
+          sharedQuants.push(item);
+        } else {
+          userQuants.push(item);
+        }
+      }
+    }
+
+    const items: PickerDialogItem[] = [];
+    if (userQuants.length > 1) {
+      items.push(...userQuants);
+    }
+    if (sharedQuants.length > 1) {
+      items.push(...sharedQuants);
+    }
+
+    const selectedROIIds = new Set<string>();
+    const quantIds = new Set<string>();
+    for (const item of this.dataSourceIds.values()) {
+      for (const [quantId, roiIds] of item.entries()) {
+        quantIds.add(quantId);
+
+        for (const roi of roiIds) {
+          selectedROIIds.add(roi);
+        }
+      }
+    }
+
+    dialogConfig.data = new PickerDialogData(true, true, true, true, items, Array.from(quantIds), "", new ElementRef(event.currentTarget));
+
+    const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
+
+    // NOTE: We don't update as clicks happen, we wait for an apply button press!
+    //
+    //        dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
+    //            (ids: string[])=>
+    dialogRef.afterClosed().subscribe((ids: string[]) => {
+      if (ids && ids.length > 0) {
+        // Regenerate our dataSourceIds to include the quant ids specified
+        this.dataSourceIds.clear();
+
+        // TODO: get scan ids from the dialog for each quant picked!
+        for (const quantId of ids) {
+          let innerMap = this.dataSourceIds.get(this.scanId);
+          if (!innerMap) {
+            innerMap = new Map<string, string[]>();
+            this.dataSourceIds.set(this.scanId, innerMap);
+          }
+
+          if (quantId.length > 0) {
+            innerMap.set(quantId, Array.from(selectedROIIds));
+          }
+        }
+
+        this.updateTable();
+        this.saveState();
+      } else {
+        this.setInitialConfig();
+      }
+    });
+  }
+
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 
-    const selectedIds: string[] = [];
-    this.dataSourceIds.forEach(rois => {
-      selectedIds.push(...rois.roiIds);
-    });
+    const selectedROIIds = new Set<string>();
+    const quantIds = new Set<string>();
+    for (const item of this.dataSourceIds.values()) {
+      for (const [quantId, roiIds] of item.entries()) {
+        quantIds.add(quantId);
+
+        for (const roi of roiIds) {
+          selectedROIIds.add(roi);
+        }
+      }
+    }
+
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: true,
-      selectedIds,
+      selectedIds: Array.from(selectedROIIds),
       scanId: this.scanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
       if (result) {
-        this.dataSourceIds.clear();
-
         // Create entries for each scan
         const roisPerScan = new Map<string, string[]>();
         for (const roi of result.selectedROISummaries) {
@@ -462,8 +655,18 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          const quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
-          this.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
+          let innerMap = this.dataSourceIds.get(scanId);
+          if (!innerMap) {
+            innerMap = new Map<string, string[]>();
+            this.dataSourceIds.set(scanId, innerMap);
+          }
+
+          // Set this list of ROIs for all quants of this scan
+          for (const quantId of innerMap.keys()) {
+            if (quantId.length > 0) {
+              innerMap.set(quantId, roiIds);
+            }
+          }
 
           if (scanId && this.scanId !== scanId) {
             this.scanId = scanId;

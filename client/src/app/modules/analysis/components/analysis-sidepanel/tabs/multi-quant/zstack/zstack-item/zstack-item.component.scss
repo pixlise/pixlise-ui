@@ -28,80 +28,54 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import 'variables.scss';
+@import 'atoms.scss';
 
-
-.tables-container {
+.zstack-item {
     display: flex;
     flex-direction: row;
-    gap: $sz-unit;
+    justify-content: space-between;
+    align-items: center;
 
-    background-color: $clr-gray-100;
+    // We add padding on the right!
+    padding-right: $sz-unit;
 
-    .column-centered {
+    // We are also darker...
+    background-color: $clr-gray-90;
+
+    // So our border needs to be too
+    border-bottom: 1px solid $clr-gray-100;
+
+    .roi-colour {
+        width: $sz-half;
+    }
+
+    .row {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+        flex-direction: row;
 
-    table {
-        border-collapse: collapse;
-        font-size: 12px;
-        font-family: Inter, Roboto;
-        border-right: 1px solid black;
+        .quant-picker-container {
+            display: flex;
+            flex-direction: column;
+            padding: $sz-unit;
+            gap: $sz-unit;
+            
+            .setting-label {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        width:100%;
-    }
+            .quant-picker {
+                padding-left: $sz-unit;
+            }
 
-    th {
-        font-weight: 700;
-        color: $clr-gray-50;
-        text-align: left;
-        padding: 10px $sz-unit $sz-unit $sz-unit;
+            quantification-selector {
+                width: 260px;
+            }
+        }
     }
+}
 
-    td {
-        padding: $sz-unit;
-    }
-
-    tbody > tr:nth-child(odd) {
-        background-color: $clr-gray-90;
-    }
-
-    tbody > tr:nth-child(even) {
-        background-color: $clr-gray-100;
-    }
-
-    thead {
-        background-color: $clr-gray-100;
-        border-bottom: 1px solid black;
-    }
-
-    .table-title {
-        color: $clr-gray-10;
-        font-size: 14px;
-        font-family: Roboto;
-        font-weight: 400;
-    }
-
-    .obj-colour {
-        margin-left: $sz-unit;
-    }
-
-    .row-label {
-        color: $clr-gray-40;
-    }
-
-    .row-value {
-        color: $clr-gray-10;
-    }
-
-    .right-align {
-        text-align: right;
-    }
-
-    .total-row {
-        font-weight: bold;
-    }
+.obj-creator {
+    margin-left: $sz-unit;
 }

@@ -556,12 +556,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         currentQuant.elements.forEach(quantElement => {
           let quantMode = currentQuant?.params?.userParams?.quantMode || "";
           let defaultDetector = quantMode;
-          if (defaultDetector.length > 0 && defaultDetector != "Combined") {
+          if (defaultDetector.length > 0 && defaultDetector.indexOf("Combined") == -1) {
             defaultDetector = defaultDetector.substring(0, 1);
           }
 
           if (!this.activeQuantifiedElementDetector) {
-            this.activeQuantifiedElementDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
+            let det = defaultDetector;
+            if (det.indexOf("Combined") > -1) {
+              det = "Combined";
+            }
+            this.activeQuantifiedElementDetector = det.replace("Combined", "A&B") as "A" | "B" | "A&B";
           }
 
           let detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");

@@ -30,10 +30,13 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="selection-tab">
+  <header>
+    <h5>Selection</h5>
+  </header>
   <!-- <push-button (onClick)="onDriftCorrection()" buttonStyle="outline" fxFlex="50%">Correct Drift?</push-button> -->
 
   <div class="summary panel-row">
-    <span>{{ summary }}</span>
+    <span class="summary-text">{{ summary }}</span>
 
     <div class="summary-buttons">
       <push-button (onClick)="onUndo()" [disabled]="!canUndo" buttonStyle="outline">Undo</push-button>
@@ -58,7 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <cdk-accordion class="selection-accordion">
-    <cdk-accordion-item role="button" tabindex="0">
+    <cdk-accordion-item class="averages-container" role="button" tabindex="0">
       <div class="accordion-title" (click)="onToggleExpand(0)">
         <span>RGBU Averages</span>
         <mat-icon aria-hidden="false" aria-label="Toggle RGBU Averages">{{ expandedIndices.includes(0) ? "arrow_drop_up" : "arrow_drop_down" }}</mat-icon>

@@ -27,33 +27,58 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "cursors.scss";
+import { Component, Input } from "@angular/core";
 
-.roughness {
-  .table-header {
-    .header-col {
-      width: 90px;
-      white-space: pre;
+export class TableHeaderItem {
+  constructor(
+    public label: string,
+    public extra: string
+  ) {}
+}
+
+export class TableRow {
+  constructor(
+    public label: string,
+    public values: number[],
+    public tooltips: string[]
+  ) {}
+
+  static makeEmpty(): TableRow {
+    return new TableRow("", [], []);
+  }
+}
+
+export class TableData {
+  constructor(
+    public title: string,
+    public subtitle: string,
+    public circleColourStr: string,
+    public valueSuffix: string | string[],
+    public headers: TableHeaderItem[],
+    public rows: TableRow[],
+    public totalsRow: TableRow
+  ) {}
+
+  getSuffix(index: number): string {
+    if (Array.isArray(this.valueSuffix)) {
+      return this.valueSuffix[index];
+    } else {
+      return this.valueSuffix;
     }
   }
 
-  .virtual-list-container {
-    .peaks-viewport {
-      height: calc(100vh - 314px);
-    }
+  static makeEmpty(): TableData {
+    return new TableData("", "", "", "", [], [], TableRow.makeEmpty());
   }
+}
 
-  .user-defined,
-  .detected-peaks {
-    .col {
-      width: 90px !important;
-    }
-  }
+@Component({
+  selector: "table-view",
+  templateUrl: "./table.component.html",
+  styleUrls: ["./table.component.scss"],
+})
+export class TableComponent {
+  @Input() tables: TableData[] = [];
 
-  .save-btns {
-    push-button {
-      flex: 1;
-    }
-  }
+  constructor() {}
 }

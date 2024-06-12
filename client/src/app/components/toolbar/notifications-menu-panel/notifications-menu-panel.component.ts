@@ -31,6 +31,9 @@ import { Component, EventEmitter, Output } from "@angular/core";
 // import { Notification } from "src/app/generated-protos/notification";
 import { UINotification, NotificationsService } from "src/app/modules/settings/services/notifications.service";
 
+export const hotkeysPanelNotificationID = "hotkeys-panel";
+export const versionUpdateNotificationID = "version-update";
+
 @Component({
   selector: "app-notifications-menu-panel",
   templateUrl: "./notifications-menu-panel.component.html",
@@ -54,8 +57,10 @@ export class NotificationsMenuPanelComponent {
 
   onNotificationAction(notification: UINotification) {
     if (notification.type === "action") {
-      if (notification.id === "hotkeys-panel") {
+      if (notification.id === hotkeysPanelNotificationID) {
         this.onOpenHotkeysMenuPanel();
+      } else if (notification.id === versionUpdateNotificationID) {
+        window.location.reload();
       } else if (notification.action?.buttonAction) {
         notification.action.buttonAction();
       }
@@ -65,7 +70,7 @@ export class NotificationsMenuPanelComponent {
   onOpenHotkeysMenuPanel() {
     this.close.emit();
     this.openHotKeysMenuPanel.emit();
-    this.dismissNotification("hotkeys-panel");
+    this.dismissNotification(hotkeysPanelNotificationID);
   }
 
   dismissNotification(notification: UINotification | string) {

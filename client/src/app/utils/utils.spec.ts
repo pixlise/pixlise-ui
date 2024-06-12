@@ -41,25 +41,9 @@ import {
   decodeIndexList,
   encodeIndexList,
   decompressZeroRunLengthEncoding,
-  replaceAsDateIfTestSOL
+  replaceAsDateIfTestSOL,
+  doesVersionDiffer,
 } from "./utils";
-
-function doesVersionDiffer(versionA: string, versionB: string): boolean {
-  if (versionA.length <= 0 || versionB.length <= 0) {
-    console.error('Invalid version information present: deployed version="' + versionB + '", this build="' + versionA + '"');
-    return false; // don't do anything drastic in this case!
-  }
-
-  if (versionA[0] == "v") {
-    versionA = versionA.substring(1);
-  }
-  if (versionB[0] == "v") {
-    versionB = versionB.substring(1);
-  }
-
-  return versionB != versionA;
-}
-
 
 // TODO: unit test getPearsonCorrelation
 
@@ -545,5 +529,35 @@ fdescribe("replaceAsDateIfTestSOL", () => {
     expect(replaceAsDateIfTestSOL("G060")).toEqual("2-Mar-2022");
     expect(replaceAsDateIfTestSOL("1024")).toEqual("1024"); // Returning if cant interpret (sol)
     expect(replaceAsDateIfTestSOL("0983")).toEqual("0983"); // Returning if cant interpret (sol)
+  });
+});
+
+describe("doesVersionDiffer", () => {
+  it("doesVersionDiffer works", () => {
+    expect(doesVersionDiffer("1.0.0", "1.0.0")).toEqual(false); // no diff...
+
+    expect(doesVersionDiffer("", "1.0.0")).toEqual(false); // blank strings mean ignore the whole thing
+    expect(doesVersionDiffer("1.0.0", "")).toEqual(false); // blank strings mean ignore the whole thing
+
+    expect(doesVersionDiffer("v1.0.0", "1.0.0")).toEqual(false); // supposed to ignore v
+    expect(doesVersionDiffer("v1.0.0", "v1.0.0")).toEqual(false); // supposed to ignore v
+    expect(doesVersionDiffer("1.0.0", "v1.0.0")).toEqual(false); // supposed to ignore v
+
+    expect(doesVersionDiffer("1.0.0", "1.0.1")).toEqual(true); // differs!
+    expect(doesVersionDiffer("0.3.30", "0.4.30")).toEqual(true); // differs!
+
+    expect(doesVersionDiffer("v1.0.0", "1.0.1")).toEqual(true); // supposed to ignore v
+    expect(doesVersionDiffer("v1.0.0", "2.0.0")).toEqual(true); // supposed to ignore v
+    expect(doesVersionDiffer("v1.0.0", "1.1.0")).toEqual(true); // supposed to ignore v
+
+    expect(doesVersionDiffer("v1.0.0", "v1.0.1")).toEqual(true); // supposed to ignore v
+    expect(doesVersionDiffer("v1.0.0", "v2.0.0")).toEqual(true); // supposed to ignore v
+    expect(doesVersionDiffer("v1.0.0", "v1.1.0")).toEqual(true); // supposed to ignore v
+
+    expect(doesVersionDiffer("1.0.0", "v1.0.1")).toEqual(true); // supposed to ignore v
+    expect(doesVersionDiffer("1.0.0", "v2.0.0")).toEqual(true); // supposed to ignore v
+    expect(doesVersionDiffer("1.0.0", "v1.1.0")).toEqual(true); // supposed to ignore v
+
+    expect(doesVersionDiffer("v0.3.30", "Matterhorn")).toEqual(true);
   });
 });

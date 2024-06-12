@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, Subject, combineLatest, concatMap, map, of, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -12,7 +12,7 @@ import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/
 import { ColourRamp } from "src/app/utils/colours";
 import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageScanModelGenerator } from "../widgets/context-image/context-image-scan-model-generator";
-import { DataSourceParams, RegionDataResults, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
+import { DataSourceParams, RegionDataResults, SnackbarService, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
 import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "../models/map-layer";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../widgets/context-image/context-image-model";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -42,7 +42,8 @@ export class ContextImageDataService {
     protected _expressionsService: ExpressionsService,
     protected _cachedDataService: APICachedDataService,
     protected _widgetDataService: WidgetDataService,
-    protected _endpointsService: APIEndpointsService
+    protected _endpointsService: APIEndpointsService,
+    private _snackService: SnackbarService
   ) {}
 
   get syncedTransform$(): BehaviorSubject<Record<string, SyncedTransform>> {
@@ -239,6 +240,14 @@ export class ContextImageDataService {
         throw new WidgetError(`processQueryResults: expression ${expr} had error: ${result.error}`, result.error.description);
       }
 
+      if (!result.isPMCTable) {
+        throw new WidgetError(`processQueryResults: expression ${expr} did not return a valid map to display`, "Unknown error happened");
+      }
+
+      if (!result.values) {
+        throw new WidgetError(`processQueryResults: expression ${expr} did not any values to display`, "Unknown error happened");
+      }
+
       if (c > 0 && adjustedQueryResults[0].values.values.length != result.values.values.length) {
         throw new Error(
           `processQueryResults: expression ${expr} results differed in length, ${adjustedQueryResults[0].values.values.length} vs ${result.values.values.length}`
@@ -330,10 +339,10 @@ export class ContextImageDataService {
               // There should be beam locations for each of these associated images, if not, error!
               const beamIJs = beamsForScan.get(scanId);
               if (!beamIJs) {
-                throw new Error(`Image associated scan: ${scanId} has no beam locations`);
+                this._snackService.openWarning(`Image associated scan: ${scanId} has no beam locations`);
+              } else {
+                requests.push(this.buildScanModel(scanId, imagePath, beamIJs));
               }
-
-              requests.push(this.buildScanModel(scanId, imagePath, beamIJs));
             }
 
             // Load the image

@@ -37,8 +37,11 @@
 
 .quant-dropdown {
   border-radius: $sz-half;
-  // background-color: $clr-gray-100;
-  background-color: #293137;
+  background-color: $clr-gray-80;
+
+  border: 1px solid #bcbcbc;
+
+  //background-color: #293137;
   display: flex;
   // max-width: calc(100% - 8px);
 
@@ -65,53 +68,54 @@
       margin-left: 4px;
     }
   }
-}
 
-.name-container {
-  display: flex;
-  align-items: center;
-  padding: $sz-half;
-  width: 100%;
-  overflow: hidden;
-}
+  .name-container {
+    display: flex;
+    align-items: center;
+    //padding: $sz-half;
+    width: 100%;
+    overflow: hidden;
 
-.quant-name {
-  color: #f8f8f8;
-  padding: $sz-half $sz-half;
-  // min-width: 200px;
-  // max-width: 200px;
-  // width: 100%;
-  // align-items: center;
-  // display: flex;
+    .quant-name {
+      color: #f8f8f8;
+      padding: $sz-half $sz-half;
+      // min-width: 200px;
+      // max-width: 200px;
+      // width: 100%;
+      // align-items: center;
+      // display: flex;
+    
+      // white-space: nowrap;
+      // overflow: hidden;
+      // text-overflow: ellipsis;
+    
+      width: 100%;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
 
-  // white-space: nowrap;
-  // overflow: hidden;
-  // text-overflow: ellipsis;
+    .quant-arrow {
+      padding-right: $sz-half;
+    }
+  }
 
-  width: 100%;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-
-.quant-arrow {
-  padding-right: $sz-half;
-}
-
-.quant-detectors {
-  // background-color: $clr-gray-30;
-  // color: $clr-gray-100;
-  font-family: Inter;
-  // font-weight: 800;
-  font-size: 12px;
-  font-style: normal;
-
-  margin: 4px;
-  padding: 4px;
-  border-radius: 4px;
-  background-color: #bcbcbc;
-  color: #454a39;
-  font-weight: 700;
-
-  justify-content: center;
-  display: flex;
+  .quant-detectors {
+    // background-color: $clr-gray-30;
+    // color: $clr-gray-100;
+    font-family: Inter;
+    // font-weight: 800;
+    font-size: 12px;
+    font-style: normal;
+  
+    padding: 4px;
+    //border-radius: 4px;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    background-color: #bcbcbc;
+    color: #454a39;
+    font-weight: 700;
+  
+    justify-content: center;
+    display: flex;
+  }
 }

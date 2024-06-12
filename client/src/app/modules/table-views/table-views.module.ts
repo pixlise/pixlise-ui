@@ -6,12 +6,11 @@ import { AnalysisModule } from "../analysis/analysis.module";
 import { WidgetModule } from "../widget/widget.module";
 
 import { QuantificationTableComponent } from "./widgets/quantification-table/quantification-table.component";
-import { TableComponent } from "./components/table/table.component";
 
 export { QuantificationTableComponent } from "./widgets/quantification-table/quantification-table.component";
 
 @NgModule({
-  declarations: [TableComponent, QuantificationTableComponent],
+  declarations: [QuantificationTableComponent],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, WidgetModule],
   exports: [QuantificationTableComponent],
 })

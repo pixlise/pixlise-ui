@@ -1,6 +1,93 @@
-.centered {
+
+@import "variables.scss";
+
+.details-container {
+    display: flex;
+    flex-direction: column;
+
+    padding: 8px;
+    gap: 8px;
+
+    .content {
+        display: flex;
+        flex-direction: column;
+    
+        gap: 4px;
+
+        span {
+            color: $clr-gray-30;
+            font-weight: bold;
+        }
+        input {
+            width: 300px;
+        }
+    }
+
+    .buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+
+        gap: 8px;
+        margin-top: 8px;
+    }
+}
+
+.mq-container {
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
-    margin-top: 50px;
+    flex: 1;
+    justify-content: space-evenly;
+
+    // fxFill
+    height: 100%;
+    min-height: 100%;
+    min-width: 100%;
+    width: 100%;
+
+    .mq-column {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        flex: 1;
+
+        gap: 1px;
+
+        .panel-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            //align-items: stretch;
+            
+            padding: 8px;
+        }
+        .panel-column {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        .flex-fill {
+            flex: 1 1 100%;
+        }
+        .msg-area {
+            padding: 40px 8px;
+        }
+        .scan-selector {
+            display: flex;
+            justify-content: space-between;
+
+            mat-select {
+                width: 100% !important;
+                margin: 8px;
+                margin-bottom: 0;
+            }
+        }
+    }
+    .mq-roi-table-container {
+        flex: 2 1 0;
+    }
+}
+
+.gray-background {
+    background-color: $clr-gray-90;
 }

@@ -89,6 +89,7 @@
       align-items: center;
       padding: 8px;
       padding-right: 0;
+      gap: 8px;
 
       .notification-title {
         color: var(--gray-30, #bec0c2);
@@ -96,10 +97,6 @@
 
       .notification-action {
         margin-left: auto;
-      }
-
-      .dismiss-notification {
-        margin-left: 8px;
       }
     }
   }

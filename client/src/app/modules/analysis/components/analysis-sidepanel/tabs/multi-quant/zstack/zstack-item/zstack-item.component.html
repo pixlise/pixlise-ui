@@ -30,33 +30,22 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 
-<div fxLayout="column" class="user-prompt-dlg dlg-border-with-backdrop gap-separated-vertical-elements">
-    <h1>{{data.title}}
-      <!-- <tag-picker
-        *ngIf="data.showTagPicker"
-        [type]="data.tagPickerTypes[0] || 'layer'"
-        [additionalVisibleTagType]="data.tagPickerTypes.slice(1)"
-        [selectedTagIDs]="selectedTagIDs"
-        [showCurrentTagsSection]="true"
-        (onTagSelectionChanged)="onTagSelectionChanged($event)"
-      >
-      </tag-picker> -->
-    </h1>
-    <div class="info-text">{{data.info}}</div>
-
-    <ng-container *ngFor="let name of names; let i = index">
-        <h3>{{name}}</h3>
-        <!-- <input *ngIf="inputTypes[i]=='string'" [(ngModel)]="values[i]" type="text" placeholder="...">
-        <mat-select *ngIf="inputTypes[i]=='dropdown'" [(ngModel)]="values[i]">
-            <mat-option
-                *ngFor="let itemName of data.items[i]['itemNames']; let selIdx = index"
-                [value]="data.items[i]['itemValues'][selIdx]">{{itemName}}</mat-option>
-        </mat-select> -->
-    </ng-container>
-
-    <div fxLayout="row" fxLayoutAlign="end" class="bottom-button-gap gap-separated-horizontal-elements">
-        <!-- <push-button buttonStyle="outline" (onClick)="onCancel()">{{data.cancelButtonLabel}}</push-button>
-        <push-button *ngIf="data.middleButton" buttonStyle="yellow" (onClick)="data.middleButtonCallback()">{{data.middleButtonLabel}}</push-button>
-        <push-button buttonStyle="yellow" (onClick)="onOK()">{{data.okButtonLabel}}</push-button> -->
+<div class="zstack-item">
+    <div class="row">
+        <div class="roi-colour" style="background-color: {{item.colour}}"></div>
+        <div class="quant-picker-container">
+            <div class="setting-label" [title]="item.roiName">{{item.roiName}}<span *ngIf="item.sharer" class="obj-creator" title="Shared By This User">{{item.sharer}}</span></div>
+            <quantification-selector
+                class="quant-picker"
+                [scanId]="item.scanId"
+                [roiID]="item.zStackItem.roiId"
+                [selectedQuantID]="item.zStackItem.quantificationId"
+                [hideMulti]="true"
+                [showNoneOption]="isRemainingPointsItem"
+                (selectQuant)="onSelectQuantForScan($event)">
+            </quantification-selector>
+        </div>
     </div>
+
+    <ng-content select="[listControls]"></ng-content>
 </div>

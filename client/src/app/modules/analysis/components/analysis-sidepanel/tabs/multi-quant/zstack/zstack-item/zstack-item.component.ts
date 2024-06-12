@@ -27,57 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { QuantCombineItem } from "src/app/generated-protos/quantification-multi";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
-export class TableHeaderItem {
+export class ZStackItemForDisplay {
   constructor(
-    public label: string,
-    public extra: string
+    public scanId: string,
+    public roiName: string,
+    public sharer: string,
+    public colour: string,
+    public zStackItem: QuantCombineItem
   ) {}
-}
-
-export class TableRow {
-  constructor(
-    public label: string,
-    public values: number[],
-    public tooltips: string[]
-  ) {}
-
-  static makeEmpty(): TableRow {
-    return new TableRow("", [], []);
-  }
-}
-
-export class TableData {
-  constructor(
-    public title: string,
-    public circleColourStr: string,
-    public valueSuffix: string | string[],
-    public headers: TableHeaderItem[],
-    public rows: TableRow[],
-    public totalsRow: TableRow
-  ) {}
-
-  getSuffix(index: number): string {
-    if (Array.isArray(this.valueSuffix)) {
-      return this.valueSuffix[index];
-    } else {
-      return this.valueSuffix;
-    }
-  }
-
-  static makeEmpty(): TableData {
-    return new TableData("", "", "", [], [], TableRow.makeEmpty());
-  }
 }
 
 @Component({
-  selector: "table-view",
-  templateUrl: "./table.component.html",
-  styleUrls: ["./table.component.scss"],
+  selector: "zstack-item",
+  templateUrl: "./zstack-item.component.html",
+  styleUrls: ["./zstack-item.component.scss"],
 })
-export class TableComponent {
-  @Input() tables: TableData[] = [];
+export class ZStackItemComponent implements OnInit {
+  @Input() item: ZStackItemForDisplay = new ZStackItemForDisplay("", "", "", "", QuantCombineItem.create());
+  @Output() onSelectQuant = new EventEmitter();
+  isRemainingPointsItem: boolean = false;
 
   constructor() {}
+
+  ngOnInit(): void {
+    this.isRemainingPointsItem = this.item.zStackItem.roiId == PredefinedROIID.RemainingPoints;
+  }
+
+  onSelectQuantForScan(quantId: string) {
+    this.onSelectQuant.emit(quantId);
+  }
 }

@@ -40,6 +40,10 @@ POSSIBILITY OF SUCH DAMAGE.
                             <circle cx="4" cy="4" r="4" attr.fill="{{table.circleColourStr}}"/>
                         </svg>
                     </span>
+                    <ng-container *ngIf="table.subtitle">
+                        <br>
+                        <span class="table-subtitle">{{table.subtitle}}</span>
+                    </ng-container>
                 </th>
             </tr>
             <tr>

@@ -27,124 +27,25 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+@import 'variables.scss';
+@import 'atoms.scss';
 
-.widget-selectors {
-  display: flex;
-  margin: 8px;
-  gap: 8px;
-
-  mat-select {
-    flex: 1;
-    margin-left: 0;
-  }
-}
-
-.roi-search {
-  background-color: $clr-gray-100;
-  padding: $sz-unit $sz-double;
-}
-
-input {
-  border: none;
-  background-color: $clr-gray-70;
-  color: $clr-gray-30;
-
-  &:focus {
-    outline: none;
-  }
-}
-
-.scrollable-container {
-  overflow-y: auto;
-}
-
-.mist-roi {
-  display: flex;
-  flex-direction: column;
-
-  margin-left: 8px;
-
-  border-left: 1px solid #000;
-  background-color: #222829;
-  height: 100%;
-  border-top-right-radius: 8px;
-
-  header {
+.zstack-list {
     display: flex;
-    align-items: center;
+    flex-direction: column;
 
-    border-bottom: 1px solid #000;
-    padding: 8px 0px;
-
-    h5 {
-      font-family: Inter;
-      font-size: 14px;
-      font-weight: 500;
-      margin: 0;
-      margin-left: 8px;
-    }
-  }
-
-  .upload-btn {
-    display: flex;
-    justify-content: center;
-    padding: 8px;
-    padding-bottom: 0;
-
-    push-button {
-      width: 100%;
-    }
-  }
-
-  .selection {
-    display: flex;
-    gap: 8px;
-
-    margin: 8px;
-    .option {
-      flex: 1;
-    }
-  }
-
-  .mist-roi-accordion {
-    overflow-y: auto;
-    max-height: calc(100vh - 196px);
-    .accordion-title {
-      display: flex;
-      align-items: center;
-      margin: 8px 16px;
-
-      .accordion-label {
+    .zstack-content {
         display: flex;
-        align-items: center;
-        width: 100%;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
 
-        .carat-button {
-          margin-left: auto;
-        }
-      }
+        gap: $sz-unit;
     }
-    .carat-button {
-      margin-left: auto;
+
+    .help-empty-msg {
+        color: $clr-gray-30;
+        text-align: center;
+        margin: 32px 0px;
     }
-  }
-}
-
-.bulk-controls {
-  display: flex;
-  align-items: center;
-  border-top: 1px solid rgb(68, 76, 80);
-  color: rgb(190, 192, 194);
-  border-bottom: 1px solid rgb(68, 76, 80);
-  padding: 4px;
-
-  .count {
-    margin-left: 16px;
-  }
-
-  .visible-toggle {
-    margin-left: auto;
-    margin-right: 48px;
-  }
 }

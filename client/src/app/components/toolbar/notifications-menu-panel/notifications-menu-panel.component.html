@@ -59,7 +59,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div *ngIf="notification.type === 'message'" class="notification-action">
           <push-button [customDialog]="messageDisplay" buttonStyle="outline" (click)="onNotificationMessageClick(notification)">Details</push-button>
         </div>
-        <action-button class="dismiss-notification" action="close" color="rgb(188, 188, 188)" (onClick)="dismissNotification(notification)"></action-button>
+        <action-button action="close" color="rgb(188, 188, 188)" (onClick)="dismissNotification(notification)"></action-button>
       </div>
       <div *ngIf="notification?.timestampUTCSeconds" class="notification-time">{{ notification?.timestampUTCSeconds || 0 * 1000 | date }}</div>
     </div>

@@ -25,6 +25,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
 import { FormsModule } from "@angular/forms";
 import { ToolbarComponent } from "./components/toolbar/toolbar.component";
 import { SettingsSidebarComponent } from "./components/settings-sidebar/settings-sidebar.component";
+import { MarkdownModule } from "ngx-markdown";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -84,7 +85,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
 
               // Loop up the chain of parents until we find either an arialabel. We record inner text along the way
               while (target && parentsVisited < 10) {
-                if (target.ariaLabel) { // We put aria-label on some HTML elements that are key to identifying what the interaction is
+                if (target.ariaLabel) {
+                  // We put aria-label on some HTML elements that are key to identifying what the interaction is
                   ariaLabel = target.ariaLabel;
                   break;
                 }
@@ -153,6 +155,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
+    MarkdownModule.forRoot(),
     HttpClientModule,
     AppRoutingModule,
     MaterialModule,
@@ -196,8 +199,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
       provide: ErrorHandler,
       useValue: Sentry.createErrorHandler({
         showDialog: false, // Decided to turn off the dialog because we got it for situations
-                           // that didnt require it. Expecting our snack service to inform users
-                           // when needed
+        // that didnt require it. Expecting our snack service to inform users
+        // when needed
       }),
     },
   ],
