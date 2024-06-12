@@ -29,35 +29,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="peakid-container">
-    <div class="peakid-tabs-container">
-        <div class="peak-tabs">
-            <h1
-              mat-dialog-title
-              cdkDrag
-              cdkDragRootElement=".cdk-overlay-pane"
-              cdkDragHandle
-              [cdkDragDisabled]="!data.draggable"
-              class="title {{ data.draggable ? 'drag' : '' }}">Peak Identification</h1>
-            <div class="tab-row">
-                <div class="clickable" [ngClass]='{"tab-selected": isQuantJobsSelected}' (click)="onTabQuantJobs()">Quant Jobs</div>
-                <div class="clickable" [ngClass]='{"tab-selected": isPeriodicTableSelected}' (click)="onTabPeriodicTable()">Periodic Table</div>
-                <div class="clickable" [ngClass]='{"tab-selected": isBrowseOnChartSelected}' (click)="onTabBrowseOnChart()">Browse On Chart</div>
-                <div class="clickable" [ngClass]='{"tab-selected": isElementSetsSelected}' (click)="onTabElementSets()">Element Sets</div>
-            </div>
-        </div>
-
-        <div class="tab-content-container">
-            <div class="key-container">
-                <img class="peak-id-key" src="assets/peak-id-key.svg">
-                <div class="footer">
-                    <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
-                </div>
-            </div>
-            <div class="tab-content">
-                <template #peakTab></template>
-            </div>
-        </div>
+<div class="container">
+    <div class="scrollable">
+        <div *ngFor="let job of jobs">{{job}}</div>
     </div>
-    <peak-id-picked-elements></peak-id-picked-elements>
+    <div class="footer"></div>
 </div>

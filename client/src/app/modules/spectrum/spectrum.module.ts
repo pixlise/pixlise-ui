@@ -25,6 +25,7 @@ import { SpectrumFitContainerComponent } from "./widgets/spectrum-chart-widget/s
 import { FitLineConfigComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-line-config/fit-line-config.component";
 import { FitElementsComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-elements/fit-elements.component";
 import { FitElementSelectionComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
+import { QuantJobsComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/tabs/quant-jobs.component";
 
 export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 
@@ -46,6 +47,7 @@ export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/sp
     FitLineConfigComponent,
     FitElementsComponent,
     FitElementSelectionComponent,
+    QuantJobsComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],

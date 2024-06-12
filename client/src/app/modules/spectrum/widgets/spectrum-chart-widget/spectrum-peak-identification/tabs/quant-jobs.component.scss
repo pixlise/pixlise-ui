@@ -27,9 +27,27 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-export class TabSelectors {
-  public static readonly tabBrowseOnChart: string = "browse-on-chart";
-  public static readonly tabElementSets: string = "element-sets";
-  public static readonly tabPeriodicTable: string = "spectrum-periodic-table-picker";
-  public static readonly tabQuantJobs: string = "quant-jobs";
+@import 'variables.scss';
+
+.container {
+    height: 100%;
+    min-height: 100%;
+    min-width: 100%;
+    width: 100%;
+    flex-direction: column;
+    box-sizing: border-box;
+    display: flex;
+
+    .scrollable {
+        overflow-y: auto;
+
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 1e-9px;
+    }
+    
+    .footer {
+        background-color: $clr-gray-80;
+        height: 40px;
+    }
 }

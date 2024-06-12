@@ -35,7 +35,7 @@ import { PeriodicTableTabComponent } from "./tabs/periodic-table-tab.component";
 import { TabSelectors } from "./tab-selectors";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { SpectrumChartModel } from "../spectrum-model";
-import { XRFDatabaseService } from "src/app/services/xrf-database.service";
+import { QuantJobsComponent } from "./tabs/quant-jobs.component";
 
 export class SpectrumPeakIdentificationData {
   constructor(
@@ -99,6 +99,10 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
     this.setTab(TabSelectors.tabElementSets);
   }
 
+  onTabQuantJobs() {
+    this.setTab(TabSelectors.tabQuantJobs);
+  }
+
   onClose() {
     this.dialogRef.close();
   }
@@ -113,6 +117,10 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
 
   get isElementSetsSelected(): boolean {
     return this._tabSelector == TabSelectors.tabElementSets;
+  }
+
+  get isQuantJobsSelected(): boolean {
+    return this._tabSelector == TabSelectors.tabQuantJobs;
   }
 
   protected setTab(selector: string) {
@@ -153,6 +161,8 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
       return BrowseOnChartComponent;
     } else if (selector == TabSelectors.tabElementSets) {
       return ElementSetsComponent;
+    } else if (selector == TabSelectors.tabQuantJobs) {
+      return QuantJobsComponent;
     } else if (selector != TabSelectors.tabPeriodicTable) {
       console.error("getComponentClassForSelector unknown selector: " + selector + ". Substituting periodic table");
     }
