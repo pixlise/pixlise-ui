@@ -31,7 +31,6 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/co
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { map, Subscription, switchMap } from "rxjs";
-import { ActivatedRoute } from "@angular/router";
 import { ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
 import { getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
 import { ObjectType } from "../../../../../../generated-protos/ownership-access";

@@ -33,6 +33,10 @@
 .tag-title {
   white-space: pre-wrap;
 
+  text-overflow: ellipsis;
+  width: 210px;
+  overflow: hidden;
+
   &.disabled {
     padding-top: 5px;
     padding-bottom: 5px;

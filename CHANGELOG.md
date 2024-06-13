@@ -1,4 +1,11 @@
-## 4.21.0 (unreleased)
+## 4.22.0 (Unreleased)
+
+### Features
+
+- **Dataset Editing** Adds the ability to edit dataset metadata, including name, description, and tags from the dataset listing page.
+  - Shows a markdown preview of the description field.
+
+## 4.21.0 (2024-06-12)
 
 ### Features
 

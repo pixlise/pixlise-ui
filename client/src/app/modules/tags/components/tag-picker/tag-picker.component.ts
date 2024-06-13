@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
 import { BuiltInTags, TagType } from "../../models/tag.model";
 import { TagService } from "../../services/tag.service";
@@ -72,6 +72,7 @@ export class TagPickerComponent implements OnInit {
   @Input() allowAdminBuiltin: boolean = false;
   @Input() additionalVisibleTagType: string[] = ["layer"];
   @Input() triggerOpen: boolean = false;
+  @Input() openRightDirection: boolean = true;
 
   @Output() onTagSelectionChanged = new EventEmitter<string[]>();
 
@@ -115,6 +116,12 @@ export class TagPickerComponent implements OnInit {
 
     this.groupTags();
     this.focusOnInput();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes["selectedTagIDs"]) {
+      this.updateSelectedTags();
+    }
   }
 
   ngOnDestroy() {
