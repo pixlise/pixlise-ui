@@ -35,7 +35,7 @@ import { Subscription } from "rxjs";
 import { AuthService } from "@auth0/auth0-angular";
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ScanListReq, ScanListResp, ScanListUpd } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
@@ -58,6 +58,8 @@ import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
 import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
 import { ScanInstrument } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { TagService } from "../../../../tags/services/tag.service";
+import { Tag } from "../../../../../generated-protos/tags";
 
 class SummaryItem {
   constructor(
@@ -76,6 +78,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
+  @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
 
   _searchString: string = "";
 
@@ -104,6 +107,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
 
+  private _tags: Map<string, Tag> = new Map<string, Tag>();
+
+  selectedScanTitle: string = "";
+  selectedScanDescription: string = "";
+  selectedScanTags: string[] = [];
+  selectedTab: "description" | "details" | "workspaces" = "description";
+  descriptionModes: string[] = ["View", "Edit"];
+  descriptionMode: "View" | "Edit" = "View";
+  expandTags: boolean = false;
+
+  scanTitleEditMode: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -114,10 +129,13 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _authService: AuthService,
     public dialog: MatDialog,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _taggingService: TagService
   ) {}
 
   ngOnInit() {
+    this._taggingService.fetchAllTags();
+
     this._subs.add(
       this._authService.idTokenClaims$.subscribe({
         next: claims => {
@@ -157,6 +175,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       })
     );
 
+    this._subs.add(
+      this._taggingService.tags$.subscribe(async tags => {
+        this._tags = tags;
+      })
+    );
+
     this.clearSelection();
     this.onSearch();
   }
@@ -164,6 +188,89 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.closeOpenOptionsMenu();
     this._subs.unsubscribe();
+  }
+
+  trackScansBy(index: number, scan: ScanItem): string {
+    return scan.id;
+  }
+
+  switchToEditMode(): void {
+    this.descriptionMode = "Edit";
+    setTimeout(() => this.setCursorToEnd(), 0);
+  }
+
+  setCursorToEnd() {
+    if (this.descriptionEditMode && this.descriptionEditMode.nativeElement) {
+      const textarea = this.descriptionEditMode.nativeElement;
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  }
+
+  get hasDescriptionChanged(): boolean {
+    return this.selectedScanDescription !== this.selectedScan?.description;
+  }
+
+  get hasTitleChanged(): boolean {
+    return this.selectedScanTitle !== this.selectedScan?.title;
+  }
+
+  onTitleEditToggle(): void {
+    this.scanTitleEditMode = !this.scanTitleEditMode;
+    if (!this.scanTitleEditMode) {
+      this.selectedScanTitle = this.selectedScan?.title || "";
+    }
+  }
+
+  onTagChange(tags: string[]): void {
+    if (!this.selectedScan) {
+      return;
+    }
+
+    this.selectedScanTags = tags;
+    this.saveMetadata(this.selectedScan.id, this.selectedScan.title, this.selectedScan.description, this.selectedScanTags);
+  }
+
+  get selectedScanTagsDisplay(): Tag[] {
+    return this.selectedScanTags.map(tag => this._tags.get(tag) || Tag.create({ id: tag, name: tag }));
+  }
+
+  onSaveMetadata(): void {
+    if (!this.selectedScan) {
+      return;
+    }
+
+    this.descriptionMode = "View";
+    this.scanTitleEditMode = false;
+    this.saveMetadata(this.selectedScan.id, this.selectedScanTitle, this.selectedScanDescription, this.selectedScanTags);
+  }
+
+  saveMetadata(scanId: string, title: string, description: string, tags: string[]): void {
+    this._dataService.sendScanMetaWriteRequest(ScanMetaWriteReq.create({ scanId, title, description, tags })).subscribe({
+      next: (resp: ScanMetaWriteResp) => {
+        this._snackService.openSuccess("Metadata updated for scan");
+        let selectedScan = this.scans.find(scan => scan.id === this.selectedScan?.id);
+        let titleChanged = selectedScan?.title !== title;
+        if (selectedScan) {
+          selectedScan.title = title;
+          selectedScan.description = description;
+          selectedScan.tags = tags;
+
+          this.filterScans();
+          if (titleChanged) {
+            this.onSearch();
+          }
+
+          this.selectedScan = selectedScan;
+          this.selectedScanTitle = selectedScan.title;
+          this.selectedScanDescription = selectedScan.description || "";
+          this.selectedScanTags = selectedScan.tags || [];
+        }
+      },
+      error: err => {
+        this._snackService.openError(err);
+      },
+    });
   }
 
   get showOpenOptions(): boolean {
@@ -468,6 +575,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onSelect(event: ScanItem): void {
     this.selectedScan = event;
+    this.selectedScanTitle = event.title;
+    this.selectedScanDescription = event.description || "";
+    this.selectedScanTags = event.tags || [];
     this.selectedScanContextImage = "";
 
     // Fill these so they display
@@ -576,6 +686,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   private clearSelection(): void {
     this.selectedScan = null;
+    this.selectedScanTitle = "";
+    this.selectedScanDescription = "";
+    this.selectedScanTags = [];
 
     this.selectedScanSummaryItems = [];
     this.selectedScanTrackingItems = [];

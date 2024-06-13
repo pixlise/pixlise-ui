@@ -69,7 +69,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="!errorString && !loading" class="scrollable">
       <div class="tiles" (onClick)="onClickTileArea()">
         <data-set-summary
-          *ngFor="let item of filteredScans"
+          *ngFor="let item of filteredScans; trackBy: trackScansBy"
           [summary]="item"
           [defaultImage]="scanDefaultImages.get(item.id)"
           [selected]="selectedScan"
@@ -81,7 +81,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <app-widget-display-message *ngIf="errorString" [showSpinner]="loading" [message]="errorString" [large]="true" class="fx-flex"> </app-widget-display-message>
 
     <div *ngIf="datasetListingAllowed" class="meta-summary" aria-label="DatasetMetaSummary">
-      <h2 class="meta-title">Metadata</h2>
+      <!-- <h2 class="meta-title">Metadata</h2> -->
 
       <app-widget-display-message *ngIf="!selectedScan" [message]="noselectedScanMsg"> </app-widget-display-message>
 
@@ -104,15 +104,31 @@ POSSIBILITY OF SUCH DAMAGE.
           </ng-container>
         </div>
         <div class="meta-open-row">
-          <div>{{ selectedScan.title }}</div>
+          <div class="title-container" (dblclick)="scanTitleEditMode = !scanTitleEditMode">
+            <div *ngIf="!scanTitleEditMode">{{ selectedScan.title }}</div>
+            <input
+              *ngIf="scanTitleEditMode"
+              class="edit-title"
+              [(ngModel)]="selectedScanTitle"
+              type="text"
+              autocomplete="off"
+              data-lpignore="true"
+              placeholder="Dataset Title" />
+            <action-button
+              class="edit-btn"
+              (onClick)="onTitleEditToggle()"
+              [action]="scanTitleEditMode ? 'close' : 'edit'"
+              color="rgb(var(--clr-gray-30))"></action-button>
+          </div>
           <div class="meta-buttons">
-            <!-- For now, we only display tags here, editing is done on dataset edit screen -->
             <tag-picker
+              [openRightDirection]="false"
               type="scan"
               placeholderText="Search Scan Tags ..."
-              [selectedTagIDs]="selectedScan.tags"
+              [selectedTagIDs]="selectedScanTags"
               [showCurrentTagsSection]="true"
-              [editable]="false">
+              [editable]="selectedScan.owner?.canEdit || false"
+              (onTagSelectionChanged)="onTagChange($event)">
             </tag-picker>
             <push-button (onClick)="onOpen(false)" buttonStyle="yellow" title="Open the dataset with views as you last used them">Open</push-button>
             <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
@@ -120,23 +136,60 @@ POSSIBILITY OF SUCH DAMAGE.
             </widget-settings-menu>
           </div>
         </div>
-        <div class="meta-heading">Description</div>
-        <div class="meta-area">
-          <div class="description">{{description}}</div>
-        </div>
-        <div class="meta-heading">Details</div>
-        <div *ngIf="selectedIsIncomplete" class="incomplete">{{ selectedMissingData }}</div>
-        <div class="meta-area">
-          <div *ngFor="let item of selectedScanSummaryItems" class="summary-item">
-            <span class="meta-name">{{ item.label }}</span>
-            <span class="meta-value">{{ item.value }}</span>
+        <div class="tag-expand-area {{ expandTags ? 'expanded' : 'preview' }}">
+          <div class="tag-container">
+            <div *ngFor="let tag of selectedScanTagsDisplay" class="tag">{{ tag.name }}</div>
+          </div>
+          <div *ngIf="selectedScanTagsDisplay.length > 0" class="expand">
+            <action-button [action]="expandTags ? 'closeAccordion' : 'openAccordion'" (onClick)="expandTags = !expandTags"></action-button>
           </div>
         </div>
-        <div class="meta-heading">Tracking</div>
-        <div class="meta-area align-start fx-column">
-          <div *ngFor="let item of selectedScanTrackingItems" class="summary-item">
-            <span class="meta-name">{{ item.label }}</span>
-            <span class="meta-value">{{ item.value }}</span>
+        <div class="tab-switcher">
+          <span class="tab-btn" [class.active]="selectedTab === 'description'" (click)="selectedTab = 'description'">Description</span>
+          <span class="tab-btn" [class.active]="selectedTab === 'details'" (click)="selectedTab = 'details'">Details</span>
+          <span class="tab-btn" [class.active]="selectedTab === 'workspaces'" (click)="selectedTab = 'workspaces'">Workspaces</span>
+        </div>
+        <div *ngIf="selectedTab === 'description'" class="tab description">
+          <div class="meta-area">
+            <div class="field-label">
+              <multi-switch-button [options]="descriptionModes" [value]="descriptionMode" (onChange)="descriptionMode = $event"></multi-switch-button>
+            </div>
+            <div *ngIf="descriptionMode === 'View'" class="markdown-container">
+              <markdown
+                (dblclick)="switchToEditMode()"
+                class="text-field description-field"
+                [lineOffset]="5"
+                [data]="selectedScanDescription || '## Scan Description'"></markdown>
+            </div>
+            <textarea
+              *ngIf="descriptionMode === 'Edit'"
+              #descriptionEditMode
+              class="text-field description-field"
+              [(ngModel)]="selectedScanDescription"
+              type="text"
+              autocomplete="off"
+              data-lpignore="true"
+              placeholder="## Scan Description"></textarea>
+          </div>
+          <div class="bottom-buttons">
+            <push-button [disabled]="!hasDescriptionChanged && !hasTitleChanged" (onClick)="onSaveMetadata()" buttonStyle="yellow">Save</push-button>
+          </div>
+        </div>
+        <div *ngIf="selectedTab === 'details'" class="tab details">
+          <div class="meta-heading">Details</div>
+          <div *ngIf="selectedIsIncomplete" class="incomplete">{{ selectedMissingData }}</div>
+          <div class="meta-area">
+            <div *ngFor="let item of selectedScanSummaryItems" class="summary-item">
+              <span class="meta-name">{{ item.label }}</span>
+              <span class="meta-value">{{ item.value }}</span>
+            </div>
+          </div>
+          <div class="meta-heading">Tracking</div>
+          <div class="meta-area align-start fx-column">
+            <div *ngFor="let item of selectedScanTrackingItems" class="summary-item">
+              <span class="meta-name">{{ item.label }}</span>
+              <span class="meta-value">{{ item.value }}</span>
+            </div>
           </div>
         </div>
       </div>
