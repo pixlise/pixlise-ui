@@ -104,7 +104,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </ng-container>
         </div>
         <div class="meta-open-row">
-          <div class="title-container" (dblclick)="scanTitleEditMode = !scanTitleEditMode">
+          <div class="title-container" (dblclick)="onTitleEditToggle()">
             <div *ngIf="!scanTitleEditMode">{{ selectedScan.title }}</div>
             <input
               *ngIf="scanTitleEditMode"
@@ -115,6 +115,7 @@ POSSIBILITY OF SUCH DAMAGE.
               data-lpignore="true"
               placeholder="Dataset Title" />
             <action-button
+              *ngIf="userCanEdit"
               class="edit-btn"
               (onClick)="onTitleEditToggle()"
               [action]="scanTitleEditMode ? 'close' : 'edit'"
@@ -127,7 +128,7 @@ POSSIBILITY OF SUCH DAMAGE.
               placeholderText="Search Scan Tags ..."
               [selectedTagIDs]="selectedScanTags"
               [showCurrentTagsSection]="true"
-              [editable]="selectedScan.owner?.canEdit || false"
+              [editable]="(userCanEdit && selectedScan.owner?.canEdit) || false"
               (onTagSelectionChanged)="onTagChange($event)">
             </tag-picker>
             <push-button (onClick)="onOpen(false)" buttonStyle="yellow" title="Open the dataset with views as you last used them">Open</push-button>
@@ -147,17 +148,17 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="tab-switcher">
           <span class="tab-btn" [class.active]="selectedTab === 'description'" (click)="selectedTab = 'description'">Description</span>
           <span class="tab-btn" [class.active]="selectedTab === 'details'" (click)="selectedTab = 'details'">Details</span>
-          <span class="tab-btn" [class.active]="selectedTab === 'workspaces'" (click)="selectedTab = 'workspaces'">Workspaces</span>
+          <!-- <span class="tab-btn" [class.active]="selectedTab === 'workspaces'" (click)="selectedTab = 'workspaces'">Workspaces</span> -->
         </div>
         <div *ngIf="selectedTab === 'description'" class="tab description">
           <div class="meta-area">
-            <div class="field-label">
+            <div *ngIf="userCanEdit" class="field-label">
               <multi-switch-button [options]="descriptionModes" [value]="descriptionMode" (onChange)="descriptionMode = $event"></multi-switch-button>
             </div>
             <div *ngIf="descriptionMode === 'View'" class="markdown-container">
               <markdown
                 (dblclick)="switchToEditMode()"
-                class="text-field description-field"
+                class="text-field description-field {{ !userCanEdit ? 'no-edit' : '' }}"
                 [lineOffset]="5"
                 [data]="selectedScanDescription || '## Scan Description'"></markdown>
             </div>
@@ -171,7 +172,7 @@ POSSIBILITY OF SUCH DAMAGE.
               data-lpignore="true"
               placeholder="## Scan Description"></textarea>
           </div>
-          <div class="bottom-buttons">
+          <div *ngIf="userCanEdit" class="bottom-buttons">
             <push-button [disabled]="!hasDescriptionChanged && !hasTitleChanged" (onClick)="onSaveMetadata()" buttonStyle="yellow">Save</push-button>
           </div>
         </div>

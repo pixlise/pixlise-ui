@@ -290,6 +290,10 @@ input {
 
             overflow: auto;
             max-height: calc(100vh - 522px);
+
+            &.no-edit {
+              max-height: calc(100vh - 494px);
+            }
           }
         }
       }

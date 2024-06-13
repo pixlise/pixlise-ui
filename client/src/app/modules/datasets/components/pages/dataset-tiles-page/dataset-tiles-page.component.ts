@@ -216,6 +216,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onTitleEditToggle(): void {
+    if (!this.userCanEdit && !this.scanTitleEditMode) {
+      return;
+    }
+
     this.scanTitleEditMode = !this.scanTitleEditMode;
     if (!this.scanTitleEditMode) {
       this.selectedScanTitle = this.selectedScan?.title || "";
@@ -256,21 +260,37 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
           selectedScan.description = description;
           selectedScan.tags = tags;
 
+          let allScans = this._analysisLayoutService.availableScans$.value;
+          allScans = allScans.map(scan => {
+            if (scan.id === selectedScan.id) {
+              scan.title = title;
+              scan.description = description;
+              scan.tags = tags;
+            }
+            return scan;
+          });
+
+          this._analysisLayoutService.availableScans$.next(allScans);
+
           this.filterScans();
           if (titleChanged) {
             this.onSearch();
           }
 
-          this.selectedScan = selectedScan;
-          this.selectedScanTitle = selectedScan.title;
-          this.selectedScanDescription = selectedScan.description || "";
-          this.selectedScanTags = selectedScan.tags || [];
+          this.updateEditFields(selectedScan);
         }
       },
       error: err => {
         this._snackService.openError(err);
       },
     });
+  }
+
+  updateEditFields(newScan: ScanItem): void {
+    this.selectedScan = newScan;
+    this.selectedScanTitle = newScan.title;
+    this.selectedScanDescription = newScan.description || "";
+    this.selectedScanTags = newScan.tags || [];
   }
 
   get showOpenOptions(): boolean {
@@ -575,9 +595,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onSelect(event: ScanItem): void {
     this.selectedScan = event;
-    this.selectedScanTitle = event.title;
-    this.selectedScanDescription = event.description || "";
-    this.selectedScanTags = event.tags || [];
+    this.updateEditFields(event);
+
     this.selectedScanContextImage = "";
 
     // Fill these so they display
