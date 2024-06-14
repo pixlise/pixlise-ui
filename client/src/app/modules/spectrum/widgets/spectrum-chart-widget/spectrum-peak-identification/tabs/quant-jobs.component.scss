@@ -30,16 +30,21 @@
 @import 'variables.scss';
 
 .container {
-    height: 100%;
+    //height: 100%;
+    height: 200px;
     min-height: 100%;
     min-width: 100%;
     width: 100%;
-    flex-direction: row;
-    box-sizing: border-box;
-    display: flex;
 
-    .scrollable {
-        overflow-y: auto;
+    display: flex;
+    flex-direction: row;
+
+    align-items: flex-start;
+
+    box-sizing: border-box;
+
+    .jobs-viewport {
+        height: 100%;
 
         flex-grow: 1;
         flex-shrink: 1;
@@ -47,35 +52,81 @@
     }
 
     .right-panel {
-        overflow-y: auto;
+        height: 100%;
+
+        display: flex;
+        flex-direction: column;
 
         flex-grow: 2;
         flex-shrink: 2;
         flex-basis: 1e-9px;
 
-        padding: $sz-unit;
+        background-color: $clr-gray-100;
 
-        .selected-quant {
+        .selection-header {
             display: flex;
-            flex-direction: column;
-            
-            h3 {
-                padding-top: $sz-unit;
-            }
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
 
+            gap: $sz-unit;
+            padding: $sz-unit;
+
+            color: $clr-gray-10;
+            background-color: $clr-gray-90;
+            
             .row {
                 display: flex;
                 flex-direction: row;
-                align-items: center;
 
                 gap: $sz-unit;
+            }
+        }
 
-                color: $clr-gray-10;
+        .selected-container {
+            overflow-y: auto;
+            flex: 1;
 
-                .varname {
-                    color: $clr-gray-30;
+            .selected-quant {
+                display: flex;
+                flex-direction: column;
+
+                padding: $sz-unit;
+                
+                h3 {
+                    padding-top: $sz-unit;
+                }
+
+                .row {
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+
+                    gap: $sz-unit;
+
+                    color: $clr-gray-10;
+
+                    .varname {
+                        color: $clr-gray-30;
+                    }
+
+                    span {
+                        max-width: 550px;
+                        overflow: hidden;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
+                    }
                 }
             }
+        }
+
+        .err-display {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+
+            justify-content: space-around;
+            align-items: center;
         }
     }
     

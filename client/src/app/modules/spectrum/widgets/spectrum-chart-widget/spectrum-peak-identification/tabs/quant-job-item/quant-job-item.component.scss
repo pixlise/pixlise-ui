@@ -30,11 +30,16 @@
 @import 'variables.scss';
 
 .job-item {
+    height: 18px;
+
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+
     padding: $sz-unit;
-    background-color: $clr-gray-90;
+    background-color: $clr-gray-80;
+    border-bottom: solid 1px black;
+    color: $clr-gray-10;
 
     cursor: pointer;
 
@@ -42,6 +47,17 @@
         display: flex;
         flex-direction: row;
         gap: $sz-unit;
+
+        span {
+            text-wrap: nowrap;
+        }
+
+        .name {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
     }
 
     &.selected {

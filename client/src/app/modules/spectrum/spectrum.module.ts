@@ -26,7 +26,8 @@ import { FitLineConfigComponent } from "./widgets/spectrum-chart-widget/spectrum
 import { FitElementsComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-elements/fit-elements.component";
 import { FitElementSelectionComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
 import { QuantJobsComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/tabs/quant-jobs.component";
-import { QuantJobItemComponent } from './widgets/spectrum-chart-widget/spectrum-peak-identification/tabs/quant-job-item/quant-job-item.component';
+import { QuantJobItemComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/tabs/quant-job-item/quant-job-item.component";
+import { ScrollingModule } from "@angular/cdk/scrolling";
 
 export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 
@@ -51,7 +52,7 @@ export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/sp
     QuantJobsComponent,
     QuantJobItemComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
+  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule, ScrollingModule],
   exports: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],
   providers: [DiffractionService, SpectrumService],
 })

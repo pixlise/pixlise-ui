@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { TabSelectors } from "../tab-selectors";
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
 import { Subscription } from "rxjs";
 import { JobStatus, JobStatus_JobType, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
@@ -13,6 +13,9 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 
 const SelectQuantText = "Select a quantification job";
 
@@ -49,7 +52,9 @@ export class QuantJobsComponent implements OnInit {
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
     private _router: Router,
-    private _route: ActivatedRoute
+    private _route: ActivatedRoute,
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _snackService: SnackbarService
   ) {}
 
   ngOnInit() {
@@ -61,6 +66,25 @@ export class QuantJobsComponent implements OnInit {
         });
       })
     );
+
+    this._subs.add(
+      this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
+        if (!upd.status) {
+          this._snackService.openError("Quantification job update did not include job status");
+        } else {
+          if (upd.status.jobId.length > 0) {
+            for (let c = 0; c < this.jobs.length; c++) {
+              const job = this.jobs[c];
+
+              if (job.jobId == upd.status.jobId) {
+                this.jobs[c] = upd.status;
+                break;
+              }
+            }
+          }
+        }
+      })
+    );
   }
 
   onSelectQuant(quantId: string) {
@@ -68,6 +92,16 @@ export class QuantJobsComponent implements OnInit {
     this.summary = null;
     this.message = "";
 
+    // Find if this is in progress
+    for (const job of this.jobs) {
+      if (job.jobId == quantId) {
+        if (job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR) {
+          this.message = "Can't display details, quantification is still running...";
+          return;
+        }
+        break;
+      }
+    }
     this._dataService.sendQuantGetRequest(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).subscribe({
       next: (resp: QuantGetResp) => {
         this.summary = resp.summary || null;
@@ -150,7 +184,27 @@ export class QuantJobsComponent implements OnInit {
     }
   }
 
-  onUseQuant(quantId: string) {}
+  onUseQuant(quantId: string) {
+    if (!this.summary) {
+      this._snackService.openError("No quantification selected");
+    }
+
+    const screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    if (!screenConfig) {
+      this._snackService.openError("Failed to get current workspace configuration");
+      return;
+    }
+
+    // We now find the item to set the quant id in, then save it
+    const scanConfig = screenConfig.scanConfigurations[this.summary!.scanId];
+    if (!scanConfig) {
+      this._snackService.openError("Failed to find scan in current workspace configuration");
+      return;
+    }
+
+    scanConfig.quantId = quantId;
+    this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+  }
 
   onExportQuant(quantId: string) {}
 

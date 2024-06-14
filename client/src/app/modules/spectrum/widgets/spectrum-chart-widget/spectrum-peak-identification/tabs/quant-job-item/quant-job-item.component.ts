@@ -29,8 +29,8 @@ export class QuantJobItemComponent implements OnInit, OnDestroy {
         })
       );
     } else {
-      // Just make it the runtime
-      this.elapsedTimeMs = (this.job.endUnixTimeSec - this.job.startUnixTimeSec) * 1000;
+      // Set to 0, we dont want to display unless it's running
+      this.elapsedTimeMs = 0; //(this.job.endUnixTimeSec - this.job.startUnixTimeSec) * 1000;
     }
   }
 
