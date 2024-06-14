@@ -93,7 +93,7 @@
           [matTooltip]="'Event type: ' + event.type + '\n\nMessage:\n' + event.message + '\n\nDetails:\n' + event.details">
           <mat-icon class="event-icon">{{ getEventIcon(event.type) }}</mat-icon>
           <span class="title">{{ event.message }}</span>
-          <span class="date">{{ event.timestamp | date: "short" }}</span>
+          <span class="date">{{ event.timestamp | date: "d MMM y, HH:mm:ss" }}</span>
         </div>
         <div *ngIf="eventHistory.length <= 0" class="empty">
           <span class="title">No events</span>

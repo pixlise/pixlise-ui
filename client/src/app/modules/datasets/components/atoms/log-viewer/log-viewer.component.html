@@ -38,6 +38,6 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button (onClick)="onRefreshLog()" buttonStyle="outline">Refresh</push-button>
   </div>
   <div #logdata class="log-data">
-    <div *ngFor="let line of logData" class="log-data-line">{{ getTimestamp(line) | date: "dd MMM yyy HH:mm:ss" }} - {{ line.message }}</div>
+    <div *ngFor="let line of logData" class="log-data-line">{{ getTimestamp(line) | date: "d MMM y, HH:mm:ss" }} - {{ line.message }}</div>
   </div>
 </div>
