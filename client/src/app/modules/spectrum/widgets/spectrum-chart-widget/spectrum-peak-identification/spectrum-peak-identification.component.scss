@@ -48,8 +48,13 @@
 
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
+      gap: $sz-double;
+      
+      &.drag {
+        cursor: move;
+      }
 
       .title {
         color: rgb(var(--clr-gray-30));
@@ -65,11 +70,6 @@
         white-space: nowrap;
 
         padding: 0;
-
-        &.drag {
-          cursor: move;
-          flex: 1;
-        }
 
         &::before {
           height: 0;

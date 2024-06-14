@@ -31,7 +31,69 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="container">
     <div class="scrollable">
-        <div *ngFor="let job of jobs">{{job}}</div>
+        <quant-job-item
+            *ngFor="let job of jobs"
+            [job]="job"
+            [selected]="job.jobId === selectedQuantId"
+            (click)="onSelectQuant(job.jobId)">
+        </quant-job-item>
     </div>
-    <div class="footer"></div>
+
+    <div class="right-panel">
+        <div *ngIf="summary" class="selected-quant">
+            <div class="row">
+                <h3>Selected Quantification Details</h3>
+                <push-button buttonStyle="outline" (onClick)="onUseQuant(summary.id)">Use in Workspace</push-button>
+                <push-button buttonStyle="outline" (onClick)="onExportQuant(summary.id)">Export</push-button>
+            </div>
+
+            <div class="row"><span class="varname">Name</span><span>{{summary.params?.userParams?.name}}</span></div>
+            <div class="row"><span class="varname">Job Id </span><span>{{summary.id}}</span></div>
+            <div class="row"><span class="varname">Status</span><span>{{status}} {{displayMsg}}</span></div>
+            <div class="row"><span class="varname">Quantifier Comments</span><span>{{comments}}</span></div>
+        
+            <ng-container *ngIf="summary.status?.endUnixTimeSec">
+                <h3>Completion Info</h3>
+                <div class="row"><span class="varname">End Time</span><span>{{(summary.status?.endUnixTimeSec||0) * 1000|date:'d MMM y, HH:mm:ss'}}</span></div>
+                <div *ngIf="summary.status?.outputFilePath" class="row">
+                    <span class="varname">Output Path</span><span>{{summary.status?.outputFilePath}}</span>
+                </div>
+                <div class="row"><span class="varname">Output Elements</span><span>{{outputElements}}</span></div>
+                <div class="row"><span class="varname">PIQUANT Version</span><span>{{summary.params?.PIQUANTVersion}}</span></div>
+            </ng-container>
+
+            <h3>Quantification Parameters</h3>
+            <div class="row"><span class="varname">Region of interest</span><span>{{roiName}}</span></div>
+            <div class="row"><span class="varname">Quantification Mode</span><span>{{quantMode}}</span></div>
+            <div class="row"><span class="varname">Include Dwells</span><span>{{includeDwells}}</span></div>
+            <div class="row"><span class="varname">Regions quantified</span><span>{{roisQuantified}}</span></div>
+            <div class="row"><span class="varname">Elements</span><span>{{summary.params?.userParams?.elements}}</span></div>
+            <div class="row"><span class="varname">Oxide/Carbonate</span><span>{{elementStateType}}</span></div>
+            <div class="row"><span class="varname">Ignore Argon</span><span>{{ignoreAr}}</span></div>
+            <div class="row"><span class="varname">PMC Count</span><span>{{summary.params?.pmcCount}}</span></div>
+            <div class="row"><span class="varname">Detector Config</span><span>{{summary.params?.userParams?.detectorConfig}}</span></div>
+            <div class="row"><span class="varname">Piquant Extra Parameters</span><span>{{piquantParameters}}</span></div>
+            <!-- <div class="row"><span class="varname">Expected Runtime</span><span>{{summary.params.runTimeSec}}</span></div> -->
+    
+            <h3>Run time details</h3>
+            <div class="row"><span class="varname">Start Time</span><span>{{(summary.status?.endUnixTimeSec||0)*1000|date:'d MMM y, HH:mm:ss'}}</span></div>
+            <div class="row"><span class="varname">Elapsed Time</span><span>{{elapsedTime*1000|date:'HH:mm:ss':'UTC'}}</span></div>
+    
+            <ng-container *ngIf="hasLogs">
+                <h3>PIQUANT Logs</h3>
+                <span class="varname" *ngIf="logMissingReason.length > 0">{{logMissingReason}}</span>
+                <ng-container *ngIf="!logMissingReason">
+                    <div *ngFor="let log of summary.status?.otherLogFiles" class="row indent">
+                        <a class="clickable" (click)="onClickLog(log)">{{getLogName(log)}}</a>
+                    </div>
+                </ng-container>
+            </ng-container>
+        </div>
+        <app-widget-display-message
+            *ngIf="!summary"
+            [message]="message" 
+            [showSpinner]="message.length === 0"
+            [large]="false"></app-widget-display-message>
+    </div>
+    <!-- <div class="footer"></div> -->
 </div>

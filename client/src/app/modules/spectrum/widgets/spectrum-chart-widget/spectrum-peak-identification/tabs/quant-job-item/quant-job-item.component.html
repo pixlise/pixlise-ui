@@ -1,0 +1,19 @@
+<div class="job-item {{selected ? 'selected' : '' }}">
+    <div class="row">
+        <div
+            class="creator"
+            #tooltip="matTooltip"
+            [matTooltipShowDelay]="200"
+            matTooltip="Creator: {{ creatorName || 'N/A' }}">
+            <img *ngIf="icon" [src]="icon" />
+            <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
+        </div>
+        <span title="Job Name">{{job.name}}</span>
+    </div>
+    <div class="row">
+        <span title="Job Start Time">{{job.startUnixTimeSec * 1000 | date: "d MMM y, HH:mm:ss"}}</span>
+        <span [title]="job.message">{{status}}</span>
+        <span *ngIf="elapsedTimeMs > 0" title="Job elapsed time">{{elapsedTimeMs | date: "mm:ss"}}</span>
+        <ng-content></ng-content>
+    </div>
+</div>
