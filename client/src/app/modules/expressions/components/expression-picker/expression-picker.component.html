@@ -102,7 +102,7 @@ POSSIBILITY OF SUCH DAMAGE.
           class="quant-element-switch-button"
           *ngIf="activeBrowseSection === 'Quantified Elements'"
           [options]="['A', 'B', 'A&B']"
-          [value]="activeQuantifiedElementDetector"
+          [value]="activeQuantifiedElementDetector || 'A'"
           (onChange)="activeQuantifiedElementDetector = $event">
         </multi-switch-button>
         <mat-select
@@ -122,6 +122,9 @@ POSSIBILITY OF SUCH DAMAGE.
         [recentExpressions]="recentExpressions"
         [manualFilters]="manualFilters"></expression-search-controls>
       <section class="expressions">
+        <div *ngIf="!quantId && filteredExpressions.length === 0 && 'Quantified Elements' === activeBrowseSection" class="empty-expressions">
+          <h5>No quantification configured</h5>
+        </div>
         <cdk-virtual-scroll-viewport [itemSize]="48" class="expressions-viewport">
           <expression-layer
             *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
@@ -172,33 +175,6 @@ POSSIBILITY OF SUCH DAMAGE.
           [value]="activeRGBMixModeGroup"
           (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button>
       </div>
-      <!-- <div *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup" class="rgbmix-row">
-        <div class="title-row">
-          <action-button
-            #tooltip="matTooltip"
-            matTooltip="Remove the loaded RGB Mix"
-            [matTooltipDisabled]="!selectedGroup.id"
-            [disabled]="!selectedGroup.id"
-            action="close"
-            color="rgb(var(--clr-gray-30))"
-            (onClick)="onClearRGBMix()"></action-button>
-          <input class="name" type="text" [(ngModel)]="selectedGroup.name" placeholder="RGB Mix Name" />
-        </div>
-        <div class="additional-row">
-          <input class="description" type="text" [(ngModel)]="selectedGroup.description" placeholder="Description" />
-          <tag-picker
-            type="expression-mix"
-            [additionalVisibleTagType]="['rgbmix']"
-            [selectedTagIDs]="selectedGroup.tags"
-            [showCurrentTagsSection]="true"
-            (onTagSelectionChanged)="selectedGroup.tags = $event">
-          </tag-picker>
-          <share-ownership-item-button
-            [id]="selectedGroup.id"
-            [type]="expressionGroupType"
-            [ownershipSummary]="selectedGroup.owner || null"></share-ownership-item-button>
-        </div>
-      </div> -->
       <section class="layer-container {{ showRGBMixMode ? 'rgbmix-mode' : 'expression-mode' }}">
         <cdk-virtual-scroll-viewport [itemSize]="activeLayerHeight" class="expressions-viewport">
           <expression-layer
