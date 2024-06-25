@@ -702,6 +702,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
                 if (result.values) {
                   valsOnly.push(result.values);
                 } else {
+                  console.log("FAILEDDD, result", result);
                   errorStr = `Failed to get expression data for ${result.expression?.name || result.expression?.id || "expression"}`;
                   this._snackService.openError(errorStr);
                 }
