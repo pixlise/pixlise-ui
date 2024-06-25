@@ -188,12 +188,10 @@ export class WidgetDataService {
     const exprResults$ = combineLatest(exprResult$);
     return exprResults$.pipe(
       map((results: DataQueryResult[]) => {
-        console.log("GET DATA RES", results, what);
         const resultItems = [];
         for (let c = 0; c < results.length; c++) {
           resultItems.push(this.processGetDataResult(results[c], what[c], allowAnyResponse));
         }
-        console.log("RES ITEMS", resultItems);
         return new RegionDataResults(resultItems, "");
       }),
       catchError(err => {
