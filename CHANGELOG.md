@@ -10,6 +10,7 @@
 
 - Variogram custom expression responses were being treated as invalid due to another recent bug fix. This has been resolved.
 - Fixes bug where variogram doesn't automatically live update when built-in comparison expressions are switched between.
+- Shows warning when selecting quantified elements tab in expression picker when no quantification is configured.
 
 ## 4.21.0 (2024-06-12)
 
