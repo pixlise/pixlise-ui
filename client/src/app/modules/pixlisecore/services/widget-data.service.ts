@@ -773,11 +773,9 @@ export class WidgetDataService {
 
   private processGetDataResult(result: DataQueryResult, query: DataSourceParams, allowAnyResponse: boolean): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
+    let isPMCTable = Array.isArray(pmcValues?.values) && (pmcValues.values.length <= 0 || pmcValues.values[0] instanceof PMCDataValue);
     // If we have an error OR we require a PMC table as a result and didn't receive one...
-    if (
-      result.errorMsg ||
-      (!allowAnyResponse && (!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))))
-    ) {
+    if (result.errorMsg || (!allowAnyResponse && !isPMCTable)) {
       let msg = result.errorMsg;
       if (!msg) {
         msg = "Result is not a PMC array!";
@@ -803,10 +801,13 @@ export class WidgetDataService {
     }
 
     let valuesToWrite: any = null;
-    if (!allowAnyResponse) {
+    if (isPMCTable) {
       // We're dealing with PMC table data, in which case we support unit conversion
       // Apply unit conversion if needed
       valuesToWrite = this.applyUnitConversion(query.exprId, pmcValues, query.units);
+    } else {
+      // We're dealing with a non-PMC table data, so we just pass it through
+      valuesToWrite = result.resultValues;
     }
 
     const resultItem = new RegionDataResultItem(
@@ -816,7 +817,7 @@ export class WidgetDataService {
       result.expression,
       result.region,
       query,
-      !allowAnyResponse // NOT allowing any response, and getting this far implies we DO have a valid PMC table!
+      isPMCTable
     );
 
     return resultItem;

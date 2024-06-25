@@ -43,7 +43,14 @@ export class AppComponent {
   ) {
     // We trigger loading the service once, here, right on startup. This will end up creating a monaco object tied
     // to the window, which our child components can listen for being ready and create code editor views as needed
-    this._monacoService.load();
+    try {
+      this._monacoService.load();
+    } catch (err) {
+      console.error("Failed to load Monaco editor", err);
+      setTimeout(() => {
+        this._monacoService.load();
+      }, 1000);
+    }
   }
 
   get isPublicPage(): boolean {

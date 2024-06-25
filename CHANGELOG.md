@@ -4,6 +4,12 @@
 
 - **Dataset Editing** Adds the ability to edit dataset metadata, including name, description, and tags from the dataset listing page.
   - Shows a markdown preview of the description field.
+- **Chart Dataset Colour Support** Adds support for custom colours for dataset all points in the charts. This feature has existed under the scan configuration tab for a while, but was not previously supported by all charts.
+
+### Bug Fixes
+
+- Variogram custom expression responses were being treated as invalid due to another recent bug fix. This has been resolved.
+- Fixes bug where variogram doesn't automatically live update when built-in comparison expressions are switched between.
 
 ## 4.21.0 (2024-06-12)
 
