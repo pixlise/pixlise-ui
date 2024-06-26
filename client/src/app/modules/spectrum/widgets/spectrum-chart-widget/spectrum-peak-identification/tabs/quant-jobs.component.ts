@@ -21,7 +21,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { AnalysisLayoutService, DataExporterService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
@@ -29,11 +29,13 @@ import { WidgetExportDialogComponent } from "src/app/modules/widget/components/w
 import {
   WidgetExportDialogData,
   WidgetExportData,
-  WIDGET_EXPORT_DATA_KEYS,
   WidgetExportRequest,
   WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { Quantification } from "src/app/generated-protos/quantification";
+import {
+  TextFileViewingDialogComponent,
+  TextFileViewingDialogData,
+} from "src/app/modules/pixlisecore/components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
 
 const SelectQuantText = "Select a quantification job";
 
@@ -68,12 +70,9 @@ export class QuantJobsComponent implements OnInit {
   status: string = "";
 
   constructor(
-    //private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
     private _dialog: MatDialog,
-    private _router: Router,
-    private _route: ActivatedRoute,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService
   ) {}
@@ -123,6 +122,8 @@ export class QuantJobsComponent implements OnInit {
         break;
       }
     }
+
+    // NOTE: NOT using _cachedDataService, we want the latest copy
     this._dataService.sendQuantGetRequest(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).subscribe({
       next: (resp: QuantGetResp) => {
         this.summary = resp.summary || null;
@@ -271,18 +272,6 @@ export class QuantJobsComponent implements OnInit {
     dialogRef.afterClosed().subscribe(() => {
       //this._exportDialogOpen = false;
     });
-    /*
-    this._exportService
-    this._dataService.sendQuantGetRequest(QuantGetReq.create({ quantId: quantId, summaryOnly: false })).subscribe((resp: QuantGetResp) => {
-      if (!resp.data) {
-        this._snackService.openError("No quant data was downloaded for: " + quantId);
-        return;
-      }
-
-      const data = DataExporterService.makeQuantCSV(resp.data);
-
-      // Allow user download
-    });*/
   }
 
   private onExportQuantData(request: WidgetExportRequest, quantId: string): Observable<WidgetExportData> {
@@ -330,7 +319,7 @@ export class QuantJobsComponent implements OnInit {
   }
 
   private getQuantExportData(quantId: string): Observable<WidgetExportFile[]> {
-    return this._dataService.sendQuantRawDataGetRequest(QuantRawDataGetReq.create({ quantId: quantId })).pipe(
+    return this._cachedDataService.getQuantRawCSV(QuantRawDataGetReq.create({ quantId: quantId })).pipe(
       map((resp: QuantRawDataGetResp) => {
         if (!resp.data) {
           throw new Error(`QuantGet for ${quantId} returned no data`);
@@ -351,7 +340,7 @@ export class QuantJobsComponent implements OnInit {
         const logRequests = [];
         for (const fileName of logListResp.fileNames) {
           logRequests.push(
-            this._dataService.sendQuantLogGetRequest(QuantLogGetReq.create({ quantId: quantId, logName: fileName })).pipe(
+            this._cachedDataService.getQuantLog(QuantLogGetReq.create({ quantId: quantId, logName: fileName })).pipe(
               map((logResp: QuantLogGetResp) => {
                 return { subFolder: "logs", fileName: fileName, data: logResp.logData } as WidgetExportFile;
               })
@@ -377,7 +366,23 @@ export class QuantJobsComponent implements OnInit {
   }
 
   onClickLog(logName: string): void {
-    this._router.navigate(["log", logName], { relativeTo: this._route });
+    const content$ = this._cachedDataService.getQuantLog(QuantLogGetReq.create({ quantId: this.selectedQuantId, logName: logName })).pipe(
+      map((resp: QuantLogGetResp) => {
+        return resp.logData;
+      })
+    );
+
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = new TextFileViewingDialogData(logName, content$);
+
+    const dialogRef = this._dialog.open(TextFileViewingDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe(
+      () => {},
+      err => {
+        console.error(err);
+      }
+    );
   }
 
   getLogName(link: string): string {
