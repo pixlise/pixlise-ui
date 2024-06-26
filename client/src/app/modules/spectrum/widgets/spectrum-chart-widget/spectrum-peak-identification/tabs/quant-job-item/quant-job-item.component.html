@@ -11,7 +11,7 @@
         <span title="Job Name: {{job.name}}" class="name">{{job.name}}</span>
     </div>
     <div class="row">
-        <span title="Job started: {{job.startUnixTimeSec * 1000 | date: 'd MMM y, HH:mm:ss'}}">{{job.startUnixTimeSec * 1000 | date: "MMM d, yy"}}</span>
+        <span title="Job started: {{job.startUnixTimeSec * 1000 | date: 'd MMM y, HH:mm:ss'}}">{{job.startUnixTimeSec * 1000 | date: "d MMM y"}}</span>
         <span [title]="job.message">{{status}}</span>
         <span *ngIf="elapsedTimeMs > 0" title="Job elapsed time">{{elapsedTimeMs | date: "mm:ss"}}</span>
         <ng-content></ng-content>

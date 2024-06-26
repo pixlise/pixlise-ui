@@ -144,6 +144,13 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
         const browseOnChartEnergy = this.mdl.xAxis.canvasToValue(middleX);
         this.mdl.setEnergyAtMouse(browseOnChartEnergy);
       }
+    } else if (selector == TabSelectors.tabQuantJobs) {
+      const quantJobsTab = this._tabComponent.instance as QuantJobsComponent;
+      this._subs.add(
+        quantJobsTab.onClose.subscribe(() => {
+          this.onClose();
+        })
+      );
     } else {
       this.mdl.xrfNearMouse.clear();
     }

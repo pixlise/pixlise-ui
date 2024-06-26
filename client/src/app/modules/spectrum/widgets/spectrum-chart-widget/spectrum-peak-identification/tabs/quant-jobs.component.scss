@@ -43,12 +43,41 @@
 
     box-sizing: border-box;
 
-    .jobs-viewport {
-        height: 100%;
+    .left-panel {
+        display: flex;
+        flex-direction: column;
 
+        height: 100%;
+    
         flex-grow: 1;
         flex-shrink: 1;
         flex-basis: 1e-9px;
+        
+        .jobs-viewport {
+            height: 100%;
+    
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 1e-9px;
+        }
+    
+        .no-jobs {
+            height: 100%;
+    
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 1e-9px;
+
+            color: $clr-gray-30;
+            font-weight: bold;
+            padding: $sz-double;
+        }
+        
+        .footer {
+            height: 42px;
+            background-color: $clr-gray-80;
+            padding: 0px $sz-unit;
+        }
     }
 
     .right-panel {
@@ -74,7 +103,7 @@
 
             color: $clr-gray-10;
             background-color: $clr-gray-90;
-            
+
             .row {
                 display: flex;
                 flex-direction: row;

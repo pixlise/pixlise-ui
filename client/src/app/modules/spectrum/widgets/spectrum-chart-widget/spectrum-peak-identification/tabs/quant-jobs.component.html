@@ -30,14 +30,21 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="container">
-    <cdk-virtual-scroll-viewport [itemSize]="34" class="jobs-viewport">
-        <quant-job-item
-            *ngFor="let job of jobs"
-            [job]="job"
-            [selected]="job.jobId === selectedQuantId"
-            (click)="onSelectQuant(job.jobId)">
-        </quant-job-item>
-    </cdk-virtual-scroll-viewport>
+    <div class="left-panel">
+        <cdk-virtual-scroll-viewport *ngIf="jobs.length > 0" [itemSize]="34" class="jobs-viewport">
+            <quant-job-item
+                *ngFor="let job of jobs"
+                [job]="job"
+                [selected]="job.jobId === selectedQuantId"
+                (click)="onSelectQuant(job.jobId)">
+            </quant-job-item>
+        </cdk-virtual-scroll-viewport>
+        <div *ngIf="jobs.length <= 0" class="no-jobs">No jobs to display</div>
+        <div class="footer">
+            <ng-content></ng-content>
+            <push-button buttonStyle="outline" (onClick)="onCloseBtn()">Close</push-button>
+        </div>
+    </div>
 
     <div class="right-panel">
         <ng-container *ngIf="summary">
@@ -45,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <h3>Selected Quantification Details</h3>
                 <div class="row">
                     <push-button buttonStyle="outline" (onClick)="onUseQuant(summary.id)">Use in Workspace</push-button>
-                    <push-button buttonStyle="outline" (onClick)="onExportQuant(summary.id)">Export</push-button>
+                    <icon-button title="Export" (onClick)="onExport(summary.id)" icon="assets/button-icons/export.svg"> </icon-button>
                 </div>
             </div>
             <div class="selected-container">
