@@ -38,7 +38,7 @@ import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { makeImageTooltip } from "src/app/utils/image-details";
-import { getScanIdFromImagePath, SDSFields } from "src/app/utils/utils";
+import { getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 
 export class ImageChoice {
@@ -48,11 +48,12 @@ export class ImageChoice {
     public scanIds: string[] = [],
     public url: string = "",
     public marsViewerURL: string = "",
-    public isTiff: boolean = false
+    public isTiff: boolean = false,
+    public imagePMC: number = invalidPMC
   ) {}
 
   copy(): ImageChoice {
-    return new ImageChoice(this.name, this.path, this.scanIds, this.url, this.marsViewerURL, this.isTiff);
+    return new ImageChoice(this.name, this.path, this.scanIds, this.url, this.marsViewerURL, this.isTiff, this.imagePMC);
   }
 }
 
@@ -185,7 +186,7 @@ export class ImagePickerDialogComponent implements OnInit {
         mergeMap(img => {
           // NOTE: We are passing this image choice by reference, not value, so any changes to it will be reflected in multiple
           // locations
-          let imageChoice = this.makeImageChoice(img);
+          const imageChoice = this.makeImageChoice(img);
 
           if (!loadedImageChoiceIds.has(imageChoice.path)) {
             this.imageChoices.push(imageChoice);
@@ -213,11 +214,12 @@ export class ImagePickerDialogComponent implements OnInit {
   }
 
   private makeImageChoice(image: ScanImage): ImageChoice {
-    let imageName = image.imagePath.replace(/^\d+\//, "");
-    let marsViewerURL = this.makeMarsViewerURL(imageName);
-    let isTiff = image.imagePath.toLowerCase().endsWith(".tif") || image.imagePath.toLowerCase().endsWith(".tiff");
+    const imageName = image.imagePath.replace(/^\d+\//, "");
+    const marsViewerURL = this.makeMarsViewerURL(imageName);
+    const isTiff = image.imagePath.toLowerCase().endsWith(".tif") || image.imagePath.toLowerCase().endsWith(".tiff");
+    const fields = SDSFields.makeFromFileName(getPathBase(image.imagePath));
 
-    return new ImageChoice(imageName, image.imagePath, image.associatedScanIds, "loading", marsViewerURL, isTiff);
+    return new ImageChoice(imageName, image.imagePath, image.associatedScanIds, "loading", marsViewerURL, isTiff, fields?.PMC || invalidPMC);
   }
 
   private loadImagePreview(imgChoice: ImageChoice) {
