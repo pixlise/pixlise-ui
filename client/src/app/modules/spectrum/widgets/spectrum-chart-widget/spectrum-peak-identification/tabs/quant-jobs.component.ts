@@ -373,7 +373,27 @@ export class QuantJobsComponent implements OnInit {
     );
 
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.data = new TextFileViewingDialogData(logName, content$);
+    dialogConfig.data = new TextFileViewingDialogData(logName, content$, false, 0);
+
+    const dialogRef = this._dialog.open(TextFileViewingDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe(
+      () => {},
+      err => {
+        console.error(err);
+      }
+    );
+  }
+
+  onViewQuantCSV(quantId: string) {
+    const content$ = this._cachedDataService.getQuantRawCSV(QuantRawDataGetReq.create({ quantId: this.selectedQuantId })).pipe(
+      map((resp: QuantRawDataGetResp) => {
+        return resp.data;
+      })
+    );
+
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = new TextFileViewingDialogData(this.summary?.params?.userParams?.name || quantId, content$, true, 1);
 
     const dialogRef = this._dialog.open(TextFileViewingDialogComponent, dialogConfig);
 

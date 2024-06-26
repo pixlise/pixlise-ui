@@ -63,6 +63,9 @@ POSSIBILITY OF SUCH DAMAGE.
                     <div class="row"><span class="varname">Quantifier Comments</span><span>{{comments}}</span></div>
                 
                     <ng-container *ngIf="summary.status?.endUnixTimeSec">
+                        <div class="row">
+                            <push-button buttonStyle="outline" (onClick)="onViewQuantCSV(summary.id)">View Quant CSV</push-button>
+                        </div>
                         <h3>Completion Info</h3>
                         <div class="row"><span class="varname">End Time</span><span>{{(summary.status?.endUnixTimeSec||0) * 1000|date:'d MMM y, HH:mm:ss'}}</span></div>
                         <div *ngIf="summary.status?.outputFilePath" class="row">

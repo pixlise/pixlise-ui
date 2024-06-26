@@ -32,9 +32,19 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="dlg-border-with-backdrop text-file-viewer-container">
     <h1>{{title}}</h1>
     <div class="file-contents">
-        <div *ngIf="content === null" class="spinner">
-            <wait-spinner ></wait-spinner>
+        <div *ngIf="loading" class="spinner">
+            <wait-spinner></wait-spinner>
         </div>
         <div *ngIf="content !== null" class="content">{{content}}</div>
+        <div *ngIf="contentCSV !== null" class="content-table">
+            <table>
+                <tr>
+                    <th *ngFor="let col of contentCSVHeader">{{col}}</th>
+                </tr>
+                <tr *ngFor="let row of contentCSV">
+                    <td *ngFor="let col of row">{{col}}</td>
+                </tr>
+            </table>
+        </div>
     </div>
 </div>

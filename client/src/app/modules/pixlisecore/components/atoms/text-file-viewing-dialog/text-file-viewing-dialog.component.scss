@@ -44,18 +44,28 @@
         display: flex;
         flex-direction: column;
 
-        background-color: $clr-gray-90;
+        background-color: $clr-gray-100;
 
         .spinner {
             display: flex;
             flex-direction: column;
     
             align-items: center;
-
         }
         .content {
-            //text-wrap: nowrap;
             white-space: pre;
+        }
+        .content-table {
+            tr {
+                td {
+                    border-left: 1px solid $clr-gray-80;
+                    border-top: 1px solid $clr-gray-80;
+                    padding: 0px 2px;
+                }
+            }
+            tr:hover td {
+                background-color: $clr-gray-70;
+            }
         }
     }
 }
