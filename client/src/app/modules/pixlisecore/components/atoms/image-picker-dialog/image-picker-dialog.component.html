@@ -53,8 +53,11 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="image-option-content">
           <h5 class="name" #tooltip="matTooltip" [matTooltip]="image.name" [matTooltipShowDelay]="200"><b>Image: </b>{{ image.name }}</h5>
-          <h5 class="scan">
+          <h5>
             <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b>{{ image.scanIds.join(", ") }}
+          </h5>
+          <h5 *ngIf="image.imagePMC >= 0">
+            <b>Image PMC: </b>{{ image.imagePMC }}
           </h5>
           <h5 class="mars-viewer" *ngIf="image.marsViewerURL">
             <b>Mars Viewer: </b><a [href]="image.marsViewerURL" target="_blank" rel="noopener noreferrer"><img src="assets/button-icons/open-external.svg" /></a>
