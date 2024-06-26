@@ -27,6 +27,7 @@ import { DataExpressionId } from "../../../expression-language/expression-id";
 import { PMCDataValues } from "../../../expression-language/data-values";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { SpectrumDataService } from "../../pixlisecore/services/spectrum-data.service";
+import { Quantification } from "src/app/generated-protos/quantification";
 
 @Injectable({
   providedIn: "root",
@@ -44,7 +45,7 @@ export class DataExporterService {
   ) {}
 
   getPiquantMapForScan(scanId: string, quantId: string, quantName: string): Observable<WidgetExportData> {
-    let exportTypes: ExportDataType[] = [ExportDataType.EDT_QUANT_CSV];
+    const exportTypes: ExportDataType[] = [ExportDataType.EDT_QUANT_CSV];
     return this._apiService
       .sendExportFilesRequest(
         ExportFilesReq.create({
@@ -57,7 +58,7 @@ export class DataExporterService {
       )
       .pipe(
         map(response => {
-          let csvs: WidgetExportFile[] = [];
+          const csvs: WidgetExportFile[] = [];
           if (response.files) {
             response.files.forEach((file, i) => {
               if (file.extension === "csv") {
@@ -80,11 +81,11 @@ export class DataExporterService {
   }
 
   private getSpectrumPMCMetadata(spectrum: Spectrum, scanMeta: ScanMetaLabelsAndTypesResp, metaLabels: string[]) {
-    let meta: Record<string, any> = {};
+    const meta: Record<string, any> = {};
     metaLabels.forEach(label => {
-      let metaIdx = scanMeta.metaLabels.findIndex(metaLabel => metaLabel === label);
+      const metaIdx = scanMeta.metaLabels.findIndex(metaLabel => metaLabel === label);
       if (metaIdx >= 0 && spectrum.meta[metaIdx] !== undefined) {
-        let value = spectrum.meta[metaIdx].fvalue ?? spectrum.meta[metaIdx].ivalue ?? "";
+        const value = spectrum.meta[metaIdx].fvalue ?? spectrum.meta[metaIdx].ivalue ?? "";
         meta[label] = value;
       }
     });
@@ -101,7 +102,7 @@ export class DataExporterService {
     roiName: string,
     roiPMCs: Set<number> = new Set()
   ): WidgetExportFile | null {
-    let metaLabels = ["SCLK", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
+    const metaLabels = ["SCLK", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
     let data = `PMC,X,Y,Z,Detector,Type,${metaLabels.join(",")},Max Count`;
     for (let i = 0; i < spectrumResp.channelCount; i++) {
       data += `,Ch. ${i + 1}`;
@@ -119,7 +120,7 @@ export class DataExporterService {
     }
 
     for (let i = 0; i < beamLocations.beamLocations.length; i++) {
-      let entry = scanEntries.entries[i];
+      const entry = scanEntries.entries[i];
       if (!entry.location) {
         continue;
       }
@@ -130,9 +131,9 @@ export class DataExporterService {
       }
 
       // Round to 5 decimal places
-      let location = beamLocations.beamLocations[i];
-      let [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
-      let spectraPerLocation = spectrumResp.spectraPerLocation[i];
+      const location = beamLocations.beamLocations[i];
+      const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
+      const spectraPerLocation = spectrumResp.spectraPerLocation[i];
 
       spectraPerLocation.spectra.forEach(spectra => {
         let typeName = spectrumTypeToJSON(spectra.type).replace("SPECTRUM_", "").toLowerCase();
@@ -140,8 +141,8 @@ export class DataExporterService {
           typeName = typeName.charAt(0).toUpperCase() + typeName.slice(1);
         }
 
-        let meta = this.getSpectrumPMCMetadata(spectra, scanMeta, metaLabels);
-        let metaValues = metaLabels.map(label => meta[label] ?? "").join(",");
+        const meta = this.getSpectrumPMCMetadata(spectra, scanMeta, metaLabels);
+        const metaValues = metaLabels.map(label => meta[label] ?? "").join(",");
 
         let dataLine = `\n${entry.id},${x},${y},${z},${spectra.detector},${typeName},${metaValues},${spectra.maxCount}`;
         spectra.counts.forEach(count => {
@@ -164,9 +165,9 @@ export class DataExporterService {
 
     return combineLatest(requests).pipe(
       switchMap(([beamLocations, scanEntries, spectrumResp, scanMeta]) => {
-        let csvs: WidgetExportFile[] = [];
+        const csvs: WidgetExportFile[] = [];
 
-        let rawSpectraPerPMC = this.makeExportForRawSpectraPerPMC(scanId, scanEntries, beamLocations, spectrumResp, scanMeta, "All Points");
+        const rawSpectraPerPMC = this.makeExportForRawSpectraPerPMC(scanId, scanEntries, beamLocations, spectrumResp, scanMeta, "All Points");
         if (rawSpectraPerPMC) {
           csvs.push(rawSpectraPerPMC);
         }
@@ -185,8 +186,8 @@ export class DataExporterService {
                 return;
               }
 
-              let pmcPoints = new Set(decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []));
-              let roiData = this.makeExportForRawSpectraPerPMC(
+              const pmcPoints = new Set(decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []));
+              const roiData = this.makeExportForRawSpectraPerPMC(
                 scanId,
                 scanEntries,
                 beamLocations,
@@ -212,10 +213,10 @@ export class DataExporterService {
       let spectraData = "ROI,Channel,Detector,Bulk Sum,Max Spectra";
       for (let i = 0; i < spectrumResp.channelCount; i++) {
         spectrumResp.bulkSpectra.forEach((bulkSpectra, j) => {
-          let bulkSum = bulkSpectra.counts[i] ?? "";
+          const bulkSum = bulkSpectra.counts[i] ?? "";
           let maxSpectra = spectrumResp.maxSpectra[j];
           if (maxSpectra?.detector !== bulkSpectra.detector) {
-            let matchingMaxSpectra = spectrumResp.maxSpectra.find(spectra => spectra.detector === bulkSpectra.detector);
+            const matchingMaxSpectra = spectrumResp.maxSpectra.find(spectra => spectra.detector === bulkSpectra.detector);
             if (matchingMaxSpectra) {
               maxSpectra = matchingMaxSpectra;
             } else {
@@ -223,7 +224,7 @@ export class DataExporterService {
               throw new Error(`Could not find matching detector (${bulkSpectra.detector}) for bulk spectra`);
             }
           }
-          let maxSpectraCount = maxSpectra.counts[i] ?? "";
+          const maxSpectraCount = maxSpectra.counts[i] ?? "";
 
           spectraData += `\n${roiName},${i + 1},${bulkSpectra.detector},${bulkSum},${maxSpectraCount}`;
         });
@@ -238,15 +239,15 @@ export class DataExporterService {
   }
 
   getBulkSumMaxSpectra(scanId: string): Observable<WidgetExportData> {
-    let spectrumRequests: Observable<SpectrumResp>[] = [
+    const spectrumRequests: Observable<SpectrumResp>[] = [
       this._spectrumDataService.getSpectrum(scanId, null, true, true), // All Points
     ];
 
     return combineLatest(spectrumRequests).pipe(
       map(spectrumResp => {
-        let csvs: WidgetExportFile[] = [];
+        const csvs: WidgetExportFile[] = [];
 
-        let allPointsData = this.makeExportForRawSpectraBulkSpectra(scanId, "All Points", spectrumResp[0]);
+        const allPointsData = this.makeExportForRawSpectraBulkSpectra(scanId, "All Points", spectrumResp[0]);
         if (allPointsData) {
           csvs.push(allPointsData);
         }
@@ -262,15 +263,15 @@ export class DataExporterService {
     scanMeta: ScanMetaLabelsAndTypesResp,
     metaLabels: string[] = ["SCLK", "PMC", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"]
   ): Record<string, Record<string, string | number>> {
-    let metadataPerDetector: Record<string, Record<string, string | number>> = {};
+    const metadataPerDetector: Record<string, Record<string, string | number>> = {};
 
     for (const spectrum of spectrumResp.bulkSpectra) {
       metaLabels.forEach(label => {
-        let metaIdx = scanMeta.metaLabels.findIndex(metaLabel => metaLabel === label);
+        const metaIdx = scanMeta.metaLabels.findIndex(metaLabel => metaLabel === label);
         if (metaIdx >= 0 && spectrum.meta[metaIdx]) {
-          let meta = spectrum.meta[metaIdx];
+          const meta = spectrum.meta[metaIdx];
 
-          let value = meta.fvalue ?? meta.ivalue ?? "";
+          const value = meta.fvalue ?? meta.ivalue ?? "";
 
           if (!metadataPerDetector[spectrum.detector]) {
             metadataPerDetector[spectrum.detector] = {};
@@ -285,9 +286,9 @@ export class DataExporterService {
 
   /** Get current date and time in UTC in the format MM-DD-YYYY and HH:MM:SS. */
   private _getMSADateTime(): [string, string] {
-    let currentTime = new Date();
-    let dateNow = ("0" + (currentTime.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + currentTime.getUTCDate()).slice(-2) + "-" + currentTime.getUTCFullYear();
-    let timeNow =
+    const currentTime = new Date();
+    const dateNow = ("0" + (currentTime.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + currentTime.getUTCDate()).slice(-2) + "-" + currentTime.getUTCFullYear();
+    const timeNow =
       ("0" + currentTime.getUTCHours()).slice(-2) + ":" + ("0" + currentTime.getUTCMinutes()).slice(-2) + ":" + ("0" + currentTime.getUTCSeconds()).slice(-2);
 
     return [dateNow, timeNow];
@@ -299,12 +300,12 @@ export class DataExporterService {
    */
   makeMSAFile(scanId: string, roiName: string, spectra: SpectrumResp, metadataPerDetector: Record<string, Record<string, string | number>>): WidgetExportFile | null {
     if (spectra && spectra.bulkSpectra.length > 0) {
-      let combinedMetadata: Record<string, (string | number)[]> = {};
-      let labels = ["XPERCHAN", "OFFSET", "LIVETIME", "REALTIME"];
+      const combinedMetadata: Record<string, (string | number)[]> = {};
+      const labels = ["XPERCHAN", "OFFSET", "LIVETIME", "REALTIME"];
       labels.forEach(label => {
         combinedMetadata[label] = [];
         spectra.bulkSpectra.forEach(spectra => {
-          let meta = metadataPerDetector[spectra.detector];
+          const meta = metadataPerDetector[spectra.detector];
           if (meta && meta[label]) {
             let value = meta[label];
             // If number, round to 7 decimal places
@@ -317,14 +318,14 @@ export class DataExporterService {
         });
       });
 
-      let detectors = Object.keys(metadataPerDetector);
+      const detectors = Object.keys(metadataPerDetector);
 
       let columns = "Y";
       if (detectors.length > 1) {
         columns = "YY";
       }
 
-      let [dateNow, timeNow] = this._getMSADateTime();
+      const [dateNow, timeNow] = this._getMSADateTime();
       let msa = `#FORMAT      : EMSA/MAS spectral data file
 #VERSION     : TC202v2.0 PIXL
 #TITLE       : Control Program v7
@@ -370,18 +371,18 @@ export class DataExporterService {
 
     return combineLatest(requests).pipe(
       map(([scanMeta, spectrumResp]) => {
-        let csvs: WidgetExportFile[] = [];
-        let msas: WidgetExportFile[] = [];
+        const csvs: WidgetExportFile[] = [];
+        const msas: WidgetExportFile[] = [];
         if (scanMeta && spectrumResp) {
-          let metaLabels = ["SCLK", "PMC", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
+          const metaLabels = ["SCLK", "PMC", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
           let data = "Detector," + metaLabels.join(",");
 
-          let metadataPerDetector: Record<string, Record<string, string | number>> = this.getBulkSpectraMetadataPerDetector(spectrumResp, scanMeta, metaLabels);
-          let detectors = Object.keys(metadataPerDetector);
+          const metadataPerDetector: Record<string, Record<string, string | number>> = this.getBulkSpectraMetadataPerDetector(spectrumResp, scanMeta, metaLabels);
+          const detectors = Object.keys(metadataPerDetector);
           detectors.forEach(detector => {
             let dataLine = `\n${detector}`;
             metaLabels.forEach(label => {
-              let value = metadataPerDetector[detector][label] ?? "";
+              const value = metadataPerDetector[detector][label] ?? "";
               dataLine += `,${value}`;
             });
 
@@ -390,7 +391,7 @@ export class DataExporterService {
 
           csvs.push({ fileName: `${scanId}-spectra-metadata.csv`, data });
 
-          let msaFile = this.makeMSAFile(scanId, "All Points", spectrumResp, metadataPerDetector);
+          const msaFile = this.makeMSAFile(scanId, "All Points", spectrumResp, metadataPerDetector);
           if (msaFile) {
             msas.push(msaFile);
           }
@@ -412,12 +413,12 @@ export class DataExporterService {
     ];
     return combineLatest(requests).pipe(
       map(([beamLocations, scanEntries, imageIJs]) => {
-        let csvs: WidgetExportFile[] = [];
+        const csvs: WidgetExportFile[] = [];
         if (beamLocations.beamLocations && scanEntries.entries && imageIJs.size > 0) {
-          let imageKeyOrder = [...imageIJs.keys()];
+          const imageKeyOrder = [...imageIJs.keys()];
           let data = "PMC,X,Y,Z";
           imageKeyOrder.forEach(imageKey => {
-            let imageName = imageKey.split("/").pop();
+            const imageName = imageKey.split("/").pop();
             data += `,${imageName}_i,${imageName}_j`;
           });
 
@@ -428,21 +429,21 @@ export class DataExporterService {
           }
 
           for (let i = 0; i < beamLocations.beamLocations.length; i++) {
-            let entry = scanEntries.entries[i];
+            const entry = scanEntries.entries[i];
             if (!entry.location) {
               continue;
             }
 
             // Round to 5 decimal places
-            let location = beamLocations.beamLocations[i];
-            let [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
+            const location = beamLocations.beamLocations[i];
+            const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
             data += `\n${entry.id},${x},${y},${z}`;
 
             // Add image coordinate headers
             imageKeyOrder.forEach(imageKey => {
-              let coords = imageIJs.get(imageKey);
+              const coords = imageIJs.get(imageKey);
               if (coords) {
-                let [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
+                const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
                 data += `,${roundedI},${roundedJ}`;
               } else {
                 data += ",,";
@@ -464,15 +465,15 @@ export class DataExporterService {
   getAllImagesIJ(scanId: string): Observable<Map<string, Coordinate2D[]>> {
     return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
       switchMap(images => {
-        let imagesIJ: Map<string, Coordinate2D[]> = new Map();
+        const imagesIJ: Map<string, Coordinate2D[]> = new Map();
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
-          let imagePaths = images.images.map(image => image.imagePath);
+          const imagePaths = images.images.map(image => image.imagePath);
 
-          let metaRequests = imagePaths.map(imagePath => this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imagePath })));
+          const metaRequests = imagePaths.map(imagePath => this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imagePath })));
           return forkJoin(metaRequests).pipe(
             switchMap(imageMetadataResponses => {
-              let beamRequests = imageMetadataResponses.map((imageMeta, i) => {
+              const beamRequests = imageMetadataResponses.map((imageMeta, i) => {
                 const beamFileName = imageMeta.image?.matchInfo?.beamImageFileName || imagePaths[i];
 
                 return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName })).pipe(
@@ -490,7 +491,7 @@ export class DataExporterService {
                       // Find the beam locations for the requested scan
                       const locations = beamResponse.locations?.locationPerScan.find(loc => loc.scanId === scanId);
                       if (locations) {
-                        let imageName = imagePaths[i];
+                        const imageName = imagePaths[i];
                         imagesIJ.set(imageName, locations.locations);
                       }
                     }
@@ -536,12 +537,12 @@ export class DataExporterService {
   }
 
   getDiffractionAndRoughness(scanId: string, quantId: string): Observable<WidgetExportData> {
-    let csvs: WidgetExportFile[] = [];
-    let diffractionExporter = new DiffractionExporter(this._snackService);
+    const csvs: WidgetExportFile[] = [];
+    const diffractionExporter = new DiffractionExporter(this._snackService);
 
     return this.fetchDiffractionData(scanId, quantId).pipe(
       switchMap(({ manualPeaks, dataSource }) => {
-        let requestedManualPeaks = manualPeaks.get(scanId) || [];
+        const requestedManualPeaks = manualPeaks.get(scanId) || [];
         return diffractionExporter.exportPeaks(dataSource.allPeaks, requestedManualPeaks, true, dataSource.roughnessItems).pipe(
           switchMap(peaks => {
             if (peaks.combined) {
@@ -561,7 +562,7 @@ export class DataExporterService {
   getUnquantifiedWeightPercents(scanId: string, quantId: string, quantName: string): Observable<WidgetExportData> {
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId })).pipe(
       map(quant => {
-        let csvs: WidgetExportFile[] = [];
+        const csvs: WidgetExportFile[] = [];
 
         if (!quant.data || quant.data?.locationSet.length === 0 || quant.data?.locationSet[0].location.length === 0) {
           console.error("Quant data not found for export");
@@ -569,36 +570,42 @@ export class DataExporterService {
           return { csvs };
         }
 
-        let quantifiedLabels = quant.data?.labels.filter(label => label.endsWith("_%"));
+        const data = DataExporterService.makeQuantCSV(quant.data);
 
-        let data = "PMC";
-
-        // Add detector names
-        quant.data.locationSet.forEach(locationSet => {
-          data += `,${locationSet.detector}`;
-        });
-
-        // Iterate over every PMC, then every detector, and calculate the weight percentages not included in the quantification
-        quant.data.locationSet[0].location.forEach((location, pmcIndex) => {
-          data += `\n${location.pmc}`;
-          quant.data!.locationSet.forEach((_, detectorIndex) => {
-            let unquantifiedPercent = 100.0;
-            quantifiedLabels.forEach(label => {
-              let labelIndex = quant.data?.labels.indexOf(label);
-              if (labelIndex !== undefined && labelIndex >= 0) {
-                unquantifiedPercent -= quant.data!.locationSet[detectorIndex].location[pmcIndex].values[labelIndex].fvalue;
-              }
-            });
-
-            let roundedUnquantifiedPercent = Math.round(unquantifiedPercent * 1e7) / 1e7;
-            data += `,${roundedUnquantifiedPercent}`;
-          });
-        });
-
-        csvs.push({ fileName: `${scanId}-${quantName}-unquantified-weight-percents.csv`, data });
+        csvs.push({ fileName: `${scanId}-${quant.summary?.params?.userParams?.name || quantName}-unquantified-weight-percents.csv`, data });
         return { csvs };
       })
     );
+  }
+
+  public static makeQuantCSV(quantData: Quantification): string {
+    const quantifiedLabels = quantData.labels.filter(label => label.endsWith("_%"));
+
+    let data = "PMC";
+
+    // Add detector names
+    quantData.locationSet.forEach(locationSet => {
+      data += `,${locationSet.detector}`;
+    });
+
+    // Iterate over every PMC, then every detector, and calculate the weight percentages not included in the quantification
+    quantData.locationSet[0].location.forEach((location, pmcIndex) => {
+      data += `\n${location.pmc}`;
+      quantData!.locationSet.forEach((_, detectorIndex) => {
+        let unquantifiedPercent = 100.0;
+        quantifiedLabels.forEach(label => {
+          const labelIndex = quantData?.labels.indexOf(label);
+          if (labelIndex !== undefined && labelIndex >= 0) {
+            unquantifiedPercent -= quantData!.locationSet[detectorIndex].location[pmcIndex].values[labelIndex].fvalue;
+          }
+        });
+
+        const roundedUnquantifiedPercent = Math.round(unquantifiedPercent * 1e7) / 1e7;
+        data += `,${roundedUnquantifiedPercent}`;
+      });
+    });
+
+    return data;
   }
 
   private makeROIPMCMembershipCSV(scanId: string, roiName: string, pmcs: number[]): WidgetExportFile {
@@ -620,7 +627,7 @@ export class DataExporterService {
 
     return combineLatest(roiRequests).pipe(
       switchMap(rois => {
-        let csvs: WidgetExportFile[] = [];
+        const csvs: WidgetExportFile[] = [];
 
         return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })).pipe(
           map((resp: ScanEntryResp) => {
@@ -630,7 +637,7 @@ export class DataExporterService {
             }
 
             // Get all PMCs for the scan
-            let allPMCs: number[] = [];
+            const allPMCs: number[] = [];
             resp.entries.forEach(entry => {
               if (entry?.normalSpectra || entry?.dwellSpectra || entry?.bulkSpectra || entry?.maxSpectra) {
                 allPMCs.push(entry.id);
@@ -640,8 +647,8 @@ export class DataExporterService {
 
             rois.forEach((roi, i) => {
               if (roi) {
-                let roiPMCs = decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []);
-                let roiName = roi.regionOfInterest?.name || roiIds[i];
+                const roiPMCs = decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []);
+                const roiName = roi.regionOfInterest?.name || roiIds[i];
                 csvs.push(this.makeROIPMCMembershipCSV(scanId, roiName.replace("/", "_"), roiPMCs));
               }
             });
@@ -656,9 +663,9 @@ export class DataExporterService {
   private makeExpressionValuesCSV(scanId: string, roiName: string, expressionName: string, pmcs: number[], expressionValues: PMCDataValues): WidgetExportFile {
     let data = "ROI,Expression,PMC,Value,Undefined";
     pmcs.forEach(pmc => {
-      let pmcDataValue = expressionValues.values.find(value => value.pmc === pmc);
-      let value = pmcDataValue?.value ?? "";
-      let isUndefined = pmcDataValue?.isUndefined ?? true;
+      const pmcDataValue = expressionValues.values.find(value => value.pmc === pmc);
+      const value = pmcDataValue?.value ?? "";
+      const isUndefined = pmcDataValue?.isUndefined ?? true;
       data += `\n"${roiName}","${expressionName}",${pmc},${value},${isUndefined}`;
     });
 
@@ -666,14 +673,14 @@ export class DataExporterService {
   }
 
   private makeAggregatedExpressionValuesCSV(scanId: string, roiName: string, pmcs: number[], expressions: Record<string, PMCDataValues>): WidgetExportFile {
-    let expressionHeaders = Object.keys(expressions);
+    const expressionHeaders = Object.keys(expressions);
     let data = `"ROI","PMC",${expressionHeaders.map(expressionName => `"${expressionName}"`).join(",")}`;
 
     pmcs.forEach(pmc => {
       data += `\n${roiName},${pmc}`;
       expressionHeaders.forEach(expressionName => {
-        let pmcDataValue = expressions[expressionName].values.find(value => value.pmc === pmc);
-        let value = pmcDataValue?.value ?? "";
+        const pmcDataValue = expressions[expressionName].values.find(value => value.pmc === pmc);
+        const value = pmcDataValue?.value ?? "";
         data += `,${value}`;
       });
     });
@@ -707,7 +714,7 @@ export class DataExporterService {
 
         return combineLatest(expressionRequests).pipe(
           switchMap(expressions => {
-            let expressionRunResults = expressions.map(expressionResp => {
+            const expressionRunResults = expressions.map(expressionResp => {
               let expression = expressionResp?.expression;
               if (!expression) {
                 return of(null);
@@ -718,23 +725,23 @@ export class DataExporterService {
 
             return combineLatest(expressionRunResults).pipe(
               switchMap(results => {
-                let csvs: WidgetExportFile[] = [];
+                const csvs: WidgetExportFile[] = [];
 
-                let expressions: Record<string, PMCDataValues> = {};
+                const expressions: Record<string, PMCDataValues> = {};
                 results.forEach((result, i) => {
                   if (!result?.expression) {
                     return;
                   }
 
-                  let expressionName = result.expression?.name || expressionIds[i];
-                  let expressionValues: PMCDataValues = result.resultValues;
+                  const expressionName = result.expression?.name || expressionIds[i];
+                  const expressionValues: PMCDataValues = result.resultValues;
 
                   if (singleCSVPerRegion) {
                     expressions[expressionName] = expressionValues;
                   } else {
                     // Make an all points CSV
-                    let allPMCs = expressionValues.values.map(value => value.pmc);
-                    let allPointsCSV = this.makeExpressionValuesCSV(scanId, "All Points", expressionName, allPMCs, expressionValues);
+                    const allPMCs = expressionValues.values.map(value => value.pmc);
+                    const allPointsCSV = this.makeExpressionValuesCSV(scanId, "All Points", expressionName, allPMCs, expressionValues);
                     csvs.push(allPointsCSV);
 
                     // Make a CSV for each ROI
@@ -742,10 +749,10 @@ export class DataExporterService {
                       if (!roi?.regionOfInterest) {
                         return;
                       }
-                      let roiName = roi.regionOfInterest?.name || roiIds[j];
-                      let roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
+                      const roiName = roi.regionOfInterest?.name || roiIds[j];
+                      const roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
 
-                      let expressionValuesCSV = this.makeExpressionValuesCSV(scanId, roiName.replace("/", "_"), expressionName, roiPMCs, expressionValues);
+                      const expressionValuesCSV = this.makeExpressionValuesCSV(scanId, roiName.replace("/", "_"), expressionName, roiPMCs, expressionValues);
                       csvs.push(expressionValuesCSV);
                     });
                   }
@@ -753,8 +760,8 @@ export class DataExporterService {
 
                 if (singleCSVPerRegion && Object.keys(expressions).length > 0) {
                   // Make a CSV with all expressions for each PMC
-                  let allPMCs = Object.values(expressions)[0].values.map(value => value.pmc);
-                  let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, "All Points", allPMCs, expressions);
+                  const allPMCs = Object.values(expressions)[0].values.map(value => value.pmc);
+                  const aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, "All Points", allPMCs, expressions);
                   csvs.push(aggregatedCSV);
 
                   // Make a CSV for each ROI
@@ -762,10 +769,10 @@ export class DataExporterService {
                     if (!roi?.regionOfInterest) {
                       return;
                     }
-                    let roiName = roi.regionOfInterest?.name || roiIds[j];
-                    let roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
+                    const roiName = roi.regionOfInterest?.name || roiIds[j];
+                    const roiPMCs = decodeIndexList(roi.regionOfInterest.scanEntryIndexesEncoded);
 
-                    let aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, roiName.replace("/", "_"), roiPMCs, expressions);
+                    const aggregatedCSV = this.makeAggregatedExpressionValuesCSV(scanId, roiName.replace("/", "_"), roiPMCs, expressions);
                     csvs.push(aggregatedCSV);
                   });
                 }
@@ -792,12 +799,12 @@ export class DataExporterService {
   }
 
   getContextImages(imagePaths: string[], includeRawTIFFs: boolean = false): Observable<WidgetExportData> {
-    let imageRequests: Observable<HTMLImageElement | ArrayBuffer>[] = imagePaths.map(imagePath => this.loadDisplayImageForPath(imagePath));
-    let fileNames = imagePaths.map((imagePath, i) => imagePath.split("/").pop() || imagePath || `image-${i}`);
-    let rawRequestStartIndex = imagePaths.length;
+    const imageRequests: Observable<HTMLImageElement | ArrayBuffer>[] = imagePaths.map(imagePath => this.loadDisplayImageForPath(imagePath));
+    const fileNames = imagePaths.map((imagePath, i) => imagePath.split("/").pop() || imagePath || `image-${i}`);
+    const rawRequestStartIndex = imagePaths.length;
 
     if (includeRawTIFFs) {
-      let rawTIFFRequests: Observable<ArrayBuffer>[] = [];
+      const rawTIFFRequests: Observable<ArrayBuffer>[] = [];
       imagePaths
         .filter(imagePath => this.checkIsTIFF(imagePath))
         .forEach((imagePath, i) => {
@@ -810,10 +817,10 @@ export class DataExporterService {
 
     return combineLatest(imageRequests).pipe(
       map(imageResponses => {
-        let images: WidgetExportFile[] = [];
-        let tiffImages: WidgetExportFile[] = [];
+        const images: WidgetExportFile[] = [];
+        const tiffImages: WidgetExportFile[] = [];
         imageResponses.forEach((imageResponse, i) => {
-          let fileName = fileNames[i];
+          const fileName = fileNames[i];
           if (i >= rawRequestStartIndex) {
             imageResponse = imageResponse as ArrayBuffer;
             tiffImages.push({ fileName, data: imageResponse });
