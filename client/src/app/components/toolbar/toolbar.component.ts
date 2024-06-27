@@ -48,6 +48,7 @@ import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/
 import { SentryHelper } from "../../utils/utils";
 import { MarkdownModule } from "ngx-markdown";
 import { VersionUpdateCheckerService } from "src/app/services/version-update-checker.service";
+import { UserOptionsService } from "../../modules/settings/services/user-options.service";
 
 export type NavigationTab = {
   icon: string;
@@ -89,6 +90,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   public static AnalysisTabURL: string = "/datasets/analysis";
   public static CodeEditorTabURL: string = "/datasets/code-editor";
   public static MapsTabURL: string = "/datasets/maps";
+  public static NewTabURL: string = "/datasets/analysis/new";
 
   @Input() titleToShow: string = "";
   @Input() darkBackground: boolean = false;
@@ -126,6 +128,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL },
     { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
     { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
+    // { icon: "", label: "+", tooltip: "New Tab", url: ToolbarComponent.NewTabURL },
   ];
   openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL }];
 
@@ -142,6 +145,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   hasQuantConfiguredScan: boolean = false;
   screenConfigLoaded: boolean = false;
 
+  isNewTab: boolean = false;
+  hasActiveWorkspace: boolean = false;
+
   constructor(
     private router: Router,
     private _route: ActivatedRoute,
@@ -153,6 +159,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
+    private _userOptionsService: UserOptionsService,
     private _versionCheckerService: VersionUpdateCheckerService,
     private _matDialog: MatDialog
   ) {}
@@ -205,6 +212,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this._route.queryParams.subscribe(params => {
         this.queryParam = { ...params };
         let scanId = params["scan_id"] || params["scanId"];
+        this.hasActiveWorkspace = !!(params["id"] || scanId);
+
         if (scanId) {
           this.datasetID = scanId;
           this._dataSetLoadedName = "Scan " + scanId;
@@ -290,6 +299,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this.openTabs.forEach(openTab => {
       openTab.active = strippedURL.endsWith(tab.url);
     });
+    this.isNewTab = strippedURL.endsWith(ToolbarComponent.NewTabURL);
+
     this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
   }
 
@@ -320,6 +331,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   private updateToolbar(): void {
     // Title to show overrides the dataset name
     this.title = this.titleToShow ? this.titleToShow : this._dataSetLoadedName;
+    this.hasActiveWorkspace = !!(this.queryParam["id"] || this.queryParam["scan_id"]);
+    console.log("Has active workspace: " + this.hasActiveWorkspace);
 
     // Work out what URL we're on
     const url = this.router.url;
@@ -329,11 +342,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     // Build list of tabs
     if (this._dataSetLoadedName.length <= 0) {
-      this.tabs = [
-        //new TabNav('Help', 'help', true),
-        new TabNav("Datasets", "datasets", true),
-        new TabNav("Code Editor", "datasets/code-editor", true),
-      ];
+      this.tabs = [new TabNav("Datasets", "datasets", true), new TabNav("Code Editor", "datasets/code-editor", true)];
     } else {
       const datasetPrefix = "datasets/";
       const scanQueryParam = this.datasetID ? `?scan_id=${this.datasetID}` : "";
@@ -344,21 +353,13 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         this.openTabs = this.allTabs.slice();
       }
 
-      const codeEditorQueryParams = `?scanId=${this.datasetID}&quantId=${quantId}`;
+      const codeEditorQueryParams = `?scan_id=${this.datasetID}&quant_id=${quantId}`;
 
       this.tabs = [
-        //new TabNav('Help', 'help', true),
         new TabNav("Datasets", "datasets", true),
         new TabNav("Analysis", `${datasetPrefix}analysis${scanQueryParam}`, true),
         new TabNav("Code Editor", `datasets/code-editor${codeEditorQueryParams}`, true),
       ];
-      // Only enabling maps tab if a quant is loaded
-      // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
-      // this.tabs.push(new TabNav("Element Maps", datasetPrefix + "/maps", true));
-      // this.tabs.push(new TabNav("Element Maps", `${datasetPrefix}/maps${scanQueryParam}`, true));
-      // if (!this.isPublicUser) {
-      //   this.tabs.push(new TabNav("Quant Tracker", `${datasetPrefix}/quant-logs${scanQueryParam}`, true));
-      // }
     }
 
     if (this._userPiquantConfigAllowed) {
@@ -371,19 +372,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this.tabs.push(new TabNav("Admin", "admin", true));
     }
 
-    // Mark the right tab as being active
-    // this._currTab = "";
-    // for (let c = 0; c < this.tabs.length; c++) {
-    //   // Remove query params
-    //   let strippedURL = url.split("?")[0];
-    //   this.tabs[c].active = strippedURL.endsWith("/" + this.tabs[c].url.split("?")[0]);
-
-    //   if (this.tabs[c].active) {
-    //     this._currTab = this.tabs[c].label;
-    //   }
-    // }
-
     let strippedURL = url.split("?")[0];
+    this.isNewTab = strippedURL.endsWith(ToolbarComponent.NewTabURL);
 
     let isAnalysisTab = false;
     this.openTabs.forEach(tab => {
@@ -446,11 +436,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     return this._hotKeysMenuOverlayHost?.isOpen;
   }
 
-  get isLoggedIn(): boolean {
-    return true;
-    // return this._authService.loggedIn;
-  }
-
   get showScanConfigurator(): boolean {
     return this.router.url.includes(ToolbarComponent.CodeEditorTabURL) || this._isAnalysisTab;
   }
@@ -466,27 +451,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onAbout(): void {
     this.router.navigateByUrl("/public/about-us");
-  }
-
-  onExport(): void {
-    // let choices = [
-    //     new ExportDataChoice("raw-spectra", "Raw Spectral Data Per PMC .csv (and bulk .msa)", true),
-    //     new ExportDataChoice("quant-map-csv", "PIQUANT Quantification map .csv", true),
-    //     //new ExportDataChoice('quant-map-tif', 'Floating point map images .tif', false),
-    //     new ExportDataChoice("beam-locations", "Beam Locations .csv", true),
-    //     // new ExportDataChoice("context-image", "All context images with PMCs", false),
-    //     new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", true),
-    //     new ExportDataChoice("ui-diffraction-peak", "Anomaly Features .csv", true),
-    //     new ExportDataChoice("rois", "ROI PMC Membership List .csv", false, false),
-    //     new ExportDataChoice("ui-roi-expressions", "ROI Expression Values .csv", false, false),
-    // ];
-    // const dialogConfig = new MatDialogConfig();
-    // //dialogConfig.disableClose = true;
-    // //dialogConfig.autoFocus = true;
-    // //dialogConfig.width = '1200px';
-    // dialogConfig.data = new ExportDataConfig("PIXLISE Data", "", true, true, true, false, choices, this._exportService);
-    // const dialogRef = this.dialog.open(ExportDataDialogComponent, dialogConfig);
-    // //dialogRef.afterClosed().subscribe...;
   }
 
   onToggleAnnotations(active: boolean): void {
@@ -621,5 +585,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   markLatestVersionViewed() {
     localStorage?.setItem("latestUIVersionViewed", this.uiVersionLastCommitDate.toString());
     this.hasViewedLatestVersion = true;
+  }
+
+  onNewTab(): void {
+    this.onOpenTab({ icon: "", label: "+", tooltip: "New Tab", url: ToolbarComponent.NewTabURL });
   }
 }

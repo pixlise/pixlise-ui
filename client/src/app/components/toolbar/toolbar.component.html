@@ -66,19 +66,29 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div class="tabs">
     <div
-      class="tab {{ tab.active ? 'active' : '' }}"
+      class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }}"
       *ngFor="let tab of openTabs"
       #tooltip="matTooltip"
       [matTooltip]="tab.tooltip || ''"
       [matTooltipShowDelay]="1000">
       <a (click)="onOpenTab(tab)">
-        <img class="tab-icon" [src]="tab.icon" />
+        <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
         <div *ngIf="tab.label" class="tab-label">{{ tab.label }}</div>
+      </a>
+    </div>
+    <div *ngIf="isNewTab" class="tab active new-tab" #tooltip="matTooltip" matTooltip="New Tab" [matTooltipShowDelay]="1000">
+      <a>
+        <span class="tab-label">New Tab</span>
+      </a>
+    </div>
+    <div *ngIf="hasActiveWorkspace" class="tab new-tab-btn">
+      <a (click)="onNewTab()">
+        <span class="tab-label">+</span>
       </a>
     </div>
   </div>
 
-  <div *ngIf="isLoggedIn" class="authenticated-buttons">
+  <div class="authenticated-buttons">
     <span class="buttons">
       <span class="version"> Pixlise {{ uiVersion }}</span>
       <push-button

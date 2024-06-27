@@ -79,8 +79,9 @@
     .tab {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       border-right: 1px solid #444c50;
+      width: 155px;
 
       cursor: pointer;
       &:hover,
@@ -118,6 +119,20 @@
           font-weight: 500;
           line-height: normal;
         }
+      }
+
+      &.new-tab {
+        a {
+          .tab-label {
+            font-style: italic;
+          }
+        }
+      }
+
+      &.new-tab-btn,
+      &.no-label {
+        width: fit-content;
+        justify-content: center;
       }
     }
   }

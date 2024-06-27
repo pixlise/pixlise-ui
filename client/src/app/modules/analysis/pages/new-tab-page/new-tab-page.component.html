@@ -1,0 +1,27 @@
+<section class="page analysis-container">
+  <analysis-sidepanel></analysis-sidepanel>
+  <div class="new-tab-container">
+    <div class="presets analysis-presets">
+      <div *ngFor="let template of analysisTemplates" class="layout-container">
+        <div class="title-bar">
+          <img src="assets/icons/workspaces-tab.svg" />
+          <span class="label">Analysis Standard Layout</span>
+        </div>
+        <div class="layout-preview">
+          <div *ngFor="let widget of template.widgets" class="widget-preview"></div>
+        </div>
+      </div>
+    </div>
+    <div class="presets other-tabs">
+      <div *ngFor="let template of otherTabs" class="layout-container">
+        <div class="title-bar">
+          <img src="assets/icons/workspaces-tab.svg" />
+          <span class="label">Code Editor</span>
+        </div>
+        <div class="layout-preview">
+          <div *ngFor="let widget of template.widgets" class="widget-preview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
