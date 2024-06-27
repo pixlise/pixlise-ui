@@ -468,27 +468,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl("/public/about-us");
   }
 
-  onExport(): void {
-    // let choices = [
-    //     new ExportDataChoice("raw-spectra", "Raw Spectral Data Per PMC .csv (and bulk .msa)", true),
-    //     new ExportDataChoice("quant-map-csv", "PIQUANT Quantification map .csv", true),
-    //     //new ExportDataChoice('quant-map-tif', 'Floating point map images .tif', false),
-    //     new ExportDataChoice("beam-locations", "Beam Locations .csv", true),
-    //     // new ExportDataChoice("context-image", "All context images with PMCs", false),
-    //     new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", true),
-    //     new ExportDataChoice("ui-diffraction-peak", "Anomaly Features .csv", true),
-    //     new ExportDataChoice("rois", "ROI PMC Membership List .csv", false, false),
-    //     new ExportDataChoice("ui-roi-expressions", "ROI Expression Values .csv", false, false),
-    // ];
-    // const dialogConfig = new MatDialogConfig();
-    // //dialogConfig.disableClose = true;
-    // //dialogConfig.autoFocus = true;
-    // //dialogConfig.width = '1200px';
-    // dialogConfig.data = new ExportDataConfig("PIXLISE Data", "", true, true, true, false, choices, this._exportService);
-    // const dialogRef = this.dialog.open(ExportDataDialogComponent, dialogConfig);
-    // //dialogRef.afterClosed().subscribe...;
-  }
-
   onToggleAnnotations(active: boolean): void {
     this.annotationsVisible = active;
   }

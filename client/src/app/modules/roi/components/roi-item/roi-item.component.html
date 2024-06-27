@@ -160,7 +160,7 @@
         <div *ngIf="summary.isMIST" class="level-dots" title="Level">
           <div class="level-dot {{ hasLevel ? 'filled' : '' }}" *ngFor="let hasLevel of mistLevels"></div>
         </div>
-        <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "dd/MMM/yy" }}</p>
+        <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "mediumDate" }}</p>
       </span>
     </div>
     <roi-shape *ngIf="displayConfigured" class="current-shape" [color]="colour.colour || '#fff'" [shape]="shape || 'circle'"></roi-shape>

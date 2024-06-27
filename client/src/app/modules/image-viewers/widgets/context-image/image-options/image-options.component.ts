@@ -504,6 +504,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   onExport(): void {
+    alert("Not implemented yet");
     // let outputName = `${this._datasetService.datasetIDLoaded} - Images.zip`;
     // this.downloadLoading = true;
     // this._exportDataService.generateExport(this._datasetService.datasetIDLoaded, "", ["context-image"], [], [], [], outputName).subscribe(

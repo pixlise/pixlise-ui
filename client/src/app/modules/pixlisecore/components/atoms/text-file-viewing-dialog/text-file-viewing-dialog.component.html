@@ -29,24 +29,22 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="elem-set-row">
-  <div *ngIf="item" class="left-container">
-    <div class="left-naming">
-      <span title="Id: {{ item.id }}">{{ item.name }}</span>
-      <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{ createdTime | date: "d MMM y, HH:mm:ss" }}</span>
-      <span *ngIf="shared && item.owner && item.owner?.creatorUser" class="obj-creator">By: {{ item.owner?.creatorUser?.name || "" }}</span>
+<div class="dlg-border-with-backdrop text-file-viewer-container">
+    <h1>{{title}}</h1>
+    <div class="file-contents">
+        <div *ngIf="loading" class="spinner">
+            <wait-spinner></wait-spinner>
+        </div>
+        <div *ngIf="content !== null" class="content">{{content}}</div>
+        <div *ngIf="contentCSV !== null" class="content-table">
+            <table>
+                <tr>
+                    <th *ngFor="let col of contentCSVHeader">{{col}}</th>
+                </tr>
+                <tr *ngFor="let row of contentCSV">
+                    <td *ngFor="let col of row">{{col}}</td>
+                </tr>
+            </table>
+        </div>
     </div>
-    <div class="elements">
-      <element-tile *ngFor="let Z of item.atomicNumbers" [atomicNumber]="Z"> </element-tile>
-    </div>
-  </div>
-  <div class="right-container">
-    <!-- *ngIf="item.creator && !item.shared" -->
-    <share-ownership-item-button *ngIf="canEdit" [id]="item?.id || ''" [type]="objectType" [ownershipSummary]="item?.owner || null"> </share-ownership-item-button>
-
-    <!-- *ngIf="canDelete(item.id, item.creator, item.shared)" -->
-    <icon-button *ngIf="showDeleteButton" (click)="onDeleteElementSet()" title="Delete Element Set" icon="assets/button-icons/delete.svg"></icon-button>
-
-    <icon-button (click)="onUseElementSet()" title="Apply Element Set to Spectrum Chart" icon="assets/button-icons/open-item.svg"></icon-button>
-  </div>
 </div>
