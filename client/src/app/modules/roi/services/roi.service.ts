@@ -396,7 +396,9 @@ export class ROIService {
     this._analysisLayoutService.activeScreenConfiguration$.subscribe({
       next: screenConfig => {
         if (screenConfig?.scanConfigurations?.[scanId]?.colour !== scanRGBA.asString()) {
-          scanRGBA = RGBA.fromString(screenConfig.scanConfigurations[scanId].colour);
+          let scanColour = screenConfig?.scanConfigurations?.[scanId]?.colour;
+          let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+
           let regionSettings = this._regionMap.get(allPointsROI);
           if (regionSettings) {
             regionSettings.subscribe({
