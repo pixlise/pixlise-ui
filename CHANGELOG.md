@@ -1,3 +1,10 @@
+## 4.23.0 (2024-06-27)
+
+### Bug Fixes
+
+- Fixed issue with scan colour setting.
+- Added more logging to help diagnose issues with downlinks
+
 ## 4.22.0 (2024-06-27)
 
 ### Features
