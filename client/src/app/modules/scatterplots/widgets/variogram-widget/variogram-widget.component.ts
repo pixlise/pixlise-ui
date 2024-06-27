@@ -448,6 +448,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     if (algorithm === "Custom") {
       this.liveUpdate = false;
     }
+
+    if (this.liveUpdate) {
+      this.saveAndUpdate();
+    }
   }
 
   private formComparisonAlgorithms(): string[] {

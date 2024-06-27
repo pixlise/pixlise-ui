@@ -11,7 +11,7 @@ import { SpectrumChartModel } from "./spectrum-model";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { SpectrumExpressionDataSource, SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
-import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { Spectrum, SpectrumType, spectrumTypeToJSON } from "src/app/generated-protos/spectrum";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -21,18 +21,15 @@ import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } f
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
+import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
-import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
 import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
-import { SpectrumChannels } from "src/app/utils/utils";
-import { Colours } from "src/app/utils/colours";
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 
 @Component({

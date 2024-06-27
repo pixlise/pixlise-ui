@@ -62,6 +62,7 @@ import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
 import { DragDropModule } from "@angular/cdk/drag-drop";
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 import { TableComponent } from "./components/atoms/table/table.component";
+import { TextFileViewingDialogComponent } from './components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component';
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -130,6 +131,7 @@ export { TableComponent } from "./components/atoms/table/table.component";
     LayerVisibilityDialogComponent,
     FeedbackDialogComponent,
     TableComponent,
+    TextFileViewingDialogComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
@@ -177,6 +179,7 @@ export { TableComponent } from "./components/atoms/table/table.component";
     LayerVisibilityDialogComponent,
     FeedbackDialogComponent,
     TableComponent,
+    TextFileViewingDialogComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

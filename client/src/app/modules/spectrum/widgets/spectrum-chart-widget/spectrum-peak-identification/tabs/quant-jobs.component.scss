@@ -1,0 +1,166 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+.container {
+    //height: 100%;
+    height: 200px;
+    min-height: 100%;
+    min-width: 100%;
+    width: 100%;
+
+    display: flex;
+    flex-direction: row;
+
+    align-items: flex-start;
+
+    box-sizing: border-box;
+
+    .left-panel {
+        display: flex;
+        flex-direction: column;
+
+        height: 100%;
+    
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 1e-9px;
+        
+        .jobs-viewport {
+            height: 100%;
+    
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 1e-9px;
+        }
+    
+        .no-jobs {
+            height: 100%;
+    
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 1e-9px;
+
+            color: $clr-gray-30;
+            font-weight: bold;
+            padding: $sz-double;
+        }
+        
+        .footer {
+            height: 42px;
+            background-color: $clr-gray-80;
+            padding: 0px $sz-unit;
+        }
+    }
+
+    .right-panel {
+        height: 100%;
+
+        display: flex;
+        flex-direction: column;
+
+        flex-grow: 2;
+        flex-shrink: 2;
+        flex-basis: 1e-9px;
+
+        background-color: $clr-gray-100;
+
+        .selection-header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+
+            gap: $sz-unit;
+            padding: $sz-unit;
+
+            color: $clr-gray-10;
+            background-color: $clr-gray-90;
+
+            .row {
+                display: flex;
+                flex-direction: row;
+
+                gap: $sz-unit;
+            }
+        }
+
+        .selected-container {
+            overflow-y: auto;
+            flex: 1;
+
+            .selected-quant {
+                display: flex;
+                flex-direction: column;
+
+                padding: $sz-unit;
+                
+                h3 {
+                    padding-top: $sz-unit;
+                }
+
+                .row {
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+
+                    gap: $sz-unit;
+
+                    color: $clr-gray-10;
+
+                    .varname {
+                        color: $clr-gray-30;
+                    }
+
+                    span {
+                        max-width: 550px;
+                        overflow: hidden;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
+                    }
+                }
+            }
+        }
+
+        .err-display {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+
+            justify-content: space-around;
+            align-items: center;
+        }
+    }
+    
+    .footer {
+        background-color: $clr-gray-80;
+        height: 40px;
+    }
+}
