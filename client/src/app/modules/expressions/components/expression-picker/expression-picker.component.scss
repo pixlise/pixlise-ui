@@ -431,3 +431,15 @@
     color: rgb(var(--clr-gray-30));
   }
 }
+
+.empty-expressions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  h5 {
+    padding: 0;
+    margin: 0;
+    color: rgb(190, 192, 194);
+  }
+}

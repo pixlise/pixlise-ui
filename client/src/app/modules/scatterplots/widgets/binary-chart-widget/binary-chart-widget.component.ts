@@ -24,6 +24,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
+import { RGBA } from "../../../../utils/colours";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -227,6 +228,21 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
               }
             });
           }
+
+          this.mdl.dataSourceIds.forEach((config, scanId) => {
+            if (screenConfiguration?.scanConfigurations?.[scanId]?.colour) {
+              if (this._roiService.displaySettingsMap$.value[scanId]) {
+                this._roiService.displaySettingsMap$.value[scanId].colour = RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour);
+              } else {
+                this._roiService.displaySettingsMap$.value[scanId] = {
+                  colour: RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour),
+                  shape: "circle",
+                };
+              }
+
+              this._roiService.displaySettingsMap$.next(this._roiService.displaySettingsMap$.value);
+            }
+          });
         }
 
         if (updated) {

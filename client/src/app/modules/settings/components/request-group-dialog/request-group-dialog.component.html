@@ -112,7 +112,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
       <ng-container matColumnDef="lastUserJoinedUnixSec">
         <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">Last User Joined Date</th>
-        <td mat-cell *matCellDef="let row">{{ row.lastUserJoinedUnixSec * 1000 | date }}</td>
+        <td mat-cell *matCellDef="let row">{{ row.lastUserJoinedUnixSec * 1000 | date: "d MMM y, HH:mm:ss" }}</td>
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="columnIDs; sticky: true"></tr>

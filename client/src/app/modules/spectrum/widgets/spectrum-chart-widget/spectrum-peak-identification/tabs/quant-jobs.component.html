@@ -1,0 +1,115 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="container">
+    <div class="left-panel">
+        <cdk-virtual-scroll-viewport *ngIf="jobs.length > 0" [itemSize]="34" class="jobs-viewport">
+            <quant-job-item
+                *ngFor="let job of jobs"
+                [job]="job"
+                [selected]="job.jobId === selectedQuantId"
+                (click)="onSelectQuant(job.jobId)">
+            </quant-job-item>
+        </cdk-virtual-scroll-viewport>
+        <div *ngIf="jobs.length <= 0" class="no-jobs">No jobs to display</div>
+        <div class="footer">
+            <ng-content></ng-content>
+            <push-button buttonStyle="outline" (onClick)="onCloseBtn()">Close</push-button>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <ng-container *ngIf="summary">
+            <div class="selection-header">
+                <h3>Selected Quantification Details</h3>
+                <div class="row">
+                    <push-button buttonStyle="outline" (onClick)="onUseQuant(summary.id)">Use in Workspace</push-button>
+                    <icon-button title="Export" (onClick)="onExport(summary.id)" icon="assets/button-icons/export.svg"> </icon-button>
+                </div>
+            </div>
+            <div class="selected-container">
+                <div class="selected-quant">
+                    <div class="row"><span class="varname">Name</span><span>{{summary.params?.userParams?.name}}</span></div>
+                    <div class="row"><span class="varname">Job Id </span><span>{{summary.id}}</span></div>
+                    <div class="row"><span class="varname">Status</span><span>{{status}} {{displayMsg}}</span></div>
+                    <div class="row"><span class="varname">Quantifier Comments</span><span>{{comments}}</span></div>
+                
+                    <ng-container *ngIf="summary.status?.endUnixTimeSec">
+                        <div class="row">
+                            <push-button buttonStyle="outline" (onClick)="onViewQuantCSV(summary.id)">View Quant CSV</push-button>
+                        </div>
+                        <h3>Completion Info</h3>
+                        <div class="row"><span class="varname">End Time</span><span>{{(summary.status?.endUnixTimeSec||0) * 1000|date:'d MMM y, HH:mm:ss'}}</span></div>
+                        <div *ngIf="summary.status?.outputFilePath" class="row">
+                            <span class="varname">Output Path</span><span>{{summary.status?.outputFilePath}}</span>
+                        </div>
+                        <div class="row"><span class="varname">Output Elements</span><span>{{outputElements}}</span></div>
+                        <div class="row"><span class="varname">PIQUANT Version</span><span>{{summary.params?.PIQUANTVersion}}</span></div>
+                    </ng-container>
+
+                    <h3>Quantification Parameters</h3>
+                    <div class="row"><span class="varname">Region of interest</span><span>{{roiName}}</span></div>
+                    <div class="row"><span class="varname">Quantification Mode</span><span>{{quantMode}}</span></div>
+                    <div class="row"><span class="varname">Include Dwells</span><span>{{includeDwells}}</span></div>
+                    <div class="row"><span class="varname">Regions quantified</span><span>{{roisQuantified}}</span></div>
+                    <div class="row"><span class="varname">Elements</span><span>{{summary.params?.userParams?.elements}}</span></div>
+                    <div class="row"><span class="varname">Oxide/Carbonate</span><span>{{elementStateType}}</span></div>
+                    <div class="row"><span class="varname">Ignore Argon</span><span>{{ignoreAr}}</span></div>
+                    <div class="row"><span class="varname">PMC Count</span><span>{{summary.params?.pmcCount}}</span></div>
+                    <div class="row"><span class="varname">Detector Config</span><span>{{summary.params?.userParams?.detectorConfig}}</span></div>
+                    <div class="row"><span class="varname">Piquant Extra Parameters</span><span>{{piquantParameters}}</span></div>
+                    <!-- <div class="row"><span class="varname">Expected Runtime</span><span>{{summary.params.runTimeSec}}</span></div> -->
+            
+                    <h3>Run time details</h3>
+                    <div class="row"><span class="varname">Start Time</span><span>{{(summary.status?.endUnixTimeSec||0)*1000|date:'d MMM y, HH:mm:ss'}}</span></div>
+                    <div class="row"><span class="varname">Elapsed Time</span><span>{{elapsedTime*1000|date:'HH:mm:ss':'UTC'}}</span></div>
+            
+                    <ng-container *ngIf="hasLogs">
+                        <h3>PIQUANT Logs</h3>
+                        <span class="varname" *ngIf="logMissingReason.length > 0">{{logMissingReason}}</span>
+                        <ng-container *ngIf="!logMissingReason">
+                            <div *ngFor="let log of summary.status?.otherLogFiles" class="row indent">
+                                <a class="clickable" (click)="onClickLog(log)">{{getLogName(log)}}</a>
+                            </div>
+                        </ng-container>
+                    </ng-container>
+                </div>
+            </div>
+        </ng-container>
+        <div *ngIf="!summary" class="err-display">
+            <app-widget-display-message
+                [message]="message" 
+                [showSpinner]="message.length === 0"
+                [large]="false"></app-widget-display-message>
+        </div>
+    </div>
+    <!-- <div class="footer"></div> -->
+</div>

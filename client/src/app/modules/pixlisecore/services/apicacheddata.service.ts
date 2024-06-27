@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Observable, shareReplay, map, toArray, of, catchError } from "rxjs";
 import { APIDataService } from "./apidata.service";
-import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { QuantGetReq, QuantGetResp, QuantLogGetReq, QuantLogGetResp, QuantRawDataGetReq, QuantRawDataGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
 import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
@@ -43,6 +43,8 @@ export class APICachedDataService {
 
   // With these, we request the whole thing, so they're easy to cache for future...
   private _quantReqMap = new Map<string, Observable<QuantGetResp>>();
+  private _quantLogReqMap = new Map<string, Observable<QuantLogGetResp>>();
+  private _quantRawCSVReqMap = new Map<string, Observable<QuantRawDataGetResp>>();
   private _scanMetaLabelsReqMap = new Map<string, Observable<ScanMetaLabelsAndTypesResp>>();
   private _manualDiffractionReqMap = new Map<string, Observable<DiffractionPeakManualListResp>>();
   private _scanEntryMap = new Map<string, Observable<ScanEntryResp>>();
@@ -151,6 +153,8 @@ export class APICachedDataService {
     if (ids != undefined) {
       for (const id of ids) {
         this._quantReqMap.delete(id);
+        this._quantLogReqMap.delete(id);
+        this._quantRawCSVReqMap.delete(id);
       }
     }
 
@@ -189,6 +193,36 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._quantReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getQuantLog(req: QuantLogGetReq): Observable<QuantLogGetResp> {
+    const cacheId = JSON.stringify(QuantLogGetReq.toJSON(req));
+    let result = this._quantLogReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendQuantLogGetRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._quantLogReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getQuantRawCSV(req: QuantRawDataGetReq): Observable<QuantRawDataGetResp> {
+    const cacheId = JSON.stringify(QuantRawDataGetReq.toJSON(req));
+    let result = this._quantRawCSVReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendQuantRawDataGetRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._quantRawCSVReqMap.set(cacheId, result);
       this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
     }
 
