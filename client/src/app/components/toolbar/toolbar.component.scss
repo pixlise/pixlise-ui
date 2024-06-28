@@ -81,7 +81,8 @@
       align-items: center;
       justify-content: flex-start;
       border-right: 1px solid #444c50;
-      width: 155px;
+      max-width: 155px;
+      min-width: 50px;
 
       cursor: pointer;
       &:hover,

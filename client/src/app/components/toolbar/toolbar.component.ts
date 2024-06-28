@@ -49,12 +49,14 @@ import { SentryHelper } from "../../utils/utils";
 import { MarkdownModule } from "ngx-markdown";
 import { VersionUpdateCheckerService } from "src/app/services/version-update-checker.service";
 import { UserOptionsService } from "../../modules/settings/services/user-options.service";
+import { TabLinks } from "../../models/TabLinks";
 
 export type NavigationTab = {
   icon: string;
   label?: string;
   tooltip?: string;
   url: string;
+  params?: Record<string, string>;
   active?: boolean;
   passQueryParams?: boolean;
 };
@@ -86,11 +88,11 @@ class TabNav {
   imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
-  public static BrowseTabURL: string = "/datasets";
-  public static AnalysisTabURL: string = "/datasets/analysis";
-  public static CodeEditorTabURL: string = "/datasets/code-editor";
-  public static MapsTabURL: string = "/datasets/maps";
-  public static NewTabURL: string = "/datasets/analysis/new";
+  public static BrowseTabURL: string = TabLinks.browse;
+  public static AnalysisTabURL: string = TabLinks.analysis;
+  public static CodeEditorTabURL: string = TabLinks.codeEditor;
+  public static MapsTabURL: string = TabLinks.maps;
+  public static NewTabURL: string = TabLinks.new;
 
   @Input() titleToShow: string = "";
   @Input() darkBackground: boolean = false;
@@ -291,15 +293,28 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onOpenTab(tab: NavigationTab): void {
     let strippedURL = this.router.url.split("?")[0];
-    if (strippedURL.endsWith(tab.url)) {
+
+    let isOnTab = strippedURL.endsWith(tab.url);
+    if (tab.params && Object.keys(tab.params).length > 0) {
+      isOnTab = isOnTab && Object.keys(tab.params).every(key => (this.queryParam[key] || 0) == tab?.params?.[key]);
+    }
+
+    if (isOnTab) {
       // Already on this tab
       return;
     }
 
     this.openTabs.forEach(openTab => {
       openTab.active = strippedURL.endsWith(tab.url);
+      if (openTab.params && Object.keys(openTab.params).length > 0) {
+        openTab.active = openTab.active && Object.keys(openTab.params).every(key => (this.queryParam[key] || 0) == openTab?.params?.[key]);
+      }
     });
     this.isNewTab = strippedURL.endsWith(ToolbarComponent.NewTabURL);
+
+    if (tab.params && Object.keys(tab.params).length > 0) {
+      this.queryParam = { ...this.queryParam, ...tab.params };
+    }
 
     this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
   }
@@ -328,11 +343,32 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     return this._currTab == "Analysis" || this._currTab == "Element Maps";
   }
 
+  private loadAnalysisTabs(): void {
+    if (this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length > 1) {
+      // Replace single Analysis tab with multiple tabs
+      let analysisTabIndex = this.openTabs.findIndex(tab => tab.url === ToolbarComponent.AnalysisTabURL);
+      if (analysisTabIndex >= 0) {
+        let analysisTabs: NavigationTab[] = this._analysisLayoutService.activeScreenConfiguration$.value.layouts.map((layout, index) => {
+          let tab: NavigationTab = {
+            icon: "assets/tab-icons/analysis.svg",
+            label: "Analysis " + (index + 1),
+            tooltip: "Analysis " + (index + 1),
+            url: ToolbarComponent.AnalysisTabURL,
+            params: { tab: index.toString() },
+          };
+
+          return tab;
+        });
+
+        this.openTabs = [...this.openTabs.slice(0, analysisTabIndex), ...analysisTabs, ...this.openTabs.slice(analysisTabIndex + 1)];
+      }
+    }
+  }
+
   private updateToolbar(): void {
     // Title to show overrides the dataset name
     this.title = this.titleToShow ? this.titleToShow : this._dataSetLoadedName;
     this.hasActiveWorkspace = !!(this.queryParam["id"] || this.queryParam["scan_id"]);
-    console.log("Has active workspace: " + this.hasActiveWorkspace);
 
     // Work out what URL we're on
     const url = this.router.url;
@@ -362,6 +398,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       ];
     }
 
+    this.loadAnalysisTabs();
+
     if (this._userPiquantConfigAllowed) {
       this.tabs.push(new TabNav("Piquant", "piquant", true));
     }
@@ -378,6 +416,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     let isAnalysisTab = false;
     this.openTabs.forEach(tab => {
       tab.active = strippedURL.endsWith(tab.url);
+      if (tab.params && Object.keys(tab.params).length > 0) {
+        tab.active = tab.active && Object.keys(tab.params).every(key => this.queryParam[key] == tab?.params?.[key]);
+      }
       if (tab.url === ToolbarComponent.AnalysisTabURL) {
         isAnalysisTab = tab.active;
       }

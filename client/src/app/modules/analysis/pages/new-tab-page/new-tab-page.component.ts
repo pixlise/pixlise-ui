@@ -3,16 +3,14 @@ import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import {
   ANALYSIS_TEMPLATES,
   createDefaultAnalysisTemplates,
-  createDefaultOtherTabTemplates,
+  createDefaultOtherTemplates,
   createDefaultScreenConfiguration,
+  ScreenTemplate,
 } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
-import { FullScreenLayout } from "../../../../generated-protos/screen-configuration";
-
-export type ScreenConfigurationCSS = {
-  templateColumns: string;
-  templateRows: string;
-};
+import { FullScreenLayout, ScreenConfigurationCSS } from "../../../../generated-protos/screen-configuration";
+import { ActivatedRoute, Router } from "@angular/router";
+import { TabLinks } from "../../../../models/TabLinks";
 
 @Component({
   selector: "app-new-tab-page",
@@ -23,15 +21,54 @@ export class NewTabPageComponent {
   private _subs: Subscription = new Subscription();
   private _keyPresses = new Set<string>();
 
-  public analysisTemplates: FullScreenLayout[] = createDefaultAnalysisTemplates();
-  public otherTabs: FullScreenLayout[] = createDefaultOtherTabTemplates();
+  public analysisTemplates: ScreenTemplate[] = createDefaultAnalysisTemplates();
+  public otherTemplates: ScreenTemplate[] = createDefaultOtherTemplates();
 
-  constructor(private _analysisLayoutService: AnalysisLayoutService) {}
+  queryParam: Record<string, string> = {};
 
-  ngOnInit(): void {}
+  constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _router: Router,
+    private _route: ActivatedRoute
+  ) {}
+
+  ngOnInit(): void {
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        this.queryParam = { ...params };
+      })
+    );
+  }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  getQueryParamString(): string {
+    return Object.entries(this.queryParam)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&");
+  }
+
+  onAnalysisTemplateClick(tab: ScreenTemplate): void {
+    let screenConfig = this._analysisLayoutService.addScreenConfigurationLayout(tab?.layout);
+    if (!screenConfig) {
+      return;
+    }
+
+    let lastTabId = screenConfig.layouts.length - 1;
+    this.queryParam["tab"] = lastTabId.toString();
+
+    console.log("this.queryParam", this.queryParam, screenConfig);
+    this._router.navigateByUrl(`${TabLinks.analysis}?${this.getQueryParamString()}`);
+  }
+
+  onOtherTemplateClick(tab: ScreenTemplate): void {
+    if (tab.id === "code-editor") {
+      this._router.navigateByUrl(`${TabLinks.codeEditor}?${this.getQueryParamString()}`);
+    } else if (tab.id === "element-maps") {
+      this._router.navigateByUrl(`${TabLinks.maps}?${this.getQueryParamString()}`);
+    }
   }
 
   @HostListener("window:keydown", ["$event"])

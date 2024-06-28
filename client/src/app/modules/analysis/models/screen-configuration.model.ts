@@ -1,10 +1,18 @@
-import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { FullScreenLayout, ScreenConfiguration, ScreenConfigurationCSS, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 
 export type WidgetReference = {
   widget: WidgetLayoutConfiguration;
   name: string;
   type: string;
   page: number;
+};
+
+export type ScreenTemplate = {
+  id: string;
+  templateIcon: string;
+  templateName: string;
+  layout: FullScreenLayout;
+  screenConfiguration: ScreenConfigurationCSS;
 };
 
 export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
@@ -85,8 +93,8 @@ export const createDefaultScreenConfiguration = (): ScreenConfiguration => {
 
 const ANALYSIS_STANDARD_LAYOUT = createDefaultScreenConfiguration().layouts[0];
 const ANALYSIS_LAYOUT_2 = {
-  rows: [{ height: 3 }, { height: 2 }],
-  columns: [{ width: 3 }, { width: 2 }, { width: 2 }, { width: 2 }],
+  rows: [{ height: 2 }, { height: 2 }],
+  columns: [{ width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }],
   widgets: [
     {
       id: "",
@@ -94,42 +102,42 @@ const ANALYSIS_LAYOUT_2 = {
       startRow: 1,
       startColumn: 1,
       endRow: 3,
-      endColumn: 3,
+      endColumn: 4,
       data: undefined,
     },
     {
       id: "",
       type: "spectrum-chart",
       startRow: 1,
-      startColumn: 3,
+      startColumn: 4,
+      endRow: 2,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "histogram",
+      startRow: 1,
+      startColumn: 5,
       endRow: 2,
       endColumn: 5,
       data: undefined,
     },
     {
       id: "",
-      type: "histogram",
-      startRow: 3,
-      startColumn: 3,
-      endRow: 3,
-      endColumn: 3,
-      data: undefined,
-    },
-    {
-      id: "",
       type: "chord-diagram",
-      startRow: 2,
-      startColumn: 2,
-      endRow: 3,
-      endColumn: 3,
+      startRow: 1,
+      startColumn: 6,
+      endRow: 2,
+      endColumn: 6,
       data: undefined,
     },
     {
       id: "",
       type: "ternary-plot",
       startRow: 2,
-      startColumn: 3,
-      endRow: 3,
+      startColumn: 4,
+      endRow: 2,
       endColumn: 4,
       data: undefined,
     },
@@ -137,17 +145,165 @@ const ANALYSIS_LAYOUT_2 = {
       id: "",
       type: "binary-plot",
       startRow: 2,
-      startColumn: 4,
-      endRow: 3,
+      startColumn: 5,
+      endRow: 2,
       endColumn: 5,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "binary-plot",
+      startRow: 2,
+      startColumn: 6,
+      endRow: 2,
+      endColumn: 6,
       data: undefined,
     },
   ],
 };
 
-export const ANALYSIS_TEMPLATES = [ANALYSIS_STANDARD_LAYOUT, ANALYSIS_LAYOUT_2];
+const ANALYSIS_LAYOUT_3 = {
+  rows: [{ height: 1 }],
+  columns: [{ width: 1 }, { width: 1 }],
+  widgets: [
+    {
+      id: "",
+      type: "context-image",
+      startRow: 1,
+      startColumn: 1,
+      endRow: 1,
+      endColumn: 1,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "spectrum-chart",
+      startRow: 1,
+      startColumn: 2,
+      endRow: 2,
+      endColumn: 2,
+      data: undefined,
+    },
+  ],
+};
 
-export const createDefaultAnalysisTemplates = (): FullScreenLayout[] => {
+const ANALYSIS_LAYOUT_4 = {
+  rows: [{ height: 1 }, { height: 1 }],
+  columns: [{ width: 1 }, { width: 1 }, { width: 1 }, { width: 1 }],
+  widgets: [
+    {
+      id: "",
+      type: "context-image",
+      startRow: 1,
+      startColumn: 1,
+      endRow: 2,
+      endColumn: 1,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "spectrum-chart",
+      startRow: 1,
+      startColumn: 2,
+      endRow: 2,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "context-image",
+      startRow: 1,
+      startColumn: 3,
+      endRow: 2,
+      endColumn: 3,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "spectrum-chart",
+      startRow: 1,
+      startColumn: 4,
+      endRow: 2,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "context-image",
+      startRow: 2,
+      startColumn: 1,
+      endRow: 3,
+      endColumn: 1,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "spectrum-chart",
+      startRow: 2,
+      startColumn: 2,
+      endRow: 3,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "context-image",
+      startRow: 2,
+      startColumn: 3,
+      endRow: 3,
+      endColumn: 3,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "spectrum-chart",
+      startRow: 2,
+      startColumn: 4,
+      endRow: 3,
+      endColumn: 4,
+      data: undefined,
+    },
+  ],
+};
+
+export const generateTemplateConfiguration = (layout: FullScreenLayout): ScreenConfigurationCSS => {
+  let templateRows = layout.rows.map(row => `${row.height}fr`).join(" ");
+  let templateColumns = layout.columns.map(column => `${column.width}fr`).join(" ");
+  return { templateColumns, templateRows };
+};
+
+export const ANALYSIS_TEMPLATES: ScreenTemplate[] = [
+  {
+    id: "standard-layout",
+    templateName: "Standard Layout",
+    templateIcon: "assets/icons/workspaces-tab.svg",
+    layout: ANALYSIS_STANDARD_LAYOUT,
+    screenConfiguration: generateTemplateConfiguration(ANALYSIS_STANDARD_LAYOUT),
+  },
+  {
+    id: "layout-2",
+    templateName: "Layout 2",
+    templateIcon: "assets/icons/workspaces-tab.svg",
+    layout: ANALYSIS_LAYOUT_2,
+    screenConfiguration: generateTemplateConfiguration(ANALYSIS_LAYOUT_2),
+  },
+  {
+    id: "layout-3",
+    templateName: "Layout 3",
+    templateIcon: "assets/icons/workspaces-tab.svg",
+    layout: ANALYSIS_LAYOUT_3,
+    screenConfiguration: generateTemplateConfiguration(ANALYSIS_LAYOUT_3),
+  },
+  {
+    id: "layout-4",
+    templateName: "Layout 4",
+    templateIcon: "assets/icons/workspaces-tab.svg",
+    layout: ANALYSIS_LAYOUT_4,
+    screenConfiguration: generateTemplateConfiguration(ANALYSIS_LAYOUT_4),
+  },
+];
+
+export const createDefaultAnalysisTemplates = (): ScreenTemplate[] => {
   return JSON.parse(JSON.stringify(ANALYSIS_TEMPLATES));
 };
 
@@ -168,7 +324,7 @@ export const CODE_EDITOR_TEMPLATE = {
       id: "",
       type: "",
       startRow: 1,
-      startColumn: 3,
+      startColumn: 2,
       endRow: 1,
       endColumn: 4,
       data: undefined,
@@ -178,7 +334,7 @@ export const CODE_EDITOR_TEMPLATE = {
 
 export const ELEMENT_MAPS_TEMPLATE = {
   rows: [{ height: 2 }, { height: 2 }],
-  columns: [{ width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }],
+  columns: [{ width: 2 }, { width: 2 }],
   widgets: [
     {
       id: "",
@@ -193,16 +349,49 @@ export const ELEMENT_MAPS_TEMPLATE = {
       id: "",
       type: "",
       startRow: 1,
-      startColumn: 3,
+      startColumn: 2,
       endRow: 1,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 1,
+      endRow: 2,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 2,
+      endRow: 2,
       endColumn: 4,
       data: undefined,
     },
   ],
 };
 
-export const OTHER_TAB_TEMPLATES = [CODE_EDITOR_TEMPLATE, ELEMENT_MAPS_TEMPLATE];
+export const OTHER_TEMPLATES: ScreenTemplate[] = [
+  {
+    id: "code-editor",
+    templateName: "Code Editor",
+    templateIcon: "assets/tab-icons/code-editor.svg",
+    layout: CODE_EDITOR_TEMPLATE,
+    screenConfiguration: generateTemplateConfiguration(CODE_EDITOR_TEMPLATE),
+  },
+  {
+    id: "element-maps",
+    templateName: "Element Maps",
+    templateIcon: "assets/tab-icons/element-maps.svg",
+    layout: ELEMENT_MAPS_TEMPLATE,
+    screenConfiguration: generateTemplateConfiguration(ELEMENT_MAPS_TEMPLATE),
+  },
+];
 
-export const createDefaultOtherTabTemplates = (): FullScreenLayout[] => {
-  return JSON.parse(JSON.stringify(OTHER_TAB_TEMPLATES));
+export const createDefaultOtherTemplates = (): ScreenTemplate[] => {
+  return JSON.parse(JSON.stringify(OTHER_TEMPLATES));
 };

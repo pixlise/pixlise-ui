@@ -9,7 +9,7 @@ import { APIDataService, SelectionService, SnackbarService } from "../../pixlise
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
-import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
@@ -157,6 +157,24 @@ export class AnalysisLayoutService implements OnDestroy {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  addScreenConfigurationLayout(layout: FullScreenLayout): ScreenConfiguration | undefined {
+    if (!layout) {
+      return undefined;
+    }
+
+    let screenConfiguration = this.activeScreenConfiguration$.value;
+    if (!screenConfiguration) {
+      screenConfiguration = createDefaultScreenConfiguration();
+    }
+
+    screenConfiguration.layouts.push(layout);
+    this.activeScreenConfiguration$.next(screenConfiguration);
+
+    this.writeScreenConfiguration(screenConfiguration);
+
+    return screenConfiguration;
   }
 
   fetchAvailableScans() {
