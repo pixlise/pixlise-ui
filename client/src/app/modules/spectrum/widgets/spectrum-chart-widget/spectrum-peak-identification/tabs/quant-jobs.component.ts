@@ -51,6 +51,7 @@ export class QuantJobsComponent implements OnInit {
   jobs: JobStatus[] = [];
   selectedQuantId: string = "";
   summary: QuantificationSummary | null = null;
+  selectedJob: JobStatus | null = null;
   message: string = SelectQuantText;
 
   // Selected items parameters:
@@ -115,12 +116,21 @@ export class QuantJobsComponent implements OnInit {
   onSelectQuant(quantId: string) {
     this.selectedQuantId = quantId;
     this.summary = null;
+    this.selectedJob = null;
     this.message = "";
 
     // Find if this is in progress
     for (const job of this.jobs) {
       if (job.jobId == quantId) {
-        if (job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR) {
+        if (job.status == JobStatus_Status.ERROR) {
+          // Show some stuff on the right including the error message
+          this.selectedJob = job;
+          this.status = jobStatus_StatusToJSON(job.status);
+          this.displayMsg = job.message;
+          this.elapsedTime = job.endUnixTimeSec - job.startUnixTimeSec;
+          this.setCreator(job.requestorUserId);
+          return;
+        } else if (job.status != JobStatus_Status.COMPLETE) {
           this.message = "Can't display details, quantification is still running...";
           return;
         }
@@ -171,17 +181,7 @@ export class QuantJobsComponent implements OnInit {
 
         this.status = summary.status?.status ? jobStatus_StatusToJSON(summary.status?.status) : "";
 
-        // Retrieve user icon if we can
-        const cachedUsers = this._usersService?.cachedUsers;
-        const userId = this.summary?.owner?.creatorUser?.id;
-        if (cachedUsers && userId) {
-          const user = cachedUsers[userId];
-          if (user) {
-            this.icon = user.iconURL;
-            this.creatorName = user.name;
-            this.creatorAbbreviation = this.creatorName.length > 0 ? this.creatorName[0] : "N/A";
-          }
-        }
+        this.setCreator(this.summary?.owner?.creatorUser?.id || "");
 
         // If it's a multi-quant we don't have logs anyway
         if (summary.id.indexOf("multi_") >= 0) {
@@ -211,15 +211,20 @@ export class QuantJobsComponent implements OnInit {
     });
   }
 
-  private updateROIName(): void {
-    this.roiName = "";
+  private setCreator(userId: string) {
+    this.icon = "";
+    this.creatorName = "";
+    this.creatorAbbreviation = "";
 
-    if (this.summary?.params?.userParams?.roiIDs.length || 0 > 0) {
-      this._cachedDataService
-        .getRegionOfInterest(RegionOfInterestGetReq.create({ id: this.summary!.params!.userParams!.roiIDs[0] }))
-        .subscribe((resp: RegionOfInterestGetResp) => {
-          this.roiName = resp.regionOfInterest?.name || "";
-        });
+    // Retrieve user icon if we can
+    const cachedUsers = this._usersService?.cachedUsers;
+    if (cachedUsers && userId) {
+      const user = cachedUsers[userId];
+      if (user) {
+        this.icon = user.iconURL;
+        this.creatorName = user.name;
+        this.creatorAbbreviation = this.creatorName.length > 0 ? this.creatorName[0] : "N/A";
+      }
     }
   }
 
