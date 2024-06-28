@@ -1,6 +1,7 @@
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { Subscription, interval } from "rxjs";
 import { JobStatus, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
+import { UsersService } from "src/app/modules/settings/services/users.service";
 
 @Component({
   selector: "quant-job-item",
@@ -18,8 +19,22 @@ export class QuantJobItemComponent implements OnInit, OnDestroy {
   status: string = "";
   elapsedTimeMs: number = 0;
 
+  constructor(private _usersService: UsersService) {}
+
   ngOnInit() {
     this.status = jobStatus_StatusToJSON(this.job.status);
+
+    // Retrieve user icon if we can
+    const cachedUsers = this._usersService?.cachedUsers;
+    const userId = this.job.requestorUserId || "";
+    if (cachedUsers && userId) {
+      const user = cachedUsers[userId];
+      if (user) {
+        this.icon = user.iconURL;
+        this.creatorName = user.name;
+        this.creatorAbbreviation = this.creatorName.length > 0 ? this.creatorName[0] : "N/A";
+      }
+    }
 
     if (this.job.status != JobStatus_Status.COMPLETE && this.job.status != JobStatus_Status.ERROR) {
       // start a timer to update the elapsed time
