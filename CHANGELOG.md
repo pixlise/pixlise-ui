@@ -2,7 +2,7 @@
 
 ### Bug Fixes
 
-- Show spinners on Quant Jobs tab when a quant is running. Also show user icons for quant creator.
+- Quant Job tab updates to show spinners, user icons and errors if they happen.
 
 ## 4.23.0 (2024-06-27)
 
