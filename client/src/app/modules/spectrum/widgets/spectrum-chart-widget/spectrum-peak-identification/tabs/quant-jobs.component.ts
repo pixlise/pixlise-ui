@@ -18,7 +18,6 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { WSError } from "src/app/modules/pixlisecore/services/wsMessageHandler";
 import { QuantModes, getQuantifiedElements } from "src/app/models/Quantification";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
@@ -36,6 +35,7 @@ import {
   TextFileViewingDialogComponent,
   TextFileViewingDialogData,
 } from "src/app/modules/pixlisecore/components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
+import { UsersService } from "src/app/modules/settings/services/users.service";
 
 const SelectQuantText = "Select a quantification job";
 
@@ -69,12 +69,17 @@ export class QuantJobsComponent implements OnInit {
   roiName: string = "";
   status: string = "";
 
+  icon: string = "";
+  creatorName: string = "";
+  creatorAbbreviation: string = "";
+
   constructor(
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
     private _dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _usersService: UsersService
   ) {}
 
   ngOnInit() {
@@ -165,6 +170,18 @@ export class QuantJobsComponent implements OnInit {
         this.elapsedTime = this.getElapsedTimeSec(summary);
 
         this.status = summary.status?.status ? jobStatus_StatusToJSON(summary.status?.status) : "";
+
+        // Retrieve user icon if we can
+        const cachedUsers = this._usersService?.cachedUsers;
+        const userId = this.summary?.owner?.creatorUser?.id;
+        if (cachedUsers && userId) {
+          const user = cachedUsers[userId];
+          if (user) {
+            this.icon = user.iconURL;
+            this.creatorName = user.name;
+            this.creatorAbbreviation = this.creatorName.length > 0 ? this.creatorName[0] : "N/A";
+          }
+        }
 
         // If it's a multi-quant we don't have logs anyway
         if (summary.id.indexOf("multi_") >= 0) {
