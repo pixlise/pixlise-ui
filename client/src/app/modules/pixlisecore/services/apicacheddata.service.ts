@@ -1,10 +1,16 @@
 import { Injectable } from "@angular/core";
-import { Observable, shareReplay, map, toArray, of, catchError } from "rxjs";
+import { Observable, shareReplay, map, of, catchError } from "rxjs";
 import { APIDataService } from "./apidata.service";
-import { QuantGetReq, QuantGetResp, QuantLogGetReq, QuantLogGetResp, QuantRawDataGetReq, QuantRawDataGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import {
+  QuantGetReq,
+  QuantGetResp,
+  QuantLogGetReq,
+  QuantLogGetResp,
+  QuantRawDataGetReq,
+  QuantRawDataGetResp,
+} from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
-import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
 import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
@@ -14,7 +20,7 @@ import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generat
 import { ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionListResp } from "src/app/generated-protos/expression-msgs";
 import { DataModuleGetReq, DataModuleGetResp, DataModuleListReq, DataModuleListResp } from "src/app/generated-protos/module-msgs";
 
-import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
+import { decodeIndexList } from "src/app/utils/utils";
 import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
@@ -24,7 +30,6 @@ import { NotificationType } from "src/app/generated-protos/notification";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { VariogramPoint } from "../../scatterplots/widgets/variogram-widget/vario-data";
-import { MemoiseGetReq, MemoiseWriteReq } from "../../../generated-protos/memoisation-msgs";
 import { MemoisationService } from "./memoisation.service";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request

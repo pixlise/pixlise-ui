@@ -42,6 +42,8 @@ export class NotificationsService {
         }
 
         if (upd.notification.notificationType !== NotificationType.NT_SYS_DATA_CHANGED) {
+          // TODO: should we do something useful with upd.notification.actionLink
+
           this.addNotification({
             id: upd.notification.id || "",
             title: upd.notification.subject || "",

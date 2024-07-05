@@ -11,7 +11,7 @@ import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantificati
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
-import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ScanEntryRange, ScanMetaDataType } from "src/app/generated-protos/scan";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
