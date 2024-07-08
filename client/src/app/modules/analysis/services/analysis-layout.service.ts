@@ -96,7 +96,7 @@ export class AnalysisLayoutService implements OnDestroy {
           this.fetchQuantsForScan(params["scan_id"]);
         } else {
           if (this.lastLoadedScreenConfigurationId) {
-            this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId);
+            this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId, "", true, false); // Don't show snack for fail in this case, the last loaded screen config might not make sense any more
             // Add id back to query params
             const queryParams = { ...this._route.snapshot.queryParams };
             queryParams["id"] = this.lastLoadedScreenConfigurationId;
@@ -221,7 +221,7 @@ export class AnalysisLayoutService implements OnDestroy {
     this.activeScreenConfigurationId$.next("");
   }
 
-  fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
+  fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true, showSnackOnError: boolean = true) {
     this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
       next: res => {
         if (res.screenConfiguration) {
@@ -251,7 +251,7 @@ export class AnalysisLayoutService implements OnDestroy {
           }
 
           this.writeScreenConfiguration(newScreenConfiguration, scanId);
-        } else {
+        } else if (showSnackOnError) {
           this._snackService.openError(err);
         }
       },

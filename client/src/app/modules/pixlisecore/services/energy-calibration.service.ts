@@ -1,8 +1,8 @@
-import { Injectable, OnInit } from "@angular/core";
+import { Injectable } from "@angular/core";
 import { Observable, combineLatest, map, of, shareReplay } from "rxjs";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { APICachedDataService } from "./apicacheddata.service";
-import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
 import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";

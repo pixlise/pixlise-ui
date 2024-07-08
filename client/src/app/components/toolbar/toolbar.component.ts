@@ -145,6 +145,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   uiVersionLastCommitDate: number = 0;
 
   hasQuantConfiguredScan: boolean = false;
+  hasScanConfigured: boolean = false;
   screenConfigLoaded: boolean = false;
 
   isNewTab: boolean = false;
@@ -190,11 +191,13 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             this.titleToShow = screenConfig.name;
           }
 
-          let hasQuantConfiguredScan = false;
+          this.hasQuantConfiguredScan = false;
+          this.hasScanConfigured = false;
           if (screenConfig?.scanConfigurations) {
-            for (let key in screenConfig.scanConfigurations) {
+            for (const key in screenConfig.scanConfigurations) {
+              this.hasScanConfigured = true;
               if (screenConfig.scanConfigurations[key].quantId) {
-                hasQuantConfiguredScan = true;
+                this.hasQuantConfiguredScan = true;
                 break;
               }
             }
@@ -202,7 +205,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             this.screenConfigLoaded = true;
           }
 
-          this.hasQuantConfiguredScan = hasQuantConfiguredScan;
           this.openScanConfigurationTabForInvalidQuants();
         }
 
@@ -437,10 +439,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   openScanConfigurationTabForInvalidQuants(): void {
-    if (this._isAnalysisTab && !this.hasQuantConfiguredScan && !this._analysisLayoutService.sidepanelOpen && this._analysisLayoutService.sidebarTabs.length > 0) {
+    if (
+      this._isAnalysisTab &&
+      (!this.hasQuantConfiguredScan || !this.hasScanConfigured) &&
+      !this._analysisLayoutService.sidepanelOpen &&
+      this._analysisLayoutService.sidebarTabs.length > 0
+    ) {
       this._analysisLayoutService.activeTab = this._analysisLayoutService.sidebarTabs[0];
       this._analysisLayoutService.sidepanelOpen$.next(true);
-      this._snackService.open("No scans configured for this workspace. Please configure scans.");
+
+      if (!this.hasScanConfigured) {
+        this._snackService.open("No scans configured for this workspace. Please configure scans.");
+      } else if (!this.hasQuantConfiguredScan) {
+        this._snackService.open("Some scans in your workspace don't have a quantification configured.");
+      }
     }
   }
 

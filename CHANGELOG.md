@@ -1,3 +1,9 @@
+## 4.24.0 (Unreleased)
+
+### Bug Fixes
+
+- Quant Job tab updates to show spinners, user icons and errors if they happen.
+
 ## 4.23.0 (2024-06-27)
 
 ### Bug Fixes

@@ -349,6 +349,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // Navigating to the URL will trigger the download. This is neat because these URLs are
     // share-able and will open datasets if users are already logged in
     if (this.selectedScan) {
+      // Load the appropriate screen config - this is required if not running for first time (where scan id is picked up from URL - here we've called
+      // clearScreenConfigurationCache() above and ended up with no screen configs loaded)
+      this._analysisLayoutService.loadScreenConfigurationFromScan(this.selectedScan.id);
+
       // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
       this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
     }
