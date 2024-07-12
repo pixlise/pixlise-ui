@@ -1,8 +1,15 @@
-## 4.24.0 (Unreleased)
+## 4.24.0 (2024-07-12)
+
+### Features
+
+- Context image Visibility window now remembers if you hid a layer, so if you open it again, it's still there
 
 ### Bug Fixes
 
 - Quant Job tab updates to show spinners, user icons and errors if they happen.
+- Fixed issue where scan doesn't show up in dataset sidebar tab when scan is opened from tiles screen.
+- Spectra are downloaded in small batches now to help with disconnection issues.
+- Exporter now exports a per-ROI bulk and max value MSA file, along with the AllPoints bulk+max MSA file.
 
 ## 4.23.0 (2024-06-27)
 
