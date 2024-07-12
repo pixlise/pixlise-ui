@@ -235,7 +235,7 @@ export class ROITabComponent implements OnInit {
     let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((created: boolean) => {
       if (created) {
-        this._selectionService.clearSelection();
+        this._selectionService.clearSelection([this._visibleScanId]);
       }
     });
   }
