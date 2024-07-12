@@ -138,20 +138,24 @@ export class SpectrumDataService {
     if (indexes !== null) {
       // Request batches of spectra, if we request the whole lot in one go, the load balancer or something ends up disconnecting us and even restarting the API
       // Never really got to the bottom of what's going on there
-      const batchSize = 200;
-      for (let c = 0; c < indexes.length; c += batchSize) {
-        const reqIdxs = encodeIndexList(indexes.slice(c, c + batchSize));
+      if (indexes.length <= 0) {
+        requests[0].entries = ScanEntryRange.create({ indexes: [] });
+      } else {
+        const batchSize = 200;
+        for (let c = 0; c < indexes.length; c += batchSize) {
+          const reqIdxs = encodeIndexList(indexes.slice(c, c + batchSize));
 
-        if (c == 0) {
-          // Tack onto that first request
-          requests[c].entries = ScanEntryRange.create({ indexes: reqIdxs });
-        } else {
-          requests.push(
-            SpectrumReq.create({
-              scanId: scanId,
-              entries: ScanEntryRange.create({ indexes: reqIdxs }),
-            })
-          );
+          if (c == 0) {
+            // Tack onto that first request
+            requests[c].entries = ScanEntryRange.create({ indexes: reqIdxs });
+          } else {
+            requests.push(
+              SpectrumReq.create({
+                scanId: scanId,
+                entries: ScanEntryRange.create({ indexes: reqIdxs }),
+              })
+            );
+          }
         }
       }
     }
