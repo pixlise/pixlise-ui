@@ -258,26 +258,13 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
         },
         {
           id: "bulkSumMaxSpectra",
-          name: "Bulk Sum and Max Spectra .csv",
+          name: "Bulk/Max All Points, ROI .msa",
           type: "checkbox",
-          description: "Export the bulk sum and max spectra for all points as a CSV",
+          description: "Export spectra (bulk, max) for all points and selected ROIs as an MSA file",
           selected: false,
           updateCounts: (selection, selected) => {
             let scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
             let countMap: Record<string, number> = { bulkSumMaxSpectra: scanOptions.length };
-
-            return countMap;
-          },
-        },
-        {
-          id: "spectraMetadata",
-          name: "Spectra Metadata .csv (and bulk .msa)",
-          type: "checkbox",
-          description: "Export the MSA file and spectra metadata as a CSV",
-          selected: false,
-          updateCounts: (selection, selected) => {
-            let scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
-            let countMap: Record<string, number> = { spectraMetadata: scanOptions.length * 2 };
 
             return countMap;
           },
@@ -468,11 +455,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     }
 
     if (request.dataProducts["bulkSumMaxSpectra"]?.selected) {
-      exportRequests.push(this._exporterService.getBulkSumMaxSpectra(scanId));
-    }
-
-    if (request.dataProducts["spectraMetadata"]?.selected) {
-      exportRequests.push(this._exporterService.getSpectraMetadata(scanId));
+      exportRequests.push(this._exporterService.getBulkSumMaxSpectra(scanId, roiIds));
     }
 
     if (request.dataProducts["piquantQuantification"]?.selected) {
