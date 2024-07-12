@@ -82,7 +82,7 @@ export class SpectrumDataService {
             // else: Process it from what we have
 
             // Don't have it cached, so request it
-            if (indexes !== null && indexes.length > 0) {
+            if (indexes === null || indexes.length > 0) {
               // Request scan entries first, so we have a list of all indexes that we need spectra for. This allows us to batch-request
               // spectra from API
               return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
