@@ -10,6 +10,7 @@
 - Fixed issue where scan doesn't show up in dataset sidebar tab when scan is opened from tiles screen.
 - Spectra are downloaded in small batches now to help with disconnection issues.
 - Exporter now exports a per-ROI bulk and max value MSA file, along with the AllPoints bulk+max MSA file.
+- Clearing selection is now persisted.
 
 ## 4.23.0 (2024-06-27)
 

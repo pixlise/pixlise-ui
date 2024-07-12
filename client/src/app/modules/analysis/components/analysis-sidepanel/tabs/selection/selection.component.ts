@@ -205,7 +205,11 @@ export class SelectionComponent implements OnInit, OnDestroy {
   }
 
   onClearSelection() {
-    this._selectionService.clearSelection();
+    const allScanIds = [];
+    for (const scan of Object.values(this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations)) {
+      allScanIds.push(scan.id);
+    }
+    this._selectionService.clearSelection(allScanIds);
     this._averageRGBURatios = [];
   }
 
