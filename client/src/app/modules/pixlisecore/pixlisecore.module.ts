@@ -62,7 +62,8 @@ import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
 import { DragDropModule } from "@angular/cdk/drag-drop";
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 import { TableComponent } from "./components/atoms/table/table.component";
-import { TextFileViewingDialogComponent } from './components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component';
+import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
+import { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -79,6 +80,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
+export { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 
 @NgModule({
   declarations: [
@@ -132,6 +134,7 @@ export { TableComponent } from "./components/atoms/table/table.component";
     FeedbackDialogComponent,
     TableComponent,
     TextFileViewingDialogComponent,
+    LayoutPreviewBox,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
@@ -180,6 +183,7 @@ export { TableComponent } from "./components/atoms/table/table.component";
     FeedbackDialogComponent,
     TableComponent,
     TextFileViewingDialogComponent,
+    LayoutPreviewBox,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

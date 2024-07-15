@@ -1,14 +1,7 @@
 import { Component, HostListener } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
-import {
-  ANALYSIS_TEMPLATES,
-  createDefaultAnalysisTemplates,
-  createDefaultOtherTemplates,
-  createDefaultScreenConfiguration,
-  ScreenTemplate,
-} from "../../models/screen-configuration.model";
+import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
-import { FullScreenLayout, ScreenConfigurationCSS } from "../../../../generated-protos/screen-configuration";
 import { ActivatedRoute, Router } from "@angular/router";
 import { TabLinks } from "../../../../models/TabLinks";
 
@@ -50,6 +43,10 @@ export class NewTabPageComponent {
       .join("&");
   }
 
+  // getWidgetIconUrl(widgetType: string): string {
+  //   return `assets/chart-placeholders/${widgetType}.svg` || "";
+  // }
+
   onAnalysisTemplateClick(tab: ScreenTemplate): void {
     let screenConfig = this._analysisLayoutService.addScreenConfigurationLayout(tab?.layout);
     if (!screenConfig) {
@@ -59,14 +56,34 @@ export class NewTabPageComponent {
     let lastTabId = screenConfig.layouts.length - 1;
     this.queryParam["tab"] = lastTabId.toString();
 
-    console.log("this.queryParam", this.queryParam, screenConfig);
     this._router.navigateByUrl(`${TabLinks.analysis}?${this.getQueryParamString()}`);
   }
 
   onOtherTemplateClick(tab: ScreenTemplate): void {
+    let screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+
+    if (tab.id === "browse") {
+      if (screenConfig.browseTabHidden) {
+        screenConfig.browseTabHidden = false;
+        this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+      }
+
+      this._router.navigateByUrl(`${TabLinks.browse}?${this.getQueryParamString()}`);
+    }
+
     if (tab.id === "code-editor") {
+      if (screenConfig.codeEditorTabHidden) {
+        screenConfig.codeEditorTabHidden = false;
+        this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+      }
+
       this._router.navigateByUrl(`${TabLinks.codeEditor}?${this.getQueryParamString()}`);
     } else if (tab.id === "element-maps") {
+      if (screenConfig.elementMapsTabHidden) {
+        screenConfig.elementMapsTabHidden = false;
+        this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+      }
+
       this._router.navigateByUrl(`${TabLinks.maps}?${this.getQueryParamString()}`);
     }
   }

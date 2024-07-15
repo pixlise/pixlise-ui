@@ -23,8 +23,16 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
   modifiedUnixSec: 0,
   owner: undefined,
   scanConfigurations: {},
+  browseTabHidden: false,
+  codeEditorTabHidden: false,
+  elementMapsTabHidden: false,
   layouts: [
     {
+      tabId: "",
+      tabName: "",
+      tabDescription: "Standard Layout",
+      hidden: false,
+      tags: [],
       rows: [{ height: 3 }, { height: 2 }],
       columns: [{ width: 3 }, { width: 2 }, { width: 2 }, { width: 2 }],
       widgets: [
@@ -92,7 +100,12 @@ export const createDefaultScreenConfiguration = (): ScreenConfiguration => {
 };
 
 const ANALYSIS_STANDARD_LAYOUT = createDefaultScreenConfiguration().layouts[0];
-const ANALYSIS_LAYOUT_2 = {
+const ANALYSIS_LAYOUT_2: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "Layout 2",
+  hidden: false,
+  tags: [],
   rows: [{ height: 2 }, { height: 2 }],
   columns: [{ width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }, { width: 2 }],
   widgets: [
@@ -107,7 +120,7 @@ const ANALYSIS_LAYOUT_2 = {
     },
     {
       id: "",
-      type: "spectrum-chart",
+      type: "binary-plot",
       startRow: 1,
       startColumn: 4,
       endRow: 2,
@@ -116,7 +129,7 @@ const ANALYSIS_LAYOUT_2 = {
     },
     {
       id: "",
-      type: "histogram",
+      type: "binary-plot",
       startRow: 1,
       startColumn: 5,
       endRow: 2,
@@ -125,7 +138,7 @@ const ANALYSIS_LAYOUT_2 = {
     },
     {
       id: "",
-      type: "chord-diagram",
+      type: "binary-plot",
       startRow: 1,
       startColumn: 6,
       endRow: 2,
@@ -143,7 +156,7 @@ const ANALYSIS_LAYOUT_2 = {
     },
     {
       id: "",
-      type: "binary-plot",
+      type: "ternary-plot",
       startRow: 2,
       startColumn: 5,
       endRow: 2,
@@ -152,7 +165,7 @@ const ANALYSIS_LAYOUT_2 = {
     },
     {
       id: "",
-      type: "binary-plot",
+      type: "ternary-plot",
       startRow: 2,
       startColumn: 6,
       endRow: 2,
@@ -162,7 +175,12 @@ const ANALYSIS_LAYOUT_2 = {
   ],
 };
 
-const ANALYSIS_LAYOUT_3 = {
+const ANALYSIS_LAYOUT_3: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "Layout 3",
+  hidden: false,
+  tags: [],
   rows: [{ height: 1 }],
   columns: [{ width: 1 }, { width: 1 }],
   widgets: [
@@ -177,7 +195,7 @@ const ANALYSIS_LAYOUT_3 = {
     },
     {
       id: "",
-      type: "spectrum-chart",
+      type: "context-image",
       startRow: 1,
       startColumn: 2,
       endRow: 2,
@@ -187,13 +205,18 @@ const ANALYSIS_LAYOUT_3 = {
   ],
 };
 
-const ANALYSIS_LAYOUT_4 = {
+const ANALYSIS_LAYOUT_4: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "Layout 4",
+  hidden: false,
+  tags: [],
   rows: [{ height: 1 }, { height: 1 }],
   columns: [{ width: 1 }, { width: 1 }, { width: 1 }, { width: 1 }],
   widgets: [
     {
       id: "",
-      type: "context-image",
+      type: "binary-plot",
       startRow: 1,
       startColumn: 1,
       endRow: 2,
@@ -202,7 +225,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "spectrum-chart",
+      type: "ternary-plot",
       startRow: 1,
       startColumn: 2,
       endRow: 2,
@@ -211,7 +234,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "context-image",
+      type: "binary-plot",
       startRow: 1,
       startColumn: 3,
       endRow: 2,
@@ -220,7 +243,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "spectrum-chart",
+      type: "ternary-plot",
       startRow: 1,
       startColumn: 4,
       endRow: 2,
@@ -229,7 +252,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "context-image",
+      type: "binary-plot",
       startRow: 2,
       startColumn: 1,
       endRow: 3,
@@ -238,7 +261,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "spectrum-chart",
+      type: "ternary-plot",
       startRow: 2,
       startColumn: 2,
       endRow: 3,
@@ -247,7 +270,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "context-image",
+      type: "binary-plot",
       startRow: 2,
       startColumn: 3,
       endRow: 3,
@@ -256,7 +279,7 @@ const ANALYSIS_LAYOUT_4 = {
     },
     {
       id: "",
-      type: "spectrum-chart",
+      type: "ternary-plot",
       startRow: 2,
       startColumn: 4,
       endRow: 3,
@@ -307,9 +330,192 @@ export const createDefaultAnalysisTemplates = (): ScreenTemplate[] => {
   return JSON.parse(JSON.stringify(ANALYSIS_TEMPLATES));
 };
 
-export const CODE_EDITOR_TEMPLATE = {
+export const BROWSE_TEMPLATE: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "",
+  hidden: false,
+  tags: [],
+  rows: [{ height: 2 }, { height: 3 }, { height: 3 }, { height: 3 }, { height: 3 }],
+  columns: [{ width: 1 }, { width: 1 }, { width: 1 }, { width: 1 }, { width: 2 }],
+  widgets: [
+    // Header bar
+    {
+      id: "",
+      type: "",
+      startRow: 1,
+      startColumn: 1,
+      endRow: 1,
+      endColumn: 6,
+      data: undefined,
+    },
+    // Scan items
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 1,
+      endRow: 2,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 2,
+      endRow: 2,
+      endColumn: 3,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 3,
+      endRow: 2,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 4,
+      endRow: 2,
+      endColumn: 5,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 3,
+      startColumn: 1,
+      endRow: 3,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 3,
+      startColumn: 2,
+      endRow: 3,
+      endColumn: 3,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 3,
+      startColumn: 3,
+      endRow: 3,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 3,
+      startColumn: 4,
+      endRow: 3,
+      endColumn: 5,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 4,
+      startColumn: 1,
+      endRow: 4,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 4,
+      startColumn: 2,
+      endRow: 4,
+      endColumn: 3,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 4,
+      startColumn: 3,
+      endRow: 4,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 4,
+      startColumn: 4,
+      endRow: 4,
+      endColumn: 5,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 5,
+      startColumn: 1,
+      endRow: 5,
+      endColumn: 2,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 5,
+      startColumn: 2,
+      endRow: 5,
+      endColumn: 3,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 5,
+      startColumn: 3,
+      endRow: 5,
+      endColumn: 4,
+      data: undefined,
+    },
+    {
+      id: "",
+      type: "",
+      startRow: 5,
+      startColumn: 4,
+      endRow: 5,
+      endColumn: 5,
+      data: undefined,
+    },
+
+    // Browse sidepanel
+    {
+      id: "",
+      type: "",
+      startRow: 2,
+      startColumn: 5,
+      endRow: 6,
+      endColumn: 5,
+      data: undefined,
+    },
+  ],
+};
+
+export const CODE_EDITOR_TEMPLATE: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "",
+  hidden: false,
+  tags: [],
   rows: [{ height: 3 }],
-  columns: [{ width: 1 }, { width: 3 }],
+  columns: [{ width: 3 }, { width: 1 }],
   widgets: [
     {
       id: "",
@@ -326,13 +532,18 @@ export const CODE_EDITOR_TEMPLATE = {
       startRow: 1,
       startColumn: 2,
       endRow: 1,
-      endColumn: 4,
+      endColumn: 2,
       data: undefined,
     },
   ],
 };
 
-export const ELEMENT_MAPS_TEMPLATE = {
+export const ELEMENT_MAPS_TEMPLATE: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "",
+  hidden: false,
+  tags: [],
   rows: [{ height: 2 }, { height: 2 }],
   columns: [{ width: 2 }, { width: 2 }],
   widgets: [
@@ -376,6 +587,13 @@ export const ELEMENT_MAPS_TEMPLATE = {
 };
 
 export const OTHER_TEMPLATES: ScreenTemplate[] = [
+  {
+    id: "browse",
+    templateName: "Browse",
+    templateIcon: "assets/tab-icons/browse.svg",
+    layout: BROWSE_TEMPLATE,
+    screenConfiguration: generateTemplateConfiguration(BROWSE_TEMPLATE),
+  },
   {
     id: "code-editor",
     templateName: "Code Editor",

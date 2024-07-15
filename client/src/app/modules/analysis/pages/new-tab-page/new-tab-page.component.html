@@ -7,7 +7,8 @@
           <img [src]="template.templateIcon" />
           <span class="label">{{ template.templateName }}</span>
         </div>
-        <div
+        <layout-preview-box [template]="template"></layout-preview-box>
+        <!-- <div
           class="layout-preview"
           [ngStyle]="{
             'grid-template-columns': template.screenConfiguration.templateColumns,
@@ -21,8 +22,10 @@
               'grid-column-end': widget.endColumn,
               'grid-row-start': widget.startRow,
               'grid-row-end': widget.endRow
-            }"></div>
-        </div>
+            }">
+            <img *ngIf="widget.type" [src]="getWidgetIconUrl(widget.type)" />
+          </div>
+        </div> -->
       </div>
     </div>
     <div class="presets other-tabs">
@@ -31,7 +34,8 @@
           <img [src]="template.templateIcon" />
           <span class="label">{{ template.templateName }}</span>
         </div>
-        <div
+        <layout-preview-box [template]="template"></layout-preview-box>
+        <!-- <div
           class="layout-preview"
           [ngStyle]="{
             'grid-template-columns': template.screenConfiguration.templateColumns,
@@ -44,9 +48,11 @@
               'grid-column-start': widget.startColumn,
               'grid-column-end': widget.endColumn,
               'grid-row-start': widget.startRow,
-              'grid-row-end': widget.endRow
-            }"></div>
-        </div>
+              'grid-row-end': widget.endRow 
+            }">
+            <img *ngIf="widget.type" [src]="getWidgetIconUrl(widget.type)" />
+          </div>
+        </div> -->
       </div>
     </div>
   </div>
