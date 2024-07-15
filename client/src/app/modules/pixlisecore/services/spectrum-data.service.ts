@@ -87,13 +87,8 @@ export class SpectrumDataService {
               // spectra from API
               return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
                 switchMap((entriesResp: ScanEntryResp) => {
-                  const reqIndexes: number[] = [];
-                  for (let c = 0; c < entriesResp.entries.length; c++) {
-                    const entry = entriesResp.entries[c];
-                    if (entry.normalSpectra) {
-                      reqIndexes.push(c);
-                    }
-                  }
+                  // Make a list of ALL indexes we want to get
+                  const reqIndexes: number[] = Array.from(Array(entriesResp.entries.length).keys());
 
                   return this.requestSpectra(scanId, scanListResp.scans[0].timestampUnixSec, reqIndexes, bulkSum, maxValue);
                 })
@@ -170,6 +165,13 @@ export class SpectrumDataService {
         const resp = resps[0];
 
         // Copy all other spectra into first message, so we can process it as one
+        // NOTE: if we requested spectra by specifying indexes (PMCs), we got them back in that order. This means
+        // if we have to put them back in the expected order, with gaps where there were gaps in pmcs
+        if (indexes && indexes.length > 0) {
+          for (const idx of indexes) {
+            
+          }
+        }
         for (let c = 1; c < resps.length; c++) {
           resp.spectraPerLocation.push(...resps[c].spectraPerLocation);
         }
