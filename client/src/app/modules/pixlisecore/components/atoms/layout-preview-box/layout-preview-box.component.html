@@ -1,0 +1,22 @@
+<div
+  *ngIf="template?.layout?.widgets && template?.screenConfiguration"
+  class="layout-preview"
+  [ngStyle]="{
+    'grid-template-columns': template!.screenConfiguration.templateColumns,
+    'grid-template-rows': template!.screenConfiguration.templateRows
+  }">
+  <div
+    *ngFor="let widget of template!.layout.widgets"
+    class="widget-preview"
+    [ngStyle]="{
+      'grid-column-start': widget.startColumn,
+      'grid-column-end': widget.endColumn,
+      'grid-row-start': widget.startRow,
+      'grid-row-end': widget.endRow
+    }">
+    <img *ngIf="widget.type" [src]="getWidgetIconUrl(widget.type)" />
+  </div>
+</div>
+<div *ngIf="!template?.layout?.widgets || !template?.screenConfiguration" class="layout-preview">
+  <div class="no-layout">No layout available</div>
+</div>

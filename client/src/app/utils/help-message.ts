@@ -36,6 +36,7 @@ export class HelpMessage {
   public static readonly NETWORK_ERROR = "The network is unresponsive, Citizen.";
   public static readonly NO_PERMISSIONS = "Citizen, you have insufficient permissions.";
   public static readonly NO_SELECTED_DATASET = "Citizen needs to select a dataset to see metadata.";
+  public static readonly NO_SELECTED_WORKSPACE = "Citizen needs to select a workspace to see metadata.";
 
   public static readonly PAGE_NOT_FOUND = "Page not found. Citizen must have thought of the wrong planet.";
 

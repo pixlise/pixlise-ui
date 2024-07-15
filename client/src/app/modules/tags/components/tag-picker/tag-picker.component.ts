@@ -56,6 +56,7 @@ export class TagPickerComponent implements OnInit {
   private _newTagSelected: boolean = false;
 
   private _selectedTags: Tag[] = [];
+  private _allTags: Tag[] = [];
 
   filteredTags: Tag[] = [];
   tagsByAuthor: AuthorTags[] = [];
@@ -74,6 +75,8 @@ export class TagPickerComponent implements OnInit {
   @Input() triggerOpen: boolean = false;
   @Input() openRightDirection: boolean = true;
 
+  @Input() updateOnSelect: boolean = false;
+
   @Output() onTagSelectionChanged = new EventEmitter<string[]>();
 
   constructor(
@@ -86,31 +89,8 @@ export class TagPickerComponent implements OnInit {
 
     this._subs.add(
       this._taggingService.tags$.subscribe(async tags => {
-        // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
-        this.tags = Array.from(tags.values()).filter(
-          tag =>
-            !this.filterToTagType ||
-            tag.type === this.type ||
-            this.additionalVisibleTagType.includes(tag.type) ||
-            ((this.isAdmin || this.allowAdminBuiltin) && tag.type === BuiltInTags.type)
-        );
-
-        this.updateSelectedTags();
-        if (this._newTagSelected) {
-          const selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
-          if (selectedTag) {
-            this.selectedTagIDs.push(selectedTag.id);
-            this.onTagSelectionChanged.emit(this.selectedTagIDs);
-            this.focusOnInput();
-
-            this.updateSelectedTags();
-
-            this._newTagSelected = false;
-            this._tagSearchValue = "";
-          }
-        }
-
-        this.groupTags();
+        this._allTags = Array.from(tags.values());
+        this.updateVisibleTags();
       })
     );
 
@@ -122,10 +102,42 @@ export class TagPickerComponent implements OnInit {
     if (changes["selectedTagIDs"]) {
       this.updateSelectedTags();
     }
+
+    if (changes["type"]) {
+      this.updateVisibleTags();
+    }
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  updateVisibleTags(): void {
+    // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
+    this.tags = this._allTags.filter(
+      tag =>
+        !this.filterToTagType ||
+        tag.type === this.type ||
+        this.additionalVisibleTagType.includes(tag.type) ||
+        (this.allowAdminBuiltin && tag.type === BuiltInTags.type)
+    );
+
+    this.updateSelectedTags();
+    if (this._newTagSelected) {
+      const selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
+      if (selectedTag) {
+        this.selectedTagIDs.push(selectedTag.id);
+        this.onTagSelectionChanged.emit(this.selectedTagIDs);
+        this.focusOnInput();
+
+        this.updateSelectedTags();
+
+        this._newTagSelected = false;
+        this._tagSearchValue = "";
+      }
+    }
+
+    this.groupTags();
   }
 
   get user(): UserDetails {
@@ -267,7 +279,7 @@ export class TagPickerComponent implements OnInit {
     this.selectedTagIDs = newTags;
     this.updateSelectedTags();
 
-    if (!this.showCurrentTagsSection) {
+    if (!this.showCurrentTagsSection || this.updateOnSelect) {
       // Prune non-existing tags on edit
       this.onTagSelectionChanged.emit(this.validSelectedTagIDs);
     }

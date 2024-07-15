@@ -33,6 +33,7 @@ import { RoughnessComponent } from "src/app/modules/analysis/components/analysis
 import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
 import { WorkspaceConfigurationTabComponent } from "./components/analysis-sidepanel/tabs/workspace-configuration/workspace-configuration.component";
 import { MarkdownModule } from "ngx-markdown";
+import { NewTabPageComponent } from "./pages/new-tab-page/new-tab-page.component";
 
 // export { ContextImageDataService } from "./services/context-image-data.service";
 export { DataExporterService } from "./services/exporter.service";
@@ -43,11 +44,16 @@ const APP_ROUTES: Routes = [
     path: "",
     component: AnalysisPageComponent,
   },
+  {
+    path: "new",
+    component: NewTabPageComponent,
+  },
 ];
 
 @NgModule({
   declarations: [
     AnalysisPageComponent,
+    NewTabPageComponent,
     AnalysisSidepanelComponent,
     ROITabComponent,
     MistROIComponent,
@@ -84,7 +90,7 @@ const APP_ROUTES: Routes = [
     MatMenuModule,
     MarkdownModule,
   ],
-  exports: [AnalysisPageComponent, AnalysisSidepanelComponent],
+  exports: [AnalysisPageComponent, NewTabPageComponent, AnalysisSidepanelComponent],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
 })
 export class AnalysisModule {}
