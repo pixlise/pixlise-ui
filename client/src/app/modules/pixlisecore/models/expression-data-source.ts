@@ -924,6 +924,10 @@ export class ExpressionDataSource
             const entry = scanMetaData.entries[c];
             if (entry) {
               const item = entry.meta[metaIdx];
+              if (item === undefined) {
+                throw new Error(`Scan entry ${c} does not contain housekeeping data labelled: "${name}"`);
+              }
+
               const value = (metaType == ScanMetaDataType.MT_FLOAT ? item.fvalue : item.ivalue) || 0; // Shut up compiler...
 
               const locIdx = this._scanEntryIndexesRequested[c];

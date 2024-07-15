@@ -31,6 +31,7 @@ import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selec
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
 import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
+import { SpectrumExpressionDataSourceImpl } from "../../models/SpectrumRespDataSource";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -901,71 +902,5 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         (t2 - t1).toLocaleString() +
         "ms"
     );*/
-  }
-}
-
-class SpectrumExpressionDataSourceImpl implements SpectrumExpressionDataSource {
-  constructor(private _spectraResp: SpectrumResp) {}
-
-  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): SpectrumValues {
-    if (locationIndex < 0) {
-      // Must be bulk or max
-      if (readType != SpectrumType.SPECTRUM_BULK && readType != SpectrumType.SPECTRUM_MAX) {
-        throw new Error("getSpectrum readType must be BulkSum or MaxValue if no locationIndex specified");
-      }
-
-      const readList: Spectrum[] = readType == SpectrumType.SPECTRUM_BULK ? this._spectraResp.bulkSpectra : this._spectraResp.maxSpectra;
-      for (const spectrum of readList) {
-        if (spectrum.detector == detectorId) {
-          return this.convertSpectrum(spectrum);
-        }
-      }
-    } else {
-      // Must be bulk or max
-      if (readType != SpectrumType.SPECTRUM_NORMAL && readType != SpectrumType.SPECTRUM_DWELL) {
-        throw new Error("getSpectrum readType must be Normal or Dwell if locationIndex is specified");
-      }
-
-      if (this._spectraResp.spectraPerLocation[locationIndex]) {
-        for (const spectrum of this._spectraResp.spectraPerLocation[locationIndex].spectra) {
-          if (spectrum.detector == detectorId && spectrum.type == readType) {
-            return this.convertSpectrum(spectrum);
-          }
-        }
-      } else {
-        console.warn("No spectra found for location idx: " + locationIndex + ", so no spectrum line will be contributed to display for this location.");
-      }
-    }
-
-    throw new Error(`No ${spectrumTypeToJSON(readType)} spectrum found for detector: ${detectorId} and location ${locationIndex}`);
-  }
-
-  private convertSpectrum(s: Spectrum): SpectrumValues {
-    const vals = new Float32Array(s.counts);
-
-    // Get the live time
-    let liveTime = 0;
-    let found = false;
-
-    const liveTimeValue = s.meta[this._spectraResp.liveTimeMetaIndex];
-    if (liveTimeValue !== undefined) {
-      if (liveTimeValue.fvalue !== undefined) {
-        liveTime = liveTimeValue.fvalue;
-        found = true;
-      } else if (liveTimeValue.ivalue !== undefined) {
-        liveTime = liveTimeValue.ivalue;
-        found = true;
-      }
-    }
-
-    if (!found) {
-      throw new Error("Failed to get live time for spectrum");
-    }
-
-    return new SpectrumValues(vals, s.maxCount, s.detector, liveTime);
-  }
-
-  get locationsWithNormalSpectra(): number {
-    return this._spectraResp.normalSpectraForScan;
   }
 }
