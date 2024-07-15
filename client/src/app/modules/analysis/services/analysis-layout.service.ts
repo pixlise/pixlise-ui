@@ -337,7 +337,7 @@ export class AnalysisLayoutService implements OnDestroy {
             newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}. ${matchedScan.description}`;
           }
 
-          this.writeScreenConfiguration(newScreenConfiguration, scanId);
+          this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
         } else if (showSnackOnError) {
           this._snackService.openError(err);
         }
@@ -345,36 +345,54 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
+  createNewScreenConfiguration(scanId: string = "", callback: (screenConfig: ScreenConfiguration) => void = () => {}) {
+    const newScreenConfiguration = createDefaultScreenConfiguration();
+    if (scanId) {
+      newScreenConfiguration.scanConfigurations = { [scanId]: { id: scanId, quantId: "", calibrations: [], colour: "" } };
+    }
+
+    this.writeScreenConfiguration(newScreenConfiguration, undefined, true, callback);
+  }
+
   loadScreenConfigurationFromScan(scanId: string) {
     this.fetchScreenConfiguration("", scanId, true);
   }
 
-  writeScreenConfiguration(screenConfiguration: ScreenConfiguration, scanId: string = "") {
+  writeScreenConfiguration(
+    screenConfiguration: ScreenConfiguration,
+    scanId: string = "",
+    setActive: boolean = false,
+    callback: (screenConfig: ScreenConfiguration) => void = () => {}
+  ) {
     if (!screenConfiguration || screenConfiguration.layouts.length === 0) {
       return;
     }
 
-    let updateId = this.activeScreenConfigurationId$.value;
-    if (!updateId && screenConfiguration.id !== updateId) {
-      // Update the active screen configuration ID
-      this.activeScreenConfigurationId$.next(screenConfiguration.id);
-      this.cacheScreenConfigurationId(screenConfiguration.id);
-      updateId = screenConfiguration.id;
-    }
+    this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe({
+      next: res => {
+        if (res.screenConfiguration) {
+          if (this.activeScreenConfigurationId$.value === res.screenConfiguration.id || setActive) {
+            this.activeScreenConfiguration$.next(res.screenConfiguration);
+          }
 
-    screenConfiguration.id = updateId;
+          if (setActive) {
+            this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
+            this.cacheScreenConfigurationId(res.screenConfiguration.id);
+          }
 
-    this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe(res => {
-      if (res.screenConfiguration) {
-        this.activeScreenConfiguration$.next(res.screenConfiguration);
+          callback(res.screenConfiguration);
 
-        // Store the screen configuration
-        this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
-      }
+          // Store the screen configuration
+          this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+        }
+      },
+      error: err => {
+        this._snackService.openError("Error saving workspace!", err);
+      },
     });
   }
 
-  deleteScreenConfiguration(id: string) {
+  deleteScreenConfiguration(id: string, callback: () => void = () => {}) {
     this._dataService.sendScreenConfigurationDeleteRequest({ id }).subscribe(res => {
       if (res.id) {
         this.screenConfigurations$.value.delete(id);
@@ -385,6 +403,8 @@ export class AnalysisLayoutService implements OnDestroy {
           this.cacheScreenConfigurationId("");
           this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
         }
+
+        callback();
       }
     });
   }

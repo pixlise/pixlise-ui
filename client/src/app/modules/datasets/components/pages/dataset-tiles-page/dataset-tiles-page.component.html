@@ -34,8 +34,22 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
       >Reset & Open</push-button
     >
+    <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="yellow">Create New Workspace From</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="yellow">Delete</push-button>
+  </div>
+</ng-template>
+
+<ng-template #openWorkspaceOptionsMenu>
+  <div class="gap-separated-vertical-elements options-menu">
+    <!-- <push-button *ngIf="userCanEdit" (onClick)="onDuplicateWorkspace()" buttonStyle="yellow">Duplicate</push-button> -->
+    <push-button
+      *ngIf="userCanEdit"
+      confirmText="Are you sure you want to delete this workspace ({{ selectedWorkspace?.name || selectedWorkspace?.id }})?"
+      (onClick)="onDeleteWorkspace()"
+      buttonStyle="yellow"
+      >Delete</push-button
+    >
   </div>
 </ng-template>
 
@@ -70,7 +84,10 @@ POSSIBILITY OF SUCH DAMAGE.
         <badge *ngIf="groupCount > 0" class="move-up-left" [value]="groupCount.toString()"></badge>
       </push-button> -->
     </div>
-    <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="yellow" title="Upload a new dataset">Upload</push-button>
+    <div class="right-header-btns">
+      <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="yellow" title="Upload a new dataset">Upload</push-button>
+      <push-button (onClick)="onNewWorkspace()" buttonStyle="yellow" title="Create a new workspace">New Workspace</push-button>
+    </div>
   </div>
 
   <div class="summary-container">
@@ -95,28 +112,30 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="cell workspace-tags">Tags</div>
       </div>
 
-      <div
-        class="workspace-summary {{ selectedWorkspace?.id === workspace.id && workspace.id ? 'selected' : '' }}"
-        *ngFor="let workspace of filteredWorkspaces; trackBy: trackWorkspacesBy"
-        (click)="onSelectWorkspace(workspace)">
-        <div class="cell">
-          <span *ngIf="workspace.name" class="text-ellipsis workspace-title">{{ workspace.name }}</span>
-          <span *ngIf="!workspace.name" class="text-ellipsis workspace-title empty-field">N/A</span>
-        </div>
-        <div class="cell">
-          <span class="text-ellipsis workspace-description">{{ workspace.description }}</span>
-        </div>
-        <div class="cell">
-          <span class="workspace-scan-count">{{ getScanNamesForWorkspace(workspace).length }}</span>
-          <span class="text-ellipsis workspace-datasets">{{ getScanNamesForWorkspace(workspace).join(", ") }}</span>
-          <span *ngIf="!getScanNamesForWorkspace(workspace).length" class="text-ellipsis workspace-datasets empty-field">None</span>
-        </div>
-        <div class="cell">
-          <span class="text-ellipsis workspace-last-updated">{{ workspace.modifiedUnixSec * 1000 | date: "medium" }}</span>
-        </div>
-        <div class="cell workspace-tags">
-          <div class="tag-container">
-            <div *ngFor="let tag of getTagsForWorkspace(workspace)" class="tag">{{ tag.name }}</div>
+      <div class="workspaces-summary-container">
+        <div
+          class="workspace-summary {{ selectedWorkspace?.id === workspace.id && workspace.id ? 'selected' : '' }}"
+          *ngFor="let workspace of filteredWorkspaces; trackBy: trackWorkspacesBy"
+          (click)="onSelectWorkspace(workspace)">
+          <div class="cell">
+            <span *ngIf="workspace.name" class="text-ellipsis workspace-title">{{ workspace.name }}</span>
+            <span *ngIf="!workspace.name" class="text-ellipsis workspace-title empty-field">N/A</span>
+          </div>
+          <div class="cell">
+            <span class="text-ellipsis workspace-description">{{ workspace.description }}</span>
+          </div>
+          <div class="cell">
+            <span class="workspace-scan-count">{{ getScanNamesForWorkspace(workspace).length }}</span>
+            <span class="text-ellipsis workspace-datasets">{{ getScanNamesForWorkspace(workspace).join(", ") }}</span>
+            <span *ngIf="!getScanNamesForWorkspace(workspace).length" class="text-ellipsis workspace-datasets empty-field">None</span>
+          </div>
+          <div class="cell">
+            <span class="text-ellipsis workspace-last-updated">{{ workspace.modifiedUnixSec * 1000 | date: "medium" }}</span>
+          </div>
+          <div class="cell workspace-tags">
+            <div class="tag-container">
+              <div *ngFor="let tag of getTagsForWorkspace(workspace)" class="tag">{{ tag.name }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -124,7 +143,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <app-widget-display-message *ngIf="errorString" [showSpinner]="loading" [message]="errorString" [large]="true" class="fx-flex"> </app-widget-display-message>
 
+    <!-- Workspaces Mode -->
     <div *ngIf="workspacesMode" class="meta-summary workspaces-meta">
+      <app-widget-display-message *ngIf="!selectedWorkspace" [message]="noSelectedWorkspaceMsg"> </app-widget-display-message>
+
       <div *ngIf="selectedWorkspace" class="info-panel">
         <div class="meta-image-container">
           <div *ngIf="!selectedWorkspaceTemplate" class="no-context">
@@ -135,7 +157,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
         </div>
         <div class="meta-open-row">
-          <div class="title-container" (dblclick)="onWorkspaceTitleEditToggle()">
+          <div class="title-container" (dblclick)="onWorkspaceTitleEditToggle(true)">
             <div *ngIf="!workspaceTitleEditMode">{{ selectedWorkspace.name }}</div>
             <input
               *ngIf="workspaceTitleEditMode"
@@ -163,6 +185,9 @@ POSSIBILITY OF SUCH DAMAGE.
               (onTagSelectionChanged)="onWorkspaceTagChange($event)">
             </tag-picker>
             <push-button (onClick)="onOpenWorkspace()" buttonStyle="yellow" title="Open the workspace with views as you last used them">Open</push-button>
+            <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openWorkspaceOptionsMenu" #openWorkspaceOptionsButton>
+              <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
+            </widget-settings-menu>
           </div>
         </div>
         <div class="tab-switcher">
@@ -208,10 +233,11 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
 
+    <!-- Datasets Mode -->
     <div *ngIf="datasetListingAllowed && datasetsMode" class="meta-summary" aria-label="DatasetMetaSummary">
       <!-- <h2 class="meta-title">Metadata</h2> -->
 
-      <app-widget-display-message *ngIf="!selectedScan" [message]="noselectedScanMsg"> </app-widget-display-message>
+      <app-widget-display-message *ngIf="!selectedScan" [message]="noSelectedScanMsg"> </app-widget-display-message>
 
       <div class="info-panel" *ngIf="selectedScan !== null">
         <div class="meta-image-container">
@@ -232,7 +258,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </ng-container>
         </div>
         <div class="meta-open-row">
-          <div class="title-container" (dblclick)="onTitleEditToggle()">
+          <div class="title-container" (dblclick)="onTitleEditToggle(true)">
             <div *ngIf="!scanTitleEditMode">{{ selectedScan.title }}</div>
             <input
               *ngIf="scanTitleEditMode"

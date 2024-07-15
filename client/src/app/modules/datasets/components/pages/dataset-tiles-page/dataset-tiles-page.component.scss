@@ -121,6 +121,12 @@ input {
         }
       }
     }
+
+    .right-header-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
   }
 
   .summary-container {
@@ -391,6 +397,7 @@ input {
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow: auto;
 
   padding: 8px;
 
@@ -418,6 +425,14 @@ input {
       line-height: normal;
       letter-spacing: 0.18px;
     }
+  }
+
+  .workspaces-summary-container {
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
 
   .workspace-summary {

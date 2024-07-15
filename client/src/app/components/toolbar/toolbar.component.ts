@@ -408,12 +408,18 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   private loadAnalysisTabs(): void {
-    if (this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length > 0) {
-      let beforeAnalysisTabs = [];
-      if (!this._analysisLayoutService.activeScreenConfiguration$.value.browseTabHidden) {
-        beforeAnalysisTabs.push({ icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL });
-      }
+    let beforeAnalysisTabs = [];
+    if (!this._analysisLayoutService.activeScreenConfiguration$.value.browseTabHidden) {
+      beforeAnalysisTabs.push({ icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL });
+    }
 
+    // Ensure a workspace was specified before attempting to load analysis tabs
+    if (!this.hasActiveWorkspace) {
+      this.openTabs = beforeAnalysisTabs;
+      return;
+    }
+
+    if (this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length > 0) {
       let afterAnalysisTabs = [];
       if (!this._analysisLayoutService.activeScreenConfiguration$.value.codeEditorTabHidden) {
         afterAnalysisTabs.push({ icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL });

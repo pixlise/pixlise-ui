@@ -51,7 +51,6 @@ import { getMB, httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/
 import { Permissions } from "src/app/utils/permissions";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { number } from "mathjs";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
@@ -83,6 +82,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
+  @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton: ElementRef | undefined;
   @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
 
   _searchString: string = "";
@@ -114,7 +114,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   errorString: string = "";
   loading = false;
 
-  noselectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
+  noSelectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
+  noSelectedWorkspaceMsg = HelpMessage.NO_SELECTED_WORKSPACE;
 
   private _allGroups: string[] = [];
   private _selectedGroups: string[] = [];
@@ -207,6 +208,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.closeOpenOptionsMenu();
+    this.closeWorkspaceOpenOptionsMenu();
     this._subs.unsubscribe();
   }
 
@@ -264,8 +266,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     return this.selectedWorkspaceName !== this.selectedWorkspace?.name;
   }
 
-  onWorkspaceTitleEditToggle(): void {
-    if ((!this.selectedWorkspace?.owner?.canEdit && !this.workspaceTitleEditMode) || this.workspaceTitleEditMode) {
+  onWorkspaceTitleEditToggle(disableToggleOff: boolean = false): void {
+    if ((disableToggleOff && this.workspaceTitleEditMode) || (!this.selectedWorkspace?.owner?.canEdit && !this.workspaceTitleEditMode)) {
       return;
     }
 
@@ -275,8 +277,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onTitleEditToggle(): void {
-    if (!this.userCanEdit && !this.scanTitleEditMode) {
+  onTitleEditToggle(disableToggleOff: boolean = false): void {
+    if ((disableToggleOff && this.scanTitleEditMode) || (!this.userCanEdit && !this.scanTitleEditMode)) {
       return;
     }
 
@@ -329,7 +331,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     workspace.description = this.selectedWorkspaceDescription;
     workspace.tags = this.selectedWorkspaceTags;
 
-    this._analysisLayoutService.writeScreenConfiguration(workspace);
+    this._analysisLayoutService.writeScreenConfiguration(workspace, undefined, false, () => {
+      this.onSearchWorkspsaces();
+    });
   }
 
   onSaveMetadata(): void {
@@ -340,6 +344,17 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.descriptionMode = "View";
     this.scanTitleEditMode = false;
     this.saveMetadata(this.selectedScan.id, this.selectedScanTitle, this.selectedScanDescription, this.selectedScanTags);
+  }
+
+  onDeleteWorkspace(): void {
+    if (!this.selectedWorkspace) {
+      return;
+    }
+
+    this._analysisLayoutService.deleteScreenConfiguration(this.selectedWorkspace.id, () => {
+      this.onSearchWorkspsaces();
+    });
+    this.clearSelection();
   }
 
   saveMetadata(scanId: string, title: string, description: string, tags: string[]): void {
@@ -376,6 +391,24 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       error: err => {
         this._snackService.openError(err);
       },
+    });
+  }
+
+  onNewWorkspace(): void {
+    this._analysisLayoutService.createNewScreenConfiguration(undefined, screenConfig => {
+      this.onSearchWorkspsaces();
+      this.navigateToWorkspace(screenConfig.id);
+    });
+  }
+
+  onCreateNewWorkspaceFromScan(): void {
+    if (!this.selectedScan) {
+      return;
+    }
+
+    this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, screenConfig => {
+      this.onSearchWorkspsaces();
+      this.navigateToWorkspace(screenConfig.id);
     });
   }
 
@@ -423,19 +456,26 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let scanId = this.selectedWorkspace?.id;
+    this.closeWorkspaceOpenOptionsMenu();
+
+    this.navigateToWorkspace(this.selectedWorkspace.id);
+  }
+
+  navigateToWorkspace(id: string): void {
+    let scanId = id;
     let isDefaultScan = scanId.match(/.+-[0-9]{9,9}/);
     if (isDefaultScan) {
       scanId = scanId.split("-")[1];
       this._router.navigate([TabLinks.analysis], { queryParams: { [EditorConfig.scanIdParam]: scanId } });
     } else {
-      this._router.navigate([TabLinks.analysis], { queryParams: { id: this.selectedWorkspace?.id } });
+      this._router.navigate([TabLinks.analysis], { queryParams: { id } });
     }
   }
 
   onOpen(resetView: boolean): void {
     this._analysisLayoutService.clearScreenConfigurationCache();
     this.closeOpenOptionsMenu();
+    this.closeWorkspaceOpenOptionsMenu();
 
     if (resetView) {
       if (
@@ -568,6 +608,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   filterWorkspaces() {
+    this.workspaces.sort((a, b) => {
+      return b.modifiedUnixSec - a.modifiedUnixSec;
+    });
+
     if (this._searchString.length === 0) {
       this.filteredWorkspaces = this.workspaces;
       return;
@@ -610,10 +654,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create()).subscribe({
       next: (resp: ScreenConfigurationListResp) => {
         this.workspaces = resp.screenConfigurations;
-        this.workspaces.sort((a, b) => {
-          return b.modifiedUnixSec - a.modifiedUnixSec;
-        });
-
         this.filterWorkspaces();
       },
       error: err => {
@@ -949,6 +989,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   private closeOpenOptionsMenu(): void {
     if (this.openOptionsButton && this.openOptionsButton instanceof WidgetSettingsMenuComponent) {
       (this.openOptionsButton as WidgetSettingsMenuComponent).close();
+    }
+  }
+
+  private closeWorkspaceOpenOptionsMenu(): void {
+    if (this.openWorkspaceOptionsButton && this.openWorkspaceOptionsButton instanceof WidgetSettingsMenuComponent) {
+      (this.openWorkspaceOptionsButton as WidgetSettingsMenuComponent).close();
     }
   }
 
