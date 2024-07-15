@@ -72,7 +72,6 @@ export class PMCSelectorDialogComponent implements OnInit {
     });
 
     let beamSelection = BeamSelection.makeSelectionFromScanEntryPMCSets(expandedSelection);
-    console.log(this.selectedPMCsByScan, expandedSelection, beamSelection);
     this._selectionService.setSelection(beamSelection, PixelSelection.makeEmptySelection(), true, true);
 
     this.dialogRef.close();
