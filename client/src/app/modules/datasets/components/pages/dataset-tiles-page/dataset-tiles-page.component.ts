@@ -290,7 +290,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onFilterTagChange(tags: string[]): void {
     this.filterTags = tags;
-    this.filterScans();
+    if (this.datasetsMode) {
+      this.filterScans();
+    } else if (this.workspacesMode) {
+      this.filterWorkspaces();
+    }
   }
 
   onTagChange(tags: string[]): void {
@@ -612,7 +616,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return b.modifiedUnixSec - a.modifiedUnixSec;
     });
 
-    if (this._searchString.length === 0) {
+    if (this._searchString.length === 0 && this.filterTags.length === 0) {
       this.filteredWorkspaces = this.workspaces;
       return;
     }
@@ -620,6 +624,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // Filter by title, description
     this.filteredWorkspaces = this.workspaces
       .filter(workspace => {
+        if (this.filterTags.length > 0 && !this.filterTags.some(tag => workspace.tags?.includes(tag))) {
+          return false;
+        }
+
         let searchFields = this.getWorkspaceSearchFields(workspace);
         return searchFields.some(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
       })
