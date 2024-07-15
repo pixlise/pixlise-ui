@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
-import { Observable, catchError, concatMap, from, map, of, shareReplay, switchMap, toArray } from "rxjs";
+import { Observable, Subject, combineLatest, from, map, of, shareReplay, switchMap } from "rxjs";
 import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
-import { decompressZeroRunLengthEncoding } from "src/app/utils/utils";
+import { decompressZeroRunLengthEncoding, encodeIndexList } from "src/app/utils/utils";
 import { APIDataService } from "./apidata.service";
 import { NotificationType } from "src/app/generated-protos/notification";
 import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
@@ -11,6 +11,7 @@ import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { LocalStorageService } from "./local-storage.service";
 import { CachedSpectraItem } from "../models/local-storage-db";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 
 export class ScanSpectrumData {
   constructor(
@@ -81,21 +82,26 @@ export class SpectrumDataService {
             // else: Process it from what we have
 
             // Don't have it cached, so request it
-            return this.requestSpectra(scanId, scanListResp.scans[0].timestampUnixSec, 0, indexes, bulkSum, maxValue);
+            if (indexes === null || indexes.length > 0) {
+              // Request scan entries first, so we have a list of all indexes that we need spectra for. This allows us to batch-request
+              // spectra from API
+              return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
+                switchMap((entriesResp: ScanEntryResp) => {
+                  // Make a list of ALL indexes we want to get
+                  const reqIndexes: number[] = Array.from(Array(entriesResp.entries.length).keys());
+
+                  return this.requestSpectra(scanId, scanListResp.scans[0].timestampUnixSec, reqIndexes, bulkSum, maxValue);
+                })
+              );
+            }
+            return this.requestSpectra(scanId, scanListResp.scans[0].timestampUnixSec, indexes, bulkSum, maxValue);
           })
         );
       })
     );
   }
 
-  private requestSpectra(
-    scanId: string,
-    scanTimeStampUnixSec: number,
-    indexCount: number,
-    indexes: number[] | null,
-    bulkSum: boolean,
-    maxValue: boolean
-  ): Observable<SpectrumResp> {
+  private requestSpectra(scanId: string, scanTimeStampUnixSec: number, indexes: number[] | null, bulkSum: boolean, maxValue: boolean): Observable<SpectrumResp> {
     const cached = this._spectrumCache.get(scanId);
 
     // Back up what we ACTUALLY require (we don't necessarily load what's requested because we may have it cached)
@@ -116,18 +122,61 @@ export class SpectrumDataService {
     }
 
     // If we've got some spectra already, only request what's newly needed
-    const req = SpectrumReq.create({
-      scanId: scanId,
-      bulkSum: bulkSum,
-      maxValue: maxValue,
-    });
+    const requests: SpectrumReq[] = [
+      SpectrumReq.create({
+        scanId: scanId,
+        bulkSum: bulkSum,
+        maxValue: maxValue,
+      }),
+    ];
 
     if (indexes !== null) {
-      req.entries = ScanEntryRange.create({ indexes: indexes });
+      // Request batches of spectra, if we request the whole lot in one go, the load balancer or something ends up disconnecting us and even restarting the API
+      // Never really got to the bottom of what's going on there
+      if (indexes.length <= 0) {
+        requests[0].entries = ScanEntryRange.create({ indexes: [] });
+      } else {
+        const batchSize = 200;
+        for (let c = 0; c < indexes.length; c += batchSize) {
+          const reqIdxs = encodeIndexList(indexes.slice(c, c + batchSize));
+
+          if (c == 0) {
+            // Tack onto that first request
+            requests[c].entries = ScanEntryRange.create({ indexes: reqIdxs });
+          } else {
+            requests.push(
+              SpectrumReq.create({
+                scanId: scanId,
+                entries: ScanEntryRange.create({ indexes: reqIdxs }),
+              })
+            );
+          }
+        }
+      }
     }
 
-    this._outstandingReq = this._dataService.sendSpectrumRequest(req).pipe(
-      map((resp: SpectrumResp) => {
+    const req$: Subject<SpectrumResp>[] = [];
+    for (const req of requests) {
+      req$.push(this._dataService.sendSpectrumRequest(req));
+    }
+
+    this._outstandingReq = combineLatest(req$).pipe(
+      map((resps: SpectrumResp[]) => {
+        const resp = resps[0];
+
+        // Copy all other spectra into first message, so we can process it as one
+        // NOTE: if we requested spectra by specifying indexes (PMCs), we got them back in that order. This means
+        // if we have to put them back in the expected order, with gaps where there were gaps in pmcs
+        if (indexes && indexes.length > 0) {
+          for (const idx of indexes) {
+            
+          }
+        }
+        for (let c = 1; c < resps.length; c++) {
+          resp.spectraPerLocation.push(...resps[c].spectraPerLocation);
+        }
+
+        // Read all responses and process in one go
         this.decompressSpectra(resp);
 
         // Update our cache

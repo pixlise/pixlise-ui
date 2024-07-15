@@ -90,6 +90,14 @@
         text-transform: uppercase;
 
         user-select: none;
+
+        .row {
+          display: flex;
+          flex-direction: row;
+
+          align-items: center;
+          gap: $sz-unit;
+        }
       }
     }
 

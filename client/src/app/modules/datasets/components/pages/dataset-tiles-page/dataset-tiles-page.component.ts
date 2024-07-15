@@ -36,7 +36,7 @@ import { AuthService } from "@auth0/auth0-angular";
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
-import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
+import { ScanDataType, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
@@ -349,6 +349,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // Navigating to the URL will trigger the download. This is neat because these URLs are
     // share-able and will open datasets if users are already logged in
     if (this.selectedScan) {
+      // Load the appropriate screen config - this is required if not running for first time (where scan id is picked up from URL - here we've called
+      // clearScreenConfigurationCache() above and ended up with no screen configs loaded)
+      this._analysisLayoutService.loadScreenConfigurationFromScan(this.selectedScan.id);
+
       // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
       this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
     }
@@ -601,7 +605,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Fill these so they display
     this.selectedScanSummaryItems = [
-      new SummaryItem("Detector:", this.selectedScan.instrumentConfig),
+      new SummaryItem("Instrument:", scanInstrumentToJSON(this.selectedScan.instrument)),
+      new SummaryItem("Detector Config:", this.selectedScan.instrumentConfig),
       new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])),
       new SummaryItem("Max Value:", this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])),
       new SummaryItem("Normal Spectra:", this.spectraCount(this.selectedScan.contentCounts["NormalSpectra"])),
@@ -611,11 +616,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     for (const sdt of this.selectedScan.dataTypes) {
       if (sdt.dataType == ScanDataType.SD_IMAGE) {
-        new SummaryItem("MCC Images:", sdt.count.toString());
+        this.selectedScanSummaryItems.push(new SummaryItem("MCC Images:", sdt.count.toString()));
       } else if (sdt.dataType == ScanDataType.SD_XRF) {
-        new SummaryItem("PMCs:", sdt.count.toString());
+        this.selectedScanSummaryItems.push(new SummaryItem("PMCs:", sdt.count.toString()));
       } else if (sdt.dataType == ScanDataType.SD_RGBU) {
-        new SummaryItem("RGBU Images:", sdt.count.toString());
+        this.selectedScanSummaryItems.push(new SummaryItem("RGBU Images:", sdt.count.toString()));
       }
     }
 
@@ -638,26 +643,34 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this.selectedScanSummaryItems.push(new SummaryItem("Updated Time:", createTime));
 
-    this.selectedScanTrackingItems = [
-      new SummaryItem("Target Name:", this.selectedScan.meta["Target"] || ""),
-      new SummaryItem("Site:", this.selectedScan.meta["Site"] || ""),
-    ];
-    let solLabel = "Sol:";
-    const sol = this.selectedScan.meta["Sol"] || "";
-    let testSOLAsDate = replaceAsDateIfTestSOL(sol);
-    if (testSOLAsDate.length != sol.length) {
-      solLabel = "Test Date:";
-      testSOLAsDate += " (" + sol + ")";
-    }
-    this.selectedScanTrackingItems.push(new SummaryItem(solLabel, testSOLAsDate));
+    this.selectedScanTrackingItems = [];
+    if (this.selectedScan.instrument == ScanInstrument.PIXL_FM) {
+      this.selectedScanTrackingItems = [
+        ...this.selectedScanTrackingItems,
+        new SummaryItem("Target Name:", this.selectedScan.meta["Target"] || ""),
+        new SummaryItem("Site:", this.selectedScan.meta["Site"] || ""),
+      ];
+      let solLabel = "Sol:";
+      const sol = this.selectedScan.meta["Sol"] || "";
+      let testSOLAsDate = replaceAsDateIfTestSOL(sol);
+      if (testSOLAsDate.length != sol.length) {
+        solLabel = "Test Date:";
+        testSOLAsDate += " (" + sol + ")";
+      }
+      this.selectedScanTrackingItems.push(new SummaryItem(solLabel, testSOLAsDate));
 
-    this.selectedScanTrackingItems = [
-      ...this.selectedScanTrackingItems,
-      new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""),
-      new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""),
-      new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""),
-      new SummaryItem("PIXLISE ID:", this.selectedScan.id),
-    ];
+      this.selectedScanTrackingItems.push(new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""));
+    }
+
+    if (this.selectedScan.instrument == ScanInstrument.PIXL_FM || this.selectedScan.instrument == ScanInstrument.PIXL_EM) {
+      this.selectedScanTrackingItems.push(new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""));
+    }
+
+    if (this.selectedScan.instrument == ScanInstrument.PIXL_FM) {
+      this.selectedScanTrackingItems.push(new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""));
+    }
+
+    this.selectedScanTrackingItems.push(new SummaryItem("PIXLISE ID:", this.selectedScan.id));
 
     // TODO:
     const missing = ""; //DataSetSummary.listMissingData(this.selectedScan);

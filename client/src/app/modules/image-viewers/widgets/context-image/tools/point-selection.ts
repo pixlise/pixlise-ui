@@ -106,8 +106,9 @@ export class PointSelection extends BaseContextImageTool {
     } else if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
       //if(event.metaKey || event.ctrlKey)
       if (this.pointInvestigationMode) {
+        const scanIds = this.selectedIdxs.keys();
         this.selectedIdxs.clear();
-        this._host.getSelectionService().clearSelection();
+        this._host.getSelectionService().clearSelection(Array.from(scanIds));
       }
 
       // Mouse released, process it (may have just been a click with no mouse drag msg in between)

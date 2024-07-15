@@ -89,6 +89,8 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
     this._isConnected = true;
 
     // Send everything in the queue
+    // TODO: Should this be in random order? That way on repeated disconnection we eventually whittle down
+    // to which message is causing issues
     for (const msg of reqs) {
       this._apiComms.send(msg);
     }

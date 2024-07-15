@@ -74,8 +74,14 @@ export class SelectionHistoryItem {
     return this.beamSelection.isEqualTo(other.beamSelection) && this.pixelSelection.isEqualTo(other.pixelSelection) && isEqualCrop;
   }
 
-  static makeEmptySelectionItem(): SelectionHistoryItem {
-    return new SelectionHistoryItem(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
+  static makeEmptySelectionItem(scanIds: string[] = []): SelectionHistoryItem {
+    const beamSel = new Map<string, Set<number>>();
+    for (const scanId of scanIds) {
+      beamSel.set(scanId, new Set<number>());
+    }
+
+    const result = new SelectionHistoryItem(new BeamSelection(beamSel), PixelSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
+    return result;
   }
 }
 
@@ -337,26 +343,28 @@ export class SelectionService {
   }
 
   // General selection operations
-  clearSelection(): void {
+  clearSelection(scanIds: string[]): void {
     console.log("Selection cleared");
 
     // Clear selection, but preserve cropped area
     const currentSelection = this.getCurrentSelection();
-    const emptySelection = SelectionHistoryItem.makeEmptySelectionItem();
+    const emptySelection = SelectionHistoryItem.makeEmptySelectionItem(scanIds);
     emptySelection.cropSelection = currentSelection.cropSelection;
     this.addSelection(emptySelection);
 
     this.updateListeners();
 
+    this.persistSelection(emptySelection.beamSelection, emptySelection.pixelSelection, false);
+
     //let toSave = new selectionState([], "", []);
     //this._viewStateService.setSelection(toSave);
   }
-
+/*
   clearSelectionAndHistory(): void {
     this._selectionStack = [SelectionHistoryItem.makeEmptySelectionItem()];
     this._selectionCurrIdx = 0;
   }
-
+*/
   get selection$(): ReplaySubject<SelectionHistoryItem> {
     return this._selectionSubject$;
   }
@@ -530,7 +538,7 @@ export class SelectionService {
     const dialogRef = this._dialog.open(NewROIDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((created: boolean) => {
       if (created) {
-        this.clearSelection();
+        this.clearSelection([defaultScanId]);
       }
     });
   }

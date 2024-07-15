@@ -76,7 +76,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   private _expressionPickerDialog: MatDialogRef<ExpressionPickerComponent> | null = null;
 
+  private _visibilityDialog: MatDialogRef<LayerVisibilityDialogComponent> | null = null;
+
   private _showBottomToolbar: boolean = !this._analysisLayoutService.isMapsPage;
+
+  // Map layers that were hidden in past - if we re-open the visibility dialog we
+  // don't want to lose them because they're time consuming to find and enable
+  private _hiddenMapLayers: Map<string, ContextImageMapLayer> = new Map<string, ContextImageMapLayer>();
 
   constructor(
     private _endpointsService: APIEndpointsService,
@@ -359,6 +365,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
       if (screenConfiguration) {
         this.configuredScanIds = Object.keys(screenConfiguration.scanConfigurations).map(scanId => scanId);
+
+        // Also, in this case, we forget any hidden layers we had. They're likely no longer
+        // relevant, user may have switched quants or something
+        this._hiddenMapLayers.clear();
       }
     });
 
@@ -784,6 +794,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   onToggleShowPoints(trigger: Element | undefined) {
+    if (this._visibilityDialog) {
+      return; // already showing it! TODO: Should we flash it or something?
+    }
+
     const datasetLayersSection: LayerVisibilitySection = {
       id: "dataset-layers",
       title: "Dataset Layers",
@@ -862,6 +876,19 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           });
         });
 
+        // Add any deleted layers we have stored
+        for (const layer of this._hiddenMapLayers.values()) {
+          mapLayerSection.options.push({
+            id: layer.expressionId,
+            name: layer.expressionName,
+            gradient: layer.shading,
+            showOpacity: true,
+            opacity: 1,
+            visible: false,
+            canDelete: true,
+          });
+        }
+
         mapLayersSection.push(mapLayerSection);
       }
 
@@ -925,9 +952,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, rect.height, rect.width);
     }
 
-    const dialogRef = this.dialog.open(LayerVisibilityDialogComponent, dialogConfig);
+    this._visibilityDialog = this.dialog.open(LayerVisibilityDialogComponent, dialogConfig);
 
-    dialogRef.componentInstance.visibilityToggle.subscribe((change: LayerVisibilityChange) => {
+    this._visibilityDialog.componentInstance.visibilityToggle.subscribe((change: LayerVisibilityChange) => {
       if (change) {
         if (change.sectionId === "dataset-layers") {
           if (change.layerId === "footprints" && change.subLayerId) {
@@ -950,8 +977,37 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
                   this.mdl.expressionIds.push(change.layerId);
                 }
               }
+              // If we had it remembered as a hidden layer, delete it
+              this._hiddenMapLayers.delete(change.layerId);
             } else {
               this.mdl.expressionIds = this.mdl.expressionIds.filter(id => id !== change.layerId);
+              // Remember that we hid this
+              const mapLayers = this.mdl.getMapLayers(scanId);
+              // Find the layer & make a backup
+              for (const layer of mapLayers) {
+                if (layer.expressionId == change.layerId) {
+                  // NOTE: we only back up some of the fields - only what we need when restoring
+                  this._hiddenMapLayers.set(
+                    change.layerId,
+                    new ContextImageMapLayer(
+                      layer.scanId,
+                      layer.expressionId,
+                      layer.quantId,
+                      layer.roiId,
+                      layer.hasOutOfDateModules,
+                      layer.expressionName,
+                      layer.opacity,
+                      layer.shading,
+                      layer.subExpressionNames,
+                      layer.subExpressionShading,
+                      [], // don't need the points! waste of mem
+                      layer.valueRanges,
+                      layer.isBinary
+                    )
+                  );
+                  break;
+                }
+              }
             }
             this.reloadModel();
           } else {
@@ -981,7 +1037,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       }
     });
 
-    dialogRef.componentInstance.onReorder.subscribe((change: LayerVisibilitySection[]) => {
+    this._visibilityDialog.componentInstance.onReorder.subscribe((change: LayerVisibilitySection[]) => {
       const newExpressionIdOrder: string[] = [];
       const newRegionIdOrder: string[] = [];
       change.forEach(section => {
@@ -1014,7 +1070,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       this.reloadModel();
     });
 
-    dialogRef.componentInstance.opacityChange.subscribe((change: LayerOpacityChange) => {
+    this._visibilityDialog.componentInstance.opacityChange.subscribe((change: LayerOpacityChange) => {
       if (change) {
         this.mdl.scanIds.forEach(scanId => {
           const mapLayers = this.mdl.getMapLayers(scanId);
@@ -1043,6 +1099,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         this.saveState();
         this.reDraw();
       }
+    });
+
+    this._visibilityDialog.afterClosed().subscribe(() => {
+      this._visibilityDialog = null;
     });
   }
 
