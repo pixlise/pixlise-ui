@@ -164,14 +164,6 @@ export class SpectrumDataService {
       map((resps: SpectrumResp[]) => {
         const resp = resps[0];
 
-        // Copy all other spectra into first message, so we can process it as one
-        // NOTE: if we requested spectra by specifying indexes (PMCs), we got them back in that order. This means
-        // if we have to put them back in the expected order, with gaps where there were gaps in pmcs
-        if (indexes && indexes.length > 0) {
-          for (const idx of indexes) {
-            
-          }
-        }
         for (let c = 1; c < resps.length; c++) {
           resp.spectraPerLocation.push(...resps[c].spectraPerLocation);
         }
