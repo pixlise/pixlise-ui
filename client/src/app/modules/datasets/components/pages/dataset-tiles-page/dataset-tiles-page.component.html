@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
       >Reset & Open</push-button
     >
-    <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="yellow">Create New Workspace From</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="yellow">New Workspace From Scan</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="yellow">Delete</push-button>
   </div>
