@@ -1,0 +1,25 @@
+<div
+  *ngIf="template?.layout?.widgets && template?.screenConfiguration"
+  class="layout-preview"
+  [ngStyle]="{
+    'grid-template-columns': template!.screenConfiguration.templateColumns,
+    'grid-template-rows': template!.screenConfiguration.templateRows
+  }">
+  <div
+    #tooltip="matTooltip"
+    matTooltip="{{ getWidgetName(widget.type) }}"
+    *ngFor="let widget of template!.layout.widgets"
+    class="widget-preview"
+    [ngStyle]="{
+      'grid-column-start': widget.startColumn,
+      'grid-column-end': widget.endColumn,
+      'grid-row-start': widget.startRow,
+      'grid-row-end': widget.endRow
+    }">
+    <img *ngIf="widget.type && getWidgetIconUrl(widget.type)" [src]="getWidgetIconUrl(widget.type)" />
+    <span class="widget-name-placeholder" *ngIf="widget.type && !getWidgetIconUrl(widget.type)">{{ getWidgetNamePlaceholder(widget.type) }}</span>
+  </div>
+</div>
+<div *ngIf="!template?.layout?.widgets || !template?.screenConfiguration" class="layout-preview">
+  <div class="no-layout">No layout available</div>
+</div>

@@ -4,6 +4,7 @@ import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
 import { UsersService } from "src/app/modules/settings/services/users.service";
+import { ActivatedRoute } from "@angular/router";
 
 export type ScreenConfigurationCSS = {
   templateColumns: string;
@@ -22,12 +23,16 @@ export class AnalysisPageComponent {
   computedLayouts: ScreenConfigurationCSS[] = [];
   loadedScreenConfiguration: ScreenConfiguration | null = null;
 
+  activeLayout: FullScreenLayout | null = null;
+  activeLayoutIndex: number = 0;
+
   soloViewWidgetId: string | null = null;
   soloViewWidget: WidgetLayoutConfiguration | null = null;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
-    private _usersService: UsersService
+    private _usersService: UsersService,
+    private _route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -50,6 +55,21 @@ export class AnalysisPageComponent {
           this._analysisLayoutService.delayNotifyCanvasResize(500);
         } else {
           this.soloViewWidget = null;
+        }
+      })
+    );
+
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        let tabNumber = parseInt(params?.["tab"] || "0");
+        if (!isNaN(tabNumber)) {
+          this.activeLayoutIndex = tabNumber;
+        } else {
+          this.activeLayoutIndex = 0;
+        }
+
+        if (this.loadedScreenConfiguration && this.loadedScreenConfiguration.layouts.length > this.activeLayoutIndex) {
+          this.activeLayout = this.loadedScreenConfiguration.layouts[this.activeLayoutIndex];
         }
       })
     );
@@ -88,6 +108,13 @@ export class AnalysisPageComponent {
       )
     ) {
       this.computedLayouts = newLayout;
+    }
+
+    if (this.loadedScreenConfiguration.layouts.length > this.activeLayoutIndex) {
+      this.activeLayout = this.loadedScreenConfiguration.layouts[this.activeLayoutIndex];
+    } else {
+      console.log("Active layout index is out of bounds, ", this.activeLayoutIndex, this.loadedScreenConfiguration.layouts);
+      this.activeLayout = null;
     }
   }
 

@@ -35,9 +35,13 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #changeLogDialog>
   <div class="change-log-container">
     <h1>
-      Change Log
+      Change Log (Updated {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }})
       <action-button (onClick)="closeChangeLogDialog()" action="close" color="rgb(var(--clr-gray-30))"></action-button>
     </h1>
+    <div class="v3-container">
+      <span class="title">We're keeping PIXLISE v3 up while we work out the bugs with v4.</span>
+      <push-button class="back-to-v3" [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button>
+    </div>
     <div class="change-log">
       <markdown lineHighlight [lineOffset]="5" src="/assets/CHANGELOG.md"> </markdown>
     </div>
@@ -48,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="logo-title">
     <img
       class="abbreviated"
-      *ngIf="title.length > 0"
+      *ngIf="hasActiveWorkspace && title.length > 0"
       src="assets/PIXLISE-abbreviated.svg"
       (click)="onLogoClick()"
       #tooltip="matTooltip"
@@ -56,31 +60,65 @@ POSSIBILITY OF SUCH DAMAGE.
       [matTooltipShowDelay]="500" />
     <img
       class="full"
-      *ngIf="title.length === 0"
+      *ngIf="!hasActiveWorkspace || title.length === 0"
       src="assets/PIXLISE-red-logo.svg"
       (click)="onLogoClick()"
       #tooltip="matTooltip"
       matTooltip="Go to homepage"
       [matTooltipShowDelay]="500" />
-    <div class="title-text" *ngIf="title.length > 0" [title]="title">{{ title }}</div>
+    <div class="title-text" *ngIf="hasActiveWorkspace && title.length > 0" [title]="title">{{ title }}</div>
   </div>
   <div class="tabs">
-    <div
-      class="tab {{ tab.active ? 'active' : '' }}"
-      *ngFor="let tab of openTabs"
-      #tooltip="matTooltip"
-      [matTooltip]="tab.tooltip || ''"
-      [matTooltipShowDelay]="1000">
-      <a (click)="onOpenTab(tab)">
-        <img class="tab-icon" [src]="tab.icon" />
-        <div *ngIf="tab.label" class="tab-label">{{ tab.label }}</div>
+    <div class="user-tabs">
+      <div
+        class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }} {{
+          editingTabIndex === getTabIndex(tab) && editingTabIndex !== null ? 'editing' : 'viewing'
+        }}"
+        *ngFor="let tab of openTabs"
+        #tooltip="matTooltip"
+        [matTooltip]="tab.tooltip || ''"
+        [matTooltipShowDelay]="1000">
+        <a (click)="onOpenTab(tab)">
+          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
+          <!-- <div *ngIf="tab.label" class="tab-label">{{ tab.label }}</div> -->
+          <div *ngIf="tab.label" class="tab-label">
+            <span *ngIf="editingTabIndex !== getTabIndex(tab) || editingTabIndex === null" class="view-label" (dblclick)="onEditTab(tab)">{{ tab.label }}</span>
+            <input
+              *ngIf="editingTabIndex === getTabIndex(tab) && editingTabIndex !== null"
+              class="edit-label"
+              [(ngModel)]="newTabName"
+              type="text"
+              autocomplete="off"
+              data-lpignore="true" />
+          </div>
+
+          <action-button
+            *ngIf="canEditTab(tab) && editingTabIndex !== getTabIndex(tab) && currentAnalysisTabIndex === getTabIndex(tab)"
+            class="tab-edit"
+            action="edit"
+            (onClick)="onEditTab(tab)"></action-button>
+          <div class="edit-btns" *ngIf="canEditTab(tab) && editingTabIndex === getTabIndex(tab)">
+            <action-button class="tab-save" action="check" (onClick)="saveTabName(tab)"></action-button>
+            <action-button class="tab-delete" action="close" (onClick)="cancelEditTabName()"></action-button>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div *ngIf="isNewTab" class="tab active new-tab" #tooltip="matTooltip" matTooltip="New Tab" [matTooltipShowDelay]="1000">
+      <a>
+        <span class="tab-label">New Tab</span>
+      </a>
+    </div>
+    <div *ngIf="hasActiveWorkspace" class="tab new-tab-btn">
+      <a (click)="onNewTab()">
+        <span class="tab-label">+</span>
       </a>
     </div>
   </div>
 
-  <div *ngIf="isLoggedIn" class="authenticated-buttons">
+  <div class="authenticated-buttons">
     <span class="buttons">
-      <span class="version"> Pixlise {{ uiVersion }}</span>
+      <!-- <span class="version"> Pixlise {{ uiVersion }}</span> -->
       <push-button
         *ngIf="uiVersionLastCommitDate > 0"
         [customDialog]="changeLogDialog"
@@ -88,10 +126,11 @@ POSSIBILITY OF SUCH DAMAGE.
         class="changelog-btn"
         [buttonStyle]="hasViewedLatestVersion ? 'changelog-viewed' : 'changelog-new'"
         #changeLogBtn>
-        <img class="changelog-icon {{ hasViewedLatestVersion ? 'viewed' : '' }}" src="assets/button-icons/change-log-lightning.svg" />
-        <span>Updated {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }}</span>
+        <img *ngIf="!hasViewedLatestVersion" class="changelog-icon {{ hasViewedLatestVersion ? 'viewed' : '' }}" src="assets/button-icons/change-log-lightning.svg" />
+        <!-- <span>Updated {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }}</span> -->
+        <span>{{ uiVersion }}</span>
       </push-button>
-      <push-button [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button>
+      <!-- <push-button class="back-to-v3" [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button> -->
       <icon-button (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
       <icon-button (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
       <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()" class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>

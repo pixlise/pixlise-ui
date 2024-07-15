@@ -31,10 +31,13 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/co
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { map, Subscription, switchMap } from "rxjs";
-import { ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
+import { FullScreenLayout, ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
 import { getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
 import { ObjectType } from "../../../../../../generated-protos/ownership-access";
 import { SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
+import { NavigationTab } from "../../../../services/analysis-layout.service";
+import { TabLinks } from "../../../../../../models/TabLinks";
+import { ActivatedRoute } from "@angular/router";
 
 @Component({
   selector: "workspace-configuration",
@@ -60,10 +63,17 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   public screenConfig: ScreenConfiguration | null = null;
 
+  public openTabs: NavigationTab[] = [];
+  public newTabName: string = "";
+  public editingTabIndex: number | null = null;
+
+  queryParam: Record<string, string> = {};
+
   constructor(
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackbarService: SnackbarService
+    private _snackbarService: SnackbarService,
+    private _route: ActivatedRoute
   ) {}
 
   get hasWorkspaceChanged(): boolean {
@@ -98,6 +108,20 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         )
         .subscribe()
     );
+
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        this.queryParam = { ...params };
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfigurationTabs$.subscribe(tabs => {
+        this.openTabs = tabs;
+        this.newTabName = "";
+        this.editingTabIndex = null;
+      })
+    );
   }
 
   ngOnDestroy(): void {
@@ -107,6 +131,121 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   switchToEditMode(): void {
     this.descriptionMode = "Edit";
     setTimeout(() => this.setCursorToEnd(), 0);
+  }
+
+  canDeleteTab(tab: NavigationTab): boolean {
+    let canDeleteTab = ![TabLinks.browse, TabLinks.codeEditor, TabLinks.maps].includes(tab?.url) && this.canEditScreenConfig;
+    if (!canDeleteTab) {
+      return false;
+    }
+
+    return this._analysisLayoutService.activeScreenConfigurationTabs$.value.filter(tab => tab.url === TabLinks.analysis).length > 1;
+  }
+
+  get canEditScreenConfig(): boolean {
+    return Boolean(this._analysisLayoutService.activeScreenConfiguration$.value.owner?.canEdit);
+  }
+
+  onEditTab(tab: NavigationTab, index: number): void {
+    if (!this.canEditTab(tab) || this.editingTabIndex === index || index < 0) {
+      return;
+    }
+
+    this.editingTabIndex = index;
+    this.newTabName = tab.label || "";
+  }
+
+  saveTabName(tab: NavigationTab, index: number): void {
+    if (this.editingTabIndex !== index || !this.newTabName || !this.screenConfig) {
+      return;
+    }
+
+    tab.label = this.newTabName;
+
+    let screenLayout = this.getLayoutFromTab(tab);
+    if (screenLayout) {
+      screenLayout.tabName = this.newTabName;
+      this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+    }
+
+    this.editingTabIndex = null;
+    this.newTabName = "";
+  }
+
+  cancelEditTabName(): void {
+    this.editingTabIndex = null;
+    this.newTabName = "";
+  }
+
+  canEditTab(tab: NavigationTab): boolean {
+    return ![TabLinks.browse, TabLinks.codeEditor, TabLinks.maps].includes(tab?.url) && this.canEditScreenConfig;
+  }
+
+  getLayoutFromTab(tab: NavigationTab): FullScreenLayout | null {
+    return this._analysisLayoutService.getLayoutFromTab(tab);
+  }
+
+  checkIsTabHidden(tab: NavigationTab): boolean {
+    if (tab.url !== TabLinks.analysis) {
+      let visibilityMap = {
+        [TabLinks.browse]: this.screenConfig?.browseTabHidden,
+        [TabLinks.codeEditor]: this.screenConfig?.codeEditorTabHidden,
+        [TabLinks.maps]: this.screenConfig?.elementMapsTabHidden,
+      };
+
+      return visibilityMap[tab.url] || false;
+    }
+
+    return this.getLayoutFromTab(tab)?.hidden || false;
+  }
+
+  onToggleTabVisibility(tab: NavigationTab) {
+    if (!this.screenConfig) {
+      return;
+    }
+
+    if (tab.url !== TabLinks.analysis) {
+      this.screenConfig.browseTabHidden = tab.url === TabLinks.browse ? !this.screenConfig.browseTabHidden : this.screenConfig.browseTabHidden;
+      this.screenConfig.codeEditorTabHidden = tab.url === TabLinks.codeEditor ? !this.screenConfig.codeEditorTabHidden : this.screenConfig.codeEditorTabHidden;
+      this.screenConfig.elementMapsTabHidden = tab.url === TabLinks.maps ? !this.screenConfig.elementMapsTabHidden : this.screenConfig.elementMapsTabHidden;
+
+      this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+      return;
+    }
+
+    let tabIndex = tab?.params?.["tab"];
+    if (tabIndex !== undefined) {
+      let index = parseInt(tabIndex);
+      let screenLayout = this.screenConfig?.layouts[index];
+      if (screenLayout) {
+        screenLayout.hidden = !screenLayout.hidden;
+
+        this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+      }
+    }
+  }
+
+  onCloseTab(tab: NavigationTab) {
+    if (!this.screenConfig) {
+      return;
+    }
+
+    let currentTab = this.queryParam["tab"];
+    let tabIndex = tab?.params?.["tab"];
+
+    if (tabIndex !== undefined) {
+      let index = parseInt(tabIndex);
+      this.screenConfig.layouts.splice(index, 1);
+
+      this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+
+      if (currentTab !== undefined) {
+        let currentTabIndex = parseInt(currentTab);
+        if (currentTabIndex > index) {
+          this._analysisLayoutService.setActiveScreenConfigurationTabIndex(Math.max(currentTabIndex - 1, 0));
+        }
+      }
+    }
   }
 
   setCursorToEnd() {

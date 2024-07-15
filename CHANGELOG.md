@@ -1,3 +1,14 @@
+## 4.26.0 (2024-07-15)
+
+### Features
+
+- **Workspace Features** Adds ability to expand workspaces past a single tab.
+  - Tab name, description, and tags are now editable from the workspace sidepanel
+  - Workspace tabs can be hidden and deleted
+  - New workspace tab that allows for different tab layouts
+- **New Workspace Listing Page** Allows for easier viewing of existing workspaces and creation of new ones.
+  - Shows metadata for each workspace
+
 ## 4.25.0 (2024-07-15)
 
 ### Features
