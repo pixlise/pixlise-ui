@@ -274,19 +274,31 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (result && result.selectedExpressions?.length > 0 && this._analysisLayoutService.highlightedWidgetId$.value === this._widgetId) {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result.selectedExpressions?.length > 0) {
           // If there are 1-3, set them all
           const last = Math.min(3, result.selectedExpressions.length);
           for (let i = 0; i < last; i++) {
             this.mdl.expressionIds[i] = result.selectedExpressions[i].id;
           }
-
-          this.update();
-          this.saveState();
-
-          // Expression picker has closed, so we can stop highlighting this widget
-          this._analysisLayoutService.highlightedWidgetId$.next("");
+        } else if (result.selectedGroup?.groupItems?.length || 0 > 0) {
+          const last = Math.min(3, result!.selectedGroup!.groupItems.length);
+          for (let i = 0; i < last; i++) {
+            this.mdl.expressionIds[i] = result!.selectedGroup!.groupItems[i].expressionId;
+          }
+        } else {
+          this._snackService.openError("No expressions to apply");
+          return;
         }
+
+        this.update();
+        this.saveState();
+
+        // Expression picker has closed, so we can stop highlighting this widget
+        this._analysisLayoutService.highlightedWidgetId$.next("");
       })
     );
 

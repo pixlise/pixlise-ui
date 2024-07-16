@@ -428,7 +428,10 @@ export class WidgetDataService {
             // Make sure we don't have broken stuff cached!
             this._inFluxSingleQueryResultCache.delete(cacheKey);
 
-            const errorMsg = httpErrorToString(err, "Expression [" + cacheKey + "] error"); // We use this function because it can decode many kinds of error class/type
+            let errorMsg = httpErrorToString(err, "Expression error"); // We use this function because it can decode many kinds of error class/type
+
+            // Show what expression it was
+            errorMsg += `. Expression was: ["${cacheKey}"]`;
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (
@@ -791,7 +794,9 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Expression failed to complete", msg),
+        /*result.errorMsg.length > 0
+          ? new WidgetError(result.errorMsg, "The expression failed, check configuration and try again")
+          :*/ new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,

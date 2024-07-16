@@ -1,30 +1,23 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, TemplateRef, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule } from "src/app/generated-protos/modules";
-import { ExpressionsService } from "../services/expressions.service";
+import { ExpressionsService } from "../../services/expressions.service";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { Subscription } from "rxjs";
-import { AnalysisLayoutService } from "../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../../analysis/analysis.module";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
-import { ScanItem } from "src/app/generated-protos/scan";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ConfirmDialogComponent } from "../../pixlisecore/components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
-import { WidgetSettingsMenuComponent } from "../../pixlisecore/pixlisecore.module";
+import { ConfirmDialogComponent } from "../../../pixlisecore/components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
+import { WidgetSettingsMenuComponent } from "../../../pixlisecore/pixlisecore.module";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
-import {
-  BINARY_WIDGET_OPTIONS,
-  RGB_MIX_MODE_OPTIONS,
-  TERNARY_WIDGET_OPTIONS,
-  WidgetLayerPositionConfig,
-  WidgetLayerPositionConfigMap,
-  widgetLayerPositions,
-} from "../models/expression-widget-layer-configs";
-import { WidgetType } from "../../widget/models/widgets.model";
+import { RGB_MIX_MODE_OPTIONS, WidgetLayerPositionConfigMap, widgetLayerPositions } from "../../models/expression-widget-layer-configs";
+import { WidgetType } from "../../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserInfo } from "src/app/generated-protos/user";
+
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",

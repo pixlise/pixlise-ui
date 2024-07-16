@@ -237,7 +237,7 @@ export class ContextImageDataService {
       const result = adjustedQueryResults[c];
       const expr = result.expression?.name ? `${result.expression?.name} (${expressionId})` : `id=${expressionId}`;
       if (result.error) {
-        throw new WidgetError(`processQueryResults: expression ${expr} had error: ${result.error}`, result.error.description);
+        throw result.error;
       }
 
       if (!result.isPMCTable) {
