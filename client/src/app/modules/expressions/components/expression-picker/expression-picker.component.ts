@@ -924,7 +924,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               this.onConfirm();
             }
           } else {
-            this.loadGroupAsRGBMix(expressionGroup);
+            // Set it as an RGB mix only if we're launched from a widget which has the capability to display RGB mixes
+            // otherwise we're just showing them as expression groups here
+            const widgetSpec: WidgetConfiguration = WIDGETS[this.data?.widgetType as keyof typeof WIDGETS];
+
+            if (widgetSpec?.showRGBMixExpressionPickerMode || false) {
+              this.loadGroupAsRGBMix(expressionGroup);
+            } else {
+              this.overwriteExistingExpressionGroup = true;
+              this.activeRGBMixModeGroup = "Expressions";
+              this.selectedGroup = expressionGroup;
+              this.updateSelectedExpressions();
+            }
+
             // Clear the last written expression because we're now working with a new group
             this._expressionService.lastWrittenExpressionGroupId$.next("");
             this.updateSelectedExpressions();
