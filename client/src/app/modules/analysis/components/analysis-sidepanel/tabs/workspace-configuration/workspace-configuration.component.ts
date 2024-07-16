@@ -56,7 +56,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   public workspaceDescription: string = "";
   public workspaceTags: string[] = [];
 
-  public descriptionModes: string[] = ["Edit", "View"];
+  public descriptionModes: string[] = ["View", "Edit"];
   public descriptionMode: string = "View";
 
   private _tagsChanged: boolean = false;
