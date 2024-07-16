@@ -1,3 +1,11 @@
+## 4.27.0 (2024-07-16)
+
+### Bug Fixes
+
+- Fixed issues with visibility window on context image
+- Fixed expression picker not behaving right when using expression groups/RGB mixes
+- Made error messages geerated by expressions more human-readable
+
 ## 4.26.0 (2024-07-15)
 
 ### Features
