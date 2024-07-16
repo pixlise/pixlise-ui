@@ -4,7 +4,7 @@ import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { CdkAccordionModule } from "@angular/cdk/accordion";
 import { TagsModule } from "../tags/tags.module";
 import { ScrollingModule } from "@angular/cdk/scrolling";
-import { ExpressionLayerComponent } from "./expression-layer/expression-layer.component";
+import { ExpressionLayerComponent } from "./components/expression-layer/expression-layer.component";
 import { ExpressionPickerComponent } from "./components/expression-picker/expression-picker.component";
 import { ExpressionSearchControlsComponent } from "./components/expression-search-controls/expression-search-controls.component";
 import { MatTooltipModule } from "@angular/material/tooltip";

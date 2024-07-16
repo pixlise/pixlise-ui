@@ -248,11 +248,6 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
     const queryWarnings: string[] = [];
 
     for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx += this.expressionIds.length) {
-      // Set up storage for our data first
-      const scanId = queryData.queryResults[queryIdx].query.scanId;
-      const roiId = queryData.queryResults[queryIdx].query.roiId;
-      const region = queryData.queryResults[queryIdx].region;
-
       let pointGroup: NaryChartDataGroup | null = null;
 
       // Filter out PMCs that don't exist in the data for all axes
@@ -268,7 +263,12 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
       const filteredValues = PMCDataValues.filterToCommonPMCsOnly(toFilter);
 
       // Read for each expression
+      let firstPointGroup = true;
       for (let c = 0; c < this.expressionIds.length; c++) {
+        const scanId = queryData.queryResults[queryIdx + c].query.scanId;
+        const roiId = queryData.queryResults[queryIdx + c].query.roiId;
+        const region = queryData.queryResults[queryIdx + c].region;
+
         // Read the name
         const expr = queryData.queryResults[queryIdx + c].expression;
         axes[c].label = getExpressionShortDisplayName(18, expr?.id || "", expr?.name || "?").shortName;
@@ -337,7 +337,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
             const value = roiValues.values[i];
 
             // Save it in A, B or C - A also is creating the value...
-            if (c == 0) {
+            if (firstPointGroup) {
               pointGroup.valuesPerScanEntry.push(new NaryChartDataItem(value.pmc, [value.value]));
 
               // Also add it to the PMC lookup map
@@ -357,6 +357,8 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
             }
           }
         }
+
+        firstPointGroup = false;
       }
 
       // TODO: we may need to store PMC vs location index lookups like we did here:
