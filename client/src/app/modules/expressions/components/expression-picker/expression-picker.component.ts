@@ -51,6 +51,7 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group-msgs";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { setsEqual } from "src/app/utils/utils";
 
 export type ExpressionPickerResponse = {
   selectedGroup?: ExpressionGroup;
@@ -1068,7 +1069,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.onConfirm();
   }
 
-  onConfirm(saveExpressionGroup: boolean = false): void {
+  onConfirm(): void {
     const selectedExpressions: DataExpression[] = Array.from(this._selectedExpressionIdOrder)
       .map(id => this._selectedExpressions.find(expression => expression?.id === id))
       .filter(expression => expression) as DataExpression[];
@@ -1077,8 +1078,24 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       .map(id => this._selectedRGBMixExpressions.find(expression => expression?.id === id))
       .filter(group => group) as DataExpression[];
 
-    let selectedGroup = ExpressionGroup.create(this.selectedGroup);
     if (rgbMixExpressions.length >= 3) {
+      // If the selected group alredy has an id, and it has the same RGB mix entries as the one we're about to create, don't create it!
+      // it can be used as-is directly.
+      if (
+        this.selectedGroup.id.length > 0 &&
+        setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id)))
+      ) {
+        this._analysisLayoutService.expressionPickerResponse$.next({
+          selectedGroup: this.selectedGroup,
+          selectedExpressions,
+          scanId: this.scanId,
+          quantId: this.quantId,
+          persistDialog: this.persistDialog,
+          subId: this.data.subId,
+        });
+        return;
+      }
+      const selectedGroup = ExpressionGroup.create(this.selectedGroup);
       selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
 
       let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
