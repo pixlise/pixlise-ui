@@ -41,6 +41,7 @@ import {
   LayerVisibilitySection,
   LayerVisiblilityData,
 } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -723,8 +724,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         },
         error: err => {
           this.isWidgetDataLoading = false;
-          this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
-          this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
+
+          if (err instanceof WidgetError) {
+            this._snackService.openError("Context image failed to display an expression", err);
+            this.widgetErrorMessage = err.message;
+          } else {
+            this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
+            this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
+          }
         },
       });
   }

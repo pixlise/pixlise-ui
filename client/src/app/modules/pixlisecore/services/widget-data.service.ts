@@ -794,7 +794,9 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Expression failed to complete", msg),
+        /*result.errorMsg.length > 0
+          ? new WidgetError(result.errorMsg, "The expression failed, check configuration and try again")
+          :*/ new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,
