@@ -1,3 +1,12 @@
+## 4.28.0 (Unreleased)
+
+### Bug Fixes
+
+- Fixed issue where key wasn't showing up for all datasets if multiple All Points regions were selected
+- The region color changer in the ROI picker now updates the dataset color if you change the color for the All Points region
+  - Hides the shapes picker for All Points as this is unsupported
+- Fixed edge case where if you held down "Cmd" (or "Ctrl" on Windows) and then clicked off the page, when you went back, pressing "B" would trigger the sidebar to toggle
+
 ## 4.27.0 (2024-07-16)
 
 ### Bug Fixes
