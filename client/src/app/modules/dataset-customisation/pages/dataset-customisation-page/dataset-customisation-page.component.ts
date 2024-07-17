@@ -607,10 +607,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     items.push(new PickerDialogItem("Footprint", "Footprint", "", true));
 
     const shown = [];
-    if (this.mdl.hidePointsForScans.length <= 0) {
+    if (this.mdl.hidePointsForScans.size <= 0) {
       shown.push("Scan Points");
     }
-    if (this.mdl.hideFootprintsForScans.length <= 0) {
+    if (this.mdl.hideFootprintsForScans.size <= 0) {
       shown.push("Footprint");
     }
 
@@ -621,14 +621,14 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       if (ids) {
         // If they are NOT selected, put them in...
         if (ids.indexOf("Footprint") == -1) {
-          this.mdl.hideFootprintsForScans = [scanId];
+          this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
         } else {
-          this.mdl.hideFootprintsForScans = [];
+          this.mdl.hideFootprintsForScans.clear();
         }
         if (ids.indexOf("Scan Points") == -1) {
-          this.mdl.hidePointsForScans = [scanId];
+          this.mdl.hidePointsForScans = new Set<string>(this.scanId);
         } else {
-          this.mdl.hidePointsForScans = [];
+          this.mdl.hidePointsForScans.clear();
         }
 
         this.reDraw();

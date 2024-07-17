@@ -71,9 +71,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   expressionIds: string[] = [];
   roiIds: ROILayerVisibility[] = [];
 
-  hidePointsForScans: string[] = [];
-  hideFootprintsForScans: string[] = [];
-  hideMapsForScans: string[] = [];
+  hidePointsForScans = new Set<string>();
+  hideFootprintsForScans = new Set<string>();
+  hideMapsForScans = new Set<string>();
 
   drawImage: boolean = true;
   imageSmoothing: boolean = true;

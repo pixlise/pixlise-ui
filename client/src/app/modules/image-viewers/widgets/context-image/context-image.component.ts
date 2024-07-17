@@ -307,8 +307,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.cachedROIs = this.mdl.roiIds.slice();
           this.mdl.drawImage = false;
-          this.mdl.hideFootprintsForScans = [this.scanId];
-          this.mdl.hidePointsForScans = [this.scanId];
+          this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
+          this.mdl.hidePointsForScans = new Set<string>(this.scanId);
           // this.setInitialConfig(true);
         } else if (contextData) {
           const validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
@@ -544,8 +544,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     // If we're on the maps page, we don't want to draw the image, and we want to hide the points and footprints
     if (this._analysisLayoutService.isMapsPage) {
       this.mdl.drawImage = false;
-      this.mdl.hideFootprintsForScans = [this.scanId];
-      this.mdl.hidePointsForScans = [this.scanId];
+      this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
+      this.mdl.hidePointsForScans = new Set<string>(this.scanId);
     }
   }
 
@@ -833,6 +833,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     const mapLayersSection: LayerVisibilitySection[] = [];
     const regionLayersSection: LayerVisibilitySection[] = [];
 
+    const mapLayersPrefix = "map-layers-";
+    const regionLayersPrefix = "region-layers-";
+
     this.mdl.scanIds.forEach(scanId => {
       const scanName = this.mdl.getScanModelFor(scanId)?.scanTitle || scanId;
 
@@ -846,8 +849,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         icon: "assets/icons/footprint.svg",
         showOpacity: true,
         opacity: 1,
-        visible: true,
+        visible: !this.mdl.hideFootprintsForScans.has(scanId),
       });
+
+      // If any are off, show the aggregate as off
+      if (this.mdl.hideFootprintsForScans.has(scanId)) {
+        footprintsSection!.visible = false;
+      }
 
       pointsSection!.subOptions!.push({
         id: `${scanId}-points`,
@@ -856,13 +864,18 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         icon: "assets/icons/scan-points.svg",
         showOpacity: true,
         opacity: 1,
-        visible: true,
+        visible: !this.mdl.hidePointsForScans.has(scanId),
       });
+
+      // If any are off, show the aggregate as off
+      if (this.mdl.hidePointsForScans.has(scanId)) {
+        pointsSection!.visible = false;
+      }
 
       const mapLayers = this.mdl.getMapLayers(scanId);
       if (mapLayers) {
         const mapLayerSection: LayerVisibilitySection = {
-          id: `map-layers-${scanId}`,
+          id: `${mapLayersPrefix}${scanId}`,
           title: "Map Data",
           scanId: scanId,
           scanName: scanName,
@@ -905,7 +918,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       const regionLayers = this.mdl.roiIds.filter(roi => roi.scanId === scanId);
       if (regionLayers.length > 0) {
         const regionLayerSection: LayerVisibilitySection = {
-          id: `region-layers-${scanId}`,
+          id: `${regionLayersPrefix}${scanId}`,
           title: "Region Data",
           scanId: scanId,
           scanName: scanName,
@@ -968,16 +981,24 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       if (change) {
         if (change.sectionId === "dataset-layers") {
           if (change.layerId === "footprints" && change.subLayerId) {
-            const scanId = change.subLayerId.split("-")[0];
-            this.mdl.hideFootprintsForScans = change.visible
-              ? this.mdl.hideFootprintsForScans.filter(id => id !== scanId)
-              : [...this.mdl.hideFootprintsForScans, scanId];
+            // scanId may have - in it, so we have to find the portion after the last -
+            const scanId = this.getLastPart(change.subLayerId);
+            if (change.visible) {
+              this.mdl.hideFootprintsForScans.delete(scanId);
+            } else {
+              this.mdl.hideFootprintsForScans.add(scanId);
+            }
           } else if (change.layerId === "points" && change.subLayerId) {
-            const scanId = change.subLayerId.split("-")[0];
-            this.mdl.hidePointsForScans = change.visible ? this.mdl.hidePointsForScans.filter(id => id !== scanId) : [...this.mdl.hidePointsForScans, scanId];
+            // scanId may have - in it, so we have to find the portion after the last -
+            const scanId = this.getLastPart(change.subLayerId);
+            if (change.visible) {
+              this.mdl.hidePointsForScans.delete(scanId);
+            } else {
+              this.mdl.hidePointsForScans.add(scanId);
+            }
           }
-        } else if (change.sectionId.startsWith("map-layers-")) {
-          const scanId = change.sectionId.split("-")[2];
+        } else if (change.sectionId.startsWith(mapLayersPrefix)) {
+          const scanId = change.sectionId.slice(mapLayersPrefix.length);
           if (scanId && change.layerId) {
             if (change.visible) {
               if (!this.mdl.expressionIds.includes(change.layerId)) {
@@ -1021,10 +1042,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             }
             this.reloadModel();
           } else {
-            this.mdl.hideMapsForScans = change.visible ? this.mdl.hideMapsForScans.filter(id => id !== scanId) : [...this.mdl.hideMapsForScans, scanId];
+            if (change.visible) {
+              this.mdl.hideMapsForScans.delete(scanId);
+            } else {
+              this.mdl.hideMapsForScans.add(scanId);
+            }
           }
-        } else if (change.sectionId.startsWith("region-layers-")) {
-          const scanId = change.sectionId.split("-")[2];
+        } else if (change.sectionId.startsWith(regionLayersPrefix)) {
+          const scanId = change.sectionId.slice(regionLayersPrefix.length);
           if (scanId && change.layerId) {
             if (change.visible) {
               if (!this.mdl.roiIds.find(roi => roi.id === change.layerId)) {
@@ -1114,6 +1139,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._visibilityDialog.afterClosed().subscribe(() => {
       this._visibilityDialog = null;
     });
+  }
+
+  private getLastPart(layerId: string): string {
+    const idx = layerId.lastIndexOf("-");
+    if (idx < 0) {
+      return "";
+    }
+    return layerId.slice(0, idx);
   }
 
   onZoomIn() {
