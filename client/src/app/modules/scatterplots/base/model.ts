@@ -322,7 +322,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
             roiIdForKey = "";
           }
 
-          if (!this.keyItems.find(key => key.id == roiIdForKey)) {
+          if (!roiIdForKey || !this.keyItems.find(key => key.id == roiIdForKey)) {
             this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, null, region.displaySettings.shape));
           }
         }

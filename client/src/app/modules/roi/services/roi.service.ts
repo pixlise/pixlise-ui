@@ -358,9 +358,25 @@ export class ROIService {
   }
 
   updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
-    // Delete from region map so we can re-fetch it with the new settings next time
-    this._regionMap.delete(roiId);
-    this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
+    console.log("Updating display settings for ROI", roiId, colour, shape);
+    // if is all points, update the scan colour
+    if (PredefinedROIID.isAllPointsROI(roiId)) {
+      let scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+
+      let scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      if (!scanConfiguration) {
+        this._snackBarService.openError(`Scan configuration not found for scan ID: ${scanId}`);
+        return;
+      }
+      scanConfiguration.colour = colour.asString();
+      this.displaySettingsMap$.value[roiId] = { colour, shape };
+      this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+      this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value);
+    } else {
+      // Delete from region map so we can re-fetch it with the new settings next time
+      this._regionMap.delete(roiId);
+      this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
+    }
   }
 
   getRegionDisplaySettings(roiId: string): ROIDisplaySettings {

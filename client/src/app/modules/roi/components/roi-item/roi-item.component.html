@@ -69,7 +69,7 @@
       <action-button title="Delete this ROI" action="delete" confirmText="Are you sure you want to delete ROI: {{ name }}?" (onClick)="onDelete()"> </action-button>
       <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
-      <widget-settings-menu [settingsDialog]="roiShapePicker" #roiShapePickerButton>
+      <widget-settings-menu *ngIf="!isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
         <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
       </widget-settings-menu>
       <widget-settings-menu [settingsDialog]="roiColorPicker" #roiColorPickerButton>
@@ -178,7 +178,7 @@
         [editable]="summary.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
-      <widget-settings-menu *ngIf="colorChangeOnly" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
+      <widget-settings-menu *ngIf="colorChangeOnly && !isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
         <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
       </widget-settings-menu>
       <widget-settings-menu *ngIf="colorChangeOnly" [settingsDialog]="roiColorPicker" #roiColorPickerButton>
