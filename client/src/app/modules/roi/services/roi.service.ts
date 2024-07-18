@@ -286,6 +286,21 @@ export class ROIService {
     return of(createDefaultSelectedPointsRegionSettings(scanId, DEFAULT_ROI_SHAPE));
   }
 
+  getScanIdsFromROIs(roiIds: string[]): Observable<string[]> {
+    let roiRequests = roiIds.map(roiId => {
+      if (PredefinedROIID.isPredefined(roiId)) {
+        return of(PredefinedROIID.getScanIdIfPredefined(roiId));
+      }
+
+      return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }));
+    });
+    return combineLatest(roiRequests).pipe(
+      map(roiResponses => {
+        return roiResponses.map(roiResp => (typeof roiResp === "string" ? roiResp : roiResp.regionOfInterest?.scanId || ""));
+      })
+    );
+  }
+
   getRegionSettings(roiId: string): Observable<RegionSettings> {
     // Now we check if we can service locally from our  map
     let result = this._regionMap.get(roiId);
@@ -358,9 +373,24 @@ export class ROIService {
   }
 
   updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
-    // Delete from region map so we can re-fetch it with the new settings next time
-    this._regionMap.delete(roiId);
-    this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
+    // if is all points, update the scan colour
+    if (PredefinedROIID.isAllPointsROI(roiId)) {
+      let scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+
+      let scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      if (!scanConfiguration) {
+        this._snackBarService.openError(`Scan configuration not found for scan ID: ${scanId}`);
+        return;
+      }
+      scanConfiguration.colour = colour.asString();
+      this.displaySettingsMap$.value[roiId] = { colour, shape };
+      this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+      this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value);
+    } else {
+      // Delete from region map so we can re-fetch it with the new settings next time
+      this._regionMap.delete(roiId);
+      this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
+    }
   }
 
   getRegionDisplaySettings(roiId: string): ROIDisplaySettings {

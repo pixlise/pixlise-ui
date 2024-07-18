@@ -140,6 +140,11 @@ export class AnalysisPageComponent {
     this._keyPresses.delete(event.key);
   }
 
+  @HostListener("window:blur")
+  onWindowBlur(): void {
+    this._keyPresses.clear();
+  }
+
   @HostListener("window:resize", ["$event"])
   onResize() {
     // Window resized, notify all canvases
