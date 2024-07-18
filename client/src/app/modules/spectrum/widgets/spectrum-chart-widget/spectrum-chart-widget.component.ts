@@ -10,9 +10,9 @@ import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canv
 import { SpectrumChartModel } from "./spectrum-model";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
-import { SpectrumExpressionDataSource, SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
+import { SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
-import { Spectrum, SpectrumType, spectrumTypeToJSON } from "src/app/generated-protos/spectrum";
+import { SpectrumType } from "src/app/generated-protos/spectrum";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
@@ -233,18 +233,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           // Remove any selection ROI from the list
           const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
           lines.delete(selectionROI);
-
-          // If new widgetData is coming in, we need to update the calibration
-          this._subs.add(
-            this._energyCalibrationService.getCurrentCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
-              if (cal.length >= 0) {
-                this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
-                this.mdl.setEnergyCalibration(this.scanId, cal);
-                this.mdl.xAxisEnergyScale = true;
-                this.updateLines();
-              }
-            })
-          );
 
           this.mdl.setLineList(lines);
 
@@ -606,7 +594,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       if (result.selectedItems.size === 0) {
         this.mdl.clearDisplayData();
       }
-      this.updateLines();
+      this.updateLines(true);
       this.saveState();
     });
 
@@ -619,7 +607,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     const spectrumLines: SpectrumLines[] = [];
     this.mdl.getLineList().forEach((lineExpressions, roiID) => {
       // If the selection ROI, we don't save it
-      if (roiID === PredefinedROIID.getSelectedPointsForScan(this.scanId)) {
+      if (PredefinedROIID.isSelectedPointsROI(roiID)) {
         return;
       }
 
@@ -712,42 +700,51 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     return y;
   }
 
-  private updateLines() {
+  private reloadScanCalibrations(scanIds: string[], refreshCalibrationData: boolean = false) {
+    scanIds.forEach(scanId => {
+      if (this.mdl.xAxisEnergyScale) {
+        this._energyCalibrationService.getCurrentCalibration(scanId).subscribe((cals: SpectrumEnergyCalibration[]) => {
+          // If any are empty...
+          let emptyCount = 0;
+          for (const cal of cals) {
+            if (cal.isEmpty()) {
+              emptyCount++;
+            }
+          }
+
+          if (refreshCalibrationData || cals.length <= 0 || emptyCount > 0) {
+            this._energyCalibrationService.getScanCalibration(scanId).subscribe((scanCals: SpectrumEnergyCalibration[]) => {
+              this._energyCalibrationService.setCurrentCalibration(scanId, scanCals);
+              this.mdl.setEnergyCalibration(scanId, scanCals);
+            });
+          }
+        });
+      }
+    });
+  }
+
+  private updateLines(refreshCalibrationData: boolean = false) {
     // TODO: should we hard code this? Probably not... how does user ask for something else?
     const readType = SpectrumType.SPECTRUM_NORMAL;
     const scanIds = new Set<string>();
 
+    let lineMap = this.mdl.getLineList();
+
+    let roiIds = Array.from(lineMap.keys());
+    this._subs.add(
+      this._roiService.getScanIdsFromROIs(roiIds).subscribe(scanIds => {
+        // For any scans coming in that are not yet calibrated, set them to
+        // dataset calibration
+        this.reloadScanCalibrations(scanIds, refreshCalibrationData);
+      })
+    );
+
     for (const [roiId, options] of this.mdl.getLineList()) {
       this._subs.add(
         this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
-          if (roi.region.id === PredefinedROIID.getSelectedPointsForScan(this.scanId)) {
+          if (roi.region.id === PredefinedROIID.getSelectedPointsForScan(roi.region.scanId)) {
             // Inject the selection data into the ROI
-            roi.region.scanEntryIndexesEncoded = Array.from(this.selection?.beamSelection.getSelectedScanEntryPMCs(this.scanId) || []) || [];
-          }
-
-          if (!scanIds.has(roi.region.scanId)) {
-            scanIds.add(roi.region.scanId);
-
-            // For any scans coming in that are not yet calibrated, set them to
-            // dataset calibration
-            if (this.mdl.xAxisEnergyScale) {
-              this._energyCalibrationService.getCurrentCalibration(roi.region.scanId).subscribe((cals: SpectrumEnergyCalibration[]) => {
-                // If any are empty...
-                let emptyCount = 0;
-                for (const cal of cals) {
-                  if (cal.isEmpty()) {
-                    emptyCount++;
-                  }
-                }
-
-                if (cals.length <= 0 || emptyCount > 0) {
-                  this._energyCalibrationService.getScanCalibration(roi.region.scanId).subscribe((scanCals: SpectrumEnergyCalibration[]) => {
-                    this._energyCalibrationService.setCurrentCalibration(roi.region.scanId, scanCals);
-                    this.mdl.setEnergyCalibration(roi.region.scanId, scanCals);
-                  });
-                }
-              });
-            }
+            roi.region.scanEntryIndexesEncoded = Array.from(this.selection?.beamSelection.getSelectedScanEntryPMCs(roi.region.scanId) || []) || [];
           }
 
           let idxs: number[] | null = [];
@@ -763,6 +760,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               idxs = null;
             }
           }
+
           combineLatest([
             this._spectrumDataService.getSpectrum(roi.region.scanId, idxs, true, true),
             this._cachedDataService.getScanList(
@@ -865,7 +863,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             line.opacity,
             line.drawFilled
           );
-/*
+          /*
           // Update the max value
           const idx = this._spectrumLines.length - 1;
           if (idx >= 0) {
@@ -874,7 +872,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         }
       }
     }
-/*
+    /*
     this._keyItems = [];
 
     // Run through and regenerate key items from all lines
