@@ -61,21 +61,23 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
     }
 
     for (const [scanId, scanDrawMdl] of drawMdl.scanDrawModels) {
-      if (scanDrawMdl.footprint && this._mdl.hideFootprintsForScans.indexOf(scanId) == -1) {
+      if (scanDrawMdl.footprint && !this._mdl.hideFootprintsForScans.has(scanId)) {
         drawFootprint(screenContext, scanDrawMdl.footprint, this._mdl.transform);
+      }
+
+      if (!this._mdl.hideMapsForScans.has(scanId)) {
+        for (let c = scanDrawMdl.maps.length-1; c >= 0; c--) {
+          const mapLayer = scanDrawMdl.maps[c];
+        //for (const mapLayer of scanDrawMdl.maps) {
+          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
+        }
       }
 
       for (const region of scanDrawMdl.regions) {
         drawRegion(screenContext, region, drawParams.worldTransform, drawMdl.imageTransform, null, false);
       }
 
-      if (this._mdl.hideMapsForScans.indexOf(scanId) === -1) {
-        for (const mapLayer of scanDrawMdl.maps) {
-          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
-        }
-      }
-
-      if (this._mdl.hidePointsForScans.indexOf(scanId) === -1) {
+      if (!this._mdl.hidePointsForScans.has(scanId)) {
         drawScanPoints(
           screenContext,
           scanDrawMdl.scanPoints,
