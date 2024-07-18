@@ -966,7 +966,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     const dialogConfig = new MatDialogConfig<LayerVisiblilityData>();
     dialogConfig.data = {
-      sections: [datasetLayersSection, ...mapLayersSection, ...regionLayersSection, imagesSection],
+      sections: [datasetLayersSection, ...regionLayersSection, ...mapLayersSection, imagesSection],
     };
 
     dialogConfig.hasBackdrop = false;
