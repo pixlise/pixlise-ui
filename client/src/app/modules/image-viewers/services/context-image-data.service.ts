@@ -266,6 +266,7 @@ export class ContextImageDataService {
         if (idx !== undefined) {
           if (c == 0) {
             const drawParams = getDrawParamsForRawValue(colourRamp, item.value, adjustedQueryResults[0].values.valueRange);
+            // NOTE: we could set drawParams.colour.a = opacity here!
             pts.push(new MapPoint(item.pmc, idx, [item.value], drawParams));
           } else {
             if (pts[i].scanEntryId == item.pmc && pts[i].scanEntryIndex == idx) {
@@ -287,7 +288,7 @@ export class ContextImageDataService {
       roiId,
       false,
       adjustedQueryResults[0].expression?.name || expressionId,
-      1, // TODO: Map opacity
+      1, // NOTE: Map opacity is loaded as 100%, but what calls us might have a more "valid" or "recent" value stored
       colourRamp,
       subExpressionNames,
       subExpressionShading,

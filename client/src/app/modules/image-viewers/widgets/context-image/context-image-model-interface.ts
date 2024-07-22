@@ -16,6 +16,7 @@ export interface IContextImageModel {
   rgbuChannels: string; // String of what channels to show for R,G,B or a division of 2 channels. Can contain R,G,B,U. Examples: RGB, RBU, R/G
 
   expressionIds: string[];
+  layerOpacity: Map<string, number>; // Loaded opacity from view state, should be kept up to date as user changes opacity too...
   roiIds: (VisibleROI | ROILayerVisibility)[];
 
   transform: PanZoom;
