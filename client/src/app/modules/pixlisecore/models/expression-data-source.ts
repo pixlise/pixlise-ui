@@ -456,14 +456,21 @@ export class ExpressionDataSource
 
           //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-          const data = ExpressionDataSource.getQuantifiedDataValues(quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
+          const data = ExpressionDataSource.getQuantifiedDataValues(this._scanId, quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
           return PMCDataValues.makeWithValues(data);
         })
       )
     );
   }
 
-  public static getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValue[] {
+  public static getQuantifiedDataValues(
+    scanId: string,
+    quantData: Quantification,
+    detectorId: string,
+    colIdx: number,
+    mult: number | null,
+    isPctColumn: boolean
+  ): PMCDataValue[] {
     const resultData: PMCDataValue[] = [];
     let detectorFound = false;
 
@@ -845,7 +852,7 @@ export class ExpressionDataSource
 
   async getRoughnessData(): Promise<PMCDataValues> {
     if (this._debug) {
-      this.logFunc(`getHousekeepingData()`);
+      this.logFunc(`getRoughnessData()`);
     }
     return await lastValueFrom(
       combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(

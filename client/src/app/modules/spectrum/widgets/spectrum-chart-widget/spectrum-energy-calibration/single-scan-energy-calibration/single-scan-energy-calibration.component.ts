@@ -6,6 +6,7 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 export class SingleScanEnergyCalibration {
   constructor(
     public scan: ScanItem,
+    public quantId: string,
     public calibration: SpectrumEnergyCalibration[]
   ) {}
 }
@@ -112,7 +113,21 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
     return false;
   }
 
-  onLoadQuant() {}
+  onLoadQuant() {
+    const scanId = this.calibration?.scan.id || "";
+    if (scanId.length <= 0) {
+      alert("Failed to get scan id for quantification when loading calibration");
+    }
+
+    const quantId = this.calibration?.quantId || "";
+    if (quantId.length <= 0) {
+      alert(`Failed to get quant id set for scan ${scanId} when loading calibration`);
+    }
+
+    this._energyCalibrationService.getQuantCalibration(scanId, quantId).subscribe((calibration: SpectrumEnergyCalibration[]) => {
+      this.setCalibration(calibration);
+    });
+  }
 
   onValueChanged(): void {
     this.readUserEntry();

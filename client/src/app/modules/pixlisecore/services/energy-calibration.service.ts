@@ -139,7 +139,7 @@ export class EnergyCalibrationService {
     );
   }
 
-  getQuantCalibration(quantId: string): Observable<SpectrumEnergyCalibration[]> {
+  getQuantCalibration(scanId: string, quantId: string): Observable<SpectrumEnergyCalibration[]> {
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).pipe(
       map(resp => {
         if (!resp.data) {
@@ -168,8 +168,8 @@ export class EnergyCalibrationService {
 
         const columns = [];
         for (const detector of detectors) {
-          columns.push(ExpressionDataSource.getQuantifiedDataValues(resp.data, detector, eVstartIdx, null, false));
-          columns.push(ExpressionDataSource.getQuantifiedDataValues(resp.data, detector, eVperChannelIdx, null, false));
+          columns.push(ExpressionDataSource.getQuantifiedDataValues(scanId, resp.data, detector, eVstartIdx, null, false));
+          columns.push(ExpressionDataSource.getQuantifiedDataValues(scanId, resp.data, detector, eVperChannelIdx, null, false));
         }
 
         const result: SpectrumEnergyCalibration[] = [];
