@@ -450,7 +450,7 @@ export class ExpressionDataSource
 
           if (idx < 0) {
             throw new Error(
-              `The currently loaded quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
+              `Scan ${this._scanId} quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
             );
           }
 
@@ -510,11 +510,7 @@ export class ExpressionDataSource
       }
 
       throw new Error(
-        'The currently loaded quantification does not contain data for detector: "' +
-          detectorId +
-          '". It only contains detector(s): "' +
-          Array.from(detectors).join(",") +
-          '"'
+        `Scan ${scanId} quantification does not contain data for detector: "${detectorId}". It only contains detector(s): "${Array.from(detectors).join(",")}"`
       );
     }
 
@@ -609,7 +605,7 @@ export class ExpressionDataSource
           }
           const elemIdx = pseudoData.intensityLabels.indexOf(name);
           if (elemIdx == -1) {
-            throw new Error(`The currently loaded dataset does not include pseudo-intensity data with column name: "${name}"`);
+            throw new Error(`Scan ${this._scanId} does not include pseudo-intensity data with column name: "${name}"`);
           }
 
           // Run through all locations & build it
@@ -909,7 +905,7 @@ export class ExpressionDataSource
           // If it exists as a metaLabel and has a type we can return, do it
           const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
           if (metaIdx < 0) {
-            throw new Error('The currently loaded dataset does not include housekeeping data with column name: "' + name + '"');
+            throw new Error(`Scan ${this._scanId} does not include housekeeping data with column name: "${name}"`);
           }
 
           const metaType = scanMetaLabelsAndTypes.metaTypes[metaIdx];
