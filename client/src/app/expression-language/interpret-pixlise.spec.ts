@@ -50,7 +50,7 @@ class MockSource implements QuantifiedDataQuerierSource {
     if (value === undefined) {
       // Do what the real class would do for non-existant data...
       throw new Error(
-        'The currently loaded quantification does not contain column: "' + label + '". Please select (or create) a quantification with the relevant element.'
+        'Scan <scanid> quantification does not contain column: "' + label + '". Please select (or create) a quantification with the relevant element.'
       );
     }
 
@@ -81,7 +81,7 @@ class MockPseudoSource implements PseudoIntensityDataQuerierSource {
     const value = this.data[name];
     if (value === undefined) {
       // Do what the real class would do for non-existant data...
-      throw new Error('The currently loaded dataset does not include pseudo-intensity data with column name: "' + name + '"');
+      throw new Error(`Scan <scanid> does not include pseudo-intensity data with column name: "${name}"`);
     }
 
     return Promise.resolve(value);
@@ -99,7 +99,7 @@ class MockHousekeepingSource implements HousekeepingDataQuerierSource {
     const value = this.data[name];
     if (value === undefined) {
       // Do what the real class would do for non-existant data...
-      throw new Error('The currently loaded dataset does not include housekeeping data with column name: "' + name + '"');
+      throw new Error('Scan <scanid> does not include housekeeping data with column name: "' + name + '"');
     }
 
     return Promise.resolve(value);
@@ -218,7 +218,7 @@ describe("element() call", () => {
       dataSource,
       done,
       'element("Mg", "%", "B")',
-      'The currently loaded quantification does not contain column: "Mg_%_B". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "Mg_%_B". Please select (or create) a quantification with the relevant element.'
     );
   });
 
@@ -228,7 +228,7 @@ describe("element() call", () => {
       dataSource,
       done,
       'element("Fe", "%", "C")',
-      'The currently loaded quantification does not contain column: "Fe_%_C". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "Fe_%_C". Please select (or create) a quantification with the relevant element.'
     );
   });
 
@@ -238,7 +238,7 @@ describe("element() call", () => {
       dataSource,
       done,
       'element("Fe", "err", "B")',
-      'The currently loaded quantification does not contain column: "Fe_err_B". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "Fe_err_B". Please select (or create) a quantification with the relevant element.'
     );
   });
 
@@ -335,7 +335,7 @@ describe("elementSum() call", () => {
       dataSource,
       done,
       'elementSum("%", "C")',
-      'The currently loaded quantification does not contain column: "Fe_%_C". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "Fe_%_C". Please select (or create) a quantification with the relevant element.'
     );
   });
 
@@ -345,7 +345,7 @@ describe("elementSum() call", () => {
       dataSource,
       done,
       'elementSum("err", "B")',
-      'The currently loaded quantification does not contain column: "Fe_err_B". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "Fe_err_B". Please select (or create) a quantification with the relevant element.'
     );
   });
 
@@ -391,7 +391,7 @@ describe("pseudo() call", () => {
   });
 
   it("should fail if non-existant pseudo-element specified", done => {
-    checkResultError(querier, dataSource, done, 'pseudo("Hg")', 'The currently loaded dataset does not include pseudo-intensity data with column name: "Hg"');
+    checkResultError(querier, dataSource, done, 'pseudo("Hg")', 'Scan <scanid> does not include pseudo-intensity data with column name: "Hg"');
   });
 
   // it("should return pseudo-intensity map Fe", done => {
@@ -409,13 +409,7 @@ describe("housekeeping() call", () => {
   });
 
   it("should fail if non-existant housekeeping column specified", done => {
-    checkResultError(
-      querier,
-      dataSource,
-      done,
-      'housekeeping("Coolant Tmp")',
-      'The currently loaded dataset does not include housekeeping data with column name: "Coolant Tmp"'
-    );
+    checkResultError(querier, dataSource, done, 'housekeeping("Coolant Tmp")', 'Scan <scanid> does not include housekeeping data with column name: "Coolant Tmp"');
   });
 
   it("should return housekeeping map Cover Tmp", done => {
@@ -603,7 +597,7 @@ describe("data() call", () => {
       dataSource,
       done,
       'data("livetime", "B")',
-      'The currently loaded quantification does not contain column: "livetime_B". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "livetime_B". Please select (or create) a quantification with the relevant element.'
     );
   });
 
@@ -613,7 +607,7 @@ describe("data() call", () => {
       dataSource,
       done,
       'data("chisq", "C")',
-      'The currently loaded quantification does not contain column: "chisq_C". Please select (or create) a quantification with the relevant element.'
+      'Scan <scanid> quantification does not contain column: "chisq_C". Please select (or create) a quantification with the relevant element.'
     );
   });
 
