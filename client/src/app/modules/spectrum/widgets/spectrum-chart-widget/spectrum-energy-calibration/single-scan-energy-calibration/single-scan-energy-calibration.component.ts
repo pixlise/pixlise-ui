@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from "@angular/core";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
 export class SingleScanEnergyCalibration {
   constructor(
@@ -110,7 +111,7 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
   }
 
   get hasQuantCalibration(): boolean {
-    return false;
+    return (this.calibration?.quantId.length || 0) > 0;
   }
 
   onLoadQuant() {
@@ -124,8 +125,13 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
       alert(`Failed to get quant id set for scan ${scanId} when loading calibration`);
     }
 
-    this._energyCalibrationService.getQuantCalibration(scanId, quantId).subscribe((calibration: SpectrumEnergyCalibration[]) => {
-      this.setCalibration(calibration);
+    this._energyCalibrationService.getQuantCalibration(scanId, quantId).subscribe({
+      next: (calibration: SpectrumEnergyCalibration[]) => {
+        this.setCalibration(calibration);
+      },
+      error: (err: any) => {
+        alert(httpErrorToString(err, "Failed to get quant data for calibration"));
+      },
     });
   }
 

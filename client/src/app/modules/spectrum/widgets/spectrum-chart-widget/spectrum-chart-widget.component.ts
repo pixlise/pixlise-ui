@@ -521,9 +521,18 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       scanIds.add(line.scanId);
     }
 
+    const scanQuants = new Map<string, string>();
+    for (const scanId of scanIds) {
+      const cfg = this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations[scanId];
+      if (cfg !== undefined) {
+        scanQuants.set(scanId, cfg.quantId);
+      }
+    }
+
     dialogConfig.data = {
       draggable: true,
       scanIds: Array.from(scanIds),
+      scanQuants: scanQuants,
       xAxisEnergyScale: this.mdl.xAxisEnergyScale,
     };
 

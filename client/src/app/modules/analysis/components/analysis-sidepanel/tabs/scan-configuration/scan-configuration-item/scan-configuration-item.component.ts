@@ -69,7 +69,7 @@ export class ScanConfigurationItemComponent implements OnDestroy {
 
     dialogConfig.data = {
       draggable: true,
-      scanQuants: new Map<string, string>([[scanId, ""]]),
+      scanQuants: new Map<string, string>([[scanId, this.config.quantId]]),
       xAxisEnergyScale: !!this.config.calibrations && this.config.calibrations.length > 0,
       hideXAxisEnergyScaleToggle: true,
     };
