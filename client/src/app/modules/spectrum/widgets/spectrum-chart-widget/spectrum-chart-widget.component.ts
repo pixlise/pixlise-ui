@@ -293,6 +293,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         if (complete) {
           this.saveState();
         }
+        this.reDraw();
       })
     );
 
