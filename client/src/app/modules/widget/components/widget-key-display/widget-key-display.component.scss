@@ -126,3 +126,138 @@
 
 .dash-pattern {
 }
+
+.key-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-left: 4px;
+
+  .max-key-toggle {
+    // padding: 2px 8px;
+    margin-right: 8px;
+  }
+
+  .label {
+    margin-right: auto;
+    color: white;
+  }
+}
+
+.key-display {
+  max-width: 100%;
+
+  &.max-key {
+    .key-items {
+      max-height: fit-content !important;
+      overflow: visible;
+
+      .key-group-title {
+        max-width: fit-content !important;
+        overflow: visible !important;
+      }
+
+      .item-container {
+        .key-label {
+          max-width: fit-content !important;
+          overflow: visible !important;
+        }
+      }
+    }
+  }
+}
+
+.key-items {
+  display: flex;
+  flex-direction: column;
+
+  max-height: 200px;
+  overflow-y: auto;
+
+  // Hide scrollbar
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .key-item-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px;
+
+    .key-group-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .key-group-title {
+        flex: 1;
+        padding: 0 4px;
+
+        max-width: 15ch;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        margin-right: auto;
+        white-space: pre;
+      }
+
+      action-button {
+      }
+    }
+
+    .item-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+
+      // .main-label {
+      //   &.region-hidden {
+      //     opacity: 0.5;
+      //   }
+      // }
+      .region-hidden {
+        opacity: 0.5;
+      }
+
+      .top-layer {
+        background-color: $clr-gray-80;
+      }
+
+      .main-label {
+        position: relative;
+      }
+
+      .key-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: pre;
+        max-width: 15ch;
+
+        position: relative;
+      }
+    }
+  }
+}
+
+.layer-order-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: rgb(var(--clr-gray-80));
+  border-radius: 50%;
+
+  width: 16px;
+  height: 16px;
+
+  .badge {
+    display: flex;
+    align-items: center;
+
+    color: rgb(var(--clr-gray-30));
+    font-size: 12px;
+  }
+}

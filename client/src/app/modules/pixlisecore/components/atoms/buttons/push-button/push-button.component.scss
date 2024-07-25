@@ -154,6 +154,13 @@
   }
 }
 
+.btn-outline-small {
+  @extend .btn-outline;
+
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
 .btn-white-outline {
   @extend .btn-base;
   color: white;

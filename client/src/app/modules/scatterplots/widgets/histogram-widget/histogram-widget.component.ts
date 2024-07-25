@@ -1,11 +1,19 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { catchError, map, Observable, Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  DataSourceParams,
+  DataUnit,
+  RegionDataResults,
+  SelectionService,
+  SnackbarService,
+  WidgetDataService,
+  WidgetKeyItem,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { HistogramModel } from "./histogram-model";
 import { HistogramDrawer } from "./histogram-drawer";
@@ -82,6 +90,10 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         value: this.mdl.keyItems,
         type: "widget-key",
         onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          this.update();
+        },
       },
     };
   }
@@ -144,25 +156,37 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.setData(data);
-
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
+        this.setData(data).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        });
       },
       error: err => {
-        this.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err)).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        });
       },
     });
   }
 
-  private setData(data: RegionDataResults) {
-    const errs = this.mdl.setData(data);
-    if (errs.length > 0) {
-      for (const err of errs) {
-        this._snackService.openError(err.message, err.description);
-      }
-    }
+  private setData(data: RegionDataResults): Observable<void> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      map(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   ngOnInit() {

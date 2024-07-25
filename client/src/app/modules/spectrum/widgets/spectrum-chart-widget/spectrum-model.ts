@@ -162,8 +162,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public clipboard: Clipboard
-  ) // public dialog: MatDialog,
+    // public dialog: MatDialog,
+  ) // public clipboard: Clipboard
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -185,6 +185,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   get keyItems(): WidgetKeyItem[] {
     return this._keyItems;
+  }
+
+  set keyItems(items: WidgetKeyItem[]) {
+    this._keyItems = items;
   }
 
   // ISpectrumChartModel
@@ -754,17 +758,25 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       this._lineRangeY.expand(line.maxValue);
     }
 
+    let previousKeyItems = this._keyItems.slice();
     this._keyItems = [];
 
     // Run through and regenerate key items from all lines
     let lastROI = "";
     for (const line of this._spectrumLines) {
-      if (lastROI !== line.roiId) {
-        // Fake entry for ROI header label
-        this._keyItems.push(new WidgetKeyItem(line.roiId, line.roiName, line.color));
-        lastROI = line.roiId;
-      }
-      const key = new WidgetKeyItem(`${line.roiId}-${line.expressionLabel}`, line.expressionLabel, line.color, line.dashPattern);
+      // if (lastROI !== line.roiId) {
+      //   // Fake entry for ROI header label
+      //   this._keyItems.push(new WidgetKeyItem(line.roiId, line.roiName, line.color));
+      //   lastROI = line.roiId;
+      // }
+
+      let roiName = PredefinedROIID.isAllPointsROI(line.roiId) ? "All Points" : line.roiName;
+
+      let groupName = `${roiName} (${line.scanName})`;
+
+      let keyId = `${line.roiId}-${line.expressionLabel}`;
+      let lastVisibility = previousKeyItems.find(item => item.id === keyId)?.isVisible ?? true;
+      const key = new WidgetKeyItem(keyId, line.expressionLabel, line.color, line.dashPattern, undefined, groupName, lastVisibility);
       this._keyItems.push(key);
     }
 
