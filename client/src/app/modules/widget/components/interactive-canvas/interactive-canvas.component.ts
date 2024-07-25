@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { Subject, Subscription, fromEvent } from "rxjs";
 import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
@@ -194,7 +194,7 @@ export interface CanvasWorldTransform {
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],
 })
-export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
+export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, OnDestroy {
   @Input() drawer: CanvasDrawer | null = null;
   _drawNotifier: CanvasDrawNotifier | null = null;
   @Input() interactionHandler: CanvasInteractionHandler | null = null;
@@ -219,7 +219,6 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    //this.printDbg('ngAfterViewInit');
     this.triggerRedraw();
     this.callFitCanvasToContainer();
 
@@ -275,41 +274,15 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
         InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer);
       }
     });
-    //this.drawFrame();
   }
 
-  /*
-    printDbg(event: string)
-    {
-        let canvasElem = this._imgCanvas.nativeElement;
-
-        let width = canvasElem.parentNode.clientWidth;
-        let height = canvasElem.parentNode.clientHeight;
-
-        let dpi = window.devicePixelRatio;
-
-        let style_height = +getComputedStyle(canvasElem).getPropertyValue("height").slice(0, -2);
-        let style_width = +getComputedStyle(canvasElem).getPropertyValue("width").slice(0, -2);
-
-        let canvas_width = canvasElem.width;
-        let canvas_height = canvasElem.height;
-
-console.log(event+' (dpi='+dpi+'):');
-console.log('Parent Size: '+width+'x'+height);
-console.log('Canvas size: '+canvas_width+'x'+canvas_height);
-console.log('Style size: '+style_width+'x'+style_height);
-console.log(canvasElem);
-    }
-*/
   private callFitCanvasToContainer() {
     if (!this._imgCanvas) {
       console.error("this._imgCanvas was not set");
       return;
     }
 
-    //this.printDbg('callFitCanvasToContainer');
     const canvasElem = this._imgCanvas.nativeElement;
-
     const newViewport = this.fitCanvasToContainer(this._imgCanvas);
     if (newViewport) {
       //console.log('callFitCanvasToContainer viewport: '+newViewport.width+'x'+newViewport.height+', dpi='+newViewport.dpi);
@@ -484,8 +457,8 @@ console.log(canvasElem);
       return;
     }
 
-    const redraw = this.interactionHandler.keyEvent(new CanvasKeyEvent(key, down));
-    if (redraw) {
+    const eventResult = this.interactionHandler.keyEvent(new CanvasKeyEvent(key, down));
+    if (eventResult && eventResult.redraw) {
       this.triggerRedraw();
     }
   }
@@ -498,7 +471,7 @@ console.log(canvasElem);
     if (!this.interactionHandler) {
       console.warn("sendMouseEvent: No interaction handler defined");
     } else {
-      const redraw = this.interactionHandler.mouseEvent(
+      const eventResult = this.interactionHandler.mouseEvent(
         new CanvasMouseEvent(
           eventId,
 
@@ -520,7 +493,7 @@ console.log(canvasElem);
         )
       );
 
-      if (redraw) {
+      if (eventResult && eventResult.redraw) {
         this.triggerRedraw();
       }
     }

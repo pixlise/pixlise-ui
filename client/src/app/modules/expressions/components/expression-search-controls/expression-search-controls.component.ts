@@ -249,31 +249,47 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   loadQuantifiedExpressions(): void {
     this._quantifiedExpressions = [];
 
-    let currentQuant = this.filteredQuants.find(quant => quant.id === this._selectedQuantId);
+    const currentQuant = this.filteredQuants.find(quant => quant.id === this._selectedQuantId);
     if (!currentQuant) {
       return;
     }
 
+    const quantMode = currentQuant?.params?.userParams?.quantMode || "";
+    let defaultDetector = quantMode;
+    if (defaultDetector.length > 0 && defaultDetector != "Combined") {
+      defaultDetector = defaultDetector.substring(0, 1);
+    }
+
+    if (!this.selectedDetector) {
+      this.selectedDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
+    }
+
+    const detector = this.selectedDetector.replace("A&B", "Combined");
+
     const orderedElems = periodicTableDB.getElementsInAtomicNumberOrder(currentQuant.elements);
     orderedElems.forEach(quantElement => {
-      let quantMode = currentQuant?.params?.userParams?.quantMode || "";
-      let defaultDetector = quantMode;
-      if (defaultDetector.length > 0 && defaultDetector != "Combined") {
-        defaultDetector = defaultDetector.substring(0, 1);
-      }
-
-      if (!this.selectedDetector) {
-        this.selectedDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
-      }
-
-      let detector = this.selectedDetector.replace("A&B", "Combined");
-
       const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
       const expr = getPredefinedExpression(id);
       if (expr) {
         this._quantifiedExpressions.push(expr);
       }
     });
+
+    // Add unquantified and chisq
+    let unquantWtPctId = DataExpressionId.predefinedUnquantifiedPercentDataExpression;
+    if (detector.length > 0) {
+      unquantWtPctId += `(${detector})`;
+    }
+    const unquantWtPct = getPredefinedExpression(unquantWtPctId);
+    if (unquantWtPct) {
+      this._quantifiedExpressions.push(unquantWtPct);
+    }
+
+    const chisqId = DataExpressionId.makePredefinedQuantDataExpression("chisq", detector);
+    const chisqExpr = getPredefinedExpression(chisqId);
+    if (chisqExpr) {
+      this._quantifiedExpressions.push(chisqExpr);
+    }
 
     this.filterExpressionsForDisplay();
   }

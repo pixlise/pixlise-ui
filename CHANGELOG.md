@@ -1,3 +1,10 @@
+## 4.29.0 (Unreleased)
+
+### Bug Fixes
+
+- Save and load context image layer opacity, and visibility dialog kept in sync too
+- Added unquantified weight % and chisq back to Quantified Elements section in expression picker
+
 ## 4.28.0 (2024-07-18)
 
 ### Bug Fixes

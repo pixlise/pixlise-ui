@@ -313,6 +313,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         } else if (contextData) {
           const validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
           this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+
+          this.mdl.layerOpacity.clear();
+          for (const l of validMapLayers) {
+            this.mdl.layerOpacity.set(l.expressionID, l.opacity);
+          }
+
           this.mdl.roiIds = contextData.roiLayers;
 
           // Set up model
@@ -890,7 +896,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             name: layer.expressionName,
             gradient: layer.shading,
             showOpacity: true,
-            opacity: 1,
+            opacity: layer.opacity,
             visible: true,
             canDelete: true,
           });
@@ -1107,6 +1113,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._visibilityDialog.componentInstance.opacityChange.subscribe((change: LayerOpacityChange) => {
       if (change) {
+        this.mdl.layerOpacity.set(change.layer.id, change.opacity);
+
         this.mdl.scanIds.forEach(scanId => {
           const mapLayers = this.mdl.getMapLayers(scanId);
           if (mapLayers) {
@@ -1259,6 +1267,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.cachedROIs = this.mdl.roiIds.slice();
 
     // TODO: Find better way of storing layer visbility settings
+    // For now, we make a map of opacity so we can write something valid
+    const opacityLookup = new Map<string, number>();
+    for (const scanMdl of this.mdl.raw?.scanModels.values() || []) {
+      for (const m of scanMdl.maps) {
+        opacityLookup.set(m.expressionId, m.opacity);
+      }
+    }
+
     this.onSaveWidgetData.emit(
       ContextImageState.create({
         panX: this.mdl.transform.pan.x,
@@ -1279,7 +1295,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         colourRatioMax: this.mdl.colourRatioMax ?? undefined,
         removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
-        mapLayers: this.mdl.expressionIds.map(id => MapLayerVisibility.create({ expressionID: id, visible: true, opacity: 1 })),
+        mapLayers: this.mdl.expressionIds.map(id =>
+          MapLayerVisibility.create({
+            expressionID: id,
+            visible: true,
+            opacity: opacityLookup.get(id) || 1,
+          })
+        ),
       })
     );
   }
