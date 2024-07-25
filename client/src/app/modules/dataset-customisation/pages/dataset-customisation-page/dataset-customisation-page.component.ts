@@ -5,7 +5,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
-import { Subscription } from "rxjs";
+import { Observable, of, Subscription } from "rxjs";
 import {
   ImageListReq,
   ImageListResp,
@@ -15,6 +15,7 @@ import {
   ImageGetDefaultResp,
   ImageSetMatchTransformReq,
   ImageSetMatchTransformResp,
+  ImageUploadHttpRequest,
 } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanGetReq, ScanTriggerAutoQuantReq } from "src/app/generated-protos/scan-msgs";
@@ -35,8 +36,6 @@ import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-l
 import { ColourRamp } from "src/app/utils/colours";
 import { SDSFields, getPathBase } from "src/app/utils/utils";
 import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../../components/add-custom-image/add-custom-image.component";
-import { ImageUploadReq } from "src/app/generated-protos/image-msgs";
-import { ImageUploadResp } from "src/app/generated-protos/image-msgs";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
 import { ScanItem } from "../../../../generated-protos/scan";
@@ -401,9 +400,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           });
         }
 
-        this._dataService
-          .sendImageUploadRequest(
-            ImageUploadReq.create({
+        this._endpointsService
+          .uploadImage(
+            ImageUploadHttpRequest.create({
               name: result.imageToUpload.name,
               imageData: new Uint8Array(imgBytes),
               associatedScanIds: [scanId],
@@ -414,7 +413,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
             })
           )
           .subscribe({
-            next: (resp: ImageUploadResp) => {
+            next: () => {
               this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}`);
               this.refreshImages();
             },
@@ -706,48 +705,61 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       this.mdl.overlayImage = null;
     } else {
       const path = (this.mdl?.overlayImagePath || "").toLowerCase().trim().split("?")[0];
-      if (path && path.endsWith(".tif")) {
-        this._endpointsService.loadRGBTIFFDisplayImage(this.mdl.overlayImagePath).subscribe(img => {
+
+      const obs$: Observable<HTMLImageElement> =
+        path && path.endsWith(".tif")
+          ? this._endpointsService.loadRGBTIFFDisplayImage(this.mdl.overlayImagePath)
+          : this._endpointsService.loadImageForPath(this.mdl.overlayImagePath);
+      obs$.subscribe(img => {
+        // NOTE: we don't apply brightness here - should we?
+        this.processOverlayImage(img).subscribe(img => {
           this.mdl.overlayImage = img;
           this.reDraw();
         });
-      } else {
-        this._endpointsService.loadImageForPath(this.mdl.overlayImagePath).subscribe((img: HTMLImageElement) => {
-          this.mdl.overlayImage = this.processOverlayImage(img);
-
-          this.reDraw();
-        });
-      }
+      });
     }
   }
 
-  private processOverlayImage(src: HTMLImageElement): HTMLImageElement {
+  private processOverlayImage(src: HTMLImageElement): Observable<HTMLImageElement> {
     // Apply brightness to the image and return it
     if (this.mdl.overlayBrightness == 1) {
-      return src; // no change needed
+      return of(src); // no change needed
     }
 
-    //overlayBrightness
-    const canvas = new OffscreenCanvas(src.width, src.height);
-    const offscreenContext = canvas.getContext("2d");
+    return new Observable<HTMLImageElement>(observer => {
+      //overlayBrightness
+      const canvas = new OffscreenCanvas(src.width, src.height);
+      const offscreenContext = canvas.getContext("2d");
 
-    if (!offscreenContext) {
-      console.error("Failed to get off-screen canvas, image uploader preview brightness setting not applied");
-    return src;
-  }
+      if (!offscreenContext) {
+        const errStr = "Failed to get off-screen canvas, image uploader preview brightness setting not applied";
+        console.error(errStr);
+        observer.error(errStr);
+        return;
+      }
 
-    offscreenContext.drawImage(src, 0, 0);
-    const imgData = offscreenContext.getImageData(0, 0, src.width, src.height);
-    const imgBytes = new Uint8Array(imgData.width * imgData.height * 3);
-    let w = 0;
-    for (let c = 0; c < imgData.data.length; c += 4) {
-      imgBytes[w] = Math.min(imgData.data[c] * this.mdl.overlayBrightness, 255);         // R
-      imgBytes[w + 1] = Math.min(imgData.data[c + 1] * this.mdl.overlayBrightness, 255); // G
-      imgBytes[w + 2] = Math.min(imgData.data[c + 2] * this.mdl.overlayBrightness, 255); // B
-      w += 3;
-    }
+      src.onload = () => {
+        offscreenContext.drawImage(src, 0, 0);
+        const imgData = offscreenContext.getImageData(0, 0, src.width, src.height);
+        const imgBytes = new Uint8Array(imgData.width * imgData.height * 3);
+        let w = 0;
+        for (let c = 0; c < imgData.data.length; c += 4) {
+          imgBytes[w] = Math.min(imgData.data[c] * this.mdl.overlayBrightness, 255); // R
+          imgBytes[w + 1] = Math.min(imgData.data[c + 1] * this.mdl.overlayBrightness, 255); // G
+          imgBytes[w + 2] = Math.min(imgData.data[c + 2] * this.mdl.overlayBrightness, 255); // B
+          w += 3;
+        }
 
-    return rgbBytesToImage(imgBytes, imgData.width, imgData.height);
+        observer.next(rgbBytesToImage(imgBytes, imgData.width, imgData.height));
+        observer.complete();
+      };
+
+      src.onerror = () => {
+        const errStr = "Failed process overlay image!";
+        console.error(errStr);
+        observer.error(errStr);
+      };
+    });
   }
 
   justName(name: string): string {
