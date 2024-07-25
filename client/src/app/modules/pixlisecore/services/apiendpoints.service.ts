@@ -29,9 +29,24 @@ export class APIEndpointsService {
       switchMap(imageData => {
         // If we have it and it's not older than maxAge (2 days), use it
         if (imageData && imageData.timestamp > Date.now() - maxAge) {
+          return new Observable<HTMLImageElement>(observer => {
           const img = new Image();
+            img.onload = event => {
+              console.log("  Loaded image from cache: " + apiUrl + ". Dimensions: " + img.width + "x" + img.height);
+              observer.next(img);
+              observer.complete();
+            };
+
+            img.onerror = event => {
+              // event doesn't seem to provide us much, usually just says "error" inside it... found that this
+              // last occurred when a bug allowed us to try to load a tif image with this function!
+              const errStr = "Failed to load image from cache: " + apiUrl;
+              console.error(errStr);
+              observer.error(errStr);
+            };
+
           img.src = imageData.data;
-          return of(img);
+          });
         } else {
           return this.loadImageFromURL(apiUrl).pipe(
             catchError(err => {

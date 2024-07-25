@@ -42,6 +42,7 @@ import { ImageSelection } from "src/app/modules/image-viewers/components/context
 import { ScanItem } from "../../../../generated-protos/scan";
 import { ObjectType } from "../../../../generated-protos/ownership-access";
 import { UserOptionsService } from "../../../settings/services/user-options.service";
+import { rgbBytesToImage } from "src/app/utils/drawing";
 
 @Component({
   selector: "app-dataset-customisation-page",
@@ -141,6 +142,12 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           this.description = "";
           this.tags = [];
         },
+      })
+    );
+
+    this._subs.add(
+      this.mdl.transform.transformChangeComplete$.subscribe((complete: boolean) => {
+        this.reDraw();
       })
     );
 
@@ -721,7 +728,26 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     }
 
     //overlayBrightness
+    const canvas = new OffscreenCanvas(src.width, src.height);
+    const offscreenContext = canvas.getContext("2d");
+
+    if (!offscreenContext) {
+      console.error("Failed to get off-screen canvas, image uploader preview brightness setting not applied");
     return src;
+  }
+
+    offscreenContext.drawImage(src, 0, 0);
+    const imgData = offscreenContext.getImageData(0, 0, src.width, src.height);
+    const imgBytes = new Uint8Array(imgData.width * imgData.height * 3);
+    let w = 0;
+    for (let c = 0; c < imgData.data.length; c += 4) {
+      imgBytes[w] = Math.min(imgData.data[c] * this.mdl.overlayBrightness, 255);         // R
+      imgBytes[w + 1] = Math.min(imgData.data[c + 1] * this.mdl.overlayBrightness, 255); // G
+      imgBytes[w + 2] = Math.min(imgData.data[c + 2] * this.mdl.overlayBrightness, 255); // B
+      w += 3;
+    }
+
+    return rgbBytesToImage(imgBytes, imgData.width, imgData.height);
   }
 
   justName(name: string): string {
