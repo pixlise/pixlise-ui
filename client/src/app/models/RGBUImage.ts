@@ -175,7 +175,6 @@ export class RGBUImage {
         channelOrder[0],
         channelOrder[2],
         pixelCount,
-        brightness,
         colourRatioMin,
         colourRatioMax,
         cropSelection,
@@ -303,7 +302,6 @@ export class RGBUImage {
     numerator: string,
     denominator: string,
     pixelCount: number,
-    brightness: number,
     colourRatioMin: number | null,
     colourRatioMax: number | null,
     cropSelection: PixelSelection,
@@ -334,7 +332,7 @@ export class RGBUImage {
 
       seenMinMax.expand(ratio);
 
-      unclampedRatioValues[px] = ratio * brightness;
+      unclampedRatioValues[px] = ratio;
       // If the value is outside our specified range, clamp it to the range
       if (colourRatioMin !== null && ratio < colourRatioMin) {
         ratio = colourRatioMin;
@@ -344,16 +342,16 @@ export class RGBUImage {
       }
 
       // Remember the value in our min-max range, divide by brightness so scale updates
-      ratioMinMax.expand(ratio / brightness);
+      ratioMinMax.expand(ratio);
 
       // But save the value with brightness applied
-      ratioValues[px] = ratio * brightness;
+      ratioValues[px] = ratio;
     }
 
     // Sort the ratio values so we can determine that line for the top 99% value (max value without specular artifacts)
     const sortedRatioValues = unclampedRatioValues.slice().sort();
-    const maxValueWithoutSpecular = sortedRatioValues[Math.floor(sortedRatioValues.length * 0.99)] / brightness;
-    const minValueWithoutSpecular = sortedRatioValues[Math.ceil(sortedRatioValues.length * 0.01)] / brightness;
+    const maxValueWithoutSpecular = sortedRatioValues[Math.floor(sortedRatioValues.length * 0.99)];
+    const minValueWithoutSpecular = sortedRatioValues[Math.ceil(sortedRatioValues.length * 0.01)];
 
     // We're storing the specular removed min max to allow toggling of this in the UI without having to regenerate the image
     const specularRemovedMinMax = new MinMax(minValueWithoutSpecular, maxValueWithoutSpecular);
@@ -365,8 +363,8 @@ export class RGBUImage {
 
       // Remap the ratio values if the new max value is less than the specified color ratio max or no color ratio is specified
       if (colourRatioMax === null || maxValueWithoutSpecular < colourRatioMax) {
-        ratioMinMax = new MinMax(ratioMinMax.min, maxValueWithoutSpecular / brightness);
-        ratioValues = ratioValues.map(ratioValue => Math.min(ratioValue, maxValueWithoutSpecular * brightness));
+        ratioMinMax = new MinMax(ratioMinMax.min, maxValueWithoutSpecular);
+        ratioValues = ratioValues.map(ratioValue => Math.min(ratioValue, maxValueWithoutSpecular));
       }
     }
 
@@ -377,7 +375,7 @@ export class RGBUImage {
       // Remap the ratio values if the new min value is greater than the specified color ratio max or no color ratio is specified
       if (colourRatioMax === null || minValueWithoutSpecular > (colourRatioMin || 0)) {
         ratioMinMax = new MinMax(minValueWithoutSpecular, ratioMinMax.max);
-        ratioValues = ratioValues.map(ratioValue => Math.max(minValueWithoutSpecular * brightness, ratioValue));
+        ratioValues = ratioValues.map(ratioValue => Math.max(minValueWithoutSpecular, ratioValue));
       }
     }
 

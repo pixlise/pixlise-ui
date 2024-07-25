@@ -159,7 +159,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="txt-meta">Opacity</div>
             <slider [value]="overlayOpacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOverlayOpacity($event)"></slider>
             <div class="txt-meta">Brightness</div>
-            <slider [value]="overlayBrightness" [minValue]="0.5" [maxValue]="10" (onChange)="onChangeOverlayBrightness($event)"></slider>
+            <slider [value]="overlayBrightness" [minValue]="1" [maxValue]="10" (onChange)="onChangeOverlayBrightness($event)"></slider>
             <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display Options</push-button>
           </div>
         </ng-container>
