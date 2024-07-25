@@ -4,6 +4,11 @@
 
 - Save and load context image layer opacity, and visibility dialog kept in sync too
 - Added unquantified weight % and chisq back to Quantified Elements section in expression picker
+- Fixed image uploader where large image uploads were causing disconnections
+- Image uploader brightness slider now works
+- All widgets have draw speed improvements due to more agressive caching
+- Context image RGBU ratio images were sometimes applying a scale (ake brightness) when they shouldn't have
+- Spectrum calibration wasn't able to load from quant
 
 ## 4.28.0 (2024-07-18)
 
