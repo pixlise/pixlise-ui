@@ -747,6 +747,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   reDraw() {
+    this.mdl.drawModel.drawnData = null;
     this.mdl.needsDraw$.next();
   }
 
