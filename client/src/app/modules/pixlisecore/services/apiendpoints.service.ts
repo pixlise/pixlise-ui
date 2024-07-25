@@ -275,7 +275,7 @@ export class APIEndpointsService {
     );
   }
 
-  uploadImage(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {
+  uploadBreadboardScanZip(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {
     const httpOptions = {
       headers: new HttpHeaders({
         "Content-Type": "application/octet-stream",
