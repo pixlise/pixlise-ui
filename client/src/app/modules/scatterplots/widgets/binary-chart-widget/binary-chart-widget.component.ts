@@ -330,6 +330,14 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       })
     );
 
+    this._subs.add(
+      this._selectionService.chordClicks$.subscribe((exprIds: string[]) => {
+        // Only update if we have the right expression count otherwise this will just trigger an error
+        this.mdl.expressionIds = exprIds;
+        this.update();
+      })
+    );
+
     this.reDraw();
   }
 

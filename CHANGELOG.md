@@ -1,4 +1,14 @@
-## 4.29.0 (Unreleased)
+## 4.30.0 (Unreleased)
+
+### Features
+
+- 
+
+### Bug Fixes
+
+- Clicking a chord on the chord diagram wasn't showing those 2 expressions on binary charts - this functionality has now been restored
+
+## 4.29.0 (2024-07-26)
 
 ### Bug Fixes
 
