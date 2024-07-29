@@ -19,6 +19,8 @@
 - Context image RGBU ratio images were sometimes applying a scale (ake brightness) when they shouldn't have
 - Spectrum calibration wasn't able to load from quant
 - Fixed bug where RGBU Plot wasn't persisting the state of configured ROIs
+- Fixes edge case bug where "Apply & Close" on context image sometimes would apply changes and hide button, but not close the dialog
+- Fixes data synchronization issues where new expressions and expression groups weren't showing up in the expression picker until reload
 
 ## 4.28.0 (2024-07-18)
 

@@ -392,6 +392,7 @@ export class ExpressionsService {
           this.lastSavedExpressionId = res.expression.id;
           this.expressions$.next({ ...this.expressions$.value, [res.expression.id]: res.expression });
           this._cacheService.cacheExpression(ExpressionGetReq.create({ id: expression.id }), ExpressionGetResp.create({ expression: res.expression }));
+          this._cacheService.exprListReqMapCacheInvalid = true;
 
           this._snackBarService.openSuccess(`Expression (${expression.name}) saved`);
         }
@@ -407,6 +408,8 @@ export class ExpressionsService {
     this._dataService.sendExpressionDeleteRequest(ExpressionDeleteReq.create({ id })).subscribe(res => {
       delete this.expressions$.value[id];
       this.expressions$.next(this.expressions$.value);
+      this._cacheService.exprListReqMapCacheInvalid = true;
+      this._cacheService.removeExpressionRequestFromCache(ExpressionGetReq.create({ id }));
     });
   }
 
@@ -414,6 +417,7 @@ export class ExpressionsService {
     this._dataService.sendExpressionGroupDeleteRequest(ExpressionGroupDeleteReq.create({ id })).subscribe(res => {
       this.expressionGroups$.value.filter(group => group.id !== id);
       this.expressionGroups$.next(this.expressionGroups$.value);
+      this._cacheService.userGroupListReqMapCacheInvalid = true;
       this.listExpressionGroups(true);
     });
   }
@@ -455,6 +459,7 @@ export class ExpressionsService {
             }
             this.expressionGroups$.next(this.expressionGroups$.value);
 
+            this._cacheService.invalidExpressionGroupIds.add(res.group.id);
             this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), true);
             this.lastWrittenExpressionGroupId$.next(res.group.id);
 
@@ -488,7 +493,9 @@ export class ExpressionsService {
           }
           this.expressionGroups$.next(this.expressionGroups$.value);
 
+          this._cacheService.invalidExpressionGroupIds.add(res.group.id);
           this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), true);
+
           this.lastWrittenExpressionGroupId$.next(res.group.id);
         }
       });
