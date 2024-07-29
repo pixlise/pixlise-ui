@@ -191,6 +191,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         xChannelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
         yChannelA: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.numeratorChannelIdx),
         yChannelB: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.denominatorChannelIdx),
+        roiIds: this.mdl.visibleRegionIds,
       })
     );
   }
@@ -206,6 +207,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           this.mdl.selectedMaxXValue = state.selectedMaxXValue ?? null;
           this.mdl.selectedMinYValue = state.selectedMinYValue ?? null;
           this.mdl.selectedMaxYValue = state.selectedMaxYValue ?? null;
+          this.mdl.visibleRegionIds = state.roiIds || [];
 
           this.mdl.xAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.xChannelA || "R"), RGBUPlotModel.channelToIdx(state.xChannelB ?? "G"));
           this.mdl.yAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.yChannelA || "B"), RGBUPlotModel.channelToIdx(state.yChannelB ?? "U"));
