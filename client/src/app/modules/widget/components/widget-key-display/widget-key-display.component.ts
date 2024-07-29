@@ -176,8 +176,17 @@ export class WidgetKeyDisplayComponent implements OnInit {
     }
   }
 
-  onToggleGroupVisibility(group: WidgetKeyGroup): void {
-    group.isVisible = !group.isVisible;
+  onToggleGroupVisibility(group: WidgetKeyGroup, event: MouseEvent): void {
+    if (event.altKey) {
+      let isOnlyGroupVisible = this.groupedItems.every(existingGroup => existingGroup.isVisible === false || existingGroup.title === group.title);
+      if (isOnlyGroupVisible) {
+        this.makeAllVisible();
+      } else {
+        this.soloGroup(group);
+      }
+    } else {
+      group.isVisible = !group.isVisible;
+    }
 
     let newItems = this.getItemsFromGroups();
     this.onUpdateItems.emit(newItems);
@@ -192,6 +201,19 @@ export class WidgetKeyDisplayComponent implements OnInit {
 
     let newItems = this.items.map(existingItem => {
       existingItem.isVisible = existingItem.id === item.id;
+      return existingItem;
+    });
+
+    this.onUpdateItems.emit(newItems);
+  }
+
+  soloGroup(group: WidgetKeyGroup): void {
+    this.groupedItems.forEach(existingGroup => {
+      existingGroup.isVisible = existingGroup.title === group.title;
+    });
+
+    let newItems = this.items.map(existingItem => {
+      existingItem.isVisible = group.items.some(item => item.id === existingItem.id);
       return existingItem;
     });
 

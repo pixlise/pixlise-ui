@@ -3,10 +3,11 @@
 ### Features
 
 - **Smart Chart Keys** Keys in the chart are now more dynamic and allow for quick toggling on/off of ROIs.
-  - New Hotkey: `Option/Alt + Click` on a key to toggle all other keys off and solo the item (click again to toggle back on).
+  - New Hotkey: `Option/Alt + Click` on a key (or group header) to toggle all other keys (or groups) off and solo the item (click again to toggle back on).
+    - Adds hotkey to "Hotkeys" menu in top right.
   - ROIs are also now grouped by dataset, making it easier to find the ROI you're looking for.
   - New "Expand" button that expands all groups and makes the key wider to fit all labels for easier screenshoting and usability on larger displays.
-  - Smart Chart Keys are available on: Binary, Ternary, RGBU Plot, Spectrum Chart, Histogram, and Variogram.
+  - Smart Chart Keys are available on: Binary, Ternary, RGBU Plot, Spectrum Chart, Histogram, Parallel Coordinates Plot, and Variogram.
 
 ### Bug Fixes
 

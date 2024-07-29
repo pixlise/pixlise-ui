@@ -51,8 +51,9 @@ POSSIBILITY OF SUCH DAMAGE.
         class="key-group-header"
         #tooltip="matTooltip"
         [matTooltip]="group.title"
-        [matTooltipDisabled]="group.title.length <= maxTitleCharacters">
-        <action-button (onClick)="onToggleGroupVisibility(group)" [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
+        [matTooltipDisabled]="group.title.length <= maxTitleCharacters"
+        (click)="onToggleGroupVisibility(group, $event)">
+        <action-button [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
         <span class="key-group-title {{ group.isVisible ? '' : 'region-hidden' }}" [ngStyle]="{ color: group.colour, 'max-width': maxTitleCharacters + 'ch' }">{{
           group.title
         }}</span>

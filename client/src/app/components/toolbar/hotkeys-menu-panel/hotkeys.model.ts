@@ -17,6 +17,12 @@ export const HOTKEYS: Record<string, Hotkey[]> = {
       shortcut: "Cmd + B",
     },
   ],
+  "Chart Keys": [
+    {
+      name: "Solo Key Item",
+      shortcut: `${altOrOption} + Click`,
+    },
+  ],
   "Context Image": [
     {
       name: "Band Box Zoom",
