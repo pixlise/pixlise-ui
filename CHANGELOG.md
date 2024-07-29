@@ -1,5 +1,13 @@
 ## 4.29.0 (Unreleased)
 
+### Features
+
+- **Smart Chart Keys** Keys in the chart are now more dynamic and allow for quick toggling on/off of ROIs.
+  - New Hotkey: `Option/Alt + Click` on a key to toggle all other keys off and solo the item (click again to toggle back on).
+  - ROIs are also now grouped by dataset, making it easier to find the ROI you're looking for.
+  - New "Expand" button that expands all groups and makes the key wider to fit all labels for easier screenshoting and usability on larger displays.
+  - Smart Chart Keys are available on: Binary, Ternary, RGBU Plot, Spectrum Chart, Histogram, and Variogram.
+
 ### Bug Fixes
 
 - Save and load context image layer opacity, and visibility dialog kept in sync too
@@ -9,6 +17,7 @@
 - All widgets have draw speed improvements due to more agressive caching
 - Context image RGBU ratio images were sometimes applying a scale (ake brightness) when they shouldn't have
 - Spectrum calibration wasn't able to load from quant
+- Fixed bug where RGBU Plot wasn't persisting the state of configured ROIs
 
 ## 4.28.0 (2024-07-18)
 
