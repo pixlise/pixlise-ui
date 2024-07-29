@@ -96,34 +96,35 @@ export class WidgetKeyGroup {
   styleUrls: ["./widget-key-display.component.scss"],
 })
 export class WidgetKeyDisplayComponent implements OnInit {
-  // items: KeyItem[] = [];
   @Input() items: WidgetKeyItem[] = [];
-  // @Output() keyClick = new EventEmitter();
-  // @Output() onToggleKey = new EventEmitter();
   public groupedItems: WidgetKeyGroup[] = [];
-
   previewItems: WidgetKeyItem[] = [];
 
   public keyShowing: boolean = false;
-
   public maxKey: boolean = false;
+  public maxTitleCharacters = 15;
+  public showExpandButton: boolean = false;
 
   @Output() onUpdateItems = new EventEmitter<WidgetKeyItem[]>();
 
-  constructor() {} // public dialogRef: MatDialogRef<WidgetKeyDisplayComponent> // @Inject(MAT_DIALOG_DATA) public data: WidgetKeyDisplayData,
+  constructor() {}
 
   ngOnInit(): void {
-    // if (this.data) {
-    //   this.items = this.data?.items || [];
-    //   this.keyShowing = this.data.showKey;
-    // }
+    this.showExpandButton = this.shouldShowExpandButton();
   }
 
   ngOnChanges(changes: any): void {
     if (changes.items) {
       this.previewItems = this.items.slice(0, 3);
       this.groupedItems = this.groupItems(this.items);
+      this.showExpandButton = this.shouldShowExpandButton();
     }
+  }
+
+  shouldShowExpandButton(): boolean {
+    // Items + Group Titles
+    let overflowsHeight = this.items.length + this.groupedItems.length > 5;
+    return overflowsHeight || this.checkIfAnyLabelsTruncated();
   }
 
   sendItemToTop(item: WidgetKeyItem): void {
@@ -263,9 +264,18 @@ export class WidgetKeyDisplayComponent implements OnInit {
     } else {
       if (item?.id && item.id.length > 0) {
         this.sendItemToTop(item);
-        // this.keyClick.emit(id);
       }
     }
+  }
+
+  checkIfAnyLabelsTruncated(): boolean {
+    let groupTitleIsTruncated = this.groupedItems.some(group => group.title.length > this.maxTitleCharacters);
+    if (groupTitleIsTruncated) {
+      return true;
+    }
+
+    let itemIsTruncated = this.items.some(item => this.getLabel(item).length > this.maxTitleCharacters);
+    return itemIsTruncated;
   }
 
   getLabel(item: WidgetKeyItem): string {
@@ -273,7 +283,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
   }
 
   getTruncatedLabel(item: WidgetKeyItem): string {
-    let maxLength = 15;
+    let maxLength = this.maxTitleCharacters;
     let label = this.getLabel(item);
     if (label.length > maxLength) {
       label = label.slice(0, maxLength) + "...";
