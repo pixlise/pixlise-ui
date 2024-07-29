@@ -20,7 +20,7 @@ export class EnergyCalibrationService {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
-    private _spectrumDataService: SpectrumDataService,
+    private _spectrumDataService: SpectrumDataService
   ) {
     if (this._currentCalibration.size === 0) {
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
@@ -139,8 +139,8 @@ export class EnergyCalibrationService {
     );
   }
 
-  getQuantCalibration(quantId: string): Observable<SpectrumEnergyCalibration[]> {
-    return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).pipe(
+  getQuantCalibration(scanId: string, quantId: string): Observable<SpectrumEnergyCalibration[]> {
+    return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })).pipe(
       map(resp => {
         if (!resp.data) {
           throw new Error(`Query for quantification ${quantId} didn't return data`);
@@ -168,8 +168,8 @@ export class EnergyCalibrationService {
 
         const columns = [];
         for (const detector of detectors) {
-          columns.push(ExpressionDataSource.getQuantifiedDataValues(resp.data, detector, eVstartIdx, null, false));
-          columns.push(ExpressionDataSource.getQuantifiedDataValues(resp.data, detector, eVperChannelIdx, null, false));
+          columns.push(ExpressionDataSource.getQuantifiedDataValues(scanId, resp.data, detector, eVstartIdx, null, false));
+          columns.push(ExpressionDataSource.getQuantifiedDataValues(scanId, resp.data, detector, eVperChannelIdx, null, false));
         }
 
         const result: SpectrumEnergyCalibration[] = [];
@@ -191,7 +191,19 @@ export class EnergyCalibrationService {
           }
 
           // Save these (we may need them later for "reset to defaults" features)
-          result.push(new SpectrumEnergyCalibration(eVStartSum / eVStartValues.values.length, eVPerChannelSum / eVPerChannelValues.values.length, detector));
+          result.push(
+            new SpectrumEnergyCalibration(
+              eVStartValues.length > 0 ? eVStartSum / eVStartValues.length : 0,
+              eVPerChannelValues.length > 0 ? eVPerChannelSum / eVPerChannelValues.length : 1,
+              detector
+            )
+          );
+        }
+
+        // If we only had one detector (it's a combined quant), copy it to both
+        if (detectors.length == 1 && result.length == 1) {
+          result[0].detector = "A";
+          result.push(new SpectrumEnergyCalibration(result[0].eVstart, result[0].eVperChannel, "B"));
         }
 
         return result;

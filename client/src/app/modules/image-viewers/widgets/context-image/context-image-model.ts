@@ -69,6 +69,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   imageName: string = "";
 
   expressionIds: string[] = [];
+  layerOpacity: Map<string, number> = new Map<string, number>();
   roiIds: ROILayerVisibility[] = [];
 
   hidePointsForScans = new Set<string>();
@@ -257,13 +258,21 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       throw new Error(`Adding map layer ${layer.expressionId} to context image before where scan id ${layer.scanId} doesn't exist`);
     }
 
+    // Set opacity on it if we have it
+    const opacity = this.layerOpacity.get(layer.expressionId);
+    if (opacity !== undefined) {
+      layer.opacity = opacity;
+    }
+
+    // And set the colour for each PMC too
+    layer.mapPoints.forEach(pt => {
+      pt.drawParams.colour.a = 255 * layer.opacity;
+    });
+
     // If already added, remove it
     let found = false;
     for (let c = 0; c < scanMdl.maps.length; c++) {
       if (scanMdl.maps[c].expressionId === layer.expressionId) {
-        layer.mapPoints.forEach(pt => {
-          pt.drawParams.colour.a = 255 * layer.opacity;
-        });
         scanMdl.maps[c] = layer;
         found = true;
       }
@@ -719,6 +728,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
             for (const pt of layerMap.mapPoints) {
               if (pt.values.length == 1) {
                 pt.drawParams = getDrawParamsForRawValue(layerMap.shading, pt.values[0], displayRanges[0]);
+                pt.drawParams.colour.a = layerMap.opacity * 255;
               } else if (pt.values.length == 3) {
                 pt.drawParams = new MapPointDrawParams(
                   new RGBA(

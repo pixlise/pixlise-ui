@@ -510,7 +510,7 @@ describe("decompressZeroRunLengthEncoding", () => {
   });
 });
 
-fdescribe("replaceAsDateIfTestSOL", () => {
+describe("replaceAsDateIfTestSOL", () => {
   it("replaceAsDateIfTestSOL should work", () => {
     expect(replaceAsDateIfTestSOL("")).toEqual(""); // Returning if cant interpret (just a string)
     expect(replaceAsDateIfTestSOL("Hello")).toEqual("Hello"); // Returning if cant interpret (just a string)

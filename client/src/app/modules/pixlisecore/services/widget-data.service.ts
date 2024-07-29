@@ -435,8 +435,8 @@ export class WidgetDataService {
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (
-              errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-              errorMsg.indexOf("The currently loaded quantification does not contain column") < 0 &&
+              errorMsg.indexOf("quantification does not contain data for detector") < 0 &&
+              errorMsg.indexOf("quantification does not contain column") < 0 &&
               errorMsg.indexOf("no quantification id specified") < 0
             ) {
               SentryHelper.logMsg(true, errorMsg);

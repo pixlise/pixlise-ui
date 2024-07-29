@@ -33,6 +33,11 @@ export class DatasetCustomisationDrawer extends ContextImageDrawer {
   }
 
   override drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    const mdl = this._mdl as DatasetCustomisationModel;
+
+    // Ensure we don't do any caching here, this isn't one to optimise...
+    mdl.drawModel.drawnData = null;
+
     // Set it so we're centered to start with
     screenContext.save();
     /*if (this._mdl.drawModel.image) {
@@ -45,7 +50,6 @@ export class DatasetCustomisationDrawer extends ContextImageDrawer {
     //drawParams.worldTransform.applyTransform(screenContext);
     // If the overlay image and the image we loaded the context image model for are the same, don't
     // draw the context image!
-    const mdl = this._mdl as DatasetCustomisationModel;
     if (mdl.overlayImagePath == mdl.imageName) {
       mdl.drawImage = false;
     }

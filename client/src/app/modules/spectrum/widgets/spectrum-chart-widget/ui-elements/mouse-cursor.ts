@@ -66,12 +66,17 @@ console.log('mouse worldPoint: '+event.point.x.toLocaleString()+','+event.point.
 console.log('mouse pct: '+this._ctx.xAxis.canvasToPct(event.canvasPoint.x).toLocaleString()+','+this._ctx.yAxis.canvasToPct(event.canvasPoint.y).toLocaleString());
 console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).toLocaleString()+','+this._ctx.yAxis.canvasToValue(event.canvasPoint.y).toLocaleString());
 */
-      this.checkHover(this._lastMousePos);
+      // NOTE: if we don't draw when checkHover returns false, our vertical line cursor no longer moves along with the mouse
+      //       so here we draw always...
+      /*if (*/this.checkHover(this._lastMousePos);//) {
+        return CanvasInteractionResult.redrawOnly;
+      //}
     } else if (event.eventId == CanvasMouseEventId.MOUSE_LEAVE) {
       this._lastMousePos = null;
+      return CanvasInteractionResult.redrawOnly;
     }
 
-    return CanvasInteractionResult.redrawOnly;
+    return CanvasInteractionResult.neither;
   }
 
   override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
@@ -147,14 +152,15 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
     }
   }
 
-  private checkHover(canvasPt: Point): void {
+  private checkHover(canvasPt: Point): boolean {
+    const prevHoverTextItems = this._hoverText.length;
     this._hoverTitle = "";
     this._hoverText = [];
     this._hoverPoint = null;
     this._hoverOverlayPos = null;
 
     if (!this._ctx.xAxis || !this._ctx.yAxis) {
-      return;
+      return false;
     }
 
     // Get in value coordinates
@@ -222,8 +228,10 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
         );
 
         //console.log('Hovering over: '+line.label+', px xy='+canvasPt.x+','+canvasPt.y+', value xy='+valuePt.x+','+valuePt.y+', line xy='+line.xValues[idx]+','+line.values[idx]);
-        return;
+        break;
       }
     }
+
+    return prevHoverTextItems != this._hoverText.length;
   }
 }

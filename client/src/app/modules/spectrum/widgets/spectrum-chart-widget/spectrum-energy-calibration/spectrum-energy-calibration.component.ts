@@ -29,8 +29,7 @@
 
 import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { Subscription, combineLatest, filter } from "rxjs";
-import { ScanItem } from "src/app/generated-protos/scan";
+import { Subscription } from "rxjs";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
@@ -38,7 +37,7 @@ import { SingleScanEnergyCalibration } from "./single-scan-energy-calibration/si
 
 export type EnergyCalibrationData = {
   draggable?: boolean;
-  scanIds?: string[];
+  scanQuants?: Map<string, string>;
   xAxisEnergyScale?: boolean;
   hideXAxisEnergyScaleToggle?: boolean;
 };
@@ -59,7 +58,6 @@ export class SpectrumEnergyCalibrationComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   allScans: SingleScanEnergyCalibration[] = [];
-
   xAxisEnergyScale: boolean = false;
 
   constructor(
@@ -78,14 +76,15 @@ export class SpectrumEnergyCalibrationComponent implements OnInit, OnDestroy {
       // TODO: This should only get scans which have been added to our layout!!!
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = [];
-        if (!this.data.scanIds) {
+        if (!this.data.scanQuants) {
           return;
         }
 
         for (const scan of scans) {
-          if (this.data.scanIds.indexOf(scan.id) > -1) {
+          const quantForScan = this.data.scanQuants.get(scan.id);
+          if (quantForScan !== undefined) {
             this._energyCalibrationService.getCurrentCalibration(scan.id).subscribe(cal => {
-              this.allScans.push(new SingleScanEnergyCalibration(scan, cal));
+              this.allScans.push(new SingleScanEnergyCalibration(scan, quantForScan, cal));
             });
           }
         }

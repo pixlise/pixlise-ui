@@ -554,29 +554,45 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       }
       const currentQuant = quants.find(quant => quant.id === this.quantId);
       if (currentQuant) {
+        const quantMode = currentQuant?.params?.userParams?.quantMode || "";
+        let defaultDetector = quantMode;
+        if (defaultDetector.length > 0 && defaultDetector.indexOf("Combined") == -1) {
+          defaultDetector = defaultDetector.substring(0, 1);
+        }
+
+        if (!this.activeQuantifiedElementDetector) {
+          let det = defaultDetector;
+          if (det.indexOf("Combined") > -1) {
+            det = "Combined";
+          }
+          this.activeQuantifiedElementDetector = det.replace("Combined", "A&B") as "A" | "B" | "A&B";
+        }
+
+        const detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");
+
         currentQuant.elements.forEach(quantElement => {
-          let quantMode = currentQuant?.params?.userParams?.quantMode || "";
-          let defaultDetector = quantMode;
-          if (defaultDetector.length > 0 && defaultDetector.indexOf("Combined") == -1) {
-            defaultDetector = defaultDetector.substring(0, 1);
-          }
-
-          if (!this.activeQuantifiedElementDetector) {
-            let det = defaultDetector;
-            if (det.indexOf("Combined") > -1) {
-              det = "Combined";
-            }
-            this.activeQuantifiedElementDetector = det.replace("Combined", "A&B") as "A" | "B" | "A&B";
-          }
-
-          let detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");
-
           const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
           const expr = getPredefinedExpression(id);
           if (expr) {
             this._quantifiedExpressions[id] = expr;
           }
         });
+
+        // Add unquantified and chisq
+        let unquantWtPctId = DataExpressionId.predefinedUnquantifiedPercentDataExpression;
+        if (detector.length > 0) {
+          unquantWtPctId += `(${detector})`;
+        }
+        const unquantWtPct = getPredefinedExpression(unquantWtPctId);
+        if (unquantWtPct) {
+          this._quantifiedExpressions[unquantWtPctId] = unquantWtPct;
+        }
+
+        const chisqId = DataExpressionId.makePredefinedQuantDataExpression("chisq", detector);
+        const chisqExpr = getPredefinedExpression(chisqId);
+        if (chisqExpr) {
+          this._quantifiedExpressions[chisqId] = chisqExpr;
+        }
       }
     }
   }
