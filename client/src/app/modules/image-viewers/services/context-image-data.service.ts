@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -38,6 +38,9 @@ export class ContextImageDataService {
 
   private _syncedTransform$: BehaviorSubject<Record<string, SyncedTransform>> = new BehaviorSubject({});
 
+  // Cached just for tab switching purposes, but expecting a full tab reload to reset this...
+  private _lastBeamLocationVersionsLoaded = new Map<string, Map<string, number>>();
+
   constructor(
     protected _expressionsService: ExpressionsService,
     protected _cachedDataService: APICachedDataService,
@@ -66,12 +69,26 @@ export class ContextImageDataService {
     this._syncedTransform$.next({});
   }
 
-  getModelData(imageName: string, widgetId: string): Observable<ContextImageModelLoadedData> {
-    // Have to include the widget ID to prevent shallow references
+  getModelData(imageName: string, beamLocationVersions: Map<string, number>, widgetId: string): Observable<ContextImageModelLoadedData> {
+    if (beamLocationVersions.size > 0) {
+      this._lastBeamLocationVersionsLoaded.set(imageName, beamLocationVersions);
+    } else {
+      const lastBeamVers = this._lastBeamLocationVersionsLoaded.get(imageName);
+      if (lastBeamVers && lastBeamVers.size > 0) {
+        beamLocationVersions = lastBeamVers;
+      }
+    }
+
+    // Have to include the widget ID to prevent shallow references. Also including beam versions
     const cacheId = `${imageName}-${widgetId}`;
-    let result = this._contextModelDataMap.get(cacheId);
+    let beamVerCacheIdSegment = "";
+    for (const [scanId, version] of beamLocationVersions.entries()) {
+      beamVerCacheIdSegment += "-" + scanId + "=" + version;
+    }
+
+    let result = this._contextModelDataMap.get(cacheId + beamVerCacheIdSegment);
     if (result === undefined) {
-      result = this._contextModelDataMap.get(imageName);
+      result = this._contextModelDataMap.get(imageName + beamVerCacheIdSegment);
       if (result) {
         // We have a result, but it's not for this widget, so we need to clone it
         result = result.pipe(
@@ -81,14 +98,22 @@ export class ContextImageDataService {
         );
       } else {
         // Have to request it!
-        result = this.fetchModelData(imageName).pipe(shareReplay(1));
+        result = this.fetchModelData(imageName, beamLocationVersions).pipe(
+          shareReplay(1),
+          catchError(err => {
+            // Remove from maps if there's an error
+            this._contextModelDataMap.delete(imageName + beamVerCacheIdSegment);
+            this._contextModelDataMap.delete(cacheId + beamVerCacheIdSegment);
+            throw err;
+          })
+        );
 
         // Copy with imageName as key so we can shortcut the request next time, but keep response unique
-        this._contextModelDataMap.set(imageName, result);
+        this._contextModelDataMap.set(imageName + beamVerCacheIdSegment, result);
       }
 
       // Add it to the map too so a subsequent request will get this
-      this._contextModelDataMap.set(cacheId, result);
+      this._contextModelDataMap.set(cacheId + beamVerCacheIdSegment, result);
     }
 
     return result;
@@ -299,7 +324,7 @@ export class ContextImageDataService {
     return layer;
   }
 
-  private fetchModelData(imagePath: string): Observable<ContextImageModelLoadedData> {
+  private fetchModelData(imagePath: string, beamLocationVersions: Map<string, number>): Observable<ContextImageModelLoadedData> {
     // First, get the image metadata so we know what image to query beam locations for (uploaded images can reference other images!)
     return this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imagePath })).pipe(
       concatMap((imgResp: ImageGetResp) => {
@@ -309,7 +334,18 @@ export class ContextImageDataService {
         }
 
         const beamFileName = imgResp.image.matchInfo?.beamImageFileName || imagePath;
-        return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName })).pipe(
+
+        const req = ImageBeamLocationsReq.create({ imageName: beamFileName });
+        if (beamLocationVersions.size > 0) {
+          console.log(`Retrieving image beam locations for image: ${beamFileName} with beam versions:`);
+          req.scanBeamVersions = {};
+          for (const [scanId, version] of beamLocationVersions.entries()) {
+            console.log(`-Scan: ${scanId}, version: ${version}`);
+            req.scanBeamVersions[scanId] = version;
+          }
+        }
+
+        return this._cachedDataService.getImageBeamLocations(req).pipe(
           concatMap((imgBeamResp: ImageBeamLocationsResp) => {
             if (!imgBeamResp.locations) {
               throw new Error("No image beam locations returned for: " + imagePath);

@@ -48,6 +48,16 @@ POSSIBILITY OF SUCH DAMAGE.
         (selectedImage)="onSelectedImageChanged($event)"></image-picker>
     </div>
 
+    <div class="ctrl-column">
+      <div class="setting-label">Beam Version:</div>
+      <div *ngFor="let scanId of pickableBeamVersionScanIds" class="ctrl-row">
+        <div title="Scan ID: {{scanId}}">{{scanNames?.get(scanId) || scanId}}</div>
+        <mat-select [(ngModel)]="selectedBeamVersions[scanId]" (selectionChange)="onBeamVersionChange(scanId)">
+          <mat-option *ngFor="let ver of pickableBeamVersions.get(scanId)" [value]="ver">{{ver}}</mat-option>
+        </mat-select>
+      </div>
+    </div>
+
     <div class="ctrl-row centered-row bunched" [ngClass]="{ 'disabled-area': !isRGBU }" [title]="rgbuOnlyHelpText">
       <two-state-icon-button
         activeIcon="assets/button-icons/radio-on.svg"
