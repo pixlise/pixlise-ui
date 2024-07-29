@@ -29,7 +29,7 @@
 
 import { Component, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { catchError, combineLatest, forkJoin, map, Observable, of, shareReplay, Subject, Subscription, switchMap } from "rxjs";
+import { catchError, combineLatest, forkJoin, map, Observable, of, shareReplay, Subject, Subscription, switchMap, take } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { distanceBetweenPoints, distanceSquaredBetweenPoints, Point } from "src/app/models/Geometry";
@@ -193,11 +193,16 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       topRightInsetButton: {
         id: "key",
         type: "widget-key",
+        style: { "margin-top": "24px" },
         value: this.keyItems,
         onClick: () => {
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.keyItems;
           }
+        },
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.keyItems = keyItems;
+          this.update();
         },
       },
     };
@@ -640,6 +645,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       return this._widgetDataService.getData(query, allowAnyResponse).pipe(
         map(queryData => {
           this.processQueryResult(t0, queryData, shouldStoreBinnedDataForExport, shouldStoreRawDataForExport);
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.keyItems;
+          }
         })
       );
     } else {
@@ -756,7 +764,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     title: string = "",
     t0: number = 0,
     shouldStoreBinnedPointDataForExport: boolean = false,
-    shouldStoreRawDataForExport: boolean = false
+    shouldStoreRawDataForExport: boolean = false,
+    scanItems: ScanItem[] = []
   ): void {
     this.isWidgetDataLoading = true;
     this.fetchVariogramPointsWithError(queryData, shouldStoreRawDataForExport).subscribe({
@@ -770,9 +779,35 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
         let pointsForExport: VariogramExportPoint[] = [];
         let comparisonAlgorithm = this.getExportableAlgorithmNames();
 
+        let previousKeyItems = this.keyItems.slice();
+        this.keyItems = [];
+
         varioPoints.forEach((pts, i) => {
           let region = queryData?.queryResults[i].region;
           if (!region?.displaySettings.colour) {
+            return;
+          }
+
+          let roiId = region.region.id;
+          let roiName = region.region.name;
+          if (PredefinedROIID.isAllPointsROI(roiId)) {
+            roiName = "All Points";
+          }
+
+          let scanId = region.region.scanId;
+          let scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
+          let isROIVisible = true;
+
+          let existingROIKey = previousKeyItems.find(item => item.id === roiId);
+          if (existingROIKey) {
+            this.keyItems.push(existingROIKey);
+            isROIVisible = existingROIKey.isVisible;
+          } else {
+            let keyItem = new WidgetKeyItem(roiId, roiName, region.displaySettings.colour, null, region.displaySettings.shape, scanName, true, true);
+            this.keyItems.push(keyItem);
+          }
+
+          if (!isROIVisible) {
             return;
           }
 
@@ -784,8 +819,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
               if (shouldStoreBinnedPointDataForExport) {
                 pointsForExport.push({
-                  roiId: region.region.id,
-                  roiName: region.region.name,
+                  roiId,
+                  roiName,
                   comparisonAlgorithm,
                   title: this._lastRunFullTitle,
                   distance: pt.distance,
@@ -797,7 +832,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
             }
           }
 
-          let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange);
+          let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange, roiId);
           dispPoints.push(ptGroup);
           dispMinMax.expandByMinMax(ptValueRange);
         });
@@ -812,7 +847,23 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
           this.widgetErrorMessage = "";
         }
 
-        let variogramData: VariogramData = new VariogramData(title, dispPoints, dispMinMax, errorStr);
+        // If previousKeyItems were sorted, sort the new ones following the layerOrder
+        let sortedPointGroups = dispPoints.sort((a, b) => {
+          let keyItemA = previousKeyItems.find(key => key.id == a.roiId);
+          let keyItemB = previousKeyItems.find(key => key.id == b.roiId);
+
+          if (keyItemA === undefined) {
+            return 1;
+          } else if (keyItemB === undefined) {
+            return -1;
+          } else if (keyItemA === undefined && keyItemB === undefined) {
+            return 0;
+          } else {
+            return keyItemB.layerOrder - keyItemA.layerOrder;
+          }
+        });
+
+        let variogramData: VariogramData = new VariogramData(title, sortedPointGroups, dispMinMax, errorStr);
 
         this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
         this.drawer = new VariogramDrawer(this._variogramModel);
@@ -841,34 +892,36 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     storeRawDataForExport: boolean = false
   ) {
     if (queryData && !queryData.hasQueryErrors() && this._expressionIds.length > 0) {
-      if (this._expressionIds.length !== this._lastRunExpressionIds.length || this._expressionIds.some((id, i) => id !== this._lastRunExpressionIds[i])) {
-        this._lastRunExpressionIds = this._expressionIds;
+      this._analysisLayoutService.availableScans$.pipe(take(1)).subscribe(scanItems => {
+        if (this._expressionIds.length !== this._lastRunExpressionIds.length || this._expressionIds.some((id, i) => id !== this._lastRunExpressionIds[i])) {
+          this._lastRunExpressionIds = this._expressionIds;
 
-        this.expressions = [];
-        let expressionRequests = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpression(exprId));
-        combineLatest(expressionRequests).subscribe(expressions => {
-          let title = "";
-          let fullTitle = "";
-          for (let expr of expressions) {
-            if (expr?.expression) {
-              this.expressions.push(expr.expression);
-              let displayName = getExpressionShortDisplayName(24, expr.expression.id, expr.expression.name);
-              if (title.length > 0) {
-                title += " / ";
-                fullTitle += " / ";
+          this.expressions = [];
+          let expressionRequests = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpression(exprId));
+          combineLatest(expressionRequests).subscribe(expressions => {
+            let title = "";
+            let fullTitle = "";
+            for (let expr of expressions) {
+              if (expr?.expression) {
+                this.expressions.push(expr.expression);
+                let displayName = getExpressionShortDisplayName(24, expr.expression.id, expr.expression.name);
+                if (title.length > 0) {
+                  title += " / ";
+                  fullTitle += " / ";
+                }
+                title += displayName.shortName;
+                fullTitle += displayName.name;
               }
-              title += displayName.shortName;
-              fullTitle += displayName.name;
             }
-          }
 
-          this._lastRunTitle = title;
-          this._lastRunFullTitle = fullTitle;
-          this.prepareDrawData(queryData, title, t0, storeBinnedPointDataForExport, storeRawDataForExport);
-        });
-      } else {
-        this.prepareDrawData(queryData, this._lastRunTitle, t0, storeBinnedPointDataForExport, storeRawDataForExport);
-      }
+            this._lastRunTitle = title;
+            this._lastRunFullTitle = fullTitle;
+            this.prepareDrawData(queryData, title, t0, storeBinnedPointDataForExport, storeRawDataForExport, scanItems);
+          });
+        } else {
+          this.prepareDrawData(queryData, this._lastRunTitle, t0, storeBinnedPointDataForExport, storeRawDataForExport, scanItems);
+        }
+      });
     }
   }
 
@@ -993,8 +1046,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       return of([]);
     }
 
-    let scanId = scanIdsFromROIS.values().next().value;
-
+    let scanId = scanIdsFromROIS.values().next().value!;
     let quantId = this._analysisLayoutService.getQuantIdForScan(scanId) || "";
     let allPointsId = PredefinedROIID.getAllPointsForScan(scanId);
 

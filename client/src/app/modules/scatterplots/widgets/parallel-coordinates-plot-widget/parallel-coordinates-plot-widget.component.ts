@@ -155,6 +155,11 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         type: "widget-key",
         onClick: () => {},
         style: { "margin-top": "30px" },
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.keyItems = keyItems;
+          this._prepareData();
+          this.recalculateLines();
+        },
       },
     };
   }
@@ -589,13 +594,14 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       selectedPixels = currentSelection.pixelSelection.selectedPixels;
     }
 
+    let previousKeyItems = this.keyItems.slice();
     this.keyItems = [];
 
     let datasetColor = "255,255,255";
-    let datasetName = "All Points";
+    let datasetName = this.scanIdAssociatedWithImage;
     let loadedScan = this.configuredScans.find(scan => scan.id === this.scanIdAssociatedWithImage);
     if (loadedScan) {
-      datasetName = `${loadedScan.title} (All Points)`;
+      datasetName = loadedScan.title;
     }
 
     let loadedScanConfiguration = this.scanConfigurations[this.scanIdAssociatedWithImage];
@@ -610,10 +616,20 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       }
     }
 
-    let datasetAverages = this.getROIAveragePoint(new Set(), datasetColor, datasetName, true);
-    datasetAverages.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
-    this.keyItems.push(new WidgetKeyItem(PredefinedROIID.getAllPointsForScan(this.scanIdAssociatedWithImage), datasetName, `rgba(${datasetColor},255)`));
-    this._data.push(datasetAverages);
+    let allPointsROIId = PredefinedROIID.getAllPointsForScan(this.scanIdAssociatedWithImage);
+    let existingAllPointsKey = previousKeyItems.find(key => key.id == allPointsROIId);
+    let isAllPointsVisible = existingAllPointsKey ? existingAllPointsKey.isVisible : true;
+
+    if (isAllPointsVisible) {
+      let datasetAverages = this.getROIAveragePoint(new Set(), datasetColor, datasetName, true);
+      datasetAverages.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
+      this._data.push(datasetAverages);
+      this.keyItems.push(new WidgetKeyItem(allPointsROIId, "All Points", `rgba(${datasetColor},255)`, null, undefined, datasetName, isAllPointsVisible, false, true));
+    } else {
+      if (existingAllPointsKey) {
+        this.keyItems.push(existingAllPointsKey);
+      }
+    }
 
     // Get averages for all selected pixels
     if (selectedPixels.size > 0) {
@@ -634,8 +650,16 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       let color = roi.displaySettings.colour;
       let colorStr = `${color.r},${color.g},${color.b}`;
 
-      this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color));
+      let existingKey = previousKeyItems.find(key => key.id == roi.region.id);
+      let isROIVisible = existingKey ? existingKey.isVisible : true;
+      if (!isROIVisible) {
+        if (existingKey) {
+          this.keyItems.push(existingKey);
+        }
+        return;
+      }
 
+      this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color, null, undefined, datasetName, isROIVisible, false, true));
       let pixels = new Set(decodeIndexList(roi.region.pixelIndexesEncoded));
       let averagePoint = this.getROIAveragePoint(pixels, colorStr, roi.region.name, false, roi.region.scanId, roi.region.imageName);
       averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);

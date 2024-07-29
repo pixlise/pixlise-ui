@@ -320,6 +320,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
 
           this.mdl.roiIds = contextData.roiLayers;
+          this.mdl.hideFootprintsForScans = new Set<string>(contextData?.hideFootprintsForScans || []);
+          this.mdl.hidePointsForScans = new Set<string>(contextData?.hidePointsForScans || []);
+          this.mdl.drawImage = contextData?.drawImage ?? true;
 
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
@@ -1299,10 +1302,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         mapLayers: this.mdl.expressionIds.map(id =>
           MapLayerVisibility.create({
             expressionID: id,
-            visible: true,
-            opacity: opacityLookup.get(id) || 1,
+            visible: !this._hiddenMapLayers.has(id),
+            opacity: opacityLookup.get(id) ?? 1,
           })
         ),
+        hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
+        hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
+        drawImage: this.mdl.drawImage,
       })
     );
   }
