@@ -212,8 +212,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           this.mdl.xAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.xChannelA || "R"), RGBUPlotModel.channelToIdx(state.xChannelB ?? "G"));
           this.mdl.yAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.yChannelA || "B"), RGBUPlotModel.channelToIdx(state.yChannelB ?? "U"));
 
-          // TODO: fill in other vars here...
-          this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
+          this.loadData(state.imageName, this.mdl.visibleRegionIds);
         } else {
           this.setInitialConfig();
         }
