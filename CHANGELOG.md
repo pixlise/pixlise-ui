@@ -1,4 +1,4 @@
-## 4.29.0 (Unreleased)
+## 4.30.0 (Unreleased)
 
 ### Features
 
@@ -11,6 +11,14 @@
 
 ### Bug Fixes
 
+- Fixed bug where RGBU Plot wasn't persisting the state of configured ROIs
+- Fixes edge case bug where "Apply & Close" on context image sometimes would apply changes and hide button, but not close the dialog
+- Fixes data synchronization issues where new expressions and expression groups weren't showing up in the expression picker until reload
+
+## 4.29.0 (2024-07-25)
+
+### Bug Fixes
+
 - Save and load context image layer opacity, and visibility dialog kept in sync too
 - Added unquantified weight % and chisq back to Quantified Elements section in expression picker
 - Fixed image uploader where large image uploads were causing disconnections
@@ -18,9 +26,6 @@
 - All widgets have draw speed improvements due to more agressive caching
 - Context image RGBU ratio images were sometimes applying a scale (ake brightness) when they shouldn't have
 - Spectrum calibration wasn't able to load from quant
-- Fixed bug where RGBU Plot wasn't persisting the state of configured ROIs
-- Fixes edge case bug where "Apply & Close" on context image sometimes would apply changes and hide button, but not close the dialog
-- Fixes data synchronization issues where new expressions and expression groups weren't showing up in the expression picker until reload
 
 ## 4.28.0 (2024-07-18)
 
