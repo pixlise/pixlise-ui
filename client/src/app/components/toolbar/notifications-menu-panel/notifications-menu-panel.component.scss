@@ -92,11 +92,15 @@
       gap: 8px;
 
       .notification-title {
-        color: var(--gray-30, #bec0c2);
+        color: $clr-gray-20;
       }
 
       .notification-action {
         margin-left: auto;
+      }
+
+      .notification-time {
+        color: $clr-gray-40;
       }
     }
   }
