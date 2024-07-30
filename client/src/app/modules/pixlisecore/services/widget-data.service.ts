@@ -210,7 +210,7 @@ export class WidgetDataService {
 
   private makeCacheKey(query: DataSourceParams, allowAnyResponse: boolean): Observable<string> {
     // We need to strip out anything that doesn't affect the result of the query
-    let strippedQuery = {
+    const strippedQuery = {
       scanId: query.scanId,
       exprId: query.exprId,
       quantId: query.quantId,
@@ -267,7 +267,7 @@ export class WidgetDataService {
       queryList.push(
         this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } })).pipe(
           catchError(err => {
-            throw new Error(`Failed to scan: ${query.scanId} - ${err}`);
+            throw new Error(`Failed to load scan: ${query.scanId} - ${err}`);
           })
         )
       );
