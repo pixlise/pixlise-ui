@@ -95,6 +95,7 @@ export class APICachedDataService {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
         // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+        console.log(`NotificationResp contained: ${notificationResp.notification.length} items`);
       },
     });
 
