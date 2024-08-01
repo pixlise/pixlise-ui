@@ -348,7 +348,11 @@ export class GroupsService {
     this._dataService.sendUserGroupJoinRequest(UserGroupJoinReq.create({ groupId: group.id, asMember })).subscribe({
       next: res => {
         this._snackBar.openSuccess(`Request to join group (${group.name}) sent.`);
-        this.fetchGroupAccessRequests(group.id);
+
+        // If user is not an admin, no need to fetch this, they don't have access anyway and we printed an uneccessary error
+        if (this._userOptionsService.hasFeatureAccess("admin")) {
+          this.fetchGroupAccessRequests(group.id);
+        }
         this.groupAccessRequestsChanged$.next();
       },
       error: err => {
