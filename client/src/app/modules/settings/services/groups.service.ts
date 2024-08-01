@@ -39,7 +39,7 @@ export class GroupsService {
     this.fetchGroups();
   }
 
-  createGroup(name: string, description: string) {
+  createGroup(name: string, description: string, joinable: boolean) {
     this._dataService.sendUserGroupCreateRequest(UserGroupCreateReq.create({ name, description })).subscribe({
       next: (res: UserGroupCreateResp) => {
         if (res.group) {
@@ -51,6 +51,7 @@ export class GroupsService {
             createdUnixSec: res.group.info?.createdUnixSec || 0,
             relationshipToUser: UserGroupRelationship.UGR_ADMIN,
             lastUserJoinedUnixSec: res.group.info?.lastUserJoinedUnixSec || 0,
+            joinable: joinable,
           });
           this.groupsChanged$.next();
         }
