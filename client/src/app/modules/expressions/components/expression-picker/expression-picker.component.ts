@@ -1121,6 +1121,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           persistDialog: this.persistDialog,
           subId: this.data.subId,
         });
+
+        if (!this.persistDialog) {
+          this.dialogRef.close();
+        }
         return;
       }
       const selectedGroup = ExpressionGroup.create(this.selectedGroup);

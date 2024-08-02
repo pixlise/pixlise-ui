@@ -16,6 +16,7 @@ import { BaseChartDataItem, BaseChartDataValueItem, BaseChartDrawModel, BaseChar
 import { WidgetError } from "../../pixlisecore/services/widget-data.service";
 import { BeamSelection } from "../../pixlisecore/models/beam-selection";
 import { invalidPMC } from "src/app/utils/utils";
+import { ScanItem } from "../../../generated-protos/scan";
 
 export class NaryChartDataItem implements BaseChartDataValueItem {
   constructor(
@@ -235,10 +236,13 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
   protected processQueryResult(
     chartName: string, // Expecting Binary or Ternary here, just used in error msgs
     queryData: RegionDataResults,
-    axes: ScatterPlotAxisInfo[]
+    axes: ScatterPlotAxisInfo[],
+    scanItems: ScanItem[] = []
   ): WidgetError[] {
     const errs: WidgetError[] = [];
     const t0 = performance.now();
+
+    let previousKeyItems = this.keyItems.slice();
 
     this.keyItems = [];
     this.expressionsMissingPMCs = "";
@@ -268,6 +272,30 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
         const scanId = queryData.queryResults[queryIdx + c].query.scanId;
         const roiId = queryData.queryResults[queryIdx + c].query.roiId;
         const region = queryData.queryResults[queryIdx + c].region;
+
+        const selectedPMCs = this._beamSelection.getSelectedScanEntryPMCs(scanId);
+        const selectionId = "selection";
+        if (selectedPMCs.size > 0 && this.keyItems.find(key => key.id === selectionId) === undefined) {
+          this.keyItems.push(new WidgetKeyItem(selectionId, "Selected Points", Colours.CONTEXT_BLUE, null, PointDrawer.ShapeCircle));
+        }
+
+        // // Add selection per scan if we have selected points
+        // const selectedPMCs = this._beamSelection.getSelectedScanEntryPMCs(scanId);
+        // let selectionId = PredefinedROIID.getSelectedPointsForScan(scanId);
+        // if (selectedPMCs.size > 0 && this.keyItems.find(key => key.id === selectionId) === undefined) {
+        //   // Add the selected PMCs to the selection
+        //   let scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
+        //   this.keyItems.push(new WidgetKeyItem(selectionId, "Selected Points", Colours.CONTEXT_BLUE, null, PointDrawer.ShapeCircle, scanName));
+        // }
+
+        let existingKeyItem = previousKeyItems.find(key => key.id == roiId);
+        if (existingKeyItem && !existingKeyItem.isVisible) {
+          // This ROI is hidden, so we won't be drawing it, but we need to keep it in the key
+          if (!this.keyItems.find(key => key.id == roiId)) {
+            this.keyItems.push(existingKeyItem);
+          }
+          continue;
+        }
 
         // Read the name
         const expr = queryData.queryResults[queryIdx + c].expression;
@@ -318,12 +346,14 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
           // Add to key too. We only specify an ID if it can be brought to front - all points & selection
           // are fixed in their draw order, so don't supply for those
           let roiIdForKey = region.region.id;
-          if (PredefinedROIID.isPredefined(roiIdForKey)) {
-            roiIdForKey = "";
+          let keyName = region.region.name;
+          if (PredefinedROIID.isAllPointsROI(roiIdForKey)) {
+            keyName = "All Points";
           }
 
           if (!roiIdForKey || !this.keyItems.find(key => key.id == roiIdForKey)) {
-            this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, null, region.displaySettings.shape));
+            let scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
+            this.keyItems.push(new WidgetKeyItem(roiIdForKey, keyName, region.displaySettings.colour, null, region.displaySettings.shape, scanName));
           }
         }
 
@@ -394,7 +424,36 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
             this.keyItems.unshift(new KeyItem(ViewStateService.AllPointsLabel, ViewStateService.AllPointsColour));
         }
   */
-    this._raw = this.makeData(axes, pointGroups); //, pmcLookup);
+
+    // If previousKeyItems were sorted, sort the new ones following the layerOrder
+    let sortedPointGroups = pointGroups.sort((a, b) => {
+      let keyItemA = previousKeyItems.find(key => key.id == a.roiId);
+      let keyItemB = previousKeyItems.find(key => key.id == b.roiId);
+
+      if (keyItemA === undefined) {
+        return 1;
+      } else if (keyItemB === undefined) {
+        return -1;
+      } else if (keyItemA === undefined && keyItemB === undefined) {
+        return 0;
+      } else {
+        return keyItemB.layerOrder - keyItemA.layerOrder;
+      }
+    });
+
+    // Update layer order for the key items
+    this.keyItems = this.keyItems.map((keyItem, idx) => {
+      let existingKeyItem = previousKeyItems.find(key => key.id == keyItem.id);
+      if (existingKeyItem) {
+        keyItem.layerOrder = existingKeyItem.layerOrder;
+      } else {
+        keyItem.layerOrder = -1;
+      }
+
+      return keyItem;
+    });
+
+    this._raw = this.makeData(axes, sortedPointGroups); //, pmcLookup);
 
     const t1 = performance.now();
     this.needsDraw$.next();

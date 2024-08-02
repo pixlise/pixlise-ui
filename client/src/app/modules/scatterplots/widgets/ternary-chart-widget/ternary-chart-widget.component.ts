@@ -1,13 +1,21 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { Observable, Subscription } from "rxjs";
+import { catchError, map, Observable, Subject, Subscription, takeUntil } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  DataSourceParams,
+  SelectionService,
+  WidgetDataService,
+  DataUnit,
+  RegionDataResults,
+  SnackbarService,
+  WidgetKeyItem,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
@@ -66,6 +74,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   quantId: string = "";
 
   private _subs = new Subscription();
+  private destroy$ = new Subject<void>();
 
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
@@ -127,6 +136,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         type: "widget-key",
         style: { "margin-top": "24px" },
         onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          this.update();
+        },
       },
     };
   }
@@ -174,25 +187,37 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.setData(data);
-
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
+        this.setData(data).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        });
       },
       error: err => {
-        this.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err)).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        });
       },
     });
   }
 
-  private setData(data: RegionDataResults) {
-    const errs = this.mdl.setData(data);
-    if (errs.length > 0) {
-      for (const err of errs) {
-        this._snackService.openError(err.message, err.description);
-      }
-    }
+  private setData(data: RegionDataResults): Observable<void> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      map(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   ngOnInit() {
@@ -315,6 +340,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
     this._subs.unsubscribe();
   }
 
