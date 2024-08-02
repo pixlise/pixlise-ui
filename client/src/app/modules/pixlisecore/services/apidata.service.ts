@@ -3,7 +3,7 @@ import { Injectable, OnDestroy } from "@angular/core";
 import { APICommService } from "./apicomm.service";
 
 import { ResponseStatus, WSMessage } from "../../../generated-protos/websocket";
-import { WSError, WSMessageHandler, WSOustandingReq } from "./wsMessageHandler";
+import { getMessageName, WSError, WSMessageHandler, WSOustandingReq } from "./wsMessageHandler";
 import { randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
@@ -140,7 +140,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
     for (const req of this._outstandingRequests.values()) {
       if (req.createTime < tooOld) {
         // This has timed out, error out or retry or something
-        req.sub.error(new WSError(ResponseStatus.WS_TIMEOUT, "Request timed out", "Try reloading the PIXLISE tab"));
+        req.sub.error(new WSError(ResponseStatus.WS_TIMEOUT, "Request timed out for: " + getMessageName(req.req), "Try reloading the PIXLISE tab"));
       }
     }
   }

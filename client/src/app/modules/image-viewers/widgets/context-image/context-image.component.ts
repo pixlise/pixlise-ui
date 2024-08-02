@@ -709,7 +709,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     const obs: Observable<ContextImageModelLoadedData> =
       this.mdl.imageName.length <= 0 && this.scanId.length > 0
         ? this._contextDataService.getWithoutImage(this.scanId)
-        : this._contextDataService.getModelData(this.mdl.imageName, this._widgetId);
+        : this._contextDataService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersions, this._widgetId);
 
     obs
       .pipe(
@@ -1319,6 +1319,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       this.configuredScanIds,
       new ImageDisplayOptions(
         this.mdl.imageName,
+        this.mdl.beamLocationVersions,
         this.mdl.imageSmoothing,
         this.mdl.imageBrightness,
         this.mdl.removeTopSpecularArtifacts,
@@ -1359,6 +1360,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       // so reloading still works (and does almost nothing because it's the same image!)
       if (this.mdl.drawImage) {
         this.mdl.imageName = result.options.currentImage;
+        this.mdl.beamLocationVersions = result.options.beamVersionMap;
       }
 
       if (result.options.selectedScanId.length > 0 && result.options.selectedScanId !== this.scanId) {

@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="notifications.length === 0" class="empty">No notifications</div>
     <div class="notification" *ngFor="let notification of notifications">
       <div class="notification-content">
+        <div *ngIf="notification?.timestampUTCSeconds" class="notification-time">{{ (notification?.timestampUTCSeconds || 0) * 1000 | date: "d MMM y, HH:mm:ss" }}</div>
         <div class="notification-title">{{ notification.title }}</div>
         <div *ngIf="notification.type === 'action'" class="notification-action">
           <push-button buttonStyle="outline" (onClick)="onNotificationAction(notification)">
@@ -61,7 +62,6 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <action-button action="close" color="rgb(188, 188, 188)" (onClick)="dismissNotification(notification)"></action-button>
       </div>
-      <div *ngIf="notification?.timestampUTCSeconds" class="notification-time">{{ (notification?.timestampUTCSeconds || 0) * 1000 | date: "d MMM y, HH:mm:ss" }}</div>
     </div>
   </section>
   <section class="buttons">
