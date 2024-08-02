@@ -409,6 +409,11 @@ export class APICachedDataService {
     this._expressionReqMap.set(cacheId, new Observable<ExpressionGetResp>(subscriber => subscriber.next(resp)));
   }
 
+  removeExpressionRequestFromCache(req: ExpressionGetReq) {
+    const cacheId = JSON.stringify(ExpressionGetReq.toJSON(req));
+    this._expressionReqMap.delete(cacheId);
+  }
+
   getDataModule(req: DataModuleGetReq): Observable<DataModuleGetResp> {
     const cacheId = JSON.stringify(DataModuleGetReq.toJSON(req));
     let result = this._dataModuleReqMap.get(cacheId);
@@ -520,7 +525,12 @@ export class APICachedDataService {
       result = this._dataService.sendDataModuleListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
+<<<<<<< HEAD
       this.addToCache(cacheId, "modListReqMap", result, this._modListReqMap);
+=======
+      this._modListReqMap.set(cacheId, result);
+      this.modListReqMapCacheInvalid = false;
+>>>>>>> development
     }
 
     return result;
@@ -534,7 +544,12 @@ export class APICachedDataService {
       result = this._dataService.sendExpressionListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
+<<<<<<< HEAD
       this.addToCache(cacheId, "exprListReqMap", result, this._exprListReqMap);
+=======
+      this._exprListReqMap.set(cacheId, result);
+      this.exprListReqMapCacheInvalid = false;
+>>>>>>> development
     }
 
     return result;
@@ -591,7 +606,12 @@ export class APICachedDataService {
       result = this._dataService.sendUserGroupListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
+<<<<<<< HEAD
       this.addToCache(cacheId, "userGroupListReqMap", result, this._userGroupListReqMap);
+=======
+      this._userGroupListReqMap.set(cacheId, result);
+      this.userGroupListReqMapCacheInvalid = false;
+>>>>>>> development
     }
 
     return result;

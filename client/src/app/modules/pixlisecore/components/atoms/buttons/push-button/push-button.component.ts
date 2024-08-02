@@ -38,6 +38,7 @@ export type PushButtonStyle =
   | "borderless"
   | "yellow"
   | "outline"
+  | "outline-small"
   | "gray"
   | "gray-title"
   | "light-right-outline"
@@ -80,6 +81,7 @@ export class PushButtonComponent implements OnInit {
       "borderless",
       "yellow",
       "outline",
+      "outline-small",
       "gray",
       "gray-title",
       "light-right-outline",

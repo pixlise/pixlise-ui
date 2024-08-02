@@ -12,6 +12,7 @@ import {
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 import { QuantificationTableComponent } from "../../table-views/table-views.module";
 import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-widget/variogram-widget.component";
+import { WidgetKeyItem } from "../../pixlisecore/pixlisecore.module";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -35,6 +36,9 @@ export type WidgetToolbarButtonConfiguration = {
   margin?: string;
   disabled?: boolean;
   onClick: (value: any, trigger?: Element) => void;
+
+  // Used by the widget-key type to communicate updates to the key items
+  onUpdateKeyItems?: (keyItems: WidgetKeyItem[]) => void;
 
   // Controls whether the value is copied over in a template
   templateable?: boolean;

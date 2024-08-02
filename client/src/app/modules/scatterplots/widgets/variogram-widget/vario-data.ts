@@ -67,7 +67,8 @@ export class VariogramPointGroup {
     public colour: RGBA,
     public shape: string,
     public points: VariogramPoint[],
-    public valueRange: MinMax
+    public valueRange: MinMax,
+    public roiId: string
   ) {}
 }
 

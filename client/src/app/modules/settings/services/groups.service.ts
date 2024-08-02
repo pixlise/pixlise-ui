@@ -39,8 +39,8 @@ export class GroupsService {
     this.fetchGroups();
   }
 
-  createGroup(name: string, description: string) {
-    this._dataService.sendUserGroupCreateRequest(UserGroupCreateReq.create({ name, description })).subscribe({
+  createGroup(name: string, description: string, joinable: boolean) {
+    this._dataService.sendUserGroupCreateRequest(UserGroupCreateReq.create({ name, description, joinable })).subscribe({
       next: (res: UserGroupCreateResp) => {
         if (res.group) {
           this.detailedGroups.push(res.group);
@@ -51,6 +51,7 @@ export class GroupsService {
             createdUnixSec: res.group.info?.createdUnixSec || 0,
             relationshipToUser: UserGroupRelationship.UGR_ADMIN,
             lastUserJoinedUnixSec: res.group.info?.lastUserJoinedUnixSec || 0,
+            joinable: res.group.info?.joinable || false,
           });
           this.groupsChanged$.next();
         }
@@ -348,7 +349,11 @@ export class GroupsService {
     this._dataService.sendUserGroupJoinRequest(UserGroupJoinReq.create({ groupId: group.id, asMember })).subscribe({
       next: res => {
         this._snackBar.openSuccess(`Request to join group (${group.name}) sent.`);
-        this.fetchGroupAccessRequests(group.id);
+
+        // If user is not an admin, no need to fetch this, they don't have access anyway and we printed an uneccessary error
+        if (this._userOptionsService.hasFeatureAccess("admin")) {
+          this.fetchGroupAccessRequests(group.id);
+        }
         this.groupAccessRequestsChanged$.next();
       },
       error: err => {

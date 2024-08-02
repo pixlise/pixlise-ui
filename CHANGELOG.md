@@ -1,4 +1,22 @@
-## 4.29.0 (Unreleased)
+## 4.30.0 (Unreleased)
+
+### Features
+
+- **Smart Chart Keys** Keys in the chart are now more dynamic and allow for quick toggling on/off of ROIs.
+  - New Hotkey: `Option/Alt + Click` on a key (or group header) to toggle all other keys (or groups) off and solo the item (click again to toggle back on).
+    - Adds hotkey to "Hotkeys" menu in top right.
+  - ROIs are also now grouped by dataset, making it easier to find the ROI you're looking for.
+  - New "Expand" button that expands all groups and makes the key wider to fit all labels for easier screenshoting and usability on larger displays.
+  - Smart Chart Keys are available on: Binary, Ternary, RGBU Plot, Spectrum Chart, Histogram, Parallel Coordinates Plot, and Variogram.
+
+### Bug Fixes
+
+- Fixed bug where RGBU Plot wasn't persisting the state of configured ROIs
+- Fixes edge case bug where "Apply & Close" on context image sometimes would apply changes and hide button, but not close the dialog
+- Fixes data synchronization issues where new expressions and expression groups weren't showing up in the expression picker until reload
+- Hides points and footprint from ontext images on element maps page
+
+## 4.29.0 (2024-07-25)
 
 ### Bug Fixes
 

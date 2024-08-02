@@ -31,7 +31,7 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from "@angular/co
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, of } from "rxjs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
@@ -149,6 +149,10 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         id: "key",
         type: "widget-key",
         onClick: () => {},
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          this.mdl.rebuild();
+        },
       },
     };
   }
@@ -187,6 +191,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         xChannelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
         yChannelA: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.numeratorChannelIdx),
         yChannelB: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.denominatorChannelIdx),
+        roiIds: this.mdl.visibleRegionIds,
       })
     );
   }
@@ -202,12 +207,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           this.mdl.selectedMaxXValue = state.selectedMaxXValue ?? null;
           this.mdl.selectedMinYValue = state.selectedMinYValue ?? null;
           this.mdl.selectedMaxYValue = state.selectedMaxYValue ?? null;
+          this.mdl.visibleRegionIds = state.roiIds || [];
 
           this.mdl.xAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.xChannelA || "R"), RGBUPlotModel.channelToIdx(state.xChannelB ?? "G"));
           this.mdl.yAxisUnit = new RGBUAxisUnit(RGBUPlotModel.channelToIdx(state.yChannelA || "B"), RGBUPlotModel.channelToIdx(state.yChannelB ?? "U"));
 
-          // TODO: fill in other vars here...
-          this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
+          this.loadData(state.imageName, this.mdl.visibleRegionIds);
         } else {
           this.setInitialConfig();
         }
