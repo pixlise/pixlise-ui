@@ -778,7 +778,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           }
 
           combineLatest([
-            this._spectrumDataService.getSpectrum(roi.region.scanId, idxs, true, true),
+            this._spectrumDataService.getSpectra(roi.region.scanId, idxs, true, true),
             this._cachedDataService.getScanList(
               ScanListReq.create({
                 searchFilters: { scanId: roi.region.scanId },

@@ -60,6 +60,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
 import { BuiltInTags } from "../../tags/models/tag.model";
 import { SpectrumDataService } from "./spectrum-data.service";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -263,9 +264,16 @@ export class WidgetDataService {
     }
 
     if (query.scanId) {
+      // NOTE: here we used to call:
+      // this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } }))
+      // But this proved to be inaccurate, because we may get a different time stamp than we have the spectrum data cached for
+      // so instead, we query the bulk spectrum and save its stats - this way our cache key is unique to the downlinked
+      // data, not a time stamp
+
       scanIdIdx = queryList.length;
       queryList.push(
-        this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } })).pipe(
+        // Really we don't need the bulk sum, but lets get it because other functionality is caching that kind of request!
+        this._spectrumDataService.getSpectra(query.scanId, [], true, true).pipe(
           catchError(err => {
             throw new Error(`Failed to load scan: ${query.scanId} - ${err}`);
           })
@@ -278,7 +286,7 @@ export class WidgetDataService {
     }
 
     return combineLatest(queryList).pipe(
-      map((result: (ExpressionGetResp | RegionOfInterestGetResp | ScanListResp)[]) => {
+      map((result: (ExpressionGetResp | RegionOfInterestGetResp | SpectrumResp)[]) => {
         let appendKey = "";
 
         if (exprIdIdx >= 0) {
@@ -296,9 +304,9 @@ export class WidgetDataService {
         }
 
         if (scanIdIdx >= 0) {
-          const s = result[scanIdIdx] as ScanListResp;
-          if (s && s.scans && s.scans.length == 1) {
-            appendKey += ",scanMod:" + s.scans[0].timestampUnixSec;
+          const s = result[scanIdIdx] as SpectrumResp;
+          if (s) {
+            appendKey += `,spectra:${s.normalSpectraForScan},${s.dwellSpectraForScan}`;
           }
         }
 
