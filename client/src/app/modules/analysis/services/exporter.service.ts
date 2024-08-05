@@ -210,7 +210,7 @@ export class DataExporterService {
     const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>, Observable<ScanMetaLabelsAndTypesResp>] = [
       this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
       this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
-      this._spectrumDataService.getSpectrum(scanId, null, true, true),
+      this._spectrumDataService.getSpectra(scanId, null, true, true),
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
     ];
 
@@ -382,7 +382,7 @@ msa += `#XPOSITION   : 0.000
   getBulkSumMaxSpectra(scanId: string, roiIds: string[]): Observable<WidgetExportData> {
     const requests: Observable<ScanMetaLabelsAndTypesResp | SpectrumResp | RegionOfInterestGetResp>[] = [
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
-      this._spectrumDataService.getSpectrum(scanId, roiIds.length > 0 ? null : [], true, true),
+      this._spectrumDataService.getSpectra(scanId, roiIds.length > 0 ? null : [], true, true),
     ];
 
     for (const roiId of roiIds) {
