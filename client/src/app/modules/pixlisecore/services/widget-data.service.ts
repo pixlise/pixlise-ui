@@ -306,7 +306,7 @@ export class WidgetDataService {
         if (scanIdIdx >= 0) {
           const s = result[scanIdIdx] as SpectrumResp;
           if (s) {
-            appendKey += `,spectra:${s.normalSpectraForScan},${s.dwellSpectraForScan}`;
+            appendKey += `,spectra:${s.normalSpectraForScan},${s.dwellSpectraForScan},${s.timeStampUnixSec}`;
           }
         }
 

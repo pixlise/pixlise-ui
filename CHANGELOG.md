@@ -20,6 +20,7 @@
 - Fixes data synchronization issues where new expressions and expression groups weren't showing up in the expression picker until reload
 - Hides points and footprint from ontext images on element maps page
 - Fixed error shown to new users when requesting to join groups
+- Fixed caching issue seen during recent downlinks
 
 ## 4.29.0 (2024-07-25)
 
