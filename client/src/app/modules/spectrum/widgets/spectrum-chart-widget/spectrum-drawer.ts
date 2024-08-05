@@ -76,6 +76,12 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
 
     for (let c = 0; c < this._mdl.spectrumLines.length; c++) {
       const spectrum = this._mdl.spectrumLines[c];
+      let keyId = `${spectrum.roiId}-${spectrum.expressionLabel}`;
+      let keyItem = this._mdl.keyItems.find(item => item.id === keyId);
+      if (keyItem && !keyItem.isVisible) {
+        continue;
+      }
+
       this.drawSpectrum(
         screenContext,
         spectrum,

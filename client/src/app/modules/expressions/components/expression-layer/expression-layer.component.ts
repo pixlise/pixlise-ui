@@ -266,15 +266,44 @@ export class ExpressionLayerComponent implements OnInit {
   }
 
   get description(): string {
-    return this._description || (this.expression as DataExpression)?.comments || (this.expression as ExpressionGroup)?.description || "";
+    const expr = this.expression as DataExpression;
+    let desc = this._description || expr?.comments || (this.expression as ExpressionGroup)?.description || "";
+
+    desc += this.getRuntimeStats(expr);
+
+    return desc;
   }
 
   set description(value: string) {
     this._description = value;
   }
 
+  private getRuntimeStats(expr: DataExpression): string {
+    let desc = "";
+
+    if (expr.recentExecStats) {
+      // Try to define slow, medium, fast expressions
+      desc += "\nExecution speed: ";
+      if (expr.recentExecStats.runtimeMsPer1000Pts < 200) { // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
+        desc += "fast";
+      } else if (expr.recentExecStats.runtimeMsPer1000Pts < 2000) { // 2000ms per 1000 points, so about 12 seconds for a large scan
+        desc += "medium";
+      } else { // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
+        desc += "slow";
+      }
+      desc += "\n";
+
+      if (expr.recentExecStats.dataRequired && expr.recentExecStats.dataRequired.length > 0) {
+        desc += "\nInputs required:\n" + expr.recentExecStats.dataRequired.join("\n");
+      }
+    }
+
+    return desc;
+  }
+
   get summaryTooltip(): string {
     let descriptionLine = this.description ? "\n\n" + this.description : "";
+
     let createdLine = this.createdDate > 0 ? "\n\nCreated: " + this.dateCreatedString : "";
     let modifiedLine = this.modifiedDate > 0 && this.createdDate !== this.modifiedDate ? "\nModified: " + this.dateModifiedString : "";
     return `${this.name}${descriptionLine}${createdLine}${modifiedLine}`;

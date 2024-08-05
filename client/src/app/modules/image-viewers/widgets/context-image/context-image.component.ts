@@ -307,8 +307,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.cachedROIs = this.mdl.roiIds.slice();
           this.mdl.drawImage = false;
-          this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
-          this.mdl.hidePointsForScans = new Set<string>(this.scanId);
+          this.mdl.hideFootprintsForScans = new Set<string>([this.scanId]);
+          this.mdl.hidePointsForScans = new Set<string>([this.scanId]);
           // this.setInitialConfig(true);
         } else if (contextData) {
           const validMapLayers = contextData.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
@@ -320,6 +320,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
 
           this.mdl.roiIds = contextData.roiLayers;
+          this.mdl.hideFootprintsForScans = new Set<string>(contextData?.hideFootprintsForScans || []);
+          this.mdl.hidePointsForScans = new Set<string>(contextData?.hidePointsForScans || []);
+          this.mdl.drawImage = contextData?.drawImage ?? true;
 
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
@@ -550,8 +553,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     // If we're on the maps page, we don't want to draw the image, and we want to hide the points and footprints
     if (this._analysisLayoutService.isMapsPage) {
       this.mdl.drawImage = false;
-      this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
-      this.mdl.hidePointsForScans = new Set<string>(this.scanId);
+      this.mdl.hideFootprintsForScans = new Set<string>([this.scanId]);
+      this.mdl.hidePointsForScans = new Set<string>([this.scanId]);
     }
   }
 
@@ -559,6 +562,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._configureForInjectedScan(liveExpression);
     if (this.mdl.imageName && this.mdl.expressionIds.length === 1 && this.mdl.expressionIds[0] === liveExpression.expressionId) {
       this.reloadModel(true);
+      this.reDraw();
     } else {
       this.setInitialConfig(true);
     }
@@ -705,7 +709,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     const obs: Observable<ContextImageModelLoadedData> =
       this.mdl.imageName.length <= 0 && this.scanId.length > 0
         ? this._contextDataService.getWithoutImage(this.scanId)
-        : this._contextDataService.getModelData(this.mdl.imageName, this._widgetId);
+        : this._contextDataService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersions, this._widgetId);
 
     obs
       .pipe(
@@ -1299,10 +1303,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         mapLayers: this.mdl.expressionIds.map(id =>
           MapLayerVisibility.create({
             expressionID: id,
-            visible: true,
-            opacity: opacityLookup.get(id) || 1,
+            visible: !this._hiddenMapLayers.has(id),
+            opacity: opacityLookup.get(id) ?? 1,
           })
         ),
+        hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
+        hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
+        drawImage: this.mdl.drawImage,
       })
     );
   }
@@ -1312,6 +1319,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       this.configuredScanIds,
       new ImageDisplayOptions(
         this.mdl.imageName,
+        this.mdl.beamLocationVersions,
         this.mdl.imageSmoothing,
         this.mdl.imageBrightness,
         this.mdl.removeTopSpecularArtifacts,
@@ -1352,6 +1360,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       // so reloading still works (and does almost nothing because it's the same image!)
       if (this.mdl.drawImage) {
         this.mdl.imageName = result.options.currentImage;
+        this.mdl.beamLocationVersions = result.options.beamVersionMap;
       }
 
       if (result.options.selectedScanId.length > 0 && result.options.selectedScanId !== this.scanId) {

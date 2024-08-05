@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { Subscription, combineLatest } from "rxjs";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
@@ -182,6 +182,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         type: "widget-key",
         style: { "margin-top": "152px" },
         onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          // this.reDraw();
+          // this.update();
+          this.mdl.updateRangesAndKey();
+        },
       },
     };
   }
@@ -772,7 +778,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           }
 
           combineLatest([
-            this._spectrumDataService.getSpectrum(roi.region.scanId, idxs, true, true),
+            this._spectrumDataService.getSpectra(roi.region.scanId, idxs, true, true),
             this._cachedDataService.getScanList(
               ScanListReq.create({
                 searchFilters: { scanId: roi.region.scanId },

@@ -1,7 +1,15 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { Observable, Subscription } from "rxjs";
+import {
+  DataSourceParams,
+  DataUnit,
+  RegionDataResults,
+  SelectionService,
+  SnackbarService,
+  WidgetDataService,
+  WidgetKeyItem,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
+import { catchError, map, Observable, Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -120,6 +128,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         value: this.mdl.keyItems,
         type: "widget-key",
         onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          this.update();
+        },
       },
     };
   }
@@ -177,25 +189,37 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.setData(data);
-
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
+        this.setData(data).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        });
       },
       error: err => {
-        this.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err)).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        });
       },
     });
   }
 
-  private setData(data: RegionDataResults) {
-    const errs = this.mdl.setData(data);
-    if (errs.length > 0) {
-      for (const err of errs) {
-        this._snackService.openError(err.message, err.description);
-      }
-    }
+  private setData(data: RegionDataResults): Observable<void> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      map(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   ngOnInit() {
@@ -327,6 +351,14 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         if (this.mdl.expressionIds.length === 2) {
           this.update();
         }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.chordClicks$.subscribe((exprIds: string[]) => {
+        // Only update if we have the right expression count otherwise this will just trigger an error
+        this.mdl.expressionIds = exprIds;
+        this.update();
       })
     );
 

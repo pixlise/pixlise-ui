@@ -260,6 +260,10 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       srcPixelIdxs
     );
 
+    let hiddenKeyItems = this.keyItems.filter(keyItem => !keyItem.isVisible);
+
+    let visibleROIs = plotData.rois.filter(roi => !hiddenKeyItems.find(keyItem => keyItem.id === roi.region.id));
+
     // Generate ratio points for newly binned data
     const [ratioPoints, colourKey] = RGBUPlotModel.generateRGBURatioPoints(
       xBinCount,
@@ -270,7 +274,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       Math.log(countMinMax.max || 0),
       this.drawMonochrome,
       binMemberInfo,
-      plotData.rois,
+      visibleROIs,
       currSelPixels.selectedPixels,
       binSrcPixels,
       false,
@@ -296,7 +300,15 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       plotData.image.path
     );
 
-    this.keyItems = Object.entries(colourKey).map(([key, keyColour]) => new WidgetKeyItem(key, key, keyColour));
+    this.keyItems = [
+      ...hiddenKeyItems,
+      ...Object.entries(colourKey).map(([key, keyColour]) => {
+        // let roi = visibleROIs.find(roi => roi.region.name === key);
+        // let scanName = roi?.region.scanId || "";
+        // return new WidgetKeyItem(key, key, keyColour, undefined, undefined, scanName, true, false);
+        return new WidgetKeyItem(key, key, keyColour, undefined, undefined, undefined, true, false, false);
+      }),
+    ];
 
     return rgbuPlotData;
   }

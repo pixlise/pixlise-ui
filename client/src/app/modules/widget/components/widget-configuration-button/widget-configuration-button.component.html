@@ -22,5 +22,8 @@
     </icon-button>
   </span>
   <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'"></selection-changer>
-  <widget-key-display *ngIf="buttonConfiguration?.type === 'widget-key'" [items]="buttonConfiguration?.value || []"></widget-key-display>
+  <widget-key-display
+    *ngIf="buttonConfiguration?.type === 'widget-key'"
+    [items]="buttonConfiguration?.value || []"
+    (onUpdateItems)="onUpdateKeyItems($event)"></widget-key-display>
 </div>

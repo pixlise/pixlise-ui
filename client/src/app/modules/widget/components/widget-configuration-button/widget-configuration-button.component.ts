@@ -1,5 +1,6 @@
 import { Component, Input } from "@angular/core";
 import { WidgetToolbarButtonConfiguration } from "../../models/widgets.model";
+import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 
 @Component({
   selector: "widget-configuration-button",
@@ -14,6 +15,16 @@ export class WidgetConfigurationButtonComponent {
   buttonClick(buttonTrigger: Element) {
     if (this.buttonConfiguration && this.buttonConfiguration.onClick && !this.buttonConfiguration.disabled) {
       this.buttonConfiguration.onClick(this.buttonConfiguration.value, buttonTrigger);
+    }
+  }
+
+  onUpdateKeyItems(keyItems: WidgetKeyItem[]) {
+    if (this.buttonConfiguration?.type !== "widget-key") {
+      return;
+    }
+
+    if (this.buttonConfiguration && this.buttonConfiguration.onUpdateKeyItems) {
+      this.buttonConfiguration.onUpdateKeyItems(keyItems);
     }
   }
 }

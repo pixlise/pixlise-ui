@@ -10,6 +10,7 @@ import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher
 import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { ScanItem } from "../../../../generated-protos/scan";
 
 export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
@@ -18,13 +19,13 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
   }
 
-  setData(data: RegionDataResults): WidgetError[] {
+  setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
     const axes: ScatterPlotAxisInfo[] = [
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()), // X
       new ScatterPlotAxisInfo("", true, "", "", new MinMax()), // Y
     ];
 
-    return this.processQueryResult("Binary", data, axes);
+    return this.processQueryResult("Binary", data, axes, scanItems);
   }
 
   protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): BinaryData {

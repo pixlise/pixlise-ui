@@ -38,7 +38,7 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
     drawParams.worldTransform.applyTransform(screenContext);
 
     const drawMdl = this._mdl.drawModel;
-    if (drawMdl.image) {
+    if (drawMdl.image && this._mdl.drawImage) {
       drawImageOrMaskWithOptionalTransform(screenContext, drawMdl.image, drawMdl.imageTransform);
     }
 
