@@ -1,4 +1,11 @@
-## 4.30.0 (Latest)
+## 4.31.0 (Latest)
+
+### Bug Fixes
+
+- Beam location version picker is also shown if there is only one version available, to show what version is being displayed
+- Tags are now displayed in alphabetical order (to see the creator, point to it!). Added confirmation for deletion too.
+
+## 4.30.0 (2024-08-05)
 
 ### Features
 

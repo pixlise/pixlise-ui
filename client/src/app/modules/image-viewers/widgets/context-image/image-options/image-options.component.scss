@@ -122,6 +122,14 @@
         @extend .setting-row;
     }
 
+    .row-space-between {
+      display: flex;
+      flex-direction: row;
+      place-content: center space-between;
+      gap: 8px;
+      margin-left: 8px;
+    }
+
     .bunched {
       justify-content: flex-start;
     }

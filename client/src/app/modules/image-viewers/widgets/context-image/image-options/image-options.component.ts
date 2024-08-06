@@ -202,12 +202,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
         for (const scanId of Object.keys(beamVersions.beamVersionPerScan)) {
           const versions = beamVersions.beamVersionPerScan[scanId];
-          if (versions.versions.length > 1) {
-            this.pickableBeamVersionScanIds.push(scanId);
-            this.pickableBeamVersions.set(scanId, versions.versions);
-            if (!this.selectedBeamVersions[scanId]) {
-              this.selectedBeamVersions[scanId] = versions.versions[0];
-            }
+          this.pickableBeamVersionScanIds.push(scanId);
+          this.pickableBeamVersions.set(scanId, versions.versions);
+          if (!this.selectedBeamVersions[scanId]) {
+            this.selectedBeamVersions[scanId] = versions.versions[0];
           }
         }
       },
