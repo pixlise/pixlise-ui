@@ -35,6 +35,7 @@ export class APIEndpointsService {
     return from(this.localStorageService.getImage(apiUrl)).pipe(
       switchMap(imageData => {
         // If we have it and it's not older than maxAge (2 days), use it
+        // NOTE: timestamp is in milliseconds
         if (imageData && imageData.timestamp > Date.now() - maxAgeSec * 1000) {
           return new Observable<HTMLImageElement>(observer => {
             const img = new Image();
@@ -186,7 +187,8 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
       switchMap(imageData => {
-        if (imageData && imageData.timestamp > Date.now() - maxAgeSec*1000) {
+        // NOTE: timestamp is in milliseconds
+        if (imageData && imageData.timestamp > Date.now() - maxAgeSec * 1000) {
           return of(imageData.data);
         } else {
           return this.loadRGBTIFFDisplayImage(imagePath, maxAgeSec).pipe(
@@ -225,6 +227,7 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
       switchMap(imageData => {
+        // NOTE: timestamp is in milliseconds
         if (imageData && imageData.timestamp > Date.now() - maxAgeSec * 1000) {
           return RGBUImage.readImage(imageData.data, imagePath);
         } else {

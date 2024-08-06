@@ -246,7 +246,7 @@ export class SpectrumDataService {
         }
 
         const cachedItem = new ScanSpectrumData(
-          storedCachedItem.timestamp,
+          storedCachedItem.timestamp / 1000, // NOTE: if we don't convert from ms to sec, cached data won't expire!!
           cachedResp.bulkSpectra,
           cachedResp.maxSpectra,
           pmcSpectra,

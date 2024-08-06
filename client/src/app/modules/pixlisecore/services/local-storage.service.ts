@@ -83,7 +83,7 @@ export class LocalStorageService {
   }*/
 
   async storeImage(data: string, key: string, url: string, height: number, width: number, size: number) {
-    const item: CachedImageItem = { data, key, url, height, width, size, timestamp: Date.now() };
+    const item: CachedImageItem = { data, key, url, height, width, size, timestamp: Date.now() }; // NOTE: timestamp is in milliseconds
     await db.images.put(item, url);
   }
 
@@ -96,7 +96,7 @@ export class LocalStorageService {
   }
 
   async storeRGBUImage(data: ArrayBuffer, key: string, url: string) {
-    const item: CachedRGBUImageItem = { data, key, url, timestamp: Date.now() };
+    const item: CachedRGBUImageItem = { data, key, url, timestamp: Date.now() }; // NOTE: timestamp is in milliseconds
     await db.rgbuImages.put(item, url);
   }
 
@@ -138,7 +138,7 @@ export class LocalStorageService {
     const item: CachedSpectraItem = {
       data,
       key,
-      timestamp: Date.now(),
+      timestamp: Date.now(), // NOTE: timestamp is in milliseconds
       loadedAllPMCs: spectra.loadedAllPMCs,
       loadedBulkSum: spectra.loadedBulkSum,
       loadedMaxValue: spectra.loadedMaxValue,
