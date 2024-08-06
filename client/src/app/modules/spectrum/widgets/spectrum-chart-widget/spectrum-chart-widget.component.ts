@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@ang
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
-import { Subscription, combineLatest } from "rxjs";
+import { Observable, Subscription, catchError, combineLatest, forkJoin, map, of, switchMap } from "rxjs";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 import { SpectrumChartDrawer } from "./spectrum-drawer";
@@ -73,7 +73,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     super();
 
     this.mdl = this._spectrumService.mdl;
-    this.toolhost = new SpectrumChartToolHost(this.mdl, dialog, clipboard);
+    this.toolhost = new SpectrumChartToolHost(this.mdl, dialog, clipboard, _snackService);
     this.drawer = new SpectrumChartDrawer(this.mdl, this.toolhost);
 
     this._widgetControlConfiguration = {
@@ -94,14 +94,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           value: false,
           onClick: () => this.onToolSelected("zoom"),
         },
-        // {
-        //   id: "spectrum-range",
-        //   type: "selectable-button",
-        //   icon: "assets/button-icons/tool-spectrum-range.svg",
-        //   tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
-        //   value: false,
-        //   onClick: () => this.onToolSelected("spectrum-range"),
-        // },
+        {
+          id: "spectrum-range",
+          type: "selectable-button",
+          icon: "assets/button-icons/tool-spectrum-range.svg",
+          tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
+          value: false,
+          onClick: () => this.onToolSelected("spectrum-range"),
+        },
         {
           id: "zoom-in",
           type: "button",
@@ -184,8 +184,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         onClick: () => this.onToggleKey(),
         onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
           this.mdl.keyItems = keyItems;
-          // this.reDraw();
-          // this.update();
           this.mdl.updateRangesAndKey();
         },
       },
@@ -268,6 +266,13 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             }
           }
         }
+
+        // let scanIds = new Set<string>();
+        // this.mdl.spectrumLines.forEach(line => {
+        //   scanIds.add(line.scanId);
+        // });
+
+        // this.reloadScanCalibrations(Array.from(scanIds), true);
       })
     );
 
@@ -351,6 +356,17 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           }
         } else if (this.mdl.diffractionPeaksShown.length > 0) {
           this.mdl.showDiffractionPeaks([]);
+          this.reDraw();
+        }
+      })
+    );
+
+    this._subs.add(
+      this.toolhost.toolStateChanged$.subscribe(() => {
+        let activeToolId = this.getToolId(this.activeTool);
+        if (this.toolhost.activeTool.id !== activeToolId) {
+          let toolName = this.getToolName(this.toolhost.activeTool.id);
+          this.onToolSelected(toolName);
           this.reDraw();
         }
       })
@@ -499,24 +515,38 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this.saveState();
   }
 
+  getChangeableToolOptions() {
+    let toolOptions: Record<string, SpectrumToolId> = {
+      pan: SpectrumToolId.PAN,
+      zoom: SpectrumToolId.ZOOM,
+      "spectrum-range": SpectrumToolId.RANGE_SELECT,
+    };
+    return toolOptions;
+  }
+
+  getToolId(tool: string): SpectrumToolId {
+    let toolOptions = this.getChangeableToolOptions();
+    return toolOptions[tool] ?? SpectrumToolId.PAN;
+  }
+
+  getToolName(tool: SpectrumToolId): string {
+    let toolOptions = this.getChangeableToolOptions();
+    return Object.keys(toolOptions).find(key => toolOptions[key] === tool) ?? "pan";
+  }
+
   onToolSelected(tool: string) {
     this.activeTool = tool;
 
+    let toolOptions = this.getChangeableToolOptions();
     if (this._widgetControlConfiguration.topToolbar) {
-      let setCount = 0;
-      for (const button of this._widgetControlConfiguration.topToolbar) {
-        if (button.id === "pan" || button.id === "zoom") {
+      this._widgetControlConfiguration.topToolbar.forEach(button => {
+        if (Object.keys(toolOptions).includes(button.id)) {
           button.value = button.id === tool;
-          setCount++;
-
-          if (setCount > 1) {
-            break;
-          }
         }
-      }
+      });
     }
 
-    this.toolhost.setTool(tool == "pan" ? SpectrumToolId.PAN : SpectrumToolId.ZOOM);
+    this.toolhost.setTool(this.getToolId(tool));
   }
 
   onCalibration() {
@@ -716,32 +746,57 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     return y;
   }
 
-  private reloadScanCalibrations(scanIds: string[], refreshCalibrationData: boolean = false) {
-    scanIds.forEach(scanId => {
-      if (this.mdl.xAxisEnergyScale) {
-        this._energyCalibrationService.getCurrentCalibration(scanId).subscribe((cals: SpectrumEnergyCalibration[]) => {
-          // If any are empty...
-          let emptyCount = 0;
-          for (const cal of cals) {
-            if (cal.isEmpty()) {
-              emptyCount++;
-            }
-          }
+  private reloadScanCalibrationsAsync(
+    scanIds: string[],
+    refreshCalibrationData: boolean = false
+  ): Observable<{ scanId: string; scanCalibrations: SpectrumEnergyCalibration[] }[]> {
+    if (this.mdl.xAxisEnergyScale) {
+      const currentCalibrationRequests = scanIds.map(scanId =>
+        this._energyCalibrationService.getCurrentCalibration(scanId).pipe(
+          map((cals: SpectrumEnergyCalibration[]) => ({ scanId, cals })),
+          catchError(() => of({ scanId, cals: [] }))
+        )
+      );
 
-          if (refreshCalibrationData || cals.length <= 0 || emptyCount > 0) {
-            this._energyCalibrationService.getScanCalibration(scanId).subscribe((scanCals: SpectrumEnergyCalibration[]) => {
-              this._energyCalibrationService.setCurrentCalibration(scanId, scanCals);
-              this.mdl.setEnergyCalibration(scanId, scanCals);
-            });
-          }
-        });
-      }
-    });
+      return forkJoin(currentCalibrationRequests).pipe(
+        switchMap(results => {
+          const calibrationRequests = results.map(({ scanId, cals }) => {
+            let emptyCount = cals.filter(cal => cal.isEmpty()).length;
+            let hasEnergyCalibration = this.mdl.checkHasEnergyCalibrationForScanIds(scanIds);
+
+            if (refreshCalibrationData || !hasEnergyCalibration || cals.length <= 0 || emptyCount > 0) {
+              return this._energyCalibrationService.getScanCalibration(scanId).pipe(
+                map((scanCalibrations: SpectrumEnergyCalibration[]) => ({ scanId, scanCalibrations })),
+                catchError(() => of({ scanId, scanCalibrations: [] }))
+              );
+            } else {
+              return of({ scanId, scanCalibrations: cals });
+            }
+          });
+
+          return forkJoin(calibrationRequests).pipe(
+            map(calibrationResults => {
+              calibrationResults.forEach(({ scanId, scanCalibrations }) => {
+                this._energyCalibrationService.setCurrentCalibration(scanId, scanCalibrations);
+                this.mdl.setEnergyCalibration(scanId, scanCalibrations);
+              });
+
+              return calibrationResults;
+            })
+          );
+        })
+      );
+    } else {
+      return of([]);
+    }
+  }
+
+  reloadScanCalibrations(scanIds: string[], refreshCalibrationData: boolean = false) {
+    return this.reloadScanCalibrationsAsync(scanIds, refreshCalibrationData).subscribe();
   }
 
   private updateLines(refreshCalibrationData: boolean = false) {
-    // TODO: should we hard code this? Probably not... how does user ask for something else?
-    const readType = SpectrumType.SPECTRUM_NORMAL;
+    this.isWidgetDataLoading = true;
     const scanIds = new Set<string>();
 
     let lineMap = this.mdl.getLineList();
@@ -751,9 +806,16 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._roiService.getScanIdsFromROIs(roiIds).subscribe(scanIds => {
         // For any scans coming in that are not yet calibrated, set them to
         // dataset calibration
-        this.reloadScanCalibrations(scanIds, refreshCalibrationData);
+        this.reloadScanCalibrationsAsync(scanIds, refreshCalibrationData).subscribe(calibrationResults => {
+          this.generateLines();
+        });
       })
     );
+  }
+
+  generateLines() {
+    // TODO: should we hard code this? Probably not... how does user ask for something else?
+    const readType = SpectrumType.SPECTRUM_NORMAL;
 
     for (const [roiId, options] of this.mdl.getLineList()) {
       this._subs.add(
@@ -830,9 +892,11 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               }
 
               this.mdl.clearDisplayData(); // This should trigger a redraw
+              this.isWidgetDataLoading = false;
             },
             error: err => {
               console.error("Failed to load spectra for ROI: ", roiId, err);
+              this.isWidgetDataLoading = false;
             },
           });
         })

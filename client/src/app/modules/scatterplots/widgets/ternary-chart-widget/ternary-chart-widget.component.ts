@@ -168,6 +168,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private update() {
+    this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 3) {
       this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
       return;
@@ -191,6 +192,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
+
+          this.isWidgetDataLoading = false;
         });
       },
       error: err => {
@@ -198,6 +201,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
+
+          this.isWidgetDataLoading = false;
         });
       },
     });

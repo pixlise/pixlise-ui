@@ -81,7 +81,6 @@ export class BaseWidgetModel {
   set isWidgetDataLoading(isWidgetDataLoading) {
     this._isWidgetDataLoading = isWidgetDataLoading;
     this._isWidgetDataError = false;
-    this._isWidgetDataLoading = false;
     this.onWidgetLoading.emit(isWidgetDataLoading);
   }
 

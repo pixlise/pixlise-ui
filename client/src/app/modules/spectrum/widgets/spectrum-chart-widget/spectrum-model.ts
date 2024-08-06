@@ -200,6 +200,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return this._spectrumLines;
   }
 
+  checkHasEnergyCalibrationForScanIds(scanIds: string[]): boolean {
+    for (const scanId of scanIds) {
+      if (!this._calibration.has(scanId)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   setEnergyCalibration(scanId: string, calibration: SpectrumEnergyCalibration[]) {
     for (const cal of calibration) {
       this._calibration.set(scanId + "-" + cal.detector, cal);

@@ -112,6 +112,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private update() {
+    this.isWidgetDataLoading = true;
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
@@ -135,9 +136,13 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     this._widgetData.getData(query).subscribe({
       next: data => {
         this.setData(data);
+
+        this.isWidgetDataLoading = false;
       },
       error: err => {
         this.setData(new RegionDataResults([], err));
+
+        this.isWidgetDataLoading = false;
       },
     });
   }

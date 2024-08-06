@@ -1,0 +1,59 @@
+.range-select-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+
+  background: #222829;
+
+  .title-bar {
+    padding: 8px 16px;
+    border-bottom: 1px solid #545f64;
+    cursor: grab;
+
+    h2 {
+      text-transform: none;
+    }
+  }
+
+  .bottom-buttons {
+    display: flex;
+    padding: 8px;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.range-container {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+  padding: 8px;
+
+  max-height: 400px;
+  overflow-y: auto;
+
+  .range-value {
+    display: flex;
+    gap: 8px;
+
+    position: relative;
+    align-items: center;
+
+    .range-label {
+      width: 50px;
+    }
+
+    input {
+      flex: 1;
+    }
+
+    .range-units {
+      position: absolute;
+      right: 8px;
+
+      color: rgb(var(--clr-gray-40));
+      font-size: 12px;
+    }
+  }
+}
