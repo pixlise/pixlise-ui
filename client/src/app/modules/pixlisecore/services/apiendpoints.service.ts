@@ -7,6 +7,7 @@ import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-
 import { APIPaths } from "src/app/utils/api-helpers";
 import { Uint8ToString } from "src/app/utils/utils";
 import { ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
+import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 
 const DefaultMaxImageCacheAgeSec = 60 * 60 * 24 * 2;
 const DefaultMaxCachedImageSizeBytes = 1024 * 1024 * 10;
@@ -35,8 +36,7 @@ export class APIEndpointsService {
     return from(this.localStorageService.getImage(apiUrl)).pipe(
       switchMap(imageData => {
         // If we have it and it's not older than maxAge (2 days), use it
-        // NOTE: timestamp is in milliseconds
-        if (imageData && imageData.timestamp > Date.now() - maxAgeSec * 1000) {
+        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return new Observable<HTMLImageElement>(observer => {
             const img = new Image();
 
@@ -187,8 +187,7 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
       switchMap(imageData => {
-        // NOTE: timestamp is in milliseconds
-        if (imageData && imageData.timestamp > Date.now() - maxAgeSec * 1000) {
+        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return of(imageData.data);
         } else {
           return this.loadRGBTIFFDisplayImage(imagePath, maxAgeSec).pipe(
@@ -227,8 +226,7 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
       switchMap(imageData => {
-        // NOTE: timestamp is in milliseconds
-        if (imageData && imageData.timestamp > Date.now() - maxAgeSec * 1000) {
+        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return RGBUImage.readImage(imageData.data, imagePath);
         } else {
           return of(null);
@@ -292,5 +290,28 @@ export class APIEndpointsService {
 
     const apiUrl = APIPaths.getWithHost("images");
     return this.http.put<void>(apiUrl, sendbuf, httpOptions);
+  }
+
+  private isValidLocallyCachedImage(imageData: CachedImageItem | CachedRGBUImageItem | undefined, maxAgeSec: number): boolean {
+    if (!imageData) {
+      return false;
+    }
+
+    const maxAgeMs = Date.now() - maxAgeSec * 1000;
+
+    // NOTE: timestamp is in milliseconds
+    if (imageData.timestamp < maxAgeMs) {
+      // Too old, don't use it
+      return false;
+    }
+
+    // Check other params
+    const img = imageData as CachedImageItem;
+    if (img && img.width <= 0 && img.height <= 0) {
+      // Seen this, invalidly stored width/height of 0
+      return false;
+    }
+
+    return true;
   }
 }
