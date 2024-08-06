@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
 import { BuiltInTags, TagType } from "../../models/tag.model";
 import { TagService } from "../../services/tag.service";
@@ -35,17 +35,12 @@ import { Tag } from "src/app/generated-protos/tags";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UserDetails } from "src/app/generated-protos/user";
 
-export interface AuthorTags {
-  author: string;
-  tags: Tag[];
-}
-
 @Component({
   selector: "tag-picker",
   templateUrl: "./tag-picker.component.html",
   styleUrls: ["./tag-picker.component.scss"],
 })
-export class TagPickerComponent implements OnInit {
+export class TagPickerComponent implements OnInit, OnChanges, OnDestroy {
   private _subs = new Subscription();
 
   private _tagSelectionChanged: boolean = false;
@@ -59,7 +54,7 @@ export class TagPickerComponent implements OnInit {
   private _allTags: Tag[] = [];
 
   filteredTags: Tag[] = [];
-  tagsByAuthor: AuthorTags[] = [];
+  allTagsWithAuthors: Tag[] = [];
 
   @Input() showCurrentTagsSection: boolean = false;
   @Input() buttonStyle: "button" | "icon" = "icon";
@@ -206,8 +201,13 @@ export class TagPickerComponent implements OnInit {
     this._taggingService.createTag(this._tagSearchValue.trim(), this.type);
   }
 
-  onDeleteTag(tagID: string): void {
+  onDeleteTag(tagID: string, tagName: string): void {
     if (!this.editable) {
+      return;
+    }
+
+    // Confirmation!
+    if (!confirm(`Are you sure you want to delete tag: ${tagName} (${tagID})`)) {
       return;
     }
 
@@ -254,9 +254,7 @@ export class TagPickerComponent implements OnInit {
       }
     });
 
-    this.tagsByAuthor = Object.entries(creatorMap)
-      .map(([creator_id, tags]) => ({ author: creators[creator_id], tags }) as AuthorTags)
-      .sort((a, b) => (a.author > b.author && a.author !== this.currentAuthorName ? 1 : -1));
+    this.allTagsWithAuthors = Array.from(this.filteredTags).sort((a: Tag, b: Tag) => a.name.localeCompare(b.name));
   }
 
   checkTagActive(tagID: string): boolean {
