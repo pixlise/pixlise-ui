@@ -32,10 +32,6 @@ const APP_ROUTES: Routes = [
     loadChildren: () => import("../map-browser/map-browser.module").then(m => m.MapBrowserModule),
   },
   {
-    path: "quant-logs",
-    loadChildren: () => import("../quantifications/quantifications.module").then(m => m.QuantificationsModule),
-  },
-  {
     path: "edit-scan",
     loadChildren: () => import("../dataset-customisation/dataset-customisation.module").then(m => m.DatasetCustomisationModule),
   },
