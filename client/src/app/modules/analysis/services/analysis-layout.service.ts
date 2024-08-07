@@ -62,6 +62,8 @@ export class AnalysisLayoutService implements OnDestroy {
   availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
 
+  spectrumSelectionWidgetTargetId$ = new BehaviorSubject<string>("");
+
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
   activeScreenConfigurationTabs$ = new BehaviorSubject<NavigationTab[]>([
@@ -182,6 +184,11 @@ export class AnalysisLayoutService implements OnDestroy {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  getCurrentTabId(): number {
+    let index = this.activeScreenConfigurationTabs$.value.findIndex(tab => tab.active);
+    return index >= 0 ? index : 0;
   }
 
   setActiveScreenConfigurationTabIndex(tabIndex: number): void {

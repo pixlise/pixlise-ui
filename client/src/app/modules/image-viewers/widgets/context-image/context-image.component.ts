@@ -42,6 +42,7 @@ import {
   LayerVisiblilityData,
 } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -372,15 +373,27 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       })
     );
 
-    this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
-      if (screenConfiguration) {
-        this.configuredScanIds = Object.keys(screenConfiguration.scanConfigurations).map(scanId => scanId);
+    this._subs.add(
+      this._analysisLayoutService.spectrumSelectionWidgetTargetId$.subscribe(targetId => {
+        // Add spectrum selection to expressions list and redraw
+        if (targetId === this._widgetId) {
+          this.mdl.expressionIds = [DataExpressionId.SpectrumSelectionExpression];
+          this.reloadModel();
+        }
+      })
+    );
 
-        // Also, in this case, we forget any hidden layers we had. They're likely no longer
-        // relevant, user may have switched quants or something
-        this._hiddenMapLayers.clear();
-      }
-    });
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        if (screenConfiguration) {
+          this.configuredScanIds = Object.keys(screenConfiguration.scanConfigurations).map(scanId => scanId);
+
+          // Also, in this case, we forget any hidden layers we had. They're likely no longer
+          // relevant, user may have switched quants or something
+          this._hiddenMapLayers.clear();
+        }
+      })
+    );
 
     this._subs.add(
       this.toolhost.activeCursor$.subscribe((cursor: string) => {
@@ -1300,13 +1313,15 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         colourRatioMax: this.mdl.colourRatioMax ?? undefined,
         removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
-        mapLayers: this.mdl.expressionIds.map(id =>
-          MapLayerVisibility.create({
-            expressionID: id,
-            visible: !this._hiddenMapLayers.has(id),
-            opacity: opacityLookup.get(id) ?? 1,
-          })
-        ),
+        mapLayers: this.mdl.expressionIds
+          .filter(id => !DataExpressionId.isUnsavedExpressionId(id))
+          .map(id =>
+            MapLayerVisibility.create({
+              expressionID: id,
+              visible: !this._hiddenMapLayers.has(id),
+              opacity: opacityLookup.get(id) ?? 1,
+            })
+          ),
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
         drawImage: this.mdl.drawImage,

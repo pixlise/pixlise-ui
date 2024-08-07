@@ -31,6 +31,7 @@ export class DataExpressionId {
   public static NewExpression = "new-expression";
   public static NewModule = "new-module";
   public static UnsavedExpressionPrefix = "u-";
+  public static SpectrumSelectionExpression = DataExpressionId.UnsavedExpressionPrefix + "spectrum-selection";
 
   public static BuiltInUserId = "builtin";
 

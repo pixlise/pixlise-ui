@@ -162,8 +162,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc

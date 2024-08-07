@@ -547,7 +547,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   onReferences() {}
 
-  onQuants(event): void {
+  onQuants(event: any): void {
     const dialogConfig = new MatDialogConfig();
     //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 

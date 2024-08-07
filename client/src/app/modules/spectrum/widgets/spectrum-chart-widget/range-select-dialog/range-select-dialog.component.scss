@@ -1,7 +1,7 @@
 .range-select-dialog {
   display: flex;
   flex-direction: column;
-  width: 250px;
+  width: 300px;
 
   background: #222829;
 
@@ -15,11 +15,31 @@
     }
   }
 
+  .show-on-chart {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    justify-content: space-between;
+
+    .label {
+      color: rgb(var(--clr-gray-30));
+      width: 85px;
+    }
+
+    mat-select {
+      flex: 1;
+    }
+  }
+
   .bottom-buttons {
     display: flex;
     padding: 8px;
     justify-content: flex-end;
     gap: 8px;
+
+    .left-btn {
+      margin-right: auto;
+    }
   }
 }
 
@@ -41,7 +61,8 @@
     align-items: center;
 
     .range-label {
-      width: 50px;
+      width: 85px;
+      color: rgb(var(--clr-gray-30));
     }
 
     input {

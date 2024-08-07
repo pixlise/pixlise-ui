@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { Observable, Subscription, catchError, combineLatest, forkJoin, map, of, switchMap } from "rxjs";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
@@ -67,13 +67,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _selectionService: SelectionService,
+    public _widgetDataService: WidgetDataService,
     public dialog: MatDialog,
     public clipboard: Clipboard
   ) {
     super();
 
     this.mdl = this._spectrumService.mdl;
-    this.toolhost = new SpectrumChartToolHost(this.mdl, dialog, clipboard, _snackService);
+    this.toolhost = new SpectrumChartToolHost(this.mdl, dialog, clipboard, _snackService, _widgetDataService, _analysisLayoutService);
     this.drawer = new SpectrumChartDrawer(this.mdl, this.toolhost);
 
     this._widgetControlConfiguration = {
@@ -806,7 +807,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._roiService.getScanIdsFromROIs(roiIds).subscribe(scanIds => {
         // For any scans coming in that are not yet calibrated, set them to
         // dataset calibration
-        this.reloadScanCalibrationsAsync(scanIds, refreshCalibrationData).subscribe(calibrationResults => {
+        this.reloadScanCalibrationsAsync(scanIds, refreshCalibrationData).subscribe(() => {
           this.generateLines();
         });
       })

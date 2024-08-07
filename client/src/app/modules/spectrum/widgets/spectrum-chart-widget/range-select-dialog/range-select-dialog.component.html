@@ -14,8 +14,16 @@
       <span class="range-units">keV</span>
     </div>
   </section>
+  <div class="show-on-chart">
+    <!-- <push-button (onClick)="showOnChart()">Show on Chart</push-button> -->
+    <span class="label">Target Chart</span>
+    <mat-select [(ngModel)]="selectedWidgetId">
+      <mat-option *ngFor="let chart of currentTabWidgets" [value]="chart.id">{{ chart.name }}</mat-option>
+    </mat-select>
+  </div>
   <div class="bottom-buttons">
-    <push-button buttonStyle="outline" title="Close window" (onClick)="onCopy()">Copy</push-button>
+    <push-button class="left-btn" buttonStyle="outline" title="Copy expression" (onClick)="onCopy()">Copy</push-button>
+    <push-button buttonStyle="yellow" title="Show on Chart" (onClick)="showOnChart()">Apply</push-button>
     <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
   </div>
 </div>

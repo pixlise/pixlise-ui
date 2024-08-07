@@ -34,6 +34,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 import { NaryChartModel } from "../../base/model";
+import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -336,6 +337,16 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
         // Only update if we have the right expression count otherwise this will just trigger an error
         if (this.mdl.expressionIds.length == 3) {
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.spectrumSelectionWidgetTargetId$.subscribe(targetId => {
+        // Add spectrum selection to expressions list and redraw
+        if (targetId === this._widgetId && this.mdl.expressionIds.length >= 3) {
+          this.mdl.expressionIds[2] = DataExpressionId.SpectrumSelectionExpression;
           this.update();
         }
       })

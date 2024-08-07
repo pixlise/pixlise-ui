@@ -51,7 +51,8 @@ import { XRFBrowser } from "../ui-elements/xrf-browser";
 import { ZoomMap } from "../ui-elements/zoom-map";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { RangeSelect } from "./range-select";
-import { SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
+import { SnackbarService, WidgetDataService } from "../../../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
 
 // TODO: Mostly copied from context image, can probably unify
 export enum ToolState {
@@ -97,9 +98,15 @@ export class SpectrumChartToolHost implements CanvasInteractionHandler, ISpectru
     private _ctx: ISpectrumChartModel,
     public dialog: MatDialog,
     public clipboard: Clipboard,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    public _widgetDataService: WidgetDataService,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {
-    this._tools = [new SpectrumPan(_ctx, this), new SpectrumZoom(_ctx, this), new RangeSelect(_ctx, this, dialog, clipboard, this._snackService)];
+    this._tools = [
+      new SpectrumPan(_ctx, this),
+      new SpectrumZoom(_ctx, this),
+      new RangeSelect(_ctx, this, dialog, clipboard, this._snackService, this._widgetDataService, _analysisLayoutService),
+    ];
     // Shut up compiler
     this._activeTool = this._tools[0];
     this.setTool(SpectrumToolId.PAN);

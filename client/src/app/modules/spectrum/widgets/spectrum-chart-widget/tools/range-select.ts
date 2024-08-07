@@ -32,26 +32,11 @@ import { Clipboard } from "@angular/cdk/clipboard";
 
 import { Subscription } from "rxjs";
 import { Rect } from "src/app/models/Geometry";
-import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import { DataExpression } from "src/app/generated-protos/expressions";
-// import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-// import {
-//   CanvasMouseEvent,
-//   CanvasInteractionResult,
-//   CanvasMouseEventId,
-//   CanvasKeyEvent,
-//   CanvasDrawParameters,
-// } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-// import {
-//   UserPromptDialogParams,
-//   UserPromptDialogComponent,
-//   UserPromptDialogResult,
-// } from "src/app/modules/pixlisecore/components/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseSpectrumTool, ISpectrumToolHost, SpectrumToolId } from "./base-tool";
 import { CursorId } from "../../../../widget/components/interactive-canvas/cursor-id";
-import { SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
+import { SnackbarService, WidgetDataService } from "../../../../pixlisecore/pixlisecore.module";
 import {
   CanvasDrawParameters,
   CanvasInteractionResult,
@@ -61,6 +46,12 @@ import {
 } from "../../../../widget/components/interactive-canvas/interactive-canvas.component";
 import { RangeSelectData, RangeSelectDialogComponent } from "../range-select-dialog/range-select-dialog.component";
 import { MinMax } from "../../../../../models/BasicTypes";
+import { DataExpression } from "../../../../../generated-protos/expressions";
+import { DataExpressionId } from "../../../../../expression-language/expression-id";
+import { EXPR_LANGUAGE_LUA } from "../../../../../expression-language/expression-language";
+import { PredefinedROIID } from "../../../../../models/RegionOfInterest";
+import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { MapLayerVisibility } from "../../../../../generated-protos/widget-data";
 const MOUSE_TOLERANCE_TO_LINE = 10;
 
 enum HandleState {
@@ -78,8 +69,6 @@ export class RangeSelect extends BaseSpectrumTool {
   private _draggingHandle: HandleState = HandleState.NONE;
   private _hover: HandleState = HandleState.NONE;
 
-  private _acceptEventId: number = 0;
-
   private _xrfkeVLowerBound: number | null = null;
   private _xrfkeVUpperBound: number | null = null;
 
@@ -90,7 +79,9 @@ export class RangeSelect extends BaseSpectrumTool {
     host: ISpectrumToolHost,
     public dialog: MatDialog,
     public clipboard: Clipboard,
-    public _snackService: SnackbarService
+    public _snackService: SnackbarService,
+    public _widgetDataService: WidgetDataService,
+    public _analysisLayoutService: AnalysisLayoutService
   ) {
     super(
       SpectrumToolId.RANGE_SELECT,
@@ -169,32 +160,12 @@ export class RangeSelect extends BaseSpectrumTool {
       }
     } else {
       this._snackService.open("Select range for map");
-
-      // Listen to snack completions
-      // this._subs.add(
-      //   this._ctx.snackService.snacksEvents$.subscribe((event: SnackEvent) => {
-      //     if (event.id == this._acceptEventId) {
-      //       // If it's a cancel, do that
-      //       if (event.action == "Accept") {
-      //         this.onAccept();
-      //       } else {
-      //         this.onCancel();
-      //       }
-      //     }
-      //   })
-      // );
     }
   }
 
   override deactivate(): void {
     this._subs.unsubscribe();
     this._subs = new Subscription();
-
-    // Remove the snack
-    if (this._acceptEventId > 0) {
-      // this._ctx.snackService.remove(this._acceptEventId);
-      this._acceptEventId = 0;
-    }
   }
 
   private openRangeSelectDialog() {
@@ -210,10 +181,6 @@ export class RangeSelect extends BaseSpectrumTool {
     };
 
     dialogConfig.hasBackdrop = false;
-    // const rect = trigger?.parentElement?.getBoundingClientRect();
-    // if (rect) {
-    // dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, rect.height, rect.width);
-    // }
 
     if (this._rangeSelectDialog) {
       this._rangeSelectDialog.close();
@@ -226,66 +193,43 @@ export class RangeSelect extends BaseSpectrumTool {
 
     this._rangeSelectDialog.componentInstance.onRangeUpdate.subscribe(range => {
       if (range?.min !== undefined && range?.min !== null && range?.max) {
-        this._rangeMin = range.min;
-        this._rangeMax = range.max;
+        let updated = false;
+        if (this._rangeMin !== range.min && range.min <= range.max) {
+          this._rangeMin = range.min;
+          updated = true;
+        }
 
-        // this._ctx.
+        if (this._rangeMax !== range.max && range.max >= range.min) {
+          this._rangeMax = range.max;
+          updated = true;
+        }
+
+        if (updated) {
+          this._ctx.needsDraw$.next();
+        }
       }
     });
 
     this._rangeSelectDialog.componentInstance.onRangeCopy.subscribe(() => {
       this.onAccept();
     });
+
+    this._rangeSelectDialog.componentInstance.onShowOnChart.subscribe(widgetId => {
+      this.onAccept(widgetId);
+    });
   }
 
-  private onExpressionEditor(expressionID: string): void {
-    // const dialogConfig = new MatDialogConfig();
-    // dialogConfig.panelClass = "panel";
-    // dialogConfig.disableClose = true;
-    // let toEdit = this._ctx.expressionService.getExpression(expressionID);
-    // dialogConfig.data = new ExpressionEditorConfig(toEdit, true, false, false);
-    // const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
-    // dialogRef.afterClosed().subscribe(
-    //   (dlgResult: ExpressionEditorConfig) => {
-    //     if (dlgResult) {
-    //       let expr = new DataExpression(
-    //         toEdit.id,
-    //         dlgResult.expr.name,
-    //         dlgResult.expr.sourceCode,
-    //         dlgResult.expr.sourceLanguage,
-    //         dlgResult.expr.comments,
-    //         toEdit.shared,
-    //         toEdit.creator,
-    //         toEdit.createUnixTimeSec,
-    //         toEdit.modUnixTimeSec,
-    //         [],
-    //         [],
-    //         null
-    //       );
-    //       this._ctx.expressionService
-    //         .edit(expressionID, dlgResult.expr.name, dlgResult.expr.sourceCode, dlgResult.expr.sourceLanguage, dlgResult.expr.comments, [])
-    //         .subscribe(
-    //           () => null,
-    //           () => {
-    //             alert("Failed to save edit data expression: " + expr.name);
-    //           }
-    //         );
-    //     }
-    //   },
-    //   () => {
-    //     alert("Error while editing data expression: " + toEdit.name);
-    //   }
-    // );
-  }
-
-  private onAccept(): void {
+  private onAccept(widgetIdToShowOn: string = ""): void {
     const det = "A"; // For now we just do this on the A spectrum!
     // TODO: the above needs to become whatever expression/format we choose to support in the spectrum widget for specifying things like
     // max(A, B) or sum(A, B)...
 
+    if (this._ctx.spectrumLines.length === 0) {
+      this._snackService.openWarning("No spectrum lines to select range from");
+      return;
+    }
+
     // Generate the expression (keV->channel)
-    // const minChannel = this._ctx.energyCalibrationManager.keVToChannel(this._rangeMin, det);
-    // const maxChannel = this._ctx.energyCalibrationManager.keVToChannel(this._rangeMax, det);
     let scanId = this._ctx.spectrumLines[0].scanId;
     // Find scan id that includes rangeMin and rangeMax
     this._ctx.spectrumLines.forEach(line => {
@@ -296,49 +240,46 @@ export class RangeSelect extends BaseSpectrumTool {
     const minChannel = this._ctx.keVToChannel(this._rangeMin, scanId, det);
     const maxChannel = this._ctx.keVToChannel(this._rangeMax, scanId, det);
 
-    const expr = "spectrum(" + minChannel + "," + maxChannel + ', "' + det + '")';
-    navigator.clipboard.writeText(expr);
+    const expr = "return spectrum(" + minChannel + "," + maxChannel + ', "' + det + '")';
     const name = this._ctx.makePrintableXValue(this._rangeMin) + "-" + this._ctx.makePrintableXValue(this._rangeMax);
     const expressionComment = `Generated expression for channel ${minChannel}->${maxChannel} (keV range: ${this._rangeMin.toLocaleString()}->${this._rangeMax.toLocaleString()})`;
 
-    this._snackService.openSuccess("Expression copied to clipboard", `Expression: ${expr}\nName: ${name}\nComment: ${expressionComment}`);
-    // const dialogConfig = new MatDialogConfig();
-    // dialogConfig.data = new UserPromptDialogParams("New Range Expression", "Copy to Clipboard", "Okay", [], true, "Take Me There", () => null);
-    // const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
+    let expression = DataExpression.create({
+      sourceCode: expr,
+      sourceLanguage: EXPR_LANGUAGE_LUA,
+      name: name,
+      comments: expressionComment,
+    });
 
-    // this._ctx.expressionService.add(name, expr, EXPR_LANGUAGE_PIXLANG, expressionComment).subscribe(
-    //   expressions => {
-    //     console.log("Added expression: " + name);
+    if (widgetIdToShowOn) {
+      this.showOnPlot(expression, widgetIdToShowOn);
+    } else {
+      navigator.clipboard.writeText(expr);
+      this._snackService.openSuccess("Expression copied to clipboard", `Expression: ${expr}\nName: ${name}\nComment: ${expressionComment}`);
 
-    //     dialogRef.componentInstance.data.middleButtonCallback = () => {
-    //       let expressionID = Object.keys(expressions).pop();
-    //       this._ctx.viewStateService.showContextImageLayers = true;
-    //       this.onExpressionEditor(expressionID);
-    //       dialogRef.close();
-    //     };
-    //   },
-    //   err => {
-    //     alert("Failed to add data expression: " + name);
-    //   }
-    // );
-
-    // dialogRef.afterClosed().subscribe((result: UserPromptDialogResult) => {
-    //   if (result !== null) {
-    //     this.clipboard.copy(expr);
-    //   }
-    // });
-
-    // // Show the layers dropdown under context image
-    // this._ctx.viewStateService.showContextImageLayers = true;
-
-    // Reset ourself
-    // this.reset();
-    this.onCancel();
-    if (this._rangeSelectDialog) {
-      this._rangeSelectDialog?.close();
+      this.onCancel();
+      if (this._rangeSelectDialog) {
+        this._rangeSelectDialog?.close();
+      }
     }
+  }
 
-    // this._ctx.setTool(SpectrumToolId.PAN);
+  showOnPlot(expression: DataExpression, widgetIdToShowOn: string): void {
+    let expressionCopy = DataExpression.create(expression);
+
+    expressionCopy.id = DataExpressionId.SpectrumSelectionExpression;
+    let scanId = this._ctx.spectrumLines[0].scanId;
+    let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+
+    this._widgetDataService.runExpression(expressionCopy, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), true, true, 10000).subscribe({
+      next: response => {
+        this._analysisLayoutService.spectrumSelectionWidgetTargetId$.next(widgetIdToShowOn);
+      },
+      error: err => {
+        let errorPreview = `${err}`.substring(0, 100);
+        this._snackService.openError(errorPreview, err);
+      },
+    });
   }
 
   private onCancel(): void {
@@ -452,10 +393,6 @@ export class RangeSelect extends BaseSpectrumTool {
     // Draw a transparent rect on top of what's already on each side
     let minPx = this.getLeftHandlePx();
     let maxPx = this.getRightHandlePx();
-
-    //console.log(JSON.stringify(chartRect));
-    //console.log('rangeMin='+this._rangeMin+', rangeMax='+this._rangeMax);
-    //console.log('minPx='+minPx+', maxPx='+maxPx);
 
     // Draw left-side selection
     if (minPx > chartRect.x) {
