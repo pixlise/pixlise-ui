@@ -95,6 +95,7 @@ export class APICachedDataService {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
         // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+        console.log(`NotificationResp contained: ${notificationResp.notification.length} items`);
       },
     });
 
@@ -152,6 +153,20 @@ export class APICachedDataService {
     this._scanIdCacheKeys.delete(scanId);
   }
 
+  private addToCache(cacheId: string, typeName: string, req$: Observable<any>, cacheMap: Map<string, any>) {
+    cacheMap.set(
+      cacheId,
+      req$.pipe(
+        catchError(err => {
+          // Remove from cache if it encountered an error
+          console.log(`Response cache cleared for ${cacheId}, type: ${typeName} due to error: ${err}`);
+          cacheMap.delete(cacheId);
+          throw err;
+        })
+      )
+    );
+  }
+
   private clearCacheForQuantId(quantId: string) {
     // Clear all item caches relevant to this scan id
     const ids = this._quantIdCacheKeys.get(quantId);
@@ -197,7 +212,7 @@ export class APICachedDataService {
       result = this._dataService.sendQuantGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._quantReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "quantReqMap", result, this._quantReqMap);
       this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
     }
 
@@ -212,7 +227,7 @@ export class APICachedDataService {
       result = this._dataService.sendQuantLogGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._quantLogReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "quantLogReqMap", result, this._quantLogReqMap);
       this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
     }
 
@@ -227,7 +242,7 @@ export class APICachedDataService {
       result = this._dataService.sendQuantRawDataGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._quantRawCSVReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "quantRawCSVReqMap", result, this._quantRawCSVReqMap);
       this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
     }
 
@@ -242,7 +257,7 @@ export class APICachedDataService {
       result = this._dataService.sendScanMetaLabelsAndTypesRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._scanMetaLabelsReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "scanMetaLabelsReqMap", result, this._scanMetaLabelsReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -257,7 +272,7 @@ export class APICachedDataService {
       result = this._dataService.sendDiffractionPeakManualListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._manualDiffractionReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "manualDiffractionReqMap", result, this._manualDiffractionReqMap);
     }
 
     return result;
@@ -271,7 +286,7 @@ export class APICachedDataService {
       result = this._dataService.sendScanEntryRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._scanEntryMap.set(cacheId, result);
+      this.addToCache(cacheId, "scanEntryMap", result, this._scanEntryMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -286,7 +301,7 @@ export class APICachedDataService {
       result = this._dataService.sendScanBeamLocationsRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._scanBeamLocationReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "scanBeamLocationReqMap", result, this._scanBeamLocationReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -301,7 +316,7 @@ export class APICachedDataService {
       result = this._dataService.sendScanEntryMetadataRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._scanEntryMetaReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "scanEntryMetaReqMap", result, this._scanEntryMetaReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -316,7 +331,7 @@ export class APICachedDataService {
       result = this._dataService.sendPseudoIntensityRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._pseudoIntensityReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "pseudoIntensityReqMap", result, this._pseudoIntensityReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -331,7 +346,7 @@ export class APICachedDataService {
       result = this._dataService.sendDetectedDiffractionPeaksRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._detectedDiffractionReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "detectedDiffractionReqMap", result, this._detectedDiffractionReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -346,7 +361,7 @@ export class APICachedDataService {
       result = this._dataService.sendDiffractionPeakStatusListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._detectedDiffractionStatusReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "detectedDiffractionStatusReqMap", result, this._detectedDiffractionStatusReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
@@ -369,7 +384,7 @@ export class APICachedDataService {
       );
 
       // Add it to the map too so a subsequent request will get this
-      this._regionOfInterestGetReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "regionOfInterestGetReqMap", result, this._regionOfInterestGetReqMap);
     }
 
     return result;
@@ -383,7 +398,7 @@ export class APICachedDataService {
       result = this._dataService.sendExpressionGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._expressionReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "expressionReqMap", result, this._expressionReqMap);
     }
 
     return result;
@@ -407,7 +422,7 @@ export class APICachedDataService {
       result = this._dataService.sendDataModuleGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._dataModuleReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "dataModuleReqMap", result, this._dataModuleReqMap);
     }
 
     return result;
@@ -421,7 +436,7 @@ export class APICachedDataService {
       result = this._dataService.sendScanListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._scanListReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "scanListReqMap", result, this._scanListReqMap);
     }
 
     return result;
@@ -435,7 +450,7 @@ export class APICachedDataService {
       result = this._dataService.sendDetectorConfigRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._detectorConfigReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "detectorConfigReqMap", result, this._detectorConfigReqMap);
     }
 
     return result;
@@ -457,7 +472,7 @@ export class APICachedDataService {
       result = this._dataService.sendImageGetDefaultRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._defaultImageReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "defaultImageReqMap", result, this._defaultImageReqMap);
       /* NOTE: we often request all default images, so scan list is every scan id
                and this doesn't look too great in our cache key lookup, see:
       for (const scanId of req.scanIds) {
@@ -480,7 +495,7 @@ export class APICachedDataService {
       result = this._dataService.sendImageBeamLocationsRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._imageBeamLocationsReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "imageBeamLocationsReqMap", result, this._imageBeamLocationsReqMap);
       this.addIdCacheItem(req.imageName, cacheId, this._imageCacheKeys);
     }
 
@@ -495,7 +510,7 @@ export class APICachedDataService {
       result = this._dataService.sendImageGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._imageReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "imageReqMap", result, this._imageReqMap);
       this.addIdCacheItem(req.imageName, cacheId, this._imageCacheKeys);
     }
 
@@ -510,7 +525,7 @@ export class APICachedDataService {
       result = this._dataService.sendDataModuleListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._modListReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "modListReqMap", result, this._modListReqMap);
       this.modListReqMapCacheInvalid = false;
     }
 
@@ -525,7 +540,7 @@ export class APICachedDataService {
       result = this._dataService.sendExpressionListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._exprListReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "exprListReqMap", result, this._exprListReqMap);
       this.exprListReqMapCacheInvalid = false;
     }
 
@@ -540,7 +555,7 @@ export class APICachedDataService {
       result = this._dataService.sendExpressionGroupListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._exprGroupListReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "exprGroupListReqMap", result, this._exprGroupListReqMap);
     }
 
     return result;
@@ -554,7 +569,7 @@ export class APICachedDataService {
       result = this._dataService.sendExpressionGroupGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._exprGroupReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "exprGroupReqMap", result, this._exprGroupReqMap);
       this.invalidExpressionGroupIds.delete(req.id);
     }
 
@@ -569,7 +584,7 @@ export class APICachedDataService {
       result = this._dataService.sendImageListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._imageListReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "imageListReqMap", result, this._imageListReqMap);
     }
 
     return result;
@@ -583,7 +598,7 @@ export class APICachedDataService {
       result = this._dataService.sendUserGroupListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this._userGroupListReqMap.set(cacheId, result);
+      this.addToCache(cacheId, "userGroupListReqMap", result, this._userGroupListReqMap);
       this.userGroupListReqMapCacheInvalid = false;
     }
 

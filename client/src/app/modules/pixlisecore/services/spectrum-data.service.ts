@@ -55,7 +55,7 @@ export class SpectrumDataService {
   }
 
   // If called with indexes==null, we won't receive per-PMC spectra. If indexes==[] or an array with numbers, the spectra for those PMCs will be returned
-  getSpectrum(scanId: string, indexes: number[] | null, bulkSum: boolean, maxValue: boolean): Observable<SpectrumResp> {
+  getSpectra(scanId: string, indexes: number[] | null, bulkSum: boolean, maxValue: boolean): Observable<SpectrumResp> {
     // Get the scans meta data so we know what indexes exist
     return this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })).pipe(
       switchMap((scanListResp: ScanListResp) => {
@@ -75,7 +75,7 @@ export class SpectrumDataService {
             if (this._outstandingReq !== null) {
               return this._outstandingReq.pipe(
                 switchMap(result => {
-                  return this.getSpectrum(scanId, indexes, bulkSum, maxValue);
+                  return this.getSpectra(scanId, indexes, bulkSum, maxValue);
                 })
               );
             }
@@ -246,7 +246,7 @@ export class SpectrumDataService {
         }
 
         const cachedItem = new ScanSpectrumData(
-          storedCachedItem.timestamp,
+          storedCachedItem.timestamp / 1000, // NOTE: if we don't convert from ms to sec, cached data won't expire!!
           cachedResp.bulkSpectra,
           cachedResp.maxSpectra,
           pmcSpectra,

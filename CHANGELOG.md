@@ -1,7 +1,17 @@
-## 4.30.0 (Unreleased)
+## 4.31.0 (Latest)
+
+### Bug Fixes
+
+- Beam location version picker is also shown if there is only one version available, to show what version is being displayed
+- Tags are now displayed in alphabetical order (to see the creator, point to it!). Added confirmation for deletion too.
+
+## 4.30.0 (2024-08-05)
 
 ### Features
 
+- **User signup changes** New users are automatically added to Public group. Choices of groups to join are now also clearer
+- **Notification improvements** Notifications now show a time stamp, and are now dismissable. You may see many unread notifications, feel free to dismiss all just this once!
+- **Beam location version selectable** Context image picker dialog now allows picking a beam location version. NOTE: if you refresh the page it will go back to the default one.
 - **Smart Chart Keys** Keys in the chart are now more dynamic and allow for quick toggling on/off of ROIs.
   - New Hotkey: `Option/Alt + Click` on a key (or group header) to toggle all other keys (or groups) off and solo the item (click again to toggle back on).
     - Adds hotkey to "Hotkeys" menu in top right.
@@ -11,10 +21,13 @@
 
 ### Bug Fixes
 
+- Clicking a chord on the chord diagram wasn't showing those 2 expressions on binary charts - this functionality has now been restored
 - Fixed bug where RGBU Plot wasn't persisting the state of configured ROIs
 - Fixes edge case bug where "Apply & Close" on context image sometimes would apply changes and hide button, but not close the dialog
 - Fixes data synchronization issues where new expressions and expression groups weren't showing up in the expression picker until reload
 - Hides points and footprint from ontext images on element maps page
+- Fixed error shown to new users when requesting to join groups
+- Fixed caching issue seen during recent downlinks
 
 ## 4.29.0 (2024-07-25)
 

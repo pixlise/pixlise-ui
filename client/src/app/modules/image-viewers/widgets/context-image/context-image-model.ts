@@ -67,6 +67,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Settings/Layers
   imageName: string = "";
+  beamLocationVersions = new Map<string, number>();
 
   expressionIds: string[] = [];
   layerOpacity: Map<string, number> = new Map<string, number>();

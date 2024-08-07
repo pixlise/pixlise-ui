@@ -13,6 +13,7 @@ export interface IContextImageModel {
   //needsDraw$: Subject<void>;
 
   imageName: string;
+  beamLocationVersions: Map<string, number>;
   rgbuChannels: string; // String of what channels to show for R,G,B or a division of 2 channels. Can contain R,G,B,U. Examples: RGB, RBU, R/G
 
   expressionIds: string[];

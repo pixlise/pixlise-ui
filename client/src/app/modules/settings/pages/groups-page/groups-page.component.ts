@@ -326,7 +326,7 @@ export class GroupsPageComponent {
   }
 
   onCreateGroup(groupName: string, groupDescription: string) {
-    this._groupsService.createGroup(groupName, groupDescription);
+    this._groupsService.createGroup(groupName, groupDescription, true);
   }
 
   onDeleteGroup(group: UserGroupInfo) {
