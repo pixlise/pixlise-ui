@@ -162,8 +162,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -198,6 +198,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   get spectrumLines(): SpectrumChartLine[] {
     return this._spectrumLines;
+  }
+
+  checkHasEnergyCalibrationForScanIds(scanIds: string[]): boolean {
+    for (const scanId of scanIds) {
+      if (!this._calibration.has(scanId)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   setEnergyCalibration(scanId: string, calibration: SpectrumEnergyCalibration[]) {

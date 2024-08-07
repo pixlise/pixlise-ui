@@ -33,6 +33,7 @@ import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
 import { RGBA } from "../../../../utils/colours";
+import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -170,6 +171,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private update() {
+    this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 2) {
       this._snackService.openError("Expected 2 expression ids for Binary, got " + this.mdl.expressionIds.length);
       return;
@@ -193,6 +195,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
+
+          this.isWidgetDataLoading = false;
         });
       },
       error: err => {
@@ -200,6 +204,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
+
+          this.isWidgetDataLoading = false;
         });
       },
     });
@@ -349,6 +355,16 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
         // Only update if we have the right expression count otherwise this will just trigger an error
         if (this.mdl.expressionIds.length === 2) {
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.spectrumSelectionWidgetTargetId$.subscribe(targetId => {
+        // Add spectrum selection to expressions list and redraw
+        if (targetId === this._widgetId && this.mdl.expressionIds.length >= 2) {
+          this.mdl.expressionIds[1] = DataExpressionId.SpectrumSelectionExpression;
           this.update();
         }
       })

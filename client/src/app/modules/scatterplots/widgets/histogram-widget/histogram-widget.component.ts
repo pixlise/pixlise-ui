@@ -132,6 +132,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private update() {
+    this.isWidgetDataLoading = true;
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
@@ -160,6 +161,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
+
+          this.isWidgetDataLoading = false;
         });
       },
       error: err => {
@@ -167,6 +170,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
+
+          this.isWidgetDataLoading = false;
         });
       },
     });

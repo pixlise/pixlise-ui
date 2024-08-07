@@ -1,4 +1,20 @@
-## 4.31.0 (Latest)
+## 4.32.0 Latest
+
+### Features
+
+- **Spectrum Range Selection** Brings back spectrum range selection and provides the ability to immediately display on a chart or copy the expression to the clipboard. Range Selection supports immediately applying to any Context Image, Binary Plot, or Ternary Plot on your active workspace tab.
+- **Better Loading Indicators** All charts will now display loading spinners when data is initially being fetched, and the chart will be disabled until the data is ready.
+- **Expression Groups Export Option** Adds the ability to export expressions using expression groups.
+
+### Bug Fixes
+
+- Spectrum chart was drawing lines before calibration data was fully loaded on initial page load in some cases when multiple datasets were configured due to a race condition. This has been fixed and lines should now be drawn correctly and the X axis should be consistent based on whether "Show Energy on X Axis" is toggled on.
+- Fixes issue where charts were initially being loaded with "default" values and then loaded again with the correct values, causing a flicker effect in some cases and increased loading time.
+- Minor CSS fixes to dataset details sidebar
+- Fixes bug where old expressions and ROI lists weren't being cleared in their respective component after "Clear" was hit on export tab.
+
+
+## 4.31.0 (2024-08-05)
 
 ### Bug Fixes
 

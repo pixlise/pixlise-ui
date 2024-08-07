@@ -22,7 +22,7 @@ import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
-import { isFirefox } from "src/app/utils/utils";
+import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 import { TabLinks } from "../../../models/TabLinks";
 
@@ -61,6 +61,8 @@ export class AnalysisLayoutService implements OnDestroy {
 
   availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
+
+  spectrumSelectionWidgetTargetId$ = new BehaviorSubject<string>("");
 
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
@@ -117,8 +119,13 @@ export class AnalysisLayoutService implements OnDestroy {
             this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId, "", true, false); // Don't show snack for fail in this case, the last loaded screen config might not make sense any more
             // Add id back to query params
             const queryParams = { ...this._route.snapshot.queryParams };
-            queryParams["id"] = this.lastLoadedScreenConfigurationId;
-            if (queryParams["id"] && (this._route?.snapshot?.url || []).length > 0) {
+            let defaultScanId = getScanIdFromWorkspaceId(this.lastLoadedScreenConfigurationId);
+            if (defaultScanId) {
+              queryParams["scan_id"] = defaultScanId;
+            } else {
+              queryParams["id"] = this.lastLoadedScreenConfigurationId;
+            }
+            if ((queryParams["id"] || queryParams["scan_id"]) && (this._route?.snapshot?.url || []).length > 0) {
               this._router.navigate([this._route.snapshot.url], { queryParams });
             }
           }
@@ -177,6 +184,11 @@ export class AnalysisLayoutService implements OnDestroy {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  getCurrentTabId(): number {
+    let index = this.activeScreenConfigurationTabs$.value.findIndex(tab => tab.active);
+    return index >= 0 ? index : 0;
   }
 
   setActiveScreenConfigurationTabIndex(tabIndex: number): void {
