@@ -31,9 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #openOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
+    <!-- <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
       >Reset & Open</push-button
-    >
+    > -->
     <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="yellow">New Workspace From Scan</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="yellow">Delete</push-button>
@@ -158,7 +158,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="meta-open-row">
           <div class="title-container" (dblclick)="onWorkspaceTitleEditToggle(true)">
-            <div *ngIf="!workspaceTitleEditMode">{{ selectedWorkspace.name }}</div>
+            <div class="view-title" *ngIf="!workspaceTitleEditMode">{{ selectedWorkspace.name }}</div>
             <input
               *ngIf="workspaceTitleEditMode"
               class="edit-title"
@@ -259,7 +259,9 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="meta-open-row">
           <div class="title-container" (dblclick)="onTitleEditToggle(true)">
-            <div *ngIf="!scanTitleEditMode">{{ selectedScan.title }}</div>
+            <div #tooltip="matTooltip" [matTooltip]="selectedScan.title" [matTooltipShowDelay]="1000" class="view-title" *ngIf="!scanTitleEditMode">
+              {{ selectedScan.title }}
+            </div>
             <input
               *ngIf="scanTitleEditMode"
               class="edit-title"

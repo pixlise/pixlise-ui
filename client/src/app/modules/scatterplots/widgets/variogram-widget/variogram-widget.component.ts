@@ -627,6 +627,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   }
 
   updateAsync(shouldStoreBinnedDataForExport: boolean = false, shouldStoreRawDataForExport: boolean = false): Observable<void> {
+    this.isWidgetDataLoading = true;
     let t0 = performance.now();
 
     let query: DataSourceParams[] = [];
@@ -917,11 +918,15 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
             this._lastRunTitle = title;
             this._lastRunFullTitle = fullTitle;
             this.prepareDrawData(queryData, title, t0, storeBinnedPointDataForExport, storeRawDataForExport, scanItems);
+            this.isWidgetDataLoading = false;
           });
         } else {
           this.prepareDrawData(queryData, this._lastRunTitle, t0, storeBinnedPointDataForExport, storeRawDataForExport, scanItems);
+          this.isWidgetDataLoading = false;
         }
       });
+    } else {
+      this.isWidgetDataLoading = false;
     }
   }
 

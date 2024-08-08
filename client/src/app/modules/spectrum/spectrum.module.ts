@@ -20,6 +20,7 @@ import { BrowseOnChartTableComponent } from "./widgets/spectrum-chart-widget/spe
 import { PickedElementsComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/picked-elements/picked-elements.component";
 import { ElementListItemComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/element-list-item/element-list-item.component";
 import { QuantificationStartOptionsComponent } from "./widgets/spectrum-chart-widget/quantification-start-options/quantification-start-options.component";
+import { RangeSelectDialogComponent } from "./widgets/spectrum-chart-widget/range-select-dialog/range-select-dialog.component";
 import { WidgetModule } from "../widget/widget.module";
 import { SpectrumFitContainerComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
 import { FitLineConfigComponent } from "./widgets/spectrum-chart-widget/spectrum-fit-container/fit-line-config/fit-line-config.component";
@@ -51,6 +52,7 @@ export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/sp
     FitElementSelectionComponent,
     QuantJobsComponent,
     QuantJobItemComponent,
+    RangeSelectDialogComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule, ScrollingModule],
   exports: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],

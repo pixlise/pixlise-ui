@@ -80,6 +80,8 @@ export class WidgetExportButtonComponent {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes["option"] && changes["option"].currentValue) {
+      this.selectedRegions = [];
+      this.selectedExpressions = [];
       this.option = changes["option"].currentValue;
       if (!this.option) {
         return;
@@ -187,7 +189,7 @@ export class WidgetExportButtonComponent {
       scanId: this.option?.scanId,
       quantId: this.option?.quantId,
       selectedIds: this.selectedExpressions.map(exp => exp.id),
-      disableExpressionGroups: true,
+      disableExpressionGroups: false,
       disableWidgetSwitching: true,
     };
 

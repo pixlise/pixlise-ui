@@ -83,6 +83,8 @@ export interface ISpectrumChartModel {
 
   recalcDisplayDataIfNeeded(viewport: CanvasParams): void;
 
+  needsDraw$: Subject<void>;
+
   spectrumLines: SpectrumChartLine[];
   highlightedLineExpr: string;
 

@@ -2,7 +2,7 @@ import { Component, HostListener } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
-import { Subscription } from "rxjs";
+import { combineLatest, distinctUntilChanged, map, of, Subscription, switchMap } from "rxjs";
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { ActivatedRoute } from "@angular/router";
 
@@ -37,41 +37,42 @@ export class AnalysisPageComponent {
 
   ngOnInit(): void {
     this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screen => {
-        this.loadedScreenConfiguration = screen;
-        this.computeLayouts();
-      })
-    );
+      combineLatest([
+        this._analysisLayoutService.activeScreenConfiguration$.pipe(distinctUntilChanged()),
+        this._analysisLayoutService.activeScreenConfigurationId$.pipe(distinctUntilChanged()),
+        this._analysisLayoutService.soloViewWidgetId$.pipe(distinctUntilChanged()),
+        this._route.queryParams.pipe(
+          map(params => parseInt(params?.["tab"] || "0")),
+          distinctUntilChanged()
+        ),
+      ])
+        .pipe(
+          switchMap(([screen, id, soloViewWidgetId, tabNumber]) => {
+            if (!screen || !id || screen.id !== id) {
+              return of(null);
+            }
 
-    this._subs.add(
-      this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
-        this.soloViewWidgetId = soloViewWidgetId;
+            this.loadedScreenConfiguration = screen;
+            this.computeLayouts();
+            this.soloViewWidgetId = soloViewWidgetId;
 
-        if (soloViewWidgetId) {
-          let widget = (this.loadedScreenConfiguration?.layouts || [])
-            .map(layout => layout.widgets.find(widget => widget.id === soloViewWidgetId))
-            .find(widget => widget !== undefined);
-          this.soloViewWidget = widget || null;
-          this._analysisLayoutService.delayNotifyCanvasResize(500);
-        } else {
-          this.soloViewWidget = null;
-        }
-      })
-    );
+            if (soloViewWidgetId) {
+              let widget = (screen?.layouts || []).map(layout => layout.widgets.find(widget => widget.id === soloViewWidgetId)).find(widget => widget !== undefined);
+              this.soloViewWidget = widget || null;
+              this._analysisLayoutService.delayNotifyCanvasResize(500);
+            } else {
+              this.soloViewWidget = null;
+            }
 
-    this._subs.add(
-      this._route.queryParams.subscribe(params => {
-        let tabNumber = parseInt(params?.["tab"] || "0");
-        if (!isNaN(tabNumber)) {
-          this.activeLayoutIndex = tabNumber;
-        } else {
-          this.activeLayoutIndex = 0;
-        }
+            this.activeLayoutIndex = !isNaN(tabNumber) ? tabNumber : 0;
+            if (screen && screen.layouts.length > this.activeLayoutIndex) {
+              this.activeLayout = screen.layouts[this.activeLayoutIndex];
+            }
 
-        if (this.loadedScreenConfiguration && this.loadedScreenConfiguration.layouts.length > this.activeLayoutIndex) {
-          this.activeLayout = this.loadedScreenConfiguration.layouts[this.activeLayoutIndex];
-        }
-      })
+            return of(null);
+          })
+        )
+        .subscribe()
     );
 
     this._usersService.searchUsers("");

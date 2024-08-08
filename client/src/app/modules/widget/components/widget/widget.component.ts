@@ -52,7 +52,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   @ViewChild("bottomLeftInset") bottomLeftInset!: ElementRef;
   @ViewChild("bottomRightInset") bottomRightInset!: ElementRef;
 
-  @Input() widgetLayoutConfig: WidgetLayoutConfiguration = WidgetLayoutConfiguration.create();
+  @Input() widgetLayoutConfig!: WidgetLayoutConfiguration;
   @Input() layoutIndex: number = 0;
   @Input() disableSwitch: boolean = false;
   @Input() title: string = "";
@@ -70,7 +70,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
   isWidgetHighlighted: boolean = false;
 
-  isWidgetDataLoading: boolean = false;
+  isWidgetDataLoading: boolean = true;
   isWidgetDataError: boolean = false;
   widgetDataErrorMessage: string = "";
 

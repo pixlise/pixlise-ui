@@ -380,6 +380,14 @@ input {
   align-items: center;
   gap: 4px;
 
+  white-space: pre;
+  overflow: hidden;
+
+  .view-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .edit-title {
     width: fit-content;
 
