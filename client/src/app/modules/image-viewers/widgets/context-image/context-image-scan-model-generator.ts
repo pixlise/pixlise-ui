@@ -87,6 +87,7 @@ export class ContextImageScanModelGenerator {
     scanItem: ScanItem,
     scanEntries: ScanEntry[],
     beamXYZs: Coordinate3D[],
+    beamLocVersion: number,
     beamIJs: Coordinate2D[] | null,
     detectorConfig: DetectorConfigResp
   ): ContextImageScanModel {
@@ -132,6 +133,7 @@ export class ContextImageScanModelGenerator {
       scanItem.id,
       scanItem.title,
       imageName,
+      beamLocVersion,
       scanPoints,
       scanPointPolygons,
       wholeFootprintHullPoints,

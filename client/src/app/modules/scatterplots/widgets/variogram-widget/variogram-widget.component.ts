@@ -1293,7 +1293,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
 
   generateScanMetadata(scan: ScanItem, entries: ScanEntry[], beamLocations: Coordinate3D[], detConf: DetectorConfigResp): VariogramScanMetadata {
     const gen = new ContextImageScanModelGenerator();
-    gen.processBeamData("", scan, entries, beamLocations, null, detConf);
+    gen.processBeamData("", scan, entries, beamLocations, 0, null, detConf);
     let metadata = new VariogramScanMetadata(gen.minXYDistance_mm, gen.locationPointXSize, gen.locationPointYSize, gen.beamUnitsInMeters, gen.locationCount);
     return metadata;
   }
