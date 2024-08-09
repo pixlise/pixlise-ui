@@ -1,4 +1,15 @@
-## 4.32.0 Latest
+## 4.33.0 Latest
+
+### Features
+
+- Now we show a "spinner" animation while PIXLISE is loading, previously it was just a blank page
+
+### Bug Fixes
+
+- Image options (for context image) was not correctly showing the currently displayed beam location version.
+- More robust login/re-authentication
+
+## 4.32.0 (2024-08-08)
 
 ### Features
 

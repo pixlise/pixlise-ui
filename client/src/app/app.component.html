@@ -30,17 +30,20 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="app-container">
-  <main>
-    <app-toolbar *ngIf="!isPublicPage">
-      <h1 class="page-title">
-        <ng-content select=".page-title"></ng-content>
-      </h1>
-      <!-- <ng-contaziner [ngTemplateOutlet]="title" [ngTemplateOutletContext]="">
-      </ng-contaziner> -->
-    </app-toolbar>
-    <router-outlet></router-outlet>
-  </main>
-  <aside *ngIf="!isPublicPage">
-    <app-settings-sidebar></app-settings-sidebar>
-  </aside>
+  <div class="loading" *ngIf="isAuth0Loading$ | async; else auth0Loaded">
+    <wait-spinner></wait-spinner>
+  </div>
+  <ng-template #auth0Loaded>
+    <main>
+      <app-toolbar *ngIf="!isPublicPage">
+        <h1 class="page-title">
+          <ng-content select=".page-title"></ng-content>
+        </h1>
+      </app-toolbar>
+      <router-outlet></router-outlet>
+    </main>
+    <aside *ngIf="!isPublicPage">
+      <app-settings-sidebar></app-settings-sidebar>
+    </aside>
+  </ng-template>
 </div>

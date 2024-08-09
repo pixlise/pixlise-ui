@@ -8,7 +8,7 @@ import { AppComponent } from "./app.component";
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
 import { HTTP_INTERCEPTORS, HttpBackend, HttpClientModule } from "@angular/common/http";
 import { AppConfig, EnvConfigurationInitService } from "./services/env-configuration-init.service";
-import { HttpInterceptorService } from "./modules/pixlisecore/pixlisecore.module";
+import { HttpInterceptorService, PIXLISECoreModule } from "./modules/pixlisecore/pixlisecore.module";
 
 import * as Sentry from "@sentry/angular-ivy";
 import { VERSION } from "src/environments/version";
@@ -165,6 +165,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     MapBrowserModule,
     QuantificationsModule,
     SettingsModule,
+    PIXLISECoreModule,
     AuthModule.forRoot(),
   ],
   providers: [

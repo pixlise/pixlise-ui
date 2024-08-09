@@ -47,15 +47,18 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
   </div>
   <div class="flex-row buttons">
-    <number-button *ngIf="!isLoggedIn" [link]="loginLink" colourStyle="red-solid" theLabel="Log In" [showArrow]="false"></number-button>
-    <number-button *ngIf="isLoggedIn" (click)="onLogout()" colourStyle="red-solid" theLabel="Log Out" [showArrow]="false"></number-button>
+    <ng-container *ngIf="isAuthenticated$ | async; else unAuthenticated">
+      <number-button (click)="onLogout()" colourStyle="red-solid" theLabel="Log Out" [showArrow]="false"></number-button>  
+    <number-button [link]="loggedInPage" colourStyle="white-solid" theLabel="Open" [showArrow]="true" [showArrowSeparator]="true"></number-button>
+  </ng-container>
+  <ng-template #unAuthenticated>
+    <number-button [link]="loginLink" colourStyle="red-solid" theLabel="Log In" [showArrow]="false"></number-button>
     <number-button
-      *ngIf="!isLoggedIn"
       [link]="signupLink"
       colourStyle="white-solid"
       theLabel="Try Pixlise"
       [showArrow]="true"
       [showArrowSeparator]="true"></number-button>
-    <number-button *ngIf="isLoggedIn" [link]="loggedInPage" colourStyle="white-solid" theLabel="Open" [showArrow]="true" [showArrowSeparator]="true"></number-button>
+  </ng-template>
   </div>
 </div>

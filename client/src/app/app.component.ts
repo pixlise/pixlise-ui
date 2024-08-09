@@ -27,9 +27,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { MonacoEditorService } from "./modules/code-editor/services/monaco-editor.service";
 import { Router } from "@angular/router";
+import { AuthService } from "@auth0/auth0-angular";
 
 @Component({
   selector: "app-root",
@@ -37,6 +38,10 @@ import { Router } from "@angular/router";
   styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
+  // From: https://developer.auth0.com/resources/guides/spa/angular/basic-authentication#render-components-conditionally
+  private auth = inject(AuthService);
+  isAuth0Loading$ = this.auth.isLoading$;
+
   constructor(
     private _monacoService: MonacoEditorService,
     private _router: Router
