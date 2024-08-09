@@ -190,7 +190,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
         // clear
         this.pickableBeamVersionScanIds = [];
         this.pickableBeamVersions.clear();
-        this.selectedBeamVersions = {};
+        //this.selectedBeamVersions = {};
         this.scanNames.clear();
 
         const beamScanIds = Object.keys(beamVersions.beamVersionPerScan);
@@ -280,6 +280,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   onSelectedImageChanged(selection: ImageSelection) {
     this._options.currentImage = selection.path;
     this._options.selectedScanId = selection.scanId;
+
+    this.selectedBeamVersions = {};
 
     this.publishOptionChange();
 
