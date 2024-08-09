@@ -30,12 +30,13 @@ export class ContextImageModelLoadedData {
   ) {}
 
   copy(): ContextImageModelLoadedData {
-    let scanModelsCopy = new Map<string, ContextImageScanModel>();
+    const scanModelsCopy = new Map<string, ContextImageScanModel>();
     for (const [scanId, scanModel] of this.scanModels.entries()) {
-      let scanModelCopy = new ContextImageScanModel(
+      const scanModelCopy = new ContextImageScanModel(
         scanModel.scanId,
         scanModel.scanTitle,
         scanModel.imageName,
+        scanModel.beamLocVersion,
         scanModel.scanPoints,
         scanModel.scanPointPolygons,
         scanModel.footprint,
@@ -67,7 +68,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Settings/Layers
   imageName: string = "";
-  beamLocationVersions = new Map<string, number>();
+  beamLocationVersionsRequested = new Map<string, number>();
 
   expressionIds: string[] = [];
   layerOpacity: Map<string, number> = new Map<string, number>();
@@ -539,6 +540,7 @@ export class ContextImageScanModel {
     public scanId: string, // The scan ID we were generated for
     public scanTitle: string, // Title as displayed on dataset tile
     public imageName: string, // The image we were generated for (our points are relative to this image!)
+    public beamLocVersion: number, // Versioning of the source beam ijs
     public scanPoints: ScanPoint[], // The actual scan points
     public scanPointPolygons: Point[][], // Scan points can be rendered as polygons which touch neighbours
     public footprint: HullPoint[][], // Footprint of scan points relative to the image

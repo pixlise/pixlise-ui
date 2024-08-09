@@ -722,7 +722,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     const obs: Observable<ContextImageModelLoadedData> =
       this.mdl.imageName.length <= 0 && this.scanId.length > 0
         ? this._contextDataService.getWithoutImage(this.scanId)
-        : this._contextDataService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersions, this._widgetId);
+        : this._contextDataService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersionsRequested, this._widgetId);
 
     obs
       .pipe(
@@ -1330,11 +1330,20 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   getImagePickerParams(): ImagePickerParams {
+    // Read back the versions we're displaying
+    const beamLocVersionsDisplayed = new Map<string, number>();
+    for (const scanId of this.mdl.scanIds) {
+      const scanMdl = this.mdl.getScanModelFor(scanId);
+      if (scanMdl) {
+        beamLocVersionsDisplayed.set(scanId, scanMdl.beamLocVersion);
+      }
+    }
+
     return new ImagePickerParams(
       this.configuredScanIds,
       new ImageDisplayOptions(
         this.mdl.imageName,
-        this.mdl.beamLocationVersions,
+        beamLocVersionsDisplayed,
         this.mdl.imageSmoothing,
         this.mdl.imageBrightness,
         this.mdl.removeTopSpecularArtifacts,
@@ -1375,7 +1384,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       // so reloading still works (and does almost nothing because it's the same image!)
       if (this.mdl.drawImage) {
         this.mdl.imageName = result.options.currentImage;
-        this.mdl.beamLocationVersions = result.options.beamVersionMap;
+        this.mdl.beamLocationVersionsRequested = result.options.beamVersionMap;
       }
 
       if (result.options.selectedScanId.length > 0 && result.options.selectedScanId !== this.scanId) {

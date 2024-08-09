@@ -367,9 +367,9 @@ export class ContextImageDataService {
               requests.push(this._endpointsService.loadImageForPath(imgResp.image!.imagePath));
             }
 
-            const beamsForScan = new Map<string, Coordinate2D[]>();
+            const beamsForScan = new Map<string, { version: number; ijs: Coordinate2D[] }>();
             for (const locs of imgBeamResp.locations.locationPerScan) {
-              beamsForScan.set(locs.scanId, locs.locations);
+              beamsForScan.set(locs.scanId, { version: locs.beamVersion, ijs: locs.locations });
             }
 
             for (const scanId of imgResp.image!.associatedScanIds) {
@@ -378,7 +378,7 @@ export class ContextImageDataService {
               if (!beamIJs) {
                 this._snackService.openWarning(`Image associated scan: ${scanId} has no beam locations`);
               } else {
-                requests.push(this.buildScanModel(scanId, imagePath, beamIJs));
+                requests.push(this.buildScanModel(scanId, imagePath, beamIJs.version, beamIJs.ijs));
               }
             }
 
@@ -434,7 +434,7 @@ export class ContextImageDataService {
         // Find the one for this scan
         for (const locs of imgBeamResp.locations.locationPerScan) {
           if (locs.scanId == scanId) {
-            return this.buildScanModel(scanId, "", locs.locations).pipe(
+            return this.buildScanModel(scanId, "", locs.beamVersion, locs.locations).pipe(
               map((mdl: ContextImageScanModel) => {
                 const scanModels = new Map<string, ContextImageScanModel>();
                 scanModels.set(mdl.scanId, mdl);
@@ -450,7 +450,7 @@ export class ContextImageDataService {
     );
   }
 
-  private buildScanModel(scanId: string, imageName: string, beamIJs: Coordinate2D[]): Observable<ContextImageScanModel> {
+  private buildScanModel(scanId: string, imageName: string, beamLocVersion: number, beamIJs: Coordinate2D[]): Observable<ContextImageScanModel> {
     // First request the scan summary so we have the detector to use
     return this._cachedDataService
       .getScanList(
@@ -486,7 +486,7 @@ export class ContextImageDataService {
 
               // Set beam data (this reads beams & turns it into scan points, polygons for each point and calculates a footprint)
               const gen = new ContextImageScanModelGenerator();
-              return gen.processBeamData(imageName, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, beamIJs, detConfResp);
+              return gen.processBeamData(imageName, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, beamLocVersion, beamIJs, detConfResp);
             }),
             shareReplay(1)
           );
