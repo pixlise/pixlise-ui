@@ -654,7 +654,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._imageModelService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersions, "customization-page").subscribe({
+    this._imageModelService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersionsRequested, "customization-page").subscribe({
       next: (data: ContextImageModelLoadedData) => {
         this.mdl.setData(data);
 
