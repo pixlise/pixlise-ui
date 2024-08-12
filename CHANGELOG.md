@@ -1,4 +1,15 @@
-## 4.32.0 Latest
+## 4.34.0 (Latest)
+
+### Bug Fixes
+- Fixes authentication issue that was causing login token failures in Chrome incognito mode and on the Brave browser (changes token storage to local storage).
+- Fixes minor bug with the chart keys where clicking on the expand/collapse accordion would also toggle group visibility.
+
+## 4.33.0 (2024-08-09)
+
+### Bug Fixes
+- Small fix for the beam geometry version selector - it wasn't showing the currently rendered version initially, but now it should be accurate.
+
+## 4.32.0 (2024-08-08)
 
 ### Features
 
