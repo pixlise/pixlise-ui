@@ -37,6 +37,12 @@ import { AuthService } from "@auth0/auth0-angular";
 // injected here - if the application is brought to this page and it has the code/state the auth service will see
 // it and treat us as logged in
 
+// Example error situation
+// http://localhost:4200/authenticate?
+// error=access_denied&
+// error_description=Please%20verify%20your%20email%20by%20clicking%20the%20verify%20link%20that%20was%20emailed%20to%20you%20before%20logging%20in.&
+// state=dnpfeC1Gc1ZVWi1PYmw2ODE4dE5qZkxIR190Sl82dElRaHIyUGxwSlJHNQ%3D%3D
+
 @Component({
   selector: "app-authenticate",
   templateUrl: "./authenticate.component.html",
