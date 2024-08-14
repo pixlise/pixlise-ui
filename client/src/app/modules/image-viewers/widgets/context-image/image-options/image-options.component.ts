@@ -247,7 +247,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   onResetBrightness(): void {
-    this._options.imageBrightness = this.data.options.imageBrightness;
+    this._options.imageBrightness = 1;
     this.publishOptionChange();
   }
 
@@ -464,8 +464,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   onResetRatioColourRemapping(): void {
     this.onResetBrightness();
-    this._options.colourRatioMin = this.data.options.colourRatioMax;
-    this._options.colourRatioMax = this.data.options.colourRatioMax;
+    this._options.colourRatioMin = this.colourRatioRangeMin;
+    this._options.colourRatioMax = this.colourRatioRangeMax;
     this.publishOptionChange();
   }
 

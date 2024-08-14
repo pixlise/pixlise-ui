@@ -3,6 +3,7 @@
 ### Bug Fixes
 - Fixes authentication issue that was causing login token failures in Chrome incognito mode and on the Brave browser (changes token storage to local storage).
 - Fixes minor bug with the chart keys where clicking on the expand/collapse accordion would also toggle group visibility.
+- Fixes bug where some image configuration options weren't being saved to the context image
 
 ## 4.33.0 (2024-08-09)
 
