@@ -261,8 +261,8 @@ export class ColourSelection extends BaseContextImageTool {
     while (toVisit.size > 0) {
       const idx = toVisit.values().next().value;
 
-      let x = idx % srcImg.width;
-      let y = (idx - x) / srcImg.width;
+      const x = idx % srcImg.width;
+      const y = (idx - x) / srcImg.width;
       if ((idx - x) % srcImg.width != 0) {
         console.warn("Something wrong with x/y: " + idx + " became: " + x + "," + y);
       }
