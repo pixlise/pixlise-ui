@@ -333,7 +333,8 @@ export class ContextImageDataService {
           throw new Error("No image returned for: " + imagePath);
         }
 
-        const beamFileName = imgResp.image.matchInfo?.beamImageFileName || imagePath;
+        // NOTE: we used to look up the matched image ourselves, but API now does this lookup internally
+        const beamFileName = imagePath; //imgResp.image.matchInfo?.beamImageFileName || imagePath;
 
         const req = ImageBeamLocationsReq.create({ imageName: beamFileName });
         if (beamLocationVersions.size > 0) {
