@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
           <h5>
             <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b>{{ image.scanIds.join(", ") }}
           </h5>
-          <h5 *ngIf="image.imagePMC >= 0">
+          <h5 *ngIf="image.imgType === 'MCC' && image.imagePMC >= 0">
             <b>Image PMC: </b>{{ image.imagePMC }}
           </h5>
           <h5 class="mars-viewer" *ngIf="image.marsViewerURL">
