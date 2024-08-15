@@ -50,8 +50,8 @@ export class ContextImageItem {
     public hasBeamData: boolean,
     public beamIJIndex: number, // -1=default context image beam ij's, 0+ indexes into beam.context_locations[]
     public imageDrawTransform: ContextImageItemTransform | null // public rgbuSourceImage: RGBUImage, // eg if image was a floating point TIF
-    // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
-  ) {}
+  ) // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
+  {}
 }
 
 // TODO: Should probably generalise this and make it into a reusable drop-list since the reason for writing
@@ -176,6 +176,9 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   contextImageItemShowingTooltip: string = "";
   contextImages: DisplayContextImageItem[] = [];
 
+  loading: boolean = false;
+  errorText: string = "";
+
   constructor(
     private _dataService: APIDataService,
     public dialog: MatDialog
@@ -197,43 +200,55 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       return;
     }
 
-    this._dataService.sendImageListRequest(ImageListReq.create({ scanIds: this.scanIds })).subscribe((resp: ImageListResp) => {
-      this.contextImages = [];
-      this.contextImageItemShowing = null;
+    this.loading = true;
+    this.errorText = "";
 
-      for (let c = 0; c < resp.images.length; c++) {
-        const img = resp.images[c];
+    this._dataService.sendImageListRequest(ImageListReq.create({ scanIds: this.scanIds })).subscribe({
+      next: (resp: ImageListResp) => {
+        this.loading = false;
+        this.errorText = "";
 
-        if (this.onlyInstrumentImages && img.source != ScanImageSource.SI_INSTRUMENT) {
-          // We're only showing images that came from the instrument
-          continue;
+        this.contextImages = [];
+        this.contextImageItemShowing = null;
+
+        for (let c = 0; c < resp.images.length; c++) {
+          const img = resp.images[c];
+
+          if (this.onlyInstrumentImages && img.source != ScanImageSource.SI_INSTRUMENT) {
+            // We're only showing images that came from the instrument
+            continue;
+          }
+
+          let matchInfo: ContextImageItemTransform | null = null;
+          if (img.matchInfo) {
+            matchInfo = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
+          }
+
+          const item = new ContextImageItem(
+            img.imagePath,
+            invalidPMC, // pmc
+            false, // has beam
+            -1, // beam idx
+            matchInfo
+          );
+
+          const tooltip = getPathBase(img.imagePath) + "\n\nDetails:\n" + makeImageTooltip(img);
+
+          let selected = false;
+          if (img.imagePath === this.currentImage) {
+            this.contextImageItemShowing = item;
+            this.contextImageItemShowingTooltip = tooltip;
+            this.contextImagePath = img.imagePath;
+            selected = true;
+          }
+
+          this.contextImages.push(new DisplayContextImageItem(item, selected, tooltip));
         }
-
-        let matchInfo: ContextImageItemTransform | null = null;
-        if (img.matchInfo) {
-          matchInfo = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
-        }
-
-        const item = new ContextImageItem(
-          img.imagePath,
-          invalidPMC, // pmc
-          false, // has beam
-          -1, // beam idx
-          matchInfo
-        );
-
-        const tooltip = makeImageTooltip(img);
-
-        let selected = false;
-        if (img.imagePath === this.currentImage) {
-          this.contextImageItemShowing = item;
-          this.contextImageItemShowingTooltip = tooltip;
-          this.contextImagePath = img.imagePath;
-          selected = true;
-        }
-
-        this.contextImages.push(new DisplayContextImageItem(item, selected, tooltip));
-      }
+      },
+      error: err => {
+        this.loading = false;
+        this.errorText = err?.message || "Failed to load image list";
+      },
     });
   }
   /*
@@ -317,7 +332,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       purpose: ScanImagePurpose.SIP_UNKNOWN,
       selectedImagePath: this.contextImagePath,
       liveUpdate: false,
-      selectedImageDetails: this.contextImageItemShowingTooltip,
+      selectedImageDetails: "", // this.contextImageItemShowingTooltip,
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);

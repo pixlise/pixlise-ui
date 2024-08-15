@@ -1,8 +1,17 @@
 ## 4.34.0 (Latest)
 
+### Features
+- Adds new "2x4 Context Images" and "2x4 Context Images/PCP" workspace tab templates
+- Persists "link to dataset" option for the context image
+- Image Picker now sorts based on image type, and displays image names/properties more readibly
+- Loading spinners shown on image options/image picker when required
+- Beam location version is selectable even for "matched" images now including RGBU images
+
 ### Bug Fixes
 - Fixes authentication issue that was causing login token failures in Chrome incognito mode and on the Brave browser (changes token storage to local storage).
 - Fixes minor bug with the chart keys where clicking on the expand/collapse accordion would also toggle group visibility.
+- Fixes bug where some image configuration options weren't being saved to the context image
+- Fixes rare image loading bug where images may be black or may not redraw straight after load
 
 ## 4.33.0 (2024-08-09)
 
