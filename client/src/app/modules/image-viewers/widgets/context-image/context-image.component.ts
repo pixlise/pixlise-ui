@@ -346,6 +346,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             this.mdl.colourRatioMax = contextData.colourRatioMax;
           }
 
+          this.linkToDataset = !contextData?.unlinkFromDataset;
+
           this.mdl.imageBrightness = contextData.brightness;
           this.mdl.removeTopSpecularArtifacts = contextData.removeTopSpecularArtifacts;
           this.mdl.removeBottomSpecularArtifacts = contextData.removeBottomSpecularArtifacts;
@@ -1340,6 +1342,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
         drawImage: this.mdl.drawImage,
+        unlinkFromDataset: !this.linkToDataset,
       })
     );
   }
