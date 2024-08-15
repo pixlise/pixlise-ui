@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 // import { Point, Rect } from "src/app/models/Geometry";
+import { Observable, of, throwError } from "rxjs";
 import { Point, PointWithRayLabel, Rect } from "../models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 
@@ -417,72 +418,92 @@ export function drawToolTip(
   });
 }
 
-export function rgbBytesToImage(bytes: Uint8Array, width: number, height: number): HTMLImageElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+export function rgbBytesToImage(bytes: Uint8Array, width: number, height: number): Observable<HTMLImageElement> {
+  return new Observable<HTMLImageElement>(observer => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
 
-  const context = canvas.getContext("2d");
-  if (!context) {
-    console.error("Failed to get 2d context (rgbBytesToImage)");
-    return new HTMLImageElement();
-  }
+    const context = canvas.getContext("2d");
+    if (!context) {
+      observer.error(new Error(`Failed to get 2d context (rgbBytesToImage)`));
+      return;
+    }
 
-  const imgData = context.createImageData(width, height);
+    const imgData = context.createImageData(width, height);
 
-  let srcIndex = 0;
-  let dstIndex = 0;
-  const totalPixels = width * height;
+    let srcIndex = 0;
+    let dstIndex = 0;
+    const totalPixels = width * height;
 
-  for (let c = 0; c < totalPixels; c++) {
-    imgData.data[dstIndex] = bytes[srcIndex]; // r
-    imgData.data[dstIndex + 1] = bytes[srcIndex + 1]; // g
-    imgData.data[dstIndex + 2] = bytes[srcIndex + 2]; // b
-    imgData.data[dstIndex + 3] = 255; // a=100%
-    srcIndex += 3;
-    dstIndex += 4;
-  }
+    for (let c = 0; c < totalPixels; c++) {
+      imgData.data[dstIndex] = bytes[srcIndex]; // r
+      imgData.data[dstIndex + 1] = bytes[srcIndex + 1]; // g
+      imgData.data[dstIndex + 2] = bytes[srcIndex + 2]; // b
+      imgData.data[dstIndex + 3] = 255; // a=100%
+      srcIndex += 3;
+      dstIndex += 4;
+    }
 
-  context.putImageData(imgData, 0, 0);
+    context.putImageData(imgData, 0, 0);
 
-  const result = document.createElement("img");
-  result.src = canvas.toDataURL(); // make base64 string of image, yuck, slow...
-  result.width = width;
-  result.height = height;
-  return result;
+    const result = document.createElement("img");
+    result.src = canvas.toDataURL(); // make base64 string of image, yuck, slow...
+    result.width = width;
+    result.height = height;
+
+    result.onload = () => {
+      observer.next(result);
+      observer.complete();
+    };
+
+    result.onerror = err => {
+      observer.error(err);
+    };
+  });
 }
 
-export function alphaBytesToImage(alphaBytes: Uint8Array, width: number, height: number, rgb: RGBA): HTMLImageElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+export function alphaBytesToImage(alphaBytes: Uint8Array, width: number, height: number, rgb: RGBA): Observable<HTMLImageElement> {
+  return new Observable<HTMLImageElement>(observer => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
 
-  const context = canvas.getContext("2d");
-  if (!context) {
-    console.error("Failed to get 2d context (alphaBytesToImage)");
-    return new HTMLImageElement();
-  }
+    const context = canvas.getContext("2d");
+    if (!context) {
+      observer.error(new Error(`Failed to get 2d context (alphaBytesToImage)`));
+      return;
+    }
 
-  const imgData = context.createImageData(width, height);
+    const imgData = context.createImageData(width, height);
 
-  let srcIndex = 0;
-  let dstIndex = 0;
-  const totalPixels = width * height;
+    let srcIndex = 0;
+    let dstIndex = 0;
+    const totalPixels = width * height;
 
-  for (let c = 0; c < totalPixels; c++) {
-    imgData.data[dstIndex] = rgb.r;
-    imgData.data[dstIndex + 1] = rgb.g;
-    imgData.data[dstIndex + 2] = rgb.b;
-    imgData.data[dstIndex + 3] = alphaBytes[srcIndex]; // a
-    srcIndex++;
-    dstIndex += 4;
-  }
+    for (let c = 0; c < totalPixels; c++) {
+      imgData.data[dstIndex] = rgb.r;
+      imgData.data[dstIndex + 1] = rgb.g;
+      imgData.data[dstIndex + 2] = rgb.b;
+      imgData.data[dstIndex + 3] = alphaBytes[srcIndex]; // a
+      srcIndex++;
+      dstIndex += 4;
+    }
 
-  context.putImageData(imgData, 0, 0);
+    context.putImageData(imgData, 0, 0);
 
-  const result = document.createElement("img");
-  result.src = canvas.toDataURL(); // make base64 string of image, yuck, slow...
-  return result;
+    const result = document.createElement("img");
+    result.src = canvas.toDataURL(); // make base64 string of image, yuck, slow...
+
+    result.onload = () => {
+      observer.next(result);
+      observer.complete();
+    };
+
+    result.onerror = err => {
+      observer.error(err);
+    };
+  });
 }
 
 export function drawTextWithBackground(
@@ -534,7 +555,7 @@ export function drawTextWithBackground(
   ctx.restore();
 }
 
-export function adjustImageRGB(img: HTMLImageElement, brightness: number): HTMLImageElement {
+export function adjustImageRGB(img: HTMLImageElement, brightness: number): Observable<HTMLImageElement> {
   if (brightness < 0) {
     brightness = 0;
   }
@@ -542,7 +563,7 @@ export function adjustImageRGB(img: HTMLImageElement, brightness: number): HTMLI
   const raw = getRawImageData(img, null);
   if (!raw) {
     console.error("Failed to get raw image data, cant adjust. (adjustImageRGB)");
-    return img;
+    return of(img);
   }
 
   // Multiply by brightness

@@ -27,6 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Observable } from "rxjs";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { alphaBytesToImage } from "src/app/utils/drawing";
 import { setsEqual } from "src/app/utils/utils";
@@ -56,7 +57,9 @@ export class PixelSelection {
     }
 
     if (pixels.size > 0 && this._width > 0 && this._height > 0) {
-      this._maskImage = this.makeMaskImage();
+      this.makeMaskImage().subscribe((mask: HTMLImageElement) => {
+        this._maskImage = mask;
+      });
     }
   }
 
@@ -83,12 +86,12 @@ export class PixelSelection {
   getMaskImage(): HTMLImageElement | null {
     return this._maskImage;
   }
-
+/*
   getInvertedMaskImage(): HTMLImageElement {
     return this.makeMaskImage(Colours.BLACK, 0, 255);
   }
-
-  private makeMaskImage(colourTint: RGBA = Colours.CONTEXT_BLUE, selectedAlpha: number = 120, unselectedAlpha: number = 0): HTMLImageElement {
+*/
+  private makeMaskImage(colourTint: RGBA = Colours.CONTEXT_BLUE, selectedAlpha: number = 120, unselectedAlpha: number = 0): Observable<HTMLImageElement> {
     // Generate an image with alpha=some %, then run through all selected pixels, set those to 0%
     // this way we end up with a mask that will not draw where we have a selected pixel
     /*
@@ -104,16 +107,15 @@ export class PixelSelection {
 
     const pixelCount = this._width * this._height;
 
-    let alphaBytes = new Uint8Array(pixelCount);
+    const alphaBytes = new Uint8Array(pixelCount);
     for (let c = 0; c < pixelCount; c++) {
       alphaBytes[c] = unselectedAlpha;
     }
 
-    for (let idx of this._selectedPixels) {
+    for (const idx of this._selectedPixels) {
       alphaBytes[idx] = selectedAlpha;
     }
 
-    let img = alphaBytesToImage(alphaBytes, this._width, this._height, colourTint);
-    return img;
+    return alphaBytesToImage(alphaBytes, this._width, this._height, colourTint);
   }
 }

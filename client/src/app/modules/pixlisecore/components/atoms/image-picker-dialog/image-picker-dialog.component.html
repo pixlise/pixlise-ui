@@ -39,11 +39,18 @@ POSSIBILITY OF SUCH DAMAGE.
   </h1>
   <div class="options-container">
     <div class="image-options">
+      <div *ngIf="loadingList" class="loading">
+        <wait-spinner></wait-spinner>
+      </div>
       <div
         class="image-option"
         class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
         *ngFor="let image of filteredImageChoices"
         (click)="onSelectImage(image)">
+        <div
+          class="image-type-tag"
+          class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
+        >{{image.imgType}}</div>
         <div class="preview-image">
           <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
           <img
@@ -56,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
           <h5>
             <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b>{{ image.scanIds.join(", ") }}
           </h5>
-          <h5 *ngIf="image.imagePMC >= 0">
+          <h5 *ngIf="image.imgType === 'MCC' && image.imagePMC >= 0">
             <b>Image PMC: </b>{{ image.imagePMC }}
           </h5>
           <h5 class="mars-viewer" *ngIf="image.marsViewerURL">
@@ -77,10 +84,10 @@ POSSIBILITY OF SUCH DAMAGE.
           [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url" />
       </div>
       <div class="image-option-content" *ngIf="selectedChoice">
-        <h5 class="name"><b>Image: </b>{{ selectedChoice?.name }}</h5>
-        <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
+        <h5 class="name"><b>{{ selectedChoice?.name }}</b></h5>
+        <!-- <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
           <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
-        </h5>
+        </h5> -->
         <h5 class="mars-viewer" *ngIf="selectedChoice.marsViewerURL">
           <b>Mars Viewer: </b
           ><a [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"><img src="assets/button-icons/open-external.svg" /></a>

@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, tap, throwError } from "rxjs";
-import { RGBUImage } from "src/app/models/RGBUImage";
+import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
@@ -160,23 +160,21 @@ export class APIEndpointsService {
   loadRGBTIFFDisplayImage(imagePath: string, maxAgeSec: number = DefaultMaxTIFImageCacheAgeSec): Observable<HTMLImageElement> {
     return this.loadRGBUImageTIF(imagePath, maxAgeSec).pipe(
       switchMap((img: RGBUImage) => {
-        return new Observable<HTMLImageElement>(observer => {
-          const generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
-          if (generated?.image) {
-            observer.next(generated.image);
-            observer.complete();
-          } else {
-            observer.error("Error generating RGB display image");
-            console.error("Error generating RGB display image", img?.path);
-          }
-        });
+        return img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null).pipe(
+          map((generated: RGBUImageGenerated | null) => {
+            if (!generated || !generated.image) {
+              throw new Error(`Error generating RGB display image: ${imagePath}`);
+            }
+
+            return generated.image;
+          })
+        );
       }),
       catchError(err => {
         console.error(err);
         return throwError(() => err);
       }),
-      tap(url => console.log(`Generated preview URL: ${url}`)),
-      mergeMap(url => of(url)),
+      //tap(() => console.log(`Loaded TIFF display image: ${imagePath}`)),
       shareReplay(1)
     );
   }
