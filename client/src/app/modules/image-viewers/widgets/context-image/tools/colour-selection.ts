@@ -40,6 +40,7 @@ import {
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../context-image-model-interface";
 import { convertLocationComponentToPixelPosition } from "../context-image-model";
+import { Observable, of } from "rxjs";
 
 export class ColourSelection extends BaseContextImageTool {
   // We take a backup of the selection when we start operating (mouse down). This way when
@@ -441,7 +442,9 @@ export class ColourSelection extends BaseContextImageTool {
           selectionMaskBytes[idx] = 255;
         }
 
-        this.selectedPixelsMask = alphaBytesToImage(selectionMaskBytes, img.width, img.height, Colours.CONTEXT_BLUE);
+        alphaBytesToImage(selectionMaskBytes, img.width, img.height, Colours.CONTEXT_BLUE).subscribe((selMask: HTMLImageElement) => {
+          this.selectedPixelsMask = selMask;
+        });
       }
     }
   }

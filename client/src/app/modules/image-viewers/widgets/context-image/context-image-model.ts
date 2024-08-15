@@ -1,11 +1,11 @@
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ClosestPoint, ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
-import { Subject } from "rxjs";
+import { map, Observable, of, Subject } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { Point, Rect, distanceBetweenPoints } from "src/app/models/Geometry";
-import { RGBUImage } from "src/app/models/RGBUImage";
+import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { ScanPoint } from "../../models/scan-point";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
@@ -494,19 +494,19 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (forceRecalcDrawModel || this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
-      this._drawModel.regenerate(canvasParams, this);
+      this._drawModel.regenerate(canvasParams, this).subscribe(() => {
+        // If we don't have colour scales, but do have RGBU data and are in ratio mode, we can generate a scale from that
+        this.buildRGBUColourScaleIfNeeded();
 
-      // If we don't have colour scales, but do have RGBU data and are in ratio mode, we can generate a scale from that
-      this.buildRGBUColourScaleIfNeeded();
+        // Also recalculate draw models of any colour scales we're showing
+        for (const scale of this._colourScales) {
+          scale.recalcDisplayData(canvasParams);
+        }
 
-      // Also recalculate draw models of any colour scales we're showing
-      for (const scale of this._colourScales) {
-        scale.recalcDisplayData(canvasParams);
-      }
-
-      this._lastCalcCanvasParams = canvasParams;
-      this._recalcNeeded = false;
+        this._lastCalcCanvasParams = canvasParams;
+        this._recalcNeeded = false;
         this.needsDraw$.next();
+      });
     }
   }
 
@@ -623,7 +623,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
   // Drawn line over the top of it all
   drawnLinePoints: Point[] = [];
 
-  regenerate(canvasParams: CanvasParams, from: ContextImageModel) {
+  regenerate(canvasParams: CanvasParams, from: ContextImageModel): Observable<void> {
     // Throw away any cached drawn image we have
     this.drawnData = null;
 
@@ -639,32 +639,49 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     // Apply brightness
     if (this.image) {
-      this.image = adjustImageRGB(this.image, from.imageBrightness);
+      return adjustImageRGB(this.image, from.imageBrightness).pipe(
+        map((img: HTMLImageElement) => {
+          this.image = img;
+          this.continueRegenerate(from);
+        })
+      );
     }
 
     // If we still don't have an image, maybe it's an RGBU and needs to be generated here
     if (!this.image && from.raw?.rgbuSourceImage) {
-      const rgbuGen = from.raw.rgbuSourceImage.generateRGBDisplayImage(
-        from.imageBrightness,
-        from.rgbuChannels,
-        //false, log colour
-        from.unselectedOpacity,
-        from.unselectedGrayscale,
-        from.currentPixelSelection ? from.currentPixelSelection : PixelSelection.makeEmptySelection(),
-        from.colourRatioMin,
-        from.colourRatioMax,
-        PixelSelection.makeEmptySelection(),
-        from.removeTopSpecularArtifacts,
-        from.removeBottomSpecularArtifacts
-      );
+      return from.raw.rgbuSourceImage
+        .generateRGBDisplayImage(
+          from.imageBrightness,
+          from.rgbuChannels,
+          //false, log colour
+          from.unselectedOpacity,
+          from.unselectedGrayscale,
+          from.currentPixelSelection ? from.currentPixelSelection : PixelSelection.makeEmptySelection(),
+          from.colourRatioMin,
+          from.colourRatioMax,
+          PixelSelection.makeEmptySelection(),
+          from.removeTopSpecularArtifacts,
+          from.removeBottomSpecularArtifacts
+        )
+        .pipe(
+          map((rgbuGen: RGBUImageGenerated | null) => {
+            if (rgbuGen) {
+              // Save the display image and scale data
+              this.image = rgbuGen.image;
+              this.rgbuImageScaleData = rgbuGen.layerForScale;
+            }
 
-      if (rgbuGen) {
-        // Save the display image and scale data
-        this.image = rgbuGen.image;
-        this.rgbuImageScaleData = rgbuGen.layerForScale;
-      }
+            this.continueRegenerate(from);
+          })
+        );
     }
 
+    // Otherwise... still continue
+    this.continueRegenerate(from);
+    return of();
+  }
+
+  private continueRegenerate(from: ContextImageModel) {
     this.imageTransform = from.raw?.imageTransform || null;
 
     const pointColours = getSchemeColours(from.pointColourScheme);
@@ -760,29 +777,31 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       for (const roi of from.roiIds) {
         const mdl = this.scanDrawModels.get(roi.scanId);
         if (mdl) {
-          mdl.regions.push(this.makeRegion(roi.scanId, roi.id, from, roi.opacity));
+          this.makeRegion(roi.scanId, roi.id, from, roi.opacity).subscribe((roiLayer: ContextImageRegionLayer) => {
+            mdl.regions.push(roiLayer);
+          });
         }
       }
     }
   }
 
-  private makePixelMask(pixelIndexes: Set<number>, width: number, height: number, roiColour: RGBA): HTMLImageElement | null {
+  private makePixelMask(pixelIndexes: Set<number>, width: number, height: number, roiColour: RGBA): Observable<HTMLImageElement | null> {
     // If we have been informed of a context images dimensions, we can generate a mask image
     if (width <= 0 || height <= 0) {
-      return null;
+      return of(null);
     }
 
     const pixelCount = width * height;
-    let maskBytes = new Uint8Array(pixelCount);
+    const maskBytes = new Uint8Array(pixelCount);
 
-    for (let idx of pixelIndexes) {
+    for (const idx of pixelIndexes) {
       maskBytes[idx] = 192;
     }
 
     return alphaBytesToImage(maskBytes, width, height, roiColour);
   }
 
-  private makeRegion(scanId: string, roiId: string, from: ContextImageModel, opacity: number = 1): ContextImageRegionLayer {
+  private makeRegion(scanId: string, roiId: string, from: ContextImageModel, opacity: number = 1): Observable<ContextImageRegionLayer> {
     const roiLayer = new ContextImageRegionLayer(roiId, "");
     roiLayer.opacity = opacity;
 
@@ -791,7 +810,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     if (!roi) {
       console.error("makeRegion failed for: " + roiId + " - region not found in model");
-      return roiLayer;
+      return of(roiLayer);
     }
 
     roiLayer.name = roi.roi.name;
@@ -801,13 +820,13 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     if (!scanMdl) {
       console.error("makeRegion failed for: " + roiId + " - scan model not found for scan: " + scanId);
-      return roiLayer;
+      return of(roiLayer);
     }
 
     for (const locIdx of roi.locIdxs) {
       if (locIdx < 0 || locIdx >= scanMdl.scanPointPolygons.length) {
         console.error("makeRegion failed for: " + roiId + " - locIdx: " + locIdx + " did not have corresponding polygon");
-        return roiLayer;
+        return of(roiLayer);
       }
 
       roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], []));
@@ -820,12 +839,17 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     // If we have pixel indexes, we can generate a mask image
     if (roi.roi.pixelIndexesEncoded.length > 0 && roi.roi.imageName == from.imageName) {
-      let width = from.raw?.rgbuSourceImage?.r?.width || 0;
-      let height = from.raw?.rgbuSourceImage?.r?.height || 0;
+      const width = from.raw?.rgbuSourceImage?.r?.width || 0;
+      const height = from.raw?.rgbuSourceImage?.r?.height || 0;
 
-      roiLayer.pixelMask = this.makePixelMask(new Set(roi.roi.pixelIndexesEncoded), width, height, roiLayer.colour);
+      return this.makePixelMask(new Set(roi.roi.pixelIndexesEncoded), width, height, roiLayer.colour).pipe(
+        map((mask: HTMLImageElement | null) => {
+          roiLayer.pixelMask = mask;
+          return roiLayer;
+        })
+      );
     }
 
-    return roiLayer;
+    return of(roiLayer);
   }
 }
