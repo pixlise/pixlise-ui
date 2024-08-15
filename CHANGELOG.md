@@ -1,5 +1,9 @@
 ## 4.34.0 (Latest)
 
+### Features
+- Adds new "2x4 Context Images" and "2x4 Context Images/PCP" workspace tab templates
+- Persists "link to dataset" option for the context image
+
 ### Bug Fixes
 - Fixes authentication issue that was causing login token failures in Chrome incognito mode and on the Brave browser (changes token storage to local storage).
 - Fixes minor bug with the chart keys where clicking on the expand/collapse accordion would also toggle group visibility.
