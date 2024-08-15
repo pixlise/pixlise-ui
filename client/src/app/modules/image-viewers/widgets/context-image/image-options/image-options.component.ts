@@ -121,6 +121,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   @Output() optionChange = new EventEmitter();
 
+  loadingBeamVersions: boolean = false;
+
   constructor(
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
@@ -177,6 +179,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   private getBeamLocationVersions(imageName: string) {
+    this.loadingBeamVersions = true;
+
     const req$ = [
       this._cachedDataService.getScanList(ScanListReq.create({})),
       this._dataService.sendImageBeamLocationVersionsRequest(ImageBeamLocationVersionsReq.create({ imageName: imageName })).asObservable(),
@@ -214,7 +218,12 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
             this.selectedBeamVersions[scanId] = versions.versions[0];
           }
         }
+
+        this.loadingBeamVersions = false;
       },
+      error: err => {
+        this.loadingBeamVersions = false;
+      }
     });
   }
 
