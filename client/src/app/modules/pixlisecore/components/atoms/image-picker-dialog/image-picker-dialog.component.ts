@@ -222,10 +222,10 @@ export class ImagePickerDialogComponent implements OnInit {
   private makeImageChoice(image: ScanImage): ImageChoice {
     const imageName = image.imagePath.replace(/^\d+\//, "");
     const marsViewerURL = this.makeMarsViewerURL(imageName);
-    const isTiff = image.imagePath.toLowerCase().endsWith(".tif") || image.imagePath.toLowerCase().endsWith(".tiff");
     const fields = SDSFields.makeFromFileName(getPathBase(image.imagePath));
 
-    let imgType: "RGBU" | "MCC" | "OTHER" = isTiff ? "RGBU" : "OTHER";
+    let imgType: "RGBU" | "MCC" | "OTHER" = image.purpose == ScanImagePurpose.SIP_MULTICHANNEL ? "RGBU" : "OTHER";
+
     if (fields && fields.prodType !== "MSA" && fields.prodType !== "VIS" && fields.producer == "J") {
       imgType = "MCC";
     }
