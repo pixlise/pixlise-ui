@@ -27,15 +27,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, concatMap, defer, from, map, throwError } from "rxjs";
+import { Observable, concatMap, from, map, of } from "rxjs";
 
 import { MinMax } from "src/app/models/BasicTypes";
 import { ColourRamp, Colours } from "src/app/utils/colours";
 import { rgbBytesToImage } from "src/app/utils/drawing";
-import { Histogram } from "./histogram";
 import { PixelSelection } from "../modules/pixlisecore/models/pixel-selection";
 import { fromArrayBuffer } from "geotiff";
-import { MapPointDrawParams, MapPointShape, MapPointState } from "../modules/image-viewers/models/map-layer";
 import { MapColourScaleSourceData } from "../modules/image-viewers/widgets/context-image/ui-elements/map-colour-scale/map-colour-scale-model";
 
 export class FloatImage {
@@ -46,7 +44,7 @@ export class FloatImage {
     public valueRange: MinMax //public displayImage: HTMLImageElement,
   ) {}
 
-  generateDisplayImage(maxValueInAllChannels: number, brightness: number, logColour: boolean): HTMLImageElement {
+  generateDisplayImage(maxValueInAllChannels: number, brightness: number, logColour: boolean): Observable<HTMLImageElement> {
     const pixels = this.width * this.height;
 
     const bytes = new Uint8Array(pixels * 3);
@@ -77,7 +75,7 @@ class RatioData {
   ) {}
 }
 
-class RGBUImageGenerated {
+export class RGBUImageGenerated {
   constructor(
     public layerForScale: MapColourScaleSourceData | null,
     public image: HTMLImageElement | null
@@ -112,7 +110,6 @@ export class RGBUImage {
   }
 
   protected _allChannelMinMax: MinMax = new MinMax();
-  protected _loadComplete = false;
 
   constructor(
     public path: string,
@@ -136,10 +133,6 @@ export class RGBUImage {
     return null;
   }
 
-  get loadComplete(): boolean {
-    return this._loadComplete;
-  }
-
   get allChannelMinMax(): MinMax {
     return this._allChannelMinMax;
   }
@@ -156,13 +149,9 @@ export class RGBUImage {
     cropSelection: PixelSelection = PixelSelection.makeEmptySelection(),
     removeTopSpecularArtifacts: boolean = false,
     removeBottomSpecularArtifacts: boolean = false
-  ): RGBUImageGenerated | null {
+  ): Observable<RGBUImageGenerated | null> {
     if (channelOrder.length !== 3) {
-      return null;
-    }
-
-    if (!this._loadComplete) {
-      return null;
+      throw new Error("RGBU Channel definition must be 3 characters");
     }
 
     const pixelCount = this.r.width * this.r.height;
@@ -237,9 +226,13 @@ export class RGBUImage {
     }
 
     // And complete the overall image
-    const rgbImage = rgbBytesToImage(overallImgBytes, this.r.width, this.r.height);
+    const rgbImage$ = rgbBytesToImage(overallImgBytes, this.r.width, this.r.height);
 
-    return new RGBUImageGenerated(csScaleData, rgbImage);
+    return rgbImage$.pipe(
+      map((imgGenerated: HTMLImageElement) => {
+        return new RGBUImageGenerated(csScaleData, imgGenerated);
+      })
+    );
   }
 
   channelImageForName(nameRGBU: string): FloatImage | null {
@@ -520,7 +513,6 @@ export class RGBUImage {
             result.u = channels[3];
 
             result._allChannelMinMax = allChannelMinMax;
-            result._loadComplete = true;
 
             return result;
           })

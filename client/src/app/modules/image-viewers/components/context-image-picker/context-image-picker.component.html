@@ -53,7 +53,9 @@ POSSIBILITY OF SUCH DAMAGE.
     [openDirDown]="false"> -->
 <two-state-push-button title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
   <div class="dropdown-line">
-    <div class="txt">{{ currentFileName }}</div>
+    <wait-spinner *ngIf="loading"></wait-spinner>
+    <div *ngIf="errorText.length > 0" class="error">ERROR: {{errorText}}</div>
+    <div *ngIf="errorText.length <= 0" class="txt">{{ currentFileName }}</div>
     <span>&#9660;</span>
   </div>
 </two-state-push-button>

@@ -764,6 +764,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         },
         error: err => {
           this.isWidgetDataLoading = false;
+          this.reDraw();
 
           if (err instanceof WidgetError) {
             this._snackService.openError("Context image failed to display an expression", err);
