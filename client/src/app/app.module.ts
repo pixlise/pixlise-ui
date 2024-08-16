@@ -8,13 +8,13 @@ import { AppComponent } from "./app.component";
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
 import { HTTP_INTERCEPTORS, HttpBackend, HttpClientModule } from "@angular/common/http";
 import { AppConfig, EnvConfigurationInitService } from "./services/env-configuration-init.service";
-import { HttpInterceptorService, PIXLISECoreModule } from "./modules/pixlisecore/pixlisecore.module";
+import { PIXLISECoreModule } from "./modules/pixlisecore/pixlisecore.module";
 
 import * as Sentry from "@sentry/angular-ivy";
 import { VERSION } from "src/environments/version";
 import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angular/material/dialog";
 import { MaterialModule } from "./modules/material.module";
-import { AuthModule, AuthClientConfig } from "@auth0/auth0-angular";
+import { AuthModule, AuthClientConfig, AuthHttpInterceptor } from "@auth0/auth0-angular";
 import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { NotFoundModule } from "./modules/not-found/not-found.module";
 import { CodeEditorModule } from "./modules/code-editor/code-editor.module";
@@ -181,11 +181,20 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
       provide: MAT_DIALOG_DEFAULT_OPTIONS,
       useValue: { hasBackdrop: true },
     },
+    /* We used to define our own HttpInterceptorService but switched to use Auth0's built in one. The "extra" things ours did were:
+        - Show snack saying "You are not online" if !window.navigator.onLine
+        - If getAccessTokenSilently() returned an error that contains "Login required": snackService.openError(
+                "Auto-login failed, please use Chrome without ad blocking",
+                "Maybe your browser/ad-blocker is preventing PIXLISE from logging in")
+        - If getAccessTokenSilently() returned another error, just show the error text in the snack
     {
       provide: HTTP_INTERCEPTORS,
       useClass: HttpInterceptorService,
       multi: true,
-    },
+    },*/
+    { provide: HTTP_INTERCEPTORS, useClass: AuthHttpInterceptor, multi: true },
+    // AuthHttpInterceptor,
+    // provideHttpClient(withInterceptors([authHttpInterceptorFn])),
     {
       provide: MAT_DIALOG_DATA,
       useValue: {},

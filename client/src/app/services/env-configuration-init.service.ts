@@ -32,7 +32,7 @@ import { Injectable } from "@angular/core";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { environment } from "src/environments/environment";
 import { ReplaySubject, take, firstValueFrom } from "rxjs";
-import { AuthClientConfig } from "@auth0/auth0-angular";
+import { AuthClientConfig, AuthConfig } from "@auth0/auth0-angular";
 
 // App config is retrieved from a json file that is injected into the built container. We ONLY use the
 // environment.ts config file to find the name of the config file to load. This is so we can
@@ -87,8 +87,13 @@ export class EnvConfigurationInitService {
             return null;
           }
 
+          // Set the API URL in the paths helper (static var)
+          if (config?.apiUrl) {
+            APIPaths.setAPIUrl(config.apiUrl);
+          }
+
           if (authConfig) {
-            authConfig.set({
+            const authCfg: AuthConfig = {
               domain: config.auth0_domain,
               clientId: config.auth0_client,
               cacheLocation: "localstorage",
@@ -96,7 +101,26 @@ export class EnvConfigurationInitService {
                 audience: config.auth0_audience,
                 redirect_uri: `${window.location.origin}/authenticate`,
               },
-            });
+              httpInterceptor: {
+                // We don't want to attach auth tokens to these:
+                // "./", "/version-binary", "/version-json", "/agreement-version.json"
+                // That's what our http interceptor used to do. But with auth0's implementation
+                // we have to specify which requests to attach to, so:
+                allowedList: [
+                  APIPaths.getWithHost("ws-connect"),
+                  APIPaths.getWithHost("scan"),
+                  APIPaths.getWithHost("images"),
+                  APIPaths.getWithHost("images/*"),
+                  // config.apiUrl+"/ws-connect",
+                  // config.apiUrl+"/scan",
+                  // config.apiUrl+"/images",
+                  // config.apiUrl+"/images/*"
+                ],
+              },
+              //skipRedirectCallback: true,
+            };
+
+            authConfig.set(authCfg);
           }
 
           EnvConfigurationInitService._appConfig = config;
@@ -107,11 +131,6 @@ export class EnvConfigurationInitService {
           }
           this._gotConfig$.next();
           console.log("Loaded application config...");
-
-          // Set the API URL in the paths helper (static var)
-          if (config?.apiUrl) {
-            APIPaths.setAPIUrl(config.apiUrl);
-          }
 
           return config;
         } /*,
