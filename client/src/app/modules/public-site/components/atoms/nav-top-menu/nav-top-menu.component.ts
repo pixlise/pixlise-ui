@@ -34,7 +34,6 @@ import { Navigation } from "../../navigation";
 
 import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { AuthService } from "@auth0/auth0-angular";
 import { Subscription } from "rxjs";
 

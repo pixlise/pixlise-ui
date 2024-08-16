@@ -338,6 +338,23 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             this.mdl.transform.scale.y = 1;
           }
 
+          if (contextData.colourRatioMin) {
+            this.mdl.colourRatioMin = contextData.colourRatioMin;
+          }
+
+          if (contextData.colourRatioMax) {
+            this.mdl.colourRatioMax = contextData.colourRatioMax;
+          }
+
+          this.linkToDataset = !contextData?.unlinkFromDataset;
+
+          this.mdl.imageBrightness = contextData.brightness;
+          this.mdl.removeTopSpecularArtifacts = contextData.removeTopSpecularArtifacts;
+          this.mdl.removeBottomSpecularArtifacts = contextData.removeBottomSpecularArtifacts;
+          this.mdl.rgbuChannels = contextData.rgbuChannels;
+          this.mdl.unselectedOpacity = contextData.unselectedOpacity;
+          this.mdl.unselectedGrayscale = contextData.unselectedGrayscale;
+
           this.mdl.imageName = contextData.contextImage;
           this.mdl.imageSmoothing = contextData.contextImageSmoothing.length > 0;
 
@@ -728,7 +745,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       .pipe(
         switchMap((data: ContextImageModelLoadedData) => {
           if (data.scanModels.size > 0) {
-            this.scanId = data.scanModels.keys().next().value;
+            this.scanId = data.scanModels.keys().next().value!;
           }
 
           this.mdl.setData(data);
@@ -747,6 +764,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         },
         error: err => {
           this.isWidgetDataLoading = false;
+          this.reDraw();
 
           if (err instanceof WidgetError) {
             this._snackService.openError("Context image failed to display an expression", err);
@@ -1325,6 +1343,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
         drawImage: this.mdl.drawImage,
+        unlinkFromDataset: !this.linkToDataset,
       })
     );
   }

@@ -28,6 +28,11 @@
       justify-content: center;
       gap: 16px;
 
+      max-width: 750px;
+      margin: 0 auto;
+
+      flex-wrap: wrap;
+
       .layout-container {
         display: flex;
         flex-direction: column;

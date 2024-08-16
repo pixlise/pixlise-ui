@@ -91,6 +91,7 @@ export class EnvConfigurationInitService {
             authConfig.set({
               domain: config.auth0_domain,
               clientId: config.auth0_client,
+              cacheLocation: "localstorage",
               authorizationParams: {
                 audience: config.auth0_audience,
                 redirect_uri: `${window.location.origin}/authenticate`,

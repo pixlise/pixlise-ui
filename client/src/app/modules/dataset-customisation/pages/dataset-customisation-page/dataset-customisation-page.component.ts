@@ -750,8 +750,17 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           w += 3;
         }
 
-        observer.next(rgbBytesToImage(imgBytes, imgData.width, imgData.height));
-        observer.complete();
+        const img$ = rgbBytesToImage(imgBytes, imgData.width, imgData.height);
+        img$.subscribe({
+          next: (img: HTMLImageElement) => {
+            observer.next(img);
+            observer.complete();
+          },
+          error: err => {
+            console.error(err);
+            observer.error(err);
+          },
+        });
       };
 
       src.onerror = () => {

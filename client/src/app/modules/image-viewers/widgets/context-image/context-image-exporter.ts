@@ -103,7 +103,7 @@ export class ContextImageExporter {
         let requestPlotImage = request.dataProducts["plotImage"]?.selected;
         let requestLargePlotImage = request.dataProducts["largePlotImage"]?.selected;
 
-        let rawImageRequest = mdl.imageName.endsWith(".tif")
+        const rawImageRequest = mdl.imageName.endsWith(".tif")
           ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName)
           : this._endpointsService.loadImagePreviewForPath(mdl.imageName);
 
