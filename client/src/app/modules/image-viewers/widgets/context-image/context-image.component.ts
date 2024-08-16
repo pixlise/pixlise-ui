@@ -320,7 +320,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             this.mdl.layerOpacity.set(l.expressionID, l.opacity);
           }
 
-          this.mdl.roiIds = contextData.roiLayers;
+          // For some reason we're getting empty ROIs so filter those out here
+          this.mdl.roiIds = [];
+          for (const roi of contextData.roiLayers) {
+            if (roi.id.length > 0) {
+              this.mdl.roiIds.push(roi);
+            }
+          }
           this.mdl.hideFootprintsForScans = new Set<string>(contextData?.hideFootprintsForScans || []);
           this.mdl.hidePointsForScans = new Set<string>(contextData?.hidePointsForScans || []);
           this.mdl.drawImage = contextData?.drawImage ?? true;
@@ -1321,7 +1327,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         pointBBoxColourScheme: this.mdl.pointBBoxColourScheme,
         contextImage: this.mdl.imageName,
         contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
-        roiLayers: this.mdl.roiIds,
+        roiLayers: this.mdl.roiIds.filter(roi => roi.id.length > 0),
         elementRelativeShading: this.mdl.elementRelativeShading,
         brightness: this.mdl.imageBrightness,
         rgbuChannels: this.mdl.rgbuChannels,
