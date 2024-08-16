@@ -1000,14 +1000,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       id: "images",
       title: "Images",
       isOpen: false,
-      isVisible: true,
+      isVisible: this.mdl.drawImage,
       options: [
         {
           id: "context-image",
           name: this.mdl.imageName,
           icon: "assets/icons/image.svg",
           opacity: 1,
-          visible: true,
+          visible: this.mdl.drawImage,
         },
       ],
     };
