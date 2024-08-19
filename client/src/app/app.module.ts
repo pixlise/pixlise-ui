@@ -19,7 +19,6 @@ import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { NotFoundModule } from "./modules/not-found/not-found.module";
 import { CodeEditorModule } from "./modules/code-editor/code-editor.module";
 import { MapBrowserModule } from "./modules/map-browser/map-browser.module";
-import { QuantificationsModule } from "./modules/quantifications/quantifications.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { FormsModule } from "@angular/forms";
 import { ToolbarComponent } from "./components/toolbar/toolbar.component";
@@ -163,7 +162,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     NotFoundModule,
     CodeEditorModule,
     MapBrowserModule,
-    QuantificationsModule,
     SettingsModule,
     PIXLISECoreModule,
     AuthModule.forRoot(),
