@@ -29,10 +29,16 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="column" fxLayoutAlign="space-around center" fxFill>
-  <div *ngIf="errorString" fxLayout="column" fxLayoutAlign="space-between center" class="page-card">
-    <app-widget-display-message image="assets/PIXLISE.svg" [message]="errorString" [large]="true" fxFlex="100%"> </app-widget-display-message>
-    <push-button class="button-gap" (onClick)="onHome()">Back to About page</push-button>
+<div class="auth-page">
+  <div class="page-card">
+    <ng-container *ngIf="errorString">
+      <img src="assets/PIXLISE.svg" alt="PIXLISE logo">
+      <div>{{errorString}}</div>
+    </ng-container>
+    <ng-container *ngIf="!errorString">
+      <h2>Authenticating</h2>
+      <wait-spinner></wait-spinner>
+    </ng-container>
+    <push-button class="button-gap" (onClick)="onHome()">Go To Home Page</push-button>
   </div>
-  <mat-progress-spinner *ngIf="!errorString" diameter="64" color="accent"></mat-progress-spinner>
 </div>
