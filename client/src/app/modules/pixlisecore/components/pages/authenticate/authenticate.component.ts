@@ -27,8 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { Router } from "@angular/router";
+import { Component, OnDestroy, OnInit } from "@angular/core";
+//import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 import { AuthService } from "@auth0/auth0-angular";
@@ -48,20 +48,20 @@ import { AuthService } from "@auth0/auth0-angular";
   templateUrl: "./authenticate.component.html",
   styleUrls: ["./authenticate.component.scss"],
 })
-export class AuthenticateComponent implements OnInit {
+export class AuthenticateComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   errorString: string = "";
 
   constructor(
-    private _router: Router,
+    //private _router: Router,
     private authService: AuthService
   ) {}
 
   ngOnInit() {
     this._subs.add(
       this.authService.error$.subscribe((errStr: Error) => {
-        this.errorString = `${errStr}`;
+        this.errorString += `${errStr}\n`;
       })
     );
   }
@@ -71,6 +71,7 @@ export class AuthenticateComponent implements OnInit {
   }
 
   onHome() {
-    this._router.navigateByUrl("about");
+    this.authService.logout();
+    //this._router.navigateByUrl("/public/about-us");
   }
 }

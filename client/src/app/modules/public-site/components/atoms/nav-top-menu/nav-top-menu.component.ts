@@ -80,12 +80,7 @@ export class NavTopMenuComponent implements OnInit {
   }
 
   onLogout() {
-    // this._authService.logout({ returnTo: window.location.origin });
-    this._authService.logout({
-      openUrl: () => {
-        this._router.navigate(["/"]);
-      },
-    });
+    this._authService.logout();
   }
 
   onClickNav(navGroup: string) {

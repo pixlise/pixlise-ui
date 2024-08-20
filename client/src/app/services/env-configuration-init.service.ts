@@ -101,6 +101,7 @@ export class EnvConfigurationInitService {
                 audience: config.auth0_audience,
                 redirect_uri: `${window.location.origin}/authenticate`,
               },
+              errorPath: "/authenticate",
               httpInterceptor: {
                 // We don't want to attach auth tokens to these:
                 // "./", "/version-binary", "/version-json", "/agreement-version.json"
