@@ -40,7 +40,6 @@ import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/com
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
 
 export type HighlightedROIs = {

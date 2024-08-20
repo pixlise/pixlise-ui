@@ -57,9 +57,9 @@ export class APICommService implements OnDestroy {
       return;
     } else {
       if (isFirefox(navigator?.userAgent || "")) {
-        this._snackService.openError(
-          "Please use Chrome. Firefox browser is currently not supported.",
-          "Firefox currently has issues with login, and has much slower context image rendering than Chrome."
+        this._snackService.openWarning(
+          "Please use Chrome - PIXLISE will run slower in Firefox",
+          "Firefox currently has much slower context image rendering than Chrome variants."
         );
         return;
       }

@@ -34,7 +34,6 @@ export function makeHeaders(): { headers: HttpHeaders } {
   const httpOptions = {
     headers: new HttpHeaders({
       "Content-Type": "application/json",
-      //'Authorization': 'Bearer '+this.authService.getTokenSilently$()
     }),
   };
   return httpOptions;

@@ -1,4 +1,15 @@
-## 4.34.0 (Latest)
+## 4.35.0 (Latest)
+
+### Features
+
+- Now we show a "spinner" animation while PIXLISE is loading, previously it was just a blank page
+
+### Bug Fixes
+
+- Image options (for context image) was not correctly showing the currently displayed beam location version.
+- More robust login/re-authentication
+
+## 4.34.0 (2024-08-15)
 
 ### Features
 - Adds new "2x4 Context Images" and "2x4 Context Images/PCP" workspace tab templates

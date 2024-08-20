@@ -69,7 +69,6 @@ export { RouteNotFoundComponent } from "./components/pages/route-not-found/route
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
-export { HttpInterceptorService } from "./services/http-interceptor.service";
 export { SnackbarService } from "./services/snackbar.service";
 export { WidgetDataService, DataSourceParams, RegionDataResults, RegionDataResultItem, DataUnit } from "./services/widget-data.service";
 export { WidgetKeyItem } from "./models/widget-key-item";
@@ -186,7 +185,7 @@ export { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-p
     LayoutPreviewBox,
   ],
   providers: [
-    /*APICommService, APIDataService, HttpInterceptorService*/
+    /*APICommService, APIDataService*/
   ], // Don't register them so they don't duplicate due to lazy load
 })
 export class PIXLISECoreModule {}
