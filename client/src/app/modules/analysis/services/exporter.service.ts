@@ -6,13 +6,18 @@ import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/compo
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "../../../generated-protos/scan-beam-location-msgs";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanEntryReq, ScanEntryResp } from "../../../generated-protos/scan-entry-msgs";
-import { ImageGetReq, ImageListReq } from "../../../generated-protos/image-msgs";
+import { ImageListReq } from "../../../generated-protos/image-msgs";
 import { Coordinate2D } from "../../../generated-protos/image-beam-location";
-import { ImageBeamLocationsReq } from "../../../generated-protos/image-beam-location-msgs";
+import {
+  ImageBeamLocationsReq,
+  ImageBeamLocationsResp,
+  ImageBeamLocationVersionsReq,
+  ImageBeamLocationVersionsResp,
+} from "../../../generated-protos/image-beam-location-msgs";
 import { SpectrumResp } from "../../../generated-protos/spectrum-msgs";
 import { Spectrum, SpectrumType } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
-import { decodeIndexList } from "../../../utils/utils";
+import { decodeIndexList, SDSFields } from "../../../utils/utils";
 import { DiffractionExporter } from "../components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
 import { DiffractionService } from "../../spectrum/services/diffraction.service";
 import { EnergyCalibrationService } from "../../pixlisecore/services/energy-calibration.service";
@@ -31,6 +36,7 @@ import { Quantification } from "src/app/generated-protos/quantification";
 import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
+import { ScanImage } from "src/app/generated-protos/image";
 
 @Injectable({
   providedIn: "root",
@@ -108,7 +114,7 @@ export class DataExporterService {
   ): WidgetExportFile | null {
     // This outputs the same format as the GDS spectra CSVs we import! At this point we don't have access to the same CSV any more, but we need to make sure
     // the formats match for less confusion. There should be 4 tables exported:
-    // 1. Spectrum parameters table: 
+    // 1. Spectrum parameters table:
     let table1 = "SCLK_A,SCLK_B,PMC,real_time_A,real_time_B,live_time_A,live_time_B,XPERCHAN_A,XPERCHAN_B,OFFSET_A,OFFSET_B\n";
     // 2. Beam locations:
     let table2 = "PMC,x,y,z\n";
@@ -149,7 +155,7 @@ export class DataExporterService {
               if (spectrum.detector == detector && spectrum.type == specType) {
                 meta.set(detector, this.getSpectrumPMCMetadata(spectrum, scanMeta, metaLabels));
 
-      // TABLE 3
+                // TABLE 3
                 if (detector == DetectorOrder[0]) {
                   let table3Line = "";
                   spectrum.counts.forEach(count => {
@@ -159,7 +165,7 @@ export class DataExporterService {
                   table3 += table3Line.slice(1) + "\n";
                 }
 
-      // TABLE 4
+                // TABLE 4
                 if (detector == DetectorOrder[0]) {
                   let table4Line = "";
                   spectrum.counts.forEach(count => {
@@ -189,11 +195,11 @@ export class DataExporterService {
             }
           }
 
-    // TABLE 1
+          // TABLE 1
           table1 += line + "\n";
         }
 
-    // TABLE 2
+        // TABLE 2
         const location = beamLocations.beamLocations[c];
         const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
         table2 += `${entry.id},${x},${y},${z}\n`;
@@ -348,7 +354,7 @@ export class DataExporterService {
 
     msa += `#SIGNALTYPE  : XRF
 #COMMENT     : Exported bulk sum MSA from PIXLISE\n`;
-/* can't provide a position really... we may be bulk summing many points!
+    /* can't provide a position really... we may be bulk summing many points!
 msa += `#XPOSITION   : 0.000
 #YPOSITION   : 0.000
 #ZPOSITION   : 0.000\n`;
@@ -439,10 +445,7 @@ msa += `#XPOSITION   : 0.000
 
               // If we have enough for a bulk
               if (spectraMap.get("bulk(A)") !== undefined && spectraMap.get("bulk(B)") !== undefined) {
-                const spectra = [
-                  this.makeSpectrum(spectraMap!.get("bulk(A)"), metaLiveTimeIdx),
-                  this.makeSpectrum(spectraMap!.get("bulk(B)"), metaLiveTimeIdx)
-                ];
+                const spectra = [this.makeSpectrum(spectraMap!.get("bulk(A)"), metaLiveTimeIdx), this.makeSpectrum(spectraMap!.get("bulk(B)"), metaLiveTimeIdx)];
 
                 const roiBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} bulk sum`, spectra, scanMeta);
                 if (roiBulkMSA) {
@@ -451,10 +454,7 @@ msa += `#XPOSITION   : 0.000
               }
 
               if (spectraMap.get("max(A)") !== undefined && spectraMap.get("max(B)") !== undefined) {
-                const spectra = [
-                  this.makeSpectrum(spectraMap!.get("max(A)"), metaLiveTimeIdx),
-                  this.makeSpectrum(spectraMap!.get("max(B)"), metaLiveTimeIdx)
-                ];
+                const spectra = [this.makeSpectrum(spectraMap!.get("max(A)"), metaLiveTimeIdx), this.makeSpectrum(spectraMap!.get("max(B)"), metaLiveTimeIdx)];
 
                 const roiMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} max value`, spectra, scanMeta);
                 if (roiMaxMSA) {
@@ -502,7 +502,7 @@ msa += `#XPOSITION   : 0.000
   }
 
   getBeamLocationsForScan(scanId: string): Observable<WidgetExportData> {
-    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<Map<string, Coordinate2D[]>>] = [
+    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<Map<string, Map<number, Coordinate2D[]>>>] = [
       this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId })),
       this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })),
       this.getAllImagesIJ(scanId),
@@ -515,7 +515,13 @@ msa += `#XPOSITION   : 0.000
           let data = "PMC,X,Y,Z";
           imageKeyOrder.forEach(imageKey => {
             const imageName = imageKey.split("/").pop();
-            data += `,${imageName}_i,${imageName}_j`;
+
+            const verMap = imageIJs.get(imageKey);
+            if (verMap) {
+              for (const ver of verMap.keys()) {
+                data += `,${imageName}_v${ver}_i,${imageName}_v${ver}_j`;
+              }
+            }
           });
 
           if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
@@ -537,11 +543,19 @@ msa += `#XPOSITION   : 0.000
 
             // Add image coordinate headers
             imageKeyOrder.forEach(imageKey => {
-              const coords = imageIJs.get(imageKey);
-              if (coords) {
-                const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
-                data += `,${roundedI},${roundedJ}`;
-              } else {
+              const verMap = imageIJs.get(imageKey);
+              let wrote = false;
+              if (verMap) {
+                for (const coords of verMap.values()) {
+                  if (coords) {
+                    const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
+                    data += `,${roundedI},${roundedJ}`;
+                    wrote = true;
+                  }
+                }
+              }
+
+              if (!wrote) {
                 data += ",,";
               }
             });
@@ -558,37 +572,69 @@ msa += `#XPOSITION   : 0.000
     );
   }
 
-  getAllImagesIJ(scanId: string): Observable<Map<string, Coordinate2D[]>> {
+  getAllImagesIJ(scanId: string): Observable<Map<string, Map<number, Coordinate2D[]>>> {
     return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
       switchMap(images => {
-        const imagesIJ: Map<string, Coordinate2D[]> = new Map();
+        const imagesIJ: Map<string, Map<number, Coordinate2D[]>> = new Map();
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
-          const imagePaths = images.images.map(image => image.imagePath);
+          const imagePaths = images.images
+            .filter((img: ScanImage) => {
+              if (img.originScanId !== scanId) {
+                return false;
+              }
 
-          const metaRequests = imagePaths.map(imagePath => this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imagePath })));
-          return forkJoin(metaRequests).pipe(
-            switchMap(imageMetadataResponses => {
-              const beamRequests = imageMetadataResponses.map((imageMeta, i) => {
-                const beamFileName = imageMeta.image?.matchInfo?.beamImageFileName || imagePaths[i];
+              const fields = SDSFields.makeFromFileName(img.imagePath.split("/").pop() || "");
+              return (fields?.producer || "") === "J";
+            })
+            .map(image => image.imagePath);
 
-                return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName })).pipe(
-                  catchError(err => {
-                    console.error("Failed to get beam locations for image", beamFileName, err);
-                    return of(null);
-                  })
-                );
-              });
+          const imageBeamVersions$ = imagePaths.map(imagePath =>
+            this._apiService.sendImageBeamLocationVersionsRequest(ImageBeamLocationVersionsReq.create({ imageName: imagePath })).asObservable()
+          );
 
-              return forkJoin(beamRequests).pipe(
+          return forkJoin(imageBeamVersions$).pipe(
+            switchMap((imageBeamVersions: ImageBeamLocationVersionsResp[]) => {
+              const beamRequests$: Observable<ImageBeamLocationsResp | null>[] = [];
+
+              for (let i = 0; i < imageBeamVersions.length; i++) {
+                const beamVers = imageBeamVersions[i];
+                for (const ver of beamVers.beamVersionPerScan[scanId].versions) {
+                  const sendVer: { [x: string]: number } = {};
+                  sendVer[scanId] = ver;
+
+                  beamRequests$.push(
+                    this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imagePaths[i], scanBeamVersions: sendVer })).pipe(
+                      catchError(err => {
+                        console.error("Failed to get beam locations for image", imagePaths[i], err);
+                        return of(null);
+                      })
+                    )
+                  );
+                }
+              }
+
+              return forkJoin(beamRequests$).pipe(
                 map(beamResponses => {
                   beamResponses.forEach((beamResponse, i) => {
                     if (beamResponse) {
                       // Find the beam locations for the requested scan
                       const locations = beamResponse.locations?.locationPerScan.find(loc => loc.scanId === scanId);
                       if (locations) {
-                        const imageName = imagePaths[i];
-                        imagesIJ.set(imageName, locations.locations);
+                        const imageName = beamResponse.locations?.imageName || "";
+                        if (imageName) {
+                          const version = locations.beamVersion;
+
+                          // If it's a new one, create a map for it
+                          let verMap = imagesIJ.get(imageName);
+                          if (verMap === undefined) {
+                            verMap = new Map<number, Coordinate2D[]>();
+                          }
+
+                          verMap.set(version, locations.locations);
+
+                          imagesIJ.set(imageName, verMap);
+                        }
                       }
                     }
                   });
@@ -731,7 +777,7 @@ msa += `#XPOSITION   : 0.000
               this._snackService.openError("Error exporting pmc membership data", "Scan entries not returned for " + scanId);
               throw new Error("ScanEntryResp indexes not returned for " + scanId);
             }
-/*
+            /*
             // Get all PMCs for the scan
             const allPMCs: number[] = [];
             resp.entries.forEach(entry => {
