@@ -13,6 +13,7 @@ import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.
 import { QuantificationTableComponent } from "../../table-views/table-views.module";
 import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-widget/variogram-widget.component";
 import { WidgetKeyItem } from "../../pixlisecore/pixlisecore.module";
+import { MarkdownTextViewComponent } from "../../text-views/text-views.module";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -169,6 +170,13 @@ export const WIDGETS = {
     description: "Quantification Table",
     component: QuantificationTableComponent,
     dataKey: "table",
+    controlConfiguration: {},
+  },
+  "text-view": {
+    name: "Text View",
+    description: "Allows annotation of layout",
+    component: MarkdownTextViewComponent,
+    dataKey: "markdownView",
     controlConfiguration: {},
   },
   variogram: {
