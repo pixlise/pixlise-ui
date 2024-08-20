@@ -33,6 +33,22 @@
   height: 100%;
 }
 
+.widget-container {
+  display: flex;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+  background: black;
+  position: relative;
+
+  .pcp-plot {
+    width: calc(100% - 120px);
+    height: calc(100% - 10px);
+    padding-top: 6px;
+  }
+}
+
 .dimensions {
   display: flex;
   flex-direction: column;
@@ -89,18 +105,42 @@ widget-key-display {
   display: flex;
   justify-content: space-between;
   height: 100%;
+  position: relative;
 
   .axis-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    height: 100%;
+    position: absolute;
 
     .axis-title {
-      font-size: 12px;
-      padding: 8px;
-      padding-bottom: 2px;
-      color: $clr-gray-30;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      position: absolute;
+      bottom: 10px;
+      left: 14px;
+
+      color: #fff;
+
+      font-family: Inter;
+      font-size: 10px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+
+      .wavelength {
+        color: #969696;
+        font-family: Inter;
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        white-space: pre;
+      }
     }
 
     .axis-line {
@@ -113,7 +153,12 @@ widget-key-display {
       .point-container {
         position: absolute;
         width: 1px;
-        height: calc(100% - 14px);
+        // height: calc(100% - 14px);
+        // height: 100%;
+        // top: 22px;
+        // height: calc(100% - 44px);
+        top: 24px;
+        height: calc(100% - 50px);
       }
     }
 
@@ -172,7 +217,11 @@ widget-key-display {
 
   .line-container {
     position: absolute;
-    top: 31px;
+    // top: 31px;
+    // top: 6px;
+    top: 30px;
+    height: calc(100% - 55px);
+    overflow: visible;
   }
 }
 
@@ -189,4 +238,119 @@ widget-key-display {
 .export-btn,
 .solo-btn {
   margin-right: $sz-half;
+}
+
+.x-axis-top {
+  display: flex;
+  justify-content: space-between;
+
+  width: 100%;
+  position: absolute;
+  top: 6px;
+  border-top: 1px solid $clr-gray-60;
+
+  .tick-container {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    .tick {
+      height: 10px;
+      width: 1px;
+      background: $clr-gray-60;
+    }
+
+    .tick-label {
+      font-size: 10px;
+      position: absolute;
+      top: 10px;
+      left: -15px;
+      color: $clr-gray-60;
+      text-shadow: 1px 1px 2px black;
+      white-space: pre;
+    }
+  }
+}
+
+.x-axis-btm {
+  display: flex;
+  justify-content: space-between;
+
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  border-bottom: 1px solid $clr-gray-60;
+
+  .tick-container {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    .tick {
+      height: 10px;
+      width: 1px;
+      background: $clr-gray-60;
+    }
+
+    .tick-label {
+      font-size: 10px;
+      position: absolute;
+      bottom: 10px;
+      left: -15px;
+      color: $clr-gray-60;
+      text-shadow: 1px 1px 2px black;
+      white-space: pre;
+    }
+  }
+}
+
+.y-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  position: absolute;
+
+  top: 30px;
+  height: calc(100% - 54px);
+
+  .axis-line {
+    width: 1px;
+    height: 100%;
+    background: $clr-gray-60;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tick-container {
+    position: relative;
+    .tick-label {
+      font-size: 10px;
+      position: absolute;
+      top: -5px;
+      // left: 26px;
+      left: -42px;
+      color: $clr-gray-60;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    .tick {
+      left: -15px;
+      position: absolute;
+
+      width: 30px;
+      height: 1px;
+      background: $clr-gray-60;
+    }
+
+    &.top {
+      // border-bottom: 1px solid $clr-gray-60;
+    }
+
+    &.bottom {
+      // border-top: 1px solid $clr-gray-60;
+    }
+  }
 }

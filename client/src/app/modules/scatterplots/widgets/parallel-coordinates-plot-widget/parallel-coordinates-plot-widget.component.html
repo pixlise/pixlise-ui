@@ -72,18 +72,47 @@ POSSIBILITY OF SUCH DAMAGE.
 </ng-template>
 
 <div class="panel outer-panel">
-  <div style="width: 100%; height: 100%; background: black; position: relative">
-    <div style="width: 100%; height: calc(100% - 10px)" class="{{ plotID }} pcp-plot">
+  <div class="widget-container">
+    <div class="{{ plotID }} pcp-plot">
+      <div class="x-axis-top">
+        <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
+          <div class="tick"></div>
+          <div *ngIf="tick.visible || i === 0 || i === axisTicks.length - 1" class="tick-label">{{ tick.value | number: "1.0-3" }} nm</div>
+        </div>
+      </div>
+      <div class="x-axis-btm">
+        <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
+          <div class="tick"></div>
+          <!-- <div *ngIf="tick % 50 === 0 || i === axisTicks.length - 1" class="tick-label">{{ tick }} nm</div> -->
+        </div>
+      </div>
+      <div class="y-scale">
+        <div class="tick-container top">
+          <div class="tick"></div>
+          <div class="tick-label">{{ yScale.max | number: "1.0-2" }}</div>
+        </div>
+        <div class="axis-line"></div>
+        <div class="tick-container bottom">
+          <div class="tick"></div>
+          <div class="tick-label">{{ yScale.min | number: "1.0-2" }}</div>
+        </div>
+        <!-- <div class="axis-title">
+          Scale
+          <span class="wavelength">yScale</span>
+        </div> -->
+      </div>
       <div class="axes">
-        <div *ngFor="let axis of visibleAxes" class="axis-container">
-          <div class="axis-title">{{ miniMode ? axis.key.toUpperCase() : axis.title }}</div>
+        <div
+          *ngFor="let axis of visibleAxes; let i = index"
+          class="axis-container"
+          [ngStyle]="{ left: 'calc(' + getXAxisDistance(axis.wavelength, i) + '% - 10px)' }">
           <div class="tick-container">
             <div class="tick"></div>
-            <div class="tick-label">{{ axis.max | number: "1.0-2" }}</div>
+            <!-- <div class="tick-label">{{ axis.max | number: "1.0-2" }}</div> -->
           </div>
           <div class="axis-line">
             <div class="point-container">
-              <div *ngFor="let point of data" class="point-tick-container" [style.top]="getFormattedValueAsPercentage(point, axis)">
+              <div *ngFor="let point of data" class="point-tick-container" [style.top]="getValueOnPlot(point, axis) + 'px'">
                 <div class="inner-tick"></div>
                 <div class="inner-point" style.background="rgb({{ point.color }})" #tooltip="matTooltip" [matTooltip]="point.tooltipText"></div>
                 <div *ngIf="showLabels" class="tick-label">{{ point.getValue(axis.key) | number: "1.0-2" }}</div>
@@ -93,13 +122,18 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
           <div class="tick-container">
             <div class="tick"></div>
-            <div class="tick-label">{{ axis.min | number: "1.0-2" }}</div>
+            <!-- <div class="tick-label">{{ axis.min | number: "1.0-2" }}</div> -->
+          </div>
+          <div class="axis-title">
+            {{ miniMode ? axis.shortName.toUpperCase() : axis.title }}
+            <span *ngIf="axis.wavelength" class="wavelength">{{ axis.wavelength }} nm</span>
           </div>
         </div>
       </div>
-      <svg width="100%" height="calc(100% - 14px - 12px - 12px)" class="line-container" *ngIf="showLines">
+      <!-- height="calc(100% - 14px - 12px - 12px)"  -->
+      <svg width="100%" class="line-container" *ngIf="showLines">
         <g *ngFor="let point of data">
-          <line
+          <!-- <line
             *ngFor="let line of point.lines"
             #tooltip="matTooltip"
             [matTooltip]="point.tooltipText"
@@ -109,6 +143,32 @@ POSSIBILITY OF SUCH DAMAGE.
             [attr.y2]="line.yEnd"
             attr.stroke="rgb({{ point.color }})"
             stroke-width="3px" />
+          <line
+            *ngFor="let line of point.sigmaLines"
+            #tooltip="matTooltip"
+            [matTooltip]="point.tooltipText"
+            [attr.x1]="line.xStart"
+            [attr.y1]="line.yStart"
+            [attr.x2]="line.xEnd"
+            [attr.y2]="line.yEnd"
+            attr.stroke="rgba({{ point.color }}, 0.5)"
+            attr.stroke-width="{{ line.width }}%" /> -->
+          <path
+            *ngFor="let line of point.lines"
+            [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
+            attr.stroke="rgb({{ point.color }})"
+            [attr.stroke-width]="getStrokeWidth(line.widthStart, line.widthEnd)"
+            stroke-linecap="round"
+            fill="none" />
+
+          <!-- <path
+            *ngFor="let line of point.sigmaLines"
+            [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
+            attr.stroke="rgba({{ point.color }}, 0.5)"
+            [attr.stroke-width]="getStrokeWidth(line.widthStart, line.widthEnd)"
+            stroke-linecap="round"
+            fill="none" /> -->
+          <polygon *ngFor="let line of point.sigmaLines" [attr.points]="getPolygonPoints(line)" attr.fill="rgba({{ point.color }}, 0.5)" />
         </g>
       </svg>
     </div>

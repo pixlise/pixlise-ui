@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, HostListener, OnInit, OnDestroy, ElementRef } from "@angular/core";
-import { catchError, combineLatest, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
+import { catchError, combineLatest, map, Observable, of, Subscription, switchMap, tap, throwError } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -53,7 +53,14 @@ import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs
 import { ParallelogramWidgetState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { decodeIndexList, getScanIdFromImagePath } from "src/app/utils/utils";
-import { Dimension, PCPAxis, RGBUPoint } from "src/app/modules/scatterplots/widgets/parallel-coordinates-plot-widget/parallel-coordinates-plot-model";
+import {
+  Dimension,
+  PCPAxis,
+  RGBUPoint,
+  SIGMA_LEVEL,
+  AVERAGE_MODE,
+  PCPLine,
+} from "src/app/modules/scatterplots/widgets/parallel-coordinates-plot-widget/parallel-coordinates-plot-model";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -80,6 +87,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
   public dimensions: Partial<Record<keyof RGBUPoint, Dimension>> = {};
   public axes: PCPAxis[] = [];
+  public yScale: MinMax = new MinMax(0, 0);
   public showLines: boolean = true;
   public showLabels: boolean = true;
 
@@ -95,6 +103,15 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
   public imageName: string = "";
   public scanIdAssociatedWithImage: string = "";
+
+  public xAxisWavelengthStart = 350;
+  public xAxisWavelengthEnd = 790;
+  public axisTickIntervals = 20;
+  public axisTicks: { value: number; visible: boolean }[] = [];
+
+  public excludeZero: boolean = true;
+  public averageMode: AVERAGE_MODE = AVERAGE_MODE.MEAN;
+  public sigmaLevel: SIGMA_LEVEL = SIGMA_LEVEL.NONE;
 
   purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
 
@@ -161,6 +178,53 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
           this.recalculateLines();
         },
       },
+      bottomToolbar: [
+        {
+          id: "sigma-level",
+          type: "multi-state-button",
+          options: [SIGMA_LEVEL.NONE, SIGMA_LEVEL.ONE, SIGMA_LEVEL.TWO],
+          tooltip: "Set the sigma level for the data",
+          value: SIGMA_LEVEL.NONE,
+          onClick: value => {
+            this.sigmaLevel = value;
+
+            let button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "sigma-level");
+            if (button) {
+              button.value = this.sigmaLevel;
+            }
+            this._prepareData();
+            this.recalculateLines();
+          },
+        },
+        {
+          id: "mean-median",
+          type: "multi-state-button",
+          tooltip: "Toggle between mean and median",
+          value: AVERAGE_MODE.MEAN,
+          options: [AVERAGE_MODE.MEAN, AVERAGE_MODE.MEDIAN],
+          onClick: value => {
+            this.averageMode = value;
+            this._prepareData();
+            this.recalculateLines();
+          },
+        },
+        {
+          id: "exclude-zero",
+          type: "toggle-button",
+          tooltip: "Toggle exclude zero",
+          title: "Exclude Zero",
+          value: this.excludeZero,
+          onClick: () => {
+            this.excludeZero = !this.excludeZero;
+            let button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "exclude-zero");
+            if (button) {
+              button.value = this.excludeZero;
+            }
+            this._prepareData();
+            this.recalculateLines();
+          },
+        },
+      ],
     };
   }
 
@@ -210,6 +274,13 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
     this._prepareData();
     setTimeout(() => this.recalculateLines(), 50);
+  }
+
+  generateAxisTicks(): void {
+    this.axisTicks = [];
+    for (let tickNm = this.xAxisWavelengthStart; tickNm <= this.xAxisWavelengthEnd; tickNm += this.axisTickIntervals) {
+      this.axisTicks.push({ value: tickNm, visible: this.axisTicks.length % 5 === 0 });
+    }
   }
 
   private setInitialConfig() {
@@ -285,24 +356,85 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     this.loadData(imagePath, this.visibleROIs);
   }
 
+  getPolygonPoints(line: PCPLine): string {
+    const y1 = Number(line.yStart) - line.widthStart;
+    const y2 = Number(line.yStart) + line.widthStart;
+    const y3 = Number(line.yEnd) + line.widthEnd;
+    const y4 = Number(line.yEnd) - line.widthEnd;
+
+    return `${line.xStart},${y1} ${line.xStart},${y2} ${line.xEnd},${y3} ${line.xEnd},${y4}`;
+  }
+
+  getValueOnPlot(point: RGBUPoint, axis: PCPAxis): number {
+    if (!point || !axis || !this._elementRef) {
+      return 0;
+    }
+
+    let plotContainer: Element = this._elementRef?.nativeElement?.querySelector(`.${this.plotID}`);
+    let svgContainer = plotContainer.querySelector("svg");
+    if (!svgContainer) {
+      return 0;
+    }
+
+    let percentage = axis.getValueAsPercentage(Number(point[axis.key]));
+    let plotHeight = svgContainer?.getBoundingClientRect().height;
+    let yValue = Math.round(percentage * plotHeight) - 6;
+
+    return yValue;
+  }
+
   getFormattedValueAsPercentage(point: RGBUPoint, axis: PCPAxis): string {
     let percentage = axis.getValueAsPercentage(Number(point[axis.key]));
     return `${Math.round(percentage * 100)}%`;
   }
 
+  getXAxisDistance(wavelength: number, axisIndex: number): number {
+    let containerWidth = this._elementRef?.nativeElement?.querySelector(`.${this.plotID}`)?.clientWidth;
+    let xAxisWavelengthRange = this.xAxisWavelengthEnd - this.xAxisWavelengthStart;
+
+    if (!containerWidth || !xAxisWavelengthRange) {
+      return 0;
+    }
+
+    if (wavelength === 0) {
+      let firstZeroAxisWavelengthIndex = this.visibleAxes.findIndex(axis => axis.wavelength === 0);
+      if (firstZeroAxisWavelengthIndex === -1) {
+        return 0;
+      }
+      let offsetFromZero = axisIndex - firstZeroAxisWavelengthIndex;
+      let lastDefinedAxisWavelength = this.visibleAxes[firstZeroAxisWavelengthIndex - 1]?.wavelength ?? 0;
+
+      let xAxisWavelengthRemainingRange = this.xAxisWavelengthEnd - lastDefinedAxisWavelength;
+      let axesRemaining = this.visibleAxes.length - axisIndex;
+
+      let interpolatedWavelength = ((offsetFromZero + 1) / axesRemaining) * xAxisWavelengthRemainingRange + lastDefinedAxisWavelength;
+      let distancePercent = (interpolatedWavelength - this.xAxisWavelengthStart) / xAxisWavelengthRange;
+
+      return Math.round(distancePercent * 1000) / 10;
+    }
+
+    let xAxisWavelengthOffset = wavelength - this.xAxisWavelengthStart;
+
+    let distancePercent = xAxisWavelengthOffset / xAxisWavelengthRange;
+
+    return Math.round(distancePercent * 1000) / 10;
+  }
+
   private _initAxes(): void {
     this.axes = [
-      new PCPAxis("r", "Red", true),
-      new PCPAxis("g", "Green", true),
-      new PCPAxis("b", "Blue", true),
-      new PCPAxis("u", "Ultraviolet", true),
-      new PCPAxis("rg", "Red/Green", false),
-      new PCPAxis("rb", "Red/Blue", false),
-      new PCPAxis("ru", "Red/Ultraviolet", false),
-      new PCPAxis("gb", "Green/Blue", false),
-      new PCPAxis("gu", "Green/Ultraviolet", false),
-      new PCPAxis("bu", "Blue/Ultraviolet", false),
-    ];
+      new PCPAxis("u", "Ultraviolet", "UV", 385, true),
+      new PCPAxis("b", "Blue", "B", 450, true),
+      new PCPAxis("g", "Green", "G", 530, true),
+      new PCPAxis("r", "Red", "R", 735, true),
+      new PCPAxis("rg", "Red/Green", "R/G", Math.round((735 / 530) * 100) / 100, false),
+      new PCPAxis("rb", "Red/Blue", "R/B", Math.round((735 / 450) * 100) / 100, false),
+      new PCPAxis("ru", "Red/Ultraviolet", "R/UV", Math.round((735 / 385) * 100) / 100, false),
+      new PCPAxis("gb", "Green/Blue", "G/B", Math.round((530 / 450) * 100) / 100, false),
+      new PCPAxis("gu", "Green/Ultraviolet", "G/UV", Math.round((530 / 385) * 100) / 100, false),
+      new PCPAxis("bu", "Blue/Ultraviolet", "B/UV", Math.round((450 / 385) * 100) / 100, false),
+    ].sort((a, b) => a.wavelength - b.wavelength);
+
+    this.generateAxisTicks();
 
     let dimensions: Partial<Record<keyof RGBUPoint, Dimension>> = {};
     this.axes.forEach(axis => {
@@ -319,6 +451,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     let axis = this.axes.find(axis => axis.key === axisKey);
     if (axis) {
       axis.visible = !axis.visible;
+      this.recalculateBounds();
       setTimeout(() => this.recalculateLines(), 50);
       this.saveState();
     }
@@ -326,6 +459,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
   toggleAll(visible: boolean): void {
     this.axes.forEach(axis => (axis.visible = visible));
+    this.recalculateBounds();
     setTimeout(() => this.recalculateLines(), 50);
     this.saveState();
   }
@@ -398,46 +532,180 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     );
   }
 
-  private getROIAveragePoint(points: Set<number>, color: string, name: string, fullDataset: boolean = false, scanId: string = "", imageName: string = ""): RGBUPoint {
+  getLinePath(xStart: number | string, yStart: number | string, xEnd: number | string, yEnd: number | string): string {
+    return `M ${xStart} ${yStart} L ${xEnd} ${yEnd}`;
+  }
+
+  getStrokeWidth(widthStart: number | string, widthEnd: number | string): string {
+    return `${widthStart}px ${widthEnd}px`;
+  }
+
+  private _getChannelMedian(channel: Float32Array | number[]): number {
+    let sorted = channel.filter(val => val > 0).sort((a, b) => a - b);
+    let mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  private getROIAveragePoint(
+    points: Set<number>,
+    color: string,
+    name: string,
+    fullDataset: boolean = false,
+    scanId: string = "",
+    imageName: string = ""
+  ): Observable<RGBUPoint> {
+    let scanIdFromLoaded = this._rgbuLoaded ? getScanIdFromImagePath(this._rgbuLoaded.path) : "";
+    if (scanId === scanIdFromLoaded) {
+      return of(this.calculateROIAveragePoint(this._rgbuLoaded, points, color, name, fullDataset, scanId, imageName));
+    } else {
+      return this.loadRGBUImageForScan(scanId).pipe(
+        switchMap(rgbuImage => {
+          return of(this.calculateROIAveragePoint(rgbuImage, points, color, name, fullDataset, scanId, imageName));
+        })
+      );
+    }
+  }
+
+  // private getROIAveragePoint(points: Set<number>, color: string, name: string, fullDataset: boolean = false, scanId: string = "", imageName: string = ""): RGBUPoint {
+  //   return this.calculateROIAveragePoint(this._rgbuLoaded, points, color, name, fullDataset, scanId, imageName);
+  // }
+
+  private calculateROIAveragePoint(
+    rgbuImage: RGBUImage | null,
+    points: Set<number>,
+    color: string,
+    name: string,
+    fullDataset: boolean = false,
+    scanId: string = "",
+    imageName: string = ""
+  ): RGBUPoint {
     let avgData = new RGBUPoint();
     avgData.name = name;
     avgData.color = color;
     avgData.scanId = scanId || this.scanIdAssociatedWithImage;
     avgData.imageName = imageName || this.imageName;
 
-    if (!this._rgbuLoaded) {
+    if (!rgbuImage) {
       return avgData;
     }
 
-    let rgbuImage = this._rgbuLoaded;
     let datasetLength = fullDataset ? rgbuImage.r.values.length : points.size;
+
+    let redLength = datasetLength;
+    let greenLength = datasetLength;
+    let blueLength = datasetLength;
+    let uvLength = datasetLength;
 
     if ((!fullDataset && (!points || points.size <= 0)) || !rgbuImage || !rgbuImage.r || !rgbuImage.r.values) {
       return avgData;
     }
 
+    let redValues: number[] = [];
+    let greenValues: number[] = [];
+    let blueValues: number[] = [];
+    let uvValues: number[] = [];
+
     if (fullDataset) {
-      rgbuImage.r.values.forEach((red, i) => {
-        let [green, blue, uv] = [rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
-        avgData.r += red;
-        avgData.g += green;
-        avgData.b += blue;
-        avgData.u += uv;
-      });
+      redValues = rgbuImage.r.values.filter(val => !this.excludeZero || val) as any as number[];
+      greenValues = rgbuImage.g.values.filter(val => !this.excludeZero || val) as any as number[];
+      blueValues = rgbuImage.b.values.filter(val => !this.excludeZero || val) as any as number[];
+      uvValues = rgbuImage.u.values.filter(val => !this.excludeZero || val) as any as number[];
+
+      if (this.averageMode === AVERAGE_MODE.MEAN) {
+        rgbuImage.r.values.forEach((red, i) => {
+          let [green, blue, uv] = [rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
+          avgData.r += red;
+          avgData.g += green;
+          avgData.b += blue;
+          avgData.u += uv;
+
+          if (this.excludeZero && red === 0) {
+            redLength--;
+          }
+
+          if (this.excludeZero && green === 0) {
+            greenLength--;
+          }
+
+          if (this.excludeZero && blue === 0) {
+            blueLength--;
+          }
+
+          if (this.excludeZero && uv === 0) {
+            uvLength--;
+          }
+        });
+      } else {
+        avgData.r = this._getChannelMedian(rgbuImage.r.values);
+        avgData.g = this._getChannelMedian(rgbuImage.g.values);
+        avgData.b = this._getChannelMedian(rgbuImage.b.values);
+        avgData.u = this._getChannelMedian(rgbuImage.u.values);
+      }
     } else {
-      points.forEach(i => {
-        let [red, green, blue, uv] = [rgbuImage.r.values[i], rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
-        avgData.r += red;
-        avgData.g += green;
-        avgData.b += blue;
-        avgData.u += uv;
-      });
+      if (this.averageMode === AVERAGE_MODE.MEAN) {
+        points.forEach(i => {
+          let [red, green, blue, uv] = [rgbuImage.r.values[i], rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
+          if (this.averageMode === AVERAGE_MODE.MEAN) {
+            avgData.r += red;
+            avgData.g += green;
+            avgData.b += blue;
+            avgData.u += uv;
+
+            redValues.push(red);
+            greenValues.push(green);
+            blueValues.push(blue);
+            uvValues.push(uv);
+          }
+        });
+      } else {
+        ["r", "g", "b", "u"].forEach(channel => {
+          let values: number[] = [];
+          points.forEach(i => {
+            let pointValue = (rgbuImage as any)[channel].values[i];
+            values.push(pointValue);
+
+            switch (channel) {
+              case "r":
+                redValues.push(pointValue);
+                break;
+              case "g":
+                greenValues.push(pointValue);
+                break;
+              case "b":
+                blueValues.push(pointValue);
+                break;
+              case "u":
+                uvValues.push(pointValue);
+                break;
+            }
+          });
+
+          (avgData as any)[channel] = this._getChannelMedian(values);
+        });
+      }
     }
 
-    avgData.r = avgData.r / datasetLength;
-    avgData.g = avgData.g / datasetLength;
-    avgData.b = avgData.b / datasetLength;
-    avgData.u = avgData.u / datasetLength;
+    if (this.averageMode === AVERAGE_MODE.MEAN) {
+      avgData.r = avgData.r / redLength;
+      avgData.g = avgData.g / greenLength;
+      avgData.b = avgData.b / blueLength;
+      avgData.u = avgData.u / uvLength;
+    }
+
+    // Calculate standard deviations
+    avgData.rStdDev = this.calculateStandardDeviation(redValues, avgData.r);
+    avgData.gStdDev = this.calculateStandardDeviation(greenValues, avgData.g);
+    avgData.bStdDev = this.calculateStandardDeviation(blueValues, avgData.b);
+    avgData.uStdDev = this.calculateStandardDeviation(uvValues, avgData.u);
+
+    avgData.rSigma1 = avgData.rStdDev;
+    avgData.rSigma2 = 2 * avgData.rStdDev;
+    avgData.gSigma1 = avgData.gStdDev;
+    avgData.gSigma2 = 2 * avgData.gStdDev;
+    avgData.bSigma1 = avgData.bStdDev;
+    avgData.bSigma2 = 2 * avgData.bStdDev;
+    avgData.uSigma1 = avgData.uStdDev;
+    avgData.uSigma2 = 2 * avgData.uStdDev;
 
     if (avgData.g > 0) {
       avgData.rg = avgData.r / avgData.g;
@@ -453,6 +721,11 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     }
 
     return avgData;
+  }
+
+  private calculateStandardDeviation(values: number[], mean: number): number {
+    const variance = values.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0) / values.length;
+    return Math.sqrt(variance);
   }
 
   private _getCrossChannelMinMax(pointA: RGBUPoint, pointB: RGBUPoint, channels: Partial<keyof RGBUPoint>[], bufferPercent: number): MinMax {
@@ -522,6 +795,31 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
   loadROIs(roiIds: string[]): Observable<RegionSettings[]> {
     let roiRequests = roiIds.map(roiId => this._roiService.getRegionSettings(roiId));
     return combineLatest(roiRequests);
+  }
+
+  loadRGBUImageForScan(scanId: string): Observable<RGBUImage | null> {
+    return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
+      map((resp: ImageListResp) => {
+        // Find MSA first, if not found, then find VIS, then find any TIF
+        let msaImages = resp.images.filter(img => img.imagePath && img.imagePath.includes("MSA_") && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+        if (msaImages.length > 0) {
+          return msaImages[0].imagePath;
+        } else {
+          let visImages = resp.images.filter(img => img.imagePath && img.imagePath.includes("VIS_") && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+          if (visImages.length > 0) {
+            return visImages[0].imagePath;
+          } else {
+            let tifImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+            if (tifImages.length > 0) {
+              return tifImages[0].imagePath;
+            } else {
+              return "";
+            }
+          }
+        }
+      }),
+      switchMap(imagePath => (imagePath ? this._endpointsService.loadRGBUImageTIF(imagePath) : of(null)))
+    );
   }
 
   loadData(imagePath: string, visibleROIs: string[]): void {
@@ -616,92 +914,121 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       }
     }
 
+    this.recalculateBounds();
+
     let allPointsROIId = PredefinedROIID.getAllPointsForScan(this.scanIdAssociatedWithImage);
     let existingAllPointsKey = previousKeyItems.find(key => key.id == allPointsROIId);
     let isAllPointsVisible = existingAllPointsKey ? existingAllPointsKey.isVisible : true;
 
-    if (isAllPointsVisible) {
-      let datasetAverages = this.getROIAveragePoint(new Set(), datasetColor, datasetName, true);
-      datasetAverages.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
-      this._data.push(datasetAverages);
-      this.keyItems.push(new WidgetKeyItem(allPointsROIId, "All Points", `rgba(${datasetColor},255)`, null, undefined, datasetName, isAllPointsVisible, false, true));
-    } else {
-      if (existingAllPointsKey) {
-        this.keyItems.push(existingAllPointsKey);
-      }
-    }
+    // if (isAllPointsVisible) {
+    //   let datasetAverages = this.getROIAveragePoint(new Set(), datasetColor, datasetName, true);
+    //   datasetAverages.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
+    //   this._data.push(datasetAverages);
+    //   this.keyItems.push(new WidgetKeyItem(allPointsROIId, "All Points", `rgba(${datasetColor},255)`, null, undefined, datasetName, isAllPointsVisible, false, true));
+    // } else {
+    //   if (existingAllPointsKey) {
+    //     this.keyItems.push(existingAllPointsKey);
+    //   }
+    // }
 
-    // Get averages for all selected pixels
-    if (selectedPixels.size > 0) {
-      let selectionColor = "110,239,255";
-      let averageSelection = this.getROIAveragePoint(selectedPixels, selectionColor, "Selection");
-      averageSelection.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
-      this.keyItems.push(new WidgetKeyItem("SelectedPoints", "Selection", `rgba(${selectionColor},255)`));
-      this._data.push(averageSelection);
-    }
+    // // Get averages for all selected pixels
+    // if (selectedPixels.size > 0) {
+    //   let selectionColor = "110,239,255";
+    //   let averageSelection = this.getROIAveragePoint(selectedPixels, selectionColor, "Selection");
+    //   averageSelection.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
+    //   this.keyItems.push(new WidgetKeyItem("SelectedPoints", "Selection", `rgba(${selectionColor},255)`));
+    //   this._data.push(averageSelection);
+    // }
+
+    console.log("Visible ROIs: ", this._rois, this.visibleROIs);
+
+    let roiAveragePointRequests = this._rois.map(roi => {
+      if (this.visibleROIs.includes(roi.region.id)) {
+        let color = roi.displaySettings.colour;
+        let colorStr = `${color.r},${color.g},${color.b}`;
+        return this.getROIAveragePoint(
+          new Set(decodeIndexList(roi.region.pixelIndexesEncoded)),
+          colorStr,
+          roi.region.name,
+          false,
+          roi.region.scanId,
+          roi.region.imageName
+        );
+      } else {
+        return of(new RGBUPoint());
+      }
+    });
 
     // Get averages for all ROIs
-    this._rois.forEach(roi => {
-      // Skip if the ROI is not for the current image
-      if (roi.region.imageName !== this.imageName) {
-        return;
-      }
+    // combineLatest(roiAveragePointRequests).forEach((averagePoint, i) => {
+    combineLatest(roiAveragePointRequests).subscribe({
+      next: responses => {
+        responses.forEach((averagePoint, i) => {
+          let roi = this._rois[i];
+          // Skip if the ROI is not for the current image
+          // if (roi.region.imageName !== this.imageName) {
+          //   return;
+          // }
 
-      let color = roi.displaySettings.colour;
-      let colorStr = `${color.r},${color.g},${color.b}`;
+          let color = roi.displaySettings.colour;
+          let colorStr = `${color.r},${color.g},${color.b}`;
 
-      let existingKey = previousKeyItems.find(key => key.id == roi.region.id);
-      let isROIVisible = existingKey ? existingKey.isVisible : true;
-      if (!isROIVisible) {
-        if (existingKey) {
-          this.keyItems.push(existingKey);
+          let existingKey = previousKeyItems.find(key => key.id == roi.region.id);
+          let isROIVisible = existingKey ? existingKey.isVisible : true;
+          if (!isROIVisible) {
+            if (existingKey) {
+              this.keyItems.push(existingKey);
+            }
+            return;
+          }
+
+          this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color, null, undefined, datasetName, isROIVisible, false, true));
+          let pixels = new Set(decodeIndexList(roi.region.pixelIndexesEncoded));
+          // let averagePoint = this.getROIAveragePoint(pixels, colorStr, roi.region.name, false, roi.region.scanId, roi.region.imageName);
+          averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
+          this._data.push(averagePoint);
+        });
+
+        let minPoint = new RGBUPoint();
+        let maxPoint = new RGBUPoint();
+        if (this._data.length > 0) {
+          minPoint = this._data[0];
+          maxPoint = this._data[0];
         }
-        return;
-      }
 
-      this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color, null, undefined, datasetName, isROIVisible, false, true));
-      let pixels = new Set(decodeIndexList(roi.region.pixelIndexesEncoded));
-      let averagePoint = this.getROIAveragePoint(pixels, colorStr, roi.region.name, false, roi.region.scanId, roi.region.imageName);
-      averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
-      this._data.push(averagePoint);
+        this._data.forEach(point => {
+          minPoint = this._getMinPoint(minPoint, point);
+          maxPoint = this._getMaxPoint(maxPoint, point);
+        });
+
+        let rgbuChannels: Partial<keyof RGBUPoint>[] = ["r", "g", "b", "u"] as any as Partial<keyof RGBUPoint>[];
+        let ratioChannels: Partial<keyof RGBUPoint>[] = ["rg", "rb", "ru", "gb", "gu", "bu"] as any as Partial<keyof RGBUPoint>[];
+        let crossRGBUMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, rgbuChannels, 0.05);
+        let crossRatioMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, ratioChannels, 0.05);
+
+        this.yScale = crossRGBUMinMax;
+
+        this.axes.forEach(axis => {
+          if (rgbuChannels.includes(axis.key)) {
+            axis.min = crossRGBUMinMax.min ?? 0;
+            axis.max = crossRGBUMinMax.max ?? 0;
+          } else {
+            axis.min = crossRatioMinMax.min ?? 0;
+            axis.max = crossRatioMinMax.max ?? 0;
+          }
+        });
+
+        setTimeout(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.keyItems;
+          }
+        }, 0);
+      },
     });
-
-    let minPoint = new RGBUPoint();
-    let maxPoint = new RGBUPoint();
-    if (this._data.length > 0) {
-      minPoint = this._data[0];
-      maxPoint = this._data[0];
-    }
-
-    this._data.forEach(point => {
-      minPoint = this._getMinPoint(minPoint, point);
-      maxPoint = this._getMaxPoint(maxPoint, point);
-    });
-
-    let rgbuChannels: Partial<keyof RGBUPoint>[] = ["r", "g", "b", "u"] as any as Partial<keyof RGBUPoint>[];
-    let ratioChannels: Partial<keyof RGBUPoint>[] = ["rg", "rb", "ru", "gb", "gu", "bu"] as any as Partial<keyof RGBUPoint>[];
-    let crossRGBUMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, rgbuChannels, 0.05);
-    let crossRatioMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, ratioChannels, 0.05);
-
-    this.axes.forEach(axis => {
-      if (rgbuChannels.includes(axis.key)) {
-        axis.min = crossRGBUMinMax.min ?? 0;
-        axis.max = crossRGBUMinMax.max ?? 0;
-      } else {
-        axis.min = crossRatioMinMax.min ?? 0;
-        axis.max = crossRatioMinMax.max ?? 0;
-      }
-    });
-
-    setTimeout(() => {
-      if (this.widgetControlConfiguration.topRightInsetButton) {
-        this.widgetControlConfiguration.topRightInsetButton.value = this.keyItems;
-      }
-    }, 0);
   }
 
   get miniMode(): boolean {
-    return this.visibleAxes.length > 6 && this.isMiniWidth;
+    return this.visibleAxes.length > 6 || this.isMiniWidth;
   }
 
   get plotID(): string {
@@ -757,20 +1084,45 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     this.showLabels = !this.showLabels;
   }
 
+  private recalculateBounds(): void {
+    // Recalc bounds based on visible wavelengths. Round to pretty numbers
+    let maxVisibleWavelength = Math.ceil(this.visibleAxes.reduce((max, axis) => Math.max(max, axis.wavelength), 0) * 100) / 100;
+    let minVisibleWavelength = Math.floor(this.visibleAxes.reduce((min, axis) => Math.min(min, axis.wavelength), Infinity) * 100) / 100;
+
+    let axisTickIntervals = Math.round(((maxVisibleWavelength - minVisibleWavelength) / this.visibleAxes.length) * 1000) / 1000;
+    this.axisTickIntervals = Math.round(Math.pow(10, Math.floor(Math.log10(axisTickIntervals))) * 1000) / 1000;
+
+    this.xAxisWavelengthEnd = Math.ceil(Math.ceil(maxVisibleWavelength / this.axisTickIntervals + 1) * this.axisTickIntervals * 100) / 100;
+    this.xAxisWavelengthStart = Math.floor(Math.floor(minVisibleWavelength / this.axisTickIntervals - 1) * this.axisTickIntervals * 100) / 100;
+
+    this.generateAxisTicks();
+  }
+
   private recalculateLines(): void {
     let plotWidth = this._elementRef?.nativeElement?.offsetWidth || 0;
     this.isMiniWidth = plotWidth < 400;
 
     if (this.showLines) {
       this._data.forEach(point => {
-        point.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
+        let miniLines = point.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
+        this.isMiniWidth = this.isMiniWidth || miniLines;
       });
     }
   }
 
   exportPlotData(): string {
-    let axisNames = this.visibleAxes.map(axis => `"${axis.title.replace(/"/g, "'")}"`);
-    let axisKeys = this.visibleAxes.map(axis => axis.key);
+    let axisNames: string[] = [];
+    let axisKeys: Partial<keyof RGBUPoint>[] = [];
+    this.visibleAxes.forEach(axis => {
+      axisNames.push(`"${axis.title.replace(/"/g, "'")}"`);
+      axisKeys.push(axis.key);
+      // If we're showing sigma, add those as well
+      if (this.sigmaLevel !== SIGMA_LEVEL.NONE) {
+        axisNames.push(`"${axis.title.replace(/"/g, "'")} Std Dev"`);
+        axisKeys.push(`${axis.key}Sigma1` as keyof RGBUPoint);
+      }
+    });
+
     let data = `"Scan Name", "Scan ID", "Image Name", "ROI",${axisNames.join(",")}\n`;
     this._data.forEach(rgbuPoint => {
       let scanName = this.configuredScans.find(scan => scan.id === rgbuPoint.scanId)?.title ?? "";
