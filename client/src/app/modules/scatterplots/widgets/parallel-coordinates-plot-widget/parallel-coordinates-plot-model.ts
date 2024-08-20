@@ -111,21 +111,21 @@ export class RGBUPoint {
       }
 
       let line = new PCPLine(xStart, yStart, xEnd, yEnd);
-      if (sigmaLevel === SIGMA_LEVEL.ONE) {
+      if (sigmaLevel === SIGMA_LEVEL.ONE && this.rStdDev) {
         let startSigma1 = this[`${currentAxis.key}Sigma1` as keyof this] as number;
-        let startWidth = Math.round((startSigma1 / (currentAxis.max - currentAxis.min)) * 100) + 3;
+        let startWidth = Math.round((startSigma1 / (currentAxis.max - currentAxis.min)) * 100);
 
         let endSigma1 = this[`${nextAxis.key}Sigma1` as keyof this] as number;
-        let endWidth = Math.round((endSigma1 / (nextAxis.max - nextAxis.min)) * 100) + 3;
+        let endWidth = Math.round((endSigma1 / (nextAxis.max - nextAxis.min)) * 100);
 
         let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
         this.sigmaLines.push(sigmaLine);
-      } else if (sigmaLevel === SIGMA_LEVEL.TWO) {
+      } else if (sigmaLevel === SIGMA_LEVEL.TWO && this.rStdDev) {
         let startSigma2 = this[`${currentAxis.key}Sigma2` as keyof this] as number;
-        let startWidth = Math.round((startSigma2 / (currentAxis.max - currentAxis.min)) * 100) + 3;
+        let startWidth = Math.round((startSigma2 / (currentAxis.max - currentAxis.min)) * 100);
 
         let endSigma2 = this[`${nextAxis.key}Sigma2` as keyof this] as number;
-        let endWidth = Math.round((endSigma2 / (nextAxis.max - nextAxis.min)) * 100) + 3;
+        let endWidth = Math.round((endSigma2 / (nextAxis.max - nextAxis.min)) * 100);
 
         let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
         this.sigmaLines.push(sigmaLine);

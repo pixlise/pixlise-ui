@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, HostListener, OnInit, OnDestroy, ElementRef } from "@angular/core";
-import { catchError, combineLatest, map, Observable, of, Subscription, switchMap, tap, throwError } from "rxjs";
+import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -42,11 +42,6 @@ import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiend
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import {
-  ImagePickerDialogComponent,
-  ImagePickerDialogData,
-  ImagePickerDialogResponse,
-} from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
@@ -78,8 +73,6 @@ import {
 })
 export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   private _subs = new Subscription();
-
-  private _rgbuLoaded: RGBUImage | null = null;
 
   private _rois: RegionSettings[] = [];
   private _visibleROIs: string[] = [];
@@ -146,13 +139,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
           onClick: () => this.onRegions(),
         },
         {
-          id: "image-picker",
-          type: "button",
-          title: "Image",
-          tooltip: "Choose image",
-          onClick: () => this.onImagePicker(),
-        },
-        {
           id: "export",
           type: "button",
           icon: "assets/button-icons/export.svg",
@@ -175,7 +161,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
           this.keyItems = keyItems;
           this._prepareData();
-          this.recalculateLines();
         },
       },
       bottomToolbar: [
@@ -234,9 +219,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const state = data as ParallelogramWidgetState;
-        if (state && state.imageName) {
+        if (state) {
           this.axes.forEach(axis => (axis.visible = state.channels.includes(axis.key)));
-          this.loadData(state.imageName, state.regions);
+          this.loadData(state.regions);
         } else {
           this.setInitialConfig();
         }
@@ -245,8 +230,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
     this._subs.add(
       this._selectionService.selection$.subscribe((sel: SelectionHistoryItem) => {
-        this._prepareData();
-        this.recalculateLines();
+        if (this.configuredScans.length > 0) {
+          this._prepareData();
+          this.recalculateLines();
+        }
       })
     );
 
@@ -256,8 +243,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
           this.scanIds = Object.entries(screenConfiguration.scanConfigurations).map(([scanId]) => scanId);
           this.scanConfigurations = screenConfiguration.scanConfigurations;
 
-          this._prepareData();
-          this.recalculateLines();
+          if (this._rois.length > 0 && this.configuredScans.length > 0) {
+            this._prepareData();
+            this.recalculateLines();
+          }
         }
       })
     );
@@ -269,11 +258,12 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         } else {
           this.configuredScans = scans;
         }
+        if (this._rois.length > 0) {
+          this._prepareData();
+          this.recalculateLines();
+        }
       })
     );
-
-    this._prepareData();
-    setTimeout(() => this.recalculateLines(), 50);
   }
 
   generateAxisTicks(): void {
@@ -291,15 +281,8 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
     const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
-      let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
-
-      // Use the MSA image as the default if it exists, else use the first RGBU image
-      let msaImage = rgbuImages.find(img => img.imagePath.includes("MSA_"));
-      if (msaImage) {
-        this.loadData(msaImage.imagePath, []);
-      } else if (rgbuImages.length > 0) {
-        this.loadData(rgbuImages[0].imagePath, []);
-      }
+      let allPointsROI = PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId);
+      this.loadData([allPointsROI]);
     });
   }
 
@@ -315,45 +298,12 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     }
   }
 
-  onImagePicker() {
-    const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
-    // Pass data to dialog
-    dialogConfig.data = {
-      scanIds: this.scanIds,
-      defaultScanId: this.scanIdAssociatedWithImage,
-      purpose: this.purpose,
-      selectedImagePath: this.imageName || "",
-      liveUpdate: false,
-      selectedImageDetails: "",
-    };
-
-    const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe(({ selectedImagePath, selectedImageScanId }: ImagePickerDialogResponse) => {
-      if (selectedImagePath) {
-        this.onImageChanged(selectedImagePath);
-        this.saveState();
-      }
-      if (selectedImageScanId) {
-        this.scanIdAssociatedWithImage = selectedImageScanId;
-      }
-    });
-  }
-
   get visibleROIs(): string[] {
     return this._visibleROIs;
   }
 
   set visibleROIs(value: string[]) {
     this._visibleROIs = value;
-  }
-
-  onImageChanged(imagePath: string) {
-    if (this.imageName === imagePath) {
-      //   // No change, stop here
-      return;
-    }
-
-    this.loadData(imagePath, this.visibleROIs);
   }
 
   getPolygonPoints(line: PCPLine): string {
@@ -466,10 +416,11 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
+    let firstScanIdFromROIs = this._rois.length > 0 ? this._rois[0].region.scanId : "";
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: false,
-      scanId: this.scanIdAssociatedWithImage ? this.scanIdAssociatedWithImage : this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
+      scanId: firstScanIdFromROIs ? firstScanIdFromROIs : this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
       selectedIds: this.visibleROIs,
     };
 
@@ -488,10 +439,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
           existing.push(roi.id);
           roisPerScan.set(roi.scanId, existing);
-
-          if (!this.scanIdAssociatedWithImage) {
-            this.scanIdAssociatedWithImage = roi.scanId;
-          }
         }
 
         // Now fill in the data source ids using the above
@@ -501,23 +448,17 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
         this.saveState();
 
-        if (this._rgbuLoaded) {
-          this.loadROIs(this.visibleROIs).subscribe({
-            next: rois => {
-              if (this._rgbuLoaded) {
-                this.setData(this._rgbuLoaded, rois);
-                this.saveState();
-              } else {
-                this.loadData(this.imageName, this.visibleROIs);
-              }
-            },
-            error: err => {
-              console.error("Error loading image: ", err);
-            },
-          });
-        } else {
-          this.loadData(this.imageName, this.visibleROIs);
-        }
+        this.loadROIs(this.visibleROIs).subscribe({
+          next: rois => {
+            this._rois = rois;
+            this._prepareData();
+            this.recalculateLines();
+            this.saveState();
+          },
+          error: err => {
+            console.error("Error loading ROIs: ", err);
+          },
+        });
       }
     });
   }
@@ -527,7 +468,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       ParallelogramWidgetState.create({
         regions: this._visibleROIs,
         channels: this.axes.filter(axis => axis.visible).map(axis => axis.key),
-        imageName: this.imageName,
       })
     );
   }
@@ -553,22 +493,13 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     fullDataset: boolean = false,
     scanId: string = "",
     imageName: string = ""
-  ): Observable<RGBUPoint> {
-    let scanIdFromLoaded = this._rgbuLoaded ? getScanIdFromImagePath(this._rgbuLoaded.path) : "";
-    if (scanId === scanIdFromLoaded) {
-      return of(this.calculateROIAveragePoint(this._rgbuLoaded, points, color, name, fullDataset, scanId, imageName));
-    } else {
-      return this.loadRGBUImageForScan(scanId).pipe(
-        switchMap(rgbuImage => {
-          return of(this.calculateROIAveragePoint(rgbuImage, points, color, name, fullDataset, scanId, imageName));
-        })
-      );
-    }
+  ): Observable<RGBUPoint | null> {
+    return this.loadRGBUImageForScan(scanId).pipe(
+      switchMap(rgbuImage => {
+        return of(this.calculateROIAveragePoint(rgbuImage, points, color, name, fullDataset, scanId, rgbuImage?.path || ""));
+      })
+    );
   }
-
-  // private getROIAveragePoint(points: Set<number>, color: string, name: string, fullDataset: boolean = false, scanId: string = "", imageName: string = ""): RGBUPoint {
-  //   return this.calculateROIAveragePoint(this._rgbuLoaded, points, color, name, fullDataset, scanId, imageName);
-  // }
 
   private calculateROIAveragePoint(
     rgbuImage: RGBUImage | null,
@@ -578,15 +509,15 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     fullDataset: boolean = false,
     scanId: string = "",
     imageName: string = ""
-  ): RGBUPoint {
+  ): RGBUPoint | null {
     let avgData = new RGBUPoint();
     avgData.name = name;
     avgData.color = color;
-    avgData.scanId = scanId || this.scanIdAssociatedWithImage;
-    avgData.imageName = imageName || this.imageName;
+    avgData.scanId = scanId;
+    avgData.imageName = imageName;
 
-    if (!rgbuImage) {
-      return avgData;
+    if (!rgbuImage || !rgbuImage.r || !rgbuImage.r.values || !scanId || !imageName || (!fullDataset && (!points || points.size <= 0))) {
+      return null;
     }
 
     let datasetLength = fullDataset ? rgbuImage.r.values.length : points.size;
@@ -596,20 +527,16 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     let blueLength = datasetLength;
     let uvLength = datasetLength;
 
-    if ((!fullDataset && (!points || points.size <= 0)) || !rgbuImage || !rgbuImage.r || !rgbuImage.r.values) {
-      return avgData;
-    }
-
     let redValues: number[] = [];
     let greenValues: number[] = [];
     let blueValues: number[] = [];
     let uvValues: number[] = [];
 
     if (fullDataset) {
-      redValues = rgbuImage.r.values.filter(val => !this.excludeZero || val) as any as number[];
-      greenValues = rgbuImage.g.values.filter(val => !this.excludeZero || val) as any as number[];
-      blueValues = rgbuImage.b.values.filter(val => !this.excludeZero || val) as any as number[];
-      uvValues = rgbuImage.u.values.filter(val => !this.excludeZero || val) as any as number[];
+      redValues = !this.excludeZero ? (rgbuImage.r.values as any as number[]) : (rgbuImage.r.values.filter(val => val) as any as number[]);
+      greenValues = !this.excludeZero ? (rgbuImage.g.values as any as number[]) : (rgbuImage.g.values.filter(val => val) as any as number[]);
+      blueValues = !this.excludeZero ? (rgbuImage.b.values as any as number[]) : (rgbuImage.b.values.filter(val => val) as any as number[]);
+      uvValues = !this.excludeZero ? (rgbuImage.u.values as any as number[]) : (rgbuImage.u.values.filter(val => val) as any as number[]);
 
       if (this.averageMode === AVERAGE_MODE.MEAN) {
         rgbuImage.r.values.forEach((red, i) => {
@@ -784,14 +711,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     this.keyShowing = !this.keyShowing;
   }
 
-  setData(image: RGBUImage, rois: RegionSettings[]): void {
-    this._rgbuLoaded = image;
-    this._rois = rois;
-
-    this._prepareData();
-    this.recalculateLines();
-  }
-
   loadROIs(roiIds: string[]): Observable<RegionSettings[]> {
     let roiRequests = roiIds.map(roiId => this._roiService.getRegionSettings(roiId));
     return combineLatest(roiRequests);
@@ -801,17 +720,17 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
       map((resp: ImageListResp) => {
         // Find MSA first, if not found, then find VIS, then find any TIF
-        let msaImages = resp.images.filter(img => img.imagePath && img.imagePath.includes("MSA_") && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+        let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+        let msaImages = rgbuImages.filter(img => img.imagePath.includes("MSA_"));
         if (msaImages.length > 0) {
           return msaImages[0].imagePath;
         } else {
-          let visImages = resp.images.filter(img => img.imagePath && img.imagePath.includes("VIS_") && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+          let visImages = rgbuImages.filter(img => img.imagePath.includes("VIS_"));
           if (visImages.length > 0) {
             return visImages[0].imagePath;
           } else {
-            let tifImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
-            if (tifImages.length > 0) {
-              return tifImages[0].imagePath;
+            if (rgbuImages.length > 0) {
+              return rgbuImages[0].imagePath;
             } else {
               return "";
             }
@@ -822,64 +741,34 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     );
   }
 
-  loadData(imagePath: string, visibleROIs: string[]): void {
-    if (!imagePath) {
+  loadData(visibleROIs: string[]): void {
+    this.isWidgetDataLoading = visibleROIs.length > 0;
+    if (visibleROIs.length === 0) {
+      this.visibleROIs = [];
+      this._rois = [];
+      this._data = [];
+      this.recalculateLines();
       return;
     }
 
-    this.isWidgetDataLoading = true;
-
-    this._endpointsService
-      .loadRGBUImageTIF(imagePath)
-      .pipe(
-        switchMap(image => {
-          this.isWidgetDataLoading = false;
-          this.imageName = imagePath;
-          this.scanIdAssociatedWithImage = getScanIdFromImagePath(imagePath);
-          this._rgbuLoaded = image;
-          this.setData(image, []);
-
-          return this.loadROIs(visibleROIs).pipe(
-            tap(rois => {
-              this.isWidgetDataLoading = false;
-              this.imageName = imagePath;
-              this.setData(image, rois);
-              setTimeout(() => {
-                if (this.widgetControlConfiguration.topRightInsetButton) {
-                  this.widgetControlConfiguration.topRightInsetButton.value = this.keyItems;
-                }
-              }, 0);
-            }),
-            catchError(err => {
-              this.isWidgetDataLoading = false;
-              console.error("Error loading image: ", err);
-              return throwError(() => err);
-            })
-          );
-        }),
-        catchError(err => {
-          this.isWidgetDataLoading = false;
-          console.error("Error loading image: ", err);
-          return throwError(() => err);
-        })
-      )
-      .subscribe({
-        next: () => {},
-        error: err => {
-          console.error("Error loading data: ", err);
-          this._rgbuLoaded = null;
-          this._data = [];
+    this.visibleROIs = visibleROIs;
+    this.loadROIs(visibleROIs).subscribe({
+      next: rois => {
+        this._rois = rois;
+        this.isWidgetDataLoading = false;
+        if (this.configuredScans.length > 0) {
+          this._prepareData();
           this.recalculateLines();
-          this._snackbarService.openError("Error loading data", err);
-        },
-      });
+        }
+      },
+      error: err => {
+        this.isWidgetDataLoading = false;
+        console.error("Error loading data: ", err);
+      },
+    });
   }
 
   private _prepareData(): void {
-    if (!this._rgbuLoaded) {
-      return;
-    }
-
     // Make sure we're starting with a clean slate
     this._data = [];
 
@@ -887,93 +776,68 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     this._data = this._data.concat(this.visibleMinerals);
 
     let currentSelection = this._selectionService.getCurrentSelection();
-    let selectedPixels = new Set<number>();
-    if (currentSelection.pixelSelection.imageName === this.imageName) {
-      selectedPixels = currentSelection.pixelSelection.selectedPixels;
-    }
+    let selectedPixels = currentSelection.pixelSelection.selectedPixels;
 
     let previousKeyItems = this.keyItems.slice();
     this.keyItems = [];
 
-    let datasetColor = "255,255,255";
-    let datasetName = this.scanIdAssociatedWithImage;
-    let loadedScan = this.configuredScans.find(scan => scan.id === this.scanIdAssociatedWithImage);
-    if (loadedScan) {
-      datasetName = loadedScan.title;
-    }
-
-    let loadedScanConfiguration = this.scanConfigurations[this.scanIdAssociatedWithImage];
-    if (loadedScanConfiguration) {
-      if (loadedScanConfiguration.colour) {
-        const match = loadedScanConfiguration.colour.match(/^rgba\((?<r>\d{1,3}),(?<g>\d{1,3}),(?<b>\d{1,3}),\d{1,3}\)$/);
-        if (match !== null) {
-          const { r, g, b } = match.groups!;
-          const colorValues = `${r},${g},${b}`;
-          datasetColor = colorValues;
-        }
-      }
-    }
-
     this.recalculateBounds();
-
-    let allPointsROIId = PredefinedROIID.getAllPointsForScan(this.scanIdAssociatedWithImage);
-    let existingAllPointsKey = previousKeyItems.find(key => key.id == allPointsROIId);
-    let isAllPointsVisible = existingAllPointsKey ? existingAllPointsKey.isVisible : true;
-
-    // if (isAllPointsVisible) {
-    //   let datasetAverages = this.getROIAveragePoint(new Set(), datasetColor, datasetName, true);
-    //   datasetAverages.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
-    //   this._data.push(datasetAverages);
-    //   this.keyItems.push(new WidgetKeyItem(allPointsROIId, "All Points", `rgba(${datasetColor},255)`, null, undefined, datasetName, isAllPointsVisible, false, true));
-    // } else {
-    //   if (existingAllPointsKey) {
-    //     this.keyItems.push(existingAllPointsKey);
-    //   }
-    // }
-
-    // // Get averages for all selected pixels
-    // if (selectedPixels.size > 0) {
-    //   let selectionColor = "110,239,255";
-    //   let averageSelection = this.getROIAveragePoint(selectedPixels, selectionColor, "Selection");
-    //   averageSelection.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
-    //   this.keyItems.push(new WidgetKeyItem("SelectedPoints", "Selection", `rgba(${selectionColor},255)`));
-    //   this._data.push(averageSelection);
-    // }
-
-    console.log("Visible ROIs: ", this._rois, this.visibleROIs);
 
     let roiAveragePointRequests = this._rois.map(roi => {
       if (this.visibleROIs.includes(roi.region.id)) {
         let color = roi.displaySettings.colour;
         let colorStr = `${color.r},${color.g},${color.b}`;
+
+        let isAllPointsROI = PredefinedROIID.isAllPointsROI(roi.region.id);
+
         return this.getROIAveragePoint(
-          new Set(decodeIndexList(roi.region.pixelIndexesEncoded)),
+          isAllPointsROI ? new Set() : new Set(decodeIndexList(roi.region.pixelIndexesEncoded)),
           colorStr,
-          roi.region.name,
-          false,
+          isAllPointsROI ? "All Points" : roi.region.name,
+          isAllPointsROI,
           roi.region.scanId,
-          roi.region.imageName
+          roi?.region?.imageName || ""
         );
       } else {
-        return of(new RGBUPoint());
+        return of(null);
       }
     });
 
+    // Get averages for all selected pixels
+    if (selectedPixels.size > 0 && currentSelection?.pixelSelection?.imageName) {
+      let selectionColor = "110,239,255";
+      let scanIdFromImageName = getScanIdFromImagePath(currentSelection.pixelSelection.imageName);
+      let selectionDatasetName = scanIdFromImageName;
+      let loadedScan = this.configuredScans.find(scan => scan.id === scanIdFromImageName);
+      if (loadedScan) {
+        selectionDatasetName = loadedScan.title;
+      }
+
+      let averageSelection = this.getROIAveragePoint(
+        selectedPixels,
+        selectionColor,
+        `Selection`,
+        false,
+        scanIdFromImageName,
+        currentSelection.pixelSelection.imageName
+      );
+      roiAveragePointRequests.push(averageSelection);
+    }
+
     // Get averages for all ROIs
-    // combineLatest(roiAveragePointRequests).forEach((averagePoint, i) => {
     combineLatest(roiAveragePointRequests).subscribe({
       next: responses => {
+        this.keyItems = [];
         responses.forEach((averagePoint, i) => {
-          let roi = this._rois[i];
-          // Skip if the ROI is not for the current image
-          // if (roi.region.imageName !== this.imageName) {
-          //   return;
-          // }
+          if (!averagePoint) {
+            return;
+          }
 
-          let color = roi.displaySettings.colour;
-          let colorStr = `${color.r},${color.g},${color.b}`;
+          let lineName = averagePoint.name;
+          let scanId = averagePoint.scanId;
+          let lineId = i < this._rois.length ? this._rois[i].region.id : PredefinedROIID.getSelectedPointsForScan(scanId);
 
-          let existingKey = previousKeyItems.find(key => key.id == roi.region.id);
+          let existingKey = previousKeyItems.find(key => key.id && key.id == lineId);
           let isROIVisible = existingKey ? existingKey.isVisible : true;
           if (!isROIVisible) {
             if (existingKey) {
@@ -982,9 +846,13 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             return;
           }
 
-          this.keyItems.push(new WidgetKeyItem(roi.region.id, roi.region.name, color, null, undefined, datasetName, isROIVisible, false, true));
-          let pixels = new Set(decodeIndexList(roi.region.pixelIndexesEncoded));
-          // let averagePoint = this.getROIAveragePoint(pixels, colorStr, roi.region.name, false, roi.region.scanId, roi.region.imageName);
+          let datasetName = scanId;
+          let loadedScan = this.configuredScans.find(scan => scan.id === scanId);
+          if (loadedScan) {
+            datasetName = loadedScan.title;
+          }
+
+          this.keyItems.push(new WidgetKeyItem(lineId, lineName, `rgb(${averagePoint.color})`, null, undefined, datasetName, isROIVisible, false, true));
           averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
           this._data.push(averagePoint);
         });
@@ -1023,6 +891,8 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             this.widgetControlConfiguration.topRightInsetButton.value = this.keyItems;
           }
         }, 0);
+
+        this.recalculateLines();
       },
     });
   }
@@ -1134,16 +1004,16 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
   }
 
   override getExportOptions(): WidgetExportDialogData {
-    let imageShortName = this.imageName?.split("/").pop() || "";
-    if (this.imageName?.includes("MSA_")) {
-      imageShortName = "MSA";
-    } else if (this.imageName?.includes("VIS_")) {
-      imageShortName = "VIS";
-    }
+    // let imageShortName = this.imageName?.split("/").pop() || "";
+    // if (this.imageName?.includes("MSA_")) {
+    //   imageShortName = "MSA";
+    // } else if (this.imageName?.includes("VIS_")) {
+    //   imageShortName = "VIS";
+    // }
 
     return {
       title: "Export Parallel Coordinates Plot",
-      defaultZipName: `${this.scanIdAssociatedWithImage} - ${imageShortName} - Parallel Coords Plot`,
+      defaultZipName: `Parallel Coords Plot`,
       options: [],
       dataProducts: [
         {

@@ -153,10 +153,6 @@ widget-key-display {
       .point-container {
         position: absolute;
         width: 1px;
-        // height: calc(100% - 14px);
-        // height: 100%;
-        // top: 22px;
-        // height: calc(100% - 44px);
         top: 24px;
         height: calc(100% - 50px);
       }
@@ -217,8 +213,6 @@ widget-key-display {
 
   .line-container {
     position: absolute;
-    // top: 31px;
-    // top: 6px;
     top: 30px;
     height: calc(100% - 55px);
     overflow: visible;
@@ -330,7 +324,7 @@ widget-key-display {
       font-size: 10px;
       position: absolute;
       top: -5px;
-      // left: 26px;
+
       left: -42px;
       color: $clr-gray-60;
       text-shadow: 1px 1px 2px black;
@@ -343,14 +337,6 @@ widget-key-display {
       width: 30px;
       height: 1px;
       background: $clr-gray-60;
-    }
-
-    &.top {
-      // border-bottom: 1px solid $clr-gray-60;
-    }
-
-    &.bottom {
-      // border-top: 1px solid $clr-gray-60;
     }
   }
 }

@@ -29,22 +29,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<!-- <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
-        <push-button (onClick)="onMinerals($event)" title="Choose mineral areas to display" class="minerals-btn">Minerals</push-button>
-        <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display" class="regions-btn">Regions</push-button>
-        <icon-button
-            class="export-btn"
-            (click)="onExport()"
-            title="Export"
-            icon="assets/button-icons/export.svg">
-        </icon-button>
-        <push-button (onClick)="toggleKey()" title="Toggle Key" class="key-btn">Key</push-button>
-        <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
-            <icon-button title='Show Settings Menu' icon="assets/button-icons/settings.svg">
-            </icon-button>
-        </widget-settings-menu>
-    </div> -->
-
 <ng-template #settingsMenu>
   <div class="dimensions" *ngIf="dimensions">
     <div class="axis-toggle-container-mini">
@@ -83,7 +67,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="x-axis-btm">
         <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
           <div class="tick"></div>
-          <!-- <div *ngIf="tick % 50 === 0 || i === axisTicks.length - 1" class="tick-label">{{ tick }} nm</div> -->
         </div>
       </div>
       <div class="y-scale">
@@ -96,10 +79,6 @@ POSSIBILITY OF SUCH DAMAGE.
           <div class="tick"></div>
           <div class="tick-label">{{ yScale.min | number: "1.0-2" }}</div>
         </div>
-        <!-- <div class="axis-title">
-          Scale
-          <span class="wavelength">yScale</span>
-        </div> -->
       </div>
       <div class="axes">
         <div
@@ -108,7 +87,6 @@ POSSIBILITY OF SUCH DAMAGE.
           [ngStyle]="{ left: 'calc(' + getXAxisDistance(axis.wavelength, i) + '% - 10px)' }">
           <div class="tick-container">
             <div class="tick"></div>
-            <!-- <div class="tick-label">{{ axis.max | number: "1.0-2" }}</div> -->
           </div>
           <div class="axis-line">
             <div class="point-container">
@@ -122,7 +100,6 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
           <div class="tick-container">
             <div class="tick"></div>
-            <!-- <div class="tick-label">{{ axis.min | number: "1.0-2" }}</div> -->
           </div>
           <div class="axis-title">
             {{ miniMode ? axis.shortName.toUpperCase() : axis.title }}
@@ -130,29 +107,8 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
         </div>
       </div>
-      <!-- height="calc(100% - 14px - 12px - 12px)"  -->
       <svg width="100%" class="line-container" *ngIf="showLines">
         <g *ngFor="let point of data">
-          <!-- <line
-            *ngFor="let line of point.lines"
-            #tooltip="matTooltip"
-            [matTooltip]="point.tooltipText"
-            [attr.x1]="line.xStart"
-            [attr.y1]="line.yStart"
-            [attr.x2]="line.xEnd"
-            [attr.y2]="line.yEnd"
-            attr.stroke="rgb({{ point.color }})"
-            stroke-width="3px" />
-          <line
-            *ngFor="let line of point.sigmaLines"
-            #tooltip="matTooltip"
-            [matTooltip]="point.tooltipText"
-            [attr.x1]="line.xStart"
-            [attr.y1]="line.yStart"
-            [attr.x2]="line.xEnd"
-            [attr.y2]="line.yEnd"
-            attr.stroke="rgba({{ point.color }}, 0.5)"
-            attr.stroke-width="{{ line.width }}%" /> -->
           <path
             *ngFor="let line of point.lines"
             [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
@@ -160,25 +116,9 @@ POSSIBILITY OF SUCH DAMAGE.
             [attr.stroke-width]="getStrokeWidth(line.widthStart, line.widthEnd)"
             stroke-linecap="round"
             fill="none" />
-
-          <!-- <path
-            *ngFor="let line of point.sigmaLines"
-            [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
-            attr.stroke="rgba({{ point.color }}, 0.5)"
-            [attr.stroke-width]="getStrokeWidth(line.widthStart, line.widthEnd)"
-            stroke-linecap="round"
-            fill="none" /> -->
           <polygon *ngFor="let line of point.sigmaLines" [attr.points]="getPolygonPoints(line)" attr.fill="rgba({{ point.color }}, 0.5)" />
         </g>
       </svg>
     </div>
   </div>
-  <!-- <widget-key-display 
-        *ngIf="keyShowing"
-        [keyShowing]="keyShowing"
-        (onToggleKey)="toggleKey()"
-        [items]="keyItems"
-        class="key-location-top-right-below-title"
-    >
-    </widget-key-display> -->
 </div>
