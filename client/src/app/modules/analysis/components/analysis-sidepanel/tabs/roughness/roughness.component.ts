@@ -30,7 +30,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { catchError, map, Subscription, switchMap } from "rxjs";
-import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
@@ -50,7 +49,6 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 
 export type DiffractionExpressionResponse = {
   title?: string;

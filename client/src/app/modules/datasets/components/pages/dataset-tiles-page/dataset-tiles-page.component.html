@@ -204,7 +204,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (dblclick)="switchToEditMode()"
                 class="text-field description-field {{ !userCanEdit ? 'no-edit' : '' }}"
                 [lineOffset]="5"
-                [data]="selectedWorkspaceDescription || '## Workspace Description'"></markdown>
+                [data]="selectedWorkspaceDescription || '## Scan Description'"></markdown>
             </div>
             <textarea
               *ngIf="descriptionMode === 'Edit'"
