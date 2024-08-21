@@ -32,7 +32,7 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
           id: "edit",
           type: "button",
           icon: "assets/button-icons/edit.svg",
-          tooltip: "Edit text content",
+          tooltip: "Toggle editing or viewing of text content",
           onClick: (val, event) => this.onToggleEdit(),
         },
       ],
@@ -40,6 +40,23 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
   }
 
   ngOnInit() {
+    /* TODO: disable edit feature if user is only a viewer of this workspace! AuthService was the wrong approach...
+    this._subs.add(
+      this._authService.idTokenClaims$.subscribe({
+        next: claims => {
+          if (claims) {
+            const btns = this._widgetControlConfiguration.topToolbar;
+            if (btns && btns.length === 1) {
+              btns[0].disabled = 
+            }
+
+            this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
+          }
+        },
+      })
+    );
+    */
+
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const markdownState: MarkdownViewState = data as MarkdownViewState;
@@ -85,7 +102,8 @@ Paragraph text
   private updateStateButton() {
     const btns = this._widgetControlConfiguration.topToolbar;
     if (btns && btns.length === 1) {
-      btns[0].icon = this.editMode ? "assets/button-icons/yellow-tick.svg" : "assets/button-icons/edit.svg";
+      btns[0].icon = this.editMode ? "" : "assets/button-icons/edit.svg";
+      btns[0].title = this.editMode ? "Save" : "";
     }
   }
 }

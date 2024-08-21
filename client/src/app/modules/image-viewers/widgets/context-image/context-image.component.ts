@@ -329,7 +329,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
           this.mdl.hideFootprintsForScans = new Set<string>(contextData?.hideFootprintsForScans || []);
           this.mdl.hidePointsForScans = new Set<string>(contextData?.hidePointsForScans || []);
-          this.mdl.drawImage = contextData?.drawImage ?? true;
+          this.mdl.drawImage = !(contextData?.hideImage ?? false);
 
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
@@ -1348,7 +1348,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           ),
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
-        drawImage: this.mdl.drawImage,
+        hideImage: !this.mdl.drawImage,
         unlinkFromDataset: !this.linkToDataset,
       })
     );

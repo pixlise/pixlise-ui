@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <!-- <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
       >Reset & Open</push-button
     > -->
+    <push-button *ngIf="userCanEdit" (onClick)="onOpen(null, true)" buttonStyle="yellow">Open In New Tab</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="yellow">New Workspace From Scan</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="yellow">Delete</push-button>
@@ -287,7 +288,7 @@ POSSIBILITY OF SUCH DAMAGE.
               [editable]="(userCanEdit && selectedScan.owner?.canEdit) || false"
               (onTagSelectionChanged)="onTagChange($event)">
             </tag-picker>
-            <push-button (onClick)="onOpen(false)" buttonStyle="yellow" title="Open the dataset with views as you last used them">Open</push-button>
+            <push-button (onClick)="onOpen($event, false)" buttonStyle="yellow" title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!">Open</push-button>
             <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
               <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
             </widget-settings-menu>
