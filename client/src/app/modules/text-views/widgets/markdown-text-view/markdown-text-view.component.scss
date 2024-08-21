@@ -1,7 +1,9 @@
+@import "variables.scss";
+
 .widget-area {
     display: flex;
     flex-direction: column;
-    background-color: #293137;
+    background-color: black; //$clr-gray-100;
     border: none;
 
     width: 100%;
@@ -11,15 +13,14 @@
 
     .text-field {
         border: none;
-        padding: 4px;
         height: 100%;
+        background: transparent;
+        padding: $sz-unit;
     }
 
     .markdown-container {
         height: 300px;
         overflow-y: scroll;
-
-        .markdown {
-        }
+        padding: $sz-unit;
     }
 }

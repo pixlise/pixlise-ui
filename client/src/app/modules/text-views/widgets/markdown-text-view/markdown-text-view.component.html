@@ -1,7 +1,6 @@
 <div class="widget-area">
     <div class="markdown-container" *ngIf="!editMode">
         <markdown
-            class="markdown {{ !userCanEdit ? 'no-edit' : '' }}"
             [lineOffset]="5"
             [data]="content || '## Editable Text Panel'">
         </markdown>
