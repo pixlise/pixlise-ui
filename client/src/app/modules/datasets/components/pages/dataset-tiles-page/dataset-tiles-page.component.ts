@@ -476,7 +476,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onOpen(event: MouseEvent): void {
+  onOpen(event: MouseEvent | null, forceOpenNewTab: boolean): void {
     this._analysisLayoutService.clearScreenConfigurationCache();
     this.closeOpenOptionsMenu();
     this.closeWorkspaceOpenOptionsMenu();
@@ -492,7 +492,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // share-able and will open datasets if users are already logged in
     if (this.selectedScan) {
       // If we've got ctrl (or cmd on mac) down, we open in new tab, otherwise open directly here
-      if (event.ctrlKey || event.metaKey) {
+      if (forceOpenNewTab || (event && (event.ctrlKey || event.metaKey))) {
         const url = window.location.origin + "/datasets/analysis?scan_id=" + this.selectedScan.id; // window.location.protocol + "://" window.location.host
         window.open(url, "_blank");
       } else {
