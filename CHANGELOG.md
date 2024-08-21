@@ -1,4 +1,10 @@
-## 4.37.0 (Latest)
+## 4.38.0 (Latest)
+
+### Features
+
+- **Redesigned Multi-Dataset Parallel Coordinates Plot** Parallel Coordinates plot now works with multiple datasets, picking up images from the ROI or defaulting to the MSA image in the case of All Points. Also allows toggling between mean/median, different sigma levels, and excluding zeros.
+
+## 4.37.0 (2024-08-20)
 
 ### Features
 

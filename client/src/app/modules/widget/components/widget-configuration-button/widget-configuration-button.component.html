@@ -14,6 +14,13 @@
     </two-state-push-button>
     <plus-minus-switch *ngIf="buttonConfiguration.type === 'plus-minus-switch'" [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled">
     </plus-minus-switch>
+    <multi-switch-button
+      *ngIf="buttonConfiguration.type === 'multi-state-button'"
+      [ngStyle]="{ 'min-width': (buttonConfiguration?.options?.length || 1) * 90 + 'px' }"
+      [value]="buttonConfiguration?.value || ''"
+      (onChange)="onMultiSwitchChange($event)"
+      [options]="buttonConfiguration?.options || []"
+      [disabled]="!!buttonConfiguration.disabled"></multi-switch-button>
     <icon-button
       *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
