@@ -193,6 +193,11 @@ export class DataExporterService {
               }
               line += writeField;
             }
+
+            // NOTE: if we're just past the first ones (SCLK), we write PMC
+            if (metaField === "SCLK") {
+              line += "," + entry.id;
+            }
           }
 
           // TABLE 1
