@@ -102,9 +102,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
   public axisTickIntervals = 20;
   public axisTicks: { value: number; visible: boolean }[] = [];
 
-  public excludeZero: boolean = true;
-  public averageMode: AVERAGE_MODE = AVERAGE_MODE.MEAN;
-  public sigmaLevel: SIGMA_LEVEL = SIGMA_LEVEL.NONE;
+  public _excludeZero: boolean = true;
+  public _averageMode: AVERAGE_MODE = AVERAGE_MODE.MEAN;
+  public _sigmaLevel: SIGMA_LEVEL = SIGMA_LEVEL.NONE;
 
   purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
 
@@ -160,7 +160,13 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         style: { "margin-top": "30px" },
         onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
           this.keyItems = keyItems;
-          this._prepareData();
+          this.keyItems.forEach(item => {
+            this.data.forEach(dataItem => {
+              if (dataItem.id === item.id) {
+                dataItem.visible = item.isVisible;
+              }
+            });
+          });
         },
       },
       bottomToolbar: [
@@ -177,8 +183,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             if (button) {
               button.value = this.sigmaLevel;
             }
-            this._prepareData();
+
             this.recalculateLines();
+            this.saveState();
           },
         },
         {
@@ -189,8 +196,8 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
           options: [AVERAGE_MODE.MEAN, AVERAGE_MODE.MEDIAN],
           onClick: value => {
             this.averageMode = value;
-            this._prepareData();
             this.recalculateLines();
+            this.saveState();
           },
         },
         {
@@ -207,6 +214,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             }
             this._prepareData();
             this.recalculateLines();
+            this.saveState();
           },
         },
       ],
@@ -282,6 +290,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       return;
     }
 
+    this.excludeZero = true;
+    this.averageMode = AVERAGE_MODE.MEAN;
+    this.sigmaLevel = SIGMA_LEVEL.NONE;
+
     const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       let allPointsROI = PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId);
@@ -291,6 +303,42 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  get excludeZero(): boolean {
+    return this._excludeZero;
+  }
+
+  set excludeZero(value: boolean) {
+    this._excludeZero = value;
+    let excludeButton = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "exclude-zero");
+    if (excludeButton) {
+      excludeButton.value = value;
+    }
+  }
+
+  get averageMode(): AVERAGE_MODE {
+    return this._averageMode;
+  }
+
+  set averageMode(value: AVERAGE_MODE) {
+    this._averageMode = value;
+    let meanMedianButton = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "mean-median");
+    if (meanMedianButton) {
+      meanMedianButton.value = value;
+    }
+  }
+
+  get sigmaLevel(): SIGMA_LEVEL {
+    return this._sigmaLevel;
+  }
+
+  set sigmaLevel(value: SIGMA_LEVEL) {
+    this._sigmaLevel = value;
+    let sigmaButton = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "sigma-level");
+    if (sigmaButton) {
+      sigmaButton.value = value;
+    }
   }
 
   onSoloView() {
@@ -331,7 +379,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
     let percentage = axis.getValueAsPercentage(Number(point[axis.key]));
     let plotHeight = svgContainer?.getBoundingClientRect().height;
-    let yValue = Math.round(percentage * plotHeight) - 6;
+    let yValue = Math.round(percentage * plotHeight) - 7;
 
     return yValue;
   }
@@ -378,7 +426,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       new PCPAxis("u", "Ultraviolet", "UV", 385, true),
       new PCPAxis("b", "Blue", "B", 450, true),
       new PCPAxis("g", "Green", "G", 530, true),
-      new PCPAxis("r", "Red", "R", 735, true),
+      new PCPAxis("r", "Red", "NIR", 735, true),
       new PCPAxis("rg", "Red/Green", "R/G", Math.round((735 / 530) * 100) / 100, false),
       new PCPAxis("rb", "Red/Blue", "R/B", Math.round((735 / 450) * 100) / 100, false),
       new PCPAxis("ru", "Red/Ultraviolet", "R/UV", Math.round((735 / 385) * 100) / 100, false),
@@ -544,92 +592,80 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       blueValues = !this.excludeZero ? (rgbuImage.b.values as any as number[]) : (rgbuImage.b.values.filter(val => val) as any as number[]);
       uvValues = !this.excludeZero ? (rgbuImage.u.values as any as number[]) : (rgbuImage.u.values.filter(val => val) as any as number[]);
 
-      if (this.averageMode === AVERAGE_MODE.MEAN) {
-        rgbuImage.r.values.forEach((red, i) => {
-          let [green, blue, uv] = [rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
-          avgData.r += red;
-          avgData.g += green;
-          avgData.b += blue;
-          avgData.u += uv;
+      rgbuImage.r.values.forEach((red, i) => {
+        let [green, blue, uv] = [rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
+        avgData.rMean += red;
+        avgData.gMean += green;
+        avgData.bMean += blue;
+        avgData.uMean += uv;
 
-          if (this.excludeZero && red === 0) {
-            redLength--;
-          }
+        if (this.excludeZero && red === 0) {
+          redLength--;
+        }
 
-          if (this.excludeZero && green === 0) {
-            greenLength--;
-          }
+        if (this.excludeZero && green === 0) {
+          greenLength--;
+        }
 
-          if (this.excludeZero && blue === 0) {
-            blueLength--;
-          }
+        if (this.excludeZero && blue === 0) {
+          blueLength--;
+        }
 
-          if (this.excludeZero && uv === 0) {
-            uvLength--;
-          }
-        });
-      } else {
-        avgData.r = this._getChannelMedian(rgbuImage.r.values);
-        avgData.g = this._getChannelMedian(rgbuImage.g.values);
-        avgData.b = this._getChannelMedian(rgbuImage.b.values);
-        avgData.u = this._getChannelMedian(rgbuImage.u.values);
-      }
+        if (this.excludeZero && uv === 0) {
+          uvLength--;
+        }
+      });
+
+      avgData.rMedian = this._getChannelMedian(rgbuImage.r.values);
+      avgData.gMedian = this._getChannelMedian(rgbuImage.g.values);
+      avgData.bMedian = this._getChannelMedian(rgbuImage.b.values);
+      avgData.uMedian = this._getChannelMedian(rgbuImage.u.values);
     } else {
-      if (this.averageMode === AVERAGE_MODE.MEAN) {
+      points.forEach(i => {
+        let [red, green, blue, uv] = [rgbuImage.r.values[i], rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
+        avgData.rMean += red;
+        avgData.gMean += green;
+        avgData.bMean += blue;
+        avgData.uMean += uv;
+
+        redValues.push(red);
+        greenValues.push(green);
+        blueValues.push(blue);
+        uvValues.push(uv);
+      });
+      ["r", "g", "b", "u"].forEach(channel => {
+        let values: number[] = [];
         points.forEach(i => {
-          let [red, green, blue, uv] = [rgbuImage.r.values[i], rgbuImage.g.values[i], rgbuImage.b.values[i], rgbuImage.u.values[i]];
-          if (this.averageMode === AVERAGE_MODE.MEAN) {
-            avgData.r += red;
-            avgData.g += green;
-            avgData.b += blue;
-            avgData.u += uv;
-
-            redValues.push(red);
-            greenValues.push(green);
-            blueValues.push(blue);
-            uvValues.push(uv);
-          }
+          let pointValue = (rgbuImage as any)[channel].values[i];
+          values.push(pointValue);
         });
-      } else {
-        ["r", "g", "b", "u"].forEach(channel => {
-          let values: number[] = [];
-          points.forEach(i => {
-            let pointValue = (rgbuImage as any)[channel].values[i];
-            values.push(pointValue);
 
-            switch (channel) {
-              case "r":
-                redValues.push(pointValue);
-                break;
-              case "g":
-                greenValues.push(pointValue);
-                break;
-              case "b":
-                blueValues.push(pointValue);
-                break;
-              case "u":
-                uvValues.push(pointValue);
-                break;
-            }
-          });
-
-          (avgData as any)[channel] = this._getChannelMedian(values);
-        });
-      }
+        (avgData as any)[`${channel}Median`] = this._getChannelMedian(values);
+      });
     }
 
+    avgData.rMean = avgData.rMean / redLength;
+    avgData.gMean = avgData.gMean / greenLength;
+    avgData.bMean = avgData.bMean / blueLength;
+    avgData.uMean = avgData.uMean / uvLength;
+
     if (this.averageMode === AVERAGE_MODE.MEAN) {
-      avgData.r = avgData.r / redLength;
-      avgData.g = avgData.g / greenLength;
-      avgData.b = avgData.b / blueLength;
-      avgData.u = avgData.u / uvLength;
+      avgData.r = avgData.rMean;
+      avgData.g = avgData.gMean;
+      avgData.b = avgData.bMean;
+      avgData.u = avgData.uMean;
+    } else {
+      avgData.r = avgData.rMedian;
+      avgData.g = avgData.gMedian;
+      avgData.b = avgData.bMedian;
+      avgData.u = avgData.uMedian;
     }
 
     // Calculate standard deviations
-    avgData.rStdDev = this.calculateStandardDeviation(redValues, avgData.r);
-    avgData.gStdDev = this.calculateStandardDeviation(greenValues, avgData.g);
-    avgData.bStdDev = this.calculateStandardDeviation(blueValues, avgData.b);
-    avgData.uStdDev = this.calculateStandardDeviation(uvValues, avgData.u);
+    avgData.rStdDev = this.calculateStandardDeviation(redValues, avgData.rMean);
+    avgData.gStdDev = this.calculateStandardDeviation(greenValues, avgData.gMean);
+    avgData.bStdDev = this.calculateStandardDeviation(blueValues, avgData.bMean);
+    avgData.uStdDev = this.calculateStandardDeviation(uvValues, avgData.uMean);
 
     avgData.rSigma1 = avgData.rStdDev;
     avgData.rSigma2 = 2 * avgData.rStdDev;
@@ -711,6 +747,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
   get data(): RGBUPoint[] {
     return this._data;
+  }
+
+  set data(value: RGBUPoint[]) {
+    this._data = value;
   }
 
   toggleKey(): void {
@@ -833,7 +873,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     // Get averages for all ROIs
     combineLatest(roiAveragePointRequests).subscribe({
       next: responses => {
+        this._data = [];
+        this._data = this._data.concat(this.visibleMinerals);
         this.keyItems = [];
+
         responses.forEach((averagePoint, i) => {
           if (!averagePoint) {
             return;
@@ -842,6 +885,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
           let lineName = averagePoint.name;
           let scanId = averagePoint.scanId;
           let lineId = i < this._rois.length ? this._rois[i].region.id : PredefinedROIID.getSelectedPointsForScan(scanId);
+          averagePoint.id = lineId;
 
           let existingKey = previousKeyItems.find(key => key.id && key.id == lineId);
           let isROIVisible = existingKey ? existingKey.isVisible : true;
@@ -849,7 +893,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             if (existingKey) {
               this.keyItems.push(existingKey);
             }
-            return;
           }
 
           let datasetName = scanId;
@@ -858,7 +901,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
             datasetName = loadedScan.title;
           }
 
-          this.keyItems.push(new WidgetKeyItem(lineId, lineName, `rgb(${averagePoint.color})`, null, undefined, datasetName, isROIVisible, false, true));
+          if (isROIVisible) {
+            this.keyItems.push(new WidgetKeyItem(lineId, lineName, `rgb(${averagePoint.color})`, null, undefined, datasetName, isROIVisible, false, true));
+          }
           averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
           this._data.push(averagePoint);
         });
@@ -921,7 +966,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       let mineralIndex = RGBUMineralRatios.names.findIndex(mineral => mineral === mineralName);
       let rgbuValues = RGBUMineralRatios.ratioValues[mineralIndex];
 
-      return new RGBUPoint(
+      let mineral = new RGBUPoint(
         rgbuValues[0] * 255,
         rgbuValues[1] * 255,
         rgbuValues[2] * 255,
@@ -935,6 +980,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         "234,58,238",
         mineralName
       );
+      mineral.id = mineralName;
+
+      return mineral;
     });
   }
 
@@ -980,6 +1028,17 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
 
     if (this.showLines) {
       this._data.forEach(point => {
+        if (this.averageMode === AVERAGE_MODE.MEAN) {
+          point.r = point.rMean;
+          point.g = point.gMean;
+          point.b = point.bMean;
+          point.u = point.uMean;
+        } else {
+          point.r = point.rMedian;
+          point.g = point.gMedian;
+          point.b = point.bMedian;
+          point.u = point.uMedian;
+        }
         let miniLines = point.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID, this.sigmaLevel);
         this.isMiniWidth = this.isMiniWidth || miniLines;
       });

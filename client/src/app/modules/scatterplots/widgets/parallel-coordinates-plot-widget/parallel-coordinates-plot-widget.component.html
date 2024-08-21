@@ -90,7 +90,11 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
           <div class="axis-line">
             <div class="point-container">
-              <div *ngFor="let point of data" class="point-tick-container" [style.top]="getValueOnPlot(point, axis) + 'px'">
+              <div
+                *ngFor="let point of data"
+                class="point-tick-container"
+                [style.top]="getValueOnPlot(point, axis) + 'px'"
+                [style.visibility]="point.visible ? 'visible' : 'hidden'">
                 <div class="inner-tick"></div>
                 <div class="inner-point" style.background="rgb({{ point.color }})" #tooltip="matTooltip" [matTooltip]="point.tooltipText"></div>
                 <div *ngIf="showLabels" class="tick-label">{{ point.getValue(axis.key) | number: "1.0-2" }}</div>
@@ -108,12 +112,12 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
       </div>
       <svg width="100%" class="line-container" *ngIf="showLines">
-        <g *ngFor="let point of data">
+        <g *ngFor="let point of data" [style.visibility]="point.visible ? 'visible' : 'hidden'">
           <path
             *ngFor="let line of point.lines"
             [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
             attr.stroke="rgb({{ point.color }})"
-            [attr.stroke-width]="getStrokeWidth(line.widthStart, line.widthEnd)"
+            stroke-width="2"
             stroke-linecap="round"
             fill="none" />
           <polygon *ngFor="let line of point.sigmaLines" [attr.points]="getPolygonPoints(line)" attr.fill="rgba({{ point.color }}, 0.5)" />

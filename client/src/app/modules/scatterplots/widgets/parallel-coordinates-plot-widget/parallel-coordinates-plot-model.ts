@@ -28,6 +28,19 @@ export class RGBUPoint {
 
   _tooltipText: string = "";
 
+  id: string = "";
+  visible: boolean = true;
+
+  public rMean: number = 0;
+  public gMean: number = 0;
+  public bMean: number = 0;
+  public uMean: number = 0;
+
+  public rMedian: number = 0;
+  public gMedian: number = 0;
+  public bMedian: number = 0;
+  public uMedian: number = 0;
+
   constructor(
     public r: number = 0,
     public g: number = 0,
