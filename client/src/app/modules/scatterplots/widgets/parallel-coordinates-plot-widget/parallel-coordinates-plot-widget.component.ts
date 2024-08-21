@@ -221,6 +221,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         const state = data as ParallelogramWidgetState;
         if (state) {
           this.axes.forEach(axis => (axis.visible = state.channels.includes(axis.key)));
+          this.excludeZero = state.excludeZero;
+          this.averageMode = (state.averageMode as AVERAGE_MODE) || AVERAGE_MODE.MEAN;
+          this.sigmaLevel = (state.sigmaLevel as SIGMA_LEVEL) || SIGMA_LEVEL.NONE;
           this.loadData(state.regions);
         } else {
           this.setInitialConfig();
@@ -468,6 +471,9 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       ParallelogramWidgetState.create({
         regions: this._visibleROIs,
         channels: this.axes.filter(axis => axis.visible).map(axis => axis.key),
+        excludeZero: this.excludeZero,
+        averageMode: this.averageMode,
+        sigmaLevel: this.sigmaLevel,
       })
     );
   }
@@ -1004,13 +1010,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
   }
 
   override getExportOptions(): WidgetExportDialogData {
-    // let imageShortName = this.imageName?.split("/").pop() || "";
-    // if (this.imageName?.includes("MSA_")) {
-    //   imageShortName = "MSA";
-    // } else if (this.imageName?.includes("VIS_")) {
-    //   imageShortName = "VIS";
-    // }
-
     return {
       title: "Export Parallel Coordinates Plot",
       defaultZipName: `Parallel Coords Plot`,
