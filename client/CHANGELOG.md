@@ -2,12 +2,19 @@
 
 ### Features
 
-- Now we show a "spinner" animation while PIXLISE is loading, previously it was just a blank page
+- More "spinners" shown while PIXLISE is loading/logging in/waiting for downloads to help usability - previously it was often just stuck as a blank/unresponsive page or similar.
+- You can now "Open in new tab" on the browse page (by selecting a dataset tile, then using the drop-down arrow OR holding CTRL (Windows) or CMD (Mac) while clicking "Open").
+- Exporting beam locations now exports ALL beam location versions. They're all in the same CSV so there may be a lot of columns. Eg 3 images, 3 versions each, i/j columns = 18 columns
+- New "Text View" widget created, so you can annotate what's in a workspace by strategically placing text views. They support "Markdown" notation so you can create headings, lists, bold/italic text, etc.
 
 ### Bug Fixes
 
 - Image options (for context image) was not correctly showing the currently displayed beam location version.
-- More robust login/re-authentication
+- Context image visibility wasn't showing show/hide setting of image correctly
+- More robust login/re-authentication, login errors are now shown more clearly too, especially useful for new users with unverified emails
+- Spectrum export CSV didn't contain PMCs in first table
+- Fixed several issues that were causing context images to be black at times.
+- Fixed issues where ROIs loaded with a workspace had no "id" field
 
 ## 4.34.0 (2024-08-15)
 

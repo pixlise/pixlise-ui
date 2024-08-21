@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, HostListener, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -66,7 +66,6 @@ import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canv
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
 import { SpectrumChannels } from "src/app/utils/utils";
 

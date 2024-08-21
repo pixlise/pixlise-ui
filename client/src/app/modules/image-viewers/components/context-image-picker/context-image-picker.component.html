@@ -29,34 +29,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<!-- <ng-template #imageMenu>
-    <div fxLayout="column" class="img-list">
-        <div
-            *ngFor="let img of contextImages"
-            class="img-item clickable gap-separated-horizontal-elements"
-            [ngClass]="{'img-item-selected': img.selected}"
-            title="{{img.tooltip}}"
-            (click)="onSetImage(img)">
-            <div class="selectable">{{img.title}}</div>
-            <img
-                *ngIf="img.marsViewerURL"
-                src="assets/button-icons/open-external.svg"
-                (click)="onOpenExternal(img, $event)"
-                title="Open in Mars Viewer">
-        </div>
-        <div *ngIf="includeHideOption" class="img-item clickable" [ngClass]="{'img-item-selected': currentImage===''}" (click)="onSetImage(null)">Hide Context Image</div>
-    </div>
-</ng-template> -->
-
-<!-- <widget-settings-menu
-    [settingsDialog]="imageMenu"
-    [openDirDown]="false"> -->
-<two-state-push-button title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
-  <div class="dropdown-line">
-    <wait-spinner *ngIf="loading"></wait-spinner>
-    <div *ngIf="errorText.length > 0" class="error">ERROR: {{errorText}}</div>
-    <div *ngIf="errorText.length <= 0" class="txt">{{ currentFileName }}</div>
-    <span>&#9660;</span>
-  </div>
-</two-state-push-button>
-<!-- </widget-settings-menu> -->
+<div class="dropdown-line clickable" title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
+  <wait-spinner *ngIf="loading"></wait-spinner>
+  <div *ngIf="errorText.length > 0" class="error">ERROR: {{errorText}}</div>
+  <div *ngIf="errorText.length <= 0" class="txt">{{ currentFileName }}</div>
+  <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false" aria-hidden="true">
+    <path class="downarrow" d="M7 10l5 5 5-5z"></path>
+  </svg>
+</div>

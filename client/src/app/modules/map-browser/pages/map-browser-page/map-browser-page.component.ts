@@ -258,7 +258,7 @@ export class MapBrowserPageComponent {
             mapLayers: [MapLayerVisibility.create({ expressionID: expression.id })],
             hideFootprintsForScans: !this.showScanFootprint ? [this.scanId] : [],
             hidePointsForScans: !this.showScanPoints ? [this.scanId] : [],
-            drawImage: false,
+            hideImage: true,
           }),
         }),
       });

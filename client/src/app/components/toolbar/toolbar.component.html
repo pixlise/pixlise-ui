@@ -118,8 +118,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
   <div class="authenticated-buttons">
     <span class="buttons">
-      <!-- <span class="version"> Pixlise {{ uiVersion }}</span> -->
       <push-button
+        title="PIXLISE Version Information"
         *ngIf="uiVersionLastCommitDate > 0"
         [customDialog]="changeLogDialog"
         (onClick)="markLatestVersionViewed()"
@@ -131,9 +131,9 @@ POSSIBILITY OF SUCH DAMAGE.
         <span>{{ uiVersion }}</span>
       </push-button>
       <!-- <push-button class="back-to-v3" [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button> -->
-      <icon-button (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
-      <icon-button (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
-      <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()" class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
+      <icon-button title="Notifications" (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
+      <icon-button title="Hot-Keys (Keyboard Shortcuts)" (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
+      <user-icon size="24px" title="User Account" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()" class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
     </span>
   </div>
 </div>

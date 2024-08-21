@@ -476,20 +476,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onOpen(resetView: boolean): void {
+  onOpen(event: MouseEvent | null, forceOpenNewTab: boolean): void {
     this._analysisLayoutService.clearScreenConfigurationCache();
     this.closeOpenOptionsMenu();
     this.closeWorkspaceOpenOptionsMenu();
-
-    if (resetView) {
-      if (
-        !confirm(
-          "Are you sure you want to reset your view to the default for this dataset?\n\nSaved workspaces are not affected, however your last stored view layout, selected regions/expressions on each view, loaded quantification and PMC/pixel selection will be cleared"
-        )
-      ) {
-        return;
-      }
-    }
 
     // TODO: replace this...
     //this._viewStateService.setResetFlag(resetView);
@@ -501,12 +491,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // Navigating to the URL will trigger the download. This is neat because these URLs are
     // share-able and will open datasets if users are already logged in
     if (this.selectedScan) {
-      // Load the appropriate screen config - this is required if not running for first time (where scan id is picked up from URL - here we've called
-      // clearScreenConfigurationCache() above and ended up with no screen configs loaded)
-      this._analysisLayoutService.loadScreenConfigurationFromScan(this.selectedScan.id);
+      // If we've got ctrl (or cmd on mac) down, we open in new tab, otherwise open directly here
+      if (forceOpenNewTab || (event && (event.ctrlKey || event.metaKey))) {
+        const url = window.location.origin + "/datasets/analysis?scan_id=" + this.selectedScan.id; // window.location.protocol + "://" window.location.host
+        window.open(url, "_blank");
+      } else {
+        // Load the appropriate screen config - this is required if not running for first time (where scan id is picked up from URL - here we've called
+        // clearScreenConfigurationCache() above and ended up with no screen configs loaded)
+        this._analysisLayoutService.loadScreenConfigurationFromScan(this.selectedScan.id);
 
-      // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
-      this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
+        // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
+        this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
+      }
     }
   }
 
