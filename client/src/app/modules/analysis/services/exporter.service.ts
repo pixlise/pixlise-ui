@@ -17,7 +17,7 @@ import {
 import { SpectrumResp } from "../../../generated-protos/spectrum-msgs";
 import { Spectrum, SpectrumType } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
-import { decodeIndexList, SDSFields } from "../../../utils/utils";
+import { decodeIndexList, getPathBase, SDSFields } from "../../../utils/utils";
 import { DiffractionExporter } from "../components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
 import { DiffractionService } from "../../spectrum/services/diffraction.service";
 import { EnergyCalibrationService } from "../../pixlisecore/services/energy-calibration.service";
@@ -519,7 +519,7 @@ msa += `#XPOSITION   : 0.000
           const imageKeyOrder = [...imageIJs.keys()];
           let data = "PMC,X,Y,Z";
           imageKeyOrder.forEach(imageKey => {
-            const imageName = imageKey.split("/").pop();
+            const imageName = getPathBase(imageKey);
 
             const verMap = imageIJs.get(imageKey);
             if (verMap) {
@@ -589,7 +589,7 @@ msa += `#XPOSITION   : 0.000
                 return false;
               }
 
-              const fields = SDSFields.makeFromFileName(img.imagePath.split("/").pop() || "");
+              const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
               return (fields?.producer || "") === "J";
             })
             .map(image => image.imagePath);
