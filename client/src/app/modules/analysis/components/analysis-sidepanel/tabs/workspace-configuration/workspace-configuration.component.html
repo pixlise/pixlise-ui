@@ -90,6 +90,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <action-button *ngIf="canEditTab(tab) && editingTabIndex === i" class="tab-delete" action="close" (onClick)="cancelEditTabName()"></action-button>
           </div>
 
+          <action-button *ngIf="canEditTab(tab)" class="tab-duplicate" action="duplicate" (onClick)="onDuplicateTab(tab, i)"></action-button>
           <action-button class="tab-toggle" [action]="checkIsTabHidden(tab) ? 'closedEye' : 'openEye'" (onClick)="onToggleTabVisibility(tab)"></action-button>
         </div>
         <action-button
