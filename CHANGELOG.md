@@ -3,6 +3,7 @@
 ### Features
 
 - **Redesigned Multi-Dataset Parallel Coordinates Plot** Parallel Coordinates plot now works with multiple datasets, picking up images from the ROI or defaulting to the MSA image in the case of All Points. Also allows toggling between mean/median, different sigma levels, and excluding zeros.
+- **Duplicate Workspace Tab** Allows for duplicating a workspace tab, including all settings and configurations, from the workspace tab on the sidebar.
 
 ## 4.37.0 (2024-08-20)
 
