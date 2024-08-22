@@ -85,9 +85,9 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
 
           <action-button *ngIf="canEditTab(tab) && editingTabIndex !== i" class="tab-edit" action="edit" (onClick)="onEditTab(tab, i)"></action-button>
-          <div class="edit-btns">
-            <action-button *ngIf="canEditTab(tab) && editingTabIndex === i" class="tab-edit" action="check" (onClick)="saveTabName(tab, i)"></action-button>
-            <action-button *ngIf="canEditTab(tab) && editingTabIndex === i" class="tab-delete" action="close" (onClick)="cancelEditTabName()"></action-button>
+          <div class="edit-btns" *ngIf="canEditTab(tab) && editingTabIndex === i">
+            <action-button class="tab-edit" action="check" (onClick)="saveTabName(tab, i)"></action-button>
+            <action-button class="tab-delete" action="close" (onClick)="cancelEditTabName()"></action-button>
           </div>
 
           <action-button *ngIf="canEditTab(tab)" class="tab-duplicate" action="duplicate" (onClick)="onDuplicateTab(tab, i)"></action-button>
