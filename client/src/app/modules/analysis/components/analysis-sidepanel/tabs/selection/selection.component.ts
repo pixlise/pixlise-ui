@@ -1,9 +1,8 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription, combineLatest, map } from "rxjs";
-import { ContextImageDataService } from "src/app/modules/image-viewers/image-viewers.module";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageDataService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { AverageRGBURatio, SelectionTabModel } from "./model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";

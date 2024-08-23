@@ -12,7 +12,6 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { MatSelectChange } from "@angular/material/select";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { RGBUImagesWidgetState } from "src/app/generated-protos/widget-data";
@@ -22,8 +21,8 @@ import {
   ImagePickerDialogData,
   ImagePickerDialogResponse,
 } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
-import { ContextImageDataService } from "src/app/modules/image-viewers/image-viewers.module";
 import { Point } from "src/app/models/Geometry";
+import { ContextImageDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 @Component({
   selector: "app-multi-channel-viewer",

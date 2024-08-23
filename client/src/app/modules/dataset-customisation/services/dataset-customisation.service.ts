@@ -1,6 +1,5 @@
 import { Injectable } from "@angular/core";
-import { ContextImageDataService } from "../../image-viewers/image-viewers.module";
-import { SnackbarService, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
+import { ContextImageDataService, SnackbarService, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";

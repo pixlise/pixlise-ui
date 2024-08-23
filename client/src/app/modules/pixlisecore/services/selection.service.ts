@@ -41,7 +41,7 @@ import { SelectedScanEntriesReq, SelectedScanEntriesResp, SelectedScanEntriesWri
 import { SelectedImagePixelsReq, SelectedImagePixelsResp, SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { PMCConversionResult, ScanIdConverterService } from "./scan-id-converter.service";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "./apicacheddata.service";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
@@ -50,7 +50,7 @@ import { PMCSelectorDialogComponent } from "../components/atoms/selection-change
 import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
 import { PixelPoint } from "../../analysis/components/analysis-sidepanel/tabs/selection/model";
-import { ContextImageDataService, ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/image-viewers.module";
+import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/image-viewers.module";
 import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 
@@ -614,7 +614,19 @@ export class SelectionService {
           const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
           if (fields?.prodType === "MSA") {
             imagesToSelectFor.push(img.imagePath);
-            scanIdForImage.push(img.originScanId);
+            let scanId = "";
+            if (img.originScanId.length > 0) {
+              scanId = img.originScanId;
+            } else if (img.imagePath.startsWith(scanIds[0])) {
+              scanId = scanIds[0];
+            }
+
+            if (scanId.length <= 0) {
+              console.error(`Failed to find Origin scan ID for MSA image: ${img.imagePath}`);
+              continue;
+            }
+
+            scanIdForImage.push(scanId);
 
             // NOTE: for now, we only work on the first image, because selection doesn't support multiple images!
             break;
