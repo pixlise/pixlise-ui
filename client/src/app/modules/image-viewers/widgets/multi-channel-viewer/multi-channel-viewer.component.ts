@@ -244,12 +244,17 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
   private loadImage(imagePath: string, scanId?: string) {
     this.currentScanId = scanId || this._analysisLayoutService.defaultScanId;
     this.isWidgetDataLoading = true;
-    this._endpointsService.loadRGBUImageTIF(imagePath).subscribe((img: RGBUImage) => {
-      this.mdl.imageName = imagePath;
-      this.mdl.setData(img, null, null);
-      this.isWidgetDataLoading = false;
+    this._endpointsService.loadRGBUImageTIF(imagePath).subscribe({
+      next: (img: RGBUImage) => {
+        this.mdl.imageName = imagePath;
+        this.mdl.setData(img, null, null);
+        this.isWidgetDataLoading = false;
 
-      this.saveState();
+        this.saveState();
+      },
+      error: err => {
+        this.isWidgetDataLoading = false;
+      }
     });
   }
 }
