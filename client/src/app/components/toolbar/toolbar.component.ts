@@ -42,13 +42,10 @@ import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/noti
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
 import { AnalysisLayoutService, NavigationTab } from "src/app/modules/analysis/services/analysis-layout.service";
-import { MatDialog } from "@angular/material/dialog";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SentryHelper } from "../../utils/utils";
 import { MarkdownModule } from "ngx-markdown";
-import { VersionUpdateCheckerService } from "src/app/services/version-update-checker.service";
-import { UserOptionsService } from "../../modules/settings/services/user-options.service";
 import { TabLinks } from "../../models/TabLinks";
 
 class TabNav {
@@ -154,10 +151,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private titleService: Title, // public dialog: MatDialog,
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackService: SnackbarService,
-    private _userOptionsService: UserOptionsService,
-    private _versionCheckerService: VersionUpdateCheckerService,
-    private _matDialog: MatDialog
+    private _snackService: SnackbarService
   ) {}
 
   ngOnInit() {

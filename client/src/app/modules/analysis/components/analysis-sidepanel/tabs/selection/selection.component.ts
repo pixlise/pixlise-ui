@@ -1,10 +1,9 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription, combineLatest, map } from "rxjs";
-import { ContextImageDataService, ContextImageItem, ContextImageModelLoadedData } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageDataService } from "src/app/modules/image-viewers/image-viewers.module";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { AverageRGBURatio, SelectionTabModel } from "./model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
@@ -12,9 +11,6 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
-import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
-import { getPathBase, SDSFields } from "src/app/utils/utils";
 import { UserOptionsService } from "src/app/modules/settings/settings.module";
 
 const emptySelectionDescription = "Empty";
