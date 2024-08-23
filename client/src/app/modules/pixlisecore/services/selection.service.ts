@@ -50,13 +50,7 @@ import { PMCSelectorDialogComponent } from "../components/atoms/selection-change
 import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
 import { PixelPoint } from "../../analysis/components/analysis-sidepanel/tabs/selection/model";
-import {
-  ContextImageDataService,
-  ContextImageItem,
-  ContextImageItemTransform,
-  ContextImageModelLoadedData,
-  ContextImageScanModel,
-} from "../../image-viewers/image-viewers.module";
+import { ContextImageDataService, ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/image-viewers.module";
 import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 
