@@ -21,6 +21,8 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { UserGroupMembershipDialogComponent } from "./components/user-group-membership-dialog/user-group-membership-dialog.component";
 import { AddSubGroupDialogComponent } from "./components/add-subgroup-dialog/add-subgroup-dialog.component";
 
+export { UserOptionsService } from "./services/user-options.service";
+
 const APP_ROUTES: Routes = [
   {
     path: "groups",

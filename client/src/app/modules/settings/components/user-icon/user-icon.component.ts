@@ -1,5 +1,5 @@
 import { Component, Input } from "@angular/core";
-import { UserOptionsService } from "../../services/user-options.service";
+import { UserOptionsService } from "../../settings.module";
 
 @Component({
   selector: "user-icon",

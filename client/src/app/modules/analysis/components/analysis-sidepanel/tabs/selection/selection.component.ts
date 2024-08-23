@@ -12,10 +12,10 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { UserOptionsService } from "../../../../../settings/services/user-options.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
 import { getPathBase, SDSFields } from "src/app/utils/utils";
+import { UserOptionsService } from "src/app/modules/settings/settings.module";
 
 const emptySelectionDescription = "Empty";
 
