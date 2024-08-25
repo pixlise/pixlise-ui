@@ -1,10 +1,8 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription, combineLatest, map } from "rxjs";
-import { ContextImageItem } from "src/app/modules/image-viewers/image-viewers.module";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { ContextImageDataService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { AverageRGBURatio, SelectionTabModel } from "./model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
@@ -12,7 +10,7 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { UserOptionsService } from "../../../../../settings/services/user-options.service";
+import { UserOptionsService } from "src/app/modules/settings/settings.module";
 
 const emptySelectionDescription = "Empty";
 
@@ -48,6 +46,7 @@ export class SelectionComponent implements OnInit, OnDestroy {
     protected _endpointsService: APIEndpointsService,
     private _userOptionsService: UserOptionsService,
     private _selectionService: SelectionService,
+    private _contextImageDataService: ContextImageDataService,
     public dialog: MatDialog
   ) {}
 
@@ -218,18 +217,12 @@ export class SelectionComponent implements OnInit, OnDestroy {
   }
 
   onAddNearbyPixels() {
-    /*let dataset = this._datasetService.datasetLoaded;
-    let contextImage = this.getRGBUContextImageItemShowing();
-
-    if (!dataset || !contextImage) {
-      return;
+    const allScanIds = [];
+    for (const scan of Object.values(this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations)) {
+      allScanIds.push(scan.id);
     }
 
-    let currentSelection = this._selectionService.getCurrentSelection();
-    let beamSelection = currentSelection.beamSelection;
-
-    let pixelSelection = SelectionTabModel.getJoinedNearbyPixelSelection(dataset, contextImage, currentSelection);
-    this._selectionService.setSelection(dataset, beamSelection, pixelSelection);*/
+    this._selectionService.selectNearbyPixels(allScanIds, this._contextImageDataService);
   }
 
   onEnterSelection(): void {
@@ -259,10 +252,8 @@ export class SelectionComponent implements OnInit, OnDestroy {
   onSelectForSubDataset(id: string): void {
     this._selectionService.selectAllPMCs([id]);
   }
-
+/*
   private getRGBUContextImageItemShowing(): ContextImageItem | null {
-    return null;
-    /*
     // Make sure there's a valid context image before proceeding
     if (!this._contextImageService || !this._contextImageService.mdl || !this._contextImageService.mdl.contextImageItemShowing) {
       return null;
@@ -275,8 +266,8 @@ export class SelectionComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return contextImage;*/
-  }
+    return contextImage;
+  }*/
 
   private getSelectionScanIds(): string[] {
     const sel = this._selectionService.getCurrentSelection().beamSelection;

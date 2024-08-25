@@ -174,6 +174,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 2) {
       this._snackService.openError("Expected 2 expression ids for Binary, got " + this.mdl.expressionIds.length);
+      this.isWidgetDataLoading = false;
       return;
     }
 

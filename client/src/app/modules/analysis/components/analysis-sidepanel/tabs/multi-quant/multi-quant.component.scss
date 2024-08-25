@@ -33,9 +33,9 @@
     }
 }
 
-.mq-container {
+.mq-container-outer {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     flex: 1;
     justify-content: space-evenly;
 
@@ -45,46 +45,77 @@
     min-width: 100%;
     width: 100%;
 
-    .mq-column {
+    header {
         display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        flex: 1;
+        align-items: center;
 
-        gap: 1px;
+        border-bottom: 1px solid #000;
+        padding: 8px 0px;
 
-        .panel-row {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-around;
-            //align-items: stretch;
-            
-            padding: 8px;
-        }
-        .panel-column {
-            margin-top: 8px;
-            display: flex;
-            flex-direction: column;
-        }
-        .flex-fill {
-            flex: 1 1 100%;
-        }
-        .msg-area {
-            padding: 40px 8px;
-        }
-        .scan-selector {
-            display: flex;
-            justify-content: space-between;
+        h5 {
+            font-family: Inter;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0;
+            margin-left: 8px;
 
-            mat-select {
-                width: 100% !important;
-                margin: 8px;
-                margin-bottom: 0;
-            }
+            user-select: none;
         }
     }
-    .mq-roi-table-container {
-        flex: 2 1 0;
+
+    .mq-container {
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+        justify-content: space-evenly;
+
+        // fxFill
+        height: 100%;
+        min-height: 100%;
+        min-width: 100%;
+        width: 100%;
+
+        .mq-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            flex: 1;
+
+            gap: 1px;
+
+            .panel-row {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-around;
+                //align-items: stretch;
+                
+                padding: 8px;
+            }
+            .panel-column {
+                margin-top: 8px;
+                display: flex;
+                flex-direction: column;
+            }
+            .flex-fill {
+                flex: 1 1 100%;
+            }
+            .msg-area {
+                padding: 40px 8px;
+            }
+            .scan-selector {
+                display: flex;
+                justify-content: space-between;
+
+                mat-select {
+                    width: 100% !important;
+                    margin: 8px;
+                    margin-bottom: 0;
+                }
+            }
+        }
+        .mq-roi-table-container {
+            flex: 2 1 0;
+        }
     }
 }
 

@@ -19,7 +19,6 @@ export { MultiChannelViewerComponent } from "./widgets/multi-channel-viewer/mult
 export { ContextImageModel, ContextImageScanModel, ContextImageModelLoadedData } from "./widgets/context-image/context-image-model";
 export { ContextImageDrawer } from "./widgets/context-image/context-image-drawer";
 export { ToolHostCreateSettings, ContextImageToolHost } from "./widgets/context-image/tools/tool-host";
-export { ContextImageDataService } from "./services/context-image-data.service";
 export { ContextImagePan } from "./widgets/context-image/tools/pan";
 export { ContextImageItemTransform } from "./models/image-transform";
 

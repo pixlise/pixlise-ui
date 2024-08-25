@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Point } from "src/app/models/Geometry";
-import { FloatImage, RGBUImage } from "src/app/models/RGBUImage";
+import { RGBUImage } from "src/app/models/RGBUImage";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 
 export interface AverageRGBURatio {
@@ -215,30 +215,5 @@ export class SelectionTabModel {
   //     }
   //   });
   //   return Array.from(polygonPixels);
-  // }
-  // static getJoinedNearbyPixelSelection(dataset: DataSet, contextImage: ContextImageItem, currentSelection: SelectionHistoryItem): PixelSelection {
-  //   // Verify valid dataset and RGBU context image before continuing
-  //   if (!dataset || !contextImage) {
-  //     return;
-  //   }
-  //   const beamSelection = currentSelection.beamSelection;
-  //   // Transform PMC selection into a list of pixel indices that are within all PMC sub-polygons
-  //   const selectedPixels = Array.from(beamSelection.locationIndexes).reduce((prevPixels, location) => {
-  //     // Get pixels within each polygon corresponding to selected PMCs
-  //     let polygonPixels = this.getPixelsInPolygon(dataset.locationPointCache[location].polygon, contextImage);
-  //     return [...prevPixels, ...polygonPixels];
-  //   }, []);
-  //   // Get width and height from red channel
-  //   const redChannel = contextImage.rgbuSourceImage.r;
-  //   const [width, height] = [redChannel.width, redChannel.height];
-  //   let imageName = "";
-  //   let newPixelSelection: Set<number> = new Set();
-  //   // If there's a current pixel selection, use this as the starting point
-  //   if (currentSelection.pixelSelection) {
-  //     imageName = currentSelection.pixelSelection.imageName;
-  //     newPixelSelection = currentSelection.pixelSelection.selectedPixels;
-  //   }
-  //   newPixelSelection = new Set([...newPixelSelection, ...selectedPixels]);
-  //   return new PixelSelection(dataset, newPixelSelection, width, height, imageName);
   // }
 }

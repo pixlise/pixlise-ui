@@ -6,14 +6,13 @@ import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/b
 import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
-import { ContextImageState, MapLayerVisibility, ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
+import { ContextImageState, MapLayerVisibility, ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
-import { ContextImageDataService } from "../../services/context-image-data.service";
 import { Point, Rect } from "src/app/models/Geometry";
-import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import {
