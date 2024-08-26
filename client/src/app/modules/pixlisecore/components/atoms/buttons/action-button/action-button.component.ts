@@ -38,6 +38,7 @@ export const matActionIcons = {
   add: "add",
   edit: "edit",
   image: "image",
+  duplicate: "content_copy",
 };
 
 const customActionIcons = {
@@ -97,7 +98,7 @@ export class ActionButtonComponent {
   @Input() set action(actionName: ACTION_TYPE) {
     this.isMatIcon = Object.keys(matActionIcons).includes(actionName);
     if (this.isMatIcon) {
-      this._actionSource = actionName;
+      this._actionSource = matActionIcons[actionName as keyof typeof matActionIcons];
     } else if (Object.keys(customActionIcons).includes(actionName)) {
       this._actionSource = customActionIcons[actionName as keyof typeof customActionIcons];
     }

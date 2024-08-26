@@ -326,10 +326,11 @@ export class MultiQuantComponent implements OnDestroy {
 
     this.handleUserChangedZStack();
   }
-
+/*
   onShowUI(): void {
-    //this._viewStateService.enableMultiQuantCombineMode();
+    this._viewStateService.enableMultiQuantCombineMode();
   }
+*/
   /*
   onQuantificationSelected(sel: QuantificationSelectionInfo): void {
     // Run through and find the ROI this was for, set it

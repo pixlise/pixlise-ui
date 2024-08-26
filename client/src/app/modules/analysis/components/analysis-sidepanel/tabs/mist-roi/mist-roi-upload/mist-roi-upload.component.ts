@@ -37,8 +37,8 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { GroupsService } from "../../../../../../settings/services/groups.service";
 import { UserGroupInfo, UserGroupRelationship } from "../../../../../../../generated-protos/user-group";
-import { UserOptionsService } from "../../../../../../settings/services/user-options.service";
 import { UserGroupList } from "../../../../../../../generated-protos/ownership-access";
+import { UserOptionsService } from "src/app/modules/settings/settings.module";
 
 export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];

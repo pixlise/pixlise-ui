@@ -38,6 +38,9 @@ export type WidgetToolbarButtonConfiguration = {
   disabled?: boolean;
   onClick: (value: any, trigger?: Element) => void;
 
+  // Used by the multi-state-button type to define the states
+  options?: string[];
+
   // Used by the widget-key type to communicate updates to the key items
   onUpdateKeyItems?: (keyItems: WidgetKeyItem[]) => void;
 

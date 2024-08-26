@@ -1,18 +1,45 @@
 import { ElementRef } from "@angular/core";
 
+export enum SIGMA_LEVEL {
+  NONE = "Sigma 0",
+  ONE = "Sigma +1",
+  TWO = "Sigma +2",
+}
+
+export enum AVERAGE_MODE {
+  MEAN = "Mean",
+  MEDIAN = "Median",
+}
+
 export class PCPLine {
   constructor(
     public xStart: number | string = 0,
     public yStart: number | string = 0,
     public xEnd: number | string = 0,
-    public yEnd: number | string = 0
+    public yEnd: number | string = 0,
+    public widthStart: number = 3,
+    public widthEnd: number = 3
   ) {}
 }
 
 export class RGBUPoint {
   lines: PCPLine[] = [];
+  sigmaLines: PCPLine[] = [];
 
   _tooltipText: string = "";
+
+  id: string = "";
+  visible: boolean = true;
+
+  public rMean: number = 0;
+  public gMean: number = 0;
+  public bMean: number = 0;
+  public uMean: number = 0;
+
+  public rMedian: number = 0;
+  public gMedian: number = 0;
+  public bMedian: number = 0;
+  public uMedian: number = 0;
 
   constructor(
     public r: number = 0,
@@ -28,7 +55,19 @@ export class RGBUPoint {
     public color: string = "255,255,255",
     public name: string = "",
     public scanId: string = "",
-    public imageName: string = ""
+    public imageName: string = "",
+    public rStdDev: number = 0,
+    public gStdDev: number = 0,
+    public bStdDev: number = 0,
+    public uStdDev: number = 0,
+    public rSigma1: number = 0,
+    public gSigma1: number = 0,
+    public bSigma1: number = 0,
+    public uSigma1: number = 0,
+    public rSigma2: number = 0,
+    public gSigma2: number = 0,
+    public bSigma2: number = 0,
+    public uSigma2: number = 0
   ) {}
 
   getValue(key: keyof RGBUPoint | string): number {
@@ -44,12 +83,12 @@ export class RGBUPoint {
     return this._tooltipText;
   }
 
-  calculateLinesForAxes(axes: PCPAxis[], element: ElementRef, plotID: string): void {
-    let plotContainer = element?.nativeElement?.querySelector(`.${plotID}`);
+  calculateLinesForAxes(axes: PCPAxis[], element: ElementRef, plotID: string, sigmaLevel: SIGMA_LEVEL): boolean {
+    let plotContainer: Element = element?.nativeElement?.querySelector(`.${plotID}`);
     let domAxes = plotContainer?.querySelectorAll(".axes .axis-container");
     if (!domAxes || !plotContainer || domAxes.length != axes.length) {
       // Something isn't loaded right, don't continue drawing
-      return;
+      return false;
     }
 
     let axesXLocations = Array.from(domAxes).map((axis: any) => {
@@ -57,27 +96,68 @@ export class RGBUPoint {
       return clientRect.x + clientRect.width / 2;
     });
 
+    let svgContainer = plotContainer.querySelector("svg");
+    if (!svgContainer) {
+      return false;
+    }
+
     let relativeX = plotContainer.getBoundingClientRect().x;
+    let plotHeight = svgContainer?.getBoundingClientRect().height;
 
     this.lines = [];
+    this.sigmaLines = [];
+    let miniMode = false;
     for (let i = 0; i < axes.length - 1; i++) {
-      let currentAxisValue = axes[i].getValueAsPercentage(Number(this[axes[i].key]));
-      let nextAxisValue = axes[i + 1].getValueAsPercentage(Number(this[axes[i + 1].key]));
+      let currentAxis = axes[i];
+      let nextAxis = axes[i + 1];
 
-      let xStart = `${Math.round((axesXLocations[i] - relativeX) * 100) / 100}`;
-      let xEnd = `${Math.round((axesXLocations[i + 1] - relativeX) * 100) / 100}`;
-      let yStart = `${currentAxisValue * 100}%`;
-      let yEnd = `${nextAxisValue * 100}%`;
+      let currentAxisValue = axes[i].getValueAsPercentage(Number(this[currentAxis.key]));
+      let nextAxisValue = nextAxis.getValueAsPercentage(Number(this[nextAxis.key]));
+
+      let xStart = Math.round((axesXLocations[i] - relativeX) * 100) / 100;
+      let xEnd = Math.round((axesXLocations[i + 1] - relativeX) * 100) / 100;
+      let yStart = Math.round(currentAxisValue * plotHeight);
+      let yEnd = Math.round(nextAxisValue * plotHeight);
+
+      if (xEnd - xStart < 75) {
+        miniMode = true;
+      }
 
       let line = new PCPLine(xStart, yStart, xEnd, yEnd);
+      if (sigmaLevel === SIGMA_LEVEL.ONE && this.rStdDev) {
+        let startSigma1 = this[`${currentAxis.key}Sigma1` as keyof this] as number;
+        let startWidth = Math.round((startSigma1 / (currentAxis.max - currentAxis.min)) * 100);
+
+        let endSigma1 = this[`${nextAxis.key}Sigma1` as keyof this] as number;
+        let endWidth = Math.round((endSigma1 / (nextAxis.max - nextAxis.min)) * 100);
+
+        let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
+        this.sigmaLines.push(sigmaLine);
+      } else if (sigmaLevel === SIGMA_LEVEL.TWO && this.rStdDev) {
+        let startSigma2 = this[`${currentAxis.key}Sigma2` as keyof this] as number;
+        let startWidth = Math.round((startSigma2 / (currentAxis.max - currentAxis.min)) * 100);
+
+        let endSigma2 = this[`${nextAxis.key}Sigma2` as keyof this] as number;
+        let endWidth = Math.round((endSigma2 / (nextAxis.max - nextAxis.min)) * 100);
+
+        let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
+        this.sigmaLines.push(sigmaLine);
+      }
       this.lines.push(line);
     }
 
     let tooltipText = `${this.name} Averages:\n`;
     axes.forEach(axis => {
-      tooltipText += `${axis.title}: ${Number(this[axis.key]).toFixed(2)}\n`;
+      let sigmaDescription = "";
+      if (sigmaLevel !== SIGMA_LEVEL.NONE) {
+        let sigmaValue = sigmaLevel === SIGMA_LEVEL.ONE ? (this[`${axis.key}Sigma1` as keyof this] as number) : (this[`${axis.key}Sigma2` as keyof this] as number);
+        sigmaDescription = ` (σ${sigmaLevel === SIGMA_LEVEL.ONE ? "1" : "2"}: ${sigmaValue.toFixed(2)})`;
+      }
+      tooltipText += `${axis.title}: ${Number(this[axis.key]).toFixed(2)}${sigmaDescription}\n`;
     });
     this._tooltipText = tooltipText;
+
+    return miniMode;
   }
 }
 
@@ -96,6 +176,8 @@ export class PCPAxis {
   constructor(
     public key: keyof RGBUPoint = "r",
     public title: string = "",
+    public shortName: string = "",
+    public wavelength: number = 0,
     public visible: boolean = true,
     public min: number = 0,
     public max: number = 0

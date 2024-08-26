@@ -550,9 +550,11 @@ export function makeValidFileName(name: string): string {
 
 // Using Go terminology, just gets last part of path or "" if path ends in /
 export function getPathBase(path: string): string {
-  const idx = path.lastIndexOf("/");
-  if (idx > -1) {
-    return path.substring(idx + 1);
+  if (path) {
+    const idx = path.lastIndexOf("/");
+    if (idx > -1) {
+      return path.substring(idx + 1);
+    }
   }
   return "";
 }

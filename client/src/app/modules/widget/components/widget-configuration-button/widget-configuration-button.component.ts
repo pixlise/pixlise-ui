@@ -12,6 +12,14 @@ export class WidgetConfigurationButtonComponent {
 
   constructor() {}
 
+  onMultiSwitchChange(value: string) {
+    if (!this.buttonConfiguration) {
+      return;
+    }
+
+    this.buttonConfiguration.value = value;
+  }
+
   buttonClick(buttonTrigger: Element) {
     if (this.buttonConfiguration && this.buttonConfiguration.onClick && !this.buttonConfiguration.disabled) {
       this.buttonConfiguration.onClick(this.buttonConfiguration.value, buttonTrigger);

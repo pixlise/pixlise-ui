@@ -155,6 +155,25 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     this.newTabName = tab.label || "";
   }
 
+  onDuplicateTab(tab: NavigationTab, index: number): void {
+    if (!this.canEditTab(tab) || index < 0 || !this.screenConfig) {
+      return;
+    }
+
+    let newTab = { ...tab };
+    newTab.label = `${newTab.label} (Copy)`;
+    let screenLayout = this.getLayoutFromTab(tab);
+    if (screenLayout) {
+      let newScreenLayout = { ...screenLayout };
+      newScreenLayout.tabName = newTab.label;
+
+      // Insert the new layout after the current layout
+      let tabIndex = this.screenConfig.layouts.indexOf(screenLayout);
+      this.screenConfig.layouts.splice(tabIndex + 1, 0, newScreenLayout);
+      this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+    }
+  }
+
   saveTabName(tab: NavigationTab, index: number): void {
     if (this.editingTabIndex !== index || !this.newTabName || !this.screenConfig) {
       return;

@@ -1,29 +1,30 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
-import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
-import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
-import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
+import { APIEndpointsService } from "./apiendpoints.service";
+import { APICachedDataService } from "./apicacheddata.service";
+import { WidgetError } from "./widget-data.service";
+import { DataSourceParams, RegionDataResults, SnackbarService, WidgetDataService } from "../pixlisecore.module";
 import { MinMax } from "src/app/models/BasicTypes";
+import { ColourRamp } from "src/app/utils/colours";
+import { ContextImageScanModelGenerator } from "../../image-viewers/widgets/context-image/context-image-scan-model-generator";
+import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "../../image-viewers/models/map-layer";
+import { ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/widgets/context-image/context-image-model";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { RGBUImage } from "src/app/models/RGBUImage";
+import { ContextImageItemTransform } from "../../image-viewers/image-viewers.module";
+import { Point } from "src/app/models/Geometry";
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
+import { PMCDataValues } from "../../../expression-language/data-values";
+
+import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
+import { ScanImagePurpose } from "src/app/generated-protos/image";
+import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { ColourRamp } from "src/app/utils/colours";
-import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
-import { ContextImageScanModelGenerator } from "../widgets/context-image/context-image-scan-model-generator";
-import { DataSourceParams, RegionDataResults, SnackbarService, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
-import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "../models/map-layer";
-import { ContextImageModelLoadedData, ContextImageScanModel } from "../widgets/context-image/context-image-model";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
-import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { RGBUImage } from "src/app/models/RGBUImage";
-import { ContextImageItemTransform } from "../image-viewers.module";
-import { Point } from "src/app/models/Geometry";
-import { WidgetError } from "../../pixlisecore/services/widget-data.service";
-import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
-import { PMCDataValues } from "../../../expression-language/data-values";
+import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
 
 export type SyncedTransform = {
   scale: Point;
@@ -118,28 +119,6 @@ export class ContextImageDataService {
 
     return result;
   }
-
-  // getLayerModel(
-  //   scanId: string,
-  //   expressionId: string,
-  //   quantId: string,
-  //   roiId: string,
-  //   colourRamp: ColourRamp,
-  //   pmcToIndexLookup: Map<number, number>
-  // ): Observable<ContextImageMapLayer> {
-  //   return this._expressionsService.getUserExpressionDisplaySettings(expressionId).pipe(
-  //     map(() => {
-  //         // If we're dealing with an expression group, we need to load the group first and run each expression in the group
-  //         if (!DataExpressionId.isExpressionGroupId(expressionId)) {
-  //           // It's just a simple layer, load it
-  //           return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
-  //         } else {
-  //           // Load the expression group first, run the first 3 expressions
-  //           return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
-  //         }
-  //     })
-  //   );
-  // }
 
   getLayerModel(
     scanId: string,
