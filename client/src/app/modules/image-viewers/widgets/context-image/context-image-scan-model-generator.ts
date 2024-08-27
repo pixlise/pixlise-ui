@@ -183,7 +183,7 @@ export class ContextImageScanModelGenerator {
         if (!beamIJs) {
           imageIJPoint = new Point(beamXYZ.x, beamXYZ.y);
         } else if (imageIJ) {
-          imageIJPoint = new Point(imageIJ.i, imageIJ.j);
+          imageIJPoint = new Point(imageIJ.j, imageIJ.i); // i=row (aka y), j=col (aka x)
         }
 
         // Expand the x,y,z bbox:
@@ -195,7 +195,7 @@ export class ContextImageScanModelGenerator {
           // And the i,j bbox
           // Not sure why this was rounded in past, but keeping this convention going forward until
           // a need arises to change it
-          const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.i, imageIJ.j);
+          const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.j, imageIJ.i); // i=row (aka y), j=col (aka x)
           if (firstBeam) {
             this._locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
             firstBeam = false;
