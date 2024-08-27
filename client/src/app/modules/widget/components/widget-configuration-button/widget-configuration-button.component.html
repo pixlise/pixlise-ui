@@ -28,7 +28,7 @@
       [icon]="buttonConfiguration.icon">
     </icon-button>
   </span>
-  <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'"></selection-changer>
+  <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'" [imageInfo]="buttonConfiguration?.getImageInfo ? buttonConfiguration?.getImageInfo() : undefined"></selection-changer>
   <widget-key-display
     *ngIf="buttonConfiguration?.type === 'widget-key'"
     [items]="buttonConfiguration?.value || []"

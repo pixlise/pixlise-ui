@@ -42,6 +42,7 @@ import {
 } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
+import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -189,6 +190,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         type: "selection-changer",
         tooltip: "Selection changer",
         onClick: () => {},
+        getImageInfo: () => {
+          if (!this.mdl.rgbuSourceImage) {
+            return new SelectionChangerImageInfo([], "", this._contextDataService);
+          }
+          return new SelectionChangerImageInfo(this.mdl.scanIds, this.mdl.imageName, this._contextDataService);
+        }
       },
       bottomToolbar: [],
     };

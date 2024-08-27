@@ -649,6 +649,12 @@ export class SelectionService {
 
         // Read pixel selections back from each image/model we're working on
         const idxs = currSel.beamSelection.getSelectedScanEntryIndexes(scanIdForImage[0]);
+
+        if (idxs.size <= 0) {
+          this._snackbarService.openError("No PMCs selected", "Cannot select nearby pixels if no PMCs are selected!");
+          return;
+        }
+
         const scanMdl = models[0].scanModels.get(scanIdForImage[0]);
         if (scanMdl && models[0].rgbuSourceImage && models[0].imageTransform) {
           let pixelSelection = this.getJoinedNearbyPixelSelection(
