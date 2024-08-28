@@ -1,6 +1,6 @@
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ClosestPoint, ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
-import { map, Observable, of, Subject } from "rxjs";
+import { forkJoin, map, Observable, of, Subject, switchMap, tap } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { ContextImageItemTransform } from "../../models/image-transform";
@@ -18,7 +18,7 @@ import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map
 import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
-import { ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
+import { ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { ROIItem } from "src/app/generated-protos/roi";
 
 export class ContextImageModelLoadedData {
@@ -154,7 +154,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     }
 
     this._recalcNeeded = true;
-    console.log(` *** ContextImageModel ${this._id} setData recalcNeeded=${this._recalcNeeded}`);
+    //console.warn("ContextImageModel setData()");
     this.needsDraw$.next();
   }
 
@@ -293,7 +293,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     }
 
     this._recalcNeeded = true;
-    console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
+    console.log(` *** ContextImageModel ${this._id} setMapLayer - scales: ${this.colourScales.length}`);
   }
 
   getMapLayers(scanId: string): ContextImageMapLayer[] {
@@ -394,6 +394,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   clearDrawnLinePoints(): void {
     this._drawModel.drawnLinePoints = [];
+    //console.warn("ContextImageModel clearDrawnLinePoints()");
     this.needsDraw$.next();
   }
 
@@ -421,6 +422,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   set pointColourScheme(scheme: ColourScheme) {
     this._pointColourScheme = scheme;
     this._recalcNeeded = true;
+    //console.warn("ContextImageModel set pointColourScheme");
     this.needsDraw$.next();
   }
 
@@ -482,8 +484,6 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Rebuilding this models display data
   recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
-    //console.log(` *** ContextImageModel ${this._id} recalcDisplayDataIfNeeded recalcNeeded=${this._recalcNeeded}`);
-
     // Sometimes the colour scale wants a recalc, so check for that here
     let forceRecalcDrawModel = false;
     for (const scale of this._colourScales) {
@@ -494,7 +494,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (forceRecalcDrawModel || this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
+      //console.warn("drawModel.regenerate called...");
       this._drawModel.regenerate(canvasParams, this).subscribe(() => {
+        //console.warn("regenerate completion...");
         // If we don't have colour scales, but do have RGBU data and are in ratio mode, we can generate a scale from that
         this.buildRGBUColourScaleIfNeeded();
 
@@ -505,9 +507,13 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
         this._lastCalcCanvasParams = canvasParams;
         this._recalcNeeded = false;
+
+        this.drawModel.drawnData = null;
         this.needsDraw$.next();
       });
-    }
+    } /*else {
+      console.warn("SKIPPED drawModel.regenerate...");
+    }*/
   }
 
   getClosestLocationIdxToPoint(worldPt: Point): ClosestPoint {
@@ -640,9 +646,9 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     // Apply brightness
     if (this.image) {
       return adjustImageRGB(this.image, from.imageBrightness).pipe(
-        map((img: HTMLImageElement) => {
+        switchMap((img: HTMLImageElement) => {
           this.image = img;
-          this.continueRegenerate(from);
+          return this.continueRegenerate(from);
         })
       );
     }
@@ -664,35 +670,41 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
           from.removeBottomSpecularArtifacts
         )
         .pipe(
-          map((rgbuGen: RGBUImageGenerated | null) => {
+          switchMap((rgbuGen: RGBUImageGenerated | null) => {
             if (rgbuGen) {
               // Save the display image and scale data
               this.image = rgbuGen.image;
               this.rgbuImageScaleData = rgbuGen.layerForScale;
             }
 
-            this.continueRegenerate(from);
+            return this.continueRegenerate(from);
           })
         );
     }
 
     // Otherwise... still continue
-    this.continueRegenerate(from);
-    return of();
+    return this.continueRegenerate(from);
   }
 
-  private continueRegenerate(from: ContextImageModel) {
-    this.imageTransform = from.raw?.imageTransform || null;
+  private continueRegenerate(from: ContextImageModel): Observable<void> {
+    return new Observable<void>(observer => {
+      this.imageTransform = from.raw?.imageTransform || null;
 
-    const pointColours = getSchemeColours(from.pointColourScheme);
-    this.primaryColour = pointColours[0];
-    this.secondaryColour = pointColours[1];
+      const pointColours = getSchemeColours(from.pointColourScheme);
+      this.primaryColour = pointColours[0];
+      this.secondaryColour = pointColours[1];
 
-    // Generate draw models for each scan while also calculating the overall bounding box
-    this.allLocationPointsBBox = new Rect();
-    let firstBBox = true;
+      // Generate draw models for each scan while also calculating the overall bounding box
+      this.allLocationPointsBBox = new Rect();
+      let firstBBox = true;
 
-    if (from.raw) {
+      if (!from.raw) {
+        //console.warn("Return EMPTY");
+        observer.next();
+        observer.complete();
+        return;
+      }
+
       const newScanDrawModels = new Map<string, ContextImageScanDrawModel>();
 
       for (const [scanId, scanMdl] of from.raw.scanModels) {
@@ -774,15 +786,34 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       this.scanDrawModels = newScanDrawModels;
 
       // If we have any regions turned on, we need to generate their region polygons so they get drawn
+      const toWait$ = [];
+
       for (const roi of from.roiIds) {
         const mdl = this.scanDrawModels.get(roi.scanId);
         if (mdl) {
-          this.makeRegion(roi.scanId, roi.id, from, roi.opacity).subscribe((roiLayer: ContextImageRegionLayer) => {
-            mdl.regions.push(roiLayer);
-          });
+          toWait$.push(
+            this.makeRegion(roi.scanId, roi.id, from, roi.opacity).pipe(
+              tap((roiLayer: ContextImageRegionLayer) => {
+                mdl.regions.push(roiLayer);
+              })
+            )
+          );
         }
       }
-    }
+
+      if (toWait$.length <= 0) {
+        //console.warn("Return EMPTY2");
+        observer.next();
+        observer.complete();
+        return;
+      }
+
+      forkJoin(toWait$).subscribe((value: ContextImageRegionLayer[]) => {
+        //console.warn("Return forkJoin");
+        observer.next();
+        observer.complete();
+      });
+    });
   }
 
   private makePixelMask(pixelIndexes: Set<number>, width: number, height: number, roiColour: RGBA): Observable<HTMLImageElement | null> {
