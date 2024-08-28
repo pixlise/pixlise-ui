@@ -55,7 +55,6 @@ import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
 import { BuiltInTags } from "../../tags/models/tag.model";
