@@ -37,10 +37,11 @@ import { SpectrumService } from "../../../services/spectrum.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { QuantCreateReq, QuantCreateResp } from "src/app/generated-protos/quantification-create";
+import { QuantCreateReq, QuantCreateResp, QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { QuantLastOutputGetReq, QuantLastOutputGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import saveAs from "file-saver";
 import { QuantOutputType } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 
 export class SpectrumFitData {
   constructor(
@@ -219,14 +220,35 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
           if (!resp.status) {
             this._snackBarService.openError("Fit start did not return job status");
           } else {
-            if (!resp.resultData || resp.resultData.byteLength <= 0) {
-              this._snackBarService.openError("Fit did not return result data");
-            } else {
-              // The returned data is a CSV, so don't print it!
-              console.log("PIQUANT returned " + resp.resultData.byteLength + " bytes");
+            // Ensure job was started
+            if (resp.status.status == JobStatus_Status.ERROR) {
+              this._snackBarService.openError(`PIQUANT Fit failed to start, error: started with unexpected status: ${resp.status.message}`);
+            } else if (resp.status.status == JobStatus_Status.STARTING) {
+              this._snackBarService.open("PIQUANT Fit started", "This may take 1-2 minutes, please wait and the result will be displayed");
 
-              const csv = new TextDecoder().decode(resp.resultData);
-              this._spectrumService.mdl.setFitLineData(createdParams.scanId, csv);
+              // At this point we subscribe to updates to listen for status changes
+              this._dataService.quantCreateUpd$.subscribe({
+                next: (upd: QuantCreateUpd) => {
+                  if (upd.resultData && upd.resultData.byteLength > 0) {
+                    // The returned data is a CSV, so don't print it!
+                    console.log("PIQUANT returned " + upd.resultData.byteLength + " bytes");
+
+                    const csv = new TextDecoder().decode(upd.resultData);
+                    this._spectrumService.mdl.setFitLineData(createdParams.scanId, csv);
+                  } else if (upd.status) {
+                    this._snackBarService.openError(`PIQUANT Fit returned unexpected status update: ${upd.status.status} - ${upd.status.message}`);
+                  } else if (!upd.resultData || upd.resultData.byteLength <= 0) {
+                    this._snackBarService.openError("PIQUANT Fit did not return result data");
+                  } else {
+                    this._snackBarService.openError("PIQUANT Fit returned empty status updated");
+                  }
+                },
+                error: err => {
+                  this._snackBarService.openError(`PIQUANT Fit status update encountered an error: ${err}`);
+                },
+              });
+            } else {
+              this._snackBarService.openError(`Fit started with unexpected status: ${jobStatus_StatusToJSON(resp.status.status)}. Message: ${resp.status.message}`);
             }
           }
         },
