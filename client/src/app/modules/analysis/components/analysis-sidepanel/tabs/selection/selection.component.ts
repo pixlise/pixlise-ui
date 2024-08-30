@@ -216,15 +216,6 @@ export class SelectionComponent implements OnInit, OnDestroy {
     this._selectionService.newROIFromSelection();
   }
 
-  onAddNearbyPixels() {
-    const allScanIds = [];
-    for (const scan of Object.values(this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations)) {
-      allScanIds.push(scan.id);
-    }
-
-    this._selectionService.selectNearbyPixels(allScanIds, this._contextImageDataService);
-  }
-
   onEnterSelection(): void {
     this._selectionService.selectUserSpecifiedPMCs();
   }

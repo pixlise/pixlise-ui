@@ -38,12 +38,14 @@ export enum SelectionOption {
   NEW_ROI,
   SEL_SUBDATASET,
   SEL_INVERT,
+  SEL_NEARBY_PIXELS,
 }
 
 export class SelectionOptionsDialogData {
   constructor(
     public showDwell: boolean,
     public showNewROI: boolean,
+    public showSelectNearbyPixels: boolean,
     public subDataSetIDs: string[],
     public triggerElementRef: ElementRef
   ) {}
@@ -107,5 +109,9 @@ export class SelectionOptionsComponent implements AfterViewInit {
 
   onInvertSelection(): void {
     this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_INVERT, ""));
+  }
+
+  onSelectNearbyPixels(): void {
+    this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_NEARBY_PIXELS, ""));
   }
 }

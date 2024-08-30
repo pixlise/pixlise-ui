@@ -41,7 +41,7 @@ import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module"
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIPickerData, ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { decodeIndexList, isValidElementsString } from "src/app/utils/utils";
+import { decodeIndexList, encodeIndexList, isValidElementsString } from "src/app/utils/utils";
 
 export class QuantificationStartOptionsParams {
   constructor(
@@ -370,7 +370,7 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
           command: this.quantModeId == "Fit" ? "quant" : "map",
           name: this.quantName,
           scanId: this.data.scanIds[0],
-          pmcs: pmcs,
+          pmcs: encodeIndexList(pmcs),
           elements: elements.split(","),
           detectorConfig: this.selectedDetectorConfig,
           parameters: parameters,

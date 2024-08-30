@@ -42,6 +42,7 @@ import {
 } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
+import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -189,6 +190,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         type: "selection-changer",
         tooltip: "Selection changer",
         onClick: () => {},
+        getImageInfo: () => {
+          if (!this.mdl.rgbuSourceImage) {
+            return new SelectionChangerImageInfo([], "", this._contextDataService);
+          }
+          return new SelectionChangerImageInfo(this.mdl.scanIds, this.mdl.imageName, this._contextDataService);
+        }
       },
       bottomToolbar: [],
     };
@@ -390,7 +397,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             this.mdl.transform.scale.y = 1;
           }
 
-          this.reDraw();
+          this.reDraw("syncedTransform$");
         }
       })
     );
@@ -440,7 +447,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         if (complete) {
           this.saveState();
         }
-        this.reDraw();
+        this.reDraw("transformChangeComplete$");
       })
     );
 
@@ -529,7 +536,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         if (this.mdl.roiIds.length > 0) {
           this.reloadModel();
         }
-        this.reDraw();
+        this.reDraw("displaySettingsMap$");
       })
     );
 
@@ -542,7 +549,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       })
     );
 
-    this.reDraw();
+    this.reDraw("displaySettings$");
   }
 
   get isMapsPage(): boolean {
@@ -597,7 +604,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._configureForInjectedScan(liveExpression);
     if (this.mdl.imageName && this.mdl.expressionIds.length === 1 && this.mdl.expressionIds[0] === liveExpression.expressionId) {
       this.reloadModel(true);
-      this.reDraw();
+      this.reDraw("injectExpression");
     } else {
       this.setInitialConfig(true);
     }
@@ -606,7 +613,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   private updateSelection() {
     const sel = this._selectionService.getCurrentSelection();
     this.mdl.setSelection(sel.beamSelection, sel.pixelSelection, this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
-    this.reDraw();
+    this.reDraw("updateSelection");
   }
 
   private loadMapLayerExpressions(scanId: string, expressionIds: string[], setViewToExperiment: boolean = false): Observable<ContextImageMapLayer[]> {
@@ -634,7 +641,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
               this.mdl.setMapLayer(layer);
             });
 
-            this.reDraw();
+            this.reDraw("loadMapLayerExpressions");
 
             this.widgetErrorMessage = "";
 
@@ -765,11 +772,11 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         next: (layers: ContextImageLayers) => {
           this.isWidgetDataLoading = false;
 
-          this.reDraw();
+          this.reDraw("reloadModel");
         },
         error: err => {
           this.isWidgetDataLoading = false;
-          this.reDraw();
+          this.reDraw("reloadModel error");
 
           if (err instanceof WidgetError) {
             this._snackService.openError("Context image failed to display an expression", err);
@@ -786,7 +793,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._subs.unsubscribe();
   }
 
-  reDraw() {
+  reDraw(reason: string) {
+    //console.warn(`ContextImage reDraw(${reason})`);
     this.mdl.drawModel.drawnData = null;
     this.mdl.needsDraw$.next();
   }
@@ -1115,7 +1123,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         }
 
         this.saveState();
-        this.reDraw();
+        this.reDraw("visible dialog: visibilityToggle");
       }
     });
 
@@ -1148,7 +1156,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       });
 
       this.saveState();
-      this.reDraw();
+      this.reDraw("visible dialog: onReorder");
       this.reloadModel();
     });
 
@@ -1181,7 +1189,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         }
 
         this.saveState();
-        this.reDraw();
+        this.reDraw("visible dialog: opacityChange");
       }
     });
 

@@ -54,9 +54,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <push-button (onClick)="onEnterSelection()" buttonStyle="outline" class="half">Enter PMCs</push-button>
     </div>
     <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline">All Points for Dataset: {{ id }}</push-button>
-    <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="beamSelection.getSelectedEntryCount() <= 0"
-      >Add Nearby Pixels From PMC Locations</push-button
-    >
     <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="!hasEditAccess">Save selection as ROI</push-button>
   </div>
 
