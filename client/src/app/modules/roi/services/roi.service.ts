@@ -622,6 +622,9 @@ export class ROIService {
 
     if (roiToWrite.pixelIndexesEncoded && roiToWrite.pixelIndexesEncoded.length > 0) {
       roiToWrite.pixelIndexesEncoded = encodeIndexList(roiToWrite.pixelIndexesEncoded);
+    } else {
+      // No pixels selected, so no need to send an image name
+      roiToWrite.imageName = "";
     }
 
     this._dataService
