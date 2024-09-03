@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngFor="let id of data.subDataSetIDs" class="option" (click)="onSelectForSubDataset(id)">All Points for Dataset: {{id}}</div>
     <div class="option" (click)="onSelectEntered()">Enter PMCs to Select</div>
     <div *ngIf="data.showDwell" class="option" (click)="onSelectDwell()">Select PMC with Dwell Spectra</div>
-    <div *ngIf="data.showNewROI" class="option" (click)="onNewROI()">New ROI from Selection</div>
+    <div class="option" [ngClass]="{'disabled': !data.showNewROI}" (click)="onNewROI()">New ROI from Selection</div>
     <div class="option" (click)="onInvertSelection()">Invert Selection</div>
     <div *ngIf="data.showSelectNearbyPixels" class="option" (click)="onSelectNearbyPixels()">Select Nearby Pixels</div>
 </div>
