@@ -45,7 +45,11 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="chosen-list-footer gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onClearPickedList()">Clear</push-button>
-        <push-button *ngIf="quantificationEnabled" buttonStyle="yellow" (onClick)="onQuantify()">Run PIQUANT</push-button>
-        <div *ngIf="!quantificationEnabled" class="quant-disabled">Quantification Disabled</div>
+        <push-button
+            [disabled]="!quantificationEnabled"
+            buttonStyle="yellow"
+            (onClick)="onQuantify()"
+            [title]="quantificationEnabled ? 'Run PIQUANT to generate a new quantification' : 'Your account is not configured to allow quantification features'"
+            >Run PIQUANT</push-button>
     </div>
 </div>

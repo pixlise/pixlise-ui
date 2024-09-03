@@ -40,6 +40,8 @@ import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { JobStatus_JobType, JobStatus_Status } from "src/app/generated-protos/job";
 import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
+import { AuthService } from "@auth0/auth0-angular";
+import { Permissions } from "src/app/utils/permissions";
 
 export class SpectrumPeakIdentificationData {
   constructor(
@@ -67,9 +69,12 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
 
   jobsRunning: number = 0;
 
+  userCanViewQuantJobs: boolean = false;
+
   constructor(
     private resolver: ComponentFactoryResolver,
     private _dataService: APIDataService,
+    private _authService: AuthService,
     public dialogRef: MatDialogRef<SpectrumPeakIdentificationComponent>,
     @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData
   ) {}
@@ -78,6 +83,13 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
         this.updateJobsRunning();
+      })
+    );
+    this._subs.add(
+      this._authService.idTokenClaims$.subscribe(idToken => {
+        if (idToken) {
+          this.userCanViewQuantJobs = Permissions.hasPermissionSet(idToken, Permissions.permissionCreateQuantification);
+        }
       })
     );
 

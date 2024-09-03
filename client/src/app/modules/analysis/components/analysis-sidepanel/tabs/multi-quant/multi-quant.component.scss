@@ -34,16 +34,16 @@
 }
 
 .mq-container-outer {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    justify-content: space-evenly;
+    border-left: 1px solid #000;
+    background-color: #222829;
+
+    border-top-right-radius: 8px;
+
+    margin-left: 8px;
 
     // fxFill
     height: 100%;
     min-height: 100%;
-    min-width: 100%;
-    width: 100%;
 
     header {
         display: flex;
@@ -64,16 +64,9 @@
     }
 
     .mq-container {
-        display: flex;
-        flex-direction: row;
-        flex: 1;
-        justify-content: space-evenly;
-
         // fxFill
         height: 100%;
         min-height: 100%;
-        min-width: 100%;
-        width: 100%;
 
         .mq-column {
             display: flex;
