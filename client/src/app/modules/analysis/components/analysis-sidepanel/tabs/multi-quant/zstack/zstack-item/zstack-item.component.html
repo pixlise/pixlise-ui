@@ -36,7 +36,6 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="quant-picker-container">
             <div class="setting-label" [title]="item.roiName">{{item.roiName}}<span *ngIf="item.sharer" class="obj-creator" title="Shared By This User">{{item.sharer}}</span></div>
             <quantification-selector
-                class="quant-picker"
                 [scanId]="item.scanId"
                 [roiID]="item.zStackItem.roiId"
                 [selectedQuantID]="item.zStackItem.quantificationId"

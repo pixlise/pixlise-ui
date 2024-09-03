@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <input [(ngModel)]="createDescription" type="text" placeholder="Description">
         </section>
         <div class="buttons">
-            <push-button buttonStyle="outline" (onClick)="onCreateConfirm()">Create</push-button>
+            <push-button buttonStyle="outline" [disabled]="createName.length <= 0" (onClick)="onCreateConfirm()">Create</push-button>
             <push-button buttonStyle="outline" (onClick)="onCreateCancel()">Close</push-button>
         </div>
     </div>
