@@ -66,7 +66,7 @@
 <ng-template #roiSettingsMenu>
   <div class="roi-settings">
     <div class="settings-buttons">
-      <action-button title="Delete this ROI" action="delete" confirmText="Are you sure you want to delete ROI: {{ name }}?" (onClick)="onDelete()"> </action-button>
+      <action-button [disabled]="!canEdit" title="Delete this ROI" action="delete" confirmText="Are you sure you want to delete ROI: {{ name }}?" (onClick)="onDelete()"> </action-button>
       <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
       <widget-settings-menu *ngIf="!isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
