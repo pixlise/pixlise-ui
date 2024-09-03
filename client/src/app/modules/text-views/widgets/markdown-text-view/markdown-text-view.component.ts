@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { MarkdownViewState } from "src/app/generated-protos/widget-data";
@@ -9,25 +9,23 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
   templateUrl: "./markdown-text-view.component.html",
   styleUrls: ["./markdown-text-view.component.scss"],
 })
-export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit, OnDestroy, AfterViewInit {
   private _subs = new Subscription();
 
   content: string = "";
   editMode: boolean = false;
   userCanEdit: boolean = true;
 
-  constructor(public dialog: MatDialog) {
+  private _container: Element | undefined;
+
+  constructor(
+    private _elementRef: ElementRef,
+    public dialog: MatDialog
+  ) {
     super();
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        // {
-        //   id: "refs",
-        //   type: "button",
-        //   title: "Refs",
-        //   tooltip: "Choose reference areas to display",
-        //   onClick: () => this.onReferences(),
-        // },
         {
           id: "edit",
           type: "button",
@@ -74,6 +72,32 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  override ngAfterViewInit(): void {
+    super.ngAfterViewInit();
+
+    if (this._elementRef) {
+      this._container = this._elementRef?.nativeElement?.querySelector(`.widget-area`);
+    }
+  }
+
+  get widgetContentHeight(): number {
+    let h = 300;
+    if (this._container) {
+      h = this._container.getBoundingClientRect().height;
+    }
+
+    return h - 10;
+  }
+
+  get widgetContentWidth(): number {
+    let w = 300;
+    if (this._container) {
+      w = this._container.getBoundingClientRect().width;
+    }
+
+    return w - 10;
   }
 
   onToggleEdit() {

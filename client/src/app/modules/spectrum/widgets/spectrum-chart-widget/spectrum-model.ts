@@ -125,6 +125,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _fitSelectedElementZs$ = new ReplaySubject<void>(1);
   private _fitXValues: Float32Array = new Float32Array();
   private _fitRawCSV: string = "";
+  private _fitIdWaitingFor: string = "";
 
   private _showFitLines: boolean = false; // Flag that controls if lines are read from spectrum sources vs fit lines
 
@@ -518,7 +519,16 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._spectrumLines = linesLeft;
   }
 
+  get fitIdWaitingFor(): string {
+    return this._fitIdWaitingFor;
+  }
+
+  set fitIdWaitingFor(id: string) {
+    this._fitIdWaitingFor = id;
+  }
+
   setFitLineData(scanId: string, csv: string): void {
+    this._fitIdWaitingFor = ""; // At this point we're being given fit CSV data, so assume any fit job ID's we were waiting for are complete
     this._fitRawCSV = csv;
     this._fitLineSources = [];
     //this._fitSelectedElementZs = [];

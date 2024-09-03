@@ -35,7 +35,6 @@ import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos
 import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
-import { SentryHelper } from "src/app/utils/utils";
 
 @Component({
   selector: "scan-configuration",
