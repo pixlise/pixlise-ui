@@ -5,6 +5,7 @@
 - **Redesigned Multi-Dataset Parallel Coordinates Plot** Parallel Coordinates plot now works with multiple datasets, picking up images from the ROI or defaulting to the MSA image in the case of All Points. Also allows toggling between mean/median, different sigma levels, and excluding zeros.
 - **Duplicate Workspace Tab** Allows for duplicating a workspace tab, including all settings and configurations, from the workspace tab on the sidebar.
 - **Select Nearby Pixels** Feature is back on the Selection (left) side-bar. If you click it, pixels in the RGBU MSA image get selected. If you're currently not viewing this on the context image, it still happens and switching the context image to the RGBU MSA image will display the selection.
+- **User Permissions applied to UI** In UI elements that allow quantification creation, viewing quant job list or ROI editing, we consistantly now show the feature as disabled if user has no permissions.
 
 ### Bug Fixes
 
