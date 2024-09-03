@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <fit-line-config *ngIf="!message"></fit-line-config>
             <div *ngIf="message" class="fit-message">
                 <app-widget-display-message
+                    *ngIf="message"
                     [message]="message"
                     [large]="false">
                 </app-widget-display-message>
@@ -54,7 +55,13 @@ POSSIBILITY OF SUCH DAMAGE.
         <fit-elements></fit-elements>
     </div>
     <div class="fit-bottom-buttons">
-        <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+        <div class="group">
+            <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+            <ng-container *ngIf="waiting">
+                <div>{{waitMessage}}</div>
+                <wait-spinner></wait-spinner>
+            </ng-container>
+        </div>
 
         <div class="group">
             <ng-container *ngIf="quantificationEnabled">
