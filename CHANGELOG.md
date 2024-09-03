@@ -9,7 +9,9 @@
 ### Bug Fixes
 
 - Multi-Quant side-bar display issues
-- Importer lambda now prints out what triggered it first thing in case we need to re-run it. Also gets auto-deployed now.
+- Importer lambda now prints out what triggered it first thing in case we need to re-run it. Also gets auto-deployed now
+- Spectrum chart Display Fit feature is now more robust, and shows "spinners" when fit is being loaded or generated
+- Made PIQUANT map/fit options clearer for different user account permissions
 
 ## 4.37.0 (2024-08-20)
 

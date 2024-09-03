@@ -64,12 +64,22 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
 
         <div class="group">
-            <ng-container *ngIf="quantificationEnabled">
-                <push-button buttonStyle="outline" (onClick)="onViewLogs()" [disabled]="!hasFitData">Logs</push-button>
-                <push-button buttonStyle="outline" (onClick)="onExport()" [disabled]="!hasFitData">Export Fit</push-button>
-                <push-button buttonStyle="yellow" (onClick)="onReQuantify()">Re-Quantify</push-button>
-            </ng-container>
-            <div *ngIf="!quantificationEnabled" class="quant-disabled">Quantification Disabled</div>
+            <push-button
+                [disabled]="!quantificationEnabled || !hasFitData"
+                buttonStyle="outline"
+                (onClick)="onViewLogs()"
+                [title]="quantificationEnabled ? 'Download the PIQUANT log from the last quant command' : 'Your account is not configured to allow quantification features'">Logs</push-button>
+            <push-button
+                [disabled]="!quantificationEnabled || !hasFitData"
+                buttonStyle="outline"
+                (onClick)="onExport()"
+                [title]="quantificationEnabled ? 'Export fit data shown on chart' : 'Your account is not configured to allow quantification features'">Export Fit</push-button>
+            <push-button
+                [disabled]="!quantificationEnabled"
+                buttonStyle="yellow"
+                (onClick)="onReQuantify()"
+                [title]="quantificationEnabled ? 'Run PIQUANT to generate fit lines using the quant command' : 'Your account is not configured to allow quantification features'"
+                >Re-Quantify</push-button>
         </div>
     </div>
 </div>
