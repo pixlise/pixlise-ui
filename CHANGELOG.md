@@ -1,4 +1,4 @@
-## 4.40.0 (Latest)
+## 4.39.0 (Latest)
 
 ### Features
 
