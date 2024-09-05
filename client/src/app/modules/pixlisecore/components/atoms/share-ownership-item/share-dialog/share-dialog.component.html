@@ -28,6 +28,32 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
+<ng-template #subItemSharingMenu>
+  <div class="sub-item-sharing-menu">
+    <span>Adds view access for</span>
+    <div class="new-view-access">
+      <div *ngFor="let member of members; trackBy: trackByMemberId" class="member-item">
+        <div class="member-container" *ngIf="subItemViewershipChangeMap.get(selectedSubItemId)?.has(member.id)">
+          <div class="icon {{ !member.isGroup && member.id === currentUserId ? 'current-user' : '' }}">
+            <img *ngIf="member.icon" [src]="member.icon" />
+            <span *ngIf="!member.icon && !member.isGroup" class="user-icon">{{ member.name ? member.name[0].toUpperCase() : "N/A" }}</span>
+            <span
+              *ngIf="!member.icon && member.isGroup"
+              #tooltip="matTooltip"
+              [matTooltip]="'Group: ' + member.name + '\nDescription: ' + (member.description ? 'N/A' : '')"
+              class="group-icon">
+              <img src="assets/PIXLISE.svg" />
+            </span>
+          </div>
+          <div class="name">{{ member.name }}</div>
+          <div class="access-type">
+            <span class="static-access">{{ member.isGroup ? "Group" : "User" }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
 
 <div class="share-dialog">
   <h1>Share {{ data.typeName }}{{ !canEdit ? " (Read Only)" : "" }}</h1>
@@ -65,6 +91,18 @@ POSSIBILITY OF SUCH DAMAGE.
     <h1>Has access</h1>
     <div class="access-list">
       <div *ngFor="let member of members; trackBy: trackByMemberId" class="member-item">
+        <div class="error-icon" *ngIf="memberSharingErrorChangeMap.get(member.id)">
+          <img
+            #tooltip="matTooltip"
+            [matTooltip]="
+              (memberSharingErrorChangeMap.get(member.id)?.size?.toString() || '0') +
+              ' items cannot be shared with this user.\n\n' +
+              'Please go through the below list of items and make sure you have edit permission on them\nto update sharing settings or confirm that the intended audience otherwise has access.\n\n' +
+              'Sharing without resolving these issues could potentially lead to broken items for this user.'
+            "
+            class="sharing-warning"
+            src="assets/icons/error-triangle.svg" />
+        </div>
         <div class="icon {{ !member.isGroup && member.id === currentUserId ? 'current-user' : '' }}">
           <img *ngIf="member.icon" [src]="member.icon" />
           <span *ngIf="!member.icon && !member.isGroup" class="user-icon">{{ member.name ? member.name[0].toUpperCase() : "N/A" }}</span>
@@ -78,12 +116,20 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="name">{{ member.name }}</div>
         <div class="access-type">
-          <mat-select [disabled]="!canEdit" [(ngModel)]="member.isEditor" (selectionChange)="onAccessChange('', $event)">
+          <span class="static-access" *ngIf="member.id === currentUserId && data?.ownershipSummary?.creatorUser?.id === member.id && preventSelfAssignment"
+            >Owner</span
+          >
+          <span class="static-access" *ngIf="member.id !== currentUserId && data.restrictSubItemSharingToViewer && subItems.length > 0">View all included items</span>
+          <mat-select
+            *ngIf="(member.id !== currentUserId && (!data.restrictSubItemSharingToViewer || subItems.length === 0)) || !preventSelfAssignment"
+            [disabled]="!canEdit || (member.id === currentUserId && preventSelfAssignment)"
+            [(ngModel)]="member.isEditor"
+            (selectionChange)="onAccessChange('', $event)">
             <mat-option [value]="true">Editor</mat-option>
             <mat-option [value]="false">Viewer</mat-option>
           </mat-select>
           <action-button
-            *ngIf="canEdit"
+            *ngIf="canEdit && (member.id !== currentUserId || !preventSelfAssignment)"
             action="close"
             color="rgb(var(--clr-gray-30))"
             confirmText="Are you sure you want to remove {{ member.name }}?"
@@ -94,20 +140,31 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div class="sub-items" *ngIf="subItems.length > 0">
       <div class="title">
-        <h1>Sub Items</h1>
+        <h1>Included in {{ data.typeName }} Sharing</h1>
         <div class="share-subitems">
           <span class="share-sub-label">Share with Sub Items:</span>
           <action-button [action]="shareWithSubItems ? 'checkOn' : 'checkOff'" (onClick)="shareWithSubItems = !shareWithSubItems"></action-button>
         </div>
       </div>
-      <div class="sub-item-list">
+      <div class="warning-not-shared" *ngIf="!shareWithSubItems">
+        <div class="warning-icon">
+          <img class="sharing-warning" src="assets/icons/error-triangle.svg" />
+        </div>
+        <span class="text-label">
+          Sharing settings will not be updated for sub-items in this {{ data.typeName }}, so it may appear broken for users who don't already have access.
+        </span>
+      </div>
+      <div *ngIf="shareWithSubItems" class="sub-item-list">
         <div *ngFor="let subItem of subItems" class="sub-item">
           <div class="icon">
             <img
-              *ngIf="!subItem.ownershipSummary.canEdit"
+              *ngIf="subItemSharingErrorMap.get(subItem.id)"
               #tooltip="matTooltip"
               [matTooltip]="
-                'You don\'t have edit permission on this expression.\nPlease make a copy of it or ask the owner to make you an editor to share this group with others.'
+                'You don\'t have edit permission on this expression to update sharing settings.\n' +
+                'Please make a copy of it or ask the owner (' +
+                (subItem.ownershipSummary?.creatorUser?.name || 'N/A') +
+                ') to make you an editor to share this group with others.'
               "
               class="sharing-warning"
               src="assets/icons/error-triangle.svg" />
@@ -116,11 +173,20 @@ POSSIBILITY OF SUCH DAMAGE.
               subItem?.ownershipSummary?.creatorUser?.name?.[0] ? subItem.ownershipSummary.creatorUser!.name[0].toUpperCase() : "N/A"
             }}</span>
           </div>
-          <div class="details">
+          <div class="details {{ subItemSharingErrorMap.get(subItem.id) ? 'error-state' : '' }}">
             <h2>{{ subItem.name }}</h2>
             <h5>{{ subItem.typeName }}</h5>
           </div>
           <div class="right-menu">
+            <widget-settings-menu [settingsDialog]="subItemSharingMenu">
+              <push-button
+                *ngIf="canEdit && subItem.ownershipSummary.canEdit && subItemViewershipChangeMap.get(subItem.id)?.size"
+                [disabled]="!canEdit || !subItem.ownershipSummary.canEdit"
+                buttonStyle="gray"
+                (onClick)="selectedSubItemId = subItem.id"
+                >+{{ subItemViewershipChangeMap.get(subItem.id)?.size || 0 }} Viewers</push-button
+              >
+            </widget-settings-menu>
             <share-ownership-item-button [id]="subItem.id" [ownershipSummary]="subItem.ownershipSummary" [type]="subItem.type"></share-ownership-item-button>
           </div>
         </div>
@@ -129,6 +195,16 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="gap-separated-horizontal-elements button-container">
       <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
       <push-button
+        *ngIf="validShareCount > 0 && shareWithSubItems"
+        [disabled]="!canEdit"
+        buttonStyle="yellow"
+        (onClick)="onConfirm()"
+        #tooltip="matTooltip"
+        [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
+        >Share {{ validShareCount + 1 }} items</push-button
+      >
+      <push-button
+        *ngIf="validShareCount === 0 || !shareWithSubItems"
         [disabled]="!canEdit"
         buttonStyle="yellow"
         (onClick)="onConfirm()"

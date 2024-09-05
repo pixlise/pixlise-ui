@@ -62,22 +62,32 @@
 
       input {
         width: 100%;
-        line-height: 40px;
+        line-height: 26px;
 
-        border-right: none;
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
+        // border-right: none;
+        // border-top-right-radius: 0;
+        // border-bottom-right-radius: 0;
+
+        border-radius: 4px;
+        border: 1px solid #545f64;
+        background: #444c50;
       }
     }
 
     .search-type {
       padding: 7px;
-      background: #454c50;
-      border: 1px solid rgb(84, 95, 100);
-      border-left: none;
-      border-radius: 4px;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
+      // background: #454c50;
+      // border: 1px solid rgb(84, 95, 100);
+      // border-left: none;
+      // border-radius: 4px;
+      // border-top-left-radius: 0;
+      // border-bottom-left-radius: 0;
+
+      mat-select {
+        border: 1px solid rgba(0, 0, 0, 0.16);
+        background: #444c50 !important;
+        border-radius: 4px !important;
+      }
 
       &.disabled {
         background: #2a3137;
@@ -97,6 +107,17 @@
       justify-content: space-between;
       gap: 8px;
       padding: 8px;
+
+      .error-icon {
+        display: flex;
+        align-items: center;
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+      }
 
       .icon {
         &.current-user {
@@ -136,6 +157,23 @@
       .access-type {
         margin-left: auto;
         display: flex;
+        gap: 16px;
+
+        .static-access {
+          display: flex;
+          align-items: center;
+
+          color: #bec0c2;
+          font-feature-settings:
+            "liga" off,
+            "clig" off;
+
+          font-family: Inter;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: 16px;
+        }
       }
     }
   }
@@ -149,6 +187,22 @@
 
   .title {
     display: flex;
+    align-items: center;
+
+    h1 {
+      color: #fff;
+      font-feature-settings:
+        "liga" off,
+        "clig" off;
+
+      font-family: Inter;
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 16px;
+      text-transform: none;
+    }
+
     .share-subitems {
       display: flex;
       align-items: center;
@@ -164,6 +218,13 @@
   .sub-item-list {
     display: flex;
     flex-direction: column;
+
+    max-height: 200px;
+    overflow-y: auto;
+
+    background: #222829;
+
+    padding: 8px;
 
     gap: 8px;
 
@@ -199,6 +260,13 @@
       }
 
       .details {
+        &.error-state {
+          h2,
+          h5 {
+            color: #fc8d59;
+          }
+        }
+
         h2 {
           font-size: 16px;
           margin: 0;
@@ -216,7 +284,86 @@
 
       .right-menu {
         margin-left: auto;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
     }
+  }
+}
+
+.sub-item-sharing-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .new-view-access {
+    width: 300px;
+
+    .member-item {
+      .member-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .icon {
+          img {
+            .user-icon {
+              width: 24px;
+              height: 24px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: rgb(84, 95, 100);
+              border-radius: 4px;
+              padding: 2px;
+            }
+
+            .group-icon,
+            .user-icon {
+              height: fit-content;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            height: 28px;
+          }
+        }
+
+        .name {
+        }
+
+        .access-type {
+          margin-left: auto;
+          color: #969696;
+
+          font-feature-settings:
+            "liga" off,
+            "clig" off;
+
+          font-family: Inter;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 500;
+          line-height: 16px;
+        }
+      }
+    }
+  }
+}
+
+.warning-not-shared {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .warning-icon {
+    display: flex;
+    align-items: center;
+  }
+
+  .text-label {
+    color: #bec0c2;
   }
 }

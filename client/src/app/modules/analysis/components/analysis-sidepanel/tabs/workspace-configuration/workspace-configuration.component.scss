@@ -107,7 +107,7 @@
   .tabs-label {
     margin: 0;
 
-    color: #fff;
+    color: #bcbcbc;
 
     font-feature-settings:
       "clig" off,
@@ -203,4 +203,37 @@
     height: 24px;
     border-radius: 0;
   }
+}
+
+.sharing-label {
+  margin: 0;
+
+  color: #bcbcbc;
+
+  font-feature-settings:
+    "clig" off,
+    "liga" off;
+
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+
+  margin-top: 8px;
+  margin-left: 8px;
+}
+
+.share-btn {
+  .share-btn-title {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+}
+
+.snapshots-container {
+  padding: 0 8px;
 }
