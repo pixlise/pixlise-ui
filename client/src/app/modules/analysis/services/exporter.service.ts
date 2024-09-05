@@ -36,7 +36,7 @@ import { Quantification } from "src/app/generated-protos/quantification";
 import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
-import { ScanImage } from "src/app/generated-protos/image";
+import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
 
 @Injectable({
   providedIn: "root",
@@ -581,16 +581,18 @@ msa += `#XPOSITION   : 0.000
     return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
       switchMap(images => {
         const imagesIJ: Map<string, Map<number, Coordinate2D[]>> = new Map();
+        const matchedImages = new Map<string, ImageMatchTransform>();
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
           const imagePaths = images.images
             .filter((img: ScanImage) => {
-              if (img.originScanId !== scanId) {
-                return false;
+              const hasMatchInfo = img.matchInfo && img.matchInfo.beamImageFileName.length > 0;
+              if (img.matchInfo && /* <-- this is to shut the linter up */ hasMatchInfo) {
+                matchedImages.set(img.imagePath, img.matchInfo);
               }
 
               const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
-              return (fields?.producer || "") === "J";
+              return (img.originScanId === scanId && (fields?.producer || "") === "J") || hasMatchInfo;
             })
             .map(image => image.imagePath);
 
@@ -636,7 +638,22 @@ msa += `#XPOSITION   : 0.000
                             verMap = new Map<number, Coordinate2D[]>();
                           }
 
-                          verMap.set(version, locations.locations);
+                          // If this one is "matched", we have to apply the transform to the ijs
+                          // NOTE: This transform is applied differently to the one in the context image - there we're transforming the image to match
+                          // the same ij locations, but here we're transforming the ijs to fit the image!
+                          const matchedInfo = matchedImages.get(imageName);
+                          if (matchedInfo) {
+                            const transformedLocations: Coordinate2D[] = [];
+                            for (const loc of locations.locations) {
+                              transformedLocations.push(
+                                Coordinate2D.create({ i: loc.i * matchedInfo.xScale + matchedInfo.xOffset, j: loc.j * matchedInfo.yScale + matchedInfo.yOffset })
+                              );
+                            }
+                            verMap.set(version, transformedLocations);
+                          } else {
+                            // Just store as is
+                            verMap.set(version, locations.locations);
+                          }
 
                           imagesIJ.set(imageName, verMap);
                         }
