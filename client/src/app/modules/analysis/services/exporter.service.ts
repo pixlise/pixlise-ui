@@ -522,8 +522,7 @@ msa += `#XPOSITION   : 0.000
             return { csvs };
           }
 
-          const imageKeyOrder = [...imageIJs.keys()];
-          imageKeyOrder.forEach(imageKey => {
+          for (const imageKey of imageIJs.keys()) {
             const imageName = getPathBase(imageKey);
 
             // Export all coordinates for this image name
@@ -548,27 +547,25 @@ msa += `#XPOSITION   : 0.000
               data += `\n${entry.id},${x},${y},${z}`;
 
               // Add image coordinate headers
-              imageKeyOrder.forEach(imageKey => {
-                const verMap = imageIJs.get(imageKey);
-                let wrote = false;
-                if (verMap) {
-                  for (const coords of verMap.values()) {
-                    if (coords) {
-                      const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
-                      data += `,${roundedI},${roundedJ}`;
-                      wrote = true;
-                    }
+              const verMap = imageIJs.get(imageKey);
+              let wrote = false;
+              if (verMap) {
+                for (const coords of verMap.values()) {
+                  if (coords) {
+                    const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
+                    data += `,${roundedI},${roundedJ}`;
+                    wrote = true;
                   }
                 }
 
                 if (!wrote) {
                   data += ",,";
                 }
-              });
+              }
             }
 
             csvs.push({ fileName: `${scanId}-${imageName}-beam-locations.csv`, data });
-          });
+          }
         } else {
           console.error("Missing data for beam locations export");
           this._snackService.openError("Error exporting data", "Missing data for beam locations export");
