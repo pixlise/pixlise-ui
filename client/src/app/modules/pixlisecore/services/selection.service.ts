@@ -29,25 +29,30 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, combineLatest, map } from "rxjs";
+import { Observable, ReplaySubject, combineLatest, forkJoin, map } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { BeamSelection } from "../models/beam-selection";
 import { PixelSelection } from "../models/pixel-selection";
-import { invalidPMC, encodeIndexList, httpErrorToString, decodeIndexList } from "src/app/utils/utils";
+import { invalidPMC, encodeIndexList, httpErrorToString, decodeIndexList, getPathBase, SDSFields } from "src/app/utils/utils";
 
 import { APIDataService } from "./apidata.service";
 import { SelectedScanEntriesReq, SelectedScanEntriesResp, SelectedScanEntriesWriteReq } from "src/app/generated-protos/selection-entry-msgs";
 import { SelectedImagePixelsReq, SelectedImagePixelsResp, SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { PMCConversionResult, ScanIdConverterService } from "./scan-id-converter.service";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "./apicacheddata.service";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { NewROIDialogData, NewROIDialogComponent } from "../../roi/components/new-roi-dialog/new-roi-dialog.component";
 import { PMCSelectorDialogComponent } from "../components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
-import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
+import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
+import { PixelPoint } from "../../analysis/components/analysis-sidepanel/tabs/selection/model";
+import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/image-viewers.module";
+import { Point } from "src/app/models/Geometry";
+import { RGBUImage } from "src/app/models/RGBUImage";
 
 // The Selection service. It should probably be named something like CrossViewLinkingService though!
 //
@@ -359,7 +364,7 @@ export class SelectionService {
     //let toSave = new selectionState([], "", []);
     //this._viewStateService.setSelection(toSave);
   }
-/*
+  /*
   clearSelectionAndHistory(): void {
     this._selectionStack = [SelectionHistoryItem.makeEmptySelectionItem()];
     this._selectionCurrIdx = 0;
@@ -597,5 +602,192 @@ export class SelectionService {
         return items;
       })
     );
+  }
+
+  selectNearbyPixels(scanIds: string[], contextImageDataService: ContextImageDataService) {
+    // Get context image model for each scan that has a MSA file
+    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: scanIds })).subscribe((imageListResp: ImageListResp) => {
+      const imagesToSelectFor: string[] = [];
+      const scanIdForImage: string[] = [];
+      for (const img of imageListResp.images) {
+        if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.source === ScanImageSource.SI_UPLOAD) {
+          const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
+          if (fields?.prodType === "MSA") {
+            imagesToSelectFor.push(img.imagePath);
+            let scanId = "";
+            if (img.originScanId.length > 0) {
+              scanId = img.originScanId;
+            } else if (img.imagePath.startsWith(scanIds[0])) {
+              scanId = scanIds[0];
+            }
+
+            if (scanId.length <= 0) {
+              console.error(`Failed to find Origin scan ID for MSA image: ${img.imagePath}`);
+              continue;
+            }
+
+            scanIdForImage.push(scanId);
+
+            // NOTE: for now, we only work on the first image, because selection doesn't support multiple images!
+            break;
+          }
+        }
+      }
+
+      if (imagesToSelectFor.length <= 0) {
+        return;
+      }
+
+      // For all the images we want to select pixels for, do it
+      const models$ = [];
+      for (const img of imagesToSelectFor) {
+        models$.push(contextImageDataService.getModelData(img, new Map<string, number>(), ""));
+      }
+
+      forkJoin(models$).subscribe((models: ContextImageModelLoadedData[]) => {
+        const currSel = this.getCurrentSelection();
+
+        // Read pixel selections back from each image/model we're working on
+        const idxs = currSel.beamSelection.getSelectedScanEntryIndexes(scanIdForImage[0]);
+
+        if (idxs.size <= 0) {
+          this._snackbarService.openError("No PMCs selected", "Cannot select nearby pixels if no PMCs are selected!");
+          return;
+        }
+
+        const scanMdl = models[0].scanModels.get(scanIdForImage[0]);
+        if (scanMdl && models[0].rgbuSourceImage && models[0].imageTransform) {
+          let pixelSelection = this.getJoinedNearbyPixelSelection(
+            imagesToSelectFor[0],
+            idxs,
+            scanMdl,
+            models[0].rgbuSourceImage,
+            models[0].imageTransform,
+            currSel.pixelSelection
+          );
+          this.setSelection(currSel.beamSelection, pixelSelection, true);
+        }
+      });
+    });
+  }
+
+  private getJoinedNearbyPixelSelection(
+    imageName: string,
+    locationIndexes: Set<number>,
+    mdl: ContextImageScanModel,
+    rgbuImage: RGBUImage,
+    imageTransform: ContextImageItemTransform,
+    currPixelSel: PixelSelection
+  ): PixelSelection {
+    // Transform PMC selection into a list of pixel indices that are within all PMC sub-polygons
+    const selectedPixels = Array.from(locationIndexes).reduce((prevPixels: number[], location: number) => {
+      // Get pixels within each polygon corresponding to selected PMCs
+      let polygonPixels = this.getPixelsInPolygon(mdl.scanPointPolygons[location], rgbuImage, imageTransform);
+      return [...prevPixels, ...polygonPixels];
+    }, []);
+
+    // Get width and height from red channel
+    const redChannel = rgbuImage.r;
+    const [width, height] = [redChannel.width, redChannel.height];
+
+    let newPixelSelection: Set<number> = new Set();
+    // If there's a current pixel selection, use this as the starting point
+    if (currPixelSel) {
+      newPixelSelection = currPixelSel.selectedPixels;
+    }
+
+    newPixelSelection = new Set([...newPixelSelection, ...selectedPixels]);
+    return new PixelSelection(newPixelSelection, width, height, imageName);
+  }
+
+  private getPixelsInPolygon(
+    polygon: Point[],
+    rgbuImage: RGBUImage,
+    imageTransform: ContextImageItemTransform,
+    oversizeRadius: number = 2,
+    includeOversizedPoints: boolean = false
+  ): number[] {
+    const polygonPixels: Set<number> = new Set();
+    polygon.forEach(point => {
+      // Convert point to pixel index
+      const currentPixel = this.getPixelIndexAtPoint(point, rgbuImage, imageTransform);
+      if (currentPixel >= 0) {
+        // Get an oversized pixel selection based on polygon points
+        const nearbyPixels = this.getNearbyPixels(currentPixel, rgbuImage, imageTransform, oversizeRadius);
+        nearbyPixels.forEach(pixel => {
+          // Add pixel from oversized pixel selection to polygon pixels if it's in the polygon or oversized points are included
+          if (includeOversizedPoints || this.pointInPolygon(polygon, pixel.point)) {
+            polygonPixels.add(pixel.i);
+          }
+        });
+      }
+    });
+    return Array.from(polygonPixels);
+  }
+
+  private getNearbyPixels(pixelIndex: number, rgbuImage: RGBUImage, imageTransform: ContextImageItemTransform, radius: number = 3): PixelPoint[] {
+    // Only contine if we have a valid RGBU context image and requested radius >= 0
+    if (radius < 0) {
+      return [];
+    }
+    const redChannel = rgbuImage.r;
+    // Convert pixelIndex to x and y point coordinates
+    const yCoord = Math.floor(pixelIndex / redChannel.width);
+    const xCoord = pixelIndex % redChannel.width;
+    // Calculate top left starting point
+    const startX = Math.max(xCoord - radius, 0);
+    const startY = Math.max(yCoord - radius, 0);
+    // Calculate bottom right ending point
+    const endX = Math.min(xCoord + radius, redChannel.width - 1);
+    const endY = Math.min(yCoord + radius, redChannel.height - 1);
+    const pixels = [];
+    // Generate a square with pixelIndex in center with specified radius
+    for (let x = startX; x <= endX; x++) {
+      for (let y = startY; y <= endY; y++) {
+        const index = y * redChannel.width + x;
+        // Verify nothing went wrong and this is a valid index
+        if (index >= 0 && index < redChannel.values.length) {
+          // Offset coordinates to be in global draw coordinate system
+          const offsetX = x + imageTransform.xOffset;
+          const offsetY = y + imageTransform.yOffset;
+          // Join point with pixel index
+          pixels.push({ point: new Point(offsetX, offsetY), i: index });
+        }
+      }
+    }
+    return pixels;
+  }
+
+  private getPixelIndexAtPoint(point: Point, rgbuImage: RGBUImage, imageTransform: ContextImageItemTransform): number {
+    const redChannel = rgbuImage.r;
+    // Remove offset from point and convert to index using red channel for width
+    const rawX = Math.round(point.x) - imageTransform.xOffset;
+    const rawY = Math.round(point.y) - imageTransform.yOffset;
+    const pixelIndex = rawY * redChannel.width + rawX;
+    // Return -1 if pixel index is not within bounds
+    if (pixelIndex <= 0 || pixelIndex >= redChannel.values.length) {
+      return -1;
+    }
+    return pixelIndex;
+  }
+
+  // Algorithm adapted from https://www.algorithms-and-technologies.com/point_in_polygon/javascript
+  private pointInPolygon(polygon: Point[], point: Point): boolean {
+    // A point is in a polygon if a line from the point to infinity crosses the polygon an odd number of times
+    let oddNumberOfCrossings = false;
+    // For each edge (In this case for each point of the polygon and the previous one)
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; i++) {
+      // If a line from the point into infinity crosses this edge
+      if (
+        polygon[i].y > point.y !== polygon[j].y > point.y && // One point needs to be above, one below our y coordinate
+        // ...and the edge doesn't cross our Y corrdinate before our x coordinate (but between our x coordinate and infinity)
+        point.x < ((polygon[j].x - polygon[i].x) * (point.y - polygon[i].y)) / (polygon[j].y - polygon[i].y) + polygon[i].x
+      ) {
+        oddNumberOfCrossings = !oddNumberOfCrossings;
+      }
+      j = i;
+    }
+    // If the number of crossings was odd, the point is in the polygon
+    return oddNumberOfCrossings;
   }
 }

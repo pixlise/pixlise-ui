@@ -40,8 +40,8 @@ import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/
 import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
 import { ScanItem } from "../../../../generated-protos/scan";
 import { ObjectType } from "../../../../generated-protos/ownership-access";
-import { UserOptionsService } from "../../../settings/services/user-options.service";
 import { rgbBytesToImage } from "src/app/utils/drawing";
+import { UserOptionsService } from "src/app/modules/settings/settings.module";
 
 @Component({
   selector: "app-dataset-customisation-page",

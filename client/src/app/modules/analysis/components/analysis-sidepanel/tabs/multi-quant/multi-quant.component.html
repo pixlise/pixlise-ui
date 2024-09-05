@@ -41,54 +41,61 @@ POSSIBILITY OF SUCH DAMAGE.
             <input [(ngModel)]="createDescription" type="text" placeholder="Description">
         </section>
         <div class="buttons">
-            <push-button buttonStyle="outline" (onClick)="onCreateConfirm()">Create</push-button>
             <push-button buttonStyle="outline" (onClick)="onCreateCancel()">Close</push-button>
+            <push-button buttonStyle="outline" [disabled]="createName.length <= 0" (onClick)="onCreateConfirm()">Create</push-button>
         </div>
     </div>
 </ng-template>
 
-<div class="mq-container">
-    <div class="mq-column">
-        <div class="scan-selector">
-        <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
-            <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
-        </mat-select>
+<section class="mq-container-outer">
+    <header>
+        <h5>Multi-Quant</h5>
+    </header>
+    <div class="mq-container">
+        <div class="mq-column">
+            <div class="scan-selector">
+            <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
+                <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+            </mat-select>
+            </div>
+<!--
+Removed this for now, as v3 UI worked vastly differently. v4 quant table can cater for what's needed so maybe it's ok to let users do this manually... In v3
+this used to replace the panel under the context image with a special quant compare table. V4 UI flexibility doesn't even afford us a way to show this.
+
+            <div class="panel-row gray-background">
+                <push-button buttonStyle='outline' (onClick)="onShowUI()" title="Show panels to help with multi-quantification">Show UI for Multi-Quant</push-button>
+            </div>
+-->
+            <div class="panel-row top-shadow">
+                <push-button buttonStyle='outline' (onClick)="onReset()" title="Clears regions" fxFlex="50%">Clear Regions</push-button>
+                <push-button buttonStyle='outline' (onClick)="onRegions()" title="Choose regions to include" fxFlex="50%">Add Regions</push-button>
+            </div>
+
+            <quant-combine-zstack
+                [items]="zStack"
+                (onZStackChanged)="onZStackChanged()">
+                <push-button (onClick)="onMakeROIFromRemainingPoints()" remainingArea>Make ROI</push-button>
+            </quant-combine-zstack>
+
+            <div class="panel-row gray-background">
+                <push-button buttonStyle='yellow' [customDialog]="createMQPopup" #createMQModal [disabled]="zStack.length <= 0">Assemble Multi-Quant</push-button>
+            </div>
+
+            <table-view
+                *ngIf="!waitingForCreate && summaryTableData && summaryTableData.rows.length > 0"
+                [tables]="[summaryTableData]"
+                class="panel-column flex-fill gray-background">
+            </table-view>
+
+            <app-widget-display-message
+                *ngIf="message"
+                [message]="message"
+                [showSpinner]="waitingForCreate || !summaryTableData" 
+                [large]="false"
+                class="flex-fill panel-column flex-fill msg-area gray-background">
+            </app-widget-display-message>
         </div>
-
-        <div class="panel-row gray-background">
-            <push-button buttonStyle='outline' (onClick)="onShowUI()" title="Show panels to help with multi-quantification">Show UI for Multi-Quant</push-button>
-        </div>
-
-        <div class="panel-row top-shadow">
-            <push-button buttonStyle='outline' (onClick)="onReset()" title="Clears regions" fxFlex="50%">Clear Regions</push-button>
-            <push-button buttonStyle='outline' (onClick)="onRegions()" title="Choose regions to include" fxFlex="50%">Add Regions</push-button>
-        </div>
-
-        <quant-combine-zstack
-            [items]="zStack"
-            (onZStackChanged)="onZStackChanged()">
-            <push-button (onClick)="onMakeROIFromRemainingPoints()" remainingArea>Make ROI</push-button>
-        </quant-combine-zstack>
-
-        <div class="panel-row gray-background">
-            <push-button buttonStyle='yellow' [customDialog]="createMQPopup" #createMQModal [disabled]="zStack.length <= 0">Assemble Multi-Quant</push-button>
-        </div>
-
-        <table-view
-            *ngIf="!waitingForCreate && summaryTableData && summaryTableData.rows.length > 0"
-            [tables]="[summaryTableData]"
-            class="panel-column flex-fill gray-background">
-        </table-view>
-
-        <app-widget-display-message
-            *ngIf="message"
-            [message]="message"
-            [showSpinner]="waitingForCreate || !summaryTableData" 
-            [large]="false"
-            class="flex-fill panel-column flex-fill msg-area gray-background">
-        </app-widget-display-message>
-    </div>
-<!-- Commented because we may not need to build the ROI comparison table, if the normal quant table widget is capable enough\
+<!-- Commented because we may not need to build the ROI comparison table, if the normal quant table widget is capable enough
     <div class="mq-column mq-roi-table-container">
         <table-view
             *ngIf="!waitingForCreate && summaryTableData && summaryTableData.rows.length > 0"
@@ -97,4 +104,5 @@ POSSIBILITY OF SUCH DAMAGE.
         </table-view>
     </div>
 -->
-</div>
+    </div>
+</section>

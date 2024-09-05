@@ -40,7 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div
               class="title">Peak Identification</div>
             <div class="tab-row">
-                <div class="clickable row" [ngClass]='{"tab-selected": isQuantJobsSelected}' (click)="onTabQuantJobs()">Quant Jobs<wait-spinner *ngIf="jobsRunning > 0"></wait-spinner></div>
+                <div *ngIf="userCanViewQuantJobs" class="clickable row" [ngClass]='{"tab-selected": isQuantJobsSelected}' (click)="onTabQuantJobs()">Quant Jobs<wait-spinner *ngIf="jobsRunning > 0"></wait-spinner></div>
                 <div class="clickable" [ngClass]='{"tab-selected": isPeriodicTableSelected}' (click)="onTabPeriodicTable()">Periodic Table</div>
                 <div class="clickable" [ngClass]='{"tab-selected": isBrowseOnChartSelected}' (click)="onTabBrowseOnChart()">Browse On Chart</div>
                 <div class="clickable" [ngClass]='{"tab-selected": isElementSetsSelected}' (click)="onTabElementSets()">Element Sets</div>

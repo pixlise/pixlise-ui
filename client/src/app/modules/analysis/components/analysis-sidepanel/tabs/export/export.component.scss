@@ -28,6 +28,8 @@
     margin-right: -8px;
     margin-top: -8px;
     color: white;
+
+    user-select: none;
   }
 
   .export-options {
@@ -44,7 +46,6 @@
   justify-content: center;
 
   left: 0;
-  background: #2a3137e0;
   width: 100%;
   justify-content: flex-start;
   z-index: 10;

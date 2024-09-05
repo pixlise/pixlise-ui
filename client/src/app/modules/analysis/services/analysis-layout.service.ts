@@ -347,7 +347,7 @@ export class AnalysisLayoutService implements OnDestroy {
           const newScreenConfiguration = createDefaultScreenConfiguration();
           const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
           if (scanId && matchedScan) {
-            newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}. ${matchedScan.description}`;
+            newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
           }
 
           this.writeScreenConfiguration(newScreenConfiguration, scanId, true);

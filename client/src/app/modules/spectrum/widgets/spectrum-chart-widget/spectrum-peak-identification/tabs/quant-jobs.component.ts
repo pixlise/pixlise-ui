@@ -96,7 +96,10 @@ export class QuantJobsComponent implements OnInit {
     this._subs.add(
       this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
         if (!upd.status) {
-          this._snackService.openError("Quantification job update did not include job status");
+          // Only complain if it also didn't contain result data - as it might be a quant fit job that just completed
+          if (!upd.resultData) {
+            this._snackService.openError("Quantification job update did not include job status");
+          }
         } else {
           if (upd.status.jobId.length > 0) {
             for (let c = 0; c < this.jobs.length; c++) {

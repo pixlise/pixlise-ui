@@ -30,83 +30,42 @@
 @import "pixlise-core.scss";
 
 .spinner {
-  padding: 0px $sz-double;
-  margin-bottom: 8px;
+  width: 60px;
+  height: 20px;
+  //padding: 0px $sz-double;
 }
 
-/**
- * ==========================================================
- * Dot Pulse from https://codepen.io/nzbin/pen/GGrXbp
- * ==========================================================
- */
 .dot-pulse {
-  position: relative;
-  left: -9999px;
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background-color: $clr-yellow;
+  width: 2px;
   color: $clr-yellow;
-  box-shadow: 9999px 0 0 -5px;
-  animation: dot-pulse 1.5s infinite linear;
-  animation-delay: 0.25s;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow:
+    15px  0    0  0px, 30px  0    0  0px, 45px  0    0  0px,
+    15px -15px 0 -1px, 30px -15px 0 -1px, 45px -15px 0 -1px;
+  transform: translateY(10px);
+  animation: pixl 4s infinite linear;
 }
-.dot-pulse::before,
-.dot-pulse::after {
-  content: "";
-  display: inline-block;
-  position: absolute;
-  top: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background-color: $clr-yellow;
-  color: $clr-yellow;
-}
-.dot-pulse::before {
-  box-shadow: 9984px 0 0 -5px;
-  animation: dot-pulse-before 1.5s infinite linear;
-  animation-delay: 0s;
-}
-.dot-pulse::after {
-  box-shadow: 10014px 0 0 -5px;
-  animation: dot-pulse-after 1.5s infinite linear;
-  animation-delay: 0.5s;
-}
-
-@keyframes dot-pulse-before {
-  0% {
-    box-shadow: 9984px 0 0 -5px;
-  }
-  30% {
-    box-shadow: 9984px 0 0 2px;
-  }
-  60%,
-  100% {
-    box-shadow: 9984px 0 0 -5px;
-  }
-}
-@keyframes dot-pulse {
-  0% {
-    box-shadow: 9999px 0 0 -5px;
-  }
-  30% {
-    box-shadow: 9999px 0 0 2px;
-  }
-  60%,
-  100% {
-    box-shadow: 9999px 0 0 -5px;
-  }
-}
-@keyframes dot-pulse-after {
-  0% {
-    box-shadow: 10014px 0 0 -5px;
-  }
-  30% {
-    box-shadow: 10014px 0 0 2px;
-  }
-  60%,
-  100% {
-    box-shadow: 10014px 0 0 -5px;
-  }
+@keyframes pixl {
+  12.5% {box-shadow:
+    15px  0    0  5px, 30px  0    0  0px, 45px  0    0  0px,
+    15px  15px 0 -1px, 30px 15px 0 -1px, 45px  15px 0 -1px}
+  25%   {box-shadow:
+    15px  0    0  0px, 30px  0    0  5px, 45px  0    0  0px,
+    15px  15px 0 -1px, 30px  15px 0 -1px, 45px  15px 0 -1px}
+  37.5%   {box-shadow:
+    15px  0    0  0px, 30px  0    0  0px, 45px  0    0  5px,
+    15px  15px 0 -1px, 30px  15px 0 -1px, 45px  15px 0 -1px}
+  50%   {box-shadow:
+    15px -15px 0 -1px, 30px -15px 0 -1px, 45px -15px 0 -1px,
+    15px  0    0  0px, 30px  0    0  0px, 45px  0    0  0px}
+  62.5%   {box-shadow:
+    15px  15px 0 -1px, 30px  15px 0 -1px, 45px  15px 0 -1px,
+    15px  0    0  0px, 30px  0    0  0px, 45px  0    0  5px}
+  75%   {box-shadow:
+    15px  15px 0 -1px, 30px  15px 0 -1px, 45px  15px 0 -1px,
+    15px  0    0  0px, 30px  0    0  5px, 45px  0    0  0px}
+  82.5%   {box-shadow:
+    15px  15px 0 -1px, 30px  15px 0 -1px, 45px  15px 0 -1px,
+    15px  0    0  5px, 30px  0    0  0px, 45px  0    0  0px}
 }

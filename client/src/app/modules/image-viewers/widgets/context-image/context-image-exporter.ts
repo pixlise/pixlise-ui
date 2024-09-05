@@ -12,6 +12,7 @@ import {
   WidgetExportFile,
   WidgetExportRequest,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { getPathBase } from "src/app/utils/utils";
 
 export class ContextImageExporter {
   constructor(
@@ -30,7 +31,7 @@ export class ContextImageExporter {
   }
 
   getImageShortName(imageName: string): string {
-    let imageShortName = imageName?.split("/").pop() || "";
+    let imageShortName = getPathBase(imageName);
     if (imageName?.includes("MSA_")) {
       imageShortName = "MSA";
     } else if (imageName?.includes("VIS_")) {
@@ -121,7 +122,7 @@ export class ContextImageExporter {
 
             if (rawImage) {
               let imageFromDataURL = rawImage?.split(",")[1];
-              let imageName = mdl.imageName?.split("/").pop() || "";
+              let imageName = getPathBase(mdl.imageName);
               images.push({
                 fileName: imageName,
                 data: imageFromDataURL,

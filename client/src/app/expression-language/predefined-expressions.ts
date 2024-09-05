@@ -47,7 +47,7 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
     } else if (id === DataExpressionId.predefinedRoughnessDataExpression) {
       expr = "roughness()";
       name = "Roughness";
-    } else if (id === DataExpressionId.predefinedDiffractionCountDataExpression) {
+    } else if (id.startsWith(DataExpressionId.predefinedDiffractionCountDataExpression)) {
       expr = "diffractionPeaks(0," + SpectrumChannels + ")";
       name = "Diffraction Count";
     } else {

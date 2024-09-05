@@ -35,7 +35,6 @@ import { WorkspaceConfigurationTabComponent } from "./components/analysis-sidepa
 import { MarkdownModule } from "ngx-markdown";
 import { NewTabPageComponent } from "./pages/new-tab-page/new-tab-page.component";
 
-// export { ContextImageDataService } from "./services/context-image-data.service";
 export { DataExporterService } from "./services/exporter.service";
 export { AnalysisLayoutService } from "./services/analysis-layout.service";
 

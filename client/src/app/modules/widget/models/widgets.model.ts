@@ -14,6 +14,7 @@ import { QuantificationTableComponent } from "../../table-views/table-views.modu
 import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-widget/variogram-widget.component";
 import { WidgetKeyItem } from "../../pixlisecore/pixlisecore.module";
 import { MarkdownTextViewComponent } from "../../text-views/text-views.module";
+import { SelectionChangerImageInfo } from "../../pixlisecore/components/atoms/selection-changer/selection-changer.component";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -43,6 +44,10 @@ export type WidgetToolbarButtonConfiguration = {
 
   // Used by the widget-key type to communicate updates to the key items
   onUpdateKeyItems?: (keyItems: WidgetKeyItem[]) => void;
+
+  // Quite specific unfortunately, but if parent widget operates on an image, this can be used to retrieve
+  // parameters around that for selection-changer and potentially others
+  getImageInfo?: () => SelectionChangerImageInfo;
 
   // Controls whether the value is copied over in a template
   templateable?: boolean;

@@ -1,5 +1,5 @@
 <div class="widget-area">
-    <div class="markdown-container" *ngIf="!editMode">
+    <div class="markdown-container" [style]="{height: widgetContentHeight+'px', width: widgetContentWidth+'px'}" *ngIf="!editMode">
         <markdown
             [lineOffset]="5"
             [data]="content || '## Editable Text Panel'">

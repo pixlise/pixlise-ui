@@ -123,7 +123,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <span *ngIf="!workspace.name" class="text-ellipsis workspace-title empty-field">N/A</span>
           </div>
           <div class="cell">
-            <span class="text-ellipsis workspace-description">{{ workspace.description }}</span>
+            <span class="text-ellipsis workspace-description" [title]="workspace.description">{{ workspace.description }}</span>
           </div>
           <div class="cell">
             <span class="workspace-scan-count">{{ getScanNamesForWorkspace(workspace).length }}</span>
