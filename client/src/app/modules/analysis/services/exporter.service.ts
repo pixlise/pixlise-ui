@@ -648,7 +648,7 @@ msa += `#XPOSITION   : 0.000
                             const transformedLocations: Coordinate2D[] = [];
                             for (const loc of locations.locations) {
                               transformedLocations.push(
-                                Coordinate2D.create({ i: loc.i * matchedInfo.xScale + matchedInfo.xOffset, j: loc.j * matchedInfo.yScale + matchedInfo.yOffset })
+                                Coordinate2D.create({ i: loc.i * matchedInfo.xScale - matchedInfo.xOffset, j: loc.j * matchedInfo.yScale - matchedInfo.yOffset })
                               );
                             }
                             verMap.set(version, transformedLocations);
