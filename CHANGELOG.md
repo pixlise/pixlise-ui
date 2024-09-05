@@ -1,10 +1,16 @@
-## 4.39.0 (Latest)
+## 4.41.0 (Latest)
+
+### Features
+
+### Bug Fixes
+
+## 4.40.0 (2024-09-05)
 
 ### Features
 
 - **Exporting beam locations for uploaded images** Images uploaded and "matched" to existing MCC images now also have coordinates exported when ticking the "Beam Locations" option on export tab. We now export one CSV file per image name because we were getting way too many columns in one file.
 
-## 4.38.0 (Latest)
+## 4.38.0 (2024-09-04)
 
 ### Features
 
