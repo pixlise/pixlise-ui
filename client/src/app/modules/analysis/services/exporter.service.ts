@@ -516,10 +516,18 @@ msa += `#XPOSITION   : 0.000
       map(([beamLocations, scanEntries, imageIJs]) => {
         const csvs: WidgetExportFile[] = [];
         if (beamLocations.beamLocations && scanEntries.entries && imageIJs.size > 0) {
+          if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
+            console.error("Beam locations and scan entries do not match");
+            this._snackService.openError("Error exporting data", "Beam locations and scan entries do not match");
+            return { csvs };
+          }
+
           const imageKeyOrder = [...imageIJs.keys()];
-          let data = "PMC,X,Y,Z";
           imageKeyOrder.forEach(imageKey => {
             const imageName = getPathBase(imageKey);
+
+            // Export all coordinates for this image name
+            let data = "PMC,X,Y,Z";
 
             const verMap = imageIJs.get(imageKey);
             if (verMap) {
@@ -527,46 +535,40 @@ msa += `#XPOSITION   : 0.000
                 data += `,${imageName}_v${ver}_i,${imageName}_v${ver}_j`;
               }
             }
-          });
 
-          if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
-            console.error("Beam locations and scan entries do not match");
-            this._snackService.openError("Error exporting data", "Beam locations and scan entries do not match");
-            return { csvs };
-          }
+            for (let i = 0; i < beamLocations.beamLocations.length; i++) {
+              const entry = scanEntries.entries[i];
+              if (!entry.location) {
+                continue;
+              }
 
-          for (let i = 0; i < beamLocations.beamLocations.length; i++) {
-            const entry = scanEntries.entries[i];
-            if (!entry.location) {
-              continue;
-            }
+              // Round to 5 decimal places
+              const location = beamLocations.beamLocations[i];
+              const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
+              data += `\n${entry.id},${x},${y},${z}`;
 
-            // Round to 5 decimal places
-            const location = beamLocations.beamLocations[i];
-            const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
-            data += `\n${entry.id},${x},${y},${z}`;
-
-            // Add image coordinate headers
-            imageKeyOrder.forEach(imageKey => {
-              const verMap = imageIJs.get(imageKey);
-              let wrote = false;
-              if (verMap) {
-                for (const coords of verMap.values()) {
-                  if (coords) {
-                    const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
-                    data += `,${roundedI},${roundedJ}`;
-                    wrote = true;
+              // Add image coordinate headers
+              imageKeyOrder.forEach(imageKey => {
+                const verMap = imageIJs.get(imageKey);
+                let wrote = false;
+                if (verMap) {
+                  for (const coords of verMap.values()) {
+                    if (coords) {
+                      const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
+                      data += `,${roundedI},${roundedJ}`;
+                      wrote = true;
+                    }
                   }
                 }
-              }
 
-              if (!wrote) {
-                data += ",,";
-              }
-            });
-          }
+                if (!wrote) {
+                  data += ",,";
+                }
+              });
+            }
 
-          csvs.push({ fileName: `${scanId}-beam-locations.csv`, data });
+            csvs.push({ fileName: `${scanId}-${imageName}-beam-locations.csv`, data });
+          });
         } else {
           console.error("Missing data for beam locations export");
           this._snackService.openError("Error exporting data", "Missing data for beam locations export");
