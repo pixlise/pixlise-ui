@@ -36,7 +36,7 @@ import { Quantification } from "src/app/generated-protos/quantification";
 import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
-import { ScanImage } from "src/app/generated-protos/image";
+import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
 
 @Injectable({
   providedIn: "root",
@@ -516,10 +516,18 @@ msa += `#XPOSITION   : 0.000
       map(([beamLocations, scanEntries, imageIJs]) => {
         const csvs: WidgetExportFile[] = [];
         if (beamLocations.beamLocations && scanEntries.entries && imageIJs.size > 0) {
+          if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
+            console.error("Beam locations and scan entries do not match");
+            this._snackService.openError("Error exporting data", "Beam locations and scan entries do not match");
+            return { csvs };
+          }
+
           const imageKeyOrder = [...imageIJs.keys()];
-          let data = "PMC,X,Y,Z";
           imageKeyOrder.forEach(imageKey => {
             const imageName = getPathBase(imageKey);
+
+            // Export all coordinates for this image name
+            let data = "PMC,X,Y,Z";
 
             const verMap = imageIJs.get(imageKey);
             if (verMap) {
@@ -527,46 +535,40 @@ msa += `#XPOSITION   : 0.000
                 data += `,${imageName}_v${ver}_i,${imageName}_v${ver}_j`;
               }
             }
-          });
 
-          if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
-            console.error("Beam locations and scan entries do not match");
-            this._snackService.openError("Error exporting data", "Beam locations and scan entries do not match");
-            return { csvs };
-          }
+            for (let i = 0; i < beamLocations.beamLocations.length; i++) {
+              const entry = scanEntries.entries[i];
+              if (!entry.location) {
+                continue;
+              }
 
-          for (let i = 0; i < beamLocations.beamLocations.length; i++) {
-            const entry = scanEntries.entries[i];
-            if (!entry.location) {
-              continue;
-            }
+              // Round to 5 decimal places
+              const location = beamLocations.beamLocations[i];
+              const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
+              data += `\n${entry.id},${x},${y},${z}`;
 
-            // Round to 5 decimal places
-            const location = beamLocations.beamLocations[i];
-            const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
-            data += `\n${entry.id},${x},${y},${z}`;
-
-            // Add image coordinate headers
-            imageKeyOrder.forEach(imageKey => {
-              const verMap = imageIJs.get(imageKey);
-              let wrote = false;
-              if (verMap) {
-                for (const coords of verMap.values()) {
-                  if (coords) {
-                    const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
-                    data += `,${roundedI},${roundedJ}`;
-                    wrote = true;
+              // Add image coordinate headers
+              imageKeyOrder.forEach(imageKey => {
+                const verMap = imageIJs.get(imageKey);
+                let wrote = false;
+                if (verMap) {
+                  for (const coords of verMap.values()) {
+                    if (coords) {
+                      const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
+                      data += `,${roundedI},${roundedJ}`;
+                      wrote = true;
+                    }
                   }
                 }
-              }
 
-              if (!wrote) {
-                data += ",,";
-              }
-            });
-          }
+                if (!wrote) {
+                  data += ",,";
+                }
+              });
+            }
 
-          csvs.push({ fileName: `${scanId}-beam-locations.csv`, data });
+            csvs.push({ fileName: `${scanId}-${imageName}-beam-locations.csv`, data });
+          });
         } else {
           console.error("Missing data for beam locations export");
           this._snackService.openError("Error exporting data", "Missing data for beam locations export");
@@ -581,16 +583,18 @@ msa += `#XPOSITION   : 0.000
     return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
       switchMap(images => {
         const imagesIJ: Map<string, Map<number, Coordinate2D[]>> = new Map();
+        const matchedImages = new Map<string, ImageMatchTransform>();
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
           const imagePaths = images.images
             .filter((img: ScanImage) => {
-              if (img.originScanId !== scanId) {
-                return false;
+              const hasMatchInfo = img.matchInfo && img.matchInfo.beamImageFileName.length > 0;
+              if (img.matchInfo && /* <-- this is to shut the linter up */ hasMatchInfo) {
+                matchedImages.set(img.imagePath, img.matchInfo);
               }
 
               const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
-              return (fields?.producer || "") === "J";
+              return (img.originScanId === scanId && (fields?.producer || "") === "J") || hasMatchInfo;
             })
             .map(image => image.imagePath);
 
@@ -636,7 +640,22 @@ msa += `#XPOSITION   : 0.000
                             verMap = new Map<number, Coordinate2D[]>();
                           }
 
-                          verMap.set(version, locations.locations);
+                          // If this one is "matched", we have to apply the transform to the ijs
+                          // NOTE: This transform is applied differently to the one in the context image - there we're transforming the image to match
+                          // the same ij locations, but here we're transforming the ijs to fit the image!
+                          const matchedInfo = matchedImages.get(imageName);
+                          if (matchedInfo) {
+                            const transformedLocations: Coordinate2D[] = [];
+                            for (const loc of locations.locations) {
+                              transformedLocations.push(
+                                Coordinate2D.create({ i: loc.i * matchedInfo.xScale - matchedInfo.xOffset, j: loc.j * matchedInfo.yScale - matchedInfo.yOffset })
+                              );
+                            }
+                            verMap.set(version, transformedLocations);
+                          } else {
+                            // Just store as is
+                            verMap.set(version, locations.locations);
+                          }
 
                           imagesIJ.set(imageName, verMap);
                         }
