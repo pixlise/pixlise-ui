@@ -30,7 +30,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
-import { Subscription } from "rxjs";
+import { last, Subscription } from "rxjs";
 
 import { AuthService } from "@auth0/auth0-angular";
 
@@ -92,6 +92,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   public workspaces: ScreenConfiguration[] = [];
   public filteredWorkspaces: ScreenConfiguration[] = [];
+  public snapshots: Map<string, ScreenConfiguration[]> = new Map<string, ScreenConfiguration[]>();
 
   selectedWorkspace: ScreenConfiguration | null = null;
   selectedWorkspaceName: string = "";
@@ -132,7 +133,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   selectedScanDescription: string = "";
   selectedScanTags: string[] = [];
 
-  selectedTab: "description" | "details" | "workspaces" = "description";
+  selectedTab: "description" | "details" | "workspaces" | "snapshots" = "description";
   descriptionModes: string[] = ["View", "Edit"];
   descriptionMode: "View" | "Edit" = "View";
   expandTags: boolean = false;
@@ -319,6 +320,19 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     return this.selectedScanTags.map(tag => this._tags.get(tag) || Tag.create({ id: tag, name: tag }));
   }
 
+  onSaveWorkspaceTitle(): void {
+    if (!this.selectedWorkspace) {
+      return;
+    }
+
+    this.workspaceTitleEditMode = false;
+    this.selectedWorkspace.name = this.selectedWorkspaceName;
+
+    this._analysisLayoutService.writeScreenConfiguration(this.selectedWorkspace, undefined, false, () => {
+      this.onSearchWorkspsaces();
+    });
+  }
+
   onSaveWorkspaceMetadata(): void {
     if (!this.selectedWorkspace) {
       return;
@@ -455,14 +469,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._snackService.openError(this.errorString);
   }
 
-  onOpenWorkspace(): void {
-    if (!this.selectedWorkspace) {
+  onOpenWorkspace(workspace: ScreenConfiguration | null = this.selectedWorkspace): void {
+    if (!workspace) {
       return;
     }
 
     this.closeWorkspaceOpenOptionsMenu();
 
-    this.navigateToWorkspace(this.selectedWorkspace.id);
+    this.navigateToWorkspace(workspace.id);
   }
 
   navigateToWorkspace(id: string): void {
@@ -654,16 +668,85 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  onDuplicateSnapshot(workspace: ScreenConfiguration | null): void {
+    if (!workspace) {
+      return;
+    }
+
+    let newWorkspace = ScreenConfiguration.create(workspace);
+    newWorkspace.id = "";
+    newWorkspace.owner = undefined;
+    newWorkspace.snapshotParentId = "";
+    newWorkspace.name = workspace.name;
+    let matchRegex = /\(Copy\s*(?<copyCount>\d*)\)$/i;
+    let match = workspace.name.match(matchRegex);
+
+    if (match) {
+      let copyCount = parseInt(match.groups?.["copyCount"] || "1");
+      newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+    } else {
+      newWorkspace.name += " (Copy)";
+    }
+
+    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, "", true, createdWorkspace => {
+      this.onSearchWorkspsaces();
+      this.onOpenWorkspace(createdWorkspace);
+    });
+  }
+
+  onDuplicateLatestSnapshot(parentId: string): void {
+    let workspace = this.snapshots.get(parentId)?.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec)[0];
+    if (workspace) {
+      this.onDuplicateSnapshot(workspace);
+    }
+  }
+
   onSearchWorkspsaces(): void {
     this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create()).subscribe({
       next: (resp: ScreenConfigurationListResp) => {
-        this.workspaces = resp.screenConfigurations;
+        let workspaces = resp.screenConfigurations;
+        let snapshots: Map<string, ScreenConfiguration[]> = new Map<string, ScreenConfiguration[]>();
+        workspaces.forEach(workspace => {
+          if (workspace.snapshotParentId) {
+            snapshots.set(workspace.snapshotParentId, snapshots.get(workspace.snapshotParentId) || []);
+            snapshots.get(workspace.snapshotParentId)?.push(workspace);
+          } else {
+            if (!snapshots.has(workspace.id)) {
+              snapshots.set(workspace.id, [workspace]);
+            } else {
+              snapshots.get(workspace.id)?.push(workspace);
+            }
+          }
+        });
+
+        this.snapshots = snapshots;
+
+        let earliestSnapshots: ScreenConfiguration[] = [];
+        this.snapshots.forEach((snapshots, parentId) => {
+          let earliestSnapshot = snapshots.sort((a, b) => (a.owner?.createdUnixSec || a.modifiedUnixSec) - (b.owner?.createdUnixSec || b.modifiedUnixSec))[0];
+          earliestSnapshots.push(earliestSnapshot);
+
+          // Reverse sort
+          snapshots.sort((a, b) => (b.owner?.createdUnixSec || b.modifiedUnixSec) - (a.owner?.createdUnixSec || a.modifiedUnixSec));
+        });
+
+        earliestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
+
+        this.workspaces = earliestSnapshots;
         this.filterWorkspaces();
       },
       error: err => {
         console.error(err);
       },
     });
+  }
+
+  get selectedWorkspaceSnapshots(): ScreenConfiguration[] {
+    if (!this.selectedWorkspace) {
+      return [];
+    }
+
+    return this.snapshots.get(this.selectedWorkspace.id) || [];
   }
 
   onSearch(): void {

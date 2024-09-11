@@ -51,6 +51,7 @@ export type SharingSubItem = {
 };
 
 export type ShareDialogData = {
+  title?: string;
   ownershipSummary: OwnershipSummary | null;
   ownershipItem: OwnershipItem;
   typeName: string;
@@ -219,6 +220,12 @@ export class ShareDialogComponent implements OnInit {
       this.userViewers.forEach(id => idsToAddAsViewers.add(id));
       this.userEditors.forEach(id => idsToAddAsViewers.add(id));
 
+      // Remove editors/viewers that were removed
+      this.removedUserEditors.forEach(id => idsToAddAsViewers.delete(id));
+      this.removedGroupEditors.forEach(id => idsToAddAsViewers.delete(id));
+      this.removedUserViewers.forEach(id => idsToAddAsViewers.delete(id));
+      this.removedGroupViewers.forEach(id => idsToAddAsViewers.delete(id));
+
       // Exclude current user
       idsToAddAsViewers.delete(this.currentUser.info?.id || "");
 
@@ -268,6 +275,11 @@ export class ShareDialogComponent implements OnInit {
         this.validShareCount++;
       }
     });
+  }
+
+  get dialogTitle(): string {
+    let title = this.data.title ? this.data.title : `Share ${this.data.typeName}`;
+    return `${title}${!this.canEdit ? " (Read Only)" : ""}`;
   }
 
   get canEdit(): boolean {

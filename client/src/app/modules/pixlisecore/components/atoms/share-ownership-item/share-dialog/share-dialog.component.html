@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
 </ng-template>
 
 <div class="share-dialog">
-  <h1>Share {{ data.typeName }}{{ !canEdit ? " (Read Only)" : "" }}</h1>
+  <h1>{{ dialogTitle }}</h1>
   <div class="fields">
     <div class="search-field">
       <div class="auto-container" *ngIf="isSearchingGroups">

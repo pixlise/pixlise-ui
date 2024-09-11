@@ -106,24 +106,24 @@
     }
   }
 
-  .tabs-label {
-    margin: 0;
+  // .tabs-label {
+  //   margin: 0;
 
-    color: #bcbcbc;
+  //   color: #bcbcbc;
 
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
+  //   font-feature-settings:
+  //     "clig" off,
+  //     "liga" off;
 
-    font-family: Inter;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 16px;
+  //   font-family: Inter;
+  //   font-size: 12px;
+  //   font-style: normal;
+  //   font-weight: 500;
+  //   line-height: 16px;
 
-    margin-top: 8px;
-    margin-left: 8px;
-  }
+  //   margin-top: 8px;
+  //   margin-left: 8px;
+  // }
 
   .tabs-container {
     flex: 1;
@@ -207,24 +207,24 @@
   }
 }
 
-.sharing-label {
-  margin: 0;
+// .sharing-label {
+//   margin: 0;
 
-  color: #bcbcbc;
+//   color: #bcbcbc;
 
-  font-feature-settings:
-    "clig" off,
-    "liga" off;
+//   font-feature-settings:
+//     "clig" off,
+//     "liga" off;
 
-  font-family: Inter;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 16px;
+//   font-family: Inter;
+//   font-size: 12px;
+//   font-style: normal;
+//   font-weight: 500;
+//   line-height: 16px;
 
-  margin-top: 8px;
-  margin-left: 8px;
-}
+//   margin-top: 8px;
+//   margin-left: 8px;
+// }
 
 .share-btn {
   .share-btn-title {
@@ -238,4 +238,85 @@
 
 .snapshots-container {
   padding: 0 8px;
+
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+
+  .existing-snapshots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+
+    // max-height: 125px;
+    overflow-y: auto;
+
+    .snapshot {
+      display: flex;
+      align-items: center;
+      background: #293137;
+      flex: 1;
+      padding: 8px;
+      gap: 8px;
+
+      .existing-share-btn {
+        img {
+        }
+      }
+
+      .snapshot-info {
+        display: flex;
+        flex: 1;
+
+        flex-direction: column;
+
+        .snapshot-name {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 200px;
+          white-space: nowrap;
+        }
+
+        .snapshot-date {
+          color: #bcbcbc;
+        }
+      }
+    }
+  }
+}
+
+.configuration-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+
+  .tab {
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    margin: 0;
+    border-bottom: 1px solid transparent;
+
+    color: #bcbcbc;
+    &.active {
+      color: #fff;
+      border-bottom: 1px solid #fdfe91;
+    }
+
+    font-feature-settings:
+      "clig" off,
+      "liga" off;
+
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 16px;
+    padding: 4px;
+  }
 }
