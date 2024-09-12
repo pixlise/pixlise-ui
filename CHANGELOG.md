@@ -9,6 +9,7 @@
 ### Bug Fixes
 
 - Fixes logout bug when clicked from the public site (redirects to wrong URL)
+- Fixes bug when plotting sigma values on Parallel Coordinates Plot with ratio columns showing
 
 ## 4.40.0 (2024-09-05)
 
