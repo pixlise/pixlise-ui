@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, map, of, timer } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, map, of, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
@@ -8,10 +8,10 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
+import { ScreenConfigurationGetReq, ScreenConfigurationListReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
-import { WidgetData } from "src/app/generated-protos/widget-data";
+import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
@@ -21,10 +21,11 @@ import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-proto
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
 import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 import { TabLinks } from "../../../models/TabLinks";
+import { PredefinedROIID } from "../../../models/RegionOfInterest";
 
 export class DefaultExpressions {
   constructor(
@@ -280,6 +281,23 @@ export class AnalysisLayoutService implements OnDestroy {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
     });
+  }
+
+  fetchWorkspaceSnapshots(workspaceId: string): Observable<ScreenConfiguration[]> {
+    return this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create({ snapshotParentId: workspaceId })).pipe(
+      map(res => {
+        let snapshots = res.screenConfigurations;
+        snapshots.sort((a, b) => {
+          return (a.owner?.createdUnixSec || 0) - (b.owner?.createdUnixSec || 0);
+        });
+
+        return snapshots;
+      }),
+      catchError(err => {
+        this._snackService.openError(err);
+        return of([]);
+      })
+    );
   }
 
   deleteQuant(quantId: string) {
@@ -575,5 +593,112 @@ export class AnalysisLayoutService implements OnDestroy {
 
   getLoadedQuant(scanId: string, quantId: string): QuantificationSummary | undefined {
     return this.availableScanQuants$.value[scanId]?.find(quant => quant.id === quantId);
+  }
+
+  getLoadedROIIDsFromActiveScreenConfiguration(): string[] {
+    let rois: string[] = [];
+
+    this.activeScreenConfiguration$.value?.layouts.forEach(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          if (widgetData?.visibleROIs) {
+            let visibleROIs = widgetData.visibleROIs as VisibleROI[];
+            visibleROIs.forEach(roi => {
+              rois.push(roi.id);
+            });
+          }
+
+          if (widgetData?.roi) {
+            rois.push(widgetData.roi);
+          }
+
+          if (widgetData?.roiLayers) {
+            let roiLayers = widgetData.roiLayers as ROILayerVisibility[];
+            roiLayers.forEach(roiLayer => {
+              rois.push(roiLayer.id);
+            });
+          }
+
+          if (widgetData?.roiIds) {
+            let roiIds = widgetData.roiIds as string[];
+            roiIds.forEach(roiId => {
+              rois.push(roiId);
+            });
+          }
+
+          if (widgetData?.spectrumLines) {
+            let spectrumLines = widgetData.spectrumLines as SpectrumLines[];
+            spectrumLines.forEach(spectrumLines => {
+              rois.push(spectrumLines.roiID);
+            });
+          }
+        }
+      });
+    });
+
+    rois = rois.filter((roi, i) => !PredefinedROIID.isPredefined(roi));
+    rois = Array.from(new Set(rois));
+
+    return rois;
+  }
+
+  getLoadedExpressionIDsFromActiveScreenConfiguration(): string[] {
+    let expressionIds: string[] = [];
+
+    this.activeScreenConfiguration$.value?.layouts.forEach(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          console.log(widgetData, widget.type, widgetKey, widgetData?.expressionIDs);
+
+          if (widgetData?.expressionIDs) {
+            widgetData.expressionIDs.forEach((expressionId: string) => {
+              expressionIds.push(expressionId);
+            });
+          }
+
+          if (widgetData?.mapLayers) {
+            let mapLayers = widgetData.mapLayers as MapLayerVisibility[];
+            mapLayers.forEach(mapLayer => {
+              expressionIds.push(mapLayer.expressionID);
+            });
+          }
+        }
+      });
+    });
+    expressionIds = expressionIds.filter((expressionId, i) => !DataExpressionId.isPredefinedExpression(expressionId));
+    expressionIds = Array.from(new Set(expressionIds));
+
+    return expressionIds;
+  }
+
+  getLoadedQuantificationIDsFromActiveScreenConfiguration(): string[] {
+    let quantificationIDs: string[] = [];
+
+    if (!this.activeScreenConfiguration$.value?.scanConfigurations) {
+      return [];
+    }
+
+    for (const scanId in this.activeScreenConfiguration$.value.scanConfigurations) {
+      const quantId = this.activeScreenConfiguration$.value.scanConfigurations[scanId].quantId;
+      if (quantId) {
+        quantificationIDs.push(quantId);
+      }
+    }
+
+    return quantificationIDs;
   }
 }

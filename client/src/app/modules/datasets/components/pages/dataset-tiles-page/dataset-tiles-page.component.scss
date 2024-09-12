@@ -532,3 +532,47 @@ input {
     }
   }
 }
+
+.tab {
+  &.snapshots {
+    .snapshots-container {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 445px);
+      overflow-y: auto;
+
+      .snapshot {
+        display: flex;
+        align-items: center;
+        border: 1px solid #293137;
+        background: #222829;
+
+        .info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 8px;
+
+          .snapshot-date {
+            color: #bcbcbc;
+          }
+        }
+
+        .action-btns {
+          display: flex;
+          align-items: center;
+          margin-left: auto;
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+}
+
+.cell {
+  &.workspace-creator {
+    width: 60px !important;
+    justify-content: center;
+  }
+}

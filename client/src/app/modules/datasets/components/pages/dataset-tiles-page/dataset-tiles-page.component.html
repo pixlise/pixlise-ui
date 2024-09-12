@@ -34,21 +34,32 @@ POSSIBILITY OF SUCH DAMAGE.
     <!-- <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
       >Reset & Open</push-button
     > -->
-    <push-button *ngIf="userCanEdit" (onClick)="onOpen(null, true)" buttonStyle="yellow">Open In New Tab</push-button>
-    <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="yellow">New Workspace From Scan</push-button>
-    <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
-    <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="yellow">Delete</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onOpen(null, true)" buttonStyle="gray">Open In New Tab</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="gray">New Workspace From Scan</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="gray">Edit</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="gray">Delete</push-button>
   </div>
 </ng-template>
 
 <ng-template #openWorkspaceOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <!-- <push-button *ngIf="userCanEdit" (onClick)="onDuplicateWorkspace()" buttonStyle="yellow">Duplicate</push-button> -->
+    <!-- <push-button *ngIf="userCanEdit" (onClick)="onDuplicateSnapshot(selectedWorkspace)" buttonStyle="gray">Duplicate</push-button> -->
+    <push-button
+      *ngIf="userCanEdit && selectedWorkspace"
+      confirmInputText="Enter a name for the new workspace"
+      confirmInputTitle="Duplicate Snapshot"
+      [confirmInputPlaceholder]="selectedWorkspace.name || 'Workspace Name'"
+      confirmInputMiddleButtonText="Duplicate"
+      confirmInputButtonText="Duplicate & Open"
+      (onClick)="onDuplicateClick(selectedWorkspace, $event)"
+      buttonStyle="gray"
+      >Duplicate</push-button
+    >
     <push-button
       *ngIf="userCanEdit"
       confirmText="Are you sure you want to delete this workspace ({{ selectedWorkspace?.name || selectedWorkspace?.id }})?"
       (onClick)="onDeleteWorkspace()"
-      buttonStyle="yellow"
+      buttonStyle="gray"
       >Delete</push-button
     >
   </div>
@@ -86,8 +97,8 @@ POSSIBILITY OF SUCH DAMAGE.
       </push-button> -->
     </div>
     <div class="right-header-btns">
-      <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="yellow" title="Upload a new dataset">Upload</push-button>
-      <push-button (onClick)="onNewWorkspace()" buttonStyle="yellow" title="Create a new workspace">New Workspace</push-button>
+      <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
+      <push-button (onClick)="onNewWorkspace()" buttonStyle="gray" title="Create a new workspace">New Workspace</push-button>
     </div>
   </div>
 
@@ -106,6 +117,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div class="workspaces-listing" *ngIf="!errorString && !loading && workspacesMode">
       <div class="workspace-summary-headers">
+        <div class="cell workspace-creator">Creator</div>
         <div class="cell workspace-title">Name</div>
         <div class="cell workspace-description">Description</div>
         <div class="cell workspace-datasets">Datasets</div>
@@ -118,6 +130,18 @@ POSSIBILITY OF SUCH DAMAGE.
           class="workspace-summary {{ selectedWorkspace?.id === workspace.id && workspace.id ? 'selected' : '' }}"
           *ngFor="let workspace of filteredWorkspaces; trackBy: trackWorkspacesBy"
           (click)="onSelectWorkspace(workspace)">
+          <div class="cell workspace-creator">
+            <!-- <img *ngIf="workspace.owner?.creatorUser?.iconURL" class="workspace-creator-icon" [src]="workspace.owner?.creatorUser?.iconURL" /> -->
+            <user-icon
+              [userId]="workspace.owner?.creatorUser?.id || ''"
+              size="32px"
+              #tooltip="matTooltip"
+              [matTooltip]="workspace.owner?.creatorUser?.name || ''"
+              [matTooltipDisabled]="!workspace.owner?.creatorUser">
+            </user-icon>
+            <!-- <span *ngIf="workspace.owner?.creatorUser" class="text-ellipsis workspace-creator">{{ workspace.owner?.creatorUser?.name }}</span> -->
+            <!-- <span *ngIf="!workspace.owner?.creatorUser" class="text-ellipsis workspace-creator empty-field">N/A</span> -->
+          </div>
           <div class="cell">
             <span *ngIf="workspace.name" class="text-ellipsis workspace-title">{{ workspace.name }}</span>
             <span *ngIf="!workspace.name" class="text-ellipsis workspace-title empty-field">N/A</span>
@@ -169,6 +193,12 @@ POSSIBILITY OF SUCH DAMAGE.
               data-lpignore="true"
               placeholder="Workspace Title" />
             <action-button
+              *ngIf="selectedWorkspace.owner?.canEdit && workspaceTitleEditMode"
+              class="edit-btn"
+              (onClick)="onSaveWorkspaceTitle()"
+              action="check"
+              color="rgb(var(--clr-gray-30))"></action-button>
+            <action-button
               *ngIf="selectedWorkspace.owner?.canEdit"
               class="edit-btn"
               (onClick)="onWorkspaceTitleEditToggle()"
@@ -185,7 +215,24 @@ POSSIBILITY OF SUCH DAMAGE.
               [editable]="selectedWorkspace.owner?.canEdit || false"
               (onTagSelectionChanged)="onWorkspaceTagChange($event)">
             </tag-picker>
-            <push-button (onClick)="onOpenWorkspace()" buttonStyle="yellow" title="Open the workspace with views as you last used them">Open</push-button>
+            <push-button
+              *ngIf="selectedWorkspace.owner?.canEdit && !selectedWorkspace.snapshotParentId"
+              (onClick)="onOpenWorkspace()"
+              buttonStyle="yellow"
+              title="Open the workspace with views as you last used them"
+              >Open</push-button
+            >
+            <push-button
+              *ngIf="!selectedWorkspace.owner?.canEdit || selectedWorkspace.snapshotParentId"
+              buttonStyle="yellow"
+              confirmInputText="Enter a name for the new workspace"
+              confirmInputTitle="Duplicate Snapshot"
+              [confirmInputPlaceholder]="selectedWorkspace.name || 'Workspace Name'"
+              confirmInputMiddleButtonText="Duplicate"
+              confirmInputButtonText="Duplicate & Open"
+              (onClick)="onDuplicateLatestClick(selectedWorkspace.snapshotParentId, $event)"
+              >Duplicate
+            </push-button>
             <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openWorkspaceOptionsMenu" #openWorkspaceOptionsButton>
               <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
             </widget-settings-menu>
@@ -194,6 +241,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="tab-switcher">
           <span class="tab-btn" [class.active]="selectedTab === 'description'" (click)="selectedTab = 'description'">Description</span>
           <span class="tab-btn" [class.active]="selectedTab === 'details'" (click)="selectedTab = 'details'">Details</span>
+          <span class="tab-btn" [class.active]="selectedTab === 'snapshots'" (click)="selectedTab = 'snapshots'">Snapshots</span>
         </div>
         <div *ngIf="selectedTab === 'description'" class="tab description">
           <div class="meta-area">
@@ -228,6 +276,30 @@ POSSIBILITY OF SUCH DAMAGE.
             <div *ngFor="let item of selectedWorkspaceSummaryItems" class="summary-item">
               <span class="meta-name">{{ item.label }}</span>
               <span class="meta-value">{{ item.value }}</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="selectedTab === 'snapshots'" class="tab snapshots">
+          <div class="snapshots-container">
+            <div *ngFor="let item of selectedWorkspaceSnapshots; let i = index" class="snapshot">
+              <div class="info">
+                <span class="snapshot-name">{{ item.name || (item.snapshotParentId ? "Snapshot " + (selectedWorkspaceSnapshots.length - i) : "Original") }}</span>
+                <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</span>
+              </div>
+              <div class="action-btns">
+                <push-button
+                  *ngIf="item.snapshotParentId"
+                  confirmInputText="Enter a name for the new workspace"
+                  confirmInputTitle="Duplicate Snapshot"
+                  [confirmInputPlaceholder]="item.name || 'Workspace Name'"
+                  confirmInputMiddleButtonText="Duplicate"
+                  confirmInputButtonText="Duplicate & Open"
+                  (onClick)="onDuplicateClick(item, $event)"
+                  buttonStyle="gray"
+                  >Duplicate</push-button
+                >
+                <push-button *ngIf="!item.snapshotParentId" (onClick)="onOpenWorkspace(item)" buttonStyle="gray">Open</push-button>
+              </div>
             </div>
           </div>
         </div>
@@ -288,7 +360,12 @@ POSSIBILITY OF SUCH DAMAGE.
               [editable]="(userCanEdit && selectedScan.owner?.canEdit) || false"
               (onTagSelectionChanged)="onTagChange($event)">
             </tag-picker>
-            <push-button (onClick)="onOpen($event, false)" buttonStyle="yellow" title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!">Open</push-button>
+            <push-button
+              (onClick)="onOpen($event, false)"
+              buttonStyle="yellow"
+              title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!"
+              >Open</push-button
+            >
             <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
               <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
             </widget-settings-menu>

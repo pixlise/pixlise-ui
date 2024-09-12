@@ -2,6 +2,10 @@
 
 ### Features
 
+- **Workspace Snapshot Sharing** Workspaces can now be shared as snapshots. This allows for sharing a workspace with a specific configuration, including all tabs, settings, and data. Snapshots can be shared with other users or saved for later use. Snapshots are read-only and cannot be edited after being created, but can be duplicated.
+  - All sub-items (expressions, ROIs, quants, etc.) are (attempted to be) shared on snapshot-share, but if the user doesn't have edit permissions for a sub-item, they will not be able to update its sharing settings and this shows up as a warning. This sharing issue can be resolved either before or after sharing a workspace and workspaces/all sub-items can be "re-shared" later.
+- **Workspace Duplicating** Workspaces can now be duplicated. This allows for creating a copy of a workspace with all tabs, settings, and data. Duplicated workspaces can be edited and saved as new workspaces.
+
 ### Bug Fixes
 
 ## 4.40.0 (2024-09-05)
