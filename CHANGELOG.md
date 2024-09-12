@@ -8,6 +8,8 @@
 
 ### Bug Fixes
 
+- Fixes logout bug when clicked from the public site (redirects to wrong URL)
+
 ## 4.40.0 (2024-09-05)
 
 ### Features
