@@ -569,3 +569,10 @@ input {
     }
   }
 }
+
+.cell {
+  &.workspace-creator {
+    width: 60px !important;
+    justify-content: center;
+  }
+}

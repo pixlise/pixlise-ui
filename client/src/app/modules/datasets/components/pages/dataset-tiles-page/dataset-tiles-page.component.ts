@@ -668,7 +668,15 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onDuplicateSnapshot(workspace: ScreenConfiguration | null): void {
+  onDuplicateClick(workspace: ScreenConfiguration, response: { value: string; middleButtonClicked: boolean }): void {
+    this.onDuplicateSnapshot(workspace, response?.value, !response?.middleButtonClicked);
+  }
+
+  onDuplicateLatestClick(parentId: string, response: { value: string; middleButtonClicked: boolean }): void {
+    this.onDuplicateLatestSnapshot(parentId, response?.value, !response?.middleButtonClicked);
+  }
+
+  onDuplicateSnapshot(workspace: ScreenConfiguration | null, workspaceName: string = "", openWorkspace: boolean = true): void {
     if (!workspace) {
       return;
     }
@@ -677,27 +685,33 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     newWorkspace.id = "";
     newWorkspace.owner = undefined;
     newWorkspace.snapshotParentId = "";
-    newWorkspace.name = workspace.name;
-    let matchRegex = /\(Copy\s*(?<copyCount>\d*)\)$/i;
-    let match = workspace.name.match(matchRegex);
-
-    if (match) {
-      let copyCount = parseInt(match.groups?.["copyCount"] || "1");
-      newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+    if (workspaceName) {
+      newWorkspace.name = workspaceName;
     } else {
-      newWorkspace.name += " (Copy)";
+      newWorkspace.name = workspace.name;
+      let matchRegex = /\(Copy\s*(?<copyCount>\d*)\)$/i;
+      let match = workspace.name.match(matchRegex);
+
+      if (match) {
+        let copyCount = parseInt(match.groups?.["copyCount"] || "1");
+        newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+      } else {
+        newWorkspace.name += " (Copy)";
+      }
     }
 
-    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, "", true, createdWorkspace => {
+    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, "", openWorkspace, createdWorkspace => {
       this.onSearchWorkspsaces();
-      this.onOpenWorkspace(createdWorkspace);
+      if (openWorkspace) {
+        this.onOpenWorkspace(createdWorkspace);
+      }
     });
   }
 
-  onDuplicateLatestSnapshot(parentId: string): void {
+  onDuplicateLatestSnapshot(parentId: string, workspaceName: string = "", openWorkspace: boolean = true): void {
     let workspace = this.snapshots.get(parentId)?.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec)[0];
     if (workspace) {
-      this.onDuplicateSnapshot(workspace);
+      this.onDuplicateSnapshot(workspace, workspaceName, openWorkspace);
     }
   }
 
