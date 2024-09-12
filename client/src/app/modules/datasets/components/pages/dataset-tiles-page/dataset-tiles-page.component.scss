@@ -575,4 +575,33 @@ input {
     width: 60px !important;
     justify-content: center;
   }
+
+  &.workspace-title {
+    width: 30% !important;
+  }
+
+  &.workspace-datasets {
+    width: 15% !important;
+  }
+
+  &.workspace-snapshots {
+    width: 120px !important;
+
+    .snapshot-count-container {
+      display: flex;
+      width: 100%;
+
+      justify-content: center;
+
+      .snapshot-count {
+        &.empty {
+          color: #bcbcbc;
+        }
+
+        &.has-snapshots {
+          font-weight: bold;
+        }
+      }
+    }
+  }
 }

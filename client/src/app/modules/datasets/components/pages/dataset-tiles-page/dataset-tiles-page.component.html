@@ -123,6 +123,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="cell workspace-datasets">Datasets</div>
         <div class="cell workspace-last-updated">Last Updated</div>
         <div class="cell workspace-tags">Tags</div>
+        <div class="cell workspace-snapshots">Snapshots</div>
       </div>
 
       <div class="workspaces-summary-container">
@@ -131,7 +132,6 @@ POSSIBILITY OF SUCH DAMAGE.
           *ngFor="let workspace of filteredWorkspaces; trackBy: trackWorkspacesBy"
           (click)="onSelectWorkspace(workspace)">
           <div class="cell workspace-creator">
-            <!-- <img *ngIf="workspace.owner?.creatorUser?.iconURL" class="workspace-creator-icon" [src]="workspace.owner?.creatorUser?.iconURL" /> -->
             <user-icon
               [userId]="workspace.owner?.creatorUser?.id || ''"
               size="32px"
@@ -139,17 +139,15 @@ POSSIBILITY OF SUCH DAMAGE.
               [matTooltip]="workspace.owner?.creatorUser?.name || ''"
               [matTooltipDisabled]="!workspace.owner?.creatorUser">
             </user-icon>
-            <!-- <span *ngIf="workspace.owner?.creatorUser" class="text-ellipsis workspace-creator">{{ workspace.owner?.creatorUser?.name }}</span> -->
-            <!-- <span *ngIf="!workspace.owner?.creatorUser" class="text-ellipsis workspace-creator empty-field">N/A</span> -->
           </div>
-          <div class="cell">
+          <div class="cell workspace-title">
             <span *ngIf="workspace.name" class="text-ellipsis workspace-title">{{ workspace.name }}</span>
             <span *ngIf="!workspace.name" class="text-ellipsis workspace-title empty-field">N/A</span>
           </div>
           <div class="cell">
             <span class="text-ellipsis workspace-description" [title]="workspace.description">{{ workspace.description }}</span>
           </div>
-          <div class="cell">
+          <div class="cell workspace-datasets">
             <span class="workspace-scan-count">{{ getScanNamesForWorkspace(workspace).length }}</span>
             <span class="text-ellipsis workspace-datasets">{{ getScanNamesForWorkspace(workspace).join(", ") }}</span>
             <span *ngIf="!getScanNamesForWorkspace(workspace).length" class="text-ellipsis workspace-datasets empty-field">None</span>
@@ -160,6 +158,11 @@ POSSIBILITY OF SUCH DAMAGE.
           <div class="cell workspace-tags">
             <div class="tag-container">
               <div *ngFor="let tag of getTagsForWorkspace(workspace)" class="tag">{{ tag.name }}</div>
+            </div>
+          </div>
+          <div class="cell workspace-snapshots">
+            <div class="snapshot-count-container">
+              <span class="snapshot-count {{ getSnapshotCount(workspace) === 0 ? 'empty' : 'has-snapshots' }}">{{ getSnapshotCount(workspace) }}</span>
             </div>
           </div>
         </div>

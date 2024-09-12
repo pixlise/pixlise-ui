@@ -760,7 +760,23 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    return this.snapshots.get(this.selectedWorkspace.id) || [];
+    // Find siblings if not source workspace
+    if (this.selectedWorkspace.snapshotParentId) {
+      return this.snapshots.get(this.selectedWorkspace.snapshotParentId) || [];
+    } else {
+      return this.snapshots.get(this.selectedWorkspace.id) || [];
+    }
+  }
+
+  getSnapshotCount(snapshot: ScreenConfiguration): number {
+    // Find siblings if not source workspace
+    if (snapshot.snapshotParentId) {
+      // Count if we're not the source workspace
+      return this.snapshots?.get(snapshot.snapshotParentId)?.length || 1;
+    } else {
+      // Don't count source workspace
+      return (this.snapshots?.get(snapshot.id)?.length || 1) - 1;
+    }
   }
 
   onSearch(): void {
@@ -934,8 +950,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspaceSummaryItems = [
       new SummaryItem("Creator:", workspace.owner?.creatorUser?.name || ""),
       new SummaryItem("Last Modified:", lastModifiedTimeStr),
-      new SummaryItem("Number of Workspaces:", workspace.layouts.length.toString()),
+      new SummaryItem("Number of Tabs:", workspace.layouts.length.toString()),
       new SummaryItem("Total Chart Count:", workspace.layouts.reduce((acc, layout) => acc + layout.widgets.length, 0).toString()),
+      new SummaryItem("Datasets:", this.getScanNamesForWorkspace(workspace).join(", ")),
     ];
 
     if (workspace.layouts.length > 0) {
