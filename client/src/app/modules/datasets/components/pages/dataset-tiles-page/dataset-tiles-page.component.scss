@@ -487,6 +487,7 @@ input {
         display: flex;
         padding: 0px 6px;
         margin-right: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.24);
       }
 
       &.workspace-tags {
@@ -594,6 +595,13 @@ input {
       justify-content: center;
 
       .snapshot-count {
+        border-radius: 16px;
+        background: #444c50;
+        display: flex;
+        padding: 0px 16px;
+        margin-right: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.24);
+
         &.empty {
           color: #bcbcbc;
         }
