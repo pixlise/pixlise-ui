@@ -79,8 +79,9 @@ export class NavTopMenuComponent implements OnInit {
     this._subs.unsubscribe();
   }
 
-  onLogout() {
-    this._authService.logout();
+  onLogout(): void {
+    const returnTo = location.protocol + "//" + location.host;
+    this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }
 
   onClickNav(navGroup: string) {
