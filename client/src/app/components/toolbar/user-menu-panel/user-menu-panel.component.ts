@@ -97,23 +97,25 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         // Now if we're PIXLISE admins, check if we're impersonating anyone
         if (this.isPIXLISEAdmin) {
           this._subs.add(
-            this._dataService.sendUserImpersonateGetRequest(UserImpersonateGetReq.create({})).subscribe((resp: UserImpersonateGetResp) => {
-              if (resp.sessionUser && resp.sessionUser.id.length > 0) {
-                this.impersonatingUserName = resp.sessionUser?.name || resp.sessionUser?.email || resp.sessionUser?.id || "UNKNOWN";
-              } else {
-                this.impersonatingUserName = "";
+            this._dataService.sendDBAdminConfigGetRequest(DBAdminConfigGetReq.create({})).subscribe((resp: DBAdminConfigGetResp) => {
+              this.backupEnabled = resp.canBackup;
+              this.restoreEnabled = resp.canRestore;
+              this.impersonateUserEnabled = resp.impersonateEnabled;
+
+              if (this.impersonateUserEnabled) {
+                this._subs.add(
+                  this._dataService.sendUserImpersonateGetRequest(UserImpersonateGetReq.create({})).subscribe((resp: UserImpersonateGetResp) => {
+                    if (resp.sessionUser && resp.sessionUser.id.length > 0) {
+                      this.impersonatingUserName = resp.sessionUser?.name || resp.sessionUser?.email || resp.sessionUser?.id || "UNKNOWN";
+                    } else {
+                      this.impersonatingUserName = "";
+                    }
+                  })
+                );
               }
             })
           );
         }
-      })
-    );
-
-    this._subs.add(
-      this._dataService.sendDBAdminConfigGetRequest(DBAdminConfigGetReq.create({})).subscribe((resp: DBAdminConfigGetResp) => {
-        this.backupEnabled = resp.canBackup;
-        this.restoreEnabled = resp.canRestore;
-        this.impersonateUserEnabled = resp.impersonateEnabled;
       })
     );
   }
