@@ -146,14 +146,6 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectedTagIDs]="filterTags"
         [showCurrentTagsSection]="false"
         (onTagSelectionChanged)="onFilterTagChange($event)"></tag-picker>
-      <!-- <push-button (onClick)="onFilters($event)" class="badge-host"
-        >Filters
-        <badge *ngIf="filterCount > 0" class="move-up-left" [value]="filterCount.toString()"></badge>
-      </push-button>
-      <push-button (onClick)="onGroups($event)" class="badge-host"
-        >Groups
-        <badge *ngIf="groupCount > 0" class="move-up-left" [value]="groupCount.toString()"></badge>
-      </push-button> -->
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
@@ -185,13 +177,55 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div class="workspaces-listing" *ngIf="!errorString && !loading && workspacesMode">
       <div class="workspace-summary-headers">
-        <div class="cell workspace-creator">Creator</div>
-        <div class="cell workspace-title">Name</div>
-        <div class="cell workspace-description">Description</div>
-        <div class="cell workspace-datasets">Datasets</div>
-        <div class="cell workspace-last-updated">Last Updated</div>
-        <div class="cell workspace-tags">Tags</div>
-        <div class="cell workspace-snapshots">Snapshots</div>
+        <div class="cell workspace-creator" (click)="changeSortWorkspaceBy('Creator')">
+          Creator
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Creator'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
+        <div class="cell workspace-title" (click)="changeSortWorkspaceBy('Name')">
+          Name
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Name'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
+        <div class="cell workspace-description" (click)="changeSortWorkspaceBy('Description')">
+          Description
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Description'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
+        <div class="cell workspace-datasets" (click)="changeSortWorkspaceBy('Datasets')">
+          Datasets
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Datasets'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
+        <div class="cell workspace-last-updated" (click)="changeSortWorkspaceBy('Last Updated')">
+          Last Updated
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Last Updated'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
+        <div class="cell workspace-tags" (click)="changeSortWorkspaceBy('Tags')">
+          Tags
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Tags'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
+        <div class="cell workspace-snapshots" (click)="changeSortWorkspaceBy('Snapshots')">
+          Snapshots
+          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Snapshots'">
+            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
+            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
+          </span>
+        </div>
       </div>
 
       <div class="workspaces-summary-container">

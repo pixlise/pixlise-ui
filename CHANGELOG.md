@@ -14,6 +14,7 @@
   - First user-created A/B quant
   - First user-created Combined quant
 - **New Workspace Improvements** Clicking the "New Workspace" button now opens a dialog to configure the workspace name, description, tags, and scans before creation. Additionally, holding "Cmd" (or "Ctrl" on Windows) and clicking scans will now add default select them for the new workspace.
+- **Workspace Searching Improvements** Workspace search now includes searching by snapshots and creator names. Also, you can click on column names to sort the workspace list. Lastly, your "Workspaces" or "Datasets" selection will be remembered when you navigate back to the workspace list.
 
 ### Bug Fixes
 

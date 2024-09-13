@@ -416,6 +416,8 @@ input {
     margin-left: 8px;
 
     .cell {
+      cursor: pointer;
+      user-select: none;
       display: flex;
       align-items: center;
       width: 20%;
@@ -426,13 +428,17 @@ input {
       font-feature-settings:
         "clig" off,
         "liga" off;
-      /* Interface/Bold */
       font-family: Inter;
       font-size: 12px;
       font-style: normal;
       font-weight: 700;
       line-height: normal;
       letter-spacing: 0.18px;
+
+      .active-sort-container {
+        display: flex;
+        align-items: center;
+      }
     }
   }
 

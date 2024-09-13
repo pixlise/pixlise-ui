@@ -155,6 +155,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   public newWorkspaceScans: string[] = [];
   public newWorkspaceSelectedScans: Set<string> = new Set<string>();
 
+  public workspaceListingColumns = ["Creator", "Name", "Description", "Datasets", "Last Updated", "Tags", "Snapshots"];
+  public sortWorkspacesBy: string = "Last Updated";
+  public sortWorkspacesAsc: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -170,6 +174,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this._taggingService.fetchAllTags();
+
+    this.checkListingMode();
 
     this._subs.add(
       this._authService.idTokenClaims$.subscribe({
@@ -246,13 +252,37 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     return workspace.id;
   }
 
+  checkListingMode(): void {
+    let workspacesMode = localStorage?.getItem("workspacesListingMode");
+    if (workspacesMode) {
+      this._searchType = workspacesMode === "workspaces" ? "workspaces" : "datasets";
+    }
+  }
+
+  setListingMode(mode: "datasets" | "workspaces"): void {
+    localStorage.setItem("workspacesListingMode", mode);
+  }
+
+  changeSortWorkspaceBy(sortBy: string): void {
+    if (this.sortWorkspacesBy === sortBy) {
+      this.sortWorkspacesAsc = !this.sortWorkspacesAsc;
+    } else {
+      this.sortWorkspacesBy = sortBy;
+      this.sortWorkspacesAsc = false;
+    }
+
+    this.filterWorkspaces();
+  }
+
   get searchType(): "datasets" | "workspaces" {
     return this._searchType;
   }
 
   set searchType(value: "datasets" | "workspaces") {
     this._searchType = value;
+    this.setListingMode(value);
     this.clearSelection();
+    this.onSearch();
   }
 
   get datasetsMode(): boolean {
@@ -712,18 +742,55 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       });
   }
 
+  getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
+    let id = workspace.snapshotParentId || workspace.id;
+    return this.snapshots.get(id)?.map(snapshot => snapshot.name) || [];
+  }
+
   getWorkspaceSearchFields(workspace: ScreenConfiguration): string[] {
     return [
       workspace?.name || "",
+      workspace?.owner?.creatorUser?.name || "",
       workspace?.description || "",
       workspace.scanConfigurations ? this.getScanNamesForWorkspace(workspace).join(", ") : "",
       workspace.scanConfigurations ? Object.keys(workspace.scanConfigurations).join(", ") : "",
+      this.getWorkspaceSnapshotNames(workspace).join(", "),
     ];
+  }
+
+  workspaceSort(workspaceA: ScreenConfiguration, workspaceB: ScreenConfiguration): number {
+    if (this.sortWorkspacesBy === "Name") {
+      return this.sortWorkspacesAsc ? workspaceA.name.localeCompare(workspaceB.name) : workspaceB.name.localeCompare(workspaceA.name);
+    } else if (this.sortWorkspacesBy === "Creator") {
+      return this.sortWorkspacesAsc
+        ? (workspaceA.owner?.creatorUser?.name || "").localeCompare(workspaceB.owner?.creatorUser?.name || "")
+        : (workspaceB.owner?.creatorUser?.name || "").localeCompare(workspaceA.owner?.creatorUser?.name || "");
+    } else if (this.sortWorkspacesBy === "Description") {
+      return this.sortWorkspacesAsc
+        ? (workspaceA.description || "").localeCompare(workspaceB.description || "")
+        : (workspaceB.description || "").localeCompare(workspaceA.description || "");
+    } else if (this.sortWorkspacesBy === "Datasets") {
+      return this.sortWorkspacesAsc
+        ? this.getScanNamesForWorkspace(workspaceA).join(", ").localeCompare(this.getScanNamesForWorkspace(workspaceB).join(", "))
+        : this.getScanNamesForWorkspace(workspaceB).join(", ").localeCompare(this.getScanNamesForWorkspace(workspaceA).join(", "));
+    } else if (this.sortWorkspacesBy === "Last Updated") {
+      return this.sortWorkspacesAsc ? workspaceA.modifiedUnixSec - workspaceB.modifiedUnixSec : workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+    } else if (this.sortWorkspacesBy === "Tags") {
+      return this.sortWorkspacesAsc
+        ? (workspaceA.tags || []).join(", ").localeCompare((workspaceB.tags || []).join(", "))
+        : (workspaceB.tags || []).join(", ").localeCompare((workspaceA.tags || []).join(", "));
+    } else if (this.sortWorkspacesBy === "Snapshots") {
+      return this.sortWorkspacesAsc
+        ? this.getWorkspaceSnapshotNames(workspaceA).length - this.getWorkspaceSnapshotNames(workspaceB).length
+        : this.getWorkspaceSnapshotNames(workspaceB).length - this.getWorkspaceSnapshotNames(workspaceA).length;
+    } else {
+      return workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+    }
   }
 
   filterWorkspaces() {
     this.workspaces.sort((a, b) => {
-      return b.modifiedUnixSec - a.modifiedUnixSec;
+      return this.workspaceSort(a, b);
     });
 
     if (this._searchString.length === 0 && this.filterTags.length === 0) {
@@ -750,7 +817,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         let bMatch = workspaceBSearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
 
         if (aMatch == bMatch) {
-          return workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+          return this.workspaceSort(workspaceA, workspaceB);
         } else {
           return aMatch - bMatch;
         }
@@ -763,7 +830,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   getScanNamesForWorkspace(workspace: ScreenConfiguration): string[] {
     return Object.keys(workspace.scanConfigurations).map(scanId => {
-      let scan = this.scans.find(scan => scan.id === scanId);
+      let scan = this.allScans.find(scan => scan.id === scanId);
       return scan?.title || scanId;
     });
   }
@@ -835,18 +902,26 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
         this.snapshots = snapshots;
 
-        let earliestSnapshots: ScreenConfiguration[] = [];
+        let latestSnapshots: ScreenConfiguration[] = [];
         this.snapshots.forEach((snapshots, parentId) => {
-          let earliestSnapshot = snapshots.sort((a, b) => (a.owner?.createdUnixSec || a.modifiedUnixSec) - (b.owner?.createdUnixSec || b.modifiedUnixSec))[0];
-          earliestSnapshots.push(earliestSnapshot);
+          if (!snapshots || snapshots.length === 0) {
+            return;
+          }
 
-          // Reverse sort
           snapshots.sort((a, b) => (b.owner?.createdUnixSec || b.modifiedUnixSec) - (a.owner?.createdUnixSec || a.modifiedUnixSec));
+
+          // Try to find the parent workspace, if can't find, then use latest snapshot
+          let parentWorkspace = snapshots.find(snapshot => snapshot.id === parentId);
+          if (parentWorkspace) {
+            latestSnapshots.push(parentWorkspace);
+          } else {
+            latestSnapshots.push(snapshots[0]);
+          }
         });
 
-        earliestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
+        latestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
 
-        this.workspaces = earliestSnapshots;
+        this.workspaces = latestSnapshots;
         this.filterWorkspaces();
       },
       error: err => {
