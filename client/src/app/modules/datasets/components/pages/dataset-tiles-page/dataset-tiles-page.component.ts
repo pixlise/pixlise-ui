@@ -30,7 +30,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
-import { last, Subscription } from "rxjs";
+import { combineLatest, last, Observable, Subscription } from "rxjs";
 
 import { AuthService } from "@auth0/auth0-angular";
 
@@ -42,12 +42,9 @@ import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
 import { FilterDialogComponent, FilterDialogData } from "../../atoms/filter-dialog/filter-dialog.component";
 
-//import { ViewStateService } from "src/app/services/view-state.service";
-
-//import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { HelpMessage } from "src/app/utils/help-message";
-import { getMB, httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
+import { httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
@@ -65,6 +62,7 @@ import { generateTemplateConfiguration, ScreenTemplate } from "../../../../analy
 import { TabLinks } from "../../../../../models/TabLinks";
 import EditorConfig from "../../../../code-editor/models/editor-config";
 import { PushButtonComponent } from "../../../../pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { QuantificationSummary } from "../../../../../generated-protos/quantification-meta";
 
 class SummaryItem {
   constructor(
@@ -529,24 +527,30 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let scanConfigs: Record<string, ScanConfiguration> = {};
-    this.newWorkspaceScans.forEach(scanId => {
-      scanConfigs[scanId] = ScanConfiguration.create({ id: scanId });
+    let defaultQuantReqs: Observable<QuantificationSummary | null>[] = this.newWorkspaceScans.map(scanId => {
+      return this._analysisLayoutService.getDefaultQuantForScan(scanId);
     });
 
-    let defaultScreenConfig = ScreenConfiguration.create({
-      name: this.newWorkspaceName,
-      description: this.newWorkspaceDescription,
-      tags: this.newWorkspaceTags,
-      scanConfigurations: scanConfigs,
-    });
+    combineLatest(defaultQuantReqs).subscribe(defaultQuants => {
+      let scanConfigs: Record<string, ScanConfiguration> = {};
+      this.newWorkspaceScans.forEach((scanId, index) => {
+        scanConfigs[scanId] = ScanConfiguration.create({ id: scanId, quantId: defaultQuants[index]?.id });
+      });
 
-    this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
-      this.onSearchWorkspsaces();
-      this.navigateToWorkspace(screenConfig.id);
-    });
+      let defaultScreenConfig = ScreenConfiguration.create({
+        name: this.newWorkspaceName,
+        description: this.newWorkspaceDescription,
+        tags: this.newWorkspaceTags,
+        scanConfigurations: scanConfigs,
+      });
 
-    this.onCloseNewWorkspaceDialog();
+      this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
+        this.onSearchWorkspsaces();
+        this.navigateToWorkspace(screenConfig.id);
+      });
+
+      this.onCloseNewWorkspaceDialog();
+    });
   }
 
   onCreateNewWorkspaceFromScan(): void {
@@ -867,7 +871,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       }
     }
 
-    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, "", openWorkspace, createdWorkspace => {
+    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, undefined, openWorkspace, createdWorkspace => {
       this.onSearchWorkspsaces();
       if (openWorkspace) {
         this.onOpenWorkspace(createdWorkspace);
@@ -1148,12 +1152,23 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     if (this.newWorkspaceSelectedScans.has(scan.id)) {
       this.newWorkspaceSelectedScans.delete(scan.id);
       this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scan.id);
+      // If we're removing the last one, set the last one as the selected one
+      if (this.newWorkspaceScans.length > 0) {
+        let lastScanId = this.newWorkspaceScans[this.newWorkspaceScans.length - 1];
+        let lastScan = this.allScans.find(scan => scan.id === lastScanId);
+        if (lastScan) {
+          this.onSelect(lastScan, false);
+        } else {
+          this.clearSelection();
+        }
+      } else {
+        this.clearSelection();
+      }
     } else {
       this.newWorkspaceSelectedScans.add(scan.id);
       this.newWorkspaceScans.push(scan.id);
+      this.onSelect(scan, false);
     }
-
-    this.onSelect(scan, false);
   }
 
   onSelect(event: ScanItem, soloSelect: boolean = true): void {

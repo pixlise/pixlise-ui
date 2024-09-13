@@ -735,6 +735,15 @@ export class AnalysisLayoutService implements OnDestroy {
     return abQuant || quants[0] || null;
   }
 
+  getDefaultQuantForScan(scanId: string): Observable<QuantificationSummary | null> {
+    let quants = this.availableScanQuants$.value[scanId];
+    if (!quants || quants.length === 0) {
+      return this.fetchQuantsForScanAsync(scanId).pipe(map(quants => this.getDefaultQuant(quants)));
+    } else {
+      return of(this.getDefaultQuant(quants));
+    }
+  }
+
   getLoadedQuantificationIDsFromActiveScreenConfiguration(): string[] {
     let quantificationIDs: string[] = [];
 

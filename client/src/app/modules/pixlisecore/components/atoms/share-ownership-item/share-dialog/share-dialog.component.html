@@ -201,7 +201,7 @@ POSSIBILITY OF SUCH DAMAGE.
         (onClick)="onConfirm()"
         #tooltip="matTooltip"
         [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
-        >Share {{ validShareCount + 1 }} items</push-button
+        >Share {{ validShareCount }} items</push-button
       >
       <push-button
         *ngIf="validShareCount === 0 || !shareWithSubItems"

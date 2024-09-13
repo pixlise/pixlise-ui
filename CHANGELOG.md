@@ -20,6 +20,7 @@
 
 - Fixes logout bug when clicked from the public site (redirects to wrong URL)
 - Fixes bug when plotting sigma values on Parallel Coordinates Plot with ratio columns showing
+- Fixes bug when creating new ROI from the ROI sidepanel instead of the selection dropdown (footprint was being selected)
 
 ## 4.40.0 (2024-09-05)
 
