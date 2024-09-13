@@ -29,11 +29,71 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #newWorkspaceDialog>
+  <div class="dlg-border-with-backdrop new-workspace-dialog">
+    <div class="title">
+      <h1>New Workspace</h1>
+      <tag-picker [type]="'workspace'" [selectedTagIDs]="newWorkspaceTags" [showCurrentTagsSection]="true" (onTagSelectionChanged)="onNewWorkspaceTagChange($event)">
+      </tag-picker>
+    </div>
+    <h5 class="confirm-text">Enter a name for the workspace</h5>
+    <div class="input-container">
+      <input class="text-field" [(ngModel)]="newWorkspaceName" type="text" autocomplete="off" data-lpignore="true" placeholder="Workspace Name" />
+    </div>
+    <h5 class="confirm-text">Enter a description for the workspace</h5>
+    <div class="input-container">
+      <textarea
+        class="text-field"
+        [rows]="5"
+        [(ngModel)]="newWorkspaceDescription"
+        type="text"
+        autocomplete="off"
+        data-lpignore="true"
+        placeholder="Workspace Description">
+      </textarea>
+    </div>
+
+    <div class="scan-select-container">
+      <push-button class="add-scan-btn" buttonStyle="gray-title" [matMenuTriggerFor]="menu" (onMenuOpen)="onScanSearchMenu()"
+        >Select datasets to add to the workspace</push-button
+      >
+      <mat-menu #menu="matMenu" class="scan-menu">
+        <div class="search-container">
+          <input class="scan-search" placeholder="Search scans" [(ngModel)]="newWorkspaceScanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
+        </div>
+        <button
+          mat-menu-item
+          *ngFor="let scan of newWorkspaceAddScanList"
+          (click)="onAddScanToNewWorkspace(scan.id)"
+          [disabled]="newWorkspaceSelectedScans.has(scan.id)">
+          Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
+        </button>
+      </mat-menu>
+      <div class="selected-scans-container">
+        <div *ngFor="let scanId of newWorkspaceSelectedScans" class="selected-scan">
+          <span class="selected-scan-title">{{ idToScan[scanId].title }}</span>
+          <action-button color="rgb(var(--clr-gray-30))" (onClick)="onRemoveScanFromNewWorkspace(scanId)" action="close"></action-button>
+        </div>
+        <span *ngIf="newWorkspaceSelectedScans.size === 0" class="empty-field">No datasets selected</span>
+      </div>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+      <push-button class="cancel-btn" buttonStyle="outline" (onClick)="onCloseNewWorkspaceDialog()">Cancel</push-button>
+      <push-button
+        buttonStyle="yellow"
+        (onClick)="onNewWorkspace()"
+        [disabled]="newWorkspaceScans.length === 0"
+        #tooltip="matTooltip"
+        matTooltip="Add scans first to create a workspace"
+        [matTooltipDisabled]="newWorkspaceScans.length > 0"
+        >Create</push-button
+      >
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #openOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <!-- <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
-      >Reset & Open</push-button
-    > -->
     <push-button *ngIf="userCanEdit" (onClick)="onOpen(null, true)" buttonStyle="gray">Open In New Tab</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="gray">New Workspace From Scan</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="gray">Edit</push-button>
@@ -43,7 +103,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #openWorkspaceOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <!-- <push-button *ngIf="userCanEdit" (onClick)="onDuplicateSnapshot(selectedWorkspace)" buttonStyle="gray">Duplicate</push-button> -->
     <push-button
       *ngIf="userCanEdit && selectedWorkspace"
       confirmInputText="Enter a name for the new workspace"
@@ -98,7 +157,14 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
-      <push-button (onClick)="onNewWorkspace()" buttonStyle="gray" title="Create a new workspace">New Workspace</push-button>
+      <push-button
+        #newWorkspaceButton
+        [notificationCount]="newWorkspaceScans.length"
+        [customDialog]="newWorkspaceDialog"
+        buttonStyle="gray"
+        title="Create a new workspace"
+        >New Workspace</push-button
+      >
     </div>
   </div>
 
@@ -110,7 +176,9 @@ POSSIBILITY OF SUCH DAMAGE.
           [summary]="item"
           [defaultImage]="scanDefaultImages.get(item.id)"
           [selected]="selectedScan"
-          (onSelect)="onSelect($event)">
+          [isMultiSelected]="newWorkspaceSelectedScans.has(item.id)"
+          (onSelect)="onSelect($event)"
+          (onCtrlSelect)="onMultiSelectScan($event)">
         </data-set-summary>
       </div>
     </div>

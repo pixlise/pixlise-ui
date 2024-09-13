@@ -44,7 +44,9 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   @Input() summary: ScanItem | null = null;
   @Input() defaultImage: string | undefined = undefined;
   @Input() selected: ScanItem | null = null;
+  @Input() isMultiSelected: boolean = false;
   @Output() onSelect = new EventEmitter();
+  @Output() onCtrlSelect = new EventEmitter();
 
   private _title: string = "";
   private _missingData: string = "";
@@ -134,6 +136,7 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
     if (!this.selected) {
       return false;
     }
+
     return this.selected?.id == this.summary?.id;
   }
 
@@ -223,7 +226,11 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
-    // Tell container we're clicked on
-    this.onSelect.emit(this.summary);
+    if (event.ctrlKey || event.metaKey) {
+      this.onCtrlSelect.emit(this.summary);
+    } else {
+      // Tell container we're clicked on
+      this.onSelect.emit(this.summary);
+    }
   }
 }

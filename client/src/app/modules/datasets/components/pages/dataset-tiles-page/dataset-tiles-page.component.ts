@@ -59,11 +59,12 @@ import { ScanInstrument } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { TagService } from "../../../../tags/services/tag.service";
 import { Tag } from "../../../../../generated-protos/tags";
-import { ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
+import { ScanConfiguration, ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
 import { ScreenConfigurationListReq, ScreenConfigurationListResp } from "../../../../../generated-protos/screen-configuration-msgs";
 import { generateTemplateConfiguration, ScreenTemplate } from "../../../../analysis/models/screen-configuration.model";
 import { TabLinks } from "../../../../../models/TabLinks";
 import EditorConfig from "../../../../code-editor/models/editor-config";
+import { PushButtonComponent } from "../../../../pixlisecore/components/atoms/buttons/push-button/push-button.component";
 
 class SummaryItem {
   constructor(
@@ -82,6 +83,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
+  @ViewChild("newWorkspaceButton") newWorkspaceButton: ElementRef | undefined;
   @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton: ElementRef | undefined;
   @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
 
@@ -141,6 +143,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   scanTitleEditMode: boolean = false;
   workspaceTitleEditMode: boolean = false;
 
+  idToScan: Record<string, ScanItem> = {};
+
+  allScans: ScanItem[] = [];
+
+  private _newWorkspaceScanSearchText: string = "";
+  public newWorkspaceAddScanList: ScanItem[] = [];
+  public newWorkspaceName: string = "";
+  public newWorkspaceDescription: string = "";
+  public newWorkspaceTags: string[] = [];
+  public newWorkspaceScans: string[] = [];
+  public newWorkspaceSelectedScans: Set<string> = new Set<string>();
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -199,6 +213,17 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._taggingService.tags$.subscribe(async tags => {
         this._tags = tags;
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.availableScans$.subscribe(scans => {
+        this.allScans = scans;
+        this.onSearchAddScanList(this._newWorkspaceScanSearchText);
+        this.idToScan = {};
+        scans.forEach(scan => {
+          this.idToScan[scan.id] = scan;
+        });
       })
     );
 
@@ -412,11 +437,86 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  onCloseNewWorkspaceDialog(): void {
+    this.newWorkspaceName = "";
+    this.newWorkspaceDescription = "";
+    this.newWorkspaceTags = [];
+    this.newWorkspaceScans = [];
+
+    if (this.newWorkspaceButton && this.newWorkspaceButton instanceof PushButtonComponent) {
+      (this.newWorkspaceButton as PushButtonComponent).closeDialog();
+    }
+  }
+
+  get newWorkspaceScanSearchText() {
+    return this._newWorkspaceScanSearchText;
+  }
+
+  set newWorkspaceScanSearchText(value: string) {
+    this._newWorkspaceScanSearchText = value;
+    this.onSearchAddScanList(value);
+  }
+
+  onNewWorkspaceTagChange(tags: string[]): void {
+    this.newWorkspaceTags = tags;
+  }
+
+  onRemoveScanFromNewWorkspace(scanId: string): void {
+    this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scanId);
+    this.newWorkspaceSelectedScans.delete(scanId);
+  }
+
+  onScanSearchMenu() {
+    const searchBox = document.getElementsByClassName("scan-search");
+    if (searchBox.length > 0) {
+      (searchBox[0] as any).focus();
+    }
+  }
+
+  onSearchAddScanList(text: string) {
+    this.newWorkspaceAddScanList = this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase()));
+  }
+
+  onAddScanSearchClick(evt: any) {
+    evt.stopPropagation();
+  }
+
+  onAddScanToNewWorkspace(scanId: string) {
+    if (this.newWorkspaceScans.includes(scanId)) {
+      return;
+    }
+
+    this.newWorkspaceScans.push(scanId);
+    setTimeout(() => {
+      this.newWorkspaceScanSearchText = "";
+    }, 500);
+
+    this.newWorkspaceSelectedScans.add(scanId);
+  }
+
   onNewWorkspace(): void {
-    this._analysisLayoutService.createNewScreenConfiguration(undefined, screenConfig => {
+    if (this.newWorkspaceScans.length === 0) {
+      return;
+    }
+
+    let scanConfigs: Record<string, ScanConfiguration> = {};
+    this.newWorkspaceScans.forEach(scanId => {
+      scanConfigs[scanId] = ScanConfiguration.create({ id: scanId });
+    });
+
+    let defaultScreenConfig = ScreenConfiguration.create({
+      name: this.newWorkspaceName,
+      description: this.newWorkspaceDescription,
+      tags: this.newWorkspaceTags,
+      scanConfigurations: scanConfigs,
+    });
+
+    this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
       this.onSearchWorkspsaces();
       this.navigateToWorkspace(screenConfig.id);
     });
+
+    this.onCloseNewWorkspaceDialog();
   }
 
   onCreateNewWorkspaceFromScan(): void {
@@ -424,7 +524,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, screenConfig => {
+    this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, null, screenConfig => {
       this.onSearchWorkspsaces();
       this.navigateToWorkspace(screenConfig.id);
     });
@@ -968,9 +1068,29 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSelect(event: ScanItem): void {
+  onMultiSelectScan(scan: ScanItem): void {
+    // Add to new workspace
+    if (this.newWorkspaceSelectedScans.has(scan.id)) {
+      this.newWorkspaceSelectedScans.delete(scan.id);
+      this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scan.id);
+    } else {
+      this.newWorkspaceSelectedScans.add(scan.id);
+      this.newWorkspaceScans.push(scan.id);
+    }
+
+    this.onSelect(scan, false);
+  }
+
+  onSelect(event: ScanItem, soloSelect: boolean = true): void {
     this.selectedScan = event;
     this.updateEditFields(event);
+
+    if (soloSelect) {
+      // Add the selected scan as a default for new workspace
+      this.newWorkspaceScans = [event.id];
+      this.newWorkspaceSelectedScans.clear();
+      this.newWorkspaceSelectedScans.add(event.id);
+    }
 
     this.selectedScanContextImage = "";
 
