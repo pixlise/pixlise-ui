@@ -30,7 +30,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
-import { last, Subscription } from "rxjs";
+import { combineLatest, last, Observable, Subscription } from "rxjs";
 
 import { AuthService } from "@auth0/auth0-angular";
 
@@ -42,12 +42,9 @@ import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
 import { FilterDialogComponent, FilterDialogData } from "../../atoms/filter-dialog/filter-dialog.component";
 
-//import { ViewStateService } from "src/app/services/view-state.service";
-
-//import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { HelpMessage } from "src/app/utils/help-message";
-import { getMB, httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
+import { httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
@@ -59,11 +56,13 @@ import { ScanInstrument } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { TagService } from "../../../../tags/services/tag.service";
 import { Tag } from "../../../../../generated-protos/tags";
-import { ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
+import { ScanConfiguration, ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
 import { ScreenConfigurationListReq, ScreenConfigurationListResp } from "../../../../../generated-protos/screen-configuration-msgs";
 import { generateTemplateConfiguration, ScreenTemplate } from "../../../../analysis/models/screen-configuration.model";
 import { TabLinks } from "../../../../../models/TabLinks";
 import EditorConfig from "../../../../code-editor/models/editor-config";
+import { PushButtonComponent } from "../../../../pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { QuantificationSummary } from "../../../../../generated-protos/quantification-meta";
 
 class SummaryItem {
   constructor(
@@ -82,6 +81,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
+  @ViewChild("newWorkspaceButton") newWorkspaceButton: ElementRef | undefined;
   @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton: ElementRef | undefined;
   @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
 
@@ -141,6 +141,22 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   scanTitleEditMode: boolean = false;
   workspaceTitleEditMode: boolean = false;
 
+  idToScan: Record<string, ScanItem> = {};
+
+  allScans: ScanItem[] = [];
+
+  private _newWorkspaceScanSearchText: string = "";
+  public newWorkspaceAddScanList: ScanItem[] = [];
+  public newWorkspaceName: string = "";
+  public newWorkspaceDescription: string = "";
+  public newWorkspaceTags: string[] = [];
+  public newWorkspaceScans: string[] = [];
+  public newWorkspaceSelectedScans: Set<string> = new Set<string>();
+
+  public workspaceListingColumns = ["Creator", "Name", "Description", "Datasets", "Last Updated", "Tags", "Snapshots"];
+  public sortWorkspacesBy: string = "Last Updated";
+  public sortWorkspacesAsc: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -156,6 +172,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this._taggingService.fetchAllTags();
+
+    this.checkListingMode();
 
     this._subs.add(
       this._authService.idTokenClaims$.subscribe({
@@ -202,6 +220,17 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       })
     );
 
+    this._subs.add(
+      this._analysisLayoutService.availableScans$.subscribe(scans => {
+        this.allScans = scans;
+        this.onSearchAddScanList(this._newWorkspaceScanSearchText);
+        this.idToScan = {};
+        scans.forEach(scan => {
+          this.idToScan[scan.id] = scan;
+        });
+      })
+    );
+
     this.clearSelection();
     this.onSearch();
     this.onSearchWorkspsaces();
@@ -221,13 +250,37 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     return workspace.id;
   }
 
+  checkListingMode(): void {
+    let workspacesMode = localStorage?.getItem("workspacesListingMode");
+    if (workspacesMode) {
+      this._searchType = workspacesMode === "workspaces" ? "workspaces" : "datasets";
+    }
+  }
+
+  setListingMode(mode: "datasets" | "workspaces"): void {
+    localStorage.setItem("workspacesListingMode", mode);
+  }
+
+  changeSortWorkspaceBy(sortBy: string): void {
+    if (this.sortWorkspacesBy === sortBy) {
+      this.sortWorkspacesAsc = !this.sortWorkspacesAsc;
+    } else {
+      this.sortWorkspacesBy = sortBy;
+      this.sortWorkspacesAsc = false;
+    }
+
+    this.filterWorkspaces();
+  }
+
   get searchType(): "datasets" | "workspaces" {
     return this._searchType;
   }
 
   set searchType(value: "datasets" | "workspaces") {
     this._searchType = value;
+    this.setListingMode(value);
     this.clearSelection();
+    this.onSearch();
   }
 
   get datasetsMode(): boolean {
@@ -412,10 +465,91 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  onCloseNewWorkspaceDialog(): void {
+    this.newWorkspaceName = "";
+    this.newWorkspaceDescription = "";
+    this.newWorkspaceTags = [];
+    this.newWorkspaceScans = [];
+
+    if (this.newWorkspaceButton && this.newWorkspaceButton instanceof PushButtonComponent) {
+      (this.newWorkspaceButton as PushButtonComponent).closeDialog();
+    }
+  }
+
+  get newWorkspaceScanSearchText() {
+    return this._newWorkspaceScanSearchText;
+  }
+
+  set newWorkspaceScanSearchText(value: string) {
+    this._newWorkspaceScanSearchText = value;
+    this.onSearchAddScanList(value);
+  }
+
+  onNewWorkspaceTagChange(tags: string[]): void {
+    this.newWorkspaceTags = tags;
+  }
+
+  onRemoveScanFromNewWorkspace(scanId: string): void {
+    this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scanId);
+    this.newWorkspaceSelectedScans.delete(scanId);
+  }
+
+  onScanSearchMenu() {
+    const searchBox = document.getElementsByClassName("scan-search");
+    if (searchBox.length > 0) {
+      (searchBox[0] as any).focus();
+    }
+  }
+
+  onSearchAddScanList(text: string) {
+    this.newWorkspaceAddScanList = this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase()));
+  }
+
+  onAddScanSearchClick(evt: any) {
+    evt.stopPropagation();
+  }
+
+  onAddScanToNewWorkspace(scanId: string) {
+    if (this.newWorkspaceScans.includes(scanId)) {
+      return;
+    }
+
+    this.newWorkspaceScans.push(scanId);
+    setTimeout(() => {
+      this.newWorkspaceScanSearchText = "";
+    }, 500);
+
+    this.newWorkspaceSelectedScans.add(scanId);
+  }
+
   onNewWorkspace(): void {
-    this._analysisLayoutService.createNewScreenConfiguration(undefined, screenConfig => {
-      this.onSearchWorkspsaces();
-      this.navigateToWorkspace(screenConfig.id);
+    if (this.newWorkspaceScans.length === 0) {
+      return;
+    }
+
+    let defaultQuantReqs: Observable<QuantificationSummary | null>[] = this.newWorkspaceScans.map(scanId => {
+      return this._analysisLayoutService.getDefaultQuantForScan(scanId);
+    });
+
+    combineLatest(defaultQuantReqs).subscribe(defaultQuants => {
+      let scanConfigs: Record<string, ScanConfiguration> = {};
+      this.newWorkspaceScans.forEach((scanId, index) => {
+        scanConfigs[scanId] = ScanConfiguration.create({ id: scanId, quantId: defaultQuants[index]?.id });
+      });
+
+      let defaultScreenConfig = ScreenConfiguration.create({
+        name: this.newWorkspaceName,
+        description: this.newWorkspaceDescription,
+        tags: this.newWorkspaceTags,
+        scanConfigurations: scanConfigs,
+      });
+
+      this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
+        this.onSearchWorkspsaces();
+        this.navigateToWorkspace(screenConfig.id);
+      });
+
+      this.onCloseNewWorkspaceDialog();
     });
   }
 
@@ -424,7 +558,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, screenConfig => {
+    this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, null, screenConfig => {
       this.onSearchWorkspsaces();
       this.navigateToWorkspace(screenConfig.id);
     });
@@ -612,18 +746,55 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       });
   }
 
+  getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
+    let id = workspace.snapshotParentId || workspace.id;
+    return this.snapshots.get(id)?.map(snapshot => snapshot.name) || [];
+  }
+
   getWorkspaceSearchFields(workspace: ScreenConfiguration): string[] {
     return [
       workspace?.name || "",
+      workspace?.owner?.creatorUser?.name || "",
       workspace?.description || "",
       workspace.scanConfigurations ? this.getScanNamesForWorkspace(workspace).join(", ") : "",
       workspace.scanConfigurations ? Object.keys(workspace.scanConfigurations).join(", ") : "",
+      this.getWorkspaceSnapshotNames(workspace).join(", "),
     ];
+  }
+
+  workspaceSort(workspaceA: ScreenConfiguration, workspaceB: ScreenConfiguration): number {
+    if (this.sortWorkspacesBy === "Name") {
+      return this.sortWorkspacesAsc ? workspaceA.name.localeCompare(workspaceB.name) : workspaceB.name.localeCompare(workspaceA.name);
+    } else if (this.sortWorkspacesBy === "Creator") {
+      return this.sortWorkspacesAsc
+        ? (workspaceA.owner?.creatorUser?.name || "").localeCompare(workspaceB.owner?.creatorUser?.name || "")
+        : (workspaceB.owner?.creatorUser?.name || "").localeCompare(workspaceA.owner?.creatorUser?.name || "");
+    } else if (this.sortWorkspacesBy === "Description") {
+      return this.sortWorkspacesAsc
+        ? (workspaceA.description || "").localeCompare(workspaceB.description || "")
+        : (workspaceB.description || "").localeCompare(workspaceA.description || "");
+    } else if (this.sortWorkspacesBy === "Datasets") {
+      return this.sortWorkspacesAsc
+        ? this.getScanNamesForWorkspace(workspaceA).join(", ").localeCompare(this.getScanNamesForWorkspace(workspaceB).join(", "))
+        : this.getScanNamesForWorkspace(workspaceB).join(", ").localeCompare(this.getScanNamesForWorkspace(workspaceA).join(", "));
+    } else if (this.sortWorkspacesBy === "Last Updated") {
+      return this.sortWorkspacesAsc ? workspaceA.modifiedUnixSec - workspaceB.modifiedUnixSec : workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+    } else if (this.sortWorkspacesBy === "Tags") {
+      return this.sortWorkspacesAsc
+        ? (workspaceA.tags || []).join(", ").localeCompare((workspaceB.tags || []).join(", "))
+        : (workspaceB.tags || []).join(", ").localeCompare((workspaceA.tags || []).join(", "));
+    } else if (this.sortWorkspacesBy === "Snapshots") {
+      return this.sortWorkspacesAsc
+        ? this.getWorkspaceSnapshotNames(workspaceA).length - this.getWorkspaceSnapshotNames(workspaceB).length
+        : this.getWorkspaceSnapshotNames(workspaceB).length - this.getWorkspaceSnapshotNames(workspaceA).length;
+    } else {
+      return workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+    }
   }
 
   filterWorkspaces() {
     this.workspaces.sort((a, b) => {
-      return b.modifiedUnixSec - a.modifiedUnixSec;
+      return this.workspaceSort(a, b);
     });
 
     if (this._searchString.length === 0 && this.filterTags.length === 0) {
@@ -650,7 +821,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         let bMatch = workspaceBSearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
 
         if (aMatch == bMatch) {
-          return workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+          return this.workspaceSort(workspaceA, workspaceB);
         } else {
           return aMatch - bMatch;
         }
@@ -663,7 +834,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   getScanNamesForWorkspace(workspace: ScreenConfiguration): string[] {
     return Object.keys(workspace.scanConfigurations).map(scanId => {
-      let scan = this.scans.find(scan => scan.id === scanId);
+      let scan = this.allScans.find(scan => scan.id === scanId);
       return scan?.title || scanId;
     });
   }
@@ -700,7 +871,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       }
     }
 
-    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, "", openWorkspace, createdWorkspace => {
+    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, undefined, openWorkspace, createdWorkspace => {
       this.onSearchWorkspsaces();
       if (openWorkspace) {
         this.onOpenWorkspace(createdWorkspace);
@@ -735,18 +906,26 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
         this.snapshots = snapshots;
 
-        let earliestSnapshots: ScreenConfiguration[] = [];
+        let latestSnapshots: ScreenConfiguration[] = [];
         this.snapshots.forEach((snapshots, parentId) => {
-          let earliestSnapshot = snapshots.sort((a, b) => (a.owner?.createdUnixSec || a.modifiedUnixSec) - (b.owner?.createdUnixSec || b.modifiedUnixSec))[0];
-          earliestSnapshots.push(earliestSnapshot);
+          if (!snapshots || snapshots.length === 0) {
+            return;
+          }
 
-          // Reverse sort
           snapshots.sort((a, b) => (b.owner?.createdUnixSec || b.modifiedUnixSec) - (a.owner?.createdUnixSec || a.modifiedUnixSec));
+
+          // Try to find the parent workspace, if can't find, then use latest snapshot
+          let parentWorkspace = snapshots.find(snapshot => snapshot.id === parentId);
+          if (parentWorkspace) {
+            latestSnapshots.push(parentWorkspace);
+          } else {
+            latestSnapshots.push(snapshots[0]);
+          }
         });
 
-        earliestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
+        latestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
 
-        this.workspaces = earliestSnapshots;
+        this.workspaces = latestSnapshots;
         this.filterWorkspaces();
       },
       error: err => {
@@ -760,7 +939,23 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    return this.snapshots.get(this.selectedWorkspace.id) || [];
+    // Find siblings if not source workspace
+    if (this.selectedWorkspace.snapshotParentId) {
+      return this.snapshots.get(this.selectedWorkspace.snapshotParentId) || [];
+    } else {
+      return this.snapshots.get(this.selectedWorkspace.id) || [];
+    }
+  }
+
+  getSnapshotCount(snapshot: ScreenConfiguration): number {
+    // Find siblings if not source workspace
+    if (snapshot.snapshotParentId) {
+      // Count if we're not the source workspace
+      return this.snapshots?.get(snapshot.snapshotParentId)?.length || 1;
+    } else {
+      // Don't count source workspace
+      return (this.snapshots?.get(snapshot.id)?.length || 1) - 1;
+    }
   }
 
   onSearch(): void {
@@ -934,8 +1129,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspaceSummaryItems = [
       new SummaryItem("Creator:", workspace.owner?.creatorUser?.name || ""),
       new SummaryItem("Last Modified:", lastModifiedTimeStr),
-      new SummaryItem("Number of Workspaces:", workspace.layouts.length.toString()),
+      new SummaryItem("Number of Tabs:", workspace.layouts.length.toString()),
       new SummaryItem("Total Chart Count:", workspace.layouts.reduce((acc, layout) => acc + layout.widgets.length, 0).toString()),
+      new SummaryItem("Datasets:", this.getScanNamesForWorkspace(workspace).join(", ")),
     ];
 
     if (workspace.layouts.length > 0) {
@@ -951,9 +1147,40 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSelect(event: ScanItem): void {
+  onMultiSelectScan(scan: ScanItem): void {
+    // Add to new workspace
+    if (this.newWorkspaceSelectedScans.has(scan.id)) {
+      this.newWorkspaceSelectedScans.delete(scan.id);
+      this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scan.id);
+      // If we're removing the last one, set the last one as the selected one
+      if (this.newWorkspaceScans.length > 0) {
+        let lastScanId = this.newWorkspaceScans[this.newWorkspaceScans.length - 1];
+        let lastScan = this.allScans.find(scan => scan.id === lastScanId);
+        if (lastScan) {
+          this.onSelect(lastScan, false);
+        } else {
+          this.clearSelection();
+        }
+      } else {
+        this.clearSelection();
+      }
+    } else {
+      this.newWorkspaceSelectedScans.add(scan.id);
+      this.newWorkspaceScans.push(scan.id);
+      this.onSelect(scan, false);
+    }
+  }
+
+  onSelect(event: ScanItem, soloSelect: boolean = true): void {
     this.selectedScan = event;
     this.updateEditFields(event);
+
+    if (soloSelect) {
+      // Add the selected scan as a default for new workspace
+      this.newWorkspaceScans = [event.id];
+      this.newWorkspaceSelectedScans.clear();
+      this.newWorkspaceSelectedScans.add(event.id);
+    }
 
     this.selectedScanContextImage = "";
 

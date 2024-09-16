@@ -313,9 +313,21 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
-  fetchQuantsForScan(scanId: string) {
+  fetchQuantsForScan(scanId: string, callback: (quants: QuantificationSummary[]) => void = () => {}) {
     this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe(res => {
       this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
+      if (callback) {
+        callback(res.quants);
+      }
+    });
+  }
+
+  fetchQuantsForScanAsync(scanId: string): Observable<QuantificationSummary[]> {
+    return new Observable<QuantificationSummary[]>(observer => {
+      this.fetchQuantsForScan(scanId, quants => {
+        observer.next(quants);
+        observer.complete();
+      });
     });
   }
 
@@ -375,10 +387,21 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
-  createNewScreenConfiguration(scanId: string = "", callback: (screenConfig: ScreenConfiguration) => void = () => {}) {
+  createNewScreenConfiguration(
+    scanId: string = "",
+    defaultScreenConfig: ScreenConfiguration | null = null,
+    callback: (screenConfig: ScreenConfiguration) => void = () => {}
+  ) {
     const newScreenConfiguration = createDefaultScreenConfiguration();
     if (scanId) {
       newScreenConfiguration.scanConfigurations = { [scanId]: { id: scanId, quantId: "", calibrations: [], colour: "" } };
+    }
+
+    if (defaultScreenConfig) {
+      newScreenConfiguration.name = defaultScreenConfig.name;
+      newScreenConfiguration.description = defaultScreenConfig.description || "";
+      newScreenConfiguration.tags = defaultScreenConfig.tags || [];
+      newScreenConfiguration.scanConfigurations = defaultScreenConfig.scanConfigurations;
     }
 
     this.writeScreenConfiguration(newScreenConfiguration, undefined, true, callback);
@@ -530,15 +553,17 @@ export class AnalysisLayoutService implements OnDestroy {
 
   get defaultScanId(): string {
     let scanId = this._route?.snapshot?.queryParams[EditorConfig.scanIdParam];
-    if (!scanId && this.activeScreenConfiguration$.value?.scanConfigurations) {
-      scanId = Object.keys(this.activeScreenConfiguration$.value.scanConfigurations)[0];
+
+    let scanConfigs = this.activeScreenConfiguration$.value?.scanConfigurations;
+    if (!scanId && scanConfigs && Object.keys(scanConfigs).length > 0) {
+      scanId = Object.keys(scanConfigs)[0];
     }
 
-    return scanId;
+    return scanId || "";
   }
 
   makeExpressionList(scanId: string, count: number, scanQuantId: string = ""): Observable<DefaultExpressions> {
-    if (scanId.length > 0) {
+    if (scanId && scanId.length > 0) {
       // If there's a quant, use elements from that, otherwise use pseudo-intensities (if they exist)
       const quantId = scanQuantId || this.getQuantIdForScan(scanId);
       if (quantId.length <= 0) {
@@ -683,6 +708,40 @@ export class AnalysisLayoutService implements OnDestroy {
     expressionIds = Array.from(new Set(expressionIds));
 
     return expressionIds;
+  }
+
+  getDefaultQuant(quants: QuantificationSummary[]): QuantificationSummary | null {
+    if (!quants || quants.length === 0) {
+      return null;
+    }
+
+    let importedQuants = quants.filter(quant => quant.params?.requestorUserId === "PIXLISEImport");
+
+    // Find auto quant A/B (PIXL), if no A/B, find combined (PIXL), if no combined, find PDS (A/B then Combined),
+    // if no PDS, find any (A/B first, then Combined), if none, don't add quant
+    const quantPriorities = ["AutoQuant-PIXL (AB)", "AutoQuant-PIXL (Combined)", "AutoQuant-PDS (AB)", "AutoQuant-PDS (Combined)"];
+    for (let quantName of quantPriorities) {
+      let foundQuant = importedQuants.find(quant => quant.params?.userParams?.name === quantName);
+      if (foundQuant) {
+        return foundQuant;
+      }
+    }
+
+    if (importedQuants.length > 0) {
+      return importedQuants[0];
+    }
+
+    let abQuant = quants.find(quant => quant.params?.userParams?.quantMode === "AB");
+    return abQuant || quants[0] || null;
+  }
+
+  getDefaultQuantForScan(scanId: string): Observable<QuantificationSummary | null> {
+    let quants = this.availableScanQuants$.value[scanId];
+    if (!quants || quants.length === 0) {
+      return this.fetchQuantsForScanAsync(scanId).pipe(map(quants => this.getDefaultQuant(quants)));
+    } else {
+      return of(this.getDefaultQuant(quants));
+    }
   }
 
   getLoadedQuantificationIDsFromActiveScreenConfiguration(): string[] {
