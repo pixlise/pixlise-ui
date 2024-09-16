@@ -126,22 +126,26 @@ export class RGBUPoint {
       let line = new PCPLine(xStart, yStart, xEnd, yEnd);
       if (sigmaLevel === SIGMA_LEVEL.ONE && this.rStdDev) {
         let startSigma1 = this[`${currentAxis.key}Sigma1` as keyof this] as number;
-        let startWidth = Math.round((startSigma1 / (currentAxis.max - currentAxis.min)) * 100);
+        let startWidth = startSigma1 !== undefined ? Math.round((startSigma1 / (currentAxis.max - currentAxis.min)) * 100) : null;
 
         let endSigma1 = this[`${nextAxis.key}Sigma1` as keyof this] as number;
-        let endWidth = Math.round((endSigma1 / (nextAxis.max - nextAxis.min)) * 100);
+        let endWidth = endSigma1 !== undefined ? Math.round((endSigma1 / (nextAxis.max - nextAxis.min)) * 100) : null;
 
-        let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
-        this.sigmaLines.push(sigmaLine);
+        if (startWidth !== null && endWidth !== null) {
+          let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
+          this.sigmaLines.push(sigmaLine);
+        }
       } else if (sigmaLevel === SIGMA_LEVEL.TWO && this.rStdDev) {
         let startSigma2 = this[`${currentAxis.key}Sigma2` as keyof this] as number;
-        let startWidth = Math.round((startSigma2 / (currentAxis.max - currentAxis.min)) * 100);
+        let startWidth = startSigma2 !== undefined ? Math.round((startSigma2 / (currentAxis.max - currentAxis.min)) * 100) : null;
 
         let endSigma2 = this[`${nextAxis.key}Sigma2` as keyof this] as number;
-        let endWidth = Math.round((endSigma2 / (nextAxis.max - nextAxis.min)) * 100);
+        let endWidth = endSigma2 !== undefined ? Math.round((endSigma2 / (nextAxis.max - nextAxis.min)) * 100) : null;
 
-        let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
-        this.sigmaLines.push(sigmaLine);
+        if (startWidth !== null && endWidth !== null) {
+          let sigmaLine = new PCPLine(xStart, yStart, xEnd, yEnd, startWidth, endWidth);
+          this.sigmaLines.push(sigmaLine);
+        }
       }
       this.lines.push(line);
     }
@@ -151,7 +155,7 @@ export class RGBUPoint {
       let sigmaDescription = "";
       if (sigmaLevel !== SIGMA_LEVEL.NONE) {
         let sigmaValue = sigmaLevel === SIGMA_LEVEL.ONE ? (this[`${axis.key}Sigma1` as keyof this] as number) : (this[`${axis.key}Sigma2` as keyof this] as number);
-        sigmaDescription = ` (σ${sigmaLevel === SIGMA_LEVEL.ONE ? "1" : "2"}: ${sigmaValue.toFixed(2)})`;
+        sigmaDescription = ` (σ${sigmaLevel === SIGMA_LEVEL.ONE ? "1" : "2"}: ${sigmaValue?.toFixed(2) ?? "N/A"})`;
       }
       tooltipText += `${axis.title}: ${Number(this[axis.key]).toFixed(2)}${sigmaDescription}\n`;
     });

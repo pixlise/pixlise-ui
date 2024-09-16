@@ -1,0 +1,4 @@
+<span class="user-icon" [ngStyle]="{ width: size, height: size }">
+  <img *ngIf="iconURL || !iconAbbreviation" [ngStyle]="{ height: size }" src="{{ iconURL || defaultIconURL }}" />
+  <span *ngIf="!iconURL && iconAbbreviation" class="icon-abbreviation">{{ iconAbbreviation }}</span>
+</span>

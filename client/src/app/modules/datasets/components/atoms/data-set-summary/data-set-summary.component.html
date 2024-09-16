@@ -29,7 +29,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="dataset-container clickable fx-start-center" [ngClass]="{ 'dataset-selected': isSelected }" (click)="onClickTileArea($event)" [attr.aria-label]="'DatasetTile:'+title">
+<div
+  class="dataset-container clickable fx-start-center"
+  [ngClass]="{ 'dataset-selected': isSelected || isMultiSelected }"
+  (click)="onClickTileArea($event)"
+  [attr.aria-label]="'DatasetTile:' + title">
   <ng-container [ngSwitch]="tileImage">
     <ng-container *ngSwitchCase="0">
       <div class="fx-space-around-center fx-flex">
@@ -37,14 +41,11 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </ng-container>
     <ng-container *ngSwitchDefault>
-      <img [src]='tileImage' class="tile-img">
+      <img [src]="tileImage" class="tile-img" />
     </ng-container>
   </ng-container>
   <div class="title-container">
-    <div
-      class="title"
-      [ngClass]="{ incomplete: incomplete }"
-      title="Title: &quot;{{ title }}&quot;. Dataset ID: &quot;{{ summaryId }}&quot; {{ missingDataList }}">
+    <div class="title" [ngClass]="{ incomplete: incomplete }" title="Title: &quot;{{ title }}&quot;. Dataset ID: &quot;{{ summaryId }}&quot; {{ missingDataList }}">
       {{ title }}<br />{{ displaySite }}
     </div>
     <div class="types">

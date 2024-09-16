@@ -14,7 +14,13 @@ export const HOTKEYS: Record<string, Hotkey[]> = {
   Layout: [
     {
       name: "Toggle Sidebar",
-      shortcut: "Cmd + B",
+      shortcut: `${cmdOrCtrl} + B`,
+    },
+  ],
+  "Datasets Listing": [
+    {
+      name: "Multi-Select Datasets",
+      shortcut: `${cmdOrCtrl} + Click`,
     },
   ],
   "Chart Keys": [

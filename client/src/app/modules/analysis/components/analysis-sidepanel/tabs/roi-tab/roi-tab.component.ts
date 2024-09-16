@@ -228,17 +228,7 @@ export class ROITabComponent implements OnInit {
   }
 
   onNewROI() {
-    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
-    dialogConfig.data = {
-      defaultScanId: this._visibleScanId,
-    };
-
-    let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((created: boolean) => {
-      if (created) {
-        this._selectionService.clearSelection([this._visibleScanId]);
-      }
-    });
+    this._selectionService.newROIFromSelection();
   }
 
   onSaveNewROI() {
