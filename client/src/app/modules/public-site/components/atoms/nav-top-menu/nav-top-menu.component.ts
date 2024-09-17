@@ -27,14 +27,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, ViewChildren, ElementRef, QueryList } from "@angular/core";
+import { Component, OnInit, ViewChildren, ElementRef, QueryList, inject } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 
 import { Navigation } from "../../navigation";
 
 import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { AuthService } from "@auth0/auth0-angular";
 import { Subscription } from "rxjs";
 
@@ -56,21 +55,15 @@ export class NavTopMenuComponent implements OnInit {
   private _openMenus: Map<string, boolean> = new Map<string, boolean>();
   private _activeNavGroup: string = "";
 
-  isLoggedIn: boolean = false;
+  private _authService = inject(AuthService);
+  isAuthenticated$ = this._authService.isAuthenticated$;
 
   constructor(
-    private _authService: AuthService,
     private _activeRoute: ActivatedRoute,
     private _router: Router
   ) {}
 
   ngOnInit(): void {
-    this._subs.add(
-      this._authService.isAuthenticated$.subscribe(isLoggedIn => {
-        this.isLoggedIn = isLoggedIn;
-      })
-    );
-
     for (let c of this.navigation.categories) {
       this._openMenus.set(c, false);
     }
@@ -86,13 +79,9 @@ export class NavTopMenuComponent implements OnInit {
     this._subs.unsubscribe();
   }
 
-  onLogout() {
-    // this._authService.logout({ returnTo: window.location.origin });
-    this._authService.logout({
-      openUrl: () => {
-        this._router.navigate(["/"]);
-      },
-    });
+  onLogout(): void {
+    const returnTo = location.protocol + "//" + location.host;
+    this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }
 
   onClickNav(navGroup: string) {

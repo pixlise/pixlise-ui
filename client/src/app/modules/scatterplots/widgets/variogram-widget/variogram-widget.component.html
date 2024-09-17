@@ -1,0 +1,114 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<ng-template #settingsMenu>
+  <div class="settings-menu">
+    <h3>Max Distance</h3>
+    <div class="setting-option">
+      <div class="slider-val">{{ maxDistance | number: "1.4-4" }}mm</div>
+      <slider
+        class="slider-control"
+        [minValue]="distanceSliderMin"
+        [maxValue]="distanceSliderMax"
+        [pxLength]="225"
+        [value]="maxDistance"
+        (onChange)="onChangeDistance($event)">
+      </slider>
+    </div>
+
+    <h3>Number Of Bins</h3>
+    <div class="setting-option">
+      <div class="slider-val">{{ binNumber }}</div>
+      <slider class="slider-control" [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="225" [value]="binNumber" (onChange)="onChangeBins($event)">
+      </slider>
+    </div>
+
+    <h3 class="line-of-best-fit">
+      Line of Best Fit
+      <switch-button class="toggle" [active]="bestFitLineShowing" (onToggle)="toggleBestFitLine()"></switch-button>
+    </h3>
+
+    <ng-container *ngIf="expressions.length > 0">
+      <h3 class="algorithm-label">Cross-Combining Algorithm</h3>
+      <div class="expressions-container">
+        <div class="algorithm-option-container">
+          <div class="setting-option">
+            <div class="label" title="{{ expressions[0].name }}">{{ expressions[0].name }}</div>
+            <multi-switch-button
+              class="algorithm-switch"
+              [options]="crossCombiningAlgorithms"
+              [value]="activeLeftCrossCombiningAlgorithm"
+              (onChange)="setActiveCrossCombiningAlgorithm(true, $event)">
+            </multi-switch-button>
+          </div>
+          <div *ngIf="activeLeftCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
+            <push-button (onClick)="onCustomAlgorithm(true)">{{ customLeftAlgorithm?.name || "Select Combining Algorithm" }}</push-button>
+          </div>
+        </div>
+        <ng-container *ngIf="expressions.length > 1">
+          <div class="algorithm-option-container">
+            <div class="setting-option">
+              <div class="label" title="{{ expressions[1].name }}">{{ expressions[1].name }}</div>
+              <multi-switch-button
+                class="algorithm-switch"
+                [options]="crossCombiningAlgorithms"
+                [value]="activeRightCrossCombiningAlgorithm"
+                (onChange)="setActiveCrossCombiningAlgorithm(false, $event)">
+              </multi-switch-button>
+            </div>
+            <div *ngIf="activeRightCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
+              <push-button (onClick)="onCustomAlgorithm(false)">{{ customRightAlgorithm?.name || "Select Combining Algorithm" }}</push-button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </ng-container>
+
+    <div class="bottom-buttons">
+      <div class="live-update" (click)="liveUpdate = !liveUpdate">
+        <action-button [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
+        <span class="label">Live Update</span>
+      </div>
+      <push-button [disabled]="liveUpdate" (onClick)="saveAndUpdate()">Update</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<div class="canvas-container">
+  <interactive-canvas
+    *ngIf="drawer && !errorMsg"
+    [ngClass]="cursorShown"
+    [drawer]="this"
+    [drawNotifier]="this"
+    [interactionHandler]="interaction"
+    [transform]="transform">
+  </interactive-canvas>
+</div>

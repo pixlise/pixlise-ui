@@ -53,6 +53,9 @@ export class MapBrowserPageComponent {
   soloViewWidgetId: string | null = null;
   soloViewWidget: WidgetLayoutConfiguration | null = null;
 
+  _showScanPoints = false;
+  _showScanFootprint = true;
+
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {
@@ -100,6 +103,24 @@ export class MapBrowserPageComponent {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  get showScanPoints(): boolean {
+    return this._showScanPoints;
+  }
+
+  set showScanPoints(value: boolean) {
+    this._showScanPoints = value;
+    this.injectNewExpressions();
+  }
+
+  get showScanFootprint(): boolean {
+    return this._showScanFootprint;
+  }
+
+  set showScanFootprint(value: boolean) {
+    this._showScanFootprint = value;
+    this.injectNewExpressions();
   }
 
   get widgetsPerPage(): number {
@@ -217,7 +238,13 @@ export class MapBrowserPageComponent {
 
       let widgetId = `element-map-${id}-${this.scanId}`;
       this.idToTitleMap[widgetId] = expression.name;
-      this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression, mapsMode: true };
+      this.liveExpressionMap[widgetId] = {
+        expressionId: expression.id,
+        scanId: this.scanId,
+        quantId: this.quantId,
+        expression,
+        mapsMode: true,
+      };
 
       layout.widgets.push({
         id: widgetId,
@@ -229,6 +256,9 @@ export class MapBrowserPageComponent {
         data: WidgetData.create({
           contextImage: ContextImageState.create({
             mapLayers: [MapLayerVisibility.create({ expressionID: expression.id })],
+            hideFootprintsForScans: !this.showScanFootprint ? [this.scanId] : [],
+            hidePointsForScans: !this.showScanPoints ? [this.scanId] : [],
+            hideImage: true,
           }),
         }),
       });

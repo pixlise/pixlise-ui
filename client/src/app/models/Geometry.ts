@@ -236,6 +236,12 @@ export function subtractVectors(v1: Point, v2: Point): Point {
   return new Point(v1.x - v2.x, v1.y - v2.y);
 }
 
+export function distanceSquaredBetweenPoints(pt1: Point, pt2: Point): number {
+  let dx = pt2.x - pt1.x;
+  let dy = pt2.y - pt1.y;
+  return dx * dx + dy * dy;
+}
+
 export function distanceBetweenPoints(pt1: Point, pt2: Point): number {
   let vec = getVectorBetweenPoints(pt1, pt2);
   return Math.sqrt(vec.x * vec.x + vec.y * vec.y);

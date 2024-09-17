@@ -1,17 +1,19 @@
 <section class="page analysis-container">
   <analysis-sidepanel></analysis-sidepanel>
-  <section class="screen-container" *ngIf="loadedScreenConfiguration && !soloViewWidget">
+  <section
+    class="screen-container"
+    *ngIf="loadedScreenConfiguration && activeLayout && loadedScreenConfiguration.layouts.length > activeLayoutIndex && !soloViewWidget">
+    <!-- *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index; trackBy: trackByLayoutId" -->
     <section
-      *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index; trackBy: trackByLayoutId"
       class="widgets-container"
       [ngStyle]="{
-        'grid-template-columns': computedLayouts[i].templateColumns,
-        'grid-template-rows': computedLayouts[i].templateRows
+        'grid-template-columns': computedLayouts[activeLayoutIndex].templateColumns,
+        'grid-template-rows': computedLayouts[activeLayoutIndex].templateRows
       }">
       <widget
-        *ngFor="let widget of layout.widgets; trackBy: trackByWidgetId"
+        *ngFor="let widget of activeLayout.widgets; trackBy: trackByWidgetId"
         [widgetLayoutConfig]="widget"
-        [layoutIndex]="i"
+        [layoutIndex]="activeLayoutIndex"
         [initWidget]="widget.type"
         [ngStyle]="{
           'grid-column-start': widget.startColumn,

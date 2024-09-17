@@ -60,21 +60,4 @@ export class EnvConfigurationService {
       })
     );
   }
-
-  /*
-  // For testing only, calls API endpoints that return specific errors
-  test500(): Observable<string> {
-    let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/500");
-    return this.http.get<string>(apiUrl, makeHeaders());
-  }
-
-  test503(): Observable<string> {
-    let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/503");
-    return this.http.get<string>(apiUrl, makeHeaders());
-  }
-
-  test404(): Observable<string> {
-    let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/404"); // literally doesn't exist on API side, so should get real 404 back
-    return this.http.get<string>(apiUrl, makeHeaders());
-  }*/
 }

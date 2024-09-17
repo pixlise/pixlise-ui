@@ -27,8 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { Router } from "@angular/router";
+import { Component, OnDestroy, OnInit } from "@angular/core";
+//import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 import { AuthService } from "@auth0/auth0-angular";
@@ -37,25 +37,31 @@ import { AuthService } from "@auth0/auth0-angular";
 // injected here - if the application is brought to this page and it has the code/state the auth service will see
 // it and treat us as logged in
 
+// Example error situation
+// http://localhost:4200/authenticate?
+// error=access_denied&
+// error_description=Please%20verify%20your%20email%20by%20clicking%20the%20verify%20link%20that%20was%20emailed%20to%20you%20before%20logging%20in.&
+// state=dnpfeC1Gc1ZVWi1PYmw2ODE4dE5qZkxIR190Sl82dElRaHIyUGxwSlJHNQ%3D%3D
+
 @Component({
   selector: "app-authenticate",
   templateUrl: "./authenticate.component.html",
   styleUrls: ["./authenticate.component.scss"],
 })
-export class AuthenticateComponent implements OnInit {
+export class AuthenticateComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   errorString: string = "";
 
   constructor(
-    private _router: Router,
+    //private _router: Router,
     private authService: AuthService
   ) {}
 
   ngOnInit() {
     this._subs.add(
       this.authService.error$.subscribe((errStr: Error) => {
-        this.errorString = `${errStr}`;
+        this.errorString += `${errStr}\n`;
       })
     );
   }
@@ -65,6 +71,7 @@ export class AuthenticateComponent implements OnInit {
   }
 
   onHome() {
-    this._router.navigateByUrl("about");
+    this.authService.logout();
+    //this._router.navigateByUrl("/public/about-us");
   }
 }

@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, HostListener, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -57,6 +57,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
@@ -65,7 +66,6 @@ import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canv
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
 import { SpectrumChannels } from "src/app/utils/utils";
 
@@ -171,6 +171,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     private _analysisLayoutService: AnalysisLayoutService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
     private _selectionService: SelectionService,
     private _diffractionService: DiffractionService,
     private _userOptionsService: UserOptionsService,
@@ -374,6 +375,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
           return dataSource
             .prepare(
               this._cachedDataService,
+              this._spectrumDataService,
               scanId,
               this._analysisLayoutService.getQuantIdForScan(scanId),
               PredefinedROIID.getAllPointsForScan(scanId),

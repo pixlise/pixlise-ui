@@ -8,23 +8,22 @@ import { AppComponent } from "./app.component";
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
 import { HTTP_INTERCEPTORS, HttpBackend, HttpClientModule } from "@angular/common/http";
 import { AppConfig, EnvConfigurationInitService } from "./services/env-configuration-init.service";
-import { HttpInterceptorService } from "./modules/pixlisecore/pixlisecore.module";
+import { PIXLISECoreModule } from "./modules/pixlisecore/pixlisecore.module";
 
 import * as Sentry from "@sentry/angular-ivy";
 import { VERSION } from "src/environments/version";
 import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angular/material/dialog";
 import { MaterialModule } from "./modules/material.module";
-import { AuthModule, AuthClientConfig } from "@auth0/auth0-angular";
+import { AuthModule, AuthClientConfig, AuthHttpInterceptor } from "@auth0/auth0-angular";
 import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { NotFoundModule } from "./modules/not-found/not-found.module";
 import { CodeEditorModule } from "./modules/code-editor/code-editor.module";
 import { MapBrowserModule } from "./modules/map-browser/map-browser.module";
-import { QuantificationsModule } from "./modules/quantifications/quantifications.module";
-import { AdminModule } from "./modules/admin/admin.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { FormsModule } from "@angular/forms";
 import { ToolbarComponent } from "./components/toolbar/toolbar.component";
 import { SettingsSidebarComponent } from "./components/settings-sidebar/settings-sidebar.component";
+import { MarkdownModule } from "ngx-markdown";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -71,6 +70,69 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
             }
             return event;
           },
+          beforeBreadcrumb(breadcrumb, hint) {
+            if (hint && breadcrumb.category === "ui.click") {
+              let target = undefined;
+              if (hint["event"]) {
+                target = hint["event"]["target"];
+              }
+
+              let ariaLabel = "";
+              const descriptors = [];
+              let parentsVisited = 0;
+
+              // Loop up the chain of parents until we find either an arialabel. We record inner text along the way
+              while (target && parentsVisited < 10) {
+                if (target.ariaLabel) {
+                  // We put aria-label on some HTML elements that are key to identifying what the interaction is
+                  ariaLabel = target.ariaLabel;
+                  break;
+                }
+
+                // Otherwise, look at the node name. If it contains something recognised, save it
+                if (target.localName && (target.localName == "a" || target.localName.indexOf("button") > -1)) {
+                  // Collect inner text, to try to identify the button
+                  descriptors.push(target.localName);
+                  if (target.innerText) {
+                    descriptors.push(`"${target.innerText}"`);
+                  }
+                }
+
+                if (target.localName.indexOf("panel") > -1 || (target.localName.indexOf("dialog") > -1 && target.localName != "mat-dialog-container")) {
+                  descriptors.unshift(target.localName);
+                }
+
+                if (target.localName == "input") {
+                  descriptors.push(target.localName);
+                  if (target?.placeholder?.length > 0) {
+                    descriptors.push(`"${target.placeholder}"`);
+                  }
+                  if (target?.accept?.length > 0) {
+                    descriptors.push(`"${target.accept}"`);
+                  }
+                }
+
+                if (target?.attributes["mattooltip"]?.nodeValue && target.attributes["mattooltip"].nodeValue.length > 0) {
+                  descriptors.push(`"${target.attributes["mattooltip"].nodeValue}"`);
+                }
+                if (target?.attributes["ng-reflect-message"]?.nodeValue && target.attributes["ng-reflect-message"].nodeValue.length > 0) {
+                  descriptors.push(`"${target.attributes["ng-reflect-message"].nodeValue}"`);
+                }
+                if (target?.title?.length > 0) {
+                  descriptors.push(`"${target.title}"`);
+                }
+
+                target = target.parentNode;
+                parentsVisited++;
+              }
+
+              if (ariaLabel.length > 0 || descriptors.length > 0) {
+                breadcrumb.message = ariaLabel + "[" + descriptors.join(",") + "], origmsg=" + breadcrumb.message;
+              }
+            }
+            //console.log("BREADCRUMB: " + breadcrumb.message);
+            return breadcrumb;
+          },
         });
 
         const version = (VERSION as any)["raw"];
@@ -91,6 +153,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
+    MarkdownModule.forRoot(),
     HttpClientModule,
     AppRoutingModule,
     MaterialModule,
@@ -99,9 +162,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     NotFoundModule,
     CodeEditorModule,
     MapBrowserModule,
-    QuantificationsModule,
-    AdminModule,
     SettingsModule,
+    PIXLISECoreModule,
     AuthModule.forRoot(),
   ],
   providers: [
@@ -117,11 +179,20 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
       provide: MAT_DIALOG_DEFAULT_OPTIONS,
       useValue: { hasBackdrop: true },
     },
+    /* We used to define our own HttpInterceptorService but switched to use Auth0's built in one. The "extra" things ours did were:
+        - Show snack saying "You are not online" if !window.navigator.onLine
+        - If getAccessTokenSilently() returned an error that contains "Login required": snackService.openError(
+                "Auto-login failed, please use Chrome without ad blocking",
+                "Maybe your browser/ad-blocker is preventing PIXLISE from logging in")
+        - If getAccessTokenSilently() returned another error, just show the error text in the snack
     {
       provide: HTTP_INTERCEPTORS,
       useClass: HttpInterceptorService,
       multi: true,
-    },
+    },*/
+    { provide: HTTP_INTERCEPTORS, useClass: AuthHttpInterceptor, multi: true },
+    // AuthHttpInterceptor,
+    // provideHttpClient(withInterceptors([authHttpInterceptorFn])),
     {
       provide: MAT_DIALOG_DATA,
       useValue: {},
@@ -134,8 +205,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
       provide: ErrorHandler,
       useValue: Sentry.createErrorHandler({
         showDialog: false, // Decided to turn off the dialog because we got it for situations
-                           // that didnt require it. Expecting our snack service to inform users
-                           // when needed
+        // that didnt require it. Expecting our snack service to inform users
+        // when needed
       }),
     },
   ],

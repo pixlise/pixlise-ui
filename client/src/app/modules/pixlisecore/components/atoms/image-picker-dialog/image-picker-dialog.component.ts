@@ -38,7 +38,7 @@ import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { makeImageTooltip } from "src/app/utils/image-details";
-import { getScanIdFromImagePath, SDSFields } from "src/app/utils/utils";
+import { getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 
 export class ImageChoice {
@@ -48,11 +48,12 @@ export class ImageChoice {
     public scanIds: string[] = [],
     public url: string = "",
     public marsViewerURL: string = "",
-    public isTiff: boolean = false
+    public imgType: "RGBU" | "MCC" | "OTHER" = "MCC",
+    public imagePMC: number = invalidPMC
   ) {}
 
   copy(): ImageChoice {
-    return new ImageChoice(this.name, this.path, this.scanIds, this.url, this.marsViewerURL, this.isTiff);
+    return new ImageChoice(this.name, this.path, this.scanIds, this.url, this.marsViewerURL, this.imgType, this.imagePMC);
   }
 }
 
@@ -102,6 +103,7 @@ export class ImagePickerDialogComponent implements OnInit {
   private _filterScanId: string = "";
 
   waitingForImages: ImageChoice[] = [];
+  loadingList = false;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerDialogData,
@@ -127,6 +129,8 @@ export class ImagePickerDialogComponent implements OnInit {
 
     if (this.data.selectedImageDetails) {
       this.selectedImageDetails = this.data.selectedImageDetails;
+    } else {
+      this.loadSelectedImageDetails();
     }
 
     if (this.data.scanIds && this.data.scanIds.length > 0) {
@@ -161,11 +165,13 @@ export class ImagePickerDialogComponent implements OnInit {
       return;
     }
 
+    this.loadingList = true;
     this._subs.add(
       this._cachedDataService
         .getImageList(ImageListReq.create({ scanIds }))
         .pipe(
           tap(resp => {
+            this.loadingList = false;
             this.filteredImageChoices = [];
             this.processImages(resp.images);
           })
@@ -185,7 +191,7 @@ export class ImagePickerDialogComponent implements OnInit {
         mergeMap(img => {
           // NOTE: We are passing this image choice by reference, not value, so any changes to it will be reflected in multiple
           // locations
-          let imageChoice = this.makeImageChoice(img);
+          const imageChoice = this.makeImageChoice(img);
 
           if (!loadedImageChoiceIds.has(imageChoice.path)) {
             this.imageChoices.push(imageChoice);
@@ -194,6 +200,7 @@ export class ImagePickerDialogComponent implements OnInit {
           if (img.associatedScanIds.includes(this.filterScanId)) {
             if (!this.filteredImageChoices.find(imgChoice => imgChoice.path === img.imagePath)) {
               this.filteredImageChoices.push(imageChoice);
+              this.sortFilteredImages();
             }
           }
 
@@ -213,15 +220,22 @@ export class ImagePickerDialogComponent implements OnInit {
   }
 
   private makeImageChoice(image: ScanImage): ImageChoice {
-    let imageName = image.imagePath.replace(/^\d+\//, "");
-    let marsViewerURL = this.makeMarsViewerURL(imageName);
-    let isTiff = image.imagePath.toLowerCase().endsWith(".tif") || image.imagePath.toLowerCase().endsWith(".tiff");
+    const imageName = image.imagePath.replace(/^\d+\//, "");
+    const marsViewerURL = this.makeMarsViewerURL(imageName);
+    const fields = SDSFields.makeFromFileName(getPathBase(image.imagePath));
 
-    return new ImageChoice(imageName, image.imagePath, image.associatedScanIds, "loading", marsViewerURL, isTiff);
+    let imgType: "RGBU" | "MCC" | "OTHER" = image.purpose == ScanImagePurpose.SIP_MULTICHANNEL ? "RGBU" : "OTHER";
+
+    if (fields && fields.prodType !== "MSA" && fields.prodType !== "VIS" && fields.producer == "J") {
+      imgType = "MCC";
+    }
+
+    return new ImageChoice(imageName, image.imagePath, image.associatedScanIds, "loading", marsViewerURL, imgType, fields?.PMC || invalidPMC);
   }
 
   private loadImagePreview(imgChoice: ImageChoice) {
-    if (imgChoice.isTiff) {
+    const isTiff = imgChoice.name.toLowerCase().endsWith(".tif") || imgChoice.name.toLowerCase().endsWith(".tiff");
+    if (isTiff) {
       return this._endpointsService.loadRGBUImageTIFPreview(imgChoice.path).pipe(
         tap(url => {
           imgChoice.url = url;
@@ -261,6 +275,7 @@ export class ImagePickerDialogComponent implements OnInit {
   set filterScanId(scanId: string) {
     this._filterScanId = scanId;
     this.filteredImageChoices = this.imageChoices.filter(img => img.scanIds.includes(scanId));
+    this.sortFilteredImages();
 
     if (this.filteredImageChoices.length === 0) {
       this.fetchImagesForScans([scanId]);
@@ -273,6 +288,21 @@ export class ImagePickerDialogComponent implements OnInit {
     }
 
     return this.data.scanIds;
+  }
+
+  private sortFilteredImages() {
+    this.filteredImageChoices.sort((a: ImageChoice, b: ImageChoice) => {
+      if (a.imgType === b.imgType) {
+        // If we have valid PMCs, sort by that
+        if (a.imagePMC >= 0 && b.imagePMC >= 0) {
+          return a.imagePMC - b.imagePMC;
+        }
+
+        // Otherwise sort by file name
+        return a.name.localeCompare(b.name);
+      }
+      return a.imgType.localeCompare(b.imgType);
+    });
   }
 
   private makeMarsViewerURL(path: string): string {
@@ -340,16 +370,18 @@ export class ImagePickerDialogComponent implements OnInit {
     if (this.selectedImagePath === image.path && !this.data.liveUpdate) {
       if (this.data.multipleSelection) {
         this.selectedPaths.delete(image.path);
+
+        if (this.selectedPaths.size > 0) {
+          this.selectedImagePath = Array.from(this.selectedPaths)[this.selectedPaths.size - 1];
+          this.selectedChoice = this.imageChoices.find(img => img.path === this.selectedImagePath) || null;
+          this.loadSelectedImageDetails();
+        } else {
+          this.selectedImagePath = "";
+          this.selectedChoice = null;
+          this.selectedImageDetails = "";
+        }
       }
-      if (this.data.multipleSelection && this.selectedPaths.size > 0) {
-        this.selectedImagePath = Array.from(this.selectedPaths)[this.selectedPaths.size - 1];
-        this.selectedChoice = this.imageChoices.find(img => img.path === this.selectedImagePath) || null;
-        this.loadSelectedImageDetails();
-      } else {
-        this.selectedImagePath = "";
-        this.selectedChoice = null;
-        this.selectedImageDetails = "";
-      }
+      // else: Single select - don't allow unselecting the only selected image
     } else if (this.selectedImagePath !== image.path) {
       this.selectedImagePath = image.path;
       this.selectedChoice = image;

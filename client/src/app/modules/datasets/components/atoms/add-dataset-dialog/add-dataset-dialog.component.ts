@@ -130,7 +130,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
         this.complete = false;
 
         // First, we upload the file via HTTP
-        this._endpointService.uploadImage(this.nameHint, this.droppedFiles[0].name, fileBytes).subscribe({
+        this._endpointService.uploadBreadboardScanZip(this.nameHint, this.droppedFiles[0].name, fileBytes).subscribe({
           next: () => {
             // Now that it's uploaded...
             // Then we send the scan upload message which picks up that file and processes it

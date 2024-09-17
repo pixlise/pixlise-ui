@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
 import { BuiltInTags, TagType } from "../../models/tag.model";
 import { TagService } from "../../services/tag.service";
@@ -35,17 +35,12 @@ import { Tag } from "src/app/generated-protos/tags";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UserDetails } from "src/app/generated-protos/user";
 
-export interface AuthorTags {
-  author: string;
-  tags: Tag[];
-}
-
 @Component({
   selector: "tag-picker",
   templateUrl: "./tag-picker.component.html",
   styleUrls: ["./tag-picker.component.scss"],
 })
-export class TagPickerComponent implements OnInit {
+export class TagPickerComponent implements OnInit, OnChanges, OnDestroy {
   private _subs = new Subscription();
 
   private _tagSelectionChanged: boolean = false;
@@ -55,8 +50,11 @@ export class TagPickerComponent implements OnInit {
   _tagSearchValue: string = "";
   private _newTagSelected: boolean = false;
 
+  private _selectedTags: Tag[] = [];
+  private _allTags: Tag[] = [];
+
   filteredTags: Tag[] = [];
-  tagsByAuthor: AuthorTags[] = [];
+  allTagsWithAuthors: Tag[] = [];
 
   @Input() showCurrentTagsSection: boolean = false;
   @Input() buttonStyle: "button" | "icon" = "icon";
@@ -70,6 +68,9 @@ export class TagPickerComponent implements OnInit {
   @Input() allowAdminBuiltin: boolean = false;
   @Input() additionalVisibleTagType: string[] = ["layer"];
   @Input() triggerOpen: boolean = false;
+  @Input() openRightDirection: boolean = true;
+
+  @Input() updateOnSelect: boolean = false;
 
   @Output() onTagSelectionChanged = new EventEmitter<string[]>();
 
@@ -83,28 +84,8 @@ export class TagPickerComponent implements OnInit {
 
     this._subs.add(
       this._taggingService.tags$.subscribe(async tags => {
-        // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
-        this.tags = Array.from(tags.values()).filter(
-          tag =>
-            !this.filterToTagType ||
-            tag.type === this.type ||
-            this.additionalVisibleTagType.includes(tag.type) ||
-            (this.isAdmin && this.allowAdminBuiltin && tag.type === BuiltInTags.type)
-        );
-
-        if (this._newTagSelected) {
-          let selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
-          if (selectedTag) {
-            this.selectedTagIDs.push(selectedTag.id);
-            this.onTagSelectionChanged.emit(this.selectedTagIDs);
-            this.focusOnInput();
-
-            this._newTagSelected = false;
-            this._tagSearchValue = "";
-          }
-        }
-
-        this.groupTags();
+        this._allTags = Array.from(tags.values());
+        this.updateVisibleTags();
       })
     );
 
@@ -112,8 +93,46 @@ export class TagPickerComponent implements OnInit {
     this.focusOnInput();
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes["selectedTagIDs"]) {
+      this.updateSelectedTags();
+    }
+
+    if (changes["type"]) {
+      this.updateVisibleTags();
+    }
+  }
+
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  updateVisibleTags(): void {
+    // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
+    this.tags = this._allTags.filter(
+      tag =>
+        !this.filterToTagType ||
+        tag.type === this.type ||
+        this.additionalVisibleTagType.includes(tag.type) ||
+        (this.allowAdminBuiltin && tag.type === BuiltInTags.type)
+    );
+
+    this.updateSelectedTags();
+    if (this._newTagSelected) {
+      const selectedTag = this.tags.find(tag => tag.name === this._tagSearchValue.trim());
+      if (selectedTag) {
+        this.selectedTagIDs.push(selectedTag.id);
+        this.onTagSelectionChanged.emit(this.selectedTagIDs);
+        this.focusOnInput();
+
+        this.updateSelectedTags();
+
+        this._newTagSelected = false;
+        this._tagSearchValue = "";
+      }
+    }
+
+    this.groupTags();
   }
 
   get user(): UserDetails {
@@ -145,6 +164,10 @@ export class TagPickerComponent implements OnInit {
     this.groupTags();
   }
 
+  private updateSelectedTags() {
+    this._selectedTags = this.tags.filter(tag => this.selectedTagIDs.includes(tag.id));
+  }
+
   onTagEnter(): void {
     if (!this.editable) {
       return;
@@ -163,7 +186,7 @@ export class TagPickerComponent implements OnInit {
   }
 
   focusOnInput(): void {
-    let tagInput = document.querySelector(".tag-search-container input") as any;
+    const tagInput = document.querySelector(".tag-search-container input") as any;
     if (tagInput && tagInput.focus) {
       tagInput.focus({ focusVisible: true });
     }
@@ -178,12 +201,17 @@ export class TagPickerComponent implements OnInit {
     this._taggingService.createTag(this._tagSearchValue.trim(), this.type);
   }
 
-  onDeleteTag(tagID: string): void {
+  onDeleteTag(tagID: string, tagName: string): void {
     if (!this.editable) {
       return;
     }
 
-    let filteredTagIDs = this.validSelectedTagIDs.filter(id => id !== tagID);
+    // Confirmation!
+    if (!confirm(`Are you sure you want to delete tag: ${tagName} (${tagID})`)) {
+      return;
+    }
+
+    const filteredTagIDs = this.validSelectedTagIDs.filter(id => id !== tagID);
 
     // If the tag is selected, unselect it before deleting
     if (this.selectedTagIDs.includes(tagID)) {
@@ -191,11 +219,12 @@ export class TagPickerComponent implements OnInit {
     }
 
     this.selectedTagIDs = filteredTagIDs;
+    this.updateSelectedTags();
     this._taggingService.deleteTag(tagID);
   }
 
   get selectedTags(): Tag[] {
-    return this.tags.filter(tag => this.selectedTagIDs.includes(tag.id));
+    return this._selectedTags;
   }
 
   get validSelectedTagIDs(): string[] {
@@ -205,16 +234,16 @@ export class TagPickerComponent implements OnInit {
   groupTags(): void {
     this.filteredTags = this.tags.filter((tag: Tag) => tag.name.toLowerCase().includes(this.tagSearchValue.trim().toLowerCase()));
 
-    let creators: Record<string, string> = {};
+    const creators: Record<string, string> = {};
     creators[this.currentAuthorName] = this.currentAuthorName;
 
-    let creatorMap: Record<string, Tag[]> = {};
+    const creatorMap: Record<string, Tag[]> = {};
     if (this.filteredTags.length === 0) {
       creatorMap[this.currentAuthorName] = [];
     }
 
     this.filteredTags.forEach(tag => {
-      let userID = tag.owner?.email === this.user.info?.email ? this.currentAuthorName : tag.owner?.id;
+      const userID = tag.owner?.email === this.user.info?.email ? this.currentAuthorName : tag.owner?.id;
       if (userID && tag.owner && !creatorMap[userID]) {
         creatorMap[userID] = [];
         creators[userID] = tag.owner.name || tag.owner.id;
@@ -225,9 +254,7 @@ export class TagPickerComponent implements OnInit {
       }
     });
 
-    this.tagsByAuthor = Object.entries(creatorMap)
-      .map(([creator_id, tags]) => ({ author: creators[creator_id], tags }) as AuthorTags)
-      .sort((a, b) => (a.author > b.author && a.author !== this.currentAuthorName ? 1 : -1));
+    this.allTagsWithAuthors = Array.from(this.filteredTags).sort((a: Tag, b: Tag) => a.name.localeCompare(b.name));
   }
 
   checkTagActive(tagID: string): boolean {
@@ -248,8 +275,9 @@ export class TagPickerComponent implements OnInit {
 
     this._tagSelectionChanged = true;
     this.selectedTagIDs = newTags;
+    this.updateSelectedTags();
 
-    if (!this.showCurrentTagsSection) {
+    if (!this.showCurrentTagsSection || this.updateOnSelect) {
       // Prune non-existing tags on edit
       this.onTagSelectionChanged.emit(this.validSelectedTagIDs);
     }

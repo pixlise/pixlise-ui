@@ -32,7 +32,7 @@ export class PredefinedROIID {
   private static readonly JoinChar = "-";
   private static readonly AllPoints: BuiltInROI = "AllPoints";
   private static readonly SelectedPoints: BuiltInROI = "SelectedPoints";
-  //private static readonly RemainingPoints: BuiltInROI = "RemainingPoints";
+  public static readonly RemainingPoints: BuiltInROI = "RemainingPoints";
 
   private static makeBuiltinIDFromScanID = (scanId: string, builtinType: string): string => {
     return `${builtinType}${PredefinedROIID.JoinChar}${scanId}`;

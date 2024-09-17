@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ScanCalibrationConfiguration, ScanConfiguration } from "src/app/generated-protos/screen-configuration";
@@ -45,7 +45,7 @@ import { COLOURS, ColourOption } from "src/app/modules/roi/models/roi-colors";
   templateUrl: "./scan-configuration-item.component.html",
   styleUrls: ["./scan-configuration-item.component.scss"],
 })
-export class ScanConfigurationItemComponent implements OnInit {
+export class ScanConfigurationItemComponent implements OnDestroy {
   private _subs: Subscription = new Subscription();
 
   @Input() config: ScanConfiguration = ScanConfiguration.create();
@@ -60,8 +60,6 @@ export class ScanConfigurationItemComponent implements OnInit {
     private _energyCalibrationService: EnergyCalibrationService
   ) {}
 
-  ngOnInit(): void {}
-
   ngOnDestroy(): void {
     this._subs.unsubscribe();
   }
@@ -71,7 +69,7 @@ export class ScanConfigurationItemComponent implements OnInit {
 
     dialogConfig.data = {
       draggable: true,
-      scanIds: [scanId],
+      scanQuants: new Map<string, string>([[scanId, this.config.quantId]]),
       xAxisEnergyScale: !!this.config.calibrations && this.config.calibrations.length > 0,
       hideXAxisEnergyScaleToggle: true,
     };

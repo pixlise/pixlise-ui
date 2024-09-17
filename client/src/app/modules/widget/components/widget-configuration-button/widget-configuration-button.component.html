@@ -14,6 +14,13 @@
     </two-state-push-button>
     <plus-minus-switch *ngIf="buttonConfiguration.type === 'plus-minus-switch'" [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled">
     </plus-minus-switch>
+    <multi-switch-button
+      *ngIf="buttonConfiguration.type === 'multi-state-button'"
+      [ngStyle]="{ 'min-width': (buttonConfiguration?.options?.length || 1) * 90 + 'px' }"
+      [value]="buttonConfiguration?.value || ''"
+      (onChange)="onMultiSwitchChange($event)"
+      [options]="buttonConfiguration?.options || []"
+      [disabled]="!!buttonConfiguration.disabled"></multi-switch-button>
     <icon-button
       *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
@@ -21,6 +28,9 @@
       [icon]="buttonConfiguration.icon">
     </icon-button>
   </span>
-  <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'"></selection-changer>
-  <widget-key-display *ngIf="buttonConfiguration?.type === 'widget-key'" [items]="buttonConfiguration?.value || []"></widget-key-display>
+  <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'" [imageInfo]="buttonConfiguration?.getImageInfo ? buttonConfiguration?.getImageInfo() : undefined"></selection-changer>
+  <widget-key-display
+    *ngIf="buttonConfiguration?.type === 'widget-key'"
+    [items]="buttonConfiguration?.value || []"
+    (onUpdateItems)="onUpdateKeyItems($event)"></widget-key-display>
 </div>

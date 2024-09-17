@@ -38,6 +38,7 @@ export const matActionIcons = {
   add: "add",
   edit: "edit",
   image: "image",
+  duplicate: "content_copy",
 };
 
 const customActionIcons = {
@@ -60,6 +61,10 @@ const customActionIcons = {
   rgbMix: "assets/button-icons/rgbmix.svg",
   colorPicker: "assets/button-icons/colours.svg",
   export: "assets/button-icons/export.svg",
+  sendToTop: "assets/button-icons/send-to-top.svg",
+  zoomIn: "assets/button-icons/zoom-in.svg",
+  zoomOut: "assets/button-icons/zoom-out.svg",
+  share: "assets/button-icons/share.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;
@@ -78,8 +83,10 @@ export class ActionButtonComponent {
   @Input() customDialog: TemplateRef<any> | null = null;
   @Input() customMenuOptions: string[] | null = null;
 
+  @Input() customSize: string = "";
+
   @Output() onCustomMenuItemClick = new EventEmitter<string>();
-  @Output() onClick = new EventEmitter();
+  @Output() onClick = new EventEmitter<MouseEvent>();
 
   private _actionSource: keyof typeof matActionIcons | string = "close";
   isMatIcon = false;
@@ -92,7 +99,7 @@ export class ActionButtonComponent {
   @Input() set action(actionName: ACTION_TYPE) {
     this.isMatIcon = Object.keys(matActionIcons).includes(actionName);
     if (this.isMatIcon) {
-      this._actionSource = actionName;
+      this._actionSource = matActionIcons[actionName as keyof typeof matActionIcons];
     } else if (Object.keys(customActionIcons).includes(actionName)) {
       this._actionSource = customActionIcons[actionName as keyof typeof customActionIcons];
     }
@@ -112,7 +119,7 @@ export class ActionButtonComponent {
 
         this._dialogRef.afterClosed().subscribe((confirmed: boolean) => {
           if (confirmed) {
-            this.onClick.emit();
+            this.onClick.emit(evt);
           }
         });
       } else if (this.customDialog) {
@@ -120,10 +127,10 @@ export class ActionButtonComponent {
         this._dialogRef = this.dialog.open(this.customDialog, dialogConfig);
 
         this._dialogRef.afterClosed().subscribe(() => {
-          this.onClick.emit();
+          this.onClick.emit(evt);
         });
       } else {
-        this.onClick.emit();
+        this.onClick.emit(evt);
       }
     }
   }

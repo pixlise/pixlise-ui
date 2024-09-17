@@ -14,6 +14,7 @@ import { RGBUPlotWidgetComponent } from "./widgets/rgbu-plot-widget/rgbu-plot-wi
 import { WidgetModule } from "../widget/widget.module";
 import { SingleAxisRGBUComponent } from "src/app/modules/scatterplots/widgets/single-axis-rgbu/single-axis-rgbu.component";
 import { ParallelCoordinatesPlotWidgetComponent } from "src/app/modules/scatterplots/widgets/parallel-coordinates-plot-widget/parallel-coordinates-plot-widget.component";
+import { VariogramWidgetComponent } from "./widgets/variogram-widget/variogram-widget.component";
 
 export { BinaryChartWidgetComponent } from "./widgets/binary-chart-widget/binary-chart-widget.component";
 export { TernaryChartWidgetComponent } from "./widgets/ternary-chart-widget/ternary-chart-widget.component";
@@ -34,6 +35,7 @@ export { ParallelCoordinatesPlotWidgetComponent } from "./widgets/parallel-coord
     RGBUPlotWidgetComponent,
     SingleAxisRGBUComponent,
     ParallelCoordinatesPlotWidgetComponent,
+    VariogramWidgetComponent,
   ],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, WidgetModule],
   exports: [
@@ -44,6 +46,7 @@ export { ParallelCoordinatesPlotWidgetComponent } from "./widgets/parallel-coord
     RGBUPlotWidgetComponent,
     SingleAxisRGBUComponent,
     ParallelCoordinatesPlotWidgetComponent,
+    VariogramWidgetComponent,
   ],
   providers: [],
 })

@@ -31,8 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="multi-switch-container {{ disabled ? 'disabled' : '' }}">
   <div *ngFor="let option of options; let i = index" (click)="onClick(option)" class="multi-switch-option {{ value === option ? 'active' : '' }}">
-    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" />
-    {{ option }}
+    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" />{{ option }}
   </div>
   <div class="active-selector" [style.margin-left]="activeLeftOffset" [style.width]="activeWidth"></div>
 </div>

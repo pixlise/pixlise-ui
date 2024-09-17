@@ -87,7 +87,11 @@
                 flex-direction: column;
     
                 justify-content: space-around;
-                padding: $sz-unit;
+                align-items: center;
+                padding: 24px $sz-unit;
+                gap: $sz-unit;
+
+                color: $clr-gray-10;
             }
         }
     }
@@ -96,7 +100,6 @@
         display: flex;
         flex-direction: row;
 
-        // fxLayoutAlign="end center"
         justify-content: space-between;
 
         padding: $sz-unit;
@@ -105,6 +108,7 @@
         .group {
             display: flex;
             flex-direction: row;
+            align-items: center;
             gap: $sz-unit;
         }
     }

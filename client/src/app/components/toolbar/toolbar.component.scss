@@ -69,18 +69,35 @@
       font-weight: 500;
       line-height: 24px;
       letter-spacing: -0.002px;
+
+      min-width: 155px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
   .tabs {
     display: flex;
     height: 100%;
+    overflow: hidden;
+
+    .user-tabs {
+      display: flex;
+
+      overflow-x: scroll;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
 
     .tab {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       border-right: 1px solid #444c50;
+      max-width: 155px;
+      min-width: 75px;
+      white-space: pre;
 
       cursor: pointer;
       &:hover,
@@ -89,9 +106,31 @@
       }
 
       &.active {
+        min-width: 100px;
+        max-width: 250px;
+        width: fit-content;
+
+        &.editing {
+          min-width: 200px;
+        }
+
         a {
+          width: 100%;
+
           .tab-label {
             color: #fff;
+
+            display: flex;
+            flex: 1;
+
+            input {
+              width: 100%;
+            }
+
+            .view-label {
+              text-overflow: ellipsis;
+              overflow: hidden;
+            }
           }
         }
       }
@@ -103,6 +142,9 @@
         height: 100%;
         padding: 0 16px;
         gap: 8px;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         &:hover {
           text-decoration: none;
@@ -118,6 +160,30 @@
           font-weight: 500;
           line-height: normal;
         }
+
+        .edit-btns {
+          display: flex;
+          align-items: center;
+        }
+      }
+
+      &.new-tab {
+        a {
+          .tab-label {
+            font-style: italic;
+          }
+        }
+      }
+
+      &.new-tab-btn {
+        min-width: 45px;
+        outline: 1px solid #444c50;
+      }
+
+      &.new-tab-btn,
+      &.no-label {
+        width: fit-content;
+        justify-content: center;
       }
     }
   }
@@ -128,6 +194,8 @@
     margin-right: 16px;
 
     .buttons {
+      margin-left: 4px;
+
       .version {
         color: var(--Neutral-Gray-40, #bcbcbc);
         text-align: center;
@@ -143,29 +211,29 @@
         opacity: 0.96;
 
         margin-right: 8px;
+
+        white-space: pre;
       }
 
-      .link-to-v3 {
-        color: #f8f8f8;
-        text-align: center;
-        font-feature-settings:
-          "clig" off,
-          "liga" off;
-        font-family: Inter;
-        font-size: 12px;
-        font-style: normal;
-        font-weight: 500;
-        line-height: 16px;
-        border-radius: 4px;
-        background: #444c50;
-        padding: 4px 8px;
+      .changelog-btn {
         margin-right: 4px;
-        cursor: pointer;
+        white-space: pre;
 
-        &:hover {
-          color: rgb(var(--clr-yellow));
-          text-decoration: none;
+        .changelog-icon {
+          margin-right: 4px;
         }
+
+        &:not(:hover) {
+          .changelog-icon {
+            &.viewed {
+              filter: grayscale(1);
+            }
+          }
+        }
+      }
+
+      .back-to-v3 {
+        white-space: pre;
       }
     }
   }
@@ -176,17 +244,17 @@
   margin-bottom: 0px;
 }
 
-// .title-text {
-//   font-weight: 900;
-//   font-size: 24px;
-//   line-height: 28px;
-//   color: $clr-gray-40;
-//   text-transform: uppercase;
-//   white-space: nowrap;
-//   overflow: hidden;
-//   text-overflow: ellipsis;
-//   max-width: 20vw;
-// }
+.title-text {
+  font-weight: 900;
+  font-size: 24px;
+  line-height: 28px;
+  color: $clr-gray-40;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 20vw;
+}
 
 .pixlise {
   color: $clr-gray-50;
@@ -249,5 +317,57 @@ user-icon {
 
   .title-text {
     margin-right: 8px;
+  }
+}
+
+.change-log-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: Inter;
+  padding: 16px;
+  padding-left: 0;
+
+  h1 {
+    display: flex;
+    align-items: center;
+    text-transform: none;
+
+    padding-left: 16px;
+
+    action-button {
+      margin-left: auto;
+    }
+  }
+
+  .v3-container {
+    display: flex;
+    align-items: center;
+
+    padding-left: 16px;
+
+    border-top: 1px solid rgb(68, 76, 80);
+    padding-top: 8px;
+
+    margin-right: -16px;
+    padding-right: 16px;
+
+    color: rgb(var(--clr-gray-30));
+
+    .back-to-v3 {
+      margin-left: auto;
+    }
+  }
+
+  .change-log {
+    height: 400px;
+    width: 600px;
+    overflow-y: scroll;
+    margin-right: -16px;
+    margin-bottom: -16px;
+    padding-right: 16px;
+
+    background: rgb(34, 40, 41);
+    padding-left: 16px;
   }
 }

@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { combineLatest, Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -83,8 +83,14 @@ export class MultiChannelViewerDrawModel {
     const channelFloatImages = [rgbuImage.r, rgbuImage.g, rgbuImage.b, rgbuImage.u];
     this.channelDisplayImages = [];
 
+    const obs$ = [];
+
     for (let c = 0; c < channelFloatImages.length; c++) {
-      this.channelDisplayImages.push(channelFloatImages[c].generateDisplayImage(rgbuImage.allChannelMinMax.max || 1, brightness, false));
+      obs$.push(channelFloatImages[c].generateDisplayImage(rgbuImage.allChannelMinMax.max || 1, brightness, false));
     }
+
+    combineLatest(obs$).subscribe((channels: HTMLImageElement[]) => {
+      this.channelDisplayImages = channels;
+    });
   }
 }

@@ -125,6 +125,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _fitSelectedElementZs$ = new ReplaySubject<void>(1);
   private _fitXValues: Float32Array = new Float32Array();
   private _fitRawCSV: string = "";
+  private _fitIdWaitingFor: string = "";
 
   private _showFitLines: boolean = false; // Flag that controls if lines are read from spectrum sources vs fit lines
 
@@ -187,6 +188,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return this._keyItems;
   }
 
+  set keyItems(items: WidgetKeyItem[]) {
+    this._keyItems = items;
+  }
+
   // ISpectrumChartModel
   get transform(): PanZoom {
     return this._drawTransform;
@@ -194,6 +199,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   get spectrumLines(): SpectrumChartLine[] {
     return this._spectrumLines;
+  }
+
+  checkHasEnergyCalibrationForScanIds(scanIds: string[]): boolean {
+    for (const scanId of scanIds) {
+      if (!this._calibration.has(scanId)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   setEnergyCalibration(scanId: string, calibration: SpectrumEnergyCalibration[]) {
@@ -505,7 +519,16 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._spectrumLines = linesLeft;
   }
 
+  get fitIdWaitingFor(): string {
+    return this._fitIdWaitingFor;
+  }
+
+  set fitIdWaitingFor(id: string) {
+    this._fitIdWaitingFor = id;
+  }
+
   setFitLineData(scanId: string, csv: string): void {
+    this._fitIdWaitingFor = ""; // At this point we're being given fit CSV data, so assume any fit job ID's we were waiting for are complete
     this._fitRawCSV = csv;
     this._fitLineSources = [];
     //this._fitSelectedElementZs = [];
@@ -754,17 +777,25 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       this._lineRangeY.expand(line.maxValue);
     }
 
+    let previousKeyItems = this._keyItems.slice();
     this._keyItems = [];
 
     // Run through and regenerate key items from all lines
     let lastROI = "";
     for (const line of this._spectrumLines) {
-      if (lastROI !== line.roiId) {
-        // Fake entry for ROI header label
-        this._keyItems.push(new WidgetKeyItem(line.roiId, line.roiName, line.color));
-        lastROI = line.roiId;
-      }
-      const key = new WidgetKeyItem(`${line.roiId}-${line.expressionLabel}`, line.expressionLabel, line.color, line.dashPattern);
+      // if (lastROI !== line.roiId) {
+      //   // Fake entry for ROI header label
+      //   this._keyItems.push(new WidgetKeyItem(line.roiId, line.roiName, line.color));
+      //   lastROI = line.roiId;
+      // }
+
+      let roiName = PredefinedROIID.isAllPointsROI(line.roiId) ? "All Points" : line.roiName;
+
+      let groupName = `${roiName} (${line.scanName})`;
+
+      let keyId = `${line.roiId}-${line.expressionLabel}`;
+      let lastVisibility = previousKeyItems.find(item => item.id === keyId)?.isVisible ?? true;
+      const key = new WidgetKeyItem(keyId, line.expressionLabel, line.color, line.dashPattern, undefined, groupName, lastVisibility);
       this._keyItems.push(key);
     }
 

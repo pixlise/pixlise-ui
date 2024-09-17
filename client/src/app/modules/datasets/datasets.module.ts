@@ -12,6 +12,8 @@ import { LogViewerComponent } from "./components/atoms/log-viewer/log-viewer.com
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { NgxDropzoneModule } from "ngx-dropzone";
 import { TagsModule } from "../tags/tags.module";
+import { MarkdownModule } from "ngx-markdown";
+import { MatMenuModule } from "@angular/material/menu";
 
 const APP_ROUTES: Routes = [
   {
@@ -31,10 +33,6 @@ const APP_ROUTES: Routes = [
     loadChildren: () => import("../map-browser/map-browser.module").then(m => m.MapBrowserModule),
   },
   {
-    path: "quant-logs",
-    loadChildren: () => import("../quantifications/quantifications.module").then(m => m.QuantificationsModule),
-  },
-  {
     path: "edit-scan",
     loadChildren: () => import("../dataset-customisation/dataset-customisation.module").then(m => m.DatasetCustomisationModule),
   },
@@ -42,6 +40,16 @@ const APP_ROUTES: Routes = [
 
 @NgModule({
   declarations: [DatasetTilesPageComponent, DataSetSummaryComponent, AddDatasetDialogComponent, FilterDialogComponent, LogViewerComponent],
-  imports: [CommonModule, FormsModule, MaterialModule, PIXLISECoreModule, TagsModule, NgxDropzoneModule, RouterModule.forChild(APP_ROUTES)],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MaterialModule,
+    MatMenuModule,
+    PIXLISECoreModule,
+    TagsModule,
+    NgxDropzoneModule,
+    MarkdownModule,
+    RouterModule.forChild(APP_ROUTES),
+  ],
 })
 export class DatasetsModule {}

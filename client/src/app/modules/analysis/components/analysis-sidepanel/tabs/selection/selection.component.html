@@ -30,10 +30,13 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="selection-tab">
+  <header>
+    <h5>Selection</h5>
+  </header>
   <!-- <push-button (onClick)="onDriftCorrection()" buttonStyle="outline" fxFlex="50%">Correct Drift?</push-button> -->
 
   <div class="summary panel-row">
-    <span>{{ summary }}</span>
+    <span class="summary-text">{{ summary }}</span>
 
     <div class="summary-buttons">
       <push-button (onClick)="onUndo()" [disabled]="!canUndo" buttonStyle="outline">Undo</push-button>
@@ -51,14 +54,11 @@ POSSIBILITY OF SUCH DAMAGE.
       <push-button (onClick)="onEnterSelection()" buttonStyle="outline" class="half">Enter PMCs</push-button>
     </div>
     <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline">All Points for Dataset: {{ id }}</push-button>
-    <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="beamSelection.getSelectedEntryCount() <= 0"
-      >Add Nearby Pixels From PMC Locations</push-button
-    >
     <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="!hasEditAccess">Save selection as ROI</push-button>
   </div>
 
   <cdk-accordion class="selection-accordion">
-    <cdk-accordion-item role="button" tabindex="0">
+    <cdk-accordion-item class="averages-container" role="button" tabindex="0">
       <div class="accordion-title" (click)="onToggleExpand(0)">
         <span>RGBU Averages</span>
         <mat-icon aria-hidden="false" aria-label="Toggle RGBU Averages">{{ expandedIndices.includes(0) ? "arrow_drop_up" : "arrow_drop_down" }}</mat-icon>

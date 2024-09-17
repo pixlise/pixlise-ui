@@ -108,7 +108,7 @@ export class MapColourScaleModel {
       this._displayValueRange.max === null ? this.valueRange.max : this._displayValueRange.max
     );
   }
-  setDisplayValueRange(r: MinMax) {
+  setDisplayValueRange(r: MinMax, allowUnclampedMin: boolean = false, allowUnclampedMax: boolean = false) {
     const prevRange = new MinMax(this._displayValueRange.min, this._displayValueRange.max);
 
     if (r.min !== null) {
@@ -133,12 +133,17 @@ export class MapColourScaleModel {
         this._displayValueRange.setMin(this._displayValueRange.max - Math.abs(this._displayValueRange.getRange()) * 0.001);
       }
 
-      // Keep it within the data limits
-      if (this._displayValueRange.max > this._mapData.valueRange.max) {
+      // Keep it within the data limits unless we're allowing unclamped
+      if (!allowUnclampedMax && this._displayValueRange.max > this._mapData.valueRange.max) {
         this._displayValueRange.setMax(this._mapData.valueRange.max);
+      } else if (allowUnclampedMax && this._displayValueRange.max > this._mapData.valueRange.max) {
+        this._mapData.valueRange.setMax(this._displayValueRange.max);
       }
-      if (this._displayValueRange.min < this._mapData.valueRange.min) {
+
+      if (!allowUnclampedMin && this._displayValueRange.min < this._mapData.valueRange.min) {
         this._displayValueRange.setMin(this._mapData.valueRange.min);
+      } else if (allowUnclampedMin && this._displayValueRange.min < this._mapData.valueRange.min) {
+        this._mapData.valueRange.setMin(this._displayValueRange.min);
       }
     }
 
@@ -146,6 +151,7 @@ export class MapColourScaleModel {
       this._needsRecalc = true;
     }
   }
+
   get valueRange(): MinMax {
     return this._mapData.valueRange;
   }

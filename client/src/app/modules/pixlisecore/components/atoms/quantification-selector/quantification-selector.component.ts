@@ -107,6 +107,7 @@ export class QuantificationSelectorComponent implements OnInit {
 
     if (!this.selectedQuantID) {
       this.selectedQuant = this.NoSelectedQuantText;
+      this.selectedQuantDetectors = "";
     } else {
       // If we can't find the name, at least we'll be showing the ID!
       this.selectedQuant = this.selectedQuantID;

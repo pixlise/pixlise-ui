@@ -28,9 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from "@angular/cdk/overlay";
-import { Component, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ElementRef, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
-import { ActivatedRoute, NavigationEnd, Params, ResolveEnd, Router } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, ResolveEnd, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
@@ -41,23 +41,12 @@ import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import {
-  ScanConfigurationDialog,
-  ScanConfigurationDialogData,
-} from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { AnalysisLayoutService, NavigationTab } from "src/app/modules/analysis/services/analysis-layout.service";
 import { VERSION } from "src/environments/version";
-
-export type NavigationTab = {
-  icon: string;
-  label?: string;
-  tooltip?: string;
-  url: string;
-  active?: boolean;
-  passQueryParams?: boolean;
-};
+import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { SentryHelper } from "../../utils/utils";
+import { MarkdownModule } from "ngx-markdown";
+import { TabLinks } from "../../models/TabLinks";
 
 class TabNav {
   constructor(
@@ -83,18 +72,21 @@ class TabNav {
   templateUrl: "./toolbar.component.html",
   styleUrls: ["./toolbar.component.scss"],
   standalone: true,
-  imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule],
+  imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
-  public static BrowseTabURL: string = "/datasets";
-  public static AnalysisTabURL: string = "/datasets/analysis";
-  public static CodeEditorTabURL: string = "/datasets/code-editor";
-  public static MapsTabURL: string = "/datasets/maps";
+  public static BrowseTabURL: string = TabLinks.browse;
+  public static AnalysisTabURL: string = TabLinks.analysis;
+  public static CodeEditorTabURL: string = TabLinks.codeEditor;
+  public static MapsTabURL: string = TabLinks.maps;
+  public static NewTabURL: string = TabLinks.new;
 
   @Input() titleToShow: string = "";
   @Input() darkBackground: boolean = false;
 
   @ViewChild(CdkOverlayOrigin) _overlayOrigin!: CdkOverlayOrigin;
+  @ViewChild("submitIssue") submitIssueDialog!: ElementRef;
+  @ViewChild("changeLogBtn") changeLogBtn!: ElementRef;
 
   private _userMenuOverlayHost!: OverlayHost;
   private _notificationsMenuOverlayHost!: OverlayHost;
@@ -110,7 +102,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   private _currTab: string = "";
   private _dataSetLoadedName = "";
 
+  public userIssue: string = "";
+
   public isVisible: boolean = true;
+  public hasViewedLatestVersion: boolean = false;
 
   title = "";
   tabs: TabNav[] = [];
@@ -119,7 +114,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   queryParam: Record<string, string> = {};
   allTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
-    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL },
+    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL, params: { tab: "0" } },
     { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
     { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
   ];
@@ -133,9 +128,18 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   isPublicUser: boolean = false;
 
   uiVersion: string = "";
+  uiVersionLastCommitDate: number = 0;
 
   hasQuantConfiguredScan: boolean = false;
+  hasScanConfigured: boolean = false;
   screenConfigLoaded: boolean = false;
+
+  isNewTab: boolean = false;
+  hasActiveWorkspace: boolean = false;
+
+  currentAnalysisTabIndex: number | null = null;
+  editingTabIndex: number | null = null;
+  newTabName: string = "";
 
   constructor(
     private router: Router,
@@ -147,14 +151,15 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private titleService: Title, // public dialog: MatDialog,
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackService: SnackbarService,
-    private _matDialog: MatDialog
+    private _snackService: SnackbarService
   ) {}
 
   ngOnInit() {
     this.updateToolbar();
 
     this.uiVersion = (VERSION as any)?.raw || "(Local build)";
+    this.uiVersionLastCommitDate = (VERSION as any)?.lastCommitDate || 0;
+    this.checkHasViewedLatestVersion();
 
     // // If user changes tabs, etc, we want to know
     this._subs.add(
@@ -169,15 +174,15 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
         if (screenConfig && screenConfig.id) {
-          if (screenConfig.name) {
-            this.titleToShow = screenConfig.name;
-          }
+          this.titleToShow = screenConfig.name || "";
 
-          let hasQuantConfiguredScan = false;
+          this.hasQuantConfiguredScan = false;
+          this.hasScanConfigured = false;
           if (screenConfig?.scanConfigurations) {
-            for (let key in screenConfig.scanConfigurations) {
+            for (const key in screenConfig.scanConfigurations) {
+              this.hasScanConfigured = true;
               if (screenConfig.scanConfigurations[key].quantId) {
-                hasQuantConfiguredScan = true;
+                this.hasQuantConfiguredScan = true;
                 break;
               }
             }
@@ -185,7 +190,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             this.screenConfigLoaded = true;
           }
 
-          this.hasQuantConfiguredScan = hasQuantConfiguredScan;
           this.openScanConfigurationTabForInvalidQuants();
         }
 
@@ -197,6 +201,16 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this._route.queryParams.subscribe(params => {
         this.queryParam = { ...params };
         let scanId = params["scan_id"] || params["scanId"];
+        this.hasActiveWorkspace = !!(params["id"] || scanId);
+
+        let strippedUrl = this.router.url.split("?")[0];
+        let isAnalysisTab = strippedUrl.endsWith(ToolbarComponent.AnalysisTabURL);
+        this.currentAnalysisTabIndex = isAnalysisTab ? parseInt(params["tab"]) || 0 : null;
+        // if (this.currentAnalysisTabIndex !== null) {
+        //   // Offset by 1 for browse tab
+        //   this.currentAnalysisTabIndex += 1;
+        // }
+
         if (scanId) {
           this.datasetID = scanId;
           this._dataSetLoadedName = "Scan " + scanId;
@@ -274,14 +288,43 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onOpenTab(tab: NavigationTab): void {
     let strippedURL = this.router.url.split("?")[0];
-    if (strippedURL.endsWith(tab.url)) {
+
+    let isOnTab = strippedURL.endsWith(tab.url);
+    if (tab.params && Object.keys(tab.params).length > 0) {
+      isOnTab = isOnTab && Object.keys(tab.params).every(key => (this.queryParam[key] || 0) == tab?.params?.[key]);
+    }
+
+    if (isOnTab) {
       // Already on this tab
       return;
     }
 
+    // Clear editing
+    this.editingTabIndex = null;
+    this.newTabName = "";
+
+    if (tab.url === ToolbarComponent.AnalysisTabURL && !this.queryParam["tab"]) {
+      // Default to first tab
+      this.queryParam["tab"] = "0";
+    }
+
     this.openTabs.forEach(openTab => {
       openTab.active = strippedURL.endsWith(tab.url);
+      if (openTab.params && Object.keys(openTab.params).length > 0) {
+        openTab.active = openTab.active && Object.keys(openTab.params).every(key => (this.queryParam[key] || 0) == (openTab?.params?.[key] || 0));
+      }
     });
+    this.isNewTab = strippedURL.endsWith(ToolbarComponent.NewTabURL);
+
+    if (tab.params && Object.keys(tab.params).length > 0) {
+      this.queryParam = { ...this.queryParam, ...tab.params };
+    }
+
+    if (tab.url !== ToolbarComponent.AnalysisTabURL) {
+      // Strip out any tab param
+      delete this.queryParam["tab"];
+    }
+
     this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
   }
 
@@ -309,9 +352,109 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     return this._currTab == "Analysis" || this._currTab == "Element Maps";
   }
 
+  get canEditScreenConfig(): boolean {
+    return Boolean(this._analysisLayoutService.activeScreenConfiguration$.value.owner?.canEdit);
+  }
+
+  getTabIndex(tab: NavigationTab): number | null {
+    if (tab.url !== ToolbarComponent.AnalysisTabURL) {
+      return null;
+    }
+
+    return tab.params?.["tab"] !== undefined ? parseInt(tab.params["tab"]) : 0;
+  }
+
+  onEditTab(tab: NavigationTab): void {
+    let index = this.getTabIndex(tab) ?? 0;
+    if (!this.canEditTab(tab) || this.editingTabIndex === index || index < 0) {
+      return;
+    }
+
+    this.editingTabIndex = index;
+    this.newTabName = tab.label || "";
+  }
+
+  saveTabName(tab: NavigationTab): void {
+    let index = this.getTabIndex(tab) ?? -1;
+    if (this.editingTabIndex !== index || !this.newTabName || !this._analysisLayoutService.activeScreenConfiguration$.value) {
+      return;
+    }
+
+    tab.label = this.newTabName;
+
+    let screenLayout = this._analysisLayoutService.getLayoutFromTab(tab);
+    if (screenLayout) {
+      screenLayout.tabName = this.newTabName;
+      this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value);
+    }
+
+    this.editingTabIndex = null;
+    this.newTabName = "";
+  }
+
+  cancelEditTabName(): void {
+    this.editingTabIndex = null;
+    this.newTabName = "";
+  }
+
+  canEditTab(tab: NavigationTab): boolean {
+    return ![TabLinks.browse, TabLinks.codeEditor, TabLinks.maps].includes(tab?.url) && this.canEditScreenConfig;
+  }
+
+  private loadAnalysisTabs(): void {
+    let beforeAnalysisTabs = [];
+    if (!this._analysisLayoutService.activeScreenConfiguration$.value.browseTabHidden) {
+      beforeAnalysisTabs.push({ icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL });
+    }
+
+    // Ensure a workspace was specified before attempting to load analysis tabs
+    if (!this.hasActiveWorkspace) {
+      this.openTabs = beforeAnalysisTabs;
+      return;
+    }
+
+    if (this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length > 0) {
+      let afterAnalysisTabs = [];
+      if (!this._analysisLayoutService.activeScreenConfiguration$.value.codeEditorTabHidden) {
+        afterAnalysisTabs.push({ icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL });
+      }
+
+      if (!this._analysisLayoutService.activeScreenConfiguration$.value.elementMapsTabHidden) {
+        afterAnalysisTabs.push({ icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL });
+      }
+
+      let analysisTabs: NavigationTab[] = [];
+
+      this._analysisLayoutService.activeScreenConfiguration$.value.layouts.forEach((layout, index) => {
+        if (layout.hidden) {
+          return;
+        }
+
+        let label = layout.tabName || "Analysis " + (index + 1);
+        let tooltip = `${label}`;
+        if (layout.tabDescription) {
+          tooltip += `:\n${layout.tabDescription}`;
+        }
+
+        let tab: NavigationTab = {
+          icon: "assets/tab-icons/analysis.svg",
+          label,
+          tooltip,
+          url: ToolbarComponent.AnalysisTabURL,
+          params: { tab: index.toString() },
+        };
+
+        analysisTabs.push(tab);
+      });
+
+      this.openTabs = [...beforeAnalysisTabs, ...analysisTabs, ...afterAnalysisTabs];
+    }
+  }
+
   private updateToolbar(): void {
     // Title to show overrides the dataset name
     this.title = this.titleToShow ? this.titleToShow : this._dataSetLoadedName;
+    this.hasActiveWorkspace = !!(this.queryParam["id"] || this.queryParam["scan_id"]);
 
     // Work out what URL we're on
     const url = this.router.url;
@@ -321,11 +464,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     // Build list of tabs
     if (this._dataSetLoadedName.length <= 0) {
-      this.tabs = [
-        //new TabNav('Help', 'help', true),
-        new TabNav("Datasets", "datasets", true),
-        new TabNav("Code Editor", "datasets/code-editor", true),
-      ];
+      this.tabs = [new TabNav("Datasets", "datasets", true), new TabNav("Code Editor", "datasets/code-editor", true)];
     } else {
       const datasetPrefix = "datasets/";
       const scanQueryParam = this.datasetID ? `?scan_id=${this.datasetID}` : "";
@@ -336,22 +475,16 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         this.openTabs = this.allTabs.slice();
       }
 
-      const codeEditorQueryParams = `?scanId=${this.datasetID}&quantId=${quantId}`;
+      const codeEditorQueryParams = `?scan_id=${this.datasetID}&quant_id=${quantId}`;
 
       this.tabs = [
-        //new TabNav('Help', 'help', true),
         new TabNav("Datasets", "datasets", true),
         new TabNav("Analysis", `${datasetPrefix}analysis${scanQueryParam}`, true),
         new TabNav("Code Editor", `datasets/code-editor${codeEditorQueryParams}`, true),
       ];
-      // Only enabling maps tab if a quant is loaded
-      // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
-      // this.tabs.push(new TabNav("Element Maps", datasetPrefix + "/maps", true));
-      // this.tabs.push(new TabNav("Element Maps", `${datasetPrefix}/maps${scanQueryParam}`, true));
-      // if (!this.isPublicUser) {
-      //   this.tabs.push(new TabNav("Quant Tracker", `${datasetPrefix}/quant-logs${scanQueryParam}`, true));
-      // }
     }
+
+    this.loadAnalysisTabs();
 
     if (this._userPiquantConfigAllowed) {
       this.tabs.push(new TabNav("Piquant", "piquant", true));
@@ -363,25 +496,19 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this.tabs.push(new TabNav("Admin", "admin", true));
     }
 
-    // Mark the right tab as being active
-    // this._currTab = "";
-    // for (let c = 0; c < this.tabs.length; c++) {
-    //   // Remove query params
-    //   let strippedURL = url.split("?")[0];
-    //   this.tabs[c].active = strippedURL.endsWith("/" + this.tabs[c].url.split("?")[0]);
-
-    //   if (this.tabs[c].active) {
-    //     this._currTab = this.tabs[c].label;
-    //   }
-    // }
-
     let strippedURL = url.split("?")[0];
+    this.isNewTab = strippedURL.endsWith(ToolbarComponent.NewTabURL);
 
-    let isAnalysisTab = false;
+    let isAnalysisTab = strippedURL.endsWith(ToolbarComponent.AnalysisTabURL);
+    if (isAnalysisTab && !this.queryParam["tab"]) {
+      // Default to first tab
+      this.queryParam["tab"] = "0";
+    }
+
     this.openTabs.forEach(tab => {
       tab.active = strippedURL.endsWith(tab.url);
-      if (tab.url === ToolbarComponent.AnalysisTabURL) {
-        isAnalysisTab = tab.active;
+      if (tab.params && Object.keys(tab.params).length > 0) {
+        tab.active = tab.active && Object.keys(tab.params).every(key => this.queryParam[key] == tab?.params?.[key]);
       }
     });
 
@@ -398,10 +525,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   openScanConfigurationTabForInvalidQuants(): void {
-    if (this._isAnalysisTab && !this.hasQuantConfiguredScan && !this._analysisLayoutService.sidepanelOpen && this._analysisLayoutService.sidebarTabs.length > 0) {
+    if (
+      this._isAnalysisTab &&
+      (!this.hasQuantConfiguredScan || !this.hasScanConfigured) &&
+      !this._analysisLayoutService.sidepanelOpen &&
+      this._analysisLayoutService.sidebarTabs.length > 0
+    ) {
       this._analysisLayoutService.activeTab = this._analysisLayoutService.sidebarTabs[0];
       this._analysisLayoutService.sidepanelOpen$.next(true);
-      this._snackService.open("No scans configured for this workspace. Please configure scans.");
+
+      if (!this.hasScanConfigured) {
+        this._snackService.open("No scans configured for this workspace. Please configure scans.");
+      } else if (!this.hasQuantConfiguredScan) {
+        this._snackService.open("Some scans in your workspace don't have a quantification configured.");
+      }
     }
   }
 
@@ -438,22 +575,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     return this._hotKeysMenuOverlayHost?.isOpen;
   }
 
-  get isLoggedIn(): boolean {
-    return true;
-    // return this._authService.loggedIn;
-  }
-
   get showScanConfigurator(): boolean {
     return this.router.url.includes(ToolbarComponent.CodeEditorTabURL) || this._isAnalysisTab;
-  }
-
-  onScanConfiguration(): void {
-    const dialogConfig = new MatDialogConfig<ScanConfigurationDialogData>();
-    dialogConfig.disableClose = true;
-    dialogConfig.autoFocus = true;
-    dialogConfig.width = "1200px";
-
-    this._matDialog.open(ScanConfigurationDialog, dialogConfig);
   }
 
   onNavigate(tab: TabNav, event: any): void {
@@ -467,27 +590,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onAbout(): void {
     this.router.navigateByUrl("/public/about-us");
-  }
-
-  onExport(): void {
-    // let choices = [
-    //     new ExportDataChoice("raw-spectra", "Raw Spectral Data Per PMC .csv (and bulk .msa)", true),
-    //     new ExportDataChoice("quant-map-csv", "PIQUANT Quantification map .csv", true),
-    //     //new ExportDataChoice('quant-map-tif', 'Floating point map images .tif', false),
-    //     new ExportDataChoice("beam-locations", "Beam Locations .csv", true),
-    //     // new ExportDataChoice("context-image", "All context images with PMCs", false),
-    //     new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", true),
-    //     new ExportDataChoice("ui-diffraction-peak", "Anomaly Features .csv", true),
-    //     new ExportDataChoice("rois", "ROI PMC Membership List .csv", false, false),
-    //     new ExportDataChoice("ui-roi-expressions", "ROI Expression Values .csv", false, false),
-    // ];
-    // const dialogConfig = new MatDialogConfig();
-    // //dialogConfig.disableClose = true;
-    // //dialogConfig.autoFocus = true;
-    // //dialogConfig.width = '1200px';
-    // dialogConfig.data = new ExportDataConfig("PIXLISE Data", "", true, true, true, false, choices, this._exportService);
-    // const dialogRef = this.dialog.open(ExportDataDialogComponent, dialogConfig);
-    // //dialogRef.afterClosed().subscribe...;
   }
 
   onToggleAnnotations(active: boolean): void {
@@ -588,5 +690,43 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   get discussLink(): string {
     return "https://discuss." + EnvConfigurationInitService.appConfig.appDomain;
+  }
+
+  private closeIssueDialog(): void {
+    if (this.submitIssueDialog && this.submitIssueDialog instanceof PushButtonComponent) {
+      (this.submitIssueDialog as PushButtonComponent).closeDialog();
+    }
+  }
+
+  onSubmitIssue(leftPage: boolean): void {
+    let strippedIssue = this.userIssue.trim();
+    if (strippedIssue.length > 0) {
+      this._snackService.openSuccess("Thanks for the feedback!");
+      this.userIssue = "";
+      SentryHelper.logMsg(false, "User Feedback (Back to V3): \n" + strippedIssue);
+    } else if (leftPage) {
+      SentryHelper.logMsg(false, "User Feedback (Back to V3): No feedback given");
+    }
+
+    this.closeIssueDialog();
+  }
+
+  closeChangeLogDialog(): void {
+    if (this.changeLogBtn && this.changeLogBtn instanceof PushButtonComponent) {
+      (this.changeLogBtn as PushButtonComponent).closeDialog();
+    }
+  }
+
+  checkHasViewedLatestVersion() {
+    this.hasViewedLatestVersion = localStorage?.getItem("latestUIVersionViewed") === this.uiVersionLastCommitDate.toString();
+  }
+
+  markLatestVersionViewed() {
+    localStorage?.setItem("latestUIVersionViewed", this.uiVersionLastCommitDate.toString());
+    this.hasViewedLatestVersion = true;
+  }
+
+  onNewTab(): void {
+    this.onOpenTab({ icon: "", label: "+", tooltip: "New Tab", url: ToolbarComponent.NewTabURL });
   }
 }

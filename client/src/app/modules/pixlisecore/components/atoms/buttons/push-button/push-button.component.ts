@@ -31,6 +31,7 @@ import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from "@an
 import { BadgeStyle } from "../../badge/badge.component";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { ConfirmDialogComponent } from "../action-button/confirm-dialog/confirm-dialog.component";
+import { ConfirmInputDialogComponent, ConfirmInputDialogData, ConfirmInputDialogResult } from "../action-button/confirm-input-dialog/confirm-input-dialog.component";
 
 export type PushButtonStyle =
   | "normal"
@@ -38,12 +39,16 @@ export type PushButtonStyle =
   | "borderless"
   | "yellow"
   | "outline"
+  | "outline-small"
   | "gray"
   | "gray-title"
   | "light-right-outline"
   | "orange"
   | "dark-outline"
-  | "hover-yellow";
+  | "hover-yellow"
+  | "v3Button"
+  | "changelog-new"
+  | "changelog-viewed";
 
 @Component({
   selector: "push-button",
@@ -61,6 +66,13 @@ export class PushButtonComponent implements OnInit {
   @Input() flexBtn: boolean = false;
 
   @Input() confirmText: string = "";
+
+  @Input() confirmInputText: string = "";
+  @Input() confirmInputTitle: string = "";
+  @Input() confirmInputButtonText: string = "";
+  @Input() confirmInputMiddleButtonText: string = "";
+  @Input() confirmInputPlaceholder: string = "";
+
   @Input() customDialog: TemplateRef<any> | null = null;
 
   @Output() onClick = new EventEmitter();
@@ -77,12 +89,16 @@ export class PushButtonComponent implements OnInit {
       "borderless",
       "yellow",
       "outline",
+      "outline-small",
       "gray",
       "gray-title",
       "light-right-outline",
       "orange",
       "dark-outline",
       "hover-yellow",
+      "v3Button",
+      "changelog-new",
+      "changelog-viewed",
     ];
     if (validStyles.indexOf(this.buttonStyle) == -1) {
       console.warn("Invalid style for push-button: " + this.buttonStyle);
@@ -96,7 +112,23 @@ export class PushButtonComponent implements OnInit {
 
   onClickInternal(event: MouseEvent): void {
     if (!this.disabled) {
-      if (this.confirmText) {
+      if (this.confirmInputText) {
+        const dialogConfig = new MatDialogConfig<ConfirmInputDialogData>();
+        dialogConfig.data = {
+          confirmInputText: this.confirmInputText,
+          inputPlaceholder: this.confirmInputPlaceholder,
+          title: this.confirmInputTitle,
+          confirmButtonText: this.confirmInputButtonText,
+          middleButtonText: this.confirmInputMiddleButtonText,
+        };
+        this._dialogRef = this.dialog.open(ConfirmInputDialogComponent, dialogConfig);
+
+        this._dialogRef.afterClosed().subscribe(({ confirmed, value, middleButtonClicked }: ConfirmInputDialogResult) => {
+          if (confirmed) {
+            this.onClick.emit({ value, middleButtonClicked });
+          }
+        });
+      } else if (this.confirmText) {
         const dialogConfig = new MatDialogConfig();
         dialogConfig.data = { confirmText: this.confirmText };
         this._dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
@@ -108,6 +140,10 @@ export class PushButtonComponent implements OnInit {
         });
       } else if (this.customDialog) {
         this._dialogRef = this.dialog.open(this.customDialog, {});
+        if (this.onClick) {
+          // Still emit the onClick event if it's also registered
+          this.onClick.emit(event);
+        }
       } else {
         this.onClick.emit(event);
       }

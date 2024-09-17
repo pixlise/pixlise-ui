@@ -55,10 +55,11 @@ import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
-import { ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
+import { BuiltInTags } from "../../tags/models/tag.model";
+import { SpectrumDataService } from "./spectrum-data.service";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -79,7 +80,8 @@ export class DataSourceParams {
     public exprId: string,
     public quantId: string,
     public roiId: string,
-    public units: DataUnit = DataUnit.UNIT_DEFAULT
+    public units: DataUnit = DataUnit.UNIT_DEFAULT,
+    public injectedFunctions: Map<string, any> | null = null
   ) {}
 }
 
@@ -165,6 +167,7 @@ export class WidgetDataService {
   constructor(
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
+    private _spectrumDataService: SpectrumDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _memoisationService: MemoisationService
@@ -174,11 +177,11 @@ export class WidgetDataService {
   // amount of items as the input parameters array (what). This is required because code calling this can then know which
   // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
   // should equal "what.length". There are also error values that can be returned.
-  getData(what: DataSourceParams[] /*, continueOnError: boolean*/): Observable<RegionDataResults> {
+  getData(what: DataSourceParams[], allowAnyResponse: boolean = false): Observable<RegionDataResults> {
     // Query each one separately and combine results at the end
     const exprResult$: Observable<DataQueryResult>[] = [];
     for (const query of what) {
-      exprResult$.push(this.getDataSingle(query, false));
+      exprResult$.push(this.getDataSingle(query, allowAnyResponse));
     }
 
     // Now wait for all expressions to complete
@@ -187,7 +190,7 @@ export class WidgetDataService {
       map((results: DataQueryResult[]) => {
         const resultItems = [];
         for (let c = 0; c < results.length; c++) {
-          resultItems.push(this.processGetDataResult(results[c], what[c]));
+          resultItems.push(this.processGetDataResult(results[c], what[c], allowAnyResponse));
         }
         return new RegionDataResults(resultItems, "");
       }),
@@ -206,11 +209,19 @@ export class WidgetDataService {
   }
 
   private makeCacheKey(query: DataSourceParams, allowAnyResponse: boolean): Observable<string> {
+    // We need to strip out anything that doesn't affect the result of the query
+    const strippedQuery = {
+      scanId: query.scanId,
+      exprId: query.exprId,
+      quantId: query.quantId,
+      roiId: query.roiId,
+      units: query.units,
+    };
     // We need to get time stamps for each item to make this cache key unique to only this specific version of
     // the quant, scan, ROI, etc
 
     // Get the cache key so far
-    let cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+    let cacheKeyStart = JSON.stringify(strippedQuery) + ",Resp:" + allowAnyResponse;
 
     // If it's an unsaved expression, make this prominent so it's easier to filter out
     if (DataExpressionId.isUnsavedExpressionId(query.exprId)) {
@@ -252,11 +263,18 @@ export class WidgetDataService {
     }
 
     if (query.scanId) {
+      // NOTE: here we used to call:
+      // this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } }))
+      // But this proved to be inaccurate, because we may get a different time stamp than we have the spectrum data cached for
+      // so instead, we query the bulk spectrum and save its stats - this way our cache key is unique to the downlinked
+      // data, not a time stamp
+
       scanIdIdx = queryList.length;
       queryList.push(
-        this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } })).pipe(
+        // Really we don't need the bulk sum, but lets get it because other functionality is caching that kind of request!
+        this._spectrumDataService.getSpectra(query.scanId, [], true, true).pipe(
           catchError(err => {
-            throw new Error(`Failed to scan: ${query.scanId} - ${err}`);
+            throw new Error(`Failed to load scan: ${query.scanId} - ${err}`);
           })
         )
       );
@@ -267,7 +285,7 @@ export class WidgetDataService {
     }
 
     return combineLatest(queryList).pipe(
-      map((result: (ExpressionGetResp | RegionOfInterestGetResp | ScanListResp)[]) => {
+      map((result: (ExpressionGetResp | RegionOfInterestGetResp | SpectrumResp)[]) => {
         let appendKey = "";
 
         if (exprIdIdx >= 0) {
@@ -285,9 +303,9 @@ export class WidgetDataService {
         }
 
         if (scanIdIdx >= 0) {
-          const s = result[scanIdIdx] as ScanListResp;
-          if (s && s.scans && s.scans.length == 1) {
-            appendKey += ",scanMod:" + s.scans[0].timestampUnixSec;
+          const s = result[scanIdIdx] as SpectrumResp;
+          if (s) {
+            appendKey += `,spectra:${s.normalSpectraForScan},${s.dwellSpectraForScan},${s.timeStampUnixSec}`;
           }
         }
 
@@ -378,7 +396,17 @@ export class WidgetDataService {
     // special handling here that ends up just returning an expression!
     return this.getExpression(query.exprId).pipe(
       concatMap((expr: DataExpression) => {
-        return this.runExpression(expr, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
+        allowAnyResponse = allowAnyResponse || BuiltInTags.hasAllowAnyExpressionResponseTag(expr.tags);
+        return this.runExpression(
+          expr,
+          query.scanId,
+          query.quantId,
+          query.roiId,
+          allowAnyResponse,
+          false,
+          environment.luaTimeoutMs,
+          query.injectedFunctions || null
+        ).pipe(
           mergeMap((result: DataQueryResult) => {
             return this._roiService.getRegionSettings(query.roiId).pipe(
               map((roiSettings: RegionSettings) => {
@@ -394,7 +422,7 @@ export class WidgetDataService {
                 this._inFluxSingleQueryResultCache.delete(cacheKey);
 
                 // Also, add to memoisation cache
-                if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+                if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
                   const encodedResult = this.toMemoised(result);
                   this._memoisationService.memoise(cacheKey, encodedResult);
                 }
@@ -407,12 +435,15 @@ export class WidgetDataService {
             // Make sure we don't have broken stuff cached!
             this._inFluxSingleQueryResultCache.delete(cacheKey);
 
-            const errorMsg = httpErrorToString(err, "Expression [" + cacheKey + "] error"); // We use this function because it can decode many kinds of error class/type
+            let errorMsg = httpErrorToString(err, "Expression error"); // We use this function because it can decode many kinds of error class/type
+
+            // Show what expression it was
+            errorMsg += `. Expression was: ["${cacheKey}"]`;
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (
-              errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-              errorMsg.indexOf("The currently loaded quantification does not contain column") < 0 &&
+              errorMsg.indexOf("quantification does not contain data for detector") < 0 &&
+              errorMsg.indexOf("quantification does not contain column") < 0 &&
               errorMsg.indexOf("no quantification id specified") < 0
             ) {
               SentryHelper.logMsg(true, errorMsg);
@@ -458,6 +489,7 @@ export class WidgetDataService {
     // We copy to protobuf structs which then serialise to binary
     // NOTE: This is an experiment, if it works, maybe we'll switch all code to use these structs!
     const memValues = [];
+
     for (const val of result.resultValues.values) {
       memValues.push(
         MemPMCDataValue.create({
@@ -593,7 +625,8 @@ export class WidgetDataService {
     // TODO: calibration as a parameter?
     allowAnyResponse: boolean,
     isUnsaved: boolean = false,
-    maxTimeoutMs: number = environment.luaTimeoutMs
+    maxTimeoutMs: number = environment.luaTimeoutMs,
+    injectedFunctions: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
     console.log(
       `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
@@ -623,60 +656,62 @@ export class WidgetDataService {
         const querier = new DataQuerier();
         const dataSource = new ExpressionDataSource();
 
-        return dataSource.prepare(this._cachedDataService, scanId, quantId, roiId, calibration).pipe(
+        return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
             const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
 
-            return querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs).pipe(
-              map((queryResult: DataQueryResult) => {
-                console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs.toLocaleString()}ms`);
+            return querier
+              .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)
+              .pipe(
+                map((queryResult: DataQueryResult) => {
+                  console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs.toLocaleString()}ms`);
 
-                // Save runtime stats for this expression if we haven't done this recently (don't spam)
-                const nowMs = Date.now();
-                const lastNotify = this._exprRunStatLastNotificationTime.get(expression.id);
-                if (!lastNotify || nowMs - lastNotify > 60000) {
-                  // Also, normalise it for runtime for 1000 points!
-                  let runtimePer1000 = 0;
+                  // Save runtime stats for this expression if we haven't done this recently (don't spam)
+                  const nowMs = Date.now();
+                  const lastNotify = this._exprRunStatLastNotificationTime.get(expression.id);
+                  if (!lastNotify || nowMs - lastNotify > 60000) {
+                    // Also, normalise it for runtime for 1000 points!
+                    let runtimePer1000 = 0;
 
-                  // Need to account for allowAnyResponse edge case
-                  const values = queryResult?.resultValues?.values || [];
-                  if (queryResult.runtimeMs > 0 && values.length > 0) {
-                    runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
-                  }
+                    // Need to account for allowAnyResponse edge case
+                    const values = queryResult?.resultValues?.values || [];
+                    if (queryResult.runtimeMs > 0 && values.length > 0) {
+                      runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
+                    }
 
-                  // Remember when we notified, so we don't spam
-                  this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
+                    // Remember when we notified, so we don't spam
+                    this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
 
-                  if (
-                    !DataExpressionId.isPredefinedExpression(expression.id) &&
-                    !DataExpressionId.isUnsavedExpressionId(expression.id) &&
-                    queryResult.dataRequired.length > 0
-                  ) {
-                    this._dataService
-                      .sendExpressionWriteExecStatRequest(
-                        ExpressionWriteExecStatReq.create({
-                          id: expression.id,
-                          stats: {
-                            dataRequired: queryResult.dataRequired,
-                            runtimeMsPer1000Pts: runtimePer1000,
-                            // timeStampUnixSec - filled out by API
+                    if (
+                      !DataExpressionId.isPredefinedExpression(expression.id) &&
+                      !DataExpressionId.isUnsavedExpressionId(expression.id) &&
+                      queryResult.dataRequired.length > 0
+                    ) {
+                      this._dataService
+                        .sendExpressionWriteExecStatRequest(
+                          ExpressionWriteExecStatReq.create({
+                            id: expression.id,
+                            stats: {
+                              dataRequired: queryResult.dataRequired,
+                              runtimeMsPer1000Pts: runtimePer1000,
+                              // timeStampUnixSec - filled out by API
+                            },
+                          })
+                        )
+                        .subscribe({
+                          error: err => {
+                            console.error(httpErrorToString(err, "sendExpressionWriteExecStatRequest"));
                           },
-                        })
-                      )
-                      .subscribe({
-                        error: err => {
-                          console.error(httpErrorToString(err, "sendExpressionWriteExecStatRequest"));
-                        },
-                      }); // we don't really do anything different if this passes or fails
+                        }); // we don't really do anything different if this passes or fails
+                    }
                   }
-                }
 
-                // Add the other stuff we loaded along the way
-                queryResult.expression = expression;
+                  // Add the other stuff we loaded along the way
+                  queryResult.expression = expression;
 
-                return queryResult;
-              })
-            );
+                  return queryResult;
+                })
+              );
           })
         );
       })
@@ -746,13 +781,16 @@ export class WidgetDataService {
     );
   }
 
-  private processGetDataResult(result: DataQueryResult, query: DataSourceParams): RegionDataResultItem {
+  private processGetDataResult(result: DataQueryResult, query: DataSourceParams, allowAnyResponse: boolean): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
-    if (result.errorMsg || !Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))) {
+    let isPMCTable = Array.isArray(pmcValues?.values) && (pmcValues.values.length <= 0 || pmcValues.values[0] instanceof PMCDataValue);
+    // If we have an error OR we require a PMC table as a result and didn't receive one...
+    if (result.errorMsg || (!allowAnyResponse && !isPMCTable)) {
       let msg = result.errorMsg;
       if (!msg) {
         msg = "Result is not a PMC array!";
       }
+
       return new RegionDataResultItem(
         new DataQueryResult(
           result.resultValues,
@@ -763,7 +801,9 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Expression failed to complete", msg),
+        /*result.errorMsg.length > 0
+          ? new WidgetError(result.errorMsg, "The expression failed, check configuration and try again")
+          :*/ new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,
@@ -772,24 +812,24 @@ export class WidgetDataService {
       );
     }
 
-    // Apply unit conversion if needed
-    const unitConverted = this.applyUnitConversion(query.exprId, pmcValues, query.units);
+    let valuesToWrite: any = null;
+    if (isPMCTable) {
+      // We're dealing with PMC table data, in which case we support unit conversion
+      // Apply unit conversion if needed
+      valuesToWrite = this.applyUnitConversion(query.exprId, pmcValues, query.units);
+    } else {
+      // We're dealing with a non-PMC table data, so we just pass it through
+      valuesToWrite = result.resultValues;
+    }
 
     const resultItem = new RegionDataResultItem(
-      new DataQueryResult(
-        unitConverted, // Put this in the result
-        result.isPMCTable,
-        result.dataRequired,
-        result.runtimeMs,
-        result.stderr,
-        result.stderr,
-        result.recordedExpressionInputs
-      ),
+      new DataQueryResult(valuesToWrite, result.isPMCTable, result.dataRequired, result.runtimeMs, result.stderr, result.stderr, result.recordedExpressionInputs),
       null,
-      unitConverted.warning,
+      valuesToWrite?.warning || "",
       result.expression,
       result.region,
-      query
+      query,
+      isPMCTable
     );
 
     return resultItem;

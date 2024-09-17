@@ -51,6 +51,7 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group-msgs";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { setsEqual } from "src/app/utils/utils";
 
 export type ExpressionPickerResponse = {
   selectedGroup?: ExpressionGroup;
@@ -58,12 +59,14 @@ export type ExpressionPickerResponse = {
   scanId: string;
   quantId: string;
   persistDialog: boolean;
+  subId?: string;
 };
 
 export type ExpressionPickerData = {
   selectedIds?: string[];
   expressionTriggerPosition?: number;
   widgetId?: string;
+  subId?: string;
   scanId?: string;
   quantId?: string;
   noActiveScreenConfig?: boolean;
@@ -79,6 +82,7 @@ export type ExpressionPickerData = {
   showRGBMixMode?: boolean;
   rgbMixModeActive?: boolean;
   disableWidgetSwitching?: boolean;
+  onlyShowItemsWithTag?: string[];
 };
 
 @Component({
@@ -172,6 +176,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.scanId = this.data.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this.draggable = this.data.draggable || false;
+    this._enforceRequiredManualFilterTags();
 
     let widgetSpec: WidgetConfiguration = WIDGETS[this.data?.widgetType as keyof typeof WIDGETS];
 
@@ -549,25 +554,45 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       }
       const currentQuant = quants.find(quant => quant.id === this.quantId);
       if (currentQuant) {
+        const quantMode = currentQuant?.params?.userParams?.quantMode || "";
+        let defaultDetector = quantMode;
+        if (defaultDetector.length > 0 && defaultDetector.indexOf("Combined") == -1) {
+          defaultDetector = defaultDetector.substring(0, 1);
+        }
+
+        if (!this.activeQuantifiedElementDetector) {
+          let det = defaultDetector;
+          if (det.indexOf("Combined") > -1) {
+            det = "Combined";
+          }
+          this.activeQuantifiedElementDetector = det.replace("Combined", "A&B") as "A" | "B" | "A&B";
+        }
+
+        const detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");
+
         currentQuant.elements.forEach(quantElement => {
-          let quantMode = currentQuant?.params?.userParams?.quantMode || "";
-          let defaultDetector = quantMode;
-          if (defaultDetector.length > 0 && defaultDetector != "Combined") {
-            defaultDetector = defaultDetector.substring(0, 1);
-          }
-
-          if (!this.activeQuantifiedElementDetector) {
-            this.activeQuantifiedElementDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
-          }
-
-          let detector = this.activeQuantifiedElementDetector.replace("A&B", "Combined");
-
           const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
           const expr = getPredefinedExpression(id);
           if (expr) {
             this._quantifiedExpressions[id] = expr;
           }
         });
+
+        // Add unquantified and chisq
+        let unquantWtPctId = DataExpressionId.predefinedUnquantifiedPercentDataExpression;
+        if (detector.length > 0) {
+          unquantWtPctId += `(${detector})`;
+        }
+        const unquantWtPct = getPredefinedExpression(unquantWtPctId);
+        if (unquantWtPct) {
+          this._quantifiedExpressions[unquantWtPctId] = unquantWtPct;
+        }
+
+        const chisqId = DataExpressionId.makePredefinedQuantDataExpression("chisq", detector);
+        const chisqExpr = getPredefinedExpression(chisqId);
+        if (chisqExpr) {
+          this._quantifiedExpressions[chisqId] = chisqExpr;
+        }
       }
     }
   }
@@ -695,6 +720,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           scanId: this.scanId,
           quantId: this.quantId,
           persistDialog: this.persistDialog,
+          subId: this.data.subId,
         });
 
         this.onCloseExpressionGroupDialog();
@@ -715,6 +741,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       return this.selectedGroup.id === id;
     } else {
       return this.selectedExpressionIds.has(id);
+    }
+  }
+
+  private _enforceRequiredManualFilterTags() {
+    if (!this.manualFilters) {
+      this.manualFilters = {};
+    }
+
+    if (this.data.onlyShowItemsWithTag && this.data.onlyShowItemsWithTag.length > 0) {
+      if (!this.manualFilters.tagIDs) {
+        this.manualFilters.tagIDs = [];
+      }
+      this.manualFilters.tagIDs = Array.from(new Set([...this.manualFilters.tagIDs, ...this.data.onlyShowItemsWithTag]));
     }
   }
 
@@ -739,6 +778,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     if (subSection === ExpressionBrowseSections.RECENT) {
       this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: section, onlyShowRecent: true };
     }
+
+    this._enforceRequiredManualFilterTags();
 
     this.activeBrowseGroup = section;
     this.activeBrowseSection = subSection;
@@ -899,7 +940,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               this.onConfirm();
             }
           } else {
-            this.loadGroupAsRGBMix(expressionGroup);
+            // Set it as an RGB mix only if we're launched from a widget which has the capability to display RGB mixes
+            // otherwise we're just showing them as expression groups here
+            const widgetSpec: WidgetConfiguration = WIDGETS[this.data?.widgetType as keyof typeof WIDGETS];
+
+            if (widgetSpec?.showRGBMixExpressionPickerMode || false) {
+              this.loadGroupAsRGBMix(expressionGroup);
+            } else {
+              this.overwriteExistingExpressionGroup = true;
+              this.activeRGBMixModeGroup = "Expressions";
+              this.selectedGroup = expressionGroup;
+              this.updateSelectedExpressions();
+            }
+
             // Clear the last written expression because we're now working with a new group
             this._expressionService.lastWrittenExpressionGroupId$.next("");
             this.updateSelectedExpressions();
@@ -928,6 +981,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     } else {
       this.manualFilters = { authors: [author] };
     }
+
+    this._enforceRequiredManualFilterTags();
   }
 
   onFilterChanged({ filteredExpressions, scanId, quantId, valueChanged }: ExpressionSearchFilter) {
@@ -1004,6 +1059,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     if (this.activeBrowseSection === ExpressionBrowseSections.RECENT) {
       this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: this.activeBrowseGroup, onlyShowRecent: true };
+      this._enforceRequiredManualFilterTags();
     }
   }
 
@@ -1041,7 +1097,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.onConfirm();
   }
 
-  onConfirm(saveExpressionGroup: boolean = false): void {
+  onConfirm(): void {
     const selectedExpressions: DataExpression[] = Array.from(this._selectedExpressionIdOrder)
       .map(id => this._selectedExpressions.find(expression => expression?.id === id))
       .filter(expression => expression) as DataExpression[];
@@ -1050,8 +1106,28 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       .map(id => this._selectedRGBMixExpressions.find(expression => expression?.id === id))
       .filter(group => group) as DataExpression[];
 
-    let selectedGroup = ExpressionGroup.create(this.selectedGroup);
     if (rgbMixExpressions.length >= 3) {
+      // If the selected group alredy has an id, and it has the same RGB mix entries as the one we're about to create, don't create it!
+      // it can be used as-is directly.
+      if (
+        this.selectedGroup.id.length > 0 &&
+        setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id)))
+      ) {
+        this._analysisLayoutService.expressionPickerResponse$.next({
+          selectedGroup: this.selectedGroup,
+          selectedExpressions,
+          scanId: this.scanId,
+          quantId: this.quantId,
+          persistDialog: this.persistDialog,
+          subId: this.data.subId,
+        });
+
+        if (!this.persistDialog) {
+          this.dialogRef.close();
+        }
+        return;
+      }
+      const selectedGroup = ExpressionGroup.create(this.selectedGroup);
       selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
 
       let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
@@ -1101,6 +1177,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               scanId: this.scanId,
               quantId: this.quantId,
               persistDialog: this.persistDialog,
+              subId: this.data.subId,
             });
           },
           error: err => {
@@ -1118,6 +1195,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         scanId: this.scanId,
         quantId: this.quantId,
         persistDialog: this.persistDialog,
+        subId: this.data.subId,
       });
 
       if (!this.persistDialog) {
@@ -1127,6 +1205,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           scanId: this.scanId,
           quantId: this.quantId,
           persistDialog: this.persistDialog,
+          subId: this.data.subId,
         });
       }
     }

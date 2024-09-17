@@ -8,20 +8,21 @@ import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher
 import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { ScanItem } from "../../../../generated-protos/scan";
 
 export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawModel> {
   protected regenerateDrawModel(raw: TernaryData | null, canvasParams: CanvasParams): void {
     this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
   }
 
-  setData(data: RegionDataResults): WidgetError[] {
+  setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
     const corners: ScatterPlotAxisInfo[] = [
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
     ];
 
-    return this.processQueryResult("Ternary", data, corners);
+    return this.processQueryResult("Ternary", data, corners, scanItems);
   }
 
   protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): TernaryData {

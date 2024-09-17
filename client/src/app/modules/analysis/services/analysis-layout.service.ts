@@ -1,17 +1,17 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, map, of, timer } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, map, of, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
-import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScreenConfigurationGetReq, ScreenConfigurationListReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
+import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
-import { WidgetData } from "src/app/generated-protos/widget-data";
+import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
@@ -21,9 +21,11 @@ import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-proto
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
-import { isFirefox } from "src/app/utils/utils";
+import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
+import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
+import { TabLinks } from "../../../models/TabLinks";
+import { PredefinedROIID } from "../../../models/RegionOfInterest";
 
 export class DefaultExpressions {
   constructor(
@@ -31,6 +33,17 @@ export class DefaultExpressions {
     public quantId: string
   ) {}
 }
+
+export type NavigationTab = {
+  icon: string;
+  label?: string;
+  tooltip?: string;
+  url: string;
+  params?: Record<string, string>;
+  active?: boolean;
+  passQueryParams?: boolean;
+};
+
 @Injectable({
   providedIn: "root",
 })
@@ -50,8 +63,16 @@ export class AnalysisLayoutService implements OnDestroy {
   availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
 
+  spectrumSelectionWidgetTargetId$ = new BehaviorSubject<string>("");
+
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
+  activeScreenConfigurationTabs$ = new BehaviorSubject<NavigationTab[]>([
+    { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: TabLinks.analysis, params: { tab: "0" } },
+    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+  ]);
   activeScreenConfigWidgetReferences$ = new BehaviorSubject<WidgetReference[]>([]);
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
@@ -77,7 +98,8 @@ export class AnalysisLayoutService implements OnDestroy {
     private _router: Router,
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _selectionService: SelectionService
   ) {
     this.fetchAvailableScans();
     this.fetchLastLoadedScreenConfigurationId();
@@ -95,11 +117,16 @@ export class AnalysisLayoutService implements OnDestroy {
           this.fetchQuantsForScan(params["scan_id"]);
         } else {
           if (this.lastLoadedScreenConfigurationId) {
-            this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId);
+            this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId, "", true, false); // Don't show snack for fail in this case, the last loaded screen config might not make sense any more
             // Add id back to query params
             const queryParams = { ...this._route.snapshot.queryParams };
-            queryParams["id"] = this.lastLoadedScreenConfigurationId;
-            if (queryParams["id"] && (this._route?.snapshot?.url || []).length > 0) {
+            let defaultScanId = getScanIdFromWorkspaceId(this.lastLoadedScreenConfigurationId);
+            if (defaultScanId) {
+              queryParams["scan_id"] = defaultScanId;
+            } else {
+              queryParams["id"] = this.lastLoadedScreenConfigurationId;
+            }
+            if ((queryParams["id"] || queryParams["scan_id"]) && (this._route?.snapshot?.url || []).length > 0) {
               this._router.navigate([this._route.snapshot.url], { queryParams });
             }
           }
@@ -144,6 +171,8 @@ export class AnalysisLayoutService implements OnDestroy {
           if (!currentReferences || JSON.stringify(widgetReferences) !== JSON.stringify(currentReferences)) {
             this.activeScreenConfigWidgetReferences$.next(widgetReferences);
           }
+
+          this.loadActiveLayoutAnalysisTabs();
         }
       })
     );
@@ -158,10 +187,117 @@ export class AnalysisLayoutService implements OnDestroy {
     this._subs.unsubscribe();
   }
 
+  getCurrentTabId(): number {
+    let index = this.activeScreenConfigurationTabs$.value.findIndex(tab => tab.active);
+    return index >= 0 ? index : 0;
+  }
+
+  setActiveScreenConfigurationTabIndex(tabIndex: number): void {
+    if (tabIndex < 0 || tabIndex >= this.activeScreenConfigurationTabs$.value.length) {
+      return;
+    }
+
+    let tabs = this.activeScreenConfigurationTabs$.value.map((tab, index) => {
+      tab.active = index === tabIndex;
+      return tab;
+    });
+
+    this.activeScreenConfigurationTabs$.next(tabs);
+
+    let queryParams = { ...this._route.snapshot.queryParams };
+    queryParams["tab"] = tabIndex.toString();
+    this._router.navigate([TabLinks.analysis], { queryParams });
+  }
+
+  getLayoutFromTab(tab: NavigationTab): FullScreenLayout | null {
+    if (!this.activeScreenConfiguration$.value) {
+      return null;
+    }
+
+    let tabIndex = tab?.params?.["tab"];
+    if (tabIndex !== undefined) {
+      let index = parseInt(tabIndex);
+      return this.activeScreenConfiguration$.value?.layouts[index];
+    }
+
+    return null;
+  }
+
+  loadActiveLayoutAnalysisTabs(): void {
+    if (this.activeScreenConfiguration$.value && this.activeScreenConfiguration$.value.layouts.length > 0) {
+      let analysisTabs: NavigationTab[] = this.activeScreenConfiguration$.value.layouts.map((layout, index) => {
+        let label = layout.tabName || "Analysis " + (index + 1);
+        let tooltip = `${label}`;
+        if (layout.tabDescription) {
+          tooltip += `:\n${layout.tabDescription}`;
+        }
+
+        let tab: NavigationTab = {
+          icon: "assets/tab-icons/analysis.svg",
+          label,
+          tooltip,
+          url: TabLinks.analysis,
+          params: { tab: index.toString() },
+        };
+
+        return tab;
+      });
+
+      let tabs = [
+        { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+        ...analysisTabs,
+        { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+        { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+      ];
+      this.activeScreenConfigurationTabs$.next(tabs);
+    } else {
+      this.activeScreenConfigurationTabs$.next([
+        { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+        { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+        { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+      ]);
+    }
+  }
+
+  addScreenConfigurationLayout(layout: FullScreenLayout): ScreenConfiguration | undefined {
+    if (!layout) {
+      return undefined;
+    }
+
+    let screenConfiguration = this.activeScreenConfiguration$.value;
+    if (!screenConfiguration) {
+      screenConfiguration = createDefaultScreenConfiguration();
+    }
+
+    screenConfiguration.layouts.push(layout);
+    this.activeScreenConfiguration$.next(screenConfiguration);
+
+    this.writeScreenConfiguration(screenConfiguration);
+
+    return screenConfiguration;
+  }
+
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
     });
+  }
+
+  fetchWorkspaceSnapshots(workspaceId: string): Observable<ScreenConfiguration[]> {
+    return this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create({ snapshotParentId: workspaceId })).pipe(
+      map(res => {
+        let snapshots = res.screenConfigurations;
+        snapshots.sort((a, b) => {
+          return (a.owner?.createdUnixSec || 0) - (b.owner?.createdUnixSec || 0);
+        });
+
+        return snapshots;
+      }),
+      catchError(err => {
+        this._snackService.openError(err);
+        return of([]);
+      })
+    );
   }
 
   deleteQuant(quantId: string) {
@@ -177,9 +313,21 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
-  fetchQuantsForScan(scanId: string) {
+  fetchQuantsForScan(scanId: string, callback: (quants: QuantificationSummary[]) => void = () => {}) {
     this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe(res => {
       this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
+      if (callback) {
+        callback(res.quants);
+      }
+    });
+  }
+
+  fetchQuantsForScanAsync(scanId: string): Observable<QuantificationSummary[]> {
+    return new Observable<QuantificationSummary[]>(observer => {
+      this.fetchQuantsForScan(scanId, quants => {
+        observer.next(quants);
+        observer.complete();
+      });
     });
   }
 
@@ -202,7 +350,7 @@ export class AnalysisLayoutService implements OnDestroy {
     this.activeScreenConfigurationId$.next("");
   }
 
-  fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
+  fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true, showSnackOnError: boolean = true) {
     this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
       next: res => {
         if (res.screenConfiguration) {
@@ -214,6 +362,10 @@ export class AnalysisLayoutService implements OnDestroy {
 
           // Store the screen configuration
           this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+
+          // Restore selections for each of the scans
+          const scanIds = Object.keys(res.screenConfiguration.scanConfigurations);
+          this._selectionService.restoreSavedSelection(scanIds, "" /* TODO: Get the image name!! */);
         }
       },
       error: err => {
@@ -223,48 +375,77 @@ export class AnalysisLayoutService implements OnDestroy {
           // No screen configuration found, create a new one for this scan
           const newScreenConfiguration = createDefaultScreenConfiguration();
           const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
-          if (matchedScan) {
-            newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}. ${matchedScan.description}`;
+          if (scanId && matchedScan) {
+            newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
           }
 
-          this.writeScreenConfiguration(newScreenConfiguration, scanId);
-        } else {
+          this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
+        } else if (showSnackOnError) {
           this._snackService.openError(err);
         }
       },
     });
   }
 
+  createNewScreenConfiguration(
+    scanId: string = "",
+    defaultScreenConfig: ScreenConfiguration | null = null,
+    callback: (screenConfig: ScreenConfiguration) => void = () => {}
+  ) {
+    const newScreenConfiguration = createDefaultScreenConfiguration();
+    if (scanId) {
+      newScreenConfiguration.scanConfigurations = { [scanId]: { id: scanId, quantId: "", calibrations: [], colour: "" } };
+    }
+
+    if (defaultScreenConfig) {
+      newScreenConfiguration.name = defaultScreenConfig.name;
+      newScreenConfiguration.description = defaultScreenConfig.description || "";
+      newScreenConfiguration.tags = defaultScreenConfig.tags || [];
+      newScreenConfiguration.scanConfigurations = defaultScreenConfig.scanConfigurations;
+    }
+
+    this.writeScreenConfiguration(newScreenConfiguration, undefined, true, callback);
+  }
+
   loadScreenConfigurationFromScan(scanId: string) {
     this.fetchScreenConfiguration("", scanId, true);
   }
 
-  writeScreenConfiguration(screenConfiguration: ScreenConfiguration, scanId: string = "") {
+  writeScreenConfiguration(
+    screenConfiguration: ScreenConfiguration,
+    scanId: string = "",
+    setActive: boolean = false,
+    callback: (screenConfig: ScreenConfiguration) => void = () => {}
+  ) {
     if (!screenConfiguration || screenConfiguration.layouts.length === 0) {
       return;
     }
 
-    let updateId = this.activeScreenConfigurationId$.value;
-    if (!updateId && screenConfiguration.id !== updateId) {
-      // Update the active screen configuration ID
-      this.activeScreenConfigurationId$.next(screenConfiguration.id);
-      this.cacheScreenConfigurationId(screenConfiguration.id);
-      updateId = screenConfiguration.id;
-    }
+    this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe({
+      next: res => {
+        if (res.screenConfiguration) {
+          if (this.activeScreenConfigurationId$.value === res.screenConfiguration.id || setActive) {
+            this.activeScreenConfiguration$.next(res.screenConfiguration);
+          }
 
-    screenConfiguration.id = updateId;
+          if (setActive) {
+            this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
+            this.cacheScreenConfigurationId(res.screenConfiguration.id);
+          }
 
-    this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe(res => {
-      if (res.screenConfiguration) {
-        this.activeScreenConfiguration$.next(res.screenConfiguration);
+          callback(res.screenConfiguration);
 
-        // Store the screen configuration
-        this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
-      }
+          // Store the screen configuration
+          this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+        }
+      },
+      error: err => {
+        this._snackService.openError("Error saving workspace!", err);
+      },
     });
   }
 
-  deleteScreenConfiguration(id: string) {
+  deleteScreenConfiguration(id: string, callback: () => void = () => {}) {
     this._dataService.sendScreenConfigurationDeleteRequest({ id }).subscribe(res => {
       if (res.id) {
         this.screenConfigurations$.value.delete(id);
@@ -275,6 +456,8 @@ export class AnalysisLayoutService implements OnDestroy {
           this.cacheScreenConfigurationId("");
           this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
         }
+
+        callback();
       }
     });
   }
@@ -369,11 +552,18 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   get defaultScanId(): string {
-    return this._route?.snapshot?.queryParams[EditorConfig.scanIdParam] || "";
+    let scanId = this._route?.snapshot?.queryParams[EditorConfig.scanIdParam];
+
+    let scanConfigs = this.activeScreenConfiguration$.value?.scanConfigurations;
+    if (!scanId && scanConfigs && Object.keys(scanConfigs).length > 0) {
+      scanId = Object.keys(scanConfigs)[0];
+    }
+
+    return scanId || "";
   }
 
   makeExpressionList(scanId: string, count: number, scanQuantId: string = ""): Observable<DefaultExpressions> {
-    if (scanId.length > 0) {
+    if (scanId && scanId.length > 0) {
       // If there's a quant, use elements from that, otherwise use pseudo-intensities (if they exist)
       const quantId = scanQuantId || this.getQuantIdForScan(scanId);
       if (quantId.length <= 0) {
@@ -428,5 +618,146 @@ export class AnalysisLayoutService implements OnDestroy {
 
   getLoadedQuant(scanId: string, quantId: string): QuantificationSummary | undefined {
     return this.availableScanQuants$.value[scanId]?.find(quant => quant.id === quantId);
+  }
+
+  getLoadedROIIDsFromActiveScreenConfiguration(): string[] {
+    let rois: string[] = [];
+
+    this.activeScreenConfiguration$.value?.layouts.forEach(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          if (widgetData?.visibleROIs) {
+            let visibleROIs = widgetData.visibleROIs as VisibleROI[];
+            visibleROIs.forEach(roi => {
+              rois.push(roi.id);
+            });
+          }
+
+          if (widgetData?.roi) {
+            rois.push(widgetData.roi);
+          }
+
+          if (widgetData?.roiLayers) {
+            let roiLayers = widgetData.roiLayers as ROILayerVisibility[];
+            roiLayers.forEach(roiLayer => {
+              rois.push(roiLayer.id);
+            });
+          }
+
+          if (widgetData?.roiIds) {
+            let roiIds = widgetData.roiIds as string[];
+            roiIds.forEach(roiId => {
+              rois.push(roiId);
+            });
+          }
+
+          if (widgetData?.spectrumLines) {
+            let spectrumLines = widgetData.spectrumLines as SpectrumLines[];
+            spectrumLines.forEach(spectrumLines => {
+              rois.push(spectrumLines.roiID);
+            });
+          }
+        }
+      });
+    });
+
+    rois = rois.filter((roi, i) => !PredefinedROIID.isPredefined(roi));
+    rois = Array.from(new Set(rois));
+
+    return rois;
+  }
+
+  getLoadedExpressionIDsFromActiveScreenConfiguration(): string[] {
+    let expressionIds: string[] = [];
+
+    this.activeScreenConfiguration$.value?.layouts.forEach(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          console.log(widgetData, widget.type, widgetKey, widgetData?.expressionIDs);
+
+          if (widgetData?.expressionIDs) {
+            widgetData.expressionIDs.forEach((expressionId: string) => {
+              expressionIds.push(expressionId);
+            });
+          }
+
+          if (widgetData?.mapLayers) {
+            let mapLayers = widgetData.mapLayers as MapLayerVisibility[];
+            mapLayers.forEach(mapLayer => {
+              expressionIds.push(mapLayer.expressionID);
+            });
+          }
+        }
+      });
+    });
+    expressionIds = expressionIds.filter((expressionId, i) => !DataExpressionId.isPredefinedExpression(expressionId));
+    expressionIds = Array.from(new Set(expressionIds));
+
+    return expressionIds;
+  }
+
+  getDefaultQuant(quants: QuantificationSummary[]): QuantificationSummary | null {
+    if (!quants || quants.length === 0) {
+      return null;
+    }
+
+    let importedQuants = quants.filter(quant => quant.params?.requestorUserId === "PIXLISEImport");
+
+    // Find auto quant A/B (PIXL), if no A/B, find combined (PIXL), if no combined, find PDS (A/B then Combined),
+    // if no PDS, find any (A/B first, then Combined), if none, don't add quant
+    const quantPriorities = ["AutoQuant-PIXL (AB)", "AutoQuant-PIXL (Combined)", "AutoQuant-PDS (AB)", "AutoQuant-PDS (Combined)"];
+    for (let quantName of quantPriorities) {
+      let foundQuant = importedQuants.find(quant => quant.params?.userParams?.name === quantName);
+      if (foundQuant) {
+        return foundQuant;
+      }
+    }
+
+    if (importedQuants.length > 0) {
+      return importedQuants[0];
+    }
+
+    let abQuant = quants.find(quant => quant.params?.userParams?.quantMode === "AB");
+    return abQuant || quants[0] || null;
+  }
+
+  getDefaultQuantForScan(scanId: string): Observable<QuantificationSummary | null> {
+    let quants = this.availableScanQuants$.value[scanId];
+    if (!quants || quants.length === 0) {
+      return this.fetchQuantsForScanAsync(scanId).pipe(map(quants => this.getDefaultQuant(quants)));
+    } else {
+      return of(this.getDefaultQuant(quants));
+    }
+  }
+
+  getLoadedQuantificationIDsFromActiveScreenConfiguration(): string[] {
+    let quantificationIDs: string[] = [];
+
+    if (!this.activeScreenConfiguration$.value?.scanConfigurations) {
+      return [];
+    }
+
+    for (const scanId in this.activeScreenConfiguration$.value.scanConfigurations) {
+      const quantId = this.activeScreenConfiguration$.value.scanConfigurations[scanId].quantId;
+      if (quantId) {
+        quantificationIDs.push(quantId);
+      }
+    }
+
+    return quantificationIDs;
   }
 }

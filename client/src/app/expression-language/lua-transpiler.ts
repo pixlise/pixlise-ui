@@ -35,25 +35,7 @@ import { SentryHelper } from "../utils/utils";
 export class LuaTranspiler {
   private _runningExpression: string = "";
   private _variableLookupIsMap: Map<string, boolean> = new Map<string, boolean>();
-  private _mapLibFuncs = [
-    "pow",
-    "over",
-    "min",
-    "max",
-    "under",
-    "under_undef",
-    "over",
-    "over_undef",
-    "avg",
-    "ln",
-    "exp",
-    "sin",
-    "cos",
-    "tan",
-    "asin",
-    "acos",
-    "atan",
-  ];
+  private _mapLibFuncs = ["pow", "over", "min", "max", "under", "under_undef", "over", "over_undef", "avg", "ln", "exp", "sin", "cos", "tan", "asin", "acos", "atan"];
 
   public static builtinFunctions = [
     "element",
@@ -67,6 +49,7 @@ export class LuaTranspiler {
     "roughness",
     "position",
     "makeMap",
+    "getVariogramInputs",
   ];
   private _mapReturningFuncs = LuaTranspiler.builtinFunctions;
 

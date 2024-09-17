@@ -29,22 +29,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<!-- <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
-        <push-button (onClick)="onMinerals($event)" title="Choose mineral areas to display" class="minerals-btn">Minerals</push-button>
-        <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display" class="regions-btn">Regions</push-button>
-        <icon-button
-            class="export-btn"
-            (click)="onExport()"
-            title="Export"
-            icon="assets/button-icons/export.svg">
-        </icon-button>
-        <push-button (onClick)="toggleKey()" title="Toggle Key" class="key-btn">Key</push-button>
-        <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
-            <icon-button title='Show Settings Menu' icon="assets/button-icons/settings.svg">
-            </icon-button>
-        </widget-settings-menu>
-    </div> -->
-
 <ng-template #settingsMenu>
   <div class="dimensions" *ngIf="dimensions">
     <div class="axis-toggle-container-mini">
@@ -72,18 +56,45 @@ POSSIBILITY OF SUCH DAMAGE.
 </ng-template>
 
 <div class="panel outer-panel">
-  <div style="width: 100%; height: 100%; background: black; position: relative">
-    <div style="width: 100%; height: calc(100% - 10px)" class="{{ plotID }} pcp-plot">
+  <div class="widget-container">
+    <div class="{{ plotID }} pcp-plot">
+      <div class="x-axis-top">
+        <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
+          <div class="tick"></div>
+          <div *ngIf="tick.visible || i === 0 || i === axisTicks.length - 1" class="tick-label">{{ tick.value | number: "1.0-3" }} nm</div>
+        </div>
+      </div>
+      <div class="x-axis-btm">
+        <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
+          <div class="tick"></div>
+        </div>
+      </div>
+      <div class="y-scale">
+        <div class="tick-container top">
+          <div class="tick"></div>
+          <div class="tick-label">{{ yScale.max | number: "1.0-2" }}</div>
+        </div>
+        <div class="axis-line"></div>
+        <div class="tick-container bottom">
+          <div class="tick"></div>
+          <div class="tick-label">{{ yScale.min | number: "1.0-2" }}</div>
+        </div>
+      </div>
       <div class="axes">
-        <div *ngFor="let axis of visibleAxes" class="axis-container">
-          <div class="axis-title">{{ miniMode ? axis.key.toUpperCase() : axis.title }}</div>
+        <div
+          *ngFor="let axis of visibleAxes; let i = index"
+          class="axis-container"
+          [ngStyle]="{ left: 'calc(' + getXAxisDistance(axis.wavelength, i) + '% - 10px)' }">
           <div class="tick-container">
             <div class="tick"></div>
-            <div class="tick-label">{{ axis.max | number: "1.0-2" }}</div>
           </div>
           <div class="axis-line">
             <div class="point-container">
-              <div *ngFor="let point of data" class="point-tick-container" [style.top]="getFormattedValueAsPercentage(point, axis)">
+              <div
+                *ngFor="let point of data"
+                class="point-tick-container"
+                [style.top]="getValueOnPlot(point, axis) + 'px'"
+                [style.visibility]="point.visible ? 'visible' : 'hidden'">
                 <div class="inner-tick"></div>
                 <div class="inner-point" style.background="rgb({{ point.color }})" #tooltip="matTooltip" [matTooltip]="point.tooltipText"></div>
                 <div *ngIf="showLabels" class="tick-label">{{ point.getValue(axis.key) | number: "1.0-2" }}</div>
@@ -93,32 +104,25 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
           <div class="tick-container">
             <div class="tick"></div>
-            <div class="tick-label">{{ axis.min | number: "1.0-2" }}</div>
+          </div>
+          <div class="axis-title">
+            {{ miniMode ? axis.shortName.toUpperCase() : axis.title }}
+            <span *ngIf="axis.wavelength" class="wavelength">{{ axis.wavelength }} nm</span>
           </div>
         </div>
       </div>
-      <svg width="100%" height="calc(100% - 14px - 12px - 12px)" class="line-container" *ngIf="showLines">
-        <g *ngFor="let point of data">
-          <line
+      <svg width="100%" class="line-container" *ngIf="showLines">
+        <g *ngFor="let point of data" [style.visibility]="point.visible ? 'visible' : 'hidden'">
+          <path
             *ngFor="let line of point.lines"
-            #tooltip="matTooltip"
-            [matTooltip]="point.tooltipText"
-            [attr.x1]="line.xStart"
-            [attr.y1]="line.yStart"
-            [attr.x2]="line.xEnd"
-            [attr.y2]="line.yEnd"
+            [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
             attr.stroke="rgb({{ point.color }})"
-            stroke-width="3px" />
+            stroke-width="2"
+            stroke-linecap="round"
+            fill="none" />
+          <polygon *ngFor="let line of point.sigmaLines" [attr.points]="getPolygonPoints(line)" attr.fill="rgba({{ point.color }}, 0.5)" />
         </g>
       </svg>
     </div>
   </div>
-  <!-- <widget-key-display 
-        *ngIf="keyShowing"
-        [keyShowing]="keyShowing"
-        (onToggleKey)="toggleKey()"
-        [items]="keyItems"
-        class="key-location-top-right-below-title"
-    >
-    </widget-key-display> -->
 </div>

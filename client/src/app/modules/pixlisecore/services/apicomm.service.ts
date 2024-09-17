@@ -22,13 +22,14 @@ import { Router } from "@angular/router";
 })
 export class APICommService implements OnDestroy {
   connection$: WebSocketSubject<any> | null = null;
-  WS_RETRY_ATTEMPTS = 30;
+  WS_RETRY_ATTEMPTS = 100;
   WS_RETRY_DELAY_MS = 5000;
 
   private _id = randomString(6);
 
-  public hasDisconnected = false;
-  public initialised = false;
+  public isConnected = false;
+
+  private _connectTime: number = 0;
 
   constructor(
     private http: HttpClient,
@@ -56,15 +57,13 @@ export class APICommService implements OnDestroy {
       return;
     } else {
       if (isFirefox(navigator?.userAgent || "")) {
-        this._snackService.openError(
-          "Please use Chrome. Firefox browser is currently not supported.",
-          "Firefox currently has issues with login, and has much slower context image rendering than Chrome."
+        this._snackService.openWarning(
+          "Please use Chrome - PIXLISE will run slower in Firefox",
+          "Firefox currently has much slower context image rendering than Chrome variants."
         );
         return;
       }
     }
-
-    this.initialised = true;
   }
 
   ngOnDestroy() {
@@ -92,7 +91,7 @@ export class APICommService implements OnDestroy {
           );
         }
 
-        this.hasDisconnected = true;
+        this.isConnected = false;
         throw err;
       })
     );
@@ -159,12 +158,13 @@ export class APICommService implements OnDestroy {
           },
           openObserver: {
             next: () => {
+              this._connectTime = performance.now();
               console.log(`APICommService [${this._id}] beginConnect: CONNECTED`);
 
               // Only show the connected message if we have previously disconnected
-              if (this.hasDisconnected) {
+              if (!this.isConnected) {
                 this._snackService.openSuccess(`Connected to PIXLISE server!`);
-                this.hasDisconnected = false;
+                this.isConnected = true;
               }
               connectEvent();
             },
@@ -178,28 +178,31 @@ export class APICommService implements OnDestroy {
               console.log(`APICommService [${this._id}] beginConnect: Websocket Closed. Close event:`);
               console.log(closeEvent);
 
+              const connTime = this._connectTime - performance.now();
+              const connTimeStr = connTime > 0 ? `after ${(connTime / 1000).toLocaleString()}sec` : "";
+
               this._snackService.openError(
-                `Disconnected from PIXLISE server (error code: ${closeEvent.code}). Refresh this page to reconnect!`,
+                `Disconnected from PIXLISE server ${connTimeStr} (error code: ${closeEvent.code}). Refresh this page to reconnect!`,
                 "Check your internet connection. You may need to log in again."
               );
 
-              this.hasDisconnected = true;
+              this.isConnected = false;
               this.connection$ = null;
               //this.connect({ reconnect: true });
             },
             error: err => {
-              this.hasDisconnected = true;
+              this.isConnected = false;
               console.error("APICommService: Close error\n", err);
             },
           },
           closingObserver: {
             next: () => {
               console.log(`APICommService [${this._id}] beginConnect: Websocket closing...`);
-              this.hasDisconnected = true;
+              this.isConnected = false;
             },
             error: err => {
               console.error("APICommService: Closing error\n", err);
-              this.hasDisconnected = true;
+              this.isConnected = false;
             },
           },
         });
@@ -217,7 +220,7 @@ export class APICommService implements OnDestroy {
     }
 
     // For verbose debugging purposes...
-    console.log("Sending: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
+    console.log("-->Send: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
     this.connection$.next(wsmsg);
   }
 

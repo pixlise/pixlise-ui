@@ -29,41 +29,21 @@
 
 @import 'variables.scss';
 
-.img-list {
-    max-height: 200px;
-    overflow-y: auto;
-    background-color: $clr-gray-80;
-    color: $clr-gray-30;
-    font-family: monospace;
-    white-space: nowrap;
-}
-
-.img-item {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-
-    padding: $sz-unit $sz-double $sz-unit $sz-unit;
-    &:hover {
-        background-color: $clr-gray-70;
-    }
-}
-
-.img-item-selected {
-    color: $clr-yellow;
-}
-
-.selectable {
-    user-select: text;
-}
 
 .dropdown-line {
     display: flex;
     flex-direction: row;
-    flex-grow: 1;
     justify-content: space-between;
+    align-items: center;
 
+    padding: $sz-qtr $sz-half;
+    border-radius: $sz-unit;
+
+    color: $clr-gray-20;
+    background-color: $clr-gray-100;
+    
     overflow: hidden;
+    gap: $sz-unit;
 
     .txt {
         display: flex;
@@ -74,7 +54,23 @@
         text-overflow: ellipsis;
     }
 
-    span {
-        padding: 0px 4px 0px 8px;
+    .error {
+        display: flex;
+        flex: 1 1 0%;
+
+        color: red;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    svg {
+        position: relative;
+
+        .downarrow {
+            fill: currentColor;
+            color: rgba(255, 255, 255, 0.54);
+        }
     }
 }

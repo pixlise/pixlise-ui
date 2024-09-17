@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div *ngIf="item" class="left-container">
     <div class="left-naming">
       <span title="Id: {{ item.id }}">{{ item.name }}</span>
-      <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{ createdTime | date: "medium" }}</span>
+      <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{ createdTime | date: "d MMM y, HH:mm:ss" }}</span>
       <span *ngIf="shared && item.owner && item.owner?.creatorUser" class="obj-creator">By: {{ item.owner?.creatorUser?.name || "" }}</span>
     </div>
     <div class="elements">

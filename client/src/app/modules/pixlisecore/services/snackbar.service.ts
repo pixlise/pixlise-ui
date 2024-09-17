@@ -44,13 +44,13 @@ export class SnackbarService {
     this._localStorageService.addEventHistoryItem({ message, details, action, type, timestamp: Date.now() });
   }
 
-  openWarning(message: string, details: string = "", action: string = ""): void {
+  openWarning(message: string, details: string = "", action: string = "", autoClose: boolean = true): void {
     this.addMessageToHistory(message, details, action, "warning");
     this._snackBar.openFromComponent(SnackBarPopupComponent, {
       data: { message, details, action, type: "warning" },
       horizontalPosition: "left",
       panelClass: ["pixlise-warn"],
-      duration: 5000,
+      duration: autoClose ? 5000 : undefined,
     });
   }
 

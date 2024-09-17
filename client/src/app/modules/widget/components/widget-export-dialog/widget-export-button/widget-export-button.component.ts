@@ -73,10 +73,15 @@ export class WidgetExportButtonComponent {
     if (this.option?.selectedExpressions) {
       this.selectedExpressions = this.option.selectedExpressions;
     }
+    if (this.option?.selected && this.option?.subOptions && this.option.subOptions.length > 0) {
+      this.accordionOpen = this.option.selected;
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes["option"] && changes["option"].currentValue) {
+      this.selectedRegions = [];
+      this.selectedExpressions = [];
       this.option = changes["option"].currentValue;
       if (!this.option) {
         return;
@@ -184,7 +189,7 @@ export class WidgetExportButtonComponent {
       scanId: this.option?.scanId,
       quantId: this.option?.quantId,
       selectedIds: this.selectedExpressions.map(exp => exp.id),
-      disableExpressionGroups: true,
+      disableExpressionGroups: false,
       disableWidgetSwitching: true,
     };
 

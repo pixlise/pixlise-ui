@@ -28,19 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Input, OnInit } from "@angular/core";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { first } from "rxjs/operators";
-// import { AuthenticationService } from "src/app/services/authentication.service";
-// import { NotificationService } from "src/app/services/notification.service";
-// import { ViewStateCollectionItem, ViewStateService } from "src/app/services/view-state.service";
-// import {
-//   UserPromptDialogComponent,
-//   UserPromptDialogDropdownItem,
-//   UserPromptDialogParams,
-//   UserPromptDialogResult,
-//   UserPromptDialogStringItem,
-// } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 
 // Primarily exists so we can remove the use of these services from the main toolbar, and they are only used when the toolbar
 // needs these items shown. For example, this way we don't instantiate a view state service before loading a dataset

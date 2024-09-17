@@ -4,7 +4,6 @@ import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { AnalysisPageComponent } from "./pages/analysis-page/analysis-page.component";
 import { RouterModule, Routes } from "@angular/router";
 import { AnalysisSidepanelComponent } from "./components/analysis-sidepanel/analysis-sidepanel.component";
-import { AnalysisLayoutService } from "./services/analysis-layout.service";
 import { ROITabComponent } from "./components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { ROIModule } from "../roi/roi.module";
 import { MistROIComponent } from "./components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
@@ -15,7 +14,6 @@ import { TagsModule } from "../tags/tags.module";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ExpressionModule } from "../expressions/expressions.module";
 import { WidgetModule } from "../widget/widget.module";
-import { ScanConfigurationDialog } from "./components/scan-configuration-dialog/scan-configuration-dialog.component";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ReactiveFormsModule } from "@angular/forms";
@@ -28,11 +26,15 @@ import { ScanConfigurationTabComponent } from "src/app/modules/analysis/componen
 import { ScanConfigurationItemComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration-item/scan-configuration-item.component";
 import { DiffractionTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/diffraction.component";
 import { MultiQuantComponent } from "./components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
+import { ZStackComponent } from "./components/analysis-sidepanel/tabs/multi-quant/zstack/zstack.component";
+import { ZStackItemComponent } from "./components/analysis-sidepanel/tabs/multi-quant/zstack/zstack-item/zstack-item.component";
 import { SelectionComponent } from "./components/analysis-sidepanel/tabs/selection/selection.component";
 import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
 import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
+import { WorkspaceConfigurationTabComponent } from "./components/analysis-sidepanel/tabs/workspace-configuration/workspace-configuration.component";
+import { MarkdownModule } from "ngx-markdown";
+import { NewTabPageComponent } from "./pages/new-tab-page/new-tab-page.component";
 
-// export { ContextImageDataService } from "./services/context-image-data.service";
 export { DataExporterService } from "./services/exporter.service";
 export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
@@ -41,24 +43,31 @@ const APP_ROUTES: Routes = [
     path: "",
     component: AnalysisPageComponent,
   },
+  {
+    path: "new",
+    component: NewTabPageComponent,
+  },
 ];
 
 @NgModule({
   declarations: [
     AnalysisPageComponent,
+    NewTabPageComponent,
     AnalysisSidepanelComponent,
     ROITabComponent,
     MistROIComponent,
     MistRoiConvertComponent,
     MistRoiUploadComponent,
-    ScanConfigurationDialog,
     ScanConfigurationTabComponent,
     ScanConfigurationItemComponent,
     DiffractionTabComponent,
     RoughnessComponent,
     MultiQuantComponent,
+    ZStackComponent,
+    ZStackItemComponent,
     SelectionComponent,
     ExportTabComponent,
+    WorkspaceConfigurationTabComponent,
   ],
   imports: [
     CommonModule,
@@ -78,8 +87,9 @@ const APP_ROUTES: Routes = [
     MatCheckboxModule,
     MatButtonModule,
     MatMenuModule,
+    MarkdownModule,
   ],
-  exports: [AnalysisPageComponent, ScanConfigurationDialog, AnalysisSidepanelComponent],
+  exports: [AnalysisPageComponent, NewTabPageComponent, AnalysisSidepanelComponent],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
 })
 export class AnalysisModule {}

@@ -29,32 +29,84 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div *ngIf="keyShowing" class="dlg-border-no-backdrop key-display">
-  <div class="title unit-padding">
-    <div class="txt-dlg-heading">KEY</div>
+<div *ngIf="keyShowing" class="dlg-border-no-backdrop key-display {{ maxKey ? 'max-key' : '' }}">
+  <div class="title unit-padding key-header">
+    <div class="txt-dlg-heading label">KEY</div>
+    <span class="max-key-toggle">
+      <push-button
+        *ngIf="showExpandButton"
+        (onClick)="onToggleMaxKey()"
+        buttonStyle="outline-small"
+        [matTooltip]="maxKey ? 'Minimize key' : 'Maximize key'"
+        [matTooltipDisabled]="false">
+        {{ maxKey ? "Collapse" : "Expand" }}
+      </push-button>
+    </span>
     <img class="clickable" src="assets/button-icons/close-cross.svg" (click)="onToggleShowKey()" />
   </div>
   <div class="key-items">
-    <div *ngFor="let item of items" class="key-item">
-      <div *ngIf="item.dashPattern !== null" class="dash-pattern">
-        <svg width="58" height="12" xmlns="http://www.w3.org/2000/svg">
-          <line [attr.stroke-dasharray]="item.dashPattern" x1="0" y1="6" x2="50" y2="6" stroke-width="2" style="stroke: {{ item.colour }}"></line>
-        </svg>
-      </div>
+    <div class="key-item-group" *ngFor="let group of groupedItems">
       <div
-        *ngIf="item.dashPattern === null"
+        *ngIf="group.title"
+        class="key-group-header"
         #tooltip="matTooltip"
-        [matTooltip]="getLabel(item)"
-        [matTooltipDisabled]="getLabel(item).length <= 15"
-        class="main-label"
-        [ngClass]="{ 'main-label-clickable': item.id.length > 0 }"
-        [style]="{ color: item.colour }"
-        (click)="onClickLabel(item.id)"
-        [title]="item.id.length > 0 ? 'Bring to front' : ''">
-        <roi-shape [scale]="1.5" [color]="item.colour" [shape]="item.shape"></roi-shape>
-        {{ getTruncatedLabel(item) }}
+        [matTooltip]="group.title"
+        [matTooltipDisabled]="group.title.length <= maxTitleCharacters">
+        <action-button (onClick)="onToggleGroupVisibility(group, $event)" [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
+        <span
+          (click)="onToggleGroupVisibility(group, $event)"
+          class="key-group-title {{ group.isVisible ? '' : 'region-hidden' }}"
+          [ngStyle]="{ color: group.colour, 'max-width': maxTitleCharacters + 'ch' }"
+          >{{ group.title }}</span
+        >
+        <action-button
+          *ngIf="!maxKey"
+          (onClick)="group.isOpen = !group.isOpen"
+          [action]="group.isOpen || maxKey ? 'closeAccordion' : 'openAccordion'"></action-button>
       </div>
-      <div *ngIf="item.dashPattern !== null" class="dash-label">{{ getTruncatedLabel(item) }}</div>
+      <div *ngIf="!group.title || group.isOpen || maxKey" class="item-container">
+        <div *ngFor="let item of group.items" class="key-item">
+          <action-button
+            *ngIf="item.isToggleable"
+            (onClick)="onToggleItemVisibility(item, group, $event)"
+            [action]="item.isVisible ? 'checkOn' : 'checkOff'"></action-button>
+          <div *ngIf="item.dashPattern !== null" class="dash-pattern">
+            <svg width="58" height="12" xmlns="http://www.w3.org/2000/svg">
+              <line [attr.stroke-dasharray]="item.dashPattern" x1="0" y1="6" x2="50" y2="6" stroke-width="2" [style]="'stroke: ' + item.colour"></line>
+            </svg>
+          </div>
+          <div
+            *ngIf="item.dashPattern === null"
+            #tooltip="matTooltip"
+            [matTooltip]="getLabel(item)"
+            [matTooltipDisabled]="getLabel(item).length <= maxTitleCharacters"
+            class="main-label {{ item.isVisible ? '' : 'region-hidden' }} {{ isItemOnTop(item) ? 'top-layer' : '' }}"
+            [ngClass]="{ 'main-label-clickable': item.id.length > 0 && item.canBeReordered }"
+            [style]="{ color: item.colour }"
+            (click)="onClickLabel(item, $event)"
+            [title]="item.id.length > 0 ? 'Bring to front' : ''">
+            <roi-shape [scale]="1.5" [color]="item.colour" [shape]="item.shape"></roi-shape>
+            <span
+              class="key-label"
+              [ngStyle]="{
+                'max-width': maxTitleCharacters + 'ch',
+                'text-shadow': isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
+              }"
+              >{{ item.label }}</span
+            >
+          </div>
+          <div *ngIf="item.dashPattern !== null" class="dash-label" (click)="onClickLabel(item, $event)">
+            <span
+              class="key-label"
+              [ngStyle]="{
+                'max-width': maxTitleCharacters + 'ch',
+                'text-shadow': isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
+              }"
+              >{{ item.label }}</span
+            >
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <ng-content></ng-content>

@@ -31,4 +31,5 @@ export class TabSelectors {
   public static readonly tabBrowseOnChart: string = "browse-on-chart";
   public static readonly tabElementSets: string = "element-sets";
   public static readonly tabPeriodicTable: string = "spectrum-periodic-table-picker";
+  public static readonly tabQuantJobs: string = "quant-jobs";
 }

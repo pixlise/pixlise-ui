@@ -13,7 +13,7 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, map, of, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
@@ -72,9 +72,25 @@ export class ROIService {
   ) {
     this.listROIs();
 
-    // this._selectionService.selection$.subscribe(selection => {
-    //   this.generateSelectionROI(selection);
-    // });
+    combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$]).subscribe({
+      next: ([screenConfig, scans]) => {
+        this._allScans = scans;
+
+        this._allScans.forEach(scan => {
+          let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
+          if (this._regionMap.get(allPointsROI) !== undefined) {
+            this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
+              let settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
+              let scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
+              let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+              settings.displaySettings.colour = scanRGBA;
+
+              this._regionMap.set(allPointsROI, of(settings));
+            });
+          }
+        });
+      },
+    });
 
     this._analysisLayoutService.availableScans$.subscribe(scans => {
       this._allScans = scans;
@@ -192,7 +208,9 @@ export class ROIService {
             if (allPointsROI) {
               this.roiItems$.value[allPointsROI.id] = allPointsROI;
               this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
-              this.displaySettingsMap$.value[allPointsROI.id] = { colour: Colours.GRAY_10, shape: DEFAULT_ROI_SHAPE };
+              let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+              let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+              this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
               this.roiItems$.next(this.roiItems$.value);
               this.displaySettingsMap$.next(this.displaySettingsMap$.value);
 
@@ -268,6 +286,21 @@ export class ROIService {
     return of(createDefaultSelectedPointsRegionSettings(scanId, DEFAULT_ROI_SHAPE));
   }
 
+  getScanIdsFromROIs(roiIds: string[]): Observable<string[]> {
+    let roiRequests = roiIds.map(roiId => {
+      if (PredefinedROIID.isPredefined(roiId)) {
+        return of(PredefinedROIID.getScanIdIfPredefined(roiId));
+      }
+
+      return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }));
+    });
+    return combineLatest(roiRequests).pipe(
+      map(roiResponses => {
+        return roiResponses.map(roiResp => (typeof roiResp === "string" ? roiResp : roiResp.regionOfInterest?.scanId || ""));
+      })
+    );
+  }
+
   getRegionSettings(roiId: string): Observable<RegionSettings> {
     // Now we check if we can service locally from our  map
     let result = this._regionMap.get(roiId);
@@ -340,9 +373,24 @@ export class ROIService {
   }
 
   updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
-    // Delete from region map so we can re-fetch it with the new settings next time
-    this._regionMap.delete(roiId);
-    this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
+    // if is all points, update the scan colour
+    if (PredefinedROIID.isAllPointsROI(roiId)) {
+      let scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+
+      let scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      if (!scanConfiguration) {
+        this._snackBarService.openError(`Scan configuration not found for scan ID: ${scanId}`);
+        return;
+      }
+      scanConfiguration.colour = colour.asString();
+      this.displaySettingsMap$.value[roiId] = { colour, shape };
+      this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+      this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value);
+    } else {
+      // Delete from region map so we can re-fetch it with the new settings next time
+      this._regionMap.delete(roiId);
+      this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
+    }
   }
 
   getRegionDisplaySettings(roiId: string): ROIDisplaySettings {
@@ -361,12 +409,38 @@ export class ROIService {
   private createDefaultScanRegionsIfNeeded(scanId: string) {
     // Add defaults for predefined ROIs
     const allPointsROI = PredefinedROIID.getAllPointsForScan(scanId);
+    let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+    let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+
     if (this._regionMap.get(allPointsROI) === undefined) {
       // Must be new, add them
       const scanDisp = this.nextDisplaySettings(scanId);
       let scanName = this._allScans.find(scan => scan.id === scanId)?.title;
-      this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(createDefaultAllPointsRegionSettings(scanId, scanDisp.shape, scanName)));
+      let regionSettings = createDefaultAllPointsRegionSettings(scanId, scanDisp.shape, scanName);
+      regionSettings.displaySettings.colour = scanRGBA;
+
+      this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(regionSettings));
     }
+
+    // Make sure the colour is up to date
+    this._analysisLayoutService.activeScreenConfiguration$.subscribe({
+      next: screenConfig => {
+        if (screenConfig?.scanConfigurations?.[scanId]?.colour !== scanRGBA.asString()) {
+          let scanColour = screenConfig?.scanConfigurations?.[scanId]?.colour;
+          let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+
+          let regionSettings = this._regionMap.get(allPointsROI);
+          if (regionSettings) {
+            regionSettings.subscribe({
+              next: settings => {
+                settings.displaySettings.colour = scanRGBA;
+                this._regionMap.set(allPointsROI, of(settings));
+              },
+            });
+          }
+        }
+      },
+    });
 
     const selectedPointsROI = PredefinedROIID.getSelectedPointsForScan(scanId);
     if (this._regionMap.get(selectedPointsROI) === undefined) {
@@ -411,7 +485,9 @@ export class ROIService {
           if (allPointsROI) {
             this.roiItems$.value[allPointsROI.id] = allPointsROI;
             this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
-            this.displaySettingsMap$.value[allPointsROI.id] = { colour: Colours.GRAY_10, shape: DEFAULT_ROI_SHAPE };
+            let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+            let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+            this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
             this.roiItems$.next(this.roiItems$.value);
             this.displaySettingsMap$.next(this.displaySettingsMap$.value);
           }
@@ -546,6 +622,9 @@ export class ROIService {
 
     if (roiToWrite.pixelIndexesEncoded && roiToWrite.pixelIndexesEncoded.length > 0) {
       roiToWrite.pixelIndexesEncoded = encodeIndexList(roiToWrite.pixelIndexesEncoded);
+    } else {
+      // No pixels selected, so no need to send an image name
+      roiToWrite.imageName = "";
     }
 
     this._dataService

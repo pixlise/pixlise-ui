@@ -42,7 +42,13 @@ POSSIBILITY OF SUCH DAMAGE.
     <img *ngIf="user !== null" class="user-icon" src="{{ user.info?.iconURL }}" />
   </section>
   <section class="buttons">
-    <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Groups</push-button>
+    <ng-container *ngIf="isPIXLISEAdmin">
+      <wait-spinner *ngIf="impersonateUserEnabled && impersonatingUserName === undefined">Loading Impersonation Setting</wait-spinner>
+      <push-button *ngIf="impersonateUserEnabled" buttonStyle="yellow" (onClick)="onImpersonate()">{{impersonatingUserName ? "Stop Impersonating: "+impersonatingUserName : "Impersonate User..."}}</push-button>
+      <push-button *ngIf="backupEnabled" buttonStyle="hover-yellow" (onClick)="onBackupData()">Backup Data</push-button>
+      <push-button *ngIf="restoreEnabled" buttonStyle="hover-yellow" (onClick)="onRestoreData()">Restore Data</push-button>
+    </ng-container>
+    <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
     <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
     <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
   </section>

@@ -14,6 +14,7 @@ import { getAnomalyExpressions, getPredefinedExpression } from "src/app/expressi
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
+import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 
 @Component({
   selector: "expression-search-controls",
@@ -73,7 +74,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const quants = this._analysisLayoutService.availableScanQuants$.value?.[this.visibleScanId];
     if (this.visibleScanId && quants && quants.length > 0) {
-      this.selectedQuantId = quants[0].id;
+      //this.selectedQuantId = quants[0].id; <-- Took this out, at this point we don't know the selected quant id, so can't just show the first one in the list!
       this.filteredQuants = quants;
     } else {
       // this.selectedQuantId = "";
@@ -248,30 +249,47 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   loadQuantifiedExpressions(): void {
     this._quantifiedExpressions = [];
 
-    let currentQuant = this.filteredQuants.find(quant => quant.id === this._selectedQuantId);
+    const currentQuant = this.filteredQuants.find(quant => quant.id === this._selectedQuantId);
     if (!currentQuant) {
       return;
     }
 
-    currentQuant.elements.forEach(quantElement => {
-      let quantMode = currentQuant?.params?.userParams?.quantMode || "";
-      let defaultDetector = quantMode;
-      if (defaultDetector.length > 0 && defaultDetector != "Combined") {
-        defaultDetector = defaultDetector.substring(0, 1);
-      }
+    const quantMode = currentQuant?.params?.userParams?.quantMode || "";
+    let defaultDetector = quantMode;
+    if (defaultDetector.length > 0 && defaultDetector != "Combined") {
+      defaultDetector = defaultDetector.substring(0, 1);
+    }
 
-      if (!this.selectedDetector) {
-        this.selectedDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
-      }
+    if (!this.selectedDetector) {
+      this.selectedDetector = defaultDetector.replace("Combined", "A&B") as "A" | "B" | "A&B";
+    }
 
-      let detector = this.selectedDetector.replace("A&B", "Combined");
+    const detector = this.selectedDetector.replace("A&B", "Combined");
 
+    const orderedElems = periodicTableDB.getElementsInAtomicNumberOrder(currentQuant.elements);
+    orderedElems.forEach(quantElement => {
       const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
       const expr = getPredefinedExpression(id);
       if (expr) {
         this._quantifiedExpressions.push(expr);
       }
     });
+
+    // Add unquantified and chisq
+    let unquantWtPctId = DataExpressionId.predefinedUnquantifiedPercentDataExpression;
+    if (detector.length > 0) {
+      unquantWtPctId += `(${detector})`;
+    }
+    const unquantWtPct = getPredefinedExpression(unquantWtPctId);
+    if (unquantWtPct) {
+      this._quantifiedExpressions.push(unquantWtPct);
+    }
+
+    const chisqId = DataExpressionId.makePredefinedQuantDataExpression("chisq", detector);
+    const chisqExpr = getPredefinedExpression(chisqId);
+    if (chisqExpr) {
+      this._quantifiedExpressions.push(chisqExpr);
+    }
 
     this.filterExpressionsForDisplay();
   }
@@ -368,7 +386,13 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.filteredExpressions = filteredExpressions.sort((a, b) => a.name.localeCompare(b.name));
+    // Only sort alphabetically if we're not looking at lists of elements/atomic numbers. They are pre-sorted!
+    if (this.expressionListType === this._et_QuantifiedElements || this.expressionListType === this._et_PseudoIntensities) {
+      this.filteredExpressions = filteredExpressions;
+    } else {
+      this.filteredExpressions = filteredExpressions.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     this.onFilterChanged.emit({
       scanId: this.visibleScanId,
       quantId: this.selectedQuantId,

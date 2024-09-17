@@ -19,9 +19,6 @@
         "@schematics/angular:guard": {
           "skipTests": true
         },
-        "@schematics/angular:module": {
-          "skipTests": true
-        },
         "@schematics/angular:pipe": {
           "skipTests": true
         },
@@ -55,6 +52,11 @@
               {
                 "glob": "**/*",
                 "input": "src/app/modules/public-site/assets",
+                "output": "assets"
+              },
+              {
+                "glob": "CHANGELOG.md",
+                "input": ".",
                 "output": "assets"
               },
               {
@@ -103,7 +105,10 @@
             ],
             "styles": [
               "src/scss/material-theme.scss",
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/prismjs/themes/prism-okaidia.css",
+              "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.css",
+              "node_modules/prismjs/plugins/line-highlight/prism-line-highlight.css"
             ],
             "stylePreprocessorOptions": {
               "includePaths": [
@@ -112,7 +117,13 @@
                 "./node_modules"
               ]
             },
-            "scripts": []
+            "scripts": [
+              "node_modules/prismjs/prism.js",
+              "node_modules/prismjs/components/prism-csharp.min.js",
+              "node_modules/prismjs/components/prism-css.min.js",
+              "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.js",
+              "node_modules/prismjs/plugins/line-highlight/prism-line-highlight.js"
+            ]
           },
           "configurations": {
             "production": {
@@ -184,6 +195,11 @@
                 "glob": "glue.wasm",
                 "input": "src/app/expression-language/lua",
                 "output": "assets/lua"
+              },
+              {
+                "glob": "CHANGELOG.md",
+                "input": ".",
+                "output": "/assets"
               },
               {
                 "glob": "Map.lua",

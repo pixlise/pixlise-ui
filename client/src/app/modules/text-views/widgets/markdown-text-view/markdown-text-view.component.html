@@ -1,0 +1,18 @@
+<div class="widget-area">
+    <div class="markdown-container" [style]="{height: widgetContentHeight+'px', width: widgetContentWidth+'px'}" *ngIf="!editMode">
+        <markdown
+            [lineOffset]="5"
+            [data]="content || '## Editable Text Panel'">
+        </markdown>
+    </div>
+    <textarea
+        *ngIf="editMode"
+        #descriptionEditMode
+        class="text-field"
+        type="text"
+        autocomplete="off"
+        data-lpignore="true"
+        placeholder="## Editable Text Panel"
+        [title]="markdownHelp"
+        [(ngModel)]="content"></textarea>
+</div>

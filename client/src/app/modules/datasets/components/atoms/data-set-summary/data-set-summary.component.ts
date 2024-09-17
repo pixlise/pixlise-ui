@@ -44,7 +44,9 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   @Input() summary: ScanItem | null = null;
   @Input() defaultImage: string | undefined = undefined;
   @Input() selected: ScanItem | null = null;
+  @Input() isMultiSelected: boolean = false;
   @Output() onSelect = new EventEmitter();
+  @Output() onCtrlSelect = new EventEmitter();
 
   private _title: string = "";
   private _missingData: string = "";
@@ -53,13 +55,17 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   constructor(private _endpointsService: APIEndpointsService) {}
 
   ngOnInit() {
-    if (!this.summary) {
+    this.generateTitle();
+  }
+
+  generateTitle(summary: ScanItem | null = this.summary) {
+    if (!summary) {
       return;
     }
 
     // Prepend SOL if it's there
     this._title = "";
-    const sol = this.summary.meta["Sol"] || "";
+    const sol = summary.meta["Sol"] || "";
     if (sol) {
       const testSOLAsDate = replaceAsDateIfTestSOL(sol);
       if (testSOLAsDate.length != sol.length) {
@@ -68,9 +74,9 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
         this._title += "SOL-" + sol + ": ";
       }
     }
-    this._title += this.summary.title;
+    this._title += summary.title;
 
-    const missing = ""; // TODO: DataSetSummary.listMissingData(this.summary);
+    const missing = ""; // TODO: DataSetSummary.listMissingData(summary);
     if (missing.length > 0) {
       this._missingData = "Missing: " + Array.from(missing).join(",");
     } else {
@@ -88,6 +94,10 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
       this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
         this._thumbnail = img.src;
       });
+    }
+
+    if (changes["summary"]) {
+      this.generateTitle(changes["summary"].currentValue);
     }
   }
 
@@ -126,6 +136,7 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
     if (!this.selected) {
       return false;
     }
+
     return this.selected?.id == this.summary?.id;
   }
 
@@ -215,7 +226,11 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
-    // Tell container we're clicked on
-    this.onSelect.emit(this.summary);
+    if (event.ctrlKey || event.metaKey) {
+      this.onCtrlSelect.emit(this.summary);
+    } else {
+      // Tell container we're clicked on
+      this.onSelect.emit(this.summary);
+    }
   }
 }

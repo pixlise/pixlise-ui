@@ -42,21 +42,31 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
       <div *ngIf="userQuants.length > 0" class="list-subheading">User Quantifications</div>
     </ng-container>
-    <quantification-item *ngFor="let quant of userQuants" [quantItem]="quant" [roiMatched]="isROIMatch(quant)" (onQuantSelected)="onSelectQuant(quant)">
-      <div *ngIf="showControlButtons" class="control-btns left-gap gap-separated-horizontal-elements" controlButtons>
+    <quantification-item
+      *ngFor="let quant of userQuants"
+      [quantItem]="quant"
+      [roiMatched]="isROIMatch(quant)"
+      (onQuantSelected)="onSelectQuant(quant)"
+      (onClearSelection)="onClearSelection()">
+      <!-- <div *ngIf="showControlButtons" class="control-btns left-gap gap-separated-horizontal-elements" controlButtons>
         <icon-button (click)="onShare(quant, $event)" title="Share quantification with other users" icon="assets/button-icons/share.svg"></icon-button>
         <icon-button *ngIf="canDelete(quant)" (click)="onDelete(quant, $event)" title="Delete quantification" icon="assets/button-icons/delete.svg"></icon-button>
         <icon-button *ngIf="canBless" (click)="onBless(quant, $event)" title="Bless quantification" icon="assets/button-icons/bless.svg"></icon-button>
         <icon-button *ngIf="canPublish" (click)="onPublish(quant, $event)" title="Publish quantification to PDS" icon="assets/button-icons/publish.svg"></icon-button>
-      </div>
+      </div> -->
     </quantification-item>
     <div *ngIf="sharedQuants.length > 0" class="list-subheading">Shared Quantifications</div>
-    <quantification-item *ngFor="let quant of sharedQuants" [quantItem]="quant" [roiMatched]="isROIMatch(quant)" (onQuantSelected)="onSelectQuant(quant)">
-      <div *ngIf="showControlButtons" class="shared-control-btns left-gap gap-separated-horizontal-elements" controlButtons>
+    <quantification-item
+      *ngFor="let quant of sharedQuants"
+      [quantItem]="quant"
+      [roiMatched]="isROIMatch(quant)"
+      (onQuantSelected)="onSelectQuant(quant)"
+      (onClearSelection)="onClearSelection()">
+      <!-- <div *ngIf="showControlButtons" class="shared-control-btns left-gap gap-separated-horizontal-elements" controlButtons>
         <icon-button *ngIf="canDelete(quant)" (click)="onDelete(quant, $event)" title="Delete quantification" icon="assets/button-icons/delete.svg"></icon-button>
         <icon-button *ngIf="canBless" (click)="onBless(quant, $event)" title="Bless quantification" icon="assets/button-icons/bless.svg"></icon-button>
         <icon-button *ngIf="canPublish" (click)="onPublish(quant, $event)" title="Publish quantification to PDS" icon="assets/button-icons/publish.svg"></icon-button>
-      </div>
+      </div> -->
     </quantification-item>
   </div>
 </div>

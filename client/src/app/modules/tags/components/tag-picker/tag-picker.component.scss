@@ -33,6 +33,10 @@
 .tag-title {
   white-space: pre-wrap;
 
+  text-overflow: ellipsis;
+  width: 210px;
+  overflow: hidden;
+
   &.disabled {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -76,6 +80,7 @@
 
     .author-container {
       h3 {
+        font-size: 14px;
         color: rgb(var(--clr-gray-40));
         background-color: rgb(var(--clr-gray-80));
         padding-left: $sz-unit;
@@ -87,6 +92,7 @@
         cursor: pointer;
         place-content: unset !important;
         padding: $sz-half;
+        gap: $sz-unit;
       }
     }
   }
@@ -115,13 +121,16 @@
 
   padding: 0 !important;
 
-  .toggle-tag-container {
+  .tag-label-area {
     flex: 1;
     width: 100%;
     display: flex;
     align-items: center;
+  }
 
-    padding: $sz-half;
+  .tag-buttons {
+    display: flex;
+    align-items: center;
   }
 }
 

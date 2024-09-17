@@ -12,6 +12,7 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserInfo } from "src/app/generated-protos/user";
+import { PredefinedROIID } from "../../../../models/RegionOfInterest";
 
 export type SubItemOptionSection = {
   title: string;
@@ -271,6 +272,10 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   get additionalColorOptions(): ColourOption[] {
     return this.colorOptions.filter(option => !option.colourBlindSafe);
+  }
+
+  get isAllPointsROI(): boolean {
+    return PredefinedROIID.isAllPointsROI(this.summary.id);
   }
 
   onSelectColour(colour: ColourOption) {

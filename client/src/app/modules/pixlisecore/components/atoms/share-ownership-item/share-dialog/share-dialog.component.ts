@@ -47,13 +47,18 @@ export type SharingSubItem = {
   typeName: string;
   name: string;
   ownershipSummary: OwnershipSummary;
+  ownershipItem?: OwnershipItem;
 };
 
 export type ShareDialogData = {
+  title?: string;
   ownershipSummary: OwnershipSummary | null;
   ownershipItem: OwnershipItem;
   typeName: string;
   subItems?: SharingSubItem[];
+  preventSelfAssignment?: boolean;
+  restrictSubItemSharingToViewer?: boolean;
+  excludeSubIds?: string[];
 };
 
 export type ShareDialogResponse = {
@@ -118,8 +123,15 @@ export class ShareDialogComponent implements OnInit {
   currentUser: UserDetails = UserDetails.create();
 
   shareWithSubItems: boolean = true;
+  preventSelfAssignment: boolean = false;
 
   subItems: SharingSubItem[] = [];
+  subItemViewershipChangeMap: Map<string, Set<string>> = new Map();
+  memberSharingErrorChangeMap: Map<string, Set<string>> = new Map();
+  subItemSharingErrorMap: Map<string, boolean> = new Map();
+  validShareCount: number = 0;
+
+  selectedSubItemId: string = "";
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ShareDialogData,
@@ -134,6 +146,8 @@ export class ShareDialogComponent implements OnInit {
   ngOnInit(): void {
     this._groupsService.fetchGroups();
     this._usersService.searchUsers("");
+
+    this.preventSelfAssignment = this.data?.preventSelfAssignment || false;
 
     if (this.data?.subItems && this.data.subItems.length > 0) {
       this.subItems = this.data.subItems;
@@ -183,6 +197,89 @@ export class ShareDialogComponent implements OnInit {
     if (!this.isChanged) {
       this.resetMembers();
     }
+
+    this.calculateSubItemViewershipChanges();
+  }
+
+  calculateSubItemViewershipChanges() {
+    this.subItemViewershipChangeMap.clear();
+    this.subItemSharingErrorMap.clear();
+    this.memberSharingErrorChangeMap.clear();
+    this.validShareCount = 0;
+
+    this.subItems.forEach(subItem => {
+      let idsToAddAsViewers = new Set<string>();
+      this.newUserViewers.forEach(id => idsToAddAsViewers.add(id));
+      this.newGroupViewers.forEach(id => idsToAddAsViewers.add(id));
+      this.newUserEditors.forEach(id => idsToAddAsViewers.add(id));
+      this.newGroupEditors.forEach(id => idsToAddAsViewers.add(id));
+
+      // Also include all existing editors and viewers, so we can see past errors
+      this.groupViewers.forEach(id => idsToAddAsViewers.add(id));
+      this.groupEditors.forEach(id => idsToAddAsViewers.add(id));
+      this.userViewers.forEach(id => idsToAddAsViewers.add(id));
+      this.userEditors.forEach(id => idsToAddAsViewers.add(id));
+
+      // Remove editors/viewers that were removed
+      this.removedUserEditors.forEach(id => idsToAddAsViewers.delete(id));
+      this.removedGroupEditors.forEach(id => idsToAddAsViewers.delete(id));
+      this.removedUserViewers.forEach(id => idsToAddAsViewers.delete(id));
+      this.removedGroupViewers.forEach(id => idsToAddAsViewers.delete(id));
+
+      // Exclude current user
+      idsToAddAsViewers.delete(this.currentUser.info?.id || "");
+
+      if (subItem?.ownershipItem) {
+        let ownershipItem = subItem.ownershipItem;
+
+        if (ownershipItem.editors) {
+          ownershipItem.editors.userIds.forEach(id => {
+            if (idsToAddAsViewers.has(id)) {
+              idsToAddAsViewers.delete(id);
+            }
+          });
+
+          ownershipItem.editors.groupIds.forEach(id => {
+            if (idsToAddAsViewers.has(id)) {
+              idsToAddAsViewers.delete(id);
+            }
+          });
+        }
+
+        if (ownershipItem.viewers) {
+          ownershipItem.viewers.userIds.forEach(id => {
+            if (idsToAddAsViewers.has(id)) {
+              idsToAddAsViewers.delete(id);
+            }
+          });
+
+          ownershipItem.viewers.groupIds.forEach(id => {
+            if (idsToAddAsViewers.has(id)) {
+              idsToAddAsViewers.delete(id);
+            }
+          });
+        }
+      }
+
+      this.subItemViewershipChangeMap.set(subItem.id, idsToAddAsViewers);
+      if (!subItem.ownershipSummary.canEdit && idsToAddAsViewers.size > 0) {
+        this.subItemSharingErrorMap.set(subItem.id, true);
+        idsToAddAsViewers.forEach(id => {
+          if (!this.memberSharingErrorChangeMap.has(id)) {
+            this.memberSharingErrorChangeMap.set(id, new Set<string>());
+          }
+
+          this.memberSharingErrorChangeMap.get(id)?.add(subItem.id);
+        });
+      } else if (subItem.ownershipSummary.canEdit && idsToAddAsViewers.size > 0) {
+        this.validShareCount++;
+      }
+    });
+  }
+
+  get dialogTitle(): string {
+    let title = this.data.title ? this.data.title : `Share ${this.data.typeName}`;
+    return `${title}${!this.canEdit ? " (Read Only)" : ""}`;
   }
 
   get canEdit(): boolean {
@@ -451,6 +548,7 @@ export class ShareDialogComponent implements OnInit {
     });
 
     this.formConfirmButtonTooltip();
+    this.calculateSubItemViewershipChanges();
   }
 
   updateSubExpressions(): Observable<ObjectEditAccessResp[]> {
@@ -461,8 +559,13 @@ export class ShareDialogComponent implements OnInit {
     let editAccessUpdateRequests: Observable<ObjectEditAccessResp>[] = [];
     this.subItems.forEach(subItem => {
       if (!subItem.ownershipSummary.canEdit) {
-        this._snackbarService.openWarning(`You do not have permission to edit sub-expression ${subItem.name}.`);
-        console.error(`User does not have permission to edit sub-expression ${subItem.name}.`);
+        // this._snackbarService.openWarning(`You do not have permission to edit sub-expression ${subItem.name}.`);
+        console.warn(`User does not have permission to edit sub-item ${subItem.name}. Skipping...`);
+        return;
+      }
+
+      // Skip excluded sub-items (used for excluding sub-items that are already being shared, but we still want to show)
+      if (this.data.excludeSubIds && this.data.excludeSubIds.includes(subItem.id)) {
         return;
       }
 
@@ -517,11 +620,11 @@ export class ShareDialogComponent implements OnInit {
 
     this.updateSubExpressions().subscribe({
       next: res => {
-        if (this.shareWithSubItems && this.subItems.length !== res.length) {
-          return;
-        } else {
-          this.closeWithResult();
+        if (this.shareWithSubItems && this.subItems.length !== res?.length) {
+          console.warn(`Could not update all sub-expressions. ${res?.length} out of ${this.subItems.length} were updated.`);
         }
+
+        this.closeWithResult();
       },
       error: err => {
         console.error(err);

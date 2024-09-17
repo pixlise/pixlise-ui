@@ -11,6 +11,10 @@ import {
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 import { QuantificationTableComponent } from "../../table-views/table-views.module";
+import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-widget/variogram-widget.component";
+import { WidgetKeyItem } from "../../pixlisecore/pixlisecore.module";
+import { MarkdownTextViewComponent } from "../../text-views/text-views.module";
+import { SelectionChangerImageInfo } from "../../pixlisecore/components/atoms/selection-changer/selection-changer.component";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -34,6 +38,16 @@ export type WidgetToolbarButtonConfiguration = {
   margin?: string;
   disabled?: boolean;
   onClick: (value: any, trigger?: Element) => void;
+
+  // Used by the multi-state-button type to define the states
+  options?: string[];
+
+  // Used by the widget-key type to communicate updates to the key items
+  onUpdateKeyItems?: (keyItems: WidgetKeyItem[]) => void;
+
+  // Quite specific unfortunately, but if parent widget operates on an image, this can be used to retrieve
+  // parameters around that for selection-changer and potentially others
+  getImageInfo?: () => SelectionChangerImageInfo;
 
   // Controls whether the value is copied over in a template
   templateable?: boolean;
@@ -164,6 +178,20 @@ export const WIDGETS = {
     description: "Quantification Table",
     component: QuantificationTableComponent,
     dataKey: "table",
+    controlConfiguration: {},
+  },
+  "text-view": {
+    name: "Text View",
+    description: "Allows annotation of layout",
+    component: MarkdownTextViewComponent,
+    dataKey: "markdownView",
+    controlConfiguration: {},
+  },
+  variogram: {
+    name: "Variogram",
+    description: "Variogram",
+    component: VariogramWidgetComponent,
+    dataKey: "variogram",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;

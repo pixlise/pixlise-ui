@@ -1,0 +1,36 @@
+h1 {
+  color: white;
+}
+
+h5 {
+  color: rgb(var(--clr-gray-30));
+}
+
+.button-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  .cancel-btn {
+    margin-right: auto;
+  }
+}
+
+.confirm-text {
+  margin-bottom: 4px;
+}
+
+.input-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 16px;
+
+  input {
+    flex: 1;
+  }
+}
+
+.confirm-input-dialog {
+  width: 400px;
+}

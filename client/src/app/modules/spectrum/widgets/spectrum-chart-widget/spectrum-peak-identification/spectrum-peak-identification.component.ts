@@ -35,7 +35,13 @@ import { PeriodicTableTabComponent } from "./tabs/periodic-table-tab.component";
 import { TabSelectors } from "./tab-selectors";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { SpectrumChartModel } from "../spectrum-model";
-import { XRFDatabaseService } from "src/app/services/xrf-database.service";
+import { QuantJobsComponent } from "./tabs/quant-jobs.component";
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
+import { JobStatus_JobType, JobStatus_Status } from "src/app/generated-protos/job";
+import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
+import { AuthService } from "@auth0/auth0-angular";
+import { Permissions } from "src/app/utils/permissions";
 
 export class SpectrumPeakIdentificationData {
   constructor(
@@ -61,13 +67,35 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
 
   @Output() onChange: EventEmitter<PeakIdentificationData> = new EventEmitter();
 
+  jobsRunning: number = 0;
+
+  userCanViewQuantJobs: boolean = false;
+
   constructor(
     private resolver: ComponentFactoryResolver,
+    private _dataService: APIDataService,
+    private _authService: AuthService,
     public dialogRef: MatDialogRef<SpectrumPeakIdentificationComponent>,
     @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData
   ) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this._subs.add(
+      this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
+        this.updateJobsRunning();
+      })
+    );
+    this._subs.add(
+      this._authService.idTokenClaims$.subscribe(idToken => {
+        if (idToken) {
+          this.userCanViewQuantJobs = Permissions.hasPermissionSet(idToken, Permissions.permissionCreateQuantification);
+        }
+      })
+    );
+
+    // And for startup case:
+    this.updateJobsRunning();
+  }
 
   ngAfterViewInit() {
     // Run this after this function finished, else we get ExpressionChangedAfterItHasBeenCheckedError
@@ -81,6 +109,18 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
     this.mdl.xrfNearMouse.clear();
     this.clearTabArea();
     this._subs.unsubscribe();
+  }
+
+  updateJobsRunning() {
+    this._dataService.sendJobListRequest(JobListReq.create()).subscribe((jobListResp: JobListResp) => {
+      this.jobsRunning = 0;
+
+      for (const job of jobListResp.jobs) {
+        if (job.jobType == JobStatus_JobType.JT_RUN_QUANT && job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR) {
+          this.jobsRunning++;
+        }
+      }
+    });
   }
 
   private get mdl(): SpectrumChartModel {
@@ -99,6 +139,10 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
     this.setTab(TabSelectors.tabElementSets);
   }
 
+  onTabQuantJobs() {
+    this.setTab(TabSelectors.tabQuantJobs);
+  }
+
   onClose() {
     this.dialogRef.close();
   }
@@ -113,6 +157,10 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
 
   get isElementSetsSelected(): boolean {
     return this._tabSelector == TabSelectors.tabElementSets;
+  }
+
+  get isQuantJobsSelected(): boolean {
+    return this._tabSelector == TabSelectors.tabQuantJobs;
   }
 
   protected setTab(selector: string) {
@@ -136,6 +184,13 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
         const browseOnChartEnergy = this.mdl.xAxis.canvasToValue(middleX);
         this.mdl.setEnergyAtMouse(browseOnChartEnergy);
       }
+    } else if (selector == TabSelectors.tabQuantJobs) {
+      const quantJobsTab = this._tabComponent.instance as QuantJobsComponent;
+      this._subs.add(
+        quantJobsTab.onClose.subscribe(() => {
+          this.onClose();
+        })
+      );
     } else {
       this.mdl.xrfNearMouse.clear();
     }
@@ -153,6 +208,8 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
       return BrowseOnChartComponent;
     } else if (selector == TabSelectors.tabElementSets) {
       return ElementSetsComponent;
+    } else if (selector == TabSelectors.tabQuantJobs) {
+      return QuantJobsComponent;
     } else if (selector != TabSelectors.tabPeriodicTable) {
       console.error("getComponentClassForSelector unknown selector: " + selector + ". Substituting periodic table");
     }

@@ -374,7 +374,12 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
   }
 
   onSelectionClear(): void {
-    this._selectionService.clearSelection();
+    const allScanIds = [];
+    for (const scan of Object.values(this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations)) {
+      allScanIds.push(scan.id);
+    }
+
+    this._selectionService.clearSelection(allScanIds);
   }
 
   onImageChanged(imagePath: string) {

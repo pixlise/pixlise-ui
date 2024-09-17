@@ -30,52 +30,48 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
     return this._mdl;
   }
 
-  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    screenContext.imageSmoothingEnabled = this._mdl.drawModel.imageSmoothing;
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    // TODO: fix this!! If we draw the guts of it here we no longer respond to mouse pan/zoom!
-  }
-
-  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Set the transform as needed
     screenContext.save();
     drawParams.worldTransform.applyTransform(screenContext);
-    //this.screenContext.rotate(degToRad(15));
-    screenContext.imageSmoothingEnabled = this._mdl.drawModel.imageSmoothing;
 
-    this.drawWorldSpace(screenContext, drawParams);
+    const drawMdl = this._mdl.drawModel;
+    if (drawMdl.image && this._mdl.drawImage) {
+      drawImageOrMaskWithOptionalTransform(screenContext, drawMdl.image, drawMdl.imageTransform);
+    }
 
     screenContext.restore();
-
-    this.drawScreenSpace(screenContext, drawParams);
   }
 
-  protected drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    // Set the transform as needed
+    screenContext.save();
+    drawParams.worldTransform.applyTransform(screenContext);
+
     const drawMdl = this._mdl.drawModel;
 
     // Set line width (it depends on zoom factor)
     drawMdl.lineWidthPixels = 2 / this._mdl.transform.scale.x;
 
-    if (drawMdl.image) {
-      drawImageOrMaskWithOptionalTransform(screenContext, drawMdl.image, drawMdl.imageTransform);
-    }
-
     for (const [scanId, scanDrawMdl] of drawMdl.scanDrawModels) {
-      if (scanDrawMdl.footprint && this._mdl.hideFootprintsForScans.indexOf(scanId) == -1) {
+      if (scanDrawMdl.footprint && !this._mdl.hideFootprintsForScans.has(scanId)) {
         drawFootprint(screenContext, scanDrawMdl.footprint, this._mdl.transform);
+      }
+
+      if (!this._mdl.hideMapsForScans.has(scanId)) {
+        for (let c = scanDrawMdl.maps.length - 1; c >= 0; c--) {
+          const mapLayer = scanDrawMdl.maps[c];
+          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
+        }
       }
 
       for (const region of scanDrawMdl.regions) {
         drawRegion(screenContext, region, drawParams.worldTransform, drawMdl.imageTransform, null, false);
       }
 
-      if (this._mdl.hideMapsForScans.indexOf(scanId) === -1) {
-        for (const mapLayer of scanDrawMdl.maps) {
-          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
-        }
-      }
-
-      if (this._mdl.hidePointsForScans.indexOf(scanId) === -1) {
+      if (!this._mdl.hidePointsForScans.has(scanId)) {
         drawScanPoints(
           screenContext,
           scanDrawMdl.scanPoints,
@@ -92,6 +88,16 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
       }
     }
 
+    screenContext.restore();
+  }
+
+  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    const drawMdl = this._mdl.drawModel;
+
+    // Set the transform as needed
+    screenContext.save();
+    drawParams.worldTransform.applyTransform(screenContext);
+
     if (drawMdl.drawnLinePoints.length > 0) {
       drawUserLine(screenContext, drawMdl.drawnLinePoints, this._mdl.transform);
     }
@@ -102,9 +108,9 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
       drawer.draw(screenContext, drawParams);
       screenContext.restore();
     }
-  }
 
-  protected drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+    screenContext.restore();
+
     for (const drawer of this._extraDrawers.getUIDrawers()) {
       screenContext.save();
       drawer.draw(screenContext, drawParams);

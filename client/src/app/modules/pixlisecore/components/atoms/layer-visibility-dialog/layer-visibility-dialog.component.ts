@@ -179,8 +179,9 @@ export class LayerVisibilityDialogComponent {
     section.isVisible = !section.isVisible;
     if (section.options) {
       section.options.forEach((option, i) => {
-        if (option.visible !== section.isVisible && (!option.subOptions || DataExpressionId.isExpressionGroupId(option.id))) {
-          option.visible = section.isVisible;
+        const origOptionVis = option.visible;
+        option.visible = section.isVisible;
+        if (origOptionVis !== section.isVisible && (!option.subOptions || DataExpressionId.isExpressionGroupId(option.id))) {
           this.visibilityToggle.emit({
             sectionId: section.id,
             layerId: option.id,

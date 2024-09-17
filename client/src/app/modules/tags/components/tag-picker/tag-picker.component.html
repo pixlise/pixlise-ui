@@ -40,8 +40,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="authors">
       <div class="author-container" *ngIf="showCurrentTagsSection">
         <h3>Current Tags</h3>
-        <div class="gap-separated-horizontal-elements tag" *ngFor="let tag of selectedTags" (click)="onToggleTag(tag.id)">
-          <div class="toggle-tag-container">
+        <div class="tag" *ngFor="let tag of selectedTags" (click)="onToggleTag(tag.id)">
+          <div class="tag-label-area">
             <two-state-icon-button
               *ngIf="editable"
               activeIcon="assets/button-icons/check-on.svg"
@@ -53,41 +53,54 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
       </div>
       <ng-container *ngIf="editable">
-        <div class="author-container" *ngFor="let authorTags of tagsByAuthor">
-          <h3>{{ authorTags.author }}</h3>
-          <div class="gap-separated-horizontal-elements tag" *ngFor="let tag of authorTags.tags">
-            <div class="toggle-tag-container" (click)="onToggleTag(tag.id)">
+        <div class="author-container">
+          <h3>Appliable Tags</h3>
+          <div
+            class="tag"
+            *ngFor="let tag of allTagsWithAuthors" 
+            #tooltip="matTooltip"
+            matTooltip="Tag creator: {{tag.owner.name}}">
+            <div class="tag-label-area" (click)="onToggleTag(tag.id)">
               <two-state-icon-button activeIcon="assets/button-icons/check-on.svg" inactiveIcon="assets/button-icons/check-off.svg" [active]="checkTagActive(tag.id)">
               </two-state-icon-button>
               <div class="tag-title">{{ tag.name }}</div>
             </div>
 
-            <div *ngIf="editable && authorTags.author === currentAuthorName" class="delete-button" (click)="onDeleteTag(tag.id)">
-              <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M7.75668 0.259846C7.60169 0.10447 7.3913 0.0171558 7.1719 0.0171558C6.9525 0.0171558 6.74211 0.10447 6.58712 0.259846L4.12494 2.7235C4.0604 2.78788 3.95597 2.78788 3.89143 2.7235L1.42859 0.259846C1.22196 0.04053 0.912475 -0.0489985 0.620756 0.0261503C0.329037 0.101299 0.101238 0.329235 0.0261346 0.621129C-0.0489691 0.913023 0.0405057 1.22269 0.25969 1.42945L2.72186 3.8931C2.75297 3.92415 2.77045 3.9663 2.77045 4.01026C2.77045 4.05422 2.75297 4.09638 2.72186 4.12742L0.25969 6.5924C-0.0629717 6.91568 -0.0629717 7.43938 0.25969 7.76267C0.585407 8.07911 1.10354 8.07911 1.42925 7.76267L3.89143 5.29901C3.92234 5.26793 3.96436 5.25045 4.00819 5.25045C4.05201 5.25045 4.09403 5.26793 4.12494 5.29901L6.58844 7.76134C6.91458 8.07675 7.43187 8.07675 7.758 7.76134C8.08067 7.43806 8.08067 6.91436 7.758 6.59107L5.29583 4.12742C5.26473 4.09638 5.24724 4.05422 5.24724 4.01026C5.24724 3.9663 5.26473 3.92415 5.29583 3.8931L7.75668 1.42945C7.91176 1.27439 7.99889 1.06402 7.99889 0.844649C7.99889 0.625281 7.91176 0.414906 7.75668 0.259846Z"
-                  fill="#BCBCBC" />
-              </svg>
+            <div class="tag-buttons">
+              <div *ngIf="editable && tag.owner.name === currentAuthorName" class="delete-button" (click)="onDeleteTag(tag.id, tag.name)">
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M7.75668 0.259846C7.60169 0.10447 7.3913 0.0171558 7.1719 0.0171558C6.9525 0.0171558 6.74211 0.10447 6.58712 0.259846L4.12494 2.7235C4.0604 2.78788 3.95597 2.78788 3.89143 2.7235L1.42859 0.259846C1.22196 0.04053 0.912475 -0.0489985 0.620756 0.0261503C0.329037 0.101299 0.101238 0.329235 0.0261346 0.621129C-0.0489691 0.913023 0.0405057 1.22269 0.25969 1.42945L2.72186 3.8931C2.75297 3.92415 2.77045 3.9663 2.77045 4.01026C2.77045 4.05422 2.75297 4.09638 2.72186 4.12742L0.25969 6.5924C-0.0629717 6.91568 -0.0629717 7.43938 0.25969 7.76267C0.585407 8.07911 1.10354 8.07911 1.42925 7.76267L3.89143 5.29901C3.92234 5.26793 3.96436 5.25045 4.00819 5.25045C4.05201 5.25045 4.09403 5.26793 4.12494 5.29901L6.58844 7.76134C6.91458 8.07675 7.43187 8.07675 7.758 7.76134C8.08067 7.43806 8.08067 6.91436 7.758 6.59107L5.29583 4.12742C5.26473 4.09638 5.24724 4.05422 5.24724 4.01026C5.24724 3.9663 5.26473 3.92415 5.29583 3.8931L7.75668 1.42945C7.91176 1.27439 7.99889 1.06402 7.99889 0.844649C7.99889 0.625281 7.91176 0.414906 7.75668 0.259846Z"
+                    fill="#BCBCBC" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
       </ng-container>
       <div
-        class="gap-separated-horizontal-elements tag"
+        class="tag"
         (click)="onCreateNewTag(true)"
         *ngIf="editable && filteredTags.length === 0 && tagSearchValue.trim().length > 0">
         <div class="new-tag">Press Enter to create new tag</div>
       </div>
     </div>
     <div
-      class="gap-separated-horizontal-elements tag sep-tag"
+      class="tag sep-tag"
       (click)="onCreateNewTag(true)"
       *ngIf="editable && filteredTags.length > 0 && tagSearchValue.length > 0 && filteredTags[0].name.toLowerCase().trim() !== tagSearchValue.toLowerCase().trim()">
       <div class="new-tag">Click to create new tag "{{ tagSearchValue.trim() }}"</div>
     </div>
   </div>
 </ng-template>
-<widget-settings-menu [triggerOpen]="triggerOpen" [settingsDialog]="tagMenu" class="tag-button" [startRight]="buttonStyle === 'icon'" (onClose)="onClose()">
+
+
+<widget-settings-menu
+  [triggerOpen]="triggerOpen"
+  [settingsDialog]="tagMenu"
+  class="tag-button"
+  [startRight]="openRightDirection && buttonStyle === 'icon'"
+  (onClose)="onClose()">
   <icon-button
     *ngIf="buttonStyle === 'icon'"
     #tooltip="matTooltip"

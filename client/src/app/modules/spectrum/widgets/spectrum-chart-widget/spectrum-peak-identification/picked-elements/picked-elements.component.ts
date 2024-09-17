@@ -31,7 +31,6 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
 import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
-import { httpErrorToString } from "src/app/utils/utils";
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
 import { AuthService } from "@auth0/auth0-angular";
 import { Permissions } from "src/app/utils/permissions";

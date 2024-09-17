@@ -13,6 +13,8 @@ import { getExpressionShortDisplayName } from "src/app/expression-language/expre
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BaseChartDrawModel, BaseChartModel } from "../../base/model-interfaces";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { ScanItem } from "../../../../generated-protos/scan";
+import { PredefinedROIID } from "../../../../models/RegionOfInterest";
 
 export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -33,6 +35,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
 
   cursorShown: string = CursorId.defaultPointer;
 
+  private _previousKeyItems: WidgetKeyItem[] = [];
   keyItems: WidgetKeyItem[] = [];
   expressionsMissingPMCs: string = "";
 
@@ -77,9 +80,10 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   }
 
   // Returns error message if one is generated
-  setData(data: RegionDataResults): WidgetError[] {
+  setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
     const t0 = performance.now();
 
+    this._previousKeyItems = this.keyItems.slice();
     this.keyItems = [];
     this.expressionsMissingPMCs = "";
 
@@ -108,11 +112,11 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     }
 
     this._recalcNeeded = true;
-    return this.processQueryResult(t0, yAxisLabel, data); // TODO: error column loading
+    return this.processQueryResult(t0, yAxisLabel, data, scanItems); // TODO: error column loading
   }
 
   // Returns error message if one is generated
-  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults): WidgetError[] {
+  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
     const errorMessages: WidgetError[] = [];
 
     const histogramBars: HistogramBars[] = [];
@@ -219,15 +223,34 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
         bands,
       };
 
-      if (colData.region) {
+      let roiId = colData.region?.region.id || "";
+      let isROIHidden = false;
+
+      let existingKeyItem = this._previousKeyItems.find(key => key.id == roiId);
+      isROIHidden = existingKeyItem ? !existingKeyItem.isVisible : false;
+      if (existingKeyItem && !existingKeyItem.isVisible) {
+        // This ROI is hidden, so we won't be drawing it, but we need to keep it in the key
+        if (!this.keyItems.find(key => key.id == roiId)) {
+          this.keyItems.push(existingKeyItem);
+        }
+        // continue;
+      }
+
+      if (colData.region && !isROIHidden) {
         bars.push(
           new HistogramBar(colData.region.region.name, colData.region.displaySettings.colour, avg, minMax, avgError, barErrorMsg, stdDev, stdErr, concentrationBands)
         );
         barGroupValueRange.expandByMinMax(minMax);
 
         if (!this.keyItems.find(item => item.id === colData?.region?.region.id)) {
+          let scanName = scanItems.find(scan => scan.id === colData.region?.region.scanId)?.title || "";
+          let roiName = colData.region.region.name;
+          if (PredefinedROIID.isAllPointsROI(roiId)) {
+            roiName = "All Points";
+          }
+
           this.keyItems.push(
-            new WidgetKeyItem(colData.region.region.id, colData.region.region.name, colData.region.displaySettings.colour, null, colData.region.displaySettings.shape)
+            new WidgetKeyItem(roiId, roiName, colData.region.displaySettings.colour, null, colData.region.displaySettings.shape, scanName, !isROIHidden, false)
           );
         }
       }

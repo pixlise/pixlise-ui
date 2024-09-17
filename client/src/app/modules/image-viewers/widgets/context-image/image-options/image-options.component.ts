@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { Observable, Subscription, map, of } from "rxjs";
+import { Observable, Subscription, combineLatest, map, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ContextImagePickerComponent, ImageSelection } from "../../../components/context-image-picker/context-image-picker.component";
@@ -40,10 +40,13 @@ import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
+import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 
 export class ImageDisplayOptions {
   constructor(
     public currentImage: string,
+    public beamVersionMap: Map<string, number>,
     public imageSmoothing: boolean,
     public imageBrightness: number,
     public removeTopSpecularArtifacts: boolean,
@@ -56,12 +59,13 @@ export class ImageDisplayOptions {
     public selectedScanId: string,
     public specularRemovedValueRange?: MinMax,
     public valueRange?: MinMax // public colourRatioRangeMin?: number,
-  ) // public colourRatioRangeMax?: number
-  {}
+    // public colourRatioRangeMax?: number
+  ) {}
 
   copy(): ImageDisplayOptions {
     return new ImageDisplayOptions(
       this.currentImage,
+      new Map<string, number>(this.beamVersionMap),
       this.imageSmoothing,
       this.imageBrightness,
       this.removeTopSpecularArtifacts,
@@ -96,7 +100,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   // All the settings we can manipulate. We construct a ImagePickerResult from these
-  private _options = new ImageDisplayOptions("", true, 1, false, false, null, null, "RGB", 0.3, false, "");
+  private _options = new ImageDisplayOptions("", new Map<string, number>(), true, 1, false, false, null, null, "RGB", 0.3, false, "");
 
   displayedChannels: string[] = [];
   displayedChannelsWithNone: string[] = [];
@@ -106,11 +110,18 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   public downloadLoading: boolean = false;
 
+  pickableBeamVersionScanIds: string[] = [];
+  pickableBeamVersions = new Map<string, number[]>();
+  selectedBeamVersions: Record<string, number> = {};
+  scanNames = new Map<string, string>();
+
   // This prevents an infinite loop of loadOptions -> publishOptionChange in the case
   // something's wrong with loading a scale range
   private _requestedNewRange: boolean = false;
 
   @Output() optionChange = new EventEmitter();
+
+  loadingBeamVersions: boolean = false;
 
   constructor(
     private _cachedDataService: APICachedDataService,
@@ -140,6 +151,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     } else {
       this._requestedNewRange = false;
     }
+
+    for (const [scanId, version] of this._options.beamVersionMap.entries()) {
+      this.selectedBeamVersions[scanId] = version;
+    }
   }
 
   ngOnInit(): void {
@@ -149,6 +164,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     } else {
       this._chosenChannels = this._options.rgbuChannels;
     }
+
+    if (this.data.options.currentImage.length > 0) {
+      this.getBeamLocationVersions(this.data.options.currentImage);
+    }
   }
 
   ngOnDestroy() {
@@ -157,6 +176,64 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   onClose(): void {
     this.dialogRef.close();
+  }
+
+  private getBeamLocationVersions(imageName: string) {
+    this.loadingBeamVersions = true;
+
+    const req$ = [
+      this._cachedDataService.getScanList(ScanListReq.create({})),
+      this._dataService.sendImageBeamLocationVersionsRequest(ImageBeamLocationVersionsReq.create({ imageName: imageName })).asObservable(),
+    ];
+
+    combineLatest(req$).subscribe({
+      next: resps => {
+        const scans = resps[0] as ScanListResp;
+        const beamVersions = resps[1] as ImageBeamLocationVersionsResp;
+
+        // clear
+        this.pickableBeamVersionScanIds = [];
+        this.pickableBeamVersions.clear();
+        //this.selectedBeamVersions = {};
+        this.scanNames.clear();
+
+        const beamScanIds = Object.keys(beamVersions.beamVersionPerScan);
+        for (const scan of scans.scans) {
+          if (beamScanIds.indexOf(scan.id) > -1) {
+            // this is a scan we're interested in (we have beam versions for it), so store its name
+            let title = scan.title;
+            const sol = scan.meta["Sol"];
+            if (sol) {
+              title = `Sol: ${sol} - ${title}`;
+            }
+            this.scanNames.set(scan.id, title);
+          }
+        }
+
+        for (const scanId of Object.keys(beamVersions.beamVersionPerScan)) {
+          const versions = beamVersions.beamVersionPerScan[scanId];
+          this.pickableBeamVersionScanIds.push(scanId);
+          this.pickableBeamVersions.set(scanId, versions.versions);
+          if (!this.selectedBeamVersions[scanId]) {
+            this.selectedBeamVersions[scanId] = versions.versions[0];
+          }
+        }
+
+        this.loadingBeamVersions = false;
+      },
+      error: err => {
+        this.loadingBeamVersions = false;
+      }
+    });
+  }
+
+  onBeamVersionChange(scanId: string) {
+    // Set the version chosen
+    const version = this.selectedBeamVersions[scanId];
+    if (version !== undefined) {
+      this._options.beamVersionMap.set(scanId, version);
+      this.publishOptionChange();
+    }
   }
 
   // Notifying caller of our options changing
@@ -179,7 +256,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   onResetBrightness(): void {
-    this._options.imageBrightness = this.data.options.imageBrightness;
+    this._options.imageBrightness = 1;
     this.publishOptionChange();
   }
 
@@ -205,11 +282,6 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     }
   }
 
-  // onSelectedImageChanged(image: ContextImageItem | null) {
-  //   this._options.currentImage = image?.path || "";
-  //   this.publishOptionChange();
-  // }
-
   get selectedScanId(): string {
     return this._options.selectedScanId || "";
   }
@@ -218,7 +290,11 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     this._options.currentImage = selection.path;
     this._options.selectedScanId = selection.scanId;
 
+    this.selectedBeamVersions = {};
+
     this.publishOptionChange();
+
+    this.getBeamLocationVersions(selection.path);
   }
 
   private isRatio(channels: string): boolean {
@@ -397,8 +473,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   onResetRatioColourRemapping(): void {
     this.onResetBrightness();
-    this._options.colourRatioMin = this.data.options.colourRatioMax;
-    this._options.colourRatioMax = this.data.options.colourRatioMax;
+    this._options.colourRatioMin = this.colourRatioRangeMin;
+    this._options.colourRatioMax = this.colourRatioRangeMax;
     this.publishOptionChange();
   }
 
@@ -504,6 +580,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   onExport(): void {
+    alert("Not implemented yet");
     // let outputName = `${this._datasetService.datasetIDLoaded} - Images.zip`;
     // this.downloadLoading = true;
     // this._exportDataService.generateExport(this._datasetService.datasetIDLoaded, "", ["context-image"], [], [], [], outputName).subscribe(

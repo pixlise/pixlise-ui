@@ -60,13 +60,19 @@ import { ClosableListComponent } from "src/app/modules/pixlisecore/components/at
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { DragDropModule } from "@angular/cdk/drag-drop";
+import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
+import { TableComponent } from "./components/atoms/table/table.component";
+import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
+import { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
+import { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
+import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
-export { HttpInterceptorService } from "./services/http-interceptor.service";
 export { SnackbarService } from "./services/snackbar.service";
+export { ContextImageDataService } from "./services/context-image-data.service";
 export { WidgetDataService, DataSourceParams, RegionDataResults, RegionDataResultItem, DataUnit } from "./services/widget-data.service";
 export { WidgetKeyItem } from "./models/widget-key-item";
 export { SelectionService } from "./services/selection.service";
@@ -74,6 +80,11 @@ export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./mo
 export { SliderComponent } from "./components/atoms/slider/slider.component";
 export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
+export { TableComponent } from "./components/atoms/table/table.component";
+export { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
+export { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
+export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 
 @NgModule({
   declarations: [
@@ -100,6 +111,7 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     HotkeysMenuPanelComponent,
     IconButtonComponent,
     ConfirmDialogComponent,
+    ConfirmInputDialogComponent,
     FilterBoxComponent,
     SliderComponent,
     RangeSliderComponent,
@@ -124,6 +136,11 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     TwoStateEditButtonComponent,
     ClosableListComponent,
     LayerVisibilityDialogComponent,
+    FeedbackDialogComponent,
+    TableComponent,
+    TextFileViewingDialogComponent,
+    LayoutPreviewBox,
+    UserIconComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
   exports: [
@@ -146,6 +163,7 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     RouteNotFoundComponent,
     IconButtonComponent,
     ConfirmDialogComponent,
+    ConfirmInputDialogComponent,
     FormsModule,
     MaterialModule,
     MatSnackBarModule,
@@ -169,9 +187,14 @@ export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibil
     TwoStateEditButtonComponent,
     ClosableListComponent,
     LayerVisibilityDialogComponent,
+    FeedbackDialogComponent,
+    TableComponent,
+    TextFileViewingDialogComponent,
+    LayoutPreviewBox,
+    UserIconComponent,
   ],
   providers: [
-    /*APICommService, APIDataService, HttpInterceptorService*/
+    /*APICommService, APIDataService*/
   ], // Don't register them so they don't duplicate due to lazy load
 })
 export class PIXLISECoreModule {}

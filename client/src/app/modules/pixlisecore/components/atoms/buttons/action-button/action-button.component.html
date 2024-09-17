@@ -44,9 +44,10 @@ POSSIBILITY OF SUCH DAMAGE.
   [ngStyle]="color ? { color } : {}"
   #tooltip="matTooltip"
   [matTooltip]="tooltipTitle">
-  <mat-icon *ngIf="isMatIcon">{{ action }}</mat-icon>
-  <img *ngIf="!isMatIcon" [src]="action" class="custom-icon" />
+  <mat-icon *ngIf="isMatIcon" [ngStyle]="customSize ? { width: customSize, height: customSize } : {}">{{ action }}</mat-icon>
+  <img *ngIf="!isMatIcon" [src]="action" class="custom-icon" [ngStyle]="customSize ? { width: customSize, height: customSize } : {}" />
 </span>
+
 <widget-settings-menu *ngIf="customMenuOptions" [settingsDialog]="customOptionsMenu">
   <span
     class="action-btn {{ buttonBackground ? 'btn-bg' : '' }} {{ action }} {{ disabled ? 'disabled' : '' }} {{ !isMatIcon ? 'custom' : '' }}"
@@ -54,7 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
     [ngStyle]="color ? { color } : {}"
     #tooltip="matTooltip"
     [matTooltip]="tooltipTitle">
-    <mat-icon *ngIf="isMatIcon">{{ action }}</mat-icon>
-    <img *ngIf="!isMatIcon" [src]="action" class="custom-icon" />
+    <mat-icon *ngIf="isMatIcon" [ngStyle]="customSize ? { width: customSize, height: customSize } : {}">{{ action }}</mat-icon>
+    <img *ngIf="!isMatIcon" [src]="action" class="custom-icon" [ngStyle]="customSize ? { width: customSize, height: customSize } : {}" />
   </span>
 </widget-settings-menu>

@@ -27,12 +27,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription, combineLatest } from "rxjs";
-import { UNICODE_CARET_DOWN, httpErrorToString } from "src/app/utils/utils";
-import { BeamSelection } from "../../../models/beam-selection";
-import { SelectionService, SnackbarService } from "../../../pixlisecore.module";
+import { Subscription } from "rxjs";
+import { UNICODE_CARET_DOWN } from "src/app/utils/utils";
+import { ContextImageDataService, SelectionService, SnackbarService } from "../../../pixlisecore.module";
 import { SelectionHistoryItem } from "../../../services/selection.service";
 import {
   SelectionOptionsDialogData,
@@ -40,20 +39,18 @@ import {
   SelectionOptionsDialogResult,
   SelectionOption,
 } from "./selection-options/selection-options.component";
-import { AuthService } from "@auth0/auth0-angular";
-import { Permissions } from "src/app/utils/permissions";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "../../../services/apicacheddata.service";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
-import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
-import { PixelSelection } from "../../../models/pixel-selection";
-import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { ROIItem } from "src/app/generated-protos/roi";
-import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
-import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
+
+export class SelectionChangerImageInfo {
+  constructor(
+    public scanIds: string[],
+    public image: string,
+    public contextImageSvc: ContextImageDataService
+  ) {}
+}
 
 @Component({
   selector: "selection-changer",
@@ -61,6 +58,8 @@ import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/componen
   styleUrls: ["./selection-changer.component.scss"],
 })
 export class SelectionChangerComponent implements OnInit, OnDestroy {
+  @Input() imageInfo: SelectionChangerImageInfo | undefined = undefined;
+
   private _subs = new Subscription();
 
   private _defaultLeftText = "No Selection";
@@ -73,6 +72,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     private _selectionService: SelectionService,
     private _userOptionsService: UserOptionsService,
     private _cachedDataService: APICachedDataService,
+    private _snackServie: SnackbarService,
     public dialog: MatDialog
   ) {}
 
@@ -136,6 +136,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     dialogConfig.data = new SelectionOptionsDialogData(
       this._hasDwells.get(this._analysisLayoutService.defaultScanId) || false, // Only show dwell if we have any
       this.userCanCreateROI,
+      !!this.imageInfo && !!this.imageInfo.contextImageSvc,
       allScanIds,
       new ElementRef(event.currentTarget)
     );
@@ -160,6 +161,15 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
         this._selectionService.selectAllPMCs([choice.value]);
       } else if (choice.result == SelectionOption.SEL_INVERT) {
         this._selectionService.invertPMCSelection(this.getSelectionScanIds());
+      } else if (choice.result == SelectionOption.SEL_NEARBY_PIXELS) {
+        if (this.imageInfo && this.imageInfo.scanIds.length > 0) {
+          this._selectionService.selectNearbyPixels(this.imageInfo?.scanIds, this.imageInfo?.contextImageSvc);
+        } else {
+          this._snackServie.openWarning(
+            "Cannot select pixels when viewing non-RGBU image",
+            "Select Nearby Pixels requires an RGBU image to be visible on context image"
+          );
+        }
       } else {
         alert("Error: selection failed - not implemented!");
       }
@@ -167,7 +177,11 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
   }
 
   onClear(): void {
-    this._selectionService.clearSelection();
+    const allScanIds = [];
+    for (const scan of Object.values(this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations)) {
+      allScanIds.push(scan.id);
+    }
+    this._selectionService.clearSelection(allScanIds);
   }
 
   private getSelectionScanIds(): string[] {

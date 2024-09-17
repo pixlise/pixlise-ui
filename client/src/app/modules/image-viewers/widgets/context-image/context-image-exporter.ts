@@ -3,7 +3,6 @@ import { ContextImageModel } from "src/app/modules/image-viewers/image-viewers.m
 import { ContextImageDrawModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model";
 import { SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { RGBUPlotModel } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-model";
 import { CanvasDrawer, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import {
@@ -13,6 +12,7 @@ import {
   WidgetExportFile,
   WidgetExportRequest,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { getPathBase } from "src/app/utils/utils";
 
 export class ContextImageExporter {
   constructor(
@@ -31,7 +31,7 @@ export class ContextImageExporter {
   }
 
   getImageShortName(imageName: string): string {
-    let imageShortName = imageName?.split("/").pop() || "";
+    let imageShortName = getPathBase(imageName);
     if (imageName?.includes("MSA_")) {
       imageShortName = "MSA";
     } else if (imageName?.includes("VIS_")) {
@@ -104,7 +104,7 @@ export class ContextImageExporter {
         let requestPlotImage = request.dataProducts["plotImage"]?.selected;
         let requestLargePlotImage = request.dataProducts["largePlotImage"]?.selected;
 
-        let rawImageRequest = mdl.imageName.endsWith(".tif")
+        const rawImageRequest = mdl.imageName.endsWith(".tif")
           ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName)
           : this._endpointsService.loadImagePreviewForPath(mdl.imageName);
 
@@ -122,7 +122,7 @@ export class ContextImageExporter {
 
             if (rawImage) {
               let imageFromDataURL = rawImage?.split(",")[1];
-              let imageName = mdl.imageName?.split("/").pop() || "";
+              let imageName = getPathBase(mdl.imageName);
               images.push({
                 fileName: imageName,
                 data: imageFromDataURL,

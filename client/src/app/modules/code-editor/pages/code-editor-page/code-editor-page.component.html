@@ -36,8 +36,8 @@
   </div>
 </ng-template>
 
-<div class="code-editor">
-  <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}">
+<div class="code-editor" aria-label="CodeEditor">
+  <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}" aria-label="CodeEditorExplorer">
     <div class="top-header">
       <h2 *ngIf="isSidebarOpen" class="explorer-header">
         Explorer
@@ -51,7 +51,7 @@
         <img src="assets/button-icons/double-arrow-left.svg" class="{{ isSidebarOpen ? 'open' : 'closed' }}" />
       </div>
     </div>
-    <section class="expressions">
+    <section class="expressions" aria-label="CodeEditorExpressions">
       <div class="layers">
         <div class="group currently-open">
           <div class="header">
@@ -110,7 +110,7 @@
       </section>
     </section>
   </section>
-  <section class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}">
+  <section class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}" aria-label="CodeEditorContainer">
     <div class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
       <status-indicator
         *ngIf="!isTopModuleIdNew || !isTopModule"
@@ -161,7 +161,7 @@
       </push-button>
     </div>
     <section class="editors">
-      <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}">
+      <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}" aria-label="CodeEditorTopEdit">
         <expression-text-editor
           *ngIf="topExpression"
           class="top-expression {{ isTopEditorActive && isSplitScreen ? 'active' : '' }}"
@@ -184,7 +184,7 @@
           [showInstalledModules]="!isTopModule"
           [isLua]="topExpression?.sourceLanguage === 'LUA'"></expression-text-editor>
       </section>
-      <section class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}">
+      <section class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}" aria-label="CodeEditorBottomEdit">
         <div *ngIf="isSplitScreen && bottomExpression" class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
           <input
             class="expression-name {{ !isBottomExpressionIdNew ? 'disabled' : '' }}"
@@ -253,7 +253,7 @@
       <push-button buttonStyle="yellow" (onClick)="onSave()" [disabled]="!activeExpressionChanged" class="save-btn">Save</push-button>
     </div>
   </section>
-  <section class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}">
+  <section class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}" aria-label="CodeEditorVisualisation">
     <div class="top-header">
       <h2>Visualization: Viz</h2>
       <div class="timeout">
@@ -278,7 +278,7 @@
         [widgetLayoutConfig]="previewLayoutConfig">
       </widget>
     </section>
-    <section class="output-container">
+    <section class="output-container" aria-label="CodeEditorOutput">
       <expression-console
         [scanId]="scanId"
         [expression]="topExpression"

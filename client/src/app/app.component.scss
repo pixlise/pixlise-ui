@@ -18,4 +18,11 @@
     top: 40px;
     right: 8px;
   }
+
+  .loading {
+    display: flex;
+    flex: 1;
+    justify-content: space-around;
+    margin-top: 60px;
+  }
 }

@@ -92,3 +92,5 @@ export const createDefaultRemainingPointsRegionSettings = (scanId: string, scanS
   return new RegionSettings(createDefaultRemainingPointsItem(scanId), { colour: Colours.CONTEXT_GREEN, shape: scanShape });
 };
 */
+
+export const RemainingPointsColour: RGBA = Colours.CONTEXT_GREEN;

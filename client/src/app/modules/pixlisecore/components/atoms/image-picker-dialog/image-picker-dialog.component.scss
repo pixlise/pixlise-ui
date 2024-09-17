@@ -39,6 +39,10 @@
     .scan-filter {
       margin-left: auto;
     }
+
+    mat-select {
+      min-width: 200px !important;
+    }
   }
 
   .options-container {
@@ -46,11 +50,18 @@
 
     .image-options {
       height: 500px;
-      width: 600px;
+      width: 620px;
       overflow-y: scroll;
 
       background-color: #242829;
       border: 1px solid #545f64;
+
+      .loading {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        margin-top: 100px;
+      }
 
       .image-option {
         display: flex;
@@ -61,6 +72,22 @@
 
         &.selected {
           border: 1px solid #ffff8d;
+        }
+
+        .image-type-tag {
+          height: 100px;
+          width: 16px;
+
+          writing-mode: vertical-lr;
+          transform: scale(-1, -1);
+
+          color: $clr-gray-20;
+          background-color: #545f64;
+          
+          &.selected {
+            color: $clr-gray-90;
+            background-color: #ffff8d;
+          }
         }
 
         .preview-image {
@@ -101,10 +128,11 @@
     .expanded-preview {
       display: flex;
       flex-direction: column;
-      width: 300px;
+      width: 400px;
       max-height: 502px;
 
       margin-left: 4px;
+      gap: 4px;
 
       .preview-image {
         width: 100%;
@@ -149,13 +177,10 @@
     }
 
     .name {
-      max-width: 50ch;
+      max-width: 66ch;
       white-space: pre;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    .scan {
     }
 
     .mars-viewer {
@@ -179,7 +204,7 @@
       font-size: 10px;
       white-space: pre;
       background-color: #242829;
-      overflow: scroll;
+      overflow: auto;
       border: 1px solid #545f64;
       padding: 2px;
     }

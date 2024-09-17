@@ -1,11 +1,19 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, tap, throwError } from "rxjs";
-import { RGBUImage } from "src/app/models/RGBUImage";
+import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { Uint8ToString } from "src/app/utils/utils";
+import { ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
+import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
+
+const DefaultMaxImageCacheAgeSec = 60 * 60 * 24 * 2;
+const DefaultMaxCachedImageSizeBytes = 1024 * 1024 * 10;
+
+const DefaultMaxTIFImageCacheAgeSec = 60 * 60 * 2;
+const DefaultMaxCachedTIFImageSizeBytes = 1024 * 1024 * 15;
 
 @Injectable({
   providedIn: "root",
@@ -18,7 +26,7 @@ export class APIEndpointsService {
 
   // Assumes the path is going to get us the image, might have to include the scan id in it
   // Loads image from local storage if available and under the max age, otherwise downloads it from the server
-  loadImageForPath(imagePath: string, maxAge: number = 1000 * 60 * 60 * 24 * 2): Observable<HTMLImageElement> {
+  loadImageForPath(imagePath: string, maxAgeSec: number = DefaultMaxImageCacheAgeSec): Observable<HTMLImageElement> {
     if (!imagePath) {
       throw new Error("No image path provided");
     }
@@ -28,10 +36,26 @@ export class APIEndpointsService {
     return from(this.localStorageService.getImage(apiUrl)).pipe(
       switchMap(imageData => {
         // If we have it and it's not older than maxAge (2 days), use it
-        if (imageData && imageData.timestamp > Date.now() - maxAge) {
-          const img = new Image();
-          img.src = imageData.data;
-          return of(img);
+        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
+          return new Observable<HTMLImageElement>(observer => {
+            const img = new Image();
+
+            img.onload = event => {
+              console.log("  Loaded image from cache: " + apiUrl + ". Dimensions: " + img.width + "x" + img.height);
+              observer.next(img);
+              observer.complete();
+            };
+
+            img.onerror = event => {
+              // event doesn't seem to provide us much, usually just says "error" inside it... found that this
+              // last occurred when a bug allowed us to try to load a tif image with this function!
+              const errStr = "Failed to load image from cache: " + apiUrl;
+              console.error(errStr);
+              observer.error(errStr);
+            };
+
+            img.src = imageData.data;
+          });
         } else {
           return this.loadImageFromURL(apiUrl).pipe(
             catchError(err => {
@@ -53,12 +77,12 @@ export class APIEndpointsService {
     );
   }
 
-  loadImagePreviewForPath(imagePath: string, maxAge: number = 1000 * 60 * 60 * 24 * 2): Observable<string> {
+  loadImagePreviewForPath(imagePath: string, maxAgeSec: number = DefaultMaxImageCacheAgeSec): Observable<string> {
     if (!imagePath) {
       throw new Error("No image path provided");
     }
 
-    return this.loadImageForPath(imagePath, maxAge).pipe(
+    return this.loadImageForPath(imagePath, maxAgeSec).pipe(
       switchMap(img => {
         return new Observable<string>(observer => {
           const canvas = document.createElement("canvas");
@@ -68,6 +92,7 @@ export class APIEndpointsService {
           if (ctx) {
             ctx.drawImage(img, 0, 0);
             observer.next(canvas.toDataURL());
+            observer.complete();
           }
         });
       }),
@@ -84,7 +109,7 @@ export class APIEndpointsService {
     return this.http.get(apiUrl, { responseType: "arraybuffer" });
   }
 
-  private loadImageFromURL(url: string, maxCacheSize: number = 10000000): Observable<HTMLImageElement> {
+  private loadImageFromURL(url: string, maxCacheSize: number = DefaultMaxCachedImageSizeBytes): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
       this.http.get(url, { responseType: "arraybuffer" }).subscribe({
@@ -132,75 +157,39 @@ export class APIEndpointsService {
     });
   }
 
-  loadRGBUImageTIFFromAPI(imagePath: string, maxCacheSize: number = 15000000): Observable<RGBUImage> {
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
-    return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
-      mergeMap((bytes: ArrayBuffer) => {
-        // Only store if it's not too big (15 mb)
-        if (bytes.byteLength < maxCacheSize) {
-          this.localStorageService.storeRGBUImage(bytes, apiUrl, apiUrl);
-        }
-        return RGBUImage.readImage(bytes, imagePath);
-      })
-    );
-  }
+  loadRGBTIFFDisplayImage(imagePath: string, maxAgeSec: number = DefaultMaxTIFImageCacheAgeSec): Observable<HTMLImageElement> {
+    return this.loadRGBUImageTIF(imagePath, maxAgeSec).pipe(
+      switchMap((img: RGBUImage) => {
+        return img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null).pipe(
+          map((generated: RGBUImageGenerated | null) => {
+            if (!generated || !generated.image) {
+              throw new Error(`Error generating RGB display image: ${imagePath}`);
+            }
 
-  private _generatedTIFFPreview(imagePath: string, maxAge: number = 3600): Observable<string> {
-    return this.loadRGBUImageTIF(imagePath, maxAge).pipe(
-      switchMap(img => {
-        return new Observable<string>(observer => {
-          let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
-          if (generated?.image?.src) {
-            observer.next(generated.image.src);
-          } else {
-            observer.error("Error generating RGB display image");
-            console.error("Error generating RGB display image", img?.path);
-          }
-        });
+            return generated.image;
+          })
+        );
       }),
       catchError(err => {
         console.error(err);
         return throwError(() => err);
       }),
-      tap(url => console.log(`Generated preview URL for ${imagePath} (${url.length} bytes)`)),
-      mergeMap(url => of(url)),
+      //tap(() => console.log(`Loaded TIFF display image: ${imagePath}`)),
       shareReplay(1)
     );
   }
 
-  loadRGBTIFFDisplayImage(imagePath: string, maxAge: number = 3600): Observable<HTMLImageElement> {
-    return this.loadRGBUImageTIF(imagePath, maxAge).pipe(
-      switchMap(img => {
-        return new Observable<HTMLImageElement>(observer => {
-          let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
-          if (generated?.image) {
-            observer.next(generated.image);
-          } else {
-            observer.error("Error generating RGB display image");
-            console.error("Error generating RGB display image", img?.path);
-          }
-        });
-      }),
-      catchError(err => {
-        console.error(err);
-        return throwError(() => err);
-      }),
-      tap(url => console.log(`Generated preview URL: ${url}`)),
-      mergeMap(url => of(url)),
-      shareReplay(1)
-    );
-  }
-
-  loadRGBUImageTIFPreview(imagePath: string, maxAge: number = 3600): Observable<string> {
+  loadRGBUImageTIFPreview(imagePath: string, maxAgeSec: number = DefaultMaxTIFImageCacheAgeSec): Observable<string> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
-    let tiffPreviewKey = `tiff-preview-${apiUrl}`;
+    const tiffPreviewKey = `tiff-preview-${apiUrl}`;
 
     return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
       switchMap(imageData => {
-        if (imageData && imageData.timestamp > Date.now() - maxAge) {
+        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return of(imageData.data);
         } else {
-          return this._generatedTIFFPreview(imagePath, maxAge).pipe(
+          return this.loadRGBTIFFDisplayImage(imagePath, maxAgeSec).pipe(
+            map((v: HTMLImageElement) => v.src),
             catchError(err => {
               return throwError(() => err);
             }),
@@ -213,7 +202,8 @@ export class APIEndpointsService {
       }),
       catchError(err => {
         console.error(err);
-        return this._generatedTIFFPreview(imagePath, maxAge).pipe(
+        return this.loadRGBTIFFDisplayImage(imagePath, maxAgeSec).pipe(
+          map((v: HTMLImageElement) => v.src),
           catchError(err => {
             console.error(err);
             return throwError(() => err);
@@ -225,7 +215,7 @@ export class APIEndpointsService {
 
   // Used by dataset customisation RGBU loading and from loadRGBUImage()
   // Gets and decodes image
-  loadRGBUImageTIF(imagePath: string, maxAge: number = 3600): Observable<RGBUImage> {
+  loadRGBUImageTIF(imagePath: string, maxAgeSec: number = DefaultMaxTIFImageCacheAgeSec): Observable<RGBUImage> {
     if (!imagePath) {
       return throwError(() => new Error("No image path provided"));
     }
@@ -234,7 +224,7 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
       switchMap(imageData => {
-        if (imageData && imageData.timestamp > Date.now() - maxAge) {
+        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return RGBUImage.readImage(imageData.data, imagePath);
         } else {
           return of(null);
@@ -248,7 +238,16 @@ export class APIEndpointsService {
         if (img) {
           return of(img);
         } else {
-          return this.loadRGBUImageTIFFromAPI(imagePath).pipe(
+          const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+          return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
+            mergeMap((bytes: ArrayBuffer) => {
+              // Only store if it's not too big
+              const maxCacheSize: number = DefaultMaxCachedTIFImageSizeBytes;
+              if (bytes.byteLength < maxCacheSize) {
+                this.localStorageService.storeRGBUImage(bytes, apiUrl, apiUrl);
+              }
+              return RGBUImage.readImage(bytes, imagePath);
+            }),
             catchError(err => {
               console.error(err);
               return throwError(() => err);
@@ -260,7 +259,7 @@ export class APIEndpointsService {
     );
   }
 
-  uploadImage(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {
+  uploadBreadboardScanZip(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {
     const httpOptions = {
       headers: new HttpHeaders({
         "Content-Type": "application/octet-stream",
@@ -274,5 +273,43 @@ export class APIEndpointsService {
         console.log("Image " + imageName + " uploaded");
       })
     );
+  }
+
+  uploadImage(req: ImageUploadHttpRequest): Observable<void> {
+    const writer = ImageUploadHttpRequest.encode(req);
+    const bytes = writer.finish();
+    const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/octet-stream",
+      }),
+    };
+
+    const apiUrl = APIPaths.getWithHost("images");
+    return this.http.put<void>(apiUrl, sendbuf, httpOptions);
+  }
+
+  private isValidLocallyCachedImage(imageData: CachedImageItem | CachedRGBUImageItem | undefined, maxAgeSec: number): boolean {
+    if (!imageData) {
+      return false;
+    }
+
+    const maxAgeMs = Date.now() - maxAgeSec * 1000;
+
+    // NOTE: timestamp is in milliseconds
+    if (imageData.timestamp < maxAgeMs) {
+      // Too old, don't use it
+      return false;
+    }
+
+    // Check other params
+    const img = imageData as CachedImageItem;
+    if (img && img.width <= 0 && img.height <= 0) {
+      // Seen this, invalidly stored width/height of 0
+      return false;
+    }
+
+    return true;
   }
 }

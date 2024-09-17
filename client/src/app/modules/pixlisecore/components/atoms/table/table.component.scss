@@ -1,0 +1,116 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+
+.tables-container {
+    display: flex;
+    flex-direction: row;
+    gap: $sz-unit;
+
+    background-color: $clr-gray-100;
+
+    .column-centered {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    table {
+        border-collapse: collapse;
+        font-size: 12px;
+        font-family: Inter, Roboto;
+        border-right: 1px solid black;
+
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        width:100%;
+    }
+
+    th {
+        font-weight: 700;
+        color: $clr-gray-50;
+        text-align: left;
+        padding: 10px $sz-unit $sz-unit $sz-unit;
+    }
+
+    td {
+        padding: $sz-unit;
+    }
+
+    tbody > tr:nth-child(odd) {
+        background-color: $clr-gray-90;
+    }
+
+    tbody > tr:nth-child(even) {
+        background-color: $clr-gray-100;
+    }
+
+    thead {
+        background-color: $clr-gray-100;
+        border-bottom: 1px solid black;
+    }
+
+    .table-title {
+        color: $clr-gray-10;
+        font-size: 14px;
+        font-family: Roboto;
+        font-weight: 400;
+    }
+
+    .table-subtitle {
+        color: $clr-gray-30;
+        font-size: 14px;
+        font-family: Roboto;
+        font-weight: 400;
+
+        padding-top: 4px;
+    }
+
+    .obj-colour {
+        margin-left: $sz-unit;
+    }
+
+    .row-label {
+        color: $clr-gray-40;
+    }
+
+    .row-value {
+        color: $clr-gray-10;
+    }
+
+    .right-align {
+        text-align: right;
+    }
+
+    .total-row {
+        font-weight: bold;
+    }
+}

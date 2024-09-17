@@ -82,6 +82,30 @@ export class TagService {
           },
         }),
       ],
+      [
+        BuiltInTags.variogramComparisonAlgorithm,
+        Tag.create({
+          id: BuiltInTags.variogramComparisonAlgorithm,
+          name: "Variogram Comparison Algorithm",
+          type: BuiltInTags.type,
+          owner: {
+            id: "Built-in",
+            name: "Built-in",
+          },
+        }),
+      ],
+      [
+        BuiltInTags.variogramMap,
+        Tag.create({
+          id: BuiltInTags.variogramMap,
+          name: "Variogram Map Expression",
+          type: BuiltInTags.type,
+          owner: {
+            id: "Built-in",
+            name: "Built-in",
+          },
+        }),
+      ],
     ]);
 
     return tags;

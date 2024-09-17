@@ -1,7 +1,15 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { Observable, Subscription } from "rxjs";
+import {
+  DataSourceParams,
+  DataUnit,
+  RegionDataResults,
+  SelectionService,
+  SnackbarService,
+  WidgetDataService,
+  WidgetKeyItem,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
+import { catchError, map, Observable, Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -24,6 +32,8 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
+import { RGBA } from "../../../../utils/colours";
+import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -119,6 +129,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         value: this.mdl.keyItems,
         type: "widget-key",
         onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          this.update();
+        },
       },
     };
   }
@@ -157,8 +171,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private update() {
+    this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 2) {
       this._snackService.openError("Expected 2 expression ids for Binary, got " + this.mdl.expressionIds.length);
+      this.isWidgetDataLoading = false;
       return;
     }
 
@@ -176,25 +192,41 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.setData(data);
+        this.setData(data).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
 
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
+          this.isWidgetDataLoading = false;
+        });
       },
       error: err => {
-        this.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err)).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+
+          this.isWidgetDataLoading = false;
+        });
       },
     });
   }
 
-  private setData(data: RegionDataResults) {
-    const errs = this.mdl.setData(data);
-    if (errs.length > 0) {
-      for (const err of errs) {
-        this._snackService.openError(err.message, err.description);
-      }
-    }
+  private setData(data: RegionDataResults): Observable<void> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      map(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   ngOnInit() {
@@ -227,6 +259,21 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
               }
             });
           }
+
+          this.mdl.dataSourceIds.forEach((config, scanId) => {
+            if (screenConfiguration?.scanConfigurations?.[scanId]?.colour) {
+              if (this._roiService.displaySettingsMap$.value[scanId]) {
+                this._roiService.displaySettingsMap$.value[scanId].colour = RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour);
+              } else {
+                this._roiService.displaySettingsMap$.value[scanId] = {
+                  colour: RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour),
+                  shape: "circle",
+                };
+              }
+
+              this._roiService.displaySettingsMap$.next(this._roiService.displaySettingsMap$.value);
+            }
+          });
         }
 
         if (updated) {
@@ -281,16 +328,24 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           return;
         }
 
-        if (result && result.selectedExpressions?.length > 0) {
+        if (result.selectedExpressions?.length > 0) {
           // If there are 1-3, set them all
           const last = Math.min(2, result.selectedExpressions.length);
           for (let i = 0; i < last; i++) {
             this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
           }
-
-          this.update();
-          this.saveState();
+        } else if (result.selectedGroup?.groupItems?.length || 0 > 0) {
+          const last = Math.min(2, result!.selectedGroup!.groupItems.length);
+          for (let i = 0; i < last; i++) {
+            this.mdl.expressionIds[i % 2] = result!.selectedGroup!.groupItems[i].expressionId;
+          }
+        } else {
+          this._snackService.openError("No expressions to apply");
+          return;
         }
+
+        this.update();
+        this.saveState();
 
         // Expression picker has closed, so we can stop highlighting this widget
         this._analysisLayoutService.highlightedWidgetId$.next("");
@@ -300,9 +355,27 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
         // Only update if we have the right expression count otherwise this will just trigger an error
-        if (this.mdl.expressionIds.length == 2) {
+        if (this.mdl.expressionIds.length === 2) {
           this.update();
         }
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.spectrumSelectionWidgetTargetId$.subscribe(targetId => {
+        // Add spectrum selection to expressions list and redraw
+        if (targetId === this._widgetId && this.mdl.expressionIds.length >= 2) {
+          this.mdl.expressionIds[1] = DataExpressionId.SpectrumSelectionExpression;
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.chordClicks$.subscribe((exprIds: string[]) => {
+        // Only update if we have the right expression count otherwise this will just trigger an error
+        this.mdl.expressionIds = exprIds;
+        this.update();
       })
     );
 

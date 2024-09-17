@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <app-toolbar titleToShow="Edit: {{datasetID}}"></app-toolbar> -->
 
   <!-- left pane browsable stuff -->
-  <div class="left-menu panel">
+  <div class="left-menu panel" aria-label="DatasetEditLeftMenu">
     <div class="menu-title">
       <div class="txt-widget-title">Customisations</div>
     </div>
@@ -61,6 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
         <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="10"></textarea>
         <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
+        <push-button (onClick)="onRunAutoQuant()" buttonStyle="yellow">Run Auto-Quantification</push-button>
       </div>
       <div *ngIf="scanId" class="meta-entry column">
         <div class="txt-dlg-heading">Default Image</div>
@@ -113,7 +114,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngFor="let item of matchedImages" class="image-item clickable" (click)="onSelectImage('matched', item)">
         <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ justName(item.imagePath) }}</span>
         <action-button
-          [confirmText]="'Are you sure you want to delete' + item.imagePath + '?'"
+          [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
           action="delete"
           (onClick)="onDeleteImage('matched', item)"></action-button>
       </div>
@@ -128,7 +129,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ item.imagePath }}</span>
         <action-button
           action="delete"
-          [confirmText]="'Are you sure you want to delete' + item.imagePath + '?'"
+          [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
           (onClick)="onDeleteImage('unaligned', item)"></action-button>
       </div>
       <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
@@ -136,7 +137,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
   </div>
   <!-- right pane, showing details -->
-  <div class="right-area">
+  <div class="right-area" aria-label="DatasetEdit">
     <div class="image-edit panel">
       <div class="image-edit-toolbar">
         <div class="txt-widget-title">Alignment</div>
@@ -158,7 +159,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="txt-meta">Opacity</div>
             <slider [value]="overlayOpacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOverlayOpacity($event)"></slider>
             <div class="txt-meta">Brightness</div>
-            <slider [value]="overlayBrightness" [minValue]="0.5" [maxValue]="10" (onChange)="onChangeOverlayBrightness($event)"></slider>
+            <slider [value]="overlayBrightness" [minValue]="1" [maxValue]="10" (onChange)="onChangeOverlayBrightness($event)"></slider>
             <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display Options</push-button>
           </div>
         </ng-container>

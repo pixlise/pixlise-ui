@@ -42,12 +42,53 @@ export class ContextImageScanModelGenerator {
   private _beamUnitsInMeters: boolean = false;
   private _beamRadius_mm: number = 0.06; // Defaults to a radius of 60um, changed once we read the detector config
 
+  get locationPointXSize(): number {
+    return this._locationPointXSize;
+  }
+
+  get locationPointYSize(): number {
+    return this._locationPointYSize;
+  }
+
+  get locationPointZSize(): number {
+    return this._locationPointZSize;
+  }
+
+  get locationPointZMax(): number {
+    return this._locationPointZMax;
+  }
+
+  get locationCount(): number {
+    return this._locationCount;
+  }
+
+  get locationsWithNormalSpectra(): number {
+    return this._locationsWithNormalSpectra;
+  }
+
+  get locationDisplayPointRadius(): number {
+    return this._locationDisplayPointRadius;
+  }
+
+  get minXYDistance_mm(): number {
+    return this._minXYDistance_mm;
+  }
+
+  get beamUnitsInMeters(): boolean {
+    return this._beamUnitsInMeters;
+  }
+
+  get beamRadius_mm(): number {
+    return this._beamRadius_mm;
+  }
+
   processBeamData(
     imageName: string,
     scanItem: ScanItem,
     scanEntries: ScanEntry[],
     beamXYZs: Coordinate3D[],
-    beamIJs: Coordinate2D[],
+    beamLocVersion: number,
+    beamIJs: Coordinate2D[] | null,
     detectorConfig: DetectorConfigResp
   ): ContextImageScanModel {
     const scanPoints = this.initLocationCachingForBeams(scanItem.instrument, scanEntries, beamXYZs, beamIJs, imageName);
@@ -58,14 +99,14 @@ export class ContextImageScanModelGenerator {
 
     // Work out what units we're in, original test data had mm but at one point in about 2020 we switched to meters
     // and FM delivers it that way since
-    let beamUnitsInMeters = ContextImageScanModelGenerator.decideBeamUnitsIsMeters(scanItem.instrument, this._locationPointZMax);
+    this._beamUnitsInMeters = ContextImageScanModelGenerator.decideBeamUnitsIsMeters(scanItem.instrument, this._locationPointZMax);
 
-    if (!imageName) {
+    if (!imageName && beamIJs) {
       // If we don't have an image, we don't scale down
-      beamUnitsInMeters = false;
+      this._beamUnitsInMeters = false;
     }
     const beamRadius_mm = detectorConfig?.config?.mmBeamRadius || this._beamRadius_mm; // If we don't get one, use the default
-    const contextPixelsTommConversion = this.calcImagePixelsToPhysicalmm(beamUnitsInMeters);
+    const contextPixelsTommConversion = this.calcImagePixelsToPhysicalmm(this._beamUnitsInMeters);
     console.log("  Conversion factor for image pixels to mm: " + contextPixelsTommConversion);
 
     const beamRadius_pixels = beamRadius_mm / contextPixelsTommConversion;
@@ -92,6 +133,7 @@ export class ContextImageScanModelGenerator {
       scanItem.id,
       scanItem.title,
       imageName,
+      beamLocVersion,
       scanPoints,
       scanPointPolygons,
       wholeFootprintHullPoints,
@@ -104,7 +146,13 @@ export class ContextImageScanModelGenerator {
     return result;
   }
 
-  private initLocationCachingForBeams(detector: ScanInstrument, scanEntries: ScanEntry[], beamLocations: Coordinate3D[], beamIJs: Coordinate2D[], imageName: string) {
+  private initLocationCachingForBeams(
+    detector: ScanInstrument,
+    scanEntries: ScanEntry[],
+    beamLocations: Coordinate3D[],
+    beamIJs: Coordinate2D[] | null,
+    imageName: string
+  ) {
     const scanPoints: ScanPoint[] = [];
     this._locationCount = 0;
     this._locationsWithNormalSpectra = 0;
@@ -115,10 +163,10 @@ export class ContextImageScanModelGenerator {
 
     // At this point, check that the arrays we have for all scan data have the same sizes
     // because the theory is that we can index across them
-    if (scanEntries.length != beamLocations.length) {
+    if (scanEntries.length !== beamLocations.length) {
       throw new Error(`ScanEntry length ${scanEntries.length} doesn't match beam location length ${beamLocations.length}`);
     }
-    if (scanEntries.length != beamIJs.length) {
+    if (beamIJs && scanEntries.length !== beamIJs.length) {
       throw new Error(`ScanEntry length ${scanEntries.length} doesn't match image beam location length ${beamIJs.length} for image: ${imageName}`);
     }
 
@@ -129,25 +177,31 @@ export class ContextImageScanModelGenerator {
       const scanEntry = scanEntries[c];
 
       const beamXYZ = beamLocations[c];
-      const imageIJ = beamIJs[c];
+      const imageIJ = beamIJs?.[c];
       let imageIJPoint: Point | null = null;
-      if (scanEntry.location && beamXYZ && imageIJ) {
-        imageIJPoint = new Point(imageIJ.i, imageIJ.j);
+      if (scanEntry.location && beamXYZ && (imageIJ || !beamIJs)) {
+        if (!beamIJs) {
+          imageIJPoint = new Point(beamXYZ.x, beamXYZ.y);
+        } else if (imageIJ) {
+          imageIJPoint = new Point(imageIJ.i, imageIJ.j);
+        }
 
         // Expand the x,y,z bbox:
         locPointXMinMax.expand(beamXYZ.x);
         locPointYMinMax.expand(beamXYZ.y);
         locPointZMinMax.expand(beamXYZ.z);
 
-        // And the i,j bbox
-        // Not sure why this was rounded in past, but keeping this convention going forward until
-        // a need arises to change it
-        const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.i, imageIJ.j);
-        if (firstBeam) {
-          this._locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
-          firstBeam = false;
-        } else {
-          this._locationPointBBox.expandToFitPoint(roundedIJ);
+        if (beamIJs && imageIJ) {
+          // And the i,j bbox
+          // Not sure why this was rounded in past, but keeping this convention going forward until
+          // a need arises to change it
+          const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.i, imageIJ.j);
+          if (firstBeam) {
+            this._locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
+            firstBeam = false;
+          } else {
+            this._locationPointBBox.expandToFitPoint(roundedIJ);
+          }
         }
 
         this._locationCount++;
@@ -340,7 +394,7 @@ export class ContextImageScanModelGenerator {
     // Units in the beam location file were converted from mm to meters around June 2020, the way to tell what
     // we're dealing with is by Z, as our standoff distance is always around 25mm, so in mm units this is > 1
     // and in m it's way < 1
-    const beamInMeters = (scanInstrument == ScanInstrument.PIXL_FM || scanInstrument == ScanInstrument.PIXL_EM) && locPointZMaxValue < 1.0;
+    const beamInMeters = (scanInstrument === ScanInstrument.PIXL_FM || scanInstrument === ScanInstrument.PIXL_EM) && locPointZMaxValue < 1.0;
     if (beamInMeters) {
       console.log("  Beam location is in meters");
     } else {

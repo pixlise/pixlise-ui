@@ -1,13 +1,21 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { Observable, Subscription } from "rxjs";
+import { catchError, map, Observable, Subject, Subscription, takeUntil } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  DataSourceParams,
+  SelectionService,
+  WidgetDataService,
+  DataUnit,
+  RegionDataResults,
+  SnackbarService,
+  WidgetKeyItem,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
@@ -20,13 +28,13 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 import { NaryChartModel } from "../../base/model";
+import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -67,6 +75,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   quantId: string = "";
 
   private _subs = new Subscription();
+  private destroy$ = new Subject<void>();
 
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
@@ -120,7 +129,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         id: "selection",
         type: "selection-changer",
         tooltip: "Selection changer",
-        style: { "margin-top": "24px" },
+        //style: { "margin-top": "24px" },
         onClick: () => {},
       },
       topRightInsetButton: {
@@ -128,6 +137,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         type: "widget-key",
         style: { "margin-top": "24px" },
         onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+          this.update();
+        },
       },
     };
   }
@@ -156,10 +169,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private update() {
+    this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 3) {
       this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
+      this.isWidgetDataLoading = false;
       return;
     }
+
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
@@ -175,25 +191,41 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.setData(data);
+        this.setData(data).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
 
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
+          this.isWidgetDataLoading = false;
+        });
       },
       error: err => {
-        this.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err)).subscribe(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+
+          this.isWidgetDataLoading = false;
+        });
       },
     });
   }
 
-  private setData(data: RegionDataResults) {
-    const errs = this.mdl.setData(data);
-    if (errs.length > 0) {
-      for (const err of errs) {
-        this._snackService.openError(err.message, err.description);
-      }
-    }
+  private setData(data: RegionDataResults): Observable<void> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      map(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   ngOnInit() {
@@ -275,19 +307,31 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (result && result.selectedExpressions?.length > 0 && this._analysisLayoutService.highlightedWidgetId$.value === this._widgetId) {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result.selectedExpressions?.length > 0) {
           // If there are 1-3, set them all
           const last = Math.min(3, result.selectedExpressions.length);
           for (let i = 0; i < last; i++) {
             this.mdl.expressionIds[i] = result.selectedExpressions[i].id;
           }
-
-          this.update();
-          this.saveState();
-
-          // Expression picker has closed, so we can stop highlighting this widget
-          this._analysisLayoutService.highlightedWidgetId$.next("");
+        } else if (result.selectedGroup?.groupItems?.length || 0 > 0) {
+          const last = Math.min(3, result!.selectedGroup!.groupItems.length);
+          for (let i = 0; i < last; i++) {
+            this.mdl.expressionIds[i] = result!.selectedGroup!.groupItems[i].expressionId;
+          }
+        } else {
+          this._snackService.openError("No expressions to apply");
+          return;
         }
+
+        this.update();
+        this.saveState();
+
+        // Expression picker has closed, so we can stop highlighting this widget
+        this._analysisLayoutService.highlightedWidgetId$.next("");
       })
     );
 
@@ -300,10 +344,22 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       })
     );
 
+    this._subs.add(
+      this._analysisLayoutService.spectrumSelectionWidgetTargetId$.subscribe(targetId => {
+        // Add spectrum selection to expressions list and redraw
+        if (targetId === this._widgetId && this.mdl.expressionIds.length >= 3) {
+          this.mdl.expressionIds[2] = DataExpressionId.SpectrumSelectionExpression;
+          this.update();
+        }
+      })
+    );
+
     this.reDraw();
   }
 
   ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
     this._subs.unsubscribe();
   }
 

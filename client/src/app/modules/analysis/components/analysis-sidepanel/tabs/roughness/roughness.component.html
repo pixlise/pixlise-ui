@@ -102,6 +102,9 @@ POSSIBILITY OF SUCH DAMAGE.
 </ng-template>
 
 <div class="tab-container roughness">
+  <header>
+    <h5>Roughness</h5>
+  </header>
   <div class="scan-selector">
     <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
       <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>

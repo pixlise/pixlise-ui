@@ -45,7 +45,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       const axisDrawer = drawData.makeChartAxisDrawer();
       axisDrawer.drawAxes(
         screenContext,
-        drawParams.drawViewport, 
+        drawParams.drawViewport,
         drawData.xAxis,
         "", // we handle our own drawing
         drawData.yAxis,
@@ -78,7 +78,11 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       screenContext.textBaseline = "top";
       screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
       // x is easy
-      screenContext.fillText(this._mdl.hoverPointData.values[0].toLocaleString(), drawData.xAxis.pctToCanvas(0.0), xAxisTextY);
+      screenContext.fillText(
+        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[0].toLocaleString() : "No Value",
+        drawData.xAxis.pctToCanvas(0.0),
+        xAxisTextY
+      );
 
       // y needs rotation
       screenContext.textAlign = "left";
@@ -86,7 +90,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       screenContext.save();
       screenContext.translate(BinaryChartModel.LABEL_PADDING + 5, drawData.yAxis.pctToCanvas(1));
       screenContext.rotate(-Math.PI / 2);
-      screenContext.fillText(this._mdl.hoverPointData.values[1].toLocaleString(), 0, 0);
+      screenContext.fillText(this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[1].toLocaleString() : "No Value", 0, 0);
       screenContext.restore();
 
       // What scan and PMC are we on?

@@ -2,8 +2,9 @@ import { Component, HostListener } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
-import { Subscription } from "rxjs";
+import { combineLatest, distinctUntilChanged, map, of, Subscription, switchMap } from "rxjs";
 import { UsersService } from "src/app/modules/settings/services/users.service";
+import { ActivatedRoute } from "@angular/router";
 
 export type ScreenConfigurationCSS = {
   templateColumns: string;
@@ -22,36 +23,56 @@ export class AnalysisPageComponent {
   computedLayouts: ScreenConfigurationCSS[] = [];
   loadedScreenConfiguration: ScreenConfiguration | null = null;
 
+  activeLayout: FullScreenLayout | null = null;
+  activeLayoutIndex: number = 0;
+
   soloViewWidgetId: string | null = null;
   soloViewWidget: WidgetLayoutConfiguration | null = null;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
-    private _usersService: UsersService
+    private _usersService: UsersService,
+    private _route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screen => {
-        this.loadedScreenConfiguration = screen;
-        this.computeLayouts();
-      })
-    );
+      combineLatest([
+        this._analysisLayoutService.activeScreenConfiguration$.pipe(distinctUntilChanged()),
+        this._analysisLayoutService.activeScreenConfigurationId$.pipe(distinctUntilChanged()),
+        this._analysisLayoutService.soloViewWidgetId$.pipe(distinctUntilChanged()),
+        this._route.queryParams.pipe(
+          map(params => parseInt(params?.["tab"] || "0")),
+          distinctUntilChanged()
+        ),
+      ])
+        .pipe(
+          switchMap(([screen, id, soloViewWidgetId, tabNumber]) => {
+            if (!screen || !id || screen.id !== id) {
+              return of(null);
+            }
 
-    this._subs.add(
-      this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
-        this.soloViewWidgetId = soloViewWidgetId;
+            this.loadedScreenConfiguration = screen;
+            this.computeLayouts();
+            this.soloViewWidgetId = soloViewWidgetId;
 
-        if (soloViewWidgetId) {
-          let widget = (this.loadedScreenConfiguration?.layouts || [])
-            .map(layout => layout.widgets.find(widget => widget.id === soloViewWidgetId))
-            .find(widget => widget !== undefined);
-          this.soloViewWidget = widget || null;
-          this._analysisLayoutService.delayNotifyCanvasResize(500);
-        } else {
-          this.soloViewWidget = null;
-        }
-      })
+            if (soloViewWidgetId) {
+              let widget = (screen?.layouts || []).map(layout => layout.widgets.find(widget => widget.id === soloViewWidgetId)).find(widget => widget !== undefined);
+              this.soloViewWidget = widget || null;
+              this._analysisLayoutService.delayNotifyCanvasResize(500);
+            } else {
+              this.soloViewWidget = null;
+            }
+
+            this.activeLayoutIndex = !isNaN(tabNumber) ? tabNumber : 0;
+            if (screen && screen.layouts.length > this.activeLayoutIndex) {
+              this.activeLayout = screen.layouts[this.activeLayoutIndex];
+            }
+
+            return of(null);
+          })
+        )
+        .subscribe()
     );
 
     this._usersService.searchUsers("");
@@ -89,6 +110,13 @@ export class AnalysisPageComponent {
     ) {
       this.computedLayouts = newLayout;
     }
+
+    if (this.loadedScreenConfiguration.layouts.length > this.activeLayoutIndex) {
+      this.activeLayout = this.loadedScreenConfiguration.layouts[this.activeLayoutIndex];
+    } else {
+      console.log("Active layout index is out of bounds, ", this.activeLayoutIndex, this.loadedScreenConfiguration.layouts);
+      this.activeLayout = null;
+    }
   }
 
   @HostListener("window:keydown", ["$event"])
@@ -111,6 +139,11 @@ export class AnalysisPageComponent {
   @HostListener("window:keyup", ["$event"])
   onKeyup(event: KeyboardEvent): void {
     this._keyPresses.delete(event.key);
+  }
+
+  @HostListener("window:blur")
+  onWindowBlur(): void {
+    this._keyPresses.clear();
   }
 
   @HostListener("window:resize", ["$event"])

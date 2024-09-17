@@ -160,11 +160,13 @@ export class PickerDialogComponent implements OnInit {
   ngAfterViewInit() {
     // Move to be near the element that opened us
     if (this.data.triggerElementRef) {
-      const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
-      const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
+      if (this.data.triggerElementRef.nativeElement) {
+        const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
+        const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
 
-      const pos = positionDialogNearParent(openerRect, ourWindowRect);
-      this.dialogRef.updatePosition(pos);
+        const pos = positionDialogNearParent(openerRect, ourWindowRect);
+        this.dialogRef.updatePosition(pos);
+      }
     }
   }
 

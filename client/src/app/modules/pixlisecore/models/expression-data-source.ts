@@ -11,7 +11,7 @@ import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantificati
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
-import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ScanEntryRange, ScanMetaDataType } from "src/app/generated-protos/scan";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
@@ -29,6 +29,7 @@ import { APICachedDataService } from "../services/apicacheddata.service";
 import { DefaultDetectorId } from "src/app/expression-language/predefined-expressions";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
+import { SpectrumDataService } from "../services/spectrum-data.service";
 
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
@@ -72,6 +73,7 @@ export class ExpressionDataSource
 
   // And where to turn to get it:
   private _cachedDataService: APICachedDataService | null = null;
+  private _spectrumDataService: SpectrumDataService | null = null;
 
   private _debug = false;
   private _prepTime = performance.now();
@@ -80,6 +82,7 @@ export class ExpressionDataSource
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
     cachedDataService: APICachedDataService,
+    spectrumService: SpectrumDataService,
     scanId: string,
     quantId: string,
     roiId: string,
@@ -89,6 +92,7 @@ export class ExpressionDataSource
     this._quantId = quantId;
 
     this._cachedDataService = cachedDataService;
+    this._spectrumDataService = spectrumService;
 
     this._spectrumEnergyCalibration = spectrumEnergyCalibration;
 
@@ -239,12 +243,12 @@ export class ExpressionDataSource
   }
 
   private getSpectrum(): Observable<SpectrumResp> {
-    if (!this._cachedDataService) {
+    if (!this._spectrumDataService) {
       return throwError(() => new Error("getSpectrum: no data available"));
     }
 
     // NOTE: We need ALL spectra because the functions that access this sum across all spectra
-    return this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: this._scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ }));
+    return this._spectrumDataService.getSpectra(this._scanId, null, false, false);
   }
 
   private getDiffractionPeakManualList(): Observable<DiffractionPeakManualListResp> {
@@ -446,19 +450,25 @@ export class ExpressionDataSource
 
           if (idx < 0) {
             throw new Error(
-              `The currently loaded quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
+              `Scan ${this._scanId} quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
             );
           }
 
           //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
-
-          return ExpressionDataSource.getQuantifiedDataValues(quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
+          return ExpressionDataSource.getQuantifiedDataValues(this._scanId, quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
         })
       )
     );
   }
 
-  public static getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValues {
+  public static getQuantifiedDataValues(
+    scanId: string,
+    quantData: Quantification,
+    detectorId: string,
+    colIdx: number,
+    mult: number | null,
+    isPctColumn: boolean
+  ): PMCDataValues {
     const result = new PMCDataValues();
     result.isBinary = true; // pre-set for detection in addValue
     let detectorFound = false;
@@ -506,11 +516,7 @@ export class ExpressionDataSource
       }
 
       throw new Error(
-        'The currently loaded quantification does not contain data for detector: "' +
-          detectorId +
-          '". It only contains detector(s): "' +
-          Array.from(detectors).join(",") +
-          '"'
+        `Scan ${scanId} quantification does not contain data for detector: "${detectorId}". It only contains detector(s): "${Array.from(detectors).join(",")}"`
       );
     }
 
@@ -605,7 +611,7 @@ export class ExpressionDataSource
           }
           const elemIdx = pseudoData.intensityLabels.indexOf(name);
           if (elemIdx == -1) {
-            throw new Error(`The currently loaded dataset does not include pseudo-intensity data with column name: "${name}"`);
+            throw new Error(`Scan ${this._scanId} does not include pseudo-intensity data with column name: "${name}"`);
           }
 
           // Run through all locations & build it
@@ -851,7 +857,7 @@ export class ExpressionDataSource
 
   async getRoughnessData(): Promise<PMCDataValues> {
     if (this._debug) {
-      this.logFunc(`getHousekeepingData()`);
+      this.logFunc(`getRoughnessData()`);
     }
     return await lastValueFrom(
       combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
@@ -912,7 +918,7 @@ export class ExpressionDataSource
           // If it exists as a metaLabel and has a type we can return, do it
           const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
           if (metaIdx < 0) {
-            throw new Error('The currently loaded dataset does not include housekeeping data with column name: "' + name + '"');
+            throw new Error(`Scan ${this._scanId} does not include housekeeping data with column name: "${name}"`);
           }
 
           const metaType = scanMetaLabelsAndTypes.metaTypes[metaIdx];
@@ -928,6 +934,10 @@ export class ExpressionDataSource
             const entry = scanMetaData.entries[c];
             if (entry) {
               const item = entry.meta[metaIdx];
+              if (item === undefined) {
+                throw new Error(`Scan entry ${c} does not contain housekeeping data labelled: "${name}"`);
+              }
+
               const value = (metaType == ScanMetaDataType.MT_FLOAT ? item.fvalue : item.ivalue) || 0; // Shut up compiler...
 
               const locIdx = this._scanEntryIndexesRequested[c];
