@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, share, shareReplay } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -649,66 +649,83 @@ export class ExpressionDataSource
 
   // SpectrumDataQuerierSource
   async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
+    const cachedResult = this._spectrumDataService?.getSpectrumRangeMapData(this._scanId, channelStart, channelEnd, detectorExpr);
+
+    if (cachedResult !== undefined) {
+      if (this._debug) {
+        this.logFunc(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr}) - CACHED`);
+      }
+      return await lastValueFrom(cachedResult);
+    }
+
     if (this._debug) {
       this.logFunc(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr})`);
     }
-    return await lastValueFrom(
-      combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum() /*, this.getScanEntryMetadata()*/]).pipe(
-        map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp /*, ScanEntryMetadataResp*/]) => {
-          const scanMetaLabelsAndTypes = dataItems[0];
-          const spectrumData = dataItems[1];
-          //const scanMetaData = dataItems[2];
 
-          if (!scanMetaLabelsAndTypes || /*!scanMetaData ||*/ !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
-            throw new Error("getSpectrumRangeMapData: No data available");
-          }
+    // We don't have it, so calculate it (while also saving it for subsequent requests)
+    const result$ = this.calcSpectrumRangeMapData(channelStart, channelEnd, detectorExpr);
+    this._spectrumDataService?.storeSpectrumRangeMapData(this._scanId, channelStart, channelEnd, detectorExpr, result$);
 
-          // For now, only supporting A & B for now
-          if (detectorExpr != "A" && detectorExpr != "B") {
-            throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
-          }
+    return await lastValueFrom(result$);
+  }
 
-          if (channelStart < 0 || channelEnd < channelStart) {
-            throw new Error("getSpectrumData: Invalid start/end channel specified");
-          }
+  private calcSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Observable<PMCDataValues> {
+    return combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum() /*, this.getScanEntryMetadata()*/]).pipe(
+      map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp /*, ScanEntryMetadataResp*/]) => {
+        const scanMetaLabelsAndTypes = dataItems[0];
+        const spectrumData = dataItems[1];
+        //const scanMetaData = dataItems[2];
 
-          let foundRange = false;
-          const values: PMCDataValue[] = [];
+        if (!scanMetaLabelsAndTypes || /*!scanMetaData ||*/ !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+          throw new Error("getSpectrumRangeMapData: No data available");
+        }
 
-          // Loop through & sum all values within the channel range
-          for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
-            const loc = spectrumData.spectraPerLocation[c];
-            for (const spectrum of loc.spectra) {
-              // At this point, we want to read from the detectors in this location. We are reading spectra for each PMC
-              // so we need to read for the detector specified (A vs B), and within there, we may have normal or dwell
-              // spectra. We can't actually combine normal vs dwell because the counts in dwell would be higher so
-              // we just hard-code here to read from normal!
-              if (detectorExpr == spectrum.detector && spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
-                let channelEndToReadTo = channelEnd;
-                if (channelEndToReadTo > spectrum.counts.length) {
-                  channelEndToReadTo = spectrum.counts.length;
-                }
+        // For now, only supporting A & B for now
+        if (detectorExpr != "A" && detectorExpr != "B") {
+          throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
+        }
 
-                // Loop through & add it
-                let sum = 0;
-                for (let ch = channelStart; ch < channelEndToReadTo; ch++) {
-                  sum += spectrum.counts[ch];
-                }
+        if (channelStart < 0 || channelEnd < channelStart) {
+          throw new Error("getSpectrumData: Invalid start/end channel specified");
+        }
 
-                const pmc = this._scanEntries.entries[c].id;
-                values.push(new PMCDataValue(pmc, sum));
-                foundRange = true;
+        let foundRange = false;
+        const values: PMCDataValue[] = [];
+
+        // Loop through & sum all values within the channel range
+        for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
+          const loc = spectrumData.spectraPerLocation[c];
+          for (const spectrum of loc.spectra) {
+            // At this point, we want to read from the detectors in this location. We are reading spectra for each PMC
+            // so we need to read for the detector specified (A vs B), and within there, we may have normal or dwell
+            // spectra. We can't actually combine normal vs dwell because the counts in dwell would be higher so
+            // we just hard-code here to read from normal!
+            if (detectorExpr == spectrum.detector && spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
+              let channelEndToReadTo = channelEnd;
+              if (channelEndToReadTo > spectrum.counts.length) {
+                channelEndToReadTo = spectrum.counts.length;
               }
+
+              // Loop through & add it
+              let sum = 0;
+              for (let ch = channelStart; ch < channelEndToReadTo; ch++) {
+                sum += spectrum.counts[ch];
+              }
+
+              const pmc = this._scanEntries.entries[c].id;
+              values.push(new PMCDataValue(pmc, sum));
+              foundRange = true;
             }
           }
+        }
 
-          if (!foundRange) {
-            throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
-          }
+        if (!foundRange) {
+          throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
+        }
 
-          return PMCDataValues.makeWithValues(values);
-        })
-      )
+        return PMCDataValues.makeWithValues(values);
+      }),
+      shareReplay(1)
     );
   }
 
