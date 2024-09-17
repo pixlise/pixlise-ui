@@ -797,12 +797,16 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   private updateLines(refreshCalibrationData: boolean = false) {
+    const lineMap = this.mdl.getLineList();
+
+    if (lineMap.size <= 0) {
+      this.isWidgetDataLoading = false;
+      return;
+    }
+
     this.isWidgetDataLoading = true;
-    const scanIds = new Set<string>();
 
-    let lineMap = this.mdl.getLineList();
-
-    let roiIds = Array.from(lineMap.keys());
+    const roiIds = Array.from(lineMap.keys());
     this._subs.add(
       this._roiService.getScanIdsFromROIs(roiIds).subscribe(scanIds => {
         // For any scans coming in that are not yet calibrated, set them to
