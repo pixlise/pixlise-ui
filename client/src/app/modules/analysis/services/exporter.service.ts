@@ -605,18 +605,20 @@ msa += `#XPOSITION   : 0.000
 
               for (let i = 0; i < imageBeamVersions.length; i++) {
                 const beamVers = imageBeamVersions[i];
-                for (const ver of beamVers.beamVersionPerScan[scanId].versions) {
-                  const sendVer: { [x: string]: number } = {};
-                  sendVer[scanId] = ver;
+                if (beamVers && beamVers.beamVersionPerScan[scanId]) {
+                  for (const ver of beamVers.beamVersionPerScan[scanId].versions) {
+                    const sendVer: { [x: string]: number } = {};
+                    sendVer[scanId] = ver;
 
-                  beamRequests$.push(
-                    this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imagePaths[i], scanBeamVersions: sendVer })).pipe(
-                      catchError(err => {
-                        console.error("Failed to get beam locations for image", imagePaths[i], err);
-                        return of(null);
-                      })
-                    )
-                  );
+                    beamRequests$.push(
+                      this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imagePaths[i], scanBeamVersions: sendVer })).pipe(
+                        catchError(err => {
+                          console.error("Failed to get beam locations for image", imagePaths[i], err);
+                          return of(null);
+                        })
+                      )
+                    );
+                  }
                 }
               }
 
