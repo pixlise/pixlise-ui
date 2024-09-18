@@ -1,4 +1,11 @@
-## 4.41.0 (Latest)
+## 4.42.0 (Latest)
+
+### Bug Fixes
+
+- Fixes issue with exporter where if no beam location versions are found for a given image, it failed the entire export
+- Fixes an issue with admin accounts viewing the backup/restore features if they're disabled
+
+## 4.41.0 (2024-09-16)
 
 ### Features
 

@@ -168,6 +168,9 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
     if (this.impersonatingUserName !== undefined && this.impersonatingUserName.length <= 0) {
       // Ask who to impersonate
       userId = prompt("Enter user id to impersonate (or blank to stop impersonating)") || "";
+      if (!userId) {
+        return;
+      }
     }
 
     this._dataService.sendUserImpersonateRequest(UserImpersonateReq.create({ userId })).subscribe({
