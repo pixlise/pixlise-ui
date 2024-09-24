@@ -124,9 +124,29 @@ fdescribe("LuaDataQuerier runQuery() for real expression", () => {
           expectedOutputValues.push(new PMCDataValue(v["pmc"], v["value"]));
         }
 
+        let valuesEqual = 0;
+        let diff = "";
         for (let c = 0; c < expectedOutputValues.length; c++) {
-          expect(`${value.resultValues.values[c].pmc}=${Math.round(value.resultValues.values[c].value * 10000) / 10000}`).toEqual(
-            `${expectedOutputValues[c].pmc}=${Math.round(expectedOutputValues[c].value * 10000) / 10000}`
+          expect(`${value.resultValues.values[c].pmc}`).toEqual(`${expectedOutputValues[c].pmc}`);
+          if (value.resultValues.values[c].value === expectedOutputValues[c].value) {
+            valuesEqual++;
+          } else {
+            diff += `${value.resultValues.values[c].pmc} = ${Math.round(value.resultValues.values[c].value * 10000) / 10000} vs ${
+              Math.round(expectedOutputValues[c].value * 10000) / 10000
+            }\n`;
+          }
+
+          // expect(`${value.resultValues.values[c].pmc}=${Math.round(value.resultValues.values[c].value * 10000) / 10000}`).toEqual(
+          //   `${expectedOutputValues[c].pmc}=${Math.round(expectedOutputValues[c].value * 10000) / 10000}`
+          // );
+        }
+
+        expect(valuesEqual).toEqual(expectedOutputValues.length);
+        if (valuesEqual != expectedOutputValues.length) {
+          console.log(
+            `${expectedOutputValues.length - valuesEqual}/${expectedOutputValues.length} (${
+              Math.round(((expectedOutputValues.length - valuesEqual) / expectedOutputValues.length) * 10000) / 100
+            }%) Differences in expression output\nPMC = calculated vs expected\n` + diff
           );
         }
 
