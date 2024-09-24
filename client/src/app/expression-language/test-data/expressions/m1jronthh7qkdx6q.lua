@@ -51,7 +51,7 @@ end
 -- printDump("FeT", FeT)
 -- printDump("MnT", MnT)
 
---print("si,canak,mgmnfe")
+-- print("si,canak,mgmnfe")
 local si = 100*SiO2/(SiO2 + CaT + Na2O + K2O + MgT + FeT + MnT)
 local canak = 100*(CaT + Na2O + K2O)/(SiO2 + CaT + Na2O + K2O + MgT + FeT + MnT)
 local mgmnfe = 100 - si - canak

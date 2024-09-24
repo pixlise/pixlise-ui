@@ -54,11 +54,11 @@ fdescribe("LuaDataQuerier runQuery() for real expression", () => {
       readTestFile(`scan/${scanId}/dataset.bin`),
       readTestFile(`scan/${scanId}/diffraction-db.bin`),
       readTestFile(`quant/${scanId}/quant-616i0uwwtns0yfbt.bin`),
-      readTestFile("expressions/SiO2'.lua"),
+      readTestFile("expressions/m1jronthh7qkdx6q.lua"),
       readTestFile("modules/Locations0.3.0.lua"),
       readTestFile("modules/Estimate0.29.0.lua"),
       readTestFile("modules/GeoAndDiffCorrection2.9.0.lua"),
-      readTestFile("expected-output/output.json"),
+      readTestFile("expected-output/m1jronthh7qkdx6q.json"),
     ]).then((results: [ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer]) => {
       datasetBin = Experiment.decode(new Uint8Array(results[0], 0, results[0].byteLength));
       diffractionBin = Diffraction.decode(new Uint8Array(results[1], 0, results[1].byteLength));
@@ -79,6 +79,8 @@ fdescribe("LuaDataQuerier runQuery() for real expression", () => {
     lua.runQuery(exprSiO2prime, modules, ds, true, false, 600000, null).subscribe({
       // Result
       next: value => {
+        console.log(`Test Query took: ${value.runtimeMs.toLocaleString()}ms`);
+
         const expDataRequired = [
           "spectrum",
           "diffraction",
