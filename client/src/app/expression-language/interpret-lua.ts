@@ -276,6 +276,36 @@ export class LuaDataQuerier {
       },
     ],
     [
+      "readCache_async",
+      async (k: any) => {
+        const t0 = performance.now();
+
+        const caller = `readCache(${k})`;
+
+        if (this._debugJSTiming) {
+          console.log(caller);
+          this._jsFuncCalls.push(caller);
+        }
+
+        return this._dataSource!.getMemoised([k]);
+      },
+    ],
+    [
+      "writeCache_async",
+      async (k: any, a: any) => {
+        const t0 = performance.now();
+
+        const caller = `writeCache(${k})`;
+
+        if (this._debugJSTiming) {
+          console.log(caller);
+          this._jsFuncCalls.push(caller);
+        }
+
+        return this._dataSource!.memoise([k, a]);
+      },
+    ],
+    [
       "getVariogramInputs",
       (useTestData: any) => {
         let values = this._customInjectFunctionData?.get("getVariogramInputs") || [];
@@ -492,7 +522,7 @@ export class LuaDataQuerier {
           }
 
           if (this._debugJSTiming) {
-            console.log(`Total JS function time: ${this._totalJSFunctionTime}ms`);
+            console.log(`Total JS function time: ${this._totalJSFunctionTime.toLocaleString()}ms`);
           }
 
           const runtimeMs = performance.now() - t0;

@@ -658,7 +658,7 @@ export class WidgetDataService {
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
+            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._memoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)

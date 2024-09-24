@@ -36,6 +36,8 @@ import {
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { MemoisationService } from "../modules/pixlisecore/services/memoisation.service";
+import { lastValueFrom, map } from "rxjs";
 
 export class InterpreterDataSource {
   constructor(
@@ -43,7 +45,8 @@ export class InterpreterDataSource {
     public pseudoDataSource: PseudoIntensityDataQuerierSource,
     public housekeepingDataSource: HousekeepingDataQuerierSource,
     public spectrumDataSource: SpectrumDataQuerierSource,
-    public diffractionSource: DiffractionPeakQuerierSource
+    public diffractionSource: DiffractionPeakQuerierSource,
+    private _memoService: MemoisationService
   ) {}
 
   ////////////////////////////////////// Calling Quant Data Source //////////////////////////////////////
@@ -73,10 +76,10 @@ export class InterpreterDataSource {
       return result;
     }
 
-    return this.convertToMmol(argList[0], result);
+    return InterpreterDataSource.convertToMmol(argList[0], result);
   }
 
-  private convertToMmol(formula: string, values: PMCDataValues): PMCDataValues {
+  public static convertToMmol(formula: string, values: PMCDataValues): PMCDataValues {
     const result: PMCDataValue[] = [];
 
     let conversion = 1;
@@ -361,4 +364,28 @@ export class InterpreterDataSource {
   }
 
   public static validExistsDataTypes = ["element", "detector", "data", "housekeeping", "pseudo"];
+
+  public async getMemoised(argList: any[]): Promise<Uint8Array> {
+    if (argList.length != 1 || typeof argList[0] != "string") {
+      throw new Error("getMemoised() expects 1 parameter: key. Received: " + argList.length + " parameters");
+    }
+
+    if (!this._memoService) {
+      throw new Error("getMemoised() failed, service not available");
+    }
+
+    return await lastValueFrom(this._memoService.memoise(argList[0], argList[1]).pipe(map(() => new Uint8Array())));
+  }
+
+  public async memoise(argList: any[]): Promise<boolean> {
+    if (argList.length != 2 || typeof argList[0] != "string") {
+      throw new Error("memoise() expects 2 parameters: key, data. Received: " + argList.length + " parameters");
+    }
+
+    if (!this._memoService) {
+      throw new Error("memoise() failed, service not available");
+    }
+
+    return await lastValueFrom(this._memoService.memoise(argList[0], argList[1]).pipe(map(() => true)));
+  }
 }

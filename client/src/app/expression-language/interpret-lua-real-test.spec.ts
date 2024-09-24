@@ -1,0 +1,517 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
+//import { InterpreterDataSource } from "./interpreter-data-source";
+import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
+import { decompressZeroRunLengthEncoding } from "../utils/utils";
+import { Diffraction } from "src/app/generated-protos/files/diffraction";
+import { Experiment, Experiment_MetaDataType } from "src/app/generated-protos/files/experiment";
+import { Quantification } from "src/app/generated-protos/quantification";
+import { InterpreterDataSource } from "./interpreter-data-source";
+import { periodicTableDB } from "../periodic-table/periodic-table-db";
+import { ExpressionDataSource } from "../modules/pixlisecore/models/expression-data-source";
+
+fdescribe("LuaDataQuerier runQuery() for real expression", () => {
+  const scanId = "371196417";
+  let datasetBin: Experiment;
+  let diffractionBin: Diffraction;
+  let quantBin: Quantification;
+  let exprSiO2prime: string = "";
+  let expectedOutput: object = {};
+  const modules = new Map<string, string>();
+
+  beforeEach(done => {
+    //waitForAsync(() => {
+    Promise.all([
+      // NOTE: These are only served by karma if they're mentioned in karma.conf.js
+      readTestFile(`scan/${scanId}/dataset.bin`),
+      readTestFile(`scan/${scanId}/diffraction-db.bin`),
+      readTestFile(`quant/${scanId}/quant-616i0uwwtns0yfbt.bin`),
+      readTestFile("expressions/SiO2'.lua"),
+      readTestFile("modules/Locations0.3.0.lua"),
+      readTestFile("modules/Estimate0.29.0.lua"),
+      readTestFile("modules/GeoAndDiffCorrection2.9.0.lua"),
+      readTestFile("expected-output/output.json"),
+    ]).then((results: [ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer]) => {
+      datasetBin = Experiment.decode(new Uint8Array(results[0], 0, results[0].byteLength));
+      diffractionBin = Diffraction.decode(new Uint8Array(results[1], 0, results[1].byteLength));
+      quantBin = Quantification.decode(new Uint8Array(results[2], 0, results[2].byteLength));
+      exprSiO2prime = new TextDecoder().decode(results[3]);
+      modules.set("Locations", new TextDecoder().decode(results[4]));
+      modules.set("Estimate", new TextDecoder().decode(results[5]));
+      modules.set("GeoAndDiffCorrection", new TextDecoder().decode(results[6]));
+      expectedOutput = JSON.parse(new TextDecoder().decode(results[7]));
+      done();
+    });
+  });
+
+  it("should run complex expression", done => {
+    const lua = new LuaDataQuerier(false);
+    const ds = makeDataSource(scanId, datasetBin, diffractionBin, quantBin);
+
+    lua.runQuery(exprSiO2prime, modules, ds, true, false, 600000, null).subscribe({
+      // Result
+      next: value => {
+        const expDataRequired = [
+          "spectrum",
+          "diffraction",
+          "expr-data-livetime(A)",
+          "expr-data-livetime(B)",
+          "expr-elem-SiO2-%-as-mmol(A)",
+          "expr-elem-SiO2-err(A)",
+          "expr-elem-SiO2-%-as-mmol(B)",
+          "expr-elem-SiO2-err(B)",
+          "expr-elem-CaO-%-as-mmol(A)",
+          "expr-elem-CaO-err(A)",
+          "expr-elem-CaO-%-as-mmol(B)",
+          "expr-elem-CaO-err(B)",
+          "expr-elem-Na2O-%-as-mmol(A)",
+          "expr-elem-Na2O-err(A)",
+          "expr-elem-Na2O-%-as-mmol(B)",
+          "expr-elem-Na2O-err(B)",
+          "expr-elem-K2O-%-as-mmol(A)",
+          "expr-elem-K2O-err(A)",
+          "expr-elem-K2O-%-as-mmol(B)",
+          "expr-elem-K2O-err(B)",
+          "expr-elem-MgO-%-as-mmol(A)",
+          "expr-elem-MgO-err(A)",
+          "expr-elem-MgO-%-as-mmol(B)",
+          "expr-elem-MgO-err(B)",
+          "expr-elem-FeO-T-%-as-mmol(A)",
+          "expr-elem-FeO-T-err(A)",
+          "expr-elem-FeO-T-%-as-mmol(B)",
+          "expr-elem-FeO-T-err(B)",
+          "expr-elem-MnO-%-as-mmol(A)",
+          "expr-elem-MnO-err(A)",
+          "expr-elem-MnO-%-as-mmol(B)",
+          "expr-elem-MnO-err(B)",
+        ];
+
+        expect(value.dataRequired).toEqual(expDataRequired);
+
+        // Form a comparable result
+        const expectedOutputValues: PMCDataValue[] = [];
+        for (const v of Object.values(expectedOutput)) {
+          expectedOutputValues.push(new PMCDataValue(v["pmc"], v["value"]));
+        }
+
+        for (let c = 0; c < expectedOutputValues.length; c++) {
+          expect(`${value.resultValues.values[c].pmc}=${Math.round(value.resultValues.values[c].value * 10000) / 10000}`).toEqual(
+            `${expectedOutputValues[c].pmc}=${Math.round(expectedOutputValues[c].value * 10000) / 10000}`
+          );
+        }
+
+        //  expect(value.resultValues.values).toEqual(PMCDataValues.makeWithValues(expectedOutputValues));
+        //const exp = new DataQueryResult(1, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+        //expect(value).toEqual(exp);
+      },
+      // Error handler
+      error: err => {
+        throw new Error(err);
+      },
+      // Finalizer
+      complete: done,
+    });
+  });
+});
+
+async function readTestFile(relativePath: string): Promise<ArrayBuffer> {
+  const fullPath = "base/src/app/expression-language/test-data/" + relativePath;
+
+  const response = await fetch(fullPath);
+  const blob = await response.blob();
+  return blob.arrayBuffer();
+  /*
+  let r = new FileReader();
+  r.readAsArrayBuffer(blob);
+
+  r.onload = function(){ alert(r.result); };
+*/
+}
+
+function readQuant(scanId: string, dataLabel: string, detectorId: string, quantBin: Quantification): PMCDataValues {
+  const elemLookup = ExpressionDataSource.buildPureElementLookup(quantBin.labels)
+  const quantCol = ExpressionDataSource.getQuantColIndex(dataLabel, quantBin.labels, elemLookup.pureElementColumnLookup);
+
+  if (quantCol.idx < 0) {
+    throw new Error(
+      `Quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
+    );
+  }
+
+  //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
+
+  const data = ExpressionDataSource.getQuantifiedDataValues(
+    scanId,
+    quantBin,
+    detectorId,
+    quantCol.idx,
+    quantCol.toElemConvert,
+    dataLabel.endsWith("_%")
+  );
+  return PMCDataValues.makeWithValues(data);
+}
+
+function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: Diffraction, quantBin: Quantification): InterpreterDataSource {
+  const ds = jasmine.createSpyObj(
+    "InterpreterDataSource",
+    [
+      "readElement",
+      "readElementSum",
+      "readMap",
+      "readSpectrum",
+      "readSpectrumDifferences",
+      "readDiffractionData",
+      "readRoughnessData",
+      "readPosition",
+      "makeMap",
+
+      "atomicMass",
+
+      "readPseudoIntensity",
+      "readHousekeepingData",
+      "exists",
+
+      "getMemoised",
+      "memoise",
+    ],
+    []
+  );
+
+  ds.readElement.and.callFake((args: any[]) => {
+    const elem = args[0] as string;
+    const column = args[1] as string;
+    const detectorId = args[2] as string;
+
+    let col = column;
+    let asMmol = false;
+
+    if (col == "%-as-mmol") {
+      col = "%";
+      asMmol = true;
+    }
+
+    const dataLabel = elem + "_" + col;
+
+    const result = readQuant(scanId, dataLabel, detectorId, quantBin);
+
+    if (!asMmol) {
+      return Promise.resolve(result);
+    }
+
+    const resultMmol = InterpreterDataSource.convertToMmol(elem, result);
+    return Promise.resolve(resultMmol);
+  });
+
+  ds.readElementSum.and.callFake((args: any[]) => {
+    return Promise.reject("readElementSum not implemented");
+  });
+
+  ds.readMap.and.callFake((args: any[]) => {
+    const dataLabel = args[0] as string;
+    const detectorId = args[1] as string;
+
+    return Promise.resolve(readQuant(scanId, dataLabel, detectorId, quantBin));
+  });
+
+  ds.readSpectrum.and.callFake((args: any[]) => {
+    const startChannel = args[0] as number;
+    let endChannel = args[1] as number;
+    const detector = args[2] as string;
+
+    if (endChannel > 4096) {
+      endChannel = 4096;
+    }
+
+    const pmcValues: PMCDataValue[] = [];
+
+    let detectorIdIdx = -1;
+    for (let c = 0; c < datasetBin.metaLabels.length; c++) {
+      if (datasetBin.metaLabels[c] === "DETECTOR_ID") {
+        detectorIdIdx = c;
+        break;
+      }
+    }
+
+    if (detectorIdIdx < 0) {
+      return Promise.reject("Failed to find DETECTOR_ID for dataset");
+    }
+
+    let readTypeIdx = -1;
+    for (let c = 0; c < datasetBin.metaLabels.length; c++) {
+      if (datasetBin.metaLabels[c] === "READTYPE") {
+        readTypeIdx = c;
+        break;
+      }
+    }
+
+    if (readTypeIdx < 0) {
+      return Promise.reject("Failed to find READTYPE for dataset");
+    }
+
+    for (const loc of datasetBin.locations) {
+      const pmc = parseInt(loc.id);
+
+      for (const det of loc.detectors) {
+        let detOK = false;
+        let readTypeOK = false;
+
+        for (const m of det.meta) {
+          if (m.labelIdx === detectorIdIdx && m.svalue === detector) {
+            detOK = true;
+          }
+          if (m.labelIdx === readTypeIdx && m.svalue === "Normal") {
+            readTypeOK = true;
+          }
+
+          if (readTypeOK && detOK) {
+            break;
+          }
+        }
+
+        if (readTypeOK && detOK) {
+          const spectrum = decompressZeroRunLengthEncoding(det.spectrum, 4096);
+          let total = 0;
+          for (let idx = startChannel; idx < endChannel; idx++) {
+            total += spectrum[idx];
+          }
+
+          pmcValues.push(new PMCDataValue(pmc, total));
+          break;
+        }
+      }
+    }
+
+    return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
+  });
+
+  ds.readSpectrumDifferences.and.callFake((args: any[]) => {
+    return Promise.reject("readSpectrumDifferences not implemented");
+  });
+
+  ds.readDiffractionData.and.callFake((args: any[]) => {
+    const channelStart = args[0] as number;
+    const channelEnd = args[1] as number;
+
+    // First, add them up per PMC
+    const pmcDiffractionCount = new Map<number, number>();
+
+    // Fill the PMCs first
+    for (const loc of datasetBin.locations) {
+      const pmc = parseInt(loc.id);
+
+      if (loc.pseudoIntensities.length > 0) {
+        pmcDiffractionCount.set(pmc, 0);
+      }
+    }
+
+    for (let c = 0; c < diffractionBin.locations.length; c++) { // const loc of diffractionBin.locations) {
+      const diffLoc = diffractionBin.locations[c];
+      const loc = datasetBin.locations[c];
+
+      for (const peak of diffLoc.peaks) {
+        const withinChannelRange = (channelStart === -1 || peak.peakChannel >= channelStart) && (channelEnd === -1 || peak.peakChannel < channelEnd);
+        if (/*peak.status != DiffractionPeak.statusNotAnomaly &&*/ withinChannelRange) {
+          const pmc = parseInt(loc.id);
+          let prev = pmcDiffractionCount.get(pmc);
+          if (!prev) {
+            prev = 0;
+          }
+          pmcDiffractionCount.set(pmc, prev + 1);
+        }
+      }
+    }
+
+    /*Skipping for this test harness
+    // Also loop through user-defined peaks
+    // If we can convert the user peak keV to a channel, do it and compare
+    if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
+      for (const cal of this._spectrumEnergyCalibration) {
+        if (cal.detector == this._eVCalibrationDetector) {
+          for (const id of Object.keys(userDiffractionPeakData.peaks)) {
+            const peak = userDiffractionPeakData.peaks[id];
+
+            // ONLY look at positive energies, negative means it's a user-entered roughness item!
+            if (peak.energykeV > 0) {
+              const ch = cal.keVsToChannel([peak.energykeV]);
+              if (ch.length == 1 && ch[0] >= channelStart && ch[0] < channelEnd) {
+                let prev = pmcDiffractionCount.get(peak.pmc);
+                if (!prev) {
+                  prev = 0;
+                }
+                pmcDiffractionCount.set(peak.pmc, prev + 1);
+              }
+            }
+          }
+
+          break;
+        }
+      }
+    }*/
+
+    // Now turn these into data values
+    const result: PMCDataValue[] = [];
+    for (const [pmc, sum] of pmcDiffractionCount.entries()) {
+      result.push(new PMCDataValue(pmc, sum));
+    }
+
+    return Promise.resolve(PMCDataValues.makeWithValues(result));
+  });
+
+  ds.readRoughnessData.and.callFake(() => {
+    return Promise.reject("readRoughnessData not implemented");
+  });
+
+  ds.readPosition.and.callFake((args: any[]) => {
+    const axis = args[0] as string;
+
+    if (axis !== "x" && axis !== "y" && axis !== "z") {
+      return Promise.reject("Bad axis: " + axis);
+    }
+
+    const pmcValues: PMCDataValue[] = [];
+
+    for (const loc of datasetBin.locations) {
+      if (loc.beam) {
+        const pmc = parseInt(loc.id);
+        if (axis === "x") {
+          pmcValues.push(new PMCDataValue(pmc, loc.beam.x));
+        } else if (axis === "y") {
+          pmcValues.push(new PMCDataValue(pmc, loc.beam.y));
+        } else {
+          pmcValues.push(new PMCDataValue(pmc, loc.beam.z));
+        }
+      }
+    }
+
+    return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
+  });
+
+  ds.makeMap.and.callFake((args: any[]) => {
+    const value = args[0] as number;
+    const result: PMCDataValue[] = [];
+
+    for (const locSet of quantBin.locationSet) {
+      for (const loc of locSet.location) {
+        result.push(new PMCDataValue(loc.pmc, value));
+      }
+
+      break; // Only do this for 1 set of PMCs, we may have a 2nd detector...
+    }
+
+    return Promise.resolve(PMCDataValues.makeWithValues(result));
+  });
+
+  ds.atomicMass.and.callFake((symbol: string) => {
+    return Promise.resolve(periodicTableDB.getMolecularMass(symbol));
+  });
+
+  ds.readPseudoIntensity.and.callFake((args: any[]) => {
+    const elem = args[0] as string;
+    const pmcValues: PMCDataValue[] = [];
+
+    let pseudoIdx = -1;
+    for (let c = 0; c < datasetBin.pseudoIntensityRanges.length; c++) {
+      if (datasetBin.pseudoIntensityRanges[c].name === elem) {
+        pseudoIdx = c;
+        break;
+      }
+    }
+
+    if (pseudoIdx < 0) {
+      return Promise.reject("Failed to find pseudo-intensity: " + elem);
+    }
+
+    for (const loc of datasetBin.locations) {
+      const pmc = parseInt(loc.id);
+
+      if (loc.pseudoIntensities.length > 0) {
+        pmcValues.push(new PMCDataValue(pmc, loc.pseudoIntensities[0].elementIntensities[pseudoIdx]));
+      }
+    }
+    return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
+  });
+
+  ds.readHousekeepingData.and.callFake((args: any[]) => {
+    const hkData = args[0] as string;
+    const pmcValues: PMCDataValue[] = [];
+
+    let housekeepingIdx = -1;
+    for (let c = 0; c < datasetBin.metaLabels.length; c++) {
+      if (datasetBin.metaLabels[c] === hkData) {
+        housekeepingIdx = c;
+        break;
+      }
+    }
+
+    if (housekeepingIdx < 0) {
+      return Promise.reject("Failed to find housekeeping data: " + hkData);
+    }
+
+    if (datasetBin.metaTypes[housekeepingIdx] !== Experiment_MetaDataType.MT_FLOAT && datasetBin.metaTypes[housekeepingIdx] !== Experiment_MetaDataType.MT_INT) {
+      return Promise.reject("Bad type for housekeeping data: " + hkData);
+    }
+
+    for (const loc of datasetBin.locations) {
+      const pmc = parseInt(loc.id);
+
+      if (housekeepingIdx < loc.meta.length) {
+        if (datasetBin.metaTypes[housekeepingIdx] === Experiment_MetaDataType.MT_FLOAT) {
+          pmcValues.push(new PMCDataValue(pmc, loc.meta[housekeepingIdx].fvalue));
+        } else {
+          pmcValues.push(new PMCDataValue(pmc, loc.meta[housekeepingIdx].ivalue));
+        }
+      }
+    }
+    return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
+  });
+
+  ds.exists.and.callFake((dataType: string, column: string) => {
+    if (dataType === "element") {
+      for (const elem of quantBin.labels) {
+        if (elem.startsWith(column)) {
+          return Promise.resolve(true);
+        }
+      }
+    }
+
+    return Promise.resolve(false);
+  });
+
+  ds.getMemoised.and.callFake((args: any[]) => {
+    return Promise.reject("getMemoised not implemented");
+  });
+
+  ds.memoise.and.callFake((args: any[]) => {
+    return Promise.reject("memoise not implemented");
+  });
+
+  return ds as InterpreterDataSource;
+}
