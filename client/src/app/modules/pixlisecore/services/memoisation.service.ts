@@ -11,6 +11,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SentryHelper } from "src/app/utils/utils";
 import { WSError } from "./wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
+import { environment } from "src/environments/environment";
 
 @Injectable({
   providedIn: "root",
@@ -39,6 +40,11 @@ export class MemoisationService {
   }
 
   memoise(key: string, data: Uint8Array): Observable<void> {
+    if (environment.skipMemoizeKeys.indexOf(key) > -1) {
+      console.warn("Skipping memoisation of: " + key);
+      return of();
+    }
+
     // Only memoise if it's changed
     const existing = this._local.get(key);
     if (existing) {
