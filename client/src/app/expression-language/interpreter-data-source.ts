@@ -38,6 +38,7 @@ import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-languag
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { MemoisationService } from "../modules/pixlisecore/services/memoisation.service";
 import { lastValueFrom, map } from "rxjs";
+import { MemoisedItem } from "../generated-protos/memoisation";
 
 export class InterpreterDataSource {
   constructor(
@@ -374,7 +375,15 @@ export class InterpreterDataSource {
       throw new Error("getMemoised() failed, service not available");
     }
 
-    return await lastValueFrom(this._memoService.memoise(argList[0], argList[1]).pipe(map(() => new Uint8Array())));
+    return await lastValueFrom(
+      this._memoService.get(argList[0]).pipe(
+        map((memItem: MemoisedItem) => {
+          // Parse to JS object
+          const str = new TextDecoder().decode(memItem.data);
+          return JSON.parse(str);
+        })
+      )
+    );
   }
 
   public async memoise(argList: any[]): Promise<boolean> {
@@ -386,6 +395,18 @@ export class InterpreterDataSource {
       throw new Error("memoise() failed, service not available");
     }
 
-    return await lastValueFrom(this._memoService.memoise(argList[0], argList[1]).pipe(map(() => true)));
+    const key = argList[0];
+    const table = argList[1];
+
+    // Make sure table "looks" like a table
+    if (Object.keys(table).length <= 0) {
+      throw new Error("memoise() failed: table has no keys");
+    }
+
+    // Dump table as JSON to byte array so we can memoise it
+    const str = JSON.stringify(table);
+    const arr = new TextEncoder().encode(str);
+
+    return await lastValueFrom(this._memoService.memoise(key, arr).pipe(map(() => true)));
   }
 }

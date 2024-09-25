@@ -278,8 +278,6 @@ export class LuaDataQuerier {
     [
       "readCache_async",
       async (k: any) => {
-        const t0 = performance.now();
-
         const caller = `readCache(${k})`;
 
         if (this._debugJSTiming) {
@@ -292,9 +290,7 @@ export class LuaDataQuerier {
     ],
     [
       "writeCache_async",
-      async (k: any, a: any) => {
-        const t0 = performance.now();
-
+      async (k: any, table: any) => {
         const caller = `writeCache(${k})`;
 
         if (this._debugJSTiming) {
@@ -302,7 +298,7 @@ export class LuaDataQuerier {
           this._jsFuncCalls.push(caller);
         }
 
-        return this._dataSource!.memoise([k, a]);
+        return this._dataSource!.memoise([k, table]);
       },
     ],
     [
