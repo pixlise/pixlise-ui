@@ -265,15 +265,29 @@ export class ExpressionDataSource
       throw new Error("cacheElementInfo: no quant data available");
     }
 
+    const lookup = ExpressionDataSource.buildPureElementLookup(quantData.data.labels);
+    this._pureElementColumnLookup = lookup.pureElementColumnLookup;
+    this._elementColumns = lookup.elementColumns;
+
+    // Also get a list of all detectors we have data for
+    this._detectors = [];
+
+    for (const quantLocSet of quantData.data.locationSet) {
+      this._detectors.push(quantLocSet.detector);
+    }
+  }
+
+  public static buildPureElementLookup(quantLabels: string[]): { pureElementColumnLookup: Map<string, string>; elementColumns: Map<string, string[]> } {
+    const pureElementColumnLookup = new Map<string, string>();
+    const elementColumns = new Map<string, string[]>();
+
     // Loop through all column names that may contain element information and store these names so we
     // can easily find them at runtime
     const columnTypesFound = new Set<string>();
     const elements = new Set<string>();
     //this._dataColumns = [];
-    this._elementColumns.clear();
-    this._pureElementColumnLookup.clear();
 
-    for (const label of quantData.data.labels) {
+    for (const label of quantLabels) {
       const labelBits = label.split("_");
       if (labelBits.length == 2) {
         if (labelBits[1] == "%" || labelBits[1] == "err" || labelBits[1] == "int") {
@@ -290,7 +304,7 @@ export class ExpressionDataSource
 
     for (const elem of elements.values()) {
       const colTypes = Array.from(columnTypesFound.values());
-      this._elementColumns.set(elem, colTypes);
+      elementColumns.set(elem, colTypes);
       //console.log('elem: '+elem);
       //console.log(colTypes);
       if (colTypes.indexOf("%") > -1) {
@@ -299,20 +313,15 @@ export class ExpressionDataSource
         const elemState = periodicTableDB.getElementOxidationState(elem);
         //console.log(elemState);
         if (elemState && !elemState.isElement) {
-          this._elementColumns.set(elemState.element, ["%"]);
+          elementColumns.set(elemState.element, ["%"]);
 
           // Also remember that this can be calculated
-          this._pureElementColumnLookup.set(elemState.element + "_%", elem + "_%");
+          pureElementColumnLookup.set(elemState.element + "_%", elem + "_%");
         }
       }
     }
 
-    // Also get a list of all detectors we have data for
-    this._detectors = [];
-
-    for (const quantLocSet of quantData.data.locationSet) {
-      this._detectors.push(quantLocSet.detector);
-    }
+    return { pureElementColumnLookup, elementColumns };
   }
 
   private readDiffractionData(diffractionData: DetectedDiffractionPeaksResp, scanId: string) {
@@ -419,36 +428,9 @@ export class ExpressionDataSource
             throw new Error("getQuantifiedDataForDetector: no quant data available");
           }
 
-          let idx = quantData.data.labels.indexOf(dataLabel);
+          const quantCol = ExpressionDataSource.getQuantColIndex(dataLabel, quantData.data.labels, this._pureElementColumnLookup);
 
-          let toElemConvert = null;
-          if (idx < 0) {
-            // Since PIQUANT supporting carbonate/oxides, we may need to calculate this from an existing column
-            // (we do this for carbonate->element or oxide->element)
-            // Check what's being requested, to see if we can convert it
-            const calcFrom = this._pureElementColumnLookup.get(dataLabel);
-            if (calcFrom != undefined) {
-              // we've found a column to look up from (eg dataLabel=Si_% and this found calcFrom=SiO2_%)
-              // Get the index of that column
-              idx = quantData.data.labels.indexOf(calcFrom);
-
-              if (idx >= 0) {
-                // Also get the conversion factor we'll have to use
-                const sepIdx = calcFrom.indexOf("_");
-                if (sepIdx > -1) {
-                  // Following the above examples, this should become SiO2
-                  const oxideOrCarbonate = calcFrom.substring(0, sepIdx);
-
-                  const elemState = periodicTableDB.getElementOxidationState(oxideOrCarbonate);
-                  if (elemState && !elemState.isElement) {
-                    toElemConvert = elemState.conversionToElementWeightPct;
-                  }
-                }
-              }
-            }
-          }
-
-          if (idx < 0) {
+          if (quantCol.idx < 0) {
             throw new Error(
               `Scan ${this._scanId} quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
             );
@@ -456,11 +438,55 @@ export class ExpressionDataSource
 
           //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-          const data = ExpressionDataSource.getQuantifiedDataValues(this._scanId, quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
+          const data = ExpressionDataSource.getQuantifiedDataValues(
+            this._scanId,
+            quantData.data,
+            detectorId,
+            quantCol.idx,
+            quantCol.toElemConvert,
+            dataLabel.endsWith("_%")
+          );
           return PMCDataValues.makeWithValues(data);
         })
       )
     );
+  }
+
+  public static getQuantColIndex(
+    dataLabel: string,
+    quantLabels: string[],
+    pureElementColumnLookup: Map<string, string>
+  ): { idx: number; toElemConvert: number | null } {
+    let idx = quantLabels.indexOf(dataLabel);
+
+    let toElemConvert = null;
+    if (idx < 0) {
+      // Since PIQUANT supporting carbonate/oxides, we may need to calculate this from an existing column
+      // (we do this for carbonate->element or oxide->element)
+      // Check what's being requested, to see if we can convert it
+      const calcFrom = pureElementColumnLookup.get(dataLabel);
+      if (calcFrom != undefined) {
+        // we've found a column to look up from (eg dataLabel=Si_% and this found calcFrom=SiO2_%)
+        // Get the index of that column
+        idx = quantLabels.indexOf(calcFrom);
+
+        if (idx >= 0) {
+          // Also get the conversion factor we'll have to use
+          const sepIdx = calcFrom.indexOf("_");
+          if (sepIdx > -1) {
+            // Following the above examples, this should become SiO2
+            const oxideOrCarbonate = calcFrom.substring(0, sepIdx);
+
+            const elemState = periodicTableDB.getElementOxidationState(oxideOrCarbonate);
+            if (elemState && !elemState.isElement) {
+              toElemConvert = elemState.conversionToElementWeightPct;
+            }
+          }
+        }
+      }
+    }
+
+    return { idx, toElemConvert };
   }
 
   public static getQuantifiedDataValues(

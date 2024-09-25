@@ -45,3 +45,11 @@ end
 function exists(dataType, column)
     return exists_async(dataType, column):await()
 end
+
+function writeCache(k, v)
+    return writeCache_async(k, v):await()
+end
+
+function readCache(k)
+    return readCache_async(k):await()
+end
