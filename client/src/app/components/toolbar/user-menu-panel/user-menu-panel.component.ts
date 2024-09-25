@@ -31,6 +31,7 @@ import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/cor
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { AuthService } from "@auth0/auth0-angular";
 import { Subscription } from "rxjs";
+import { BackupDBReq, BackupDBResp, DBAdminConfigGetReq, DBAdminConfigGetResp, RestoreDBReq, RestoreDBResp } from "src/app/generated-protos/system";
 import { UserDetails } from "src/app/generated-protos/user";
 import { UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { UserImpersonateGetReq, UserImpersonateGetResp, UserImpersonateReq, UserImpersonateResp } from "src/app/generated-protos/user-management-msgs";
@@ -62,7 +63,10 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
 
   isAdminOfAnyGroup = false;
   isPIXLISEAdmin = false;
+  impersonateUserEnabled = false;
   impersonatingUserName: string | undefined;
+  backupEnabled = false;
+  restoreEnabled = false;
 
   trigger: any;
 
@@ -93,11 +97,21 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         // Now if we're PIXLISE admins, check if we're impersonating anyone
         if (this.isPIXLISEAdmin) {
           this._subs.add(
-            this._dataService.sendUserImpersonateGetRequest(UserImpersonateGetReq.create({})).subscribe((resp: UserImpersonateGetResp) => {
-              if (resp.sessionUser && resp.sessionUser.id.length > 0) {
-                this.impersonatingUserName = resp.sessionUser?.name || resp.sessionUser?.email || resp.sessionUser?.id || "UNKNOWN";
-              } else {
-                this.impersonatingUserName = "";
+            this._dataService.sendDBAdminConfigGetRequest(DBAdminConfigGetReq.create({})).subscribe((resp: DBAdminConfigGetResp) => {
+              this.backupEnabled = resp.canBackup;
+              this.restoreEnabled = resp.canRestore;
+              this.impersonateUserEnabled = resp.impersonateEnabled;
+
+              if (this.impersonateUserEnabled) {
+                this._subs.add(
+                  this._dataService.sendUserImpersonateGetRequest(UserImpersonateGetReq.create({})).subscribe((resp: UserImpersonateGetResp) => {
+                    if (resp.sessionUser && resp.sessionUser.id.length > 0) {
+                      this.impersonatingUserName = resp.sessionUser?.name || resp.sessionUser?.email || resp.sessionUser?.id || "UNKNOWN";
+                    } else {
+                      this.impersonatingUserName = "";
+                    }
+                  })
+                );
               }
             })
           );
@@ -154,6 +168,9 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
     if (this.impersonatingUserName !== undefined && this.impersonatingUserName.length <= 0) {
       // Ask who to impersonate
       userId = prompt("Enter user id to impersonate (or blank to stop impersonating)") || "";
+      if (!userId) {
+        return;
+      }
     }
 
     this._dataService.sendUserImpersonateRequest(UserImpersonateReq.create({ userId })).subscribe({
@@ -170,5 +187,31 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         this._snackService.openError("Failed to impersonate user", err);
       },
     });
+  }
+
+  onBackupData() {
+    if (confirm("Are you sure you want to start a PIXLISE backup operation? This will take a while...")) {
+      this._dataService.sendBackupDBRequest(BackupDBReq.create({})).subscribe({
+        next: (resp: BackupDBResp) => {
+          this._snackService.open("Backup started");
+        },
+        error: err => {
+          this._snackService.openError("Backup failed", err);
+        }
+      });
+    }
+  }
+
+  onRestoreData() {
+    if (confirm("Are you sure you want to restore the PIXLISE backup?")) {
+      this._dataService.sendRestoreDBRequest(RestoreDBReq.create({})).subscribe({
+        next: (resp: RestoreDBResp) => {
+          this._snackService.open("Restore started");
+        },
+        error: err => {
+          this._snackService.openError("Restore failed", err);
+        }
+      });
+    }
   }
 }

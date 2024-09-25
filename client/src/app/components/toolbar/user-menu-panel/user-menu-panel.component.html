@@ -43,8 +43,10 @@ POSSIBILITY OF SUCH DAMAGE.
   </section>
   <section class="buttons">
     <ng-container *ngIf="isPIXLISEAdmin">
-      <wait-spinner *ngIf="impersonatingUserName === undefined">Loading Impersonation Setting</wait-spinner>
-      <push-button *ngIf="impersonatingUserName !== undefined" buttonStyle="yellow" (onClick)="onImpersonate()">{{impersonatingUserName ? "Stop Impersonating: "+impersonatingUserName : "Impersonate User..."}}</push-button>
+      <wait-spinner *ngIf="impersonateUserEnabled && impersonatingUserName === undefined">Loading Impersonation Setting</wait-spinner>
+      <push-button *ngIf="impersonateUserEnabled" buttonStyle="yellow" (onClick)="onImpersonate()">{{impersonatingUserName ? "Stop Impersonating: "+impersonatingUserName : "Impersonate User..."}}</push-button>
+      <push-button *ngIf="backupEnabled" buttonStyle="hover-yellow" (onClick)="onBackupData()">Backup Data</push-button>
+      <push-button *ngIf="restoreEnabled" buttonStyle="hover-yellow" (onClick)="onRestoreData()">Restore Data</push-button>
     </ng-container>
     <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
     <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>

@@ -1,4 +1,11 @@
-## 4.41.0 (Latest)
+## 4.42.0 (Latest)
+
+### Bug Fixes
+
+- Fixes issue with exporter where if no beam location versions are found for a given image, it failed the entire export
+- Fixes an issue with admin accounts viewing the backup/restore features if they're disabled
+
+## 4.41.0 (2024-09-16)
 
 ### Features
 
@@ -15,12 +22,14 @@
   - First user-created Combined quant
 - **New Workspace Improvements** Clicking the "New Workspace" button now opens a dialog to configure the workspace name, description, tags, and scans before creation. Additionally, holding "Cmd" (or "Ctrl" on Windows) and clicking scans will now add default select them for the new workspace.
 - **Workspace Searching Improvements** Workspace search now includes searching by snapshots and creator names. Also, you can click on column names to sort the workspace list. Lastly, your "Workspaces" or "Datasets" selection will be remembered when you navigate back to the workspace list.
+- **Backup & Restore** For PIXLISE Devs/Admins to be able to back up all PIXLISE data and restore onto another environment in a more automated way.
 
 ### Bug Fixes
 
 - Fixes logout bug when clicked from the public site (redirects to wrong URL)
 - Fixes bug when plotting sigma values on Parallel Coordinates Plot with ratio columns showing
 - Fixes bug when creating new ROI from the ROI sidepanel instead of the selection dropdown (footprint was being selected)
+- Fixed intermittent connection error 18798 when UI was reconnecting to server
 
 ## 4.40.0 (2024-09-05)
 
