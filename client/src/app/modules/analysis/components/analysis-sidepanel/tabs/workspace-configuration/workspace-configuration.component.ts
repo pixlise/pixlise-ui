@@ -45,13 +45,12 @@ import {
   SharingSubItem,
 } from "../../../../../pixlisecore/components/atoms/share-ownership-item/share-dialog/share-dialog.component";
 import { GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "../../../../../../generated-protos/ownership-access-msgs";
-import { WIDGETS, WidgetType } from "../../../../../widget/models/widgets.model";
-import { ROILayerVisibility, SpectrumLines, VisibleROI } from "../../../../../../generated-protos/widget-data";
-import { PredefinedROIID } from "../../../../../../models/RegionOfInterest";
 import { APICachedDataService } from "../../../../../pixlisecore/services/apicacheddata.service";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../../../../generated-protos/roi-msgs";
 import { ExpressionGetReq, ExpressionGetResp } from "../../../../../../generated-protos/expression-msgs";
 import { QuantGetReq, QuantGetResp } from "../../../../../../generated-protos/quantification-retrieval-msgs";
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
+import { ExpressionGroupGetResp } from "../../../../../../generated-protos/expression-group-msgs";
 
 @Component({
   selector: "workspace-configuration",
@@ -85,6 +84,12 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   queryParam: Record<string, string> = {};
 
   public activeConfigurationTab: "workspace" | "snapshots" = "workspace";
+
+  public builtInTabs: NavigationTab[] = [
+    { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+  ];
 
   constructor(
     public dialog: MatDialog,
@@ -151,6 +156,12 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         this.openTabs = tabs;
         this.newTabName = "";
         this.editingTabIndex = null;
+
+        this.openTabs.forEach(tab => {
+          if (tab.url === TabLinks.analysis && tab.params && Object.keys(tab.params).length > 0) {
+            tab.active = Object.keys(tab.params).every(key => this.queryParam[key] == tab?.params?.[key]);
+          }
+        });
       })
     );
   }
@@ -408,6 +419,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       let workspaceId = this.screenConfig?.id || "";
       let roiIds = this._analysisLayoutService.getLoadedROIIDsFromActiveScreenConfiguration();
       let expressionIds = this._analysisLayoutService.getLoadedExpressionIDsFromActiveScreenConfiguration();
+      let expressionGroupIds = this._analysisLayoutService.getLoadedExpressionGroupIDsFromActiveScreenConfiguration();
       let quantIds = this._analysisLayoutService.getLoadedQuantificationIDsFromActiveScreenConfiguration();
 
       let workspaceSubItem: SharingSubItem = {
@@ -431,13 +443,21 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
       });
 
+      let expressionGroupRequests = expressionGroupIds.map(expressionGroupId => {
+        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(
+          GetOwnershipReq.create({ objectId: expressionGroupId, objectType: ObjectType.OT_EXPRESSION_GROUP })
+        );
+        let itemReq = this._apiCachedDataService.getExpressionGroup(ExpressionGetReq.create({ id: expressionGroupId }));
+        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
+      });
+
       let quantRequests = quantIds.map(quantId => {
         let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: quantId, objectType: ObjectType.OT_QUANTIFICATION }));
         let itemReq = this._apiCachedDataService.getQuant(QuantGetReq.create({ quantId }));
         return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
       });
 
-      let requests = [...roiRequests, ...expressionRequests, ...quantRequests];
+      let requests = [...roiRequests, ...expressionRequests, ...expressionGroupRequests, ...quantRequests];
       combineLatest(requests).subscribe(res => {
         let subItems: SharingSubItem[] = res.map(({ ownership, item }, i) => {
           if (!ownership || !item) {
@@ -460,7 +480,17 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
               ownershipSummary: roiResp.regionOfInterest?.owner,
               ownershipItem: ownership,
             } as SharingSubItem;
-          } else if (i < roiRequests.length + expressionRequests.length) {
+          } else if (i < roiRequests.length + expressionGroupRequests.length) {
+            let expressionGroupResp = item as ExpressionGroupGetResp;
+            return {
+              id: expressionGroupResp.group?.id || "",
+              type: ObjectType.OT_EXPRESSION_GROUP,
+              typeName: "Expression Group",
+              name: expressionGroupResp.group?.name || "",
+              ownershipSummary: expressionGroupResp.group?.owner,
+              ownershipItem: ownership,
+            } as SharingSubItem;
+          } else if (i < roiRequests.length + expressionGroupRequests.length + expressionRequests.length) {
             let expressionResp = item as ExpressionGetResp;
             return {
               id: expressionResp.expression?.id || "",
@@ -526,6 +556,26 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           }
         });
       });
+    });
+  }
+
+  dropTab(event: CdkDragDrop<NavigationTab>) {
+    let moveFromIndex = event.previousIndex;
+    let moveToIndex = event.currentIndex;
+
+    moveItemInArray(this.openTabs, moveFromIndex, moveToIndex);
+
+    let layouts = this._analysisLayoutService.activeScreenConfiguration$.value.layouts;
+    // If current open tab is moveFromLayoutIndex, then move it to moveToLayoutIndex
+    let currentTab = parseInt(this.queryParam["tab"] || "0");
+    moveItemInArray(layouts, moveFromIndex, moveToIndex);
+    this._analysisLayoutService.activeScreenConfiguration$.value.layouts = layouts;
+    this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value, undefined, false, () => {
+      if (currentTab === moveFromIndex) {
+        this._analysisLayoutService.setActiveScreenConfigurationTabIndex(moveToIndex);
+      }
+
+      this._analysisLayoutService.loadActiveLayoutAnalysisTabs();
     });
   }
 }
