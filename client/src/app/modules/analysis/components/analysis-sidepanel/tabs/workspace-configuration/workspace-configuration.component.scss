@@ -106,25 +106,6 @@
     }
   }
 
-  // .tabs-label {
-  //   margin: 0;
-
-  //   color: #bcbcbc;
-
-  //   font-feature-settings:
-  //     "clig" off,
-  //     "liga" off;
-
-  //   font-family: Inter;
-  //   font-size: 12px;
-  //   font-style: normal;
-  //   font-weight: 500;
-  //   line-height: 16px;
-
-  //   margin-top: 8px;
-  //   margin-left: 8px;
-  // }
-
   .tabs-container {
     flex: 1;
 
@@ -139,6 +120,12 @@
       .tab {
         display: flex;
         align-items: center;
+
+        &.active {
+          .tab-info {
+            background: #454c50;
+          }
+        }
 
         .tab-info {
           display: flex;
@@ -169,11 +156,6 @@
           action-button:first-of-type {
             margin-left: auto;
           }
-
-          // .tab-edit {
-          // }
-          // .tab-toggle {
-          // }
         }
 
         .delete-tab {
@@ -207,25 +189,6 @@
   }
 }
 
-// .sharing-label {
-//   margin: 0;
-
-//   color: #bcbcbc;
-
-//   font-feature-settings:
-//     "clig" off,
-//     "liga" off;
-
-//   font-family: Inter;
-//   font-size: 12px;
-//   font-style: normal;
-//   font-weight: 500;
-//   line-height: 16px;
-
-//   margin-top: 8px;
-//   margin-left: 8px;
-// }
-
 .share-btn {
   .share-btn-title {
     display: flex;
@@ -251,7 +214,6 @@
     margin-top: 8px;
     margin-bottom: 8px;
 
-    // max-height: 125px;
     overflow-y: auto;
 
     .snapshot {
@@ -319,4 +281,67 @@
     line-height: 16px;
     padding: 4px;
   }
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.2),
+    0 8px 10px 1px rgba(0, 0, 0, 0.14),
+    0 3px 14px 2px rgba(0, 0, 0, 0.12);
+
+  display: flex;
+  align-items: center;
+
+  .tab-info {
+    display: flex;
+    align-items: center;
+
+    background: #293137;
+    flex: 1;
+    padding: 8px;
+    gap: 8px;
+
+    .tab-label {
+      display: flex;
+      flex: 1;
+
+      .view-label {
+      }
+
+      .edit-label {
+        width: 100%;
+      }
+    }
+
+    .edit-btns {
+      display: flex;
+      align-items: center;
+    }
+
+    action-button:first-of-type {
+      margin-left: auto;
+    }
+  }
+
+  .delete-tab {
+    margin-left: 4px;
+  }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.25;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.tab-icon {
+  cursor: grab;
+}
+
+.drag-icon {
+  cursor: grab;
 }

@@ -47,6 +47,7 @@ import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/
 import { SentryHelper } from "../../utils/utils";
 import { MarkdownModule } from "ngx-markdown";
 import { TabLinks } from "../../models/TabLinks";
+import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
 
 class TabNav {
   constructor(
@@ -72,7 +73,7 @@ class TabNav {
   templateUrl: "./toolbar.component.html",
   styleUrls: ["./toolbar.component.scss"],
   standalone: true,
-  imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule],
+  imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule, DragDropModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
   public static BrowseTabURL: string = TabLinks.browse;
@@ -112,13 +113,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   datasetID: string = "";
 
   queryParam: Record<string, string> = {};
-  allTabs: NavigationTab[] = [
+
+  builtInTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
-    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL, params: { tab: "0" } },
     { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
     { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
   ];
-  openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL }];
+
+  allTabs: NavigationTab[] = [
+    // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
+    // { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL, params: { tab: "0" } },
+    // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
+    // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
+  ];
+  openTabs: NavigationTab[] = [];
 
   editingAnnotationIndex: number = -1;
 
@@ -402,26 +410,26 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   private loadAnalysisTabs(): void {
-    let beforeAnalysisTabs = [];
-    if (!this._analysisLayoutService.activeScreenConfiguration$.value.browseTabHidden) {
-      beforeAnalysisTabs.push({ icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL });
-    }
+    // let beforeAnalysisTabs = [];
+    // if (!this._analysisLayoutService.activeScreenConfiguration$.value.browseTabHidden) {
+    //   beforeAnalysisTabs.push({ icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL });
+    // }
 
     // Ensure a workspace was specified before attempting to load analysis tabs
     if (!this.hasActiveWorkspace) {
-      this.openTabs = beforeAnalysisTabs;
+      // this.openTabs = beforeAnalysisTabs;
       return;
     }
 
     if (this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length > 0) {
-      let afterAnalysisTabs = [];
-      if (!this._analysisLayoutService.activeScreenConfiguration$.value.codeEditorTabHidden) {
-        afterAnalysisTabs.push({ icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL });
-      }
+      // let afterAnalysisTabs = [];
+      // if (!this._analysisLayoutService.activeScreenConfiguration$.value.codeEditorTabHidden) {
+      //   afterAnalysisTabs.push({ icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL });
+      // }
 
-      if (!this._analysisLayoutService.activeScreenConfiguration$.value.elementMapsTabHidden) {
-        afterAnalysisTabs.push({ icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL });
-      }
+      // if (!this._analysisLayoutService.activeScreenConfiguration$.value.elementMapsTabHidden) {
+      //   afterAnalysisTabs.push({ icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL });
+      // }
 
       let analysisTabs: NavigationTab[] = [];
 
@@ -447,7 +455,11 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         analysisTabs.push(tab);
       });
 
-      this.openTabs = [...beforeAnalysisTabs, ...analysisTabs, ...afterAnalysisTabs];
+      this.openTabs = [
+        // ...beforeAnalysisTabs,
+        ...analysisTabs,
+        // ...afterAnalysisTabs
+      ];
     }
   }
 
@@ -504,6 +516,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       // Default to first tab
       this.queryParam["tab"] = "0";
     }
+
+    this.builtInTabs.forEach(tab => {
+      tab.active = strippedURL.endsWith(tab.url);
+    });
 
     this.openTabs.forEach(tab => {
       tab.active = strippedURL.endsWith(tab.url);
@@ -728,5 +744,25 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onNewTab(): void {
     this.onOpenTab({ icon: "", label: "+", tooltip: "New Tab", url: ToolbarComponent.NewTabURL });
+  }
+
+  dropTab(event: CdkDragDrop<NavigationTab>) {
+    let moveFromIndex = event.previousIndex;
+    let moveToIndex = event.currentIndex;
+
+    moveItemInArray(this.openTabs, moveFromIndex, moveToIndex);
+
+    let layouts = this._analysisLayoutService.activeScreenConfiguration$.value.layouts;
+    // If current open tab is moveFromLayoutIndex, then move it to moveToLayoutIndex
+    let currentTab = parseInt(this.queryParam["tab"] || "0");
+    moveItemInArray(layouts, moveFromIndex, moveToIndex);
+    this._analysisLayoutService.activeScreenConfiguration$.value.layouts = layouts;
+    this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value, undefined, false, () => {
+      if (currentTab === moveFromIndex) {
+        this._analysisLayoutService.setActiveScreenConfigurationTabIndex(moveToIndex);
+      }
+
+      this._analysisLayoutService.loadActiveLayoutAnalysisTabs();
+    });
   }
 }

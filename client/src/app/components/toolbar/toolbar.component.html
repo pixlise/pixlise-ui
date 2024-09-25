@@ -66,10 +66,34 @@ POSSIBILITY OF SUCH DAMAGE.
       #tooltip="matTooltip"
       matTooltip="Go to homepage"
       [matTooltipShowDelay]="500" />
-    <div class="title-text" *ngIf="hasActiveWorkspace && title.length > 0" [title]="title">{{ title }}</div>
+    <div
+      class="title-text"
+      [ngClass]="{ 'condensed-mode': hasActiveWorkspace && openTabs.length > 5 }"
+      *ngIf="hasActiveWorkspace && title.length > 0"
+      [title]="title"
+      #tooltip="matTooltip"
+      [matTooltip]="title"
+      [matTooltipShowDelay]="500">
+      {{ title }}
+    </div>
   </div>
   <div class="tabs">
-    <div class="user-tabs">
+    <div
+      class="tab builtin {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }} {{
+        editingTabIndex === getTabIndex(tab) && editingTabIndex !== null ? 'editing' : 'viewing'
+      }}"
+      *ngFor="let tab of builtInTabs"
+      #tooltip="matTooltip"
+      [matTooltip]="tab.tooltip || ''"
+      [matTooltipShowDelay]="1000">
+      <a (click)="onOpenTab(tab)">
+        <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
+        <div *ngIf="tab.label && openTabs.length < 5" class="tab-label">
+          <span class="view-label">{{ tab.label }}</span>
+        </div>
+      </a>
+    </div>
+    <div class="user-tabs" cdkDropList (cdkDropListDropped)="dropTab($event)">
       <div
         class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }} {{
           editingTabIndex === getTabIndex(tab) && editingTabIndex !== null ? 'editing' : 'viewing'
@@ -131,9 +155,26 @@ POSSIBILITY OF SUCH DAMAGE.
         <span>{{ uiVersion }}</span>
       </push-button>
       <!-- <push-button class="back-to-v3" [customDialog]="v3ConfirmDialog" buttonStyle="v3Button">Back to v3</push-button> -->
-      <icon-button title="Notifications" (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
-      <icon-button title="Hot-Keys (Keyboard Shortcuts)" (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
-      <user-icon size="24px" title="User Account" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()" class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
+      <icon-button
+        title="Notifications"
+        (click)="onNotificationsMenu()"
+        [state]="notificationsMenuOpen ? 1 : 0"
+        type="notification"
+        [notificationCount]="notificationsCount"></icon-button>
+      <icon-button
+        title="Hot-Keys (Keyboard Shortcuts)"
+        (click)="onHotkeysMenu()"
+        [hoverYellow]="true"
+        [state]="hotKeysMenuOpen ? 1 : 0"
+        type="hotkeys"
+        [hasBackground]="true"></icon-button>
+      <user-icon
+        size="24px"
+        title="User Account"
+        cdkOverlayOrigin
+        #trigger="cdkOverlayOrigin"
+        (click)="onUserMenu()"
+        class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
     </span>
   </div>
 </div>

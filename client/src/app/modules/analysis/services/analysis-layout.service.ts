@@ -67,12 +67,7 @@ export class AnalysisLayoutService implements OnDestroy {
 
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
-  activeScreenConfigurationTabs$ = new BehaviorSubject<NavigationTab[]>([
-    { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: TabLinks.analysis, params: { tab: "0" } },
-    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-  ]);
+  activeScreenConfigurationTabs$ = new BehaviorSubject<NavigationTab[]>([]);
   activeScreenConfigWidgetReferences$ = new BehaviorSubject<WidgetReference[]>([]);
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
@@ -209,6 +204,20 @@ export class AnalysisLayoutService implements OnDestroy {
     this._router.navigate([TabLinks.analysis], { queryParams });
   }
 
+  getLayoutIndexFromTab(tab: NavigationTab): number | null {
+    if (!this.activeScreenConfiguration$.value) {
+      return null;
+    }
+
+    let tabIndex = tab?.params?.["tab"];
+    if (tabIndex !== undefined) {
+      let index = parseInt(tabIndex);
+      return index;
+    }
+
+    return null;
+  }
+
   getLayoutFromTab(tab: NavigationTab): FullScreenLayout | null {
     if (!this.activeScreenConfiguration$.value) {
       return null;
@@ -244,17 +253,17 @@ export class AnalysisLayoutService implements OnDestroy {
       });
 
       let tabs = [
-        { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
         ...analysisTabs,
-        { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
       ];
       this.activeScreenConfigurationTabs$.next(tabs);
     } else {
       this.activeScreenConfigurationTabs$.next([
-        { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
       ]);
     }
   }
@@ -674,7 +683,7 @@ export class AnalysisLayoutService implements OnDestroy {
     return rois;
   }
 
-  getLoadedExpressionIDsFromActiveScreenConfiguration(): string[] {
+  private _getAllLoadedExpressionIdsFromActiveScreenConfiguration(): string[] {
     let expressionIds: string[] = [];
 
     this.activeScreenConfiguration$.value?.layouts.forEach(layout => {
@@ -708,6 +717,16 @@ export class AnalysisLayoutService implements OnDestroy {
     expressionIds = Array.from(new Set(expressionIds));
 
     return expressionIds;
+  }
+
+  getLoadedExpressionIDsFromActiveScreenConfiguration(): string[] {
+    let expressionIds = this._getAllLoadedExpressionIdsFromActiveScreenConfiguration();
+    return expressionIds.filter((expressionId, i) => !DataExpressionId.isExpressionGroupId(expressionId));
+  }
+
+  getLoadedExpressionGroupIDsFromActiveScreenConfiguration(): string[] {
+    let expressionIds = this._getAllLoadedExpressionIdsFromActiveScreenConfiguration();
+    return expressionIds.filter((expressionId, i) => DataExpressionId.isExpressionGroupId(expressionId));
   }
 
   getDefaultQuant(quants: QuantificationSummary[]): QuantificationSummary | null {
