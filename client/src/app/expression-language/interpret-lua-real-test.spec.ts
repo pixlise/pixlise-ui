@@ -193,15 +193,7 @@ function readQuant(scanId: string, dataLabel: string, detectorId: string, quantB
 
   //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-  const data = ExpressionDataSource.getQuantifiedDataValues(
-    scanId,
-    quantBin,
-    detectorId,
-    quantCol.idx,
-    quantCol.toElemConvert,
-    dataLabel.endsWith("_%")
-  );
-  return PMCDataValues.makeWithValues(data);
+  return ExpressionDataSource.getQuantifiedDataValues(scanId, quantBin, detectorId, quantCol.idx, quantCol.toElemConvert, dataLabel.endsWith("_%"));
 }
 
 function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: Diffraction, quantBin: Quantification): InterpreterDataSource {
