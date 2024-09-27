@@ -298,12 +298,12 @@ export class DataExporterService {
     const metaIdxs: number[] = [];
 
     for (const label of metaLabels) {
-      for (let c = 0; c < scanMeta.metaLabels.length; c++) {
-        if (label == scanMeta.metaLabels[c]) {
-          metaIdxs.push(c);
-          break;
-        }
+      const idx = scanMeta.metaLabels.indexOf(label);
+      if (idx < 0) {
+        throw new Error(`Failed to find meta label index for: ${label}`);
       }
+
+      metaIdxs.push(idx);
     }
 
     const meta: Map<string, number[]> = new Map<string, number[]>();
@@ -411,15 +411,7 @@ msa += `#XPOSITION   : 0.000
         const scanMeta = resps[0] as ScanMetaLabelsAndTypesResp;
         const spectrumResp = resps[1] as SpectrumResp;
 
-        let metaLiveTimeIdx = -1;
-
-        for (let c = 0; c < scanMeta.metaLabels.length; c++) {
-          if (scanMeta.metaLabels[c] == "LIVETIME") {
-            metaLiveTimeIdx = c;
-            break;
-          }
-        }
-
+        const metaLiveTimeIdx = scanMeta.metaLabels.indexOf("LIVETIME");
         if (metaLiveTimeIdx < 0) {
           throw new Error("Failed to get LIVETIME meta index from scan: " + scanId);
         }

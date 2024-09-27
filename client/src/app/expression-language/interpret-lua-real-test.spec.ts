@@ -192,27 +192,10 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
 function readBulkSpectrumCalibration(datasetBin: Experiment): SpectrumEnergyCalibration[] {
   const result: SpectrumEnergyCalibration[] = [];
 
-  let eVStartMetaIdx = -1;
-  let eVperChannelMetaIdx = -1;
-  let readTypeMetaIdx = -1;
-  let detectorMetaIdx = -1;
-
-  for (let c = 0; c < datasetBin.metaLabels.length; c++) {
-    const label = datasetBin.metaLabels[c];
-    if (label == "OFFSET") {
-      eVStartMetaIdx = c;
-    } else if (label == "XPERCHAN") {
-      eVperChannelMetaIdx = c;
-    } else if (label == "READTYPE") {
-      readTypeMetaIdx = c;
-    } else if (label == "DETECTOR_ID") {
-      detectorMetaIdx = c;
-    }
-
-    if (eVStartMetaIdx >= 0 && eVperChannelMetaIdx >= 0 && readTypeMetaIdx >= 0 && detectorMetaIdx >= 0) {
-      break;
-    }
-  }
+  const eVStartMetaIdx = datasetBin.metaLabels.indexOf("OFFSET");
+  const eVperChannelMetaIdx = datasetBin.metaLabels.indexOf("XPERCHAN");
+  const readTypeMetaIdx = datasetBin.metaLabels.indexOf("READTYPE");
+  const detectorMetaIdx = datasetBin.metaLabels.indexOf("DETECTOR_ID");
 
   for (let idx = 0; idx < datasetBin.locations.length; idx++) {
     const loc = datasetBin.locations[idx];
@@ -384,26 +367,12 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
 
     const pmcValues: PMCDataValue[] = [];
 
-    let detectorIdIdx = -1;
-    for (let c = 0; c < datasetBin.metaLabels.length; c++) {
-      if (datasetBin.metaLabels[c] === "DETECTOR_ID") {
-        detectorIdIdx = c;
-        break;
-      }
-    }
-
+    const detectorIdIdx = datasetBin.metaLabels.indexOf("DETECTOR_ID");
     if (detectorIdIdx < 0) {
       return Promise.reject("Failed to find DETECTOR_ID for dataset");
     }
 
-    let readTypeIdx = -1;
-    for (let c = 0; c < datasetBin.metaLabels.length; c++) {
-      if (datasetBin.metaLabels[c] === "READTYPE") {
-        readTypeIdx = c;
-        break;
-      }
-    }
-
+    const readTypeIdx = datasetBin.metaLabels.indexOf("READTYPE");
     if (readTypeIdx < 0) {
       return Promise.reject("Failed to find READTYPE for dataset");
     }
@@ -563,14 +532,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
     const hkData = args[0] as string;
     const pmcValues: PMCDataValue[] = [];
 
-    let housekeepingIdx = -1;
-    for (let c = 0; c < datasetBin.metaLabels.length; c++) {
-      if (datasetBin.metaLabels[c] === hkData) {
-        housekeepingIdx = c;
-        break;
-      }
-    }
-
+    const housekeepingIdx = datasetBin.metaLabels.indexOf(hkData);
     if (housekeepingIdx < 0) {
       return Promise.reject("Failed to find housekeeping data: " + hkData);
     }
