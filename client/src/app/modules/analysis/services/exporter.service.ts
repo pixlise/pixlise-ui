@@ -170,7 +170,7 @@ export class DataExporterService {
                 }
 
                 // TABLE 4
-                if (detector == DetectorOrder[0]) {
+                if (detector == DetectorOrder[1]) {
                   let table4Line = "";
                   spectrum.counts.forEach(count => {
                     table4Line += `,${count ?? ""}`;
