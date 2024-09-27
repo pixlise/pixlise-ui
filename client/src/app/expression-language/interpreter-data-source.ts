@@ -38,7 +38,7 @@ import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-languag
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { MinMax } from "../models/BasicTypes";
 import { MemoisationService } from "../modules/pixlisecore/services/memoisation.service";
-import { lastValueFrom, map } from "rxjs";
+import { catchError, lastValueFrom, map, of } from "rxjs";
 import { MemoisedItem } from "../generated-protos/memoisation";
 
 export class InterpreterDataSource {
@@ -370,7 +370,7 @@ export class InterpreterDataSource {
 
   public static validExistsDataTypes = ["element", "detector", "data", "housekeeping", "pseudo"];
 
-  public async getMemoised(argList: any[]): Promise<Uint8Array> {
+  public async getMemoised(argList: any[]): Promise<Uint8Array | null> {
     if (argList.length != 1 || typeof argList[0] != "string") {
       throw new Error("getMemoised() expects 1 parameter: key. Received: " + argList.length + " parameters");
     }
@@ -385,6 +385,10 @@ export class InterpreterDataSource {
           // Parse to JS object
           const str = new TextDecoder().decode(memItem.data);
           return JSON.parse(str);
+        }),
+        catchError(err => {
+          console.error(`InterpreterDataSource: Failed to get memoised value for : ${argList[0]}: ${err}`);
+          return of(null);
         })
       )
     );
