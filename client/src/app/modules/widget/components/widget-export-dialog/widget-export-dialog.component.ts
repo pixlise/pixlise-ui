@@ -329,6 +329,8 @@ export class WidgetExportDialogComponent implements OnInit {
 
     this.addFilesToZip(zip, "Data Files", data.csvs, ".csv");
     this.addFilesToZip(zip, "Data Files", data.txts, ".txt");
+    this.addFilesToZip(zip, "Data Files", data.luas, ".lua");
+    this.addFilesToZip(zip, "Data Files", data.mds, ".md");
     this.addFilesToZip(zip, "Data Files", data.msas, ".msa");
     this.addFilesToZip(zip, "Images", data.images, ".png", true);
     this.addFilesToZip(zip, "Images", data.tiffImages, ".tif", true);

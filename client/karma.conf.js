@@ -55,6 +55,12 @@ module.exports = function (config) {
         served: true,
         included: false,
       },
+      {
+        pattern: "src/app/expression-language/test-data/input-data/*.csv",
+        watched: false,
+        served: true,
+        included: false,
+      },
     ],
   });
 };

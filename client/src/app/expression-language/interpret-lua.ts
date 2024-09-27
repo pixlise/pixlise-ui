@@ -48,8 +48,8 @@ export class LuaDataQuerier {
 
   private _luaInit$: Observable<void> | null = null;
   private _lua: LuaEngine | null = null;
-  //private _logTables: boolean = false;
-  //private _loggedTables = new Map<string, PMCDataValues>();
+  private _logTables: boolean = false;
+  private _loggedTables = new Map<string, PMCDataValues>();
   private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
   private _totalJSFunctionTime = 0; // Total time spent in JS functions called from Lua
   private _debugJSTiming = true; // Enable to debug
@@ -389,7 +389,7 @@ export class LuaDataQuerier {
     dataSource: InterpreterDataSource,
     cleanupLua: boolean,
     allowAnyResponse: boolean,
-    //recordExpressionInputs: boolean
+    recordExpressionInputs: boolean,
     maxTimeoutMs: number = environment.luaTimeoutMs,
     customInjectFunctionData: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
@@ -435,7 +435,7 @@ export class LuaDataQuerier {
         allSource += sourceCode;
         const codeParts = this.formatLuaCallable(allSource, exprFuncName /*, imports*/);
         const execSource = codeParts.join("");
-        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse /*, recordExpressionInputs*/, maxTimeoutMs);
+        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse, maxTimeoutMs, recordExpressionInputs);
       })
     );
   }
@@ -490,8 +490,8 @@ export class LuaDataQuerier {
     cleanupLua: boolean,
     t0: number,
     allowAnyResponse: boolean,
-    maxTimeoutMs: number = environment.luaTimeoutMs
-    //recordExpressionInputs: boolean,
+    maxTimeoutMs: number = environment.luaTimeoutMs,
+    recordExpressionInputs: boolean
   ): Observable<DataQueryResult> {
     // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
     this._runtimeDataRequired.clear();
@@ -501,8 +501,8 @@ export class LuaDataQuerier {
     this._runtimeStdErr = "";
 
     // If we want to record tables (well, any inputs) that the expression requires to run, remember this
-    //this._logTables = recordExpressionInputs;
-    //this._loggedTables.clear();
+    this._logTables = recordExpressionInputs;
+    this._loggedTables.clear();
 
     return this.runLuaCode(sourceCode, maxTimeoutMs).pipe(
       map(result => {
@@ -529,7 +529,7 @@ export class LuaDataQuerier {
             runtimeMs,
             this._runtimeStdOut,
             this._runtimeStdErr,
-            new Map<string, PMCDataValues>() //this._loggedTables
+            this._loggedTables
           );
         }
 
@@ -844,6 +844,11 @@ end
       }
 
       const luaTable = [pmcs, values];
+
+      if (this._logTables) {
+        // Save table for later
+        this._loggedTables.set(tableSource, result);
+      }
 
       if (this._debugJSTiming) {
         const t1 = performance.now();

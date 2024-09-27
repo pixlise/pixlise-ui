@@ -79,7 +79,8 @@ export class DataQuerier {
         modules,
         dataSource,
         environment.newLuaPerExpression,
-        allowAnyResponse /*, recordExpressionInputs*/,
+        allowAnyResponse,
+        recordExpressionInputs,
         maxTimeoutMs,
         injectedFunctions
       );

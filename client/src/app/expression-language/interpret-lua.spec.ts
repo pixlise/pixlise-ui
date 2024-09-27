@@ -116,7 +116,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult("helloworld333", false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -136,7 +136,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false /*, false*/).subscribe(
+    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false, false).subscribe(
       // Result
       null,
       // Error handler
@@ -151,7 +151,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult(7, false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -169,7 +169,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       null,
       // Error handler
@@ -186,7 +186,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const Ca = PMCDataValues.makeWithValues([new PMCDataValue(4, 10), new PMCDataValue(5, 11), new PMCDataValue(7, 12)]);
     ds.readElement.and.returnValue(Promise.resolve(Ca));
 
-    lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -299,7 +299,8 @@ return readWorked["amap"]`,
         new Map<string, string>(),
         ds,
         true,
-        true /*, false*/
+        true,
+        false
       )
       .subscribe(
         // Result
