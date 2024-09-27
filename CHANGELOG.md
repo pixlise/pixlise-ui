@@ -1,11 +1,17 @@
-## 4.43.0 (Latest)
+## 4.44.0 (Latest)
+
+### Bug Fixes
+- Fixes spectrum export exporting detector A values for detector B
+
+## 4.43.0 (2024-09-26)
+
+### Features
+- **Reorderable Workspace Tabs** You can now reorder workspace tabs by dragging and dropping them in the workspace tab list.
 
 ### Bug Fixes
 - Fixes bug with sharing workspaces that include expression groups
 - Allows longer RGB Mix names to be saved
 
-### Features
-- ***Reorderable Workspace Tabs** You can now reorder workspace tabs by dragging and dropping them in the workspace tab list.
 
 ## 4.42.0 (2024-09-18)
 
