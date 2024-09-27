@@ -37,6 +37,10 @@ import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/Spectrum
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
 import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
+import { ExpressionExporter } from "src/app/expression-language/expression-export";
+import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
+import { LoadedSources } from "../../pixlisecore/services/widget-data.service";
+import { DataExpression } from "src/app/generated-protos/expressions";
 
 @Injectable({
   providedIn: "root",
@@ -1001,6 +1005,31 @@ msa += `#XPOSITION   : 0.000
         });
 
         return { images, tiffImages };
+      })
+    );
+  }
+
+  exportExpressionCode(scanId: string, quantId: string, expressionIds: string[]): Observable<WidgetExportData> {
+    // For now, we only export the first expression...
+    if (expressionIds.length < 1) {
+      throw new Error("At least one expression must be selected when exporting expression code");
+    }
+
+    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: expressionIds[0] })).pipe(
+      switchMap((resp: ExpressionGetResp) => {
+        if (!resp.expression) {
+          throw new Error(`Expression ${expressionIds[0]} failed to load`);
+        }
+
+        const expExp = new ExpressionExporter();
+        return expExp.exportExpressionCode(
+          resp.expression as DataExpression,
+          scanId,
+          quantId,
+          this._cachedDataService,
+          this._spectrumDataService,
+          this._energyCalibrationService
+        );
       })
     );
   }

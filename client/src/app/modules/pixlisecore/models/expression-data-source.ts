@@ -31,6 +31,12 @@ import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src
 import { DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
 import { SpectrumDataService } from "../services/spectrum-data.service";
 
+// What we consider to be a "roughness" item for the purposes of diffraction:
+const roughnessItemThreshold = 0.16;
+
+// TODO: Which detectors calibration do we adopt?
+const eVCalibrationDetector = "A";
+
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 {
@@ -57,14 +63,8 @@ export class ExpressionDataSource
   private _diffractionStatuses: Record<string, DetectedDiffractionPeakStatuses_PeakStatus> = {};
   private _diffractionStatusRead = false;
 
-  // What we consider to be a "roughness" item for the purposes of diffraction:
-  private _roughnessItemThreshold = 0.16;
-
   // Needed by DiffractionPeakQuerierSource
   private _spectrumEnergyCalibration: SpectrumEnergyCalibration[] = [];
-
-  // TODO: Which detectors calibration do we adopt?
-  private _eVCalibrationDetector = "A";
 
   // The things we're supposed to request on demand
   private _scanId: string = "";
@@ -325,8 +325,21 @@ export class ExpressionDataSource
   }
 
   private readDiffractionData(diffractionData: DetectedDiffractionPeaksResp, scanId: string) {
-    this._allPeaks = [];
-    this._roughnessItems = [];
+    const result = ExpressionDataSource.readDiffractionPeaks(diffractionData, scanId, this._diffractionStatuses, this._spectrumEnergyCalibration);
+    this._allPeaks = result.allPeaks;
+    this._roughnessItems = result.roughnessItems;
+  }
+
+  // Separated out mainly so that tests running expressions can generate the same diffraction data as prod - but notable omissions are
+  // that tests won't have diffraciton statuses or energy calibration defined, to test the "simple case"
+  public static readDiffractionPeaks(
+    diffractionData: DetectedDiffractionPeaksResp,
+    scanId: string,
+    diffractionStatuses: Record<string, DetectedDiffractionPeakStatuses_PeakStatus>,
+    spectrumEnergyCalibration: SpectrumEnergyCalibration[]
+  ): { allPeaks: DiffractionPeak[]; roughnessItems: RoughnessItem[] } {
+    const allPeaks:  DiffractionPeak[] = [];
+    const roughnessItems: RoughnessItem[] = [];
     const roughnessPMCs: Set<number> = new Set<number>();
 
     for (const item of diffractionData.peaksPerLocation) {
@@ -338,15 +351,15 @@ export class ExpressionDataSource
 
       for (const peak of item.peaks) {
         if (peak.effectSize > 6.0) {
-          if (peak.globalDifference > this._roughnessItemThreshold) {
+          if (peak.globalDifference > roughnessItemThreshold) {
             // It's roughness, can repeat so ensure we only save once
             if (!roughnessPMCs.has(pmc)) {
               let status = DiffractionPeak.roughnessPeak;
-              if (this._diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
-                status = this._diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
+              if (diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
+                status = diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
               }
 
-              this._roughnessItems.push(
+              roughnessItems.push(
                 new RoughnessItem(
                   pmc,
                   peak.globalDifference,
@@ -363,19 +376,19 @@ export class ExpressionDataSource
             // keV values will be calculated later
             const channels = [peak.peakChannel, startChannel, endChannel];
             let keVs: number[] = [];
-            for (const calibration of this._spectrumEnergyCalibration) {
-              if (calibration.detector == this._eVCalibrationDetector) {
+            for (const calibration of spectrumEnergyCalibration) {
+              if (calibration.detector == eVCalibrationDetector) {
                 keVs = calibration.channelsTokeV(channels);
               }
             }
 
             if (keVs.length == 3) {
               let status = DiffractionPeak.diffractionPeak;
-              if (this._diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
-                status = this._diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
+              if (diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
+                status = diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
               }
 
-              this._allPeaks.push(
+              allPeaks.push(
                 new DiffractionPeak(
                   pmc,
 
@@ -400,19 +413,21 @@ export class ExpressionDataSource
       }
     }
 
-    const msg = `Diffraction for scan ${scanId} contained ${this._allPeaks.length} usable diffraction peaks, ${this._roughnessItems.length} roughness items`;
-    if (this._allPeaks.length <= 0 || this._roughnessItems.length <= 0) {
+    const msg = `Diffraction for scan ${scanId} contained ${allPeaks.length} usable diffraction peaks, ${roughnessItems.length} roughness items`;
+    if (allPeaks.length <= 0 || roughnessItems.length <= 0) {
       console.warn(msg);
     } else {
       console.log(msg);
     }
 
-    this._allPeaks.sort((a: DiffractionPeak, b: DiffractionPeak) => {
+    allPeaks.sort((a: DiffractionPeak, b: DiffractionPeak) => {
       return a.pmc == b.pmc ? 0 : a.pmc < b.pmc ? -1 : 1;
     });
-    this._roughnessItems.sort((a: RoughnessItem, b: RoughnessItem) => {
+    roughnessItems.sort((a: RoughnessItem, b: RoughnessItem) => {
       return a.pmc == b.pmc ? 0 : a.pmc < b.pmc ? -1 : 1;
     });
+
+    return { allPeaks, roughnessItems };
   }
 
   // QuantifiedDataQuerierSource
@@ -806,12 +821,14 @@ export class ExpressionDataSource
     if (this._debug) {
       this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
+
+    // NOTE: this.getDetectedDiffraction() not needed here because this operates on the previously read diffraction data in: this._allPeaks
     return await lastValueFrom(
-      combineLatest([this.getDetectedDiffractionStatus(), this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
-        map(([diffractionStatusData, diffractionData, userDiffractionPeakData]) => {
+      combineLatest([this.getDetectedDiffractionStatus(), this.getDiffractionPeakManualList()]).pipe(
+        map(([diffractionStatusData, userDiffractionPeakData]) => {
           // Detected Diffraction data is fetched for the Roughness and Diffraction tabs
           // We can continue here on fail, but without this data those tabs won't load
-          if (!diffractionStatusData || /*!diffractionData ||*/ !this._scanEntries) {
+          if (!diffractionStatusData || !this._scanEntries) {
             throw new Error("getDiffractionPeakEffectData: No data available");
           }
 
@@ -842,7 +859,7 @@ export class ExpressionDataSource
           // If we can convert the user peak keV to a channel, do it and compare
           if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
             for (const cal of this._spectrumEnergyCalibration) {
-              if (cal.detector == this._eVCalibrationDetector) {
+              if (cal.detector == eVCalibrationDetector) {
                 for (const id of Object.keys(userDiffractionPeakData.peaks)) {
                   const peak = userDiffractionPeakData.peaks[id];
 
@@ -903,7 +920,7 @@ export class ExpressionDataSource
 
               // ONLY negative means it's a user-entered roughness item!
               if (peak.energykeV < 0) {
-                result.push(new PMCDataValue(peak.pmc, this._roughnessItemThreshold));
+                result.push(new PMCDataValue(peak.pmc, roughnessItemThreshold));
               }
             }
           }

@@ -31,14 +31,18 @@ import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 //import { InterpreterDataSource } from "./interpreter-data-source";
 import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
 import { decompressZeroRunLengthEncoding } from "../utils/utils";
-import { Diffraction } from "src/app/generated-protos/files/diffraction";
-import { Experiment, Experiment_MetaDataType } from "src/app/generated-protos/files/experiment";
+import { Diffraction, Diffraction_Location } from "src/app/generated-protos/files/diffraction";
+import { Experiment, Experiment_Location_MetaDataItem, Experiment_MetaDataType } from "src/app/generated-protos/files/experiment";
 import { Quantification } from "src/app/generated-protos/quantification";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { periodicTableDB } from "../periodic-table/periodic-table-db";
 import { ExpressionDataSource } from "../modules/pixlisecore/models/expression-data-source";
+import { DetectedDiffractionPerLocation, DetectedDiffractionPerLocation_DetectedDiffractionPeak } from "../generated-protos/diffraction-data";
+import { DetectedDiffractionPeaksResp } from "../generated-protos/diffraction-detected-peak-msgs";
+import { DiffractionPeak, RoughnessItem } from "../modules/pixlisecore/models/diffraction";
+import { SpectrumEnergyCalibration } from "../models/BasicTypes";
 
-describe("LuaDataQuerier runQuery() for real expression", () => {
+fdescribe("LuaDataQuerier runQuery() for real expression", () => {
   const scanId = "371196417";
   let datasetBin: Experiment;
   let diffractionBin: Diffraction;
@@ -46,6 +50,12 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
   let exprSiO2prime: string = "";
   let expectedOutput: object = {};
   const modules = new Map<string, string>();
+  let spectrumEnergyCalibration: SpectrumEnergyCalibration[] = [];
+
+  let diffractionInfoRead: {
+    allPeaks: DiffractionPeak[];
+    roughnessItems: RoughnessItem[];
+  } = { allPeaks: [], roughnessItems: [] };
 
   beforeEach(done => {
     //waitForAsync(() => {
@@ -68,6 +78,18 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
       modules.set("Estimate", new TextDecoder().decode(results[5]));
       modules.set("GeoAndDiffCorrection", new TextDecoder().decode(results[6]));
       expectedOutput = JSON.parse(new TextDecoder().decode(results[7]));
+
+      spectrumEnergyCalibration = readBulkSpectrumCalibration(datasetBin);
+      const diffPerLoc: DetectedDiffractionPerLocation[] = readDiffraction(datasetBin, diffractionBin);
+
+      // We now have the "API request" done, do the UI-side of this
+      diffractionInfoRead = ExpressionDataSource.readDiffractionPeaks(
+        DetectedDiffractionPeaksResp.create({ peaksPerLocation: diffPerLoc }),
+        scanId,
+        {},
+        spectrumEnergyCalibration
+      );
+
       done();
     });
   });
@@ -77,9 +99,9 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
 
   it("should run complex expression", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = makeDataSource(scanId, datasetBin, diffractionBin, quantBin);
+    const ds = makeDataSource(scanId, datasetBin, diffractionInfoRead.allPeaks, quantBin);
 
-    lua.runQuery(exprSiO2prime, modules, ds, true, false, 600000, null).subscribe({
+    lua.runQuery(exprSiO2prime, modules, ds, true, false, false, 600000, null).subscribe({
       // Result
       next: value => {
         console.log(`Test Query took: ${value.runtimeMs.toLocaleString()}ms`);
@@ -144,8 +166,8 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
           // );
         }
 
-        expect(valuesEqual).toEqual(364);//expectedOutputValues.length);
-        if (valuesEqual != 364) { //expectedOutputValues.length) {
+        expect(valuesEqual).toEqual(expectedOutputValues.length);
+        if (valuesEqual != expectedOutputValues.length) {
           console.log(
             `${expectedOutputValues.length - valuesEqual}/${expectedOutputValues.length} (${
               Math.round(((expectedOutputValues.length - valuesEqual) / expectedOutputValues.length) * 10000) / 100
@@ -167,44 +189,171 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
   });
 });
 
+function readBulkSpectrumCalibration(datasetBin: Experiment): SpectrumEnergyCalibration[] {
+  const result: SpectrumEnergyCalibration[] = [];
+
+  let eVStartMetaIdx = -1;
+  let eVperChannelMetaIdx = -1;
+  let readTypeMetaIdx = -1;
+  let detectorMetaIdx = -1;
+
+  for (let c = 0; c < datasetBin.metaLabels.length; c++) {
+    const label = datasetBin.metaLabels[c];
+    if (label == "OFFSET") {
+      eVStartMetaIdx = c;
+    } else if (label == "XPERCHAN") {
+      eVperChannelMetaIdx = c;
+    } else if (label == "READTYPE") {
+      readTypeMetaIdx = c;
+    } else if (label == "DETECTOR_ID") {
+      detectorMetaIdx = c;
+    }
+
+    if (eVStartMetaIdx >= 0 && eVperChannelMetaIdx >= 0 && readTypeMetaIdx >= 0 && detectorMetaIdx >= 0) {
+      break;
+    }
+  }
+
+  for (let idx = 0; idx < datasetBin.locations.length; idx++) {
+    const loc = datasetBin.locations[idx];
+
+    for (const det of loc.detectors) {
+      if (getMetaValue(readTypeMetaIdx, det.meta)?.svalue == "BulkSum") {
+        let eVstart = 0;
+        let eVperChannel = 1;
+
+        let m = getMetaValue(eVStartMetaIdx, det.meta);
+        if (m) {
+          if (m.fvalue !== undefined) {
+            eVstart = m.fvalue;
+          } else if (m.ivalue !== undefined) {
+            eVstart = m.ivalue;
+          }
+        }
+
+        m = getMetaValue(eVperChannelMetaIdx, det.meta);
+        if (m) {
+          if (m.fvalue !== undefined) {
+            eVperChannel = m.fvalue;
+          } else if (m.ivalue !== undefined) {
+            eVperChannel = m.ivalue;
+          }
+        }
+
+        m = getMetaValue(detectorMetaIdx, det.meta);
+        if (m) {
+          result.push(new SpectrumEnergyCalibration(eVstart, eVperChannel, m.svalue));
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+function getMetaValue(idx: number, from: Experiment_Location_MetaDataItem[]): Experiment_Location_MetaDataItem | undefined {
+  for (const item of from) {
+    if (item.labelIdx == idx) {
+      return item;
+    }
+  }
+
+  return undefined;
+}
+
+function readDiffraction(datasetBin: Experiment, diffractionBin: Diffraction): DetectedDiffractionPerLocation[] {
+  // Read diffraction bin data as API would. Also read spectrum calibration while we're at it!
+  const diffLookup = new Map<number, Diffraction_Location>();
+  for (const loc of diffractionBin.locations) {
+    diffLookup.set(parseInt(loc.id), loc);
+  }
+
+  const diffPerLoc: DetectedDiffractionPerLocation[] = [];
+  for (let idx = 0; idx < datasetBin.locations.length; idx++) {
+    const loc = datasetBin.locations[idx];
+    const pmc = parseInt(loc.id);
+
+    const diffLoc = diffLookup.get(pmc);
+    if (diffLoc) {
+      const peaks: DetectedDiffractionPerLocation_DetectedDiffractionPeak[] = [];
+
+      for (const peak of diffLoc.peaks) {
+        peaks.push(peak);
+      }
+
+      diffPerLoc.push(DetectedDiffractionPerLocation.create({ id: diffLoc.id, peaks: peaks }));
+    }
+  }
+
+  return diffPerLoc;
+}
+
 async function readTestFile(relativePath: string): Promise<ArrayBuffer> {
   const fullPath = "base/src/app/expression-language/test-data/" + relativePath;
 
   const response = await fetch(fullPath);
   const blob = await response.blob();
   return blob.arrayBuffer();
-  /*
-  let r = new FileReader();
-  r.readAsArrayBuffer(blob);
+}
 
-  r.onload = function(){ alert(r.result); };
-*/
+function compareWithCSV(fileName: string, values: PMCDataValue[]) {
+  // Read the input file and compare with what we've generated
+  readTestFile("input-data/" + fileName).then((val: ArrayBuffer) => {
+    // Got it as an array buffer, read as csv
+    const csv = new TextDecoder().decode(val);
+    let c = 0;
+    for (const line of csv.split("\n")) {
+      const v = values[c];
+      if (!v) {
+        console.warn("Skipped reading value: " + c + " for comparison with: " + fileName);
+      } else {
+        // Compare!
+        const ourLine = `${v.pmc},${v.value}`;
+        if (line != ourLine) {
+          throw new Error(`Input file mismatch: ${fileName} (${c}): "${line}" != "${ourLine}"`);
+        }
+      }
+      c++;
+    }
+  });
+}
+
+async function readCSV(fileName: string): Promise<PMCDataValues> {
+  const f = await readTestFile(fileName);
+
+  const result: PMCDataValue[] = [];
+
+  // Got it as an array buffer, read as csv
+  const csv = new TextDecoder().decode(f);
+  for (const line of csv.split("\n")) {
+    const parts = line.split(",");
+
+    if (parts.length == 2) {
+      const pmc = parseInt(parts[0]);
+      const value = parseFloat(parts[1]);
+
+      result.push(new PMCDataValue(pmc, value));
+    }
+  }
+
+  return PMCDataValues.makeWithValues(result);
 }
 
 function readQuant(scanId: string, dataLabel: string, detectorId: string, quantBin: Quantification): PMCDataValues {
-  const elemLookup = ExpressionDataSource.buildPureElementLookup(quantBin.labels)
+  const elemLookup = ExpressionDataSource.buildPureElementLookup(quantBin.labels);
   const quantCol = ExpressionDataSource.getQuantColIndex(dataLabel, quantBin.labels, elemLookup.pureElementColumnLookup);
 
   if (quantCol.idx < 0) {
-    throw new Error(
-      `Quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
-    );
+    throw new Error(`Quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`);
   }
 
   //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-  const data = ExpressionDataSource.getQuantifiedDataValues(
-    scanId,
-    quantBin,
-    detectorId,
-    quantCol.idx,
-    quantCol.toElemConvert,
-    dataLabel.endsWith("_%")
-  );
+  const data = ExpressionDataSource.getQuantifiedDataValues(scanId, quantBin, detectorId, quantCol.idx, quantCol.toElemConvert, dataLabel.endsWith("_%"));
   return PMCDataValues.makeWithValues(data);
 }
 
-function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: Diffraction, quantBin: Quantification): InterpreterDataSource {
+function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPeaks: DiffractionPeak[], quantBin: Quantification): InterpreterDataSource {
   const ds = jasmine.createSpyObj(
     "InterpreterDataSource",
     [
@@ -248,10 +397,12 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
     const result = readQuant(scanId, dataLabel, detectorId, quantBin);
 
     if (!asMmol) {
+      compareWithCSV(`element(${elem},${column},${detectorId}).csv`, result.values);
       return Promise.resolve(result);
     }
 
     const resultMmol = InterpreterDataSource.convertToMmol(elem, result);
+    compareWithCSV(`element(${elem},${column},${detectorId}).csv`, resultMmol.values);
     return Promise.resolve(resultMmol);
   });
 
@@ -263,7 +414,9 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
     const dataLabel = args[0] as string;
     const detectorId = args[1] as string;
 
-    return Promise.resolve(readQuant(scanId, dataLabel, detectorId, quantBin));
+    const q = readQuant(scanId, dataLabel, detectorId, quantBin);
+    compareWithCSV(`data(${dataLabel}, ${detectorId}).csv`, q.values);
+    return Promise.resolve(q);
   });
 
   ds.readSpectrum.and.callFake((args: any[]) => {
@@ -334,6 +487,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
       }
     }
 
+    compareWithCSV(`spectrum(${startChannel},${args[1]},${detector}).csv`, pmcValues);
     return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
   });
 
@@ -345,11 +499,9 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
     const channelStart = args[0] as number;
     const channelEnd = args[1] as number;
 
-    // First, add them up per PMC
     const pmcDiffractionCount = new Map<number, number>();
-
-    // Fill the PMCs first
-    for (const loc of datasetBin.locations) {
+    for (let idx = 0; idx < datasetBin.locations.length; idx++) {
+      const loc = datasetBin.locations[idx];
       const pmc = parseInt(loc.id);
 
       if (loc.pseudoIntensities.length > 0) {
@@ -357,49 +509,19 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
       }
     }
 
-    for (let c = 0; c < diffractionBin.locations.length; c++) { // const loc of diffractionBin.locations) {
-      const diffLoc = diffractionBin.locations[c];
-      const loc = datasetBin.locations[c];
-
-      for (const peak of diffLoc.peaks) {
-        const withinChannelRange = (channelStart === -1 || peak.peakChannel >= channelStart) && (channelEnd === -1 || peak.peakChannel < channelEnd);
-        if (/*peak.status != DiffractionPeak.statusNotAnomaly &&*/ withinChannelRange) {
-          const pmc = parseInt(loc.id);
-          let prev = pmcDiffractionCount.get(pmc);
-          if (!prev) {
-            prev = 0;
-          }
-          pmcDiffractionCount.set(pmc, prev + 1);
+    for (const peak of allDiffractionPeaks) {
+      const withinChannelRange = (channelStart === -1 || peak.channel >= channelStart) && (channelEnd === -1 || peak.channel < channelEnd);
+      if (peak.status != DiffractionPeak.statusNotAnomaly && withinChannelRange) {
+        let prev = pmcDiffractionCount.get(peak.pmc);
+        if (!prev) {
+          prev = 0;
         }
+        pmcDiffractionCount.set(peak.pmc, prev + 1);
       }
     }
 
-    /*Skipping for this test harness
-    // Also loop through user-defined peaks
-    // If we can convert the user peak keV to a channel, do it and compare
-    if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
-      for (const cal of this._spectrumEnergyCalibration) {
-        if (cal.detector == this._eVCalibrationDetector) {
-          for (const id of Object.keys(userDiffractionPeakData.peaks)) {
-            const peak = userDiffractionPeakData.peaks[id];
-
-            // ONLY look at positive energies, negative means it's a user-entered roughness item!
-            if (peak.energykeV > 0) {
-              const ch = cal.keVsToChannel([peak.energykeV]);
-              if (ch.length == 1 && ch[0] >= channelStart && ch[0] < channelEnd) {
-                let prev = pmcDiffractionCount.get(peak.pmc);
-                if (!prev) {
-                  prev = 0;
-                }
-                pmcDiffractionCount.set(peak.pmc, prev + 1);
-              }
-            }
-          }
-
-          break;
-        }
-      }
-    }*/
+    // NOTE: WE SKIP the part about reading user peaks - they're not commonly used and our test data will be selected so there aren't any
+    //       in the calculation of the "expected" values
 
     // Now turn these into data values
     const result: PMCDataValue[] = [];
@@ -407,7 +529,11 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
       result.push(new PMCDataValue(pmc, sum));
     }
 
+    compareWithCSV(`diffractionPeaks(${channelStart},${channelEnd}).csv`, result);
     return Promise.resolve(PMCDataValues.makeWithValues(result));
+
+    // Read the input file and compare with what we've generated
+    //return readCSV(`input-data/diffractionPeaks(${channelStart},${channelEnd}).csv`);
   });
 
   ds.readRoughnessData.and.callFake(() => {
@@ -451,6 +577,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, diffractionBin: 
       break; // Only do this for 1 set of PMCs, we may have a 2nd detector...
     }
 
+    compareWithCSV(`makeMap(${value}).csv`, result);
     return Promise.resolve(PMCDataValues.makeWithValues(result));
   });
 
