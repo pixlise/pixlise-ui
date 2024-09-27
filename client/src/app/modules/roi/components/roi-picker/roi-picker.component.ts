@@ -271,7 +271,7 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
     }
 
     let regionRequests = selectedROISummaries.map(summary => {
-      return this._roiService.loadROI(summary.id);
+      return this._roiService.loadROI(summary.id, true);
     });
 
     combineLatest(regionRequests).subscribe({

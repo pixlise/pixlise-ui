@@ -860,7 +860,17 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         return of(roiLayer);
       }
 
-      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], []));
+      let locOpacity = 1;
+      if (roi.roi.isMIST) {
+        let mistOpacity = roi.roi?.mistROIItem?.pmcConfidenceMap[locIdx];
+        if (mistOpacity !== undefined) {
+          locOpacity = mistOpacity;
+        }
+      }
+
+      console.log("Region opacity: ", locOpacity, roi.roi.isMIST, roi.roi.mistROIItem);
+
+      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], [], locOpacity));
     }
 
     if (roi.roi.displaySettings) {

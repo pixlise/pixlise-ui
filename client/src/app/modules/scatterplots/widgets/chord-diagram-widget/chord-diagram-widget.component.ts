@@ -196,7 +196,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
           // Get the ROI to work out the scan id... this will be retrieved soon anyway...
           if (chordData.displayROI) {
-            this._roiService.loadROI(chordData.displayROI).subscribe({
+            this._roiService.loadROI(chordData.displayROI, true).subscribe({
               next: roiItem => {
                 if (roiItem) {
                   this.scanId = roiItem.scanId;

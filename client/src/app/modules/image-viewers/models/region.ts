@@ -18,7 +18,8 @@ export class RegionDisplayPolygon {
 
   constructor(
     public boundaryPoints: Point[],
-    public holePolygons: Point[][]
+    public holePolygons: Point[][],
+    public opacity: number = 1
   ) {
     this.updateBBoxes();
   }
