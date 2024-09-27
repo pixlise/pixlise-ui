@@ -1,7 +1,9 @@
 ## 4.45.0 (Latest)
 
 ### Features
-- Expression picker now remembers your last opened section
+- Expression Picker now remembers your last opened section
+- ROI Picker now remembers your last selected sections
+- MIST ROIs can now include a per-PMC confidence value column that affects ROI opacity on context image
 
 ## 4.44.0 (2024-09-27)
 
