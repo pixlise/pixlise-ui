@@ -338,7 +338,7 @@ export class ExpressionDataSource
     diffractionStatuses: Record<string, DetectedDiffractionPeakStatuses_PeakStatus>,
     spectrumEnergyCalibration: SpectrumEnergyCalibration[]
   ): { allPeaks: DiffractionPeak[]; roughnessItems: RoughnessItem[] } {
-    const allPeaks:  DiffractionPeak[] = [];
+    const allPeaks: DiffractionPeak[] = [];
     const roughnessItems: RoughnessItem[] = [];
     const roughnessPMCs: Set<number> = new Set<number>();
 
@@ -453,7 +453,7 @@ export class ExpressionDataSource
 
           //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-          const data = ExpressionDataSource.getQuantifiedDataValues(
+          return ExpressionDataSource.getQuantifiedDataValues(
             this._scanId,
             quantData.data,
             detectorId,
@@ -461,7 +461,6 @@ export class ExpressionDataSource
             quantCol.toElemConvert,
             dataLabel.endsWith("_%")
           );
-          return PMCDataValues.makeWithValues(data);
         })
       )
     );
@@ -511,8 +510,9 @@ export class ExpressionDataSource
     colIdx: number,
     mult: number | null,
     isPctColumn: boolean
-  ): PMCDataValue[] {
-    const resultData: PMCDataValue[] = [];
+  ): PMCDataValues {
+    const result = new PMCDataValues();
+    result.isBinary = true; // pre-set for detection in addValue
     let detectorFound = false;
 
     // NOTE: if requesting "default" detector, just pick the first one
@@ -544,7 +544,7 @@ export class ExpressionDataSource
             value *= mult;
           }
 
-          resultData.push(new PMCDataValue(quantLoc.pmc, value, undef));
+          result.addValue(new PMCDataValue(quantLoc.pmc, value, undef));
         }
 
         detectorFound = true;
@@ -562,7 +562,7 @@ export class ExpressionDataSource
       );
     }
 
-    return resultData;
+    return result;
   }
 
   async getElementList(): Promise<string[]> {
@@ -657,16 +657,18 @@ export class ExpressionDataSource
           }
 
           // Run through all locations & build it
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
+
           // TODO: filter by scan entry ids requested...
           // for (const idx of this._scanEntryIndexesRequested) {
           for (const item of pseudoData.data) {
             const pmc = item.id;
             const value = item.intensities[elemIdx];
 
-            values.push(new PMCDataValue(pmc, value));
+            result.addValue(new PMCDataValue(pmc, value));
           }
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );
@@ -721,6 +723,10 @@ export class ExpressionDataSource
           throw new Error("getSpectrumRangeMapData: No data available");
         }
 
+        let foundRange = false;
+        const result = new PMCDataValues();
+        result.isBinary = true; // pre-set for detection in addValue
+
         // For now, only supporting A & B for now
         if (detectorExpr != "A" && detectorExpr != "B") {
           throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
@@ -729,9 +735,6 @@ export class ExpressionDataSource
         if (channelStart < 0 || channelEnd < channelStart) {
           throw new Error("getSpectrumData: Invalid start/end channel specified");
         }
-
-        let foundRange = false;
-        const values: PMCDataValue[] = [];
 
         // Loop through & sum all values within the channel range
         for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
@@ -754,7 +757,7 @@ export class ExpressionDataSource
               }
 
               const pmc = this._scanEntries.entries[c].id;
-              values.push(new PMCDataValue(pmc, sum));
+              result.addValue(new PMCDataValue(pmc, sum));
               foundRange = true;
             }
           }
@@ -764,7 +767,7 @@ export class ExpressionDataSource
           throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
         }
 
-        return PMCDataValues.makeWithValues(values);
+        return result;
       }),
       shareReplay(1)
     );
@@ -782,7 +785,8 @@ export class ExpressionDataSource
             throw new Error("getSpectrumDifferences: No data available");
           }
 
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
             const loc = spectrumData.spectraPerLocation[c];
@@ -815,11 +819,11 @@ export class ExpressionDataSource
               }
 
               const pmc = this._scanEntries.entries[c].id;
-              values.push(new PMCDataValue(pmc, value));
+              result.addValue(new PMCDataValue(pmc, value));
             }
           }
 
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );
@@ -899,12 +903,14 @@ export class ExpressionDataSource
           }
 
           // Now turn these into data values
-          const result: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
+
           for (const [pmc, sum] of pmcDiffractionCount.entries()) {
-            result.push(new PMCDataValue(pmc, sum));
+            result.addValue(new PMCDataValue(pmc, sum));
           }
 
-          return PMCDataValues.makeWithValues(result);
+          return result;
         })
       )
     );
@@ -924,10 +930,11 @@ export class ExpressionDataSource
           }
 
           // Loop through all roughness items and form a map from their globalDifference value
-          const result: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           for (const item of this._roughnessItems) {
-            result.push(new PMCDataValue(item.pmc, item.globalDifference));
+            result.addValue(new PMCDataValue(item.pmc, item.globalDifference));
           }
 
           // Also run through user-defined roughness items
@@ -937,12 +944,12 @@ export class ExpressionDataSource
 
               // ONLY negative means it's a user-entered roughness item!
               if (peak.energykeV < 0) {
-                result.push(new PMCDataValue(peak.pmc, roughnessItemThreshold));
+                result.addValue(new PMCDataValue(peak.pmc, roughnessItemThreshold));
               }
             }
           }
 
-          return PMCDataValues.makeWithValues(result);
+          return result;
         })
       )
     );
@@ -981,7 +988,8 @@ export class ExpressionDataSource
           }
 
           // Run through all locations & build it
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           for (let c = 0; c < scanMetaData.entries.length; c++) {
             const entry = scanMetaData.entries[c];
@@ -995,11 +1003,11 @@ export class ExpressionDataSource
 
               const locIdx = this._scanEntryIndexesRequested[c];
               const pmc = this._scanEntries.entries[locIdx].id;
-              values.push(new PMCDataValue(pmc, value));
+              result.addValue(new PMCDataValue(pmc, value));
             }
           }
 
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );
@@ -1024,7 +1032,8 @@ export class ExpressionDataSource
             throw new Error("Cannot find position for axis: " + axis);
           }
 
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           // We've requested the items indexed by _scanEntryIndexesRequested, so here we loop through them
           // but have to read the corresponding item in the response. Previously we had a bug here where
@@ -1041,12 +1050,12 @@ export class ExpressionDataSource
               // doesn't encode "null" values, it actually puts 0,0,0 there. That's not a likely valid coordinate anyway, so we
               // can check for it here
               if (loc.x !== 0 || loc.y !== 0 || loc.z !== 0) {
-                values.push(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
+                result.addValue(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
               }
             }
           }
 
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );

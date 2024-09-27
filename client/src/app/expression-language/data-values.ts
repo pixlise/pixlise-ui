@@ -123,6 +123,14 @@ export class PMCDataValues {
     return result;
   }
 
+  static makeWithValuesMinMax(values: PMCDataValue[], range: MinMax, isBinary: boolean) {
+    const result = new PMCDataValues();
+    result._valueRange = range;
+    result.values = values;
+    result.isBinary = isBinary;
+    return result;
+  }
+
   static filterToCommonPMCsOnly(values: (PMCDataValues | null | undefined)[]): (PMCDataValues | null)[] {
     const result: (PMCDataValues | null)[] = [];
     if (values.length === 0) {
@@ -157,6 +165,17 @@ export class PMCDataValues {
       const filteredValues = vals.values.filter(value => overlappingPMCs.has(value.pmc));
       return PMCDataValues.makeWithValues(filteredValues);
     });
+  }
+
+  addValue(v: PMCDataValue) {
+    if (!v.isUndefined) {
+      this._valueRange.expand(v.value);
+    }
+    this.values.push(v);
+
+    if (v.value != 0 && v.value != 1) {
+      this.isBinary = false;
+    }
   }
 
   private setValues(values: PMCDataValue[]) {
@@ -249,8 +268,8 @@ export class PMCDataValues {
   // For example, Math.sin taking in map value as arg
   // Executes this for each value in map
   public mathFunc(theMathFunc: (num: number) => number): PMCDataValues {
-    //let result = new PMCDataValues();
-    const result: PMCDataValue[] = [];
+    const result = new PMCDataValues();
+    result.isBinary = true; // pre-set for detection in addValue
 
     for (let c = 0; c < this.values.length; c++) {
       let towrite = theMathFunc(this.values[c].value);
@@ -258,7 +277,7 @@ export class PMCDataValues {
         towrite = 0;
       }
 
-      result./*values.*/ push(new PMCDataValue(this.values[c].pmc, towrite, this.values[c].isUndefined));
+      result.addValue(new PMCDataValue(this.values[c].pmc, towrite, this.values[c].isUndefined));
     }
 
     /* This was failing for some trig functions... seemed like min vs max were backwards?!
@@ -270,7 +289,7 @@ export class PMCDataValues {
 
         return result;
 */
-    return PMCDataValues.makeWithValues(result);
+    return result;
   }
 
   public operationWithScalar(operation: QuantOp, scalar: number, scalarIsLeft: boolean): PMCDataValues {
