@@ -42,7 +42,7 @@ import { DetectedDiffractionPeaksResp } from "../generated-protos/diffraction-de
 import { DiffractionPeak, RoughnessItem } from "../modules/pixlisecore/models/diffraction";
 import { SpectrumEnergyCalibration } from "../models/BasicTypes";
 
-fdescribe("LuaDataQuerier runQuery() for real expression", () => {
+describe("LuaDataQuerier runQuery() for real expression", () => {
   const scanId = "371196417";
   let datasetBin: Experiment;
   let diffractionBin: Diffraction;
@@ -296,49 +296,6 @@ async function readTestFile(relativePath: string): Promise<ArrayBuffer> {
   return blob.arrayBuffer();
 }
 
-function compareWithCSV(fileName: string, values: PMCDataValue[]) {
-  // Read the input file and compare with what we've generated
-  readTestFile("input-data/" + fileName).then((val: ArrayBuffer) => {
-    // Got it as an array buffer, read as csv
-    const csv = new TextDecoder().decode(val);
-    let c = 0;
-    for (const line of csv.split("\n")) {
-      const v = values[c];
-      if (!v) {
-        console.warn("Skipped reading value: " + c + " for comparison with: " + fileName);
-      } else {
-        // Compare!
-        const ourLine = `${v.pmc},${v.value}`;
-        if (line != ourLine) {
-          throw new Error(`Input file mismatch: ${fileName} (${c}): "${line}" != "${ourLine}"`);
-        }
-      }
-      c++;
-    }
-  });
-}
-
-async function readCSV(fileName: string): Promise<PMCDataValues> {
-  const f = await readTestFile(fileName);
-
-  const result: PMCDataValue[] = [];
-
-  // Got it as an array buffer, read as csv
-  const csv = new TextDecoder().decode(f);
-  for (const line of csv.split("\n")) {
-    const parts = line.split(",");
-
-    if (parts.length == 2) {
-      const pmc = parseInt(parts[0]);
-      const value = parseFloat(parts[1]);
-
-      result.push(new PMCDataValue(pmc, value));
-    }
-  }
-
-  return PMCDataValues.makeWithValues(result);
-}
-
 function readQuant(scanId: string, dataLabel: string, detectorId: string, quantBin: Quantification): PMCDataValues {
   const elemLookup = ExpressionDataSource.buildPureElementLookup(quantBin.labels);
   const quantCol = ExpressionDataSource.getQuantColIndex(dataLabel, quantBin.labels, elemLookup.pureElementColumnLookup);
@@ -397,12 +354,10 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
     const result = readQuant(scanId, dataLabel, detectorId, quantBin);
 
     if (!asMmol) {
-      compareWithCSV(`element(${elem},${column},${detectorId}).csv`, result.values);
       return Promise.resolve(result);
     }
 
     const resultMmol = InterpreterDataSource.convertToMmol(elem, result);
-    compareWithCSV(`element(${elem},${column},${detectorId}).csv`, resultMmol.values);
     return Promise.resolve(resultMmol);
   });
 
@@ -415,7 +370,6 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
     const detectorId = args[1] as string;
 
     const q = readQuant(scanId, dataLabel, detectorId, quantBin);
-    compareWithCSV(`data(${dataLabel}, ${detectorId}).csv`, q.values);
     return Promise.resolve(q);
   });
 
@@ -487,7 +441,6 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
       }
     }
 
-    compareWithCSV(`spectrum(${startChannel},${args[1]},${detector}).csv`, pmcValues);
     return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
   });
 
@@ -529,11 +482,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
       result.push(new PMCDataValue(pmc, sum));
     }
 
-    compareWithCSV(`diffractionPeaks(${channelStart},${channelEnd}).csv`, result);
     return Promise.resolve(PMCDataValues.makeWithValues(result));
-
-    // Read the input file and compare with what we've generated
-    //return readCSV(`input-data/diffractionPeaks(${channelStart},${channelEnd}).csv`);
   });
 
   ds.readRoughnessData.and.callFake(() => {
@@ -577,7 +526,6 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
       break; // Only do this for 1 set of PMCs, we may have a 2nd detector...
     }
 
-    compareWithCSV(`makeMap(${value}).csv`, result);
     return Promise.resolve(PMCDataValues.makeWithValues(result));
   });
 
