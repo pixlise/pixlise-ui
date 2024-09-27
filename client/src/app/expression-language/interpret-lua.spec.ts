@@ -116,7 +116,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult("helloworld333", false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -136,7 +136,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false /*, false*/).subscribe(
+    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false, false).subscribe(
       // Result
       null,
       // Error handler
@@ -151,7 +151,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult(7, false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -169,7 +169,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const lua = new LuaDataQuerier(false);
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
 
-    lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       null,
       // Error handler
@@ -186,7 +186,7 @@ describe("LuaDataQuerier runQuery()", () => {
     const Ca = PMCDataValues.makeWithValues([new PMCDataValue(4, 10), new PMCDataValue(5, 11), new PMCDataValue(7, 12)]);
     ds.readElement.and.returnValue(Promise.resolve(Ca));
 
-    lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -198,6 +198,7 @@ describe("LuaDataQuerier runQuery()", () => {
       done
     );
   });
+
   /* Input recording no longer works since everything went async
   it("should run simple expression (and record inputs)", done => {
     const lua = new LuaDataQuerier(false);
@@ -217,4 +218,100 @@ describe("LuaDataQuerier runQuery()", () => {
       done
     );
   });*/
+});
+
+describe("LuaDataQuerier runQuery() caching", () => {
+  it("should save expression cache value when requested", done => {
+    const lua = new LuaDataQuerier(false);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", "memoise", "getMemoised"], []);
+
+    const mapValues = PMCDataValues.makeWithValues([
+      new PMCDataValue(5, 3.45),
+      new PMCDataValue(7, 7.93),
+      new PMCDataValue(8, 4.33),
+      new PMCDataValue(9, 20.37),
+      new PMCDataValue(1055, 10.72),
+      new PMCDataValue(1056, 12.29),
+    ]);
+
+    const jsCachedItem = {
+      anum: 72.94,
+      elements: ["CaO", "FeT", "MnT"],
+      amap: [
+        [5, 7, 8, 9, 1055, 1056],
+        [3.45, 7.93, 4.33, 20.37, 10.72, 12.29],
+      ],
+    };
+
+    //ds.readElement.and.returnValue(Promise.resolve(Ca));
+    ds.memoise.and.callFake((args: any[]) => {
+      const k = args[0];
+      expect(k).toEqual("GeoData");
+
+      const v = args[1];
+      expect(v).toEqual(jsCachedItem);
+      // console.log("memoise: " + k);
+      // console.log(args[1]);
+      return Promise.resolve(true);
+    });
+    ds.getMemoised.and.callFake((k: string) => {
+      if (k == "GeoData") {
+        return Promise.resolve(jsCachedItem);
+      }
+      return Promise.resolve(null);
+    });
+
+    lua
+      .runQuery(
+        `local amap = {{5, 7, 8, 9, 1055, 1056}, {3.45, 7.93, 4.33, 20.37, 10.72, 12.29}}
+local tocache = {}
+tocache["amap"] = amap
+tocache["anum"] = 72.94
+tocache["elements"] = {"CaO", "FeT", "MnT"}
+
+--print(DebugHelp.printTable("tocache", tocache))
+local x = writeCache("GeoData", tocache)
+if x ~= true then
+  return "writeCache(GeoData) unexpected result: "..x
+end
+
+local notHere = readCache("DoesntExist")
+if notHere ~= nil then
+  return "readCache(DoesntExist) unexpected result: "..notHere
+end
+
+local readWorked = readCache("GeoData")
+if readWorked["anum"] ~= 72.94 or
+    readWorked["elements"][1] ~= "CaO" or
+    readWorked["elements"][2] ~= "FeT" or
+    readWorked["elements"][3] ~= "MnT" or
+    #readWorked["amap"] ~= 2 or
+    #readWorked["amap"][1] ~= 6 or
+    readWorked["amap"][1][4] ~= 9 or
+    readWorked["amap"][2][4] ~= 20.37 then
+  print("BAD RESULT: ")
+  DebugHelp.printTable("readWorked", readWorked)
+
+  return "readCache(GeoData) returned unexpected value"
+end
+
+return readWorked["amap"]`,
+        new Map<string, string>(),
+        ds,
+        true,
+        true,
+        false
+      )
+      .subscribe(
+        // Result
+        value => {
+          const exp = new DataQueryResult(mapValues, true, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+          expect(value).toEqual(exp);
+        },
+        // Error handler
+        null,
+        // Finalizer
+        done
+      );
+  });
 });

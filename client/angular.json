@@ -248,7 +248,8 @@
                 "./node_modules"
               ]
             },
-            "scripts": []
+            "scripts": [],
+            "karmaConfig": "karma.conf.js"
           }
         },
         "lint": {

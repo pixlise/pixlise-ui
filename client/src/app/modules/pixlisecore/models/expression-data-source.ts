@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, share, shareReplay } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -31,6 +31,12 @@ import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src
 import { DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
 import { SpectrumDataService } from "../services/spectrum-data.service";
 
+// What we consider to be a "roughness" item for the purposes of diffraction:
+const roughnessItemThreshold = 0.16;
+
+// TODO: Which detectors calibration do we adopt?
+const eVCalibrationDetector = "A";
+
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 {
@@ -57,14 +63,8 @@ export class ExpressionDataSource
   private _diffractionStatuses: Record<string, DetectedDiffractionPeakStatuses_PeakStatus> = {};
   private _diffractionStatusRead = false;
 
-  // What we consider to be a "roughness" item for the purposes of diffraction:
-  private _roughnessItemThreshold = 0.16;
-
   // Needed by DiffractionPeakQuerierSource
   private _spectrumEnergyCalibration: SpectrumEnergyCalibration[] = [];
-
-  // TODO: Which detectors calibration do we adopt?
-  private _eVCalibrationDetector = "A";
 
   // The things we're supposed to request on demand
   private _scanId: string = "";
@@ -265,15 +265,29 @@ export class ExpressionDataSource
       throw new Error("cacheElementInfo: no quant data available");
     }
 
+    const lookup = ExpressionDataSource.buildPureElementLookup(quantData.data.labels);
+    this._pureElementColumnLookup = lookup.pureElementColumnLookup;
+    this._elementColumns = lookup.elementColumns;
+
+    // Also get a list of all detectors we have data for
+    this._detectors = [];
+
+    for (const quantLocSet of quantData.data.locationSet) {
+      this._detectors.push(quantLocSet.detector);
+    }
+  }
+
+  public static buildPureElementLookup(quantLabels: string[]): { pureElementColumnLookup: Map<string, string>; elementColumns: Map<string, string[]> } {
+    const pureElementColumnLookup = new Map<string, string>();
+    const elementColumns = new Map<string, string[]>();
+
     // Loop through all column names that may contain element information and store these names so we
     // can easily find them at runtime
     const columnTypesFound = new Set<string>();
     const elements = new Set<string>();
     //this._dataColumns = [];
-    this._elementColumns.clear();
-    this._pureElementColumnLookup.clear();
 
-    for (const label of quantData.data.labels) {
+    for (const label of quantLabels) {
       const labelBits = label.split("_");
       if (labelBits.length == 2) {
         if (labelBits[1] == "%" || labelBits[1] == "err" || labelBits[1] == "int") {
@@ -290,7 +304,7 @@ export class ExpressionDataSource
 
     for (const elem of elements.values()) {
       const colTypes = Array.from(columnTypesFound.values());
-      this._elementColumns.set(elem, colTypes);
+      elementColumns.set(elem, colTypes);
       //console.log('elem: '+elem);
       //console.log(colTypes);
       if (colTypes.indexOf("%") > -1) {
@@ -299,25 +313,33 @@ export class ExpressionDataSource
         const elemState = periodicTableDB.getElementOxidationState(elem);
         //console.log(elemState);
         if (elemState && !elemState.isElement) {
-          this._elementColumns.set(elemState.element, ["%"]);
+          elementColumns.set(elemState.element, ["%"]);
 
           // Also remember that this can be calculated
-          this._pureElementColumnLookup.set(elemState.element + "_%", elem + "_%");
+          pureElementColumnLookup.set(elemState.element + "_%", elem + "_%");
         }
       }
     }
 
-    // Also get a list of all detectors we have data for
-    this._detectors = [];
-
-    for (const quantLocSet of quantData.data.locationSet) {
-      this._detectors.push(quantLocSet.detector);
-    }
+    return { pureElementColumnLookup, elementColumns };
   }
 
   private readDiffractionData(diffractionData: DetectedDiffractionPeaksResp, scanId: string) {
-    this._allPeaks = [];
-    this._roughnessItems = [];
+    const result = ExpressionDataSource.readDiffractionPeaks(diffractionData, scanId, this._diffractionStatuses, this._spectrumEnergyCalibration);
+    this._allPeaks = result.allPeaks;
+    this._roughnessItems = result.roughnessItems;
+  }
+
+  // Separated out mainly so that tests running expressions can generate the same diffraction data as prod - but notable omissions are
+  // that tests won't have diffraciton statuses or energy calibration defined, to test the "simple case"
+  public static readDiffractionPeaks(
+    diffractionData: DetectedDiffractionPeaksResp,
+    scanId: string,
+    diffractionStatuses: Record<string, DetectedDiffractionPeakStatuses_PeakStatus>,
+    spectrumEnergyCalibration: SpectrumEnergyCalibration[]
+  ): { allPeaks: DiffractionPeak[]; roughnessItems: RoughnessItem[] } {
+    const allPeaks: DiffractionPeak[] = [];
+    const roughnessItems: RoughnessItem[] = [];
     const roughnessPMCs: Set<number> = new Set<number>();
 
     for (const item of diffractionData.peaksPerLocation) {
@@ -329,15 +351,15 @@ export class ExpressionDataSource
 
       for (const peak of item.peaks) {
         if (peak.effectSize > 6.0) {
-          if (peak.globalDifference > this._roughnessItemThreshold) {
+          if (peak.globalDifference > roughnessItemThreshold) {
             // It's roughness, can repeat so ensure we only save once
             if (!roughnessPMCs.has(pmc)) {
               let status = DiffractionPeak.roughnessPeak;
-              if (this._diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
-                status = this._diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
+              if (diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
+                status = diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
               }
 
-              this._roughnessItems.push(
+              roughnessItems.push(
                 new RoughnessItem(
                   pmc,
                   peak.globalDifference,
@@ -354,19 +376,19 @@ export class ExpressionDataSource
             // keV values will be calculated later
             const channels = [peak.peakChannel, startChannel, endChannel];
             let keVs: number[] = [];
-            for (const calibration of this._spectrumEnergyCalibration) {
-              if (calibration.detector == this._eVCalibrationDetector) {
+            for (const calibration of spectrumEnergyCalibration) {
+              if (calibration.detector == eVCalibrationDetector) {
                 keVs = calibration.channelsTokeV(channels);
               }
             }
 
             if (keVs.length == 3) {
               let status = DiffractionPeak.diffractionPeak;
-              if (this._diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
-                status = this._diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
+              if (diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
+                status = diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
               }
 
-              this._allPeaks.push(
+              allPeaks.push(
                 new DiffractionPeak(
                   pmc,
 
@@ -391,19 +413,21 @@ export class ExpressionDataSource
       }
     }
 
-    const msg = `Diffraction for scan ${scanId} contained ${this._allPeaks.length} usable diffraction peaks, ${this._roughnessItems.length} roughness items`;
-    if (this._allPeaks.length <= 0 || this._roughnessItems.length <= 0) {
+    const msg = `Diffraction for scan ${scanId} contained ${allPeaks.length} usable diffraction peaks, ${roughnessItems.length} roughness items`;
+    if (allPeaks.length <= 0 || roughnessItems.length <= 0) {
       console.warn(msg);
     } else {
       console.log(msg);
     }
 
-    this._allPeaks.sort((a: DiffractionPeak, b: DiffractionPeak) => {
+    allPeaks.sort((a: DiffractionPeak, b: DiffractionPeak) => {
       return a.pmc == b.pmc ? 0 : a.pmc < b.pmc ? -1 : 1;
     });
-    this._roughnessItems.sort((a: RoughnessItem, b: RoughnessItem) => {
+    roughnessItems.sort((a: RoughnessItem, b: RoughnessItem) => {
       return a.pmc == b.pmc ? 0 : a.pmc < b.pmc ? -1 : 1;
     });
+
+    return { allPeaks, roughnessItems };
   }
 
   // QuantifiedDataQuerierSource
@@ -419,36 +443,9 @@ export class ExpressionDataSource
             throw new Error("getQuantifiedDataForDetector: no quant data available");
           }
 
-          let idx = quantData.data.labels.indexOf(dataLabel);
+          const quantCol = ExpressionDataSource.getQuantColIndex(dataLabel, quantData.data.labels, this._pureElementColumnLookup);
 
-          let toElemConvert = null;
-          if (idx < 0) {
-            // Since PIQUANT supporting carbonate/oxides, we may need to calculate this from an existing column
-            // (we do this for carbonate->element or oxide->element)
-            // Check what's being requested, to see if we can convert it
-            const calcFrom = this._pureElementColumnLookup.get(dataLabel);
-            if (calcFrom != undefined) {
-              // we've found a column to look up from (eg dataLabel=Si_% and this found calcFrom=SiO2_%)
-              // Get the index of that column
-              idx = quantData.data.labels.indexOf(calcFrom);
-
-              if (idx >= 0) {
-                // Also get the conversion factor we'll have to use
-                const sepIdx = calcFrom.indexOf("_");
-                if (sepIdx > -1) {
-                  // Following the above examples, this should become SiO2
-                  const oxideOrCarbonate = calcFrom.substring(0, sepIdx);
-
-                  const elemState = periodicTableDB.getElementOxidationState(oxideOrCarbonate);
-                  if (elemState && !elemState.isElement) {
-                    toElemConvert = elemState.conversionToElementWeightPct;
-                  }
-                }
-              }
-            }
-          }
-
-          if (idx < 0) {
+          if (quantCol.idx < 0) {
             throw new Error(
               `Scan ${this._scanId} quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
             );
@@ -456,11 +453,54 @@ export class ExpressionDataSource
 
           //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-          const data = ExpressionDataSource.getQuantifiedDataValues(this._scanId, quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
-          return PMCDataValues.makeWithValues(data);
+          return ExpressionDataSource.getQuantifiedDataValues(
+            this._scanId,
+            quantData.data,
+            detectorId,
+            quantCol.idx,
+            quantCol.toElemConvert,
+            dataLabel.endsWith("_%")
+          );
         })
       )
     );
+  }
+
+  public static getQuantColIndex(
+    dataLabel: string,
+    quantLabels: string[],
+    pureElementColumnLookup: Map<string, string>
+  ): { idx: number; toElemConvert: number | null } {
+    let idx = quantLabels.indexOf(dataLabel);
+
+    let toElemConvert = null;
+    if (idx < 0) {
+      // Since PIQUANT supporting carbonate/oxides, we may need to calculate this from an existing column
+      // (we do this for carbonate->element or oxide->element)
+      // Check what's being requested, to see if we can convert it
+      const calcFrom = pureElementColumnLookup.get(dataLabel);
+      if (calcFrom != undefined) {
+        // we've found a column to look up from (eg dataLabel=Si_% and this found calcFrom=SiO2_%)
+        // Get the index of that column
+        idx = quantLabels.indexOf(calcFrom);
+
+        if (idx >= 0) {
+          // Also get the conversion factor we'll have to use
+          const sepIdx = calcFrom.indexOf("_");
+          if (sepIdx > -1) {
+            // Following the above examples, this should become SiO2
+            const oxideOrCarbonate = calcFrom.substring(0, sepIdx);
+
+            const elemState = periodicTableDB.getElementOxidationState(oxideOrCarbonate);
+            if (elemState && !elemState.isElement) {
+              toElemConvert = elemState.conversionToElementWeightPct;
+            }
+          }
+        }
+      }
+    }
+
+    return { idx, toElemConvert };
   }
 
   public static getQuantifiedDataValues(
@@ -470,8 +510,9 @@ export class ExpressionDataSource
     colIdx: number,
     mult: number | null,
     isPctColumn: boolean
-  ): PMCDataValue[] {
-    const resultData: PMCDataValue[] = [];
+  ): PMCDataValues {
+    const result = new PMCDataValues();
+    result.isBinary = true; // pre-set for detection in addValue
     let detectorFound = false;
 
     // NOTE: if requesting "default" detector, just pick the first one
@@ -503,7 +544,7 @@ export class ExpressionDataSource
             value *= mult;
           }
 
-          resultData.push(new PMCDataValue(quantLoc.pmc, value, undef));
+          result.addValue(new PMCDataValue(quantLoc.pmc, value, undef));
         }
 
         detectorFound = true;
@@ -521,7 +562,7 @@ export class ExpressionDataSource
       );
     }
 
-    return resultData;
+    return result;
   }
 
   async getElementList(): Promise<string[]> {
@@ -616,16 +657,18 @@ export class ExpressionDataSource
           }
 
           // Run through all locations & build it
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
+
           // TODO: filter by scan entry ids requested...
           // for (const idx of this._scanEntryIndexesRequested) {
           for (const item of pseudoData.data) {
             const pmc = item.id;
             const value = item.intensities[elemIdx];
 
-            values.push(new PMCDataValue(pmc, value));
+            result.addValue(new PMCDataValue(pmc, value));
           }
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );
@@ -649,66 +692,84 @@ export class ExpressionDataSource
 
   // SpectrumDataQuerierSource
   async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
+    const cachedResult = this._spectrumDataService?.getSpectrumRangeMapData(this._scanId, channelStart, channelEnd, detectorExpr);
+
+    if (cachedResult !== undefined) {
+      if (this._debug) {
+        this.logFunc(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr}) - CACHED`);
+      }
+      return await lastValueFrom(cachedResult);
+    }
+
     if (this._debug) {
       this.logFunc(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr})`);
     }
-    return await lastValueFrom(
-      combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum() /*, this.getScanEntryMetadata()*/]).pipe(
-        map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp /*, ScanEntryMetadataResp*/]) => {
-          const scanMetaLabelsAndTypes = dataItems[0];
-          const spectrumData = dataItems[1];
-          //const scanMetaData = dataItems[2];
 
-          if (!scanMetaLabelsAndTypes || /*!scanMetaData ||*/ !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
-            throw new Error("getSpectrumRangeMapData: No data available");
-          }
+    // We don't have it, so calculate it (while also saving it for subsequent requests)
+    const result$ = this.calcSpectrumRangeMapData(channelStart, channelEnd, detectorExpr);
+    this._spectrumDataService?.storeSpectrumRangeMapData(this._scanId, channelStart, channelEnd, detectorExpr, result$);
 
-          // For now, only supporting A & B for now
-          if (detectorExpr != "A" && detectorExpr != "B") {
-            throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
-          }
+    return await lastValueFrom(result$);
+  }
 
-          if (channelStart < 0 || channelEnd < channelStart) {
-            throw new Error("getSpectrumData: Invalid start/end channel specified");
-          }
+  private calcSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Observable<PMCDataValues> {
+    return combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum() /*, this.getScanEntryMetadata()*/]).pipe(
+      map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp /*, ScanEntryMetadataResp*/]) => {
+        const scanMetaLabelsAndTypes = dataItems[0];
+        const spectrumData = dataItems[1];
+        //const scanMetaData = dataItems[2];
 
-          let foundRange = false;
-          const values: PMCDataValue[] = [];
+        if (!scanMetaLabelsAndTypes || /*!scanMetaData ||*/ !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+          throw new Error("getSpectrumRangeMapData: No data available");
+        }
 
-          // Loop through & sum all values within the channel range
-          for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
-            const loc = spectrumData.spectraPerLocation[c];
-            for (const spectrum of loc.spectra) {
-              // At this point, we want to read from the detectors in this location. We are reading spectra for each PMC
-              // so we need to read for the detector specified (A vs B), and within there, we may have normal or dwell
-              // spectra. We can't actually combine normal vs dwell because the counts in dwell would be higher so
-              // we just hard-code here to read from normal!
-              if (detectorExpr == spectrum.detector && spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
-                let channelEndToReadTo = channelEnd;
-                if (channelEndToReadTo > spectrum.counts.length) {
-                  channelEndToReadTo = spectrum.counts.length;
-                }
+        let foundRange = false;
+        const result = new PMCDataValues();
+        result.isBinary = true; // pre-set for detection in addValue
 
-                // Loop through & add it
-                let sum = 0;
-                for (let ch = channelStart; ch < channelEndToReadTo; ch++) {
-                  sum += spectrum.counts[ch];
-                }
+        // For now, only supporting A & B for now
+        if (detectorExpr != "A" && detectorExpr != "B") {
+          throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
+        }
 
-                const pmc = this._scanEntries.entries[c].id;
-                values.push(new PMCDataValue(pmc, sum));
-                foundRange = true;
+        if (channelStart < 0 || channelEnd < channelStart) {
+          throw new Error("getSpectrumData: Invalid start/end channel specified");
+        }
+
+        // Loop through & sum all values within the channel range
+        for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
+          const loc = spectrumData.spectraPerLocation[c];
+          for (const spectrum of loc.spectra) {
+            // At this point, we want to read from the detectors in this location. We are reading spectra for each PMC
+            // so we need to read for the detector specified (A vs B), and within there, we may have normal or dwell
+            // spectra. We can't actually combine normal vs dwell because the counts in dwell would be higher so
+            // we just hard-code here to read from normal!
+            if (detectorExpr == spectrum.detector && spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
+              let channelEndToReadTo = channelEnd;
+              if (channelEndToReadTo > spectrum.counts.length) {
+                channelEndToReadTo = spectrum.counts.length;
               }
+
+              // Loop through & add it
+              let sum = 0;
+              for (let ch = channelStart; ch < channelEndToReadTo; ch++) {
+                sum += spectrum.counts[ch];
+              }
+
+              const pmc = this._scanEntries.entries[c].id;
+              result.addValue(new PMCDataValue(pmc, sum));
+              foundRange = true;
             }
           }
+        }
 
-          if (!foundRange) {
-            throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
-          }
+        if (!foundRange) {
+          throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
+        }
 
-          return PMCDataValues.makeWithValues(values);
-        })
-      )
+        return result;
+      }),
+      shareReplay(1)
     );
   }
 
@@ -724,7 +785,8 @@ export class ExpressionDataSource
             throw new Error("getSpectrumDifferences: No data available");
           }
 
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
             const loc = spectrumData.spectraPerLocation[c];
@@ -757,11 +819,11 @@ export class ExpressionDataSource
               }
 
               const pmc = this._scanEntries.entries[c].id;
-              values.push(new PMCDataValue(pmc, value));
+              result.addValue(new PMCDataValue(pmc, value));
             }
           }
 
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );
@@ -780,12 +842,14 @@ export class ExpressionDataSource
     if (this._debug) {
       this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
+
+    // NOTE: this.getDetectedDiffraction() not needed here because this operates on the previously read diffraction data in: this._allPeaks
     return await lastValueFrom(
-      combineLatest([this.getDetectedDiffractionStatus(), this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
-        map(([diffractionStatusData, diffractionData, userDiffractionPeakData]) => {
+      combineLatest([this.getDetectedDiffractionStatus(), this.getDiffractionPeakManualList()]).pipe(
+        map(([diffractionStatusData, userDiffractionPeakData]) => {
           // Detected Diffraction data is fetched for the Roughness and Diffraction tabs
           // We can continue here on fail, but without this data those tabs won't load
-          if (!diffractionStatusData || /*!diffractionData ||*/ !this._scanEntries) {
+          if (!diffractionStatusData || !this._scanEntries) {
             throw new Error("getDiffractionPeakEffectData: No data available");
           }
 
@@ -816,7 +880,7 @@ export class ExpressionDataSource
           // If we can convert the user peak keV to a channel, do it and compare
           if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
             for (const cal of this._spectrumEnergyCalibration) {
-              if (cal.detector == this._eVCalibrationDetector) {
+              if (cal.detector == eVCalibrationDetector) {
                 for (const id of Object.keys(userDiffractionPeakData.peaks)) {
                   const peak = userDiffractionPeakData.peaks[id];
 
@@ -839,12 +903,14 @@ export class ExpressionDataSource
           }
 
           // Now turn these into data values
-          const result: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
+
           for (const [pmc, sum] of pmcDiffractionCount.entries()) {
-            result.push(new PMCDataValue(pmc, sum));
+            result.addValue(new PMCDataValue(pmc, sum));
           }
 
-          return PMCDataValues.makeWithValues(result);
+          return result;
         })
       )
     );
@@ -864,10 +930,11 @@ export class ExpressionDataSource
           }
 
           // Loop through all roughness items and form a map from their globalDifference value
-          const result: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           for (const item of this._roughnessItems) {
-            result.push(new PMCDataValue(item.pmc, item.globalDifference));
+            result.addValue(new PMCDataValue(item.pmc, item.globalDifference));
           }
 
           // Also run through user-defined roughness items
@@ -877,12 +944,12 @@ export class ExpressionDataSource
 
               // ONLY negative means it's a user-entered roughness item!
               if (peak.energykeV < 0) {
-                result.push(new PMCDataValue(peak.pmc, this._roughnessItemThreshold));
+                result.addValue(new PMCDataValue(peak.pmc, roughnessItemThreshold));
               }
             }
           }
 
-          return PMCDataValues.makeWithValues(result);
+          return result;
         })
       )
     );
@@ -921,7 +988,8 @@ export class ExpressionDataSource
           }
 
           // Run through all locations & build it
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           for (let c = 0; c < scanMetaData.entries.length; c++) {
             const entry = scanMetaData.entries[c];
@@ -935,11 +1003,11 @@ export class ExpressionDataSource
 
               const locIdx = this._scanEntryIndexesRequested[c];
               const pmc = this._scanEntries.entries[locIdx].id;
-              values.push(new PMCDataValue(pmc, value));
+              result.addValue(new PMCDataValue(pmc, value));
             }
           }
 
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );
@@ -964,7 +1032,8 @@ export class ExpressionDataSource
             throw new Error("Cannot find position for axis: " + axis);
           }
 
-          const values: PMCDataValue[] = [];
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
 
           // We've requested the items indexed by _scanEntryIndexesRequested, so here we loop through them
           // but have to read the corresponding item in the response. Previously we had a bug here where
@@ -981,12 +1050,12 @@ export class ExpressionDataSource
               // doesn't encode "null" values, it actually puts 0,0,0 there. That's not a likely valid coordinate anyway, so we
               // can check for it here
               if (loc.x !== 0 || loc.y !== 0 || loc.z !== 0) {
-                values.push(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
+                result.addValue(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
               }
             }
           }
 
-          return PMCDataValues.makeWithValues(values);
+          return result;
         })
       )
     );

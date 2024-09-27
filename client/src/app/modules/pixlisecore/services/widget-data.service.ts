@@ -60,6 +60,7 @@ import { environment } from "src/environments/environment";
 import { BuiltInTags } from "../../tags/models/tag.model";
 import { SpectrumDataService } from "./spectrum-data.service";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -140,10 +141,10 @@ export class RegionDataResults {
   }
 }
 
-class LoadedSources {
+export class LoadedSources {
   constructor(
     public expressionSrc: string,
-    public modules: Map<string, DataModuleVersion>
+    public modules: DataModuleVersionWithRef[]
   ) {}
 }
 
@@ -637,7 +638,7 @@ export class WidgetDataService {
     }
 
     const calibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
-    const expr$ = this.loadCodeForExpression(expression);
+    const expr$ = loadCodeForExpression(expression, this._cachedDataService);
 
     // Load both of these
     return combineLatest([calibration$, expr$]).pipe(
@@ -650,7 +651,7 @@ export class WidgetDataService {
           throw new Error("loadCodeForExpression did not return expression source code for: " + expression.id);
         }
 
-        const modSources = this.makeRunnableModules(sources.modules);
+        const modSources = WidgetDataService.makeRunnableModules(sources.modules);
 
         // Pass in the source and module sources separately
         const querier = new DataQuerier();
@@ -658,7 +659,7 @@ export class WidgetDataService {
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
+            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._memoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)
@@ -718,72 +719,19 @@ export class WidgetDataService {
     );
   }
 
-  private makeRunnableModules(loadedModules: Map<string, DataModuleVersion>): Map<string, string> {
+  public static makeRunnableModules(loadedModules: DataModuleVersionWithRef[]): Map<string, string> {
     // Build the map required by runQuery. NOTE: here we pass the module name, not the ID!
     const modSources = new Map<string, string>();
-    for (const [modName, mod] of loadedModules) {
-      modSources.set(modName, mod.sourceCode);
+    for (const mod of loadedModules) {
+      modSources.set(mod.name, mod.moduleVersion.sourceCode);
     }
 
     return modSources;
   }
 
-  private loadCodeForExpression(expression: DataExpression): Observable<LoadedSources> {
-    // Filter out crazy cases
-    if (expression.sourceCode.length <= 0) {
-      throw new Error(`Expression ${expression.id} source code is empty`);
-    }
-
-    if (expression.moduleReferences.length > 0 && expression.sourceLanguage != EXPR_LANGUAGE_LUA) {
-      throw new Error(`Expression ${expression.id} references modules, but source language is not Lua`);
-    }
-
-    // If we are a simple loaded expression that doesn't have references, early out!
-    const result = new LoadedSources(expression.sourceCode, new Map<string, DataModuleVersion>());
-    if (expression.sourceCode.length > 0 && expression.moduleReferences.length <= 0) {
-      return of(result);
-    }
-
-    // Read the module sources
-    const waitModules$: Observable<DataModuleVersionWithRef>[] = [];
-    for (const ref of expression.moduleReferences) {
-      waitModules$.push(
-        this._cachedDataService.getDataModule(DataModuleGetReq.create({ id: ref.moduleId, version: ref.version })).pipe(
-          map((value: DataModuleGetResp) => {
-            if (value.module === undefined) {
-              throw new Error(`Module ${ref.moduleId} version ${ref.version} came back empty`);
-            }
-
-            const moduleVersion = value.module.versions.find(
-              v => v.version?.major === ref.version?.major && v.version?.minor === ref.version?.minor && v.version?.patch === ref.version?.patch
-            );
-            if (!moduleVersion) {
-              throw new Error(`Module (${ref.moduleId}) does not contain version: ${ref.version}`);
-            }
-
-            return { id: value.module.id, name: value.module.name, moduleVersion };
-          })
-        )
-      );
-    }
-
-    const allResults$ = combineLatest(waitModules$);
-    return allResults$.pipe(
-      map((sources: unknown[]) => {
-        // At this point, we should have all the source code we're interested in. Combine them!
-        for (const src of sources) {
-          const version = src as DataModuleVersionWithRef;
-          result.modules.set(version.name, version.moduleVersion);
-        }
-
-        return result;
-      })
-    );
-  }
-
   private processGetDataResult(result: DataQueryResult, query: DataSourceParams, allowAnyResponse: boolean): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
-    let isPMCTable = Array.isArray(pmcValues?.values) && (pmcValues.values.length <= 0 || pmcValues.values[0] instanceof PMCDataValue);
+    const isPMCTable = Array.isArray(pmcValues?.values) && (pmcValues.values.length <= 0 || pmcValues.values[0] instanceof PMCDataValue);
     // If we have an error OR we require a PMC table as a result and didn't receive one...
     if (result.errorMsg || (!allowAnyResponse && !isPMCTable)) {
       let msg = result.errorMsg;

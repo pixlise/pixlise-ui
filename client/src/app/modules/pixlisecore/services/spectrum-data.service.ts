@@ -12,6 +12,7 @@ import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { LocalStorageService } from "./local-storage.service";
 import { CachedSpectraItem } from "../models/local-storage-db";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 
 export class ScanSpectrumData {
   constructor(
@@ -35,6 +36,7 @@ export class ScanSpectrumData {
 export class SpectrumDataService {
   private _spectrumCache = new Map<string, ScanSpectrumData>();
   private _outstandingReq: Observable<SpectrumResp> | null = null;
+  private _spectrumRangeMapCache = new Map<string, Observable<PMCDataValues>>();
 
   constructor(
     private _dataService: APIDataService,
@@ -48,6 +50,15 @@ export class SpectrumDataService {
         if (upd.notification.scanIds) {
           for (const scanId of upd.notification.scanIds) {
             this._spectrumCache.delete(scanId);
+          }
+
+          // Find all cached range data that starts with this scan id
+          for (const key of this._spectrumRangeMapCache.keys()) {
+            for (const scanId of upd.notification.scanIds) {
+              if (key.startsWith(scanId+"-")) {
+                this._spectrumRangeMapCache.delete(key);
+              }
+            }
           }
         }
       }
@@ -342,5 +353,16 @@ export class SpectrumDataService {
         spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
       }
     }
+  }
+
+  // Cache lookup - in memory only
+  getSpectrumRangeMapData(scanId: string, channelStart: number, channelEnd: number, detectorExpr: string): Observable<PMCDataValues> | undefined {
+    const key = `${scanId}-${channelStart}-${channelEnd}-${detectorExpr}`;
+    return this._spectrumRangeMapCache.get(key);
+  }
+
+  storeSpectrumRangeMapData(scanId: string, channelStart: number, channelEnd: number, detectorExpr: string, data: Observable<PMCDataValues>) {
+    const key = `${scanId}-${channelStart}-${channelEnd}-${detectorExpr}`;
+    this._spectrumRangeMapCache.set(key, data);
   }
 }

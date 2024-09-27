@@ -52,6 +52,11 @@ export const environment = {
   },
   largeMessageLogThresholdBytes: 102400,
   marsViewerUrlRoot: "https://marsviewer.sops.m20.jpl.nasa.gov",
+  skipMemoizeKeys: [
+    '{"scanId":"430834177","exprId":"m1jronthh7qkdx6q","quantId":"quant-nr4q8ak4ncyf3br2","roiId":"AllPoints-430834177","units":0},Resp:false,exprMod:1715638046,spectra:3298,74,0',
+    '{"scanId":"371196417","exprId":"m1jronthh7qkdx6q","quantId":"zm1asxqm0r0nmspb","roiId":"AllPoints-371196417","units":0},Resp:false,exprMod:1726802104,spectra:1650,32,0',
+    '{"scanId":"371196417","exprId":"m1jronthh7qkdx6q","quantId":"quant-616i0uwwtns0yfbt","roiId":"AllPoints-371196417","units":0},Resp:false,exprMod:1727181150,spectra:1650,32,0',
+  ],
 };
 
 /*
