@@ -1,4 +1,9 @@
-## 4.44.0 (Latest)
+## 4.45.0 (Latest)
+
+### Features
+- Expression picker now remembers your last opened section
+
+## 4.44.0 (2024-09-27)
 
 ### Bug Fixes
 - Fixes spectrum export exporting detector A values for detector B
