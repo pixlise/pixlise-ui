@@ -379,15 +379,16 @@ export class InterpreterDataSource {
       throw new Error("getMemoised() failed, service not available");
     }
 
+    const key = "exprcachev1_" + argList[0];
     return await lastValueFrom(
-      this._memoService.get(argList[0]).pipe(
+      this._memoService.get(key).pipe(
         map((memItem: MemoisedItem) => {
           // Parse to JS object
           const str = new TextDecoder().decode(memItem.data);
           return JSON.parse(str);
         }),
         catchError(err => {
-          console.error(`InterpreterDataSource: Failed to get memoised value for : ${argList[0]}: ${err}`);
+          console.error(`InterpreterDataSource: Failed to get memoised value for : ${key}: ${err}`);
           return of(null);
         })
       )
@@ -403,7 +404,7 @@ export class InterpreterDataSource {
       throw new Error("memoise() failed, service not available");
     }
 
-    const key = argList[0];
+    const key = "exprcachev1_" + argList[0];
     const table = argList[1];
 
     // Make sure table "looks" like a table
