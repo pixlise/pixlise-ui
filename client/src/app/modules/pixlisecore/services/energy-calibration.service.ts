@@ -96,21 +96,8 @@ export class EnergyCalibrationService {
 
         const calibration: SpectrumEnergyCalibration[] = [];
 
-        let eVStartMetaIdx = -1;
-        let eVperChannelMetaIdx = -1;
-
-        for (let c = 0; c < metaResp.metaLabels.length; c++) {
-          if (metaResp.metaLabels[c] == "OFFSET") {
-            eVStartMetaIdx = c;
-          }
-          if (metaResp.metaLabels[c] == "XPERCHAN") {
-            eVperChannelMetaIdx = c;
-          }
-
-          if (eVStartMetaIdx >= 0 && eVperChannelMetaIdx >= 0) {
-            break;
-          }
-        }
+        const eVStartMetaIdx = metaResp.metaLabels.indexOf("OFFSET");
+        const eVperChannelMetaIdx = metaResp.metaLabels.indexOf("XPERCHAN");
 
         for (const spectrum of spectrumResp.bulkSpectra) {
           let eVstart = 0;

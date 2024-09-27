@@ -81,13 +81,15 @@ export type WidgetExportFile = {
   data: any;
 };
 
-export const WIDGET_EXPORT_DATA_KEYS = ["csvs", "txts", "images", "tiffImages", "msas"];
+export const WIDGET_EXPORT_DATA_KEYS = ["csvs", "txts", "images", "tiffImages", "msas", "luas", "mds"];
 export type WidgetExportData = {
   csvs?: WidgetExportFile[];
   txts?: WidgetExportFile[];
   images?: WidgetExportFile[];
   tiffImages?: WidgetExportFile[];
   msas?: WidgetExportFile[];
+  luas?: WidgetExportFile[];
+  mds?: WidgetExportFile[];
 };
 
 const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: WidgetKeyItem[], viewport: CanvasParams, lightMode: boolean): void => {

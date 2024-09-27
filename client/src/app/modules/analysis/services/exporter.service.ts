@@ -37,6 +37,10 @@ import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/Spectrum
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
 import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
+import { ExpressionExporter } from "src/app/expression-language/expression-export";
+import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
+import { LoadedSources } from "../../pixlisecore/services/widget-data.service";
+import { DataExpression } from "src/app/generated-protos/expressions";
 
 @Injectable({
   providedIn: "root",
@@ -294,12 +298,12 @@ export class DataExporterService {
     const metaIdxs: number[] = [];
 
     for (const label of metaLabels) {
-      for (let c = 0; c < scanMeta.metaLabels.length; c++) {
-        if (label == scanMeta.metaLabels[c]) {
-          metaIdxs.push(c);
-          break;
-        }
+      const idx = scanMeta.metaLabels.indexOf(label);
+      if (idx < 0) {
+        throw new Error(`Failed to find meta label index for: ${label}`);
       }
+
+      metaIdxs.push(idx);
     }
 
     const meta: Map<string, number[]> = new Map<string, number[]>();
@@ -407,15 +411,7 @@ msa += `#XPOSITION   : 0.000
         const scanMeta = resps[0] as ScanMetaLabelsAndTypesResp;
         const spectrumResp = resps[1] as SpectrumResp;
 
-        let metaLiveTimeIdx = -1;
-
-        for (let c = 0; c < scanMeta.metaLabels.length; c++) {
-          if (scanMeta.metaLabels[c] == "LIVETIME") {
-            metaLiveTimeIdx = c;
-            break;
-          }
-        }
-
+        const metaLiveTimeIdx = scanMeta.metaLabels.indexOf("LIVETIME");
         if (metaLiveTimeIdx < 0) {
           throw new Error("Failed to get LIVETIME meta index from scan: " + scanId);
         }
@@ -1001,6 +997,31 @@ msa += `#XPOSITION   : 0.000
         });
 
         return { images, tiffImages };
+      })
+    );
+  }
+
+  exportExpressionCode(scanId: string, quantId: string, expressionIds: string[]): Observable<WidgetExportData> {
+    // For now, we only export the first expression...
+    if (expressionIds.length < 1) {
+      throw new Error("At least one expression must be selected when exporting expression code");
+    }
+
+    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: expressionIds[0] })).pipe(
+      switchMap((resp: ExpressionGetResp) => {
+        if (!resp.expression) {
+          throw new Error(`Expression ${expressionIds[0]} failed to load`);
+        }
+
+        const expExp = new ExpressionExporter();
+        return expExp.exportExpressionCode(
+          resp.expression as DataExpression,
+          scanId,
+          quantId,
+          this._cachedDataService,
+          this._spectrumDataService,
+          this._energyCalibrationService
+        );
       })
     );
   }

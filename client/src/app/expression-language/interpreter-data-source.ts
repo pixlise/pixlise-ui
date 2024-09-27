@@ -48,7 +48,7 @@ export class InterpreterDataSource {
     public housekeepingDataSource: HousekeepingDataQuerierSource,
     public spectrumDataSource: SpectrumDataQuerierSource,
     public diffractionSource: DiffractionPeakQuerierSource,
-    private _memoService: MemoisationService
+    private _memoService?: MemoisationService
   ) {}
 
   ////////////////////////////////////// Calling Quant Data Source //////////////////////////////////////
