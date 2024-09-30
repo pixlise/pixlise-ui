@@ -41,6 +41,7 @@ import { DetectedDiffractionPerLocation, DetectedDiffractionPerLocation_Detected
 import { DetectedDiffractionPeaksResp } from "../generated-protos/diffraction-detected-peak-msgs";
 import { DiffractionPeak, RoughnessItem } from "../modules/pixlisecore/models/diffraction";
 import { SpectrumEnergyCalibration } from "../models/BasicTypes";
+import { mockFuncs, setupMock } from "./interpret-lua.spec";
 
 describe("LuaDataQuerier runQuery() for real expression", () => {
   const scanId = "371196417";
@@ -314,9 +315,12 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
 
       "getMemoised",
       "memoise",
+      ...mockFuncs,
     ],
     []
   );
+
+  setupMock(ds);
 
   ds.readElement.and.callFake((args: any[]) => {
     const elem = args[0] as string;

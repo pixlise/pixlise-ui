@@ -31,6 +31,14 @@ import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 //import { InterpreterDataSource } from "./interpreter-data-source";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 
+export const mockFuncs = ["getScanId", "getQuantId", "getInstrument", "getMaxSpectrumChannel", "getElevAngle"];
+export function setupMock(ds: any) {
+  ds.getScanId.and.returnValue("scan123");
+  ds.getQuantId.and.returnValue("quant123");
+  ds.getInstrument.and.returnValue("PIXL_FM");
+  ds.getMaxSpectrumChannel.and.returnValue(4096);
+  ds.getElevAngle.and.returnValue(70);
+}
 describe("LuaDataQuerier parseLuaError()", () => {
   it("should parse (JS function err)", () => {
     const err = new Error(
@@ -114,7 +122,8 @@ describe("LuaDataQuerier parseLuaError()", () => {
 describe("LuaDataQuerier runQuery()", () => {
   it("should run simple func returning string", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
     lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
@@ -134,7 +143,8 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should reject string result if asked to", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
     lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false, false).subscribe(
       // Result
@@ -149,7 +159,8 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should run simple func returning number", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
     lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
@@ -167,14 +178,15 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should run fail if unknown lua func called", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
     lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       null,
       // Error handler
       err => {
-        expect(err.message).toEqual("Runtime error on line 1: attempt to call a nil value (global 'nonExistantFunc')");
+        expect(err.message).toEqual("Runtime error on line 6: attempt to call a nil value (global 'nonExistantFunc')");
         done();
       }
     );
@@ -182,8 +194,9 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should run simple expression", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     const Ca = PMCDataValues.makeWithValues([new PMCDataValue(4, 10), new PMCDataValue(5, 11), new PMCDataValue(7, 12)]);
+    setupMock(ds);
     ds.readElement.and.returnValue(Promise.resolve(Ca));
 
     lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
@@ -201,12 +214,8 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("works with PIXLISE supplied consts", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["getScanId", "getQuantId", "getInstrument", "getMaxSpectrumChannel", "getElevAngle"], []);
-    ds.getScanId.and.returnValue("scan123");
-    ds.getQuantId.and.returnValue("quant123");
-    ds.getInstrument.and.returnValue("PIXL_FM");
-    ds.getMaxSpectrumChannel.and.returnValue(4096);
-    ds.getElevAngle.and.returnValue(70);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", mockFuncs, []);
+    setupMock(ds);
 
     lua
       .runQuery(`return instrument..","..scanId..","..quantId..","..maxSpectrumChannel..","..elevAngle`, new Map<string, string>(), ds, true, true, false)
@@ -246,7 +255,8 @@ describe("LuaDataQuerier runQuery()", () => {
 describe("LuaDataQuerier runQuery() caching", () => {
   it("should save expression cache value when requested", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", "memoise", "getMemoised"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", "memoise", "getMemoised", ...mockFuncs], []);
+    setupMock(ds);
 
     const mapValues = PMCDataValues.makeWithValues([
       new PMCDataValue(5, 3.45),
