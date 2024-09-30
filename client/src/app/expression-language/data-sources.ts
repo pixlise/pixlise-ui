@@ -31,6 +31,10 @@ import { PMCDataValues } from "src/app/expression-language/data-values";
 
 // Query data sources (interfaces)
 export interface QuantifiedDataQuerierSource {
+  getQuantId(): string;
+  getScanId(): string;
+  getInstrument(): string;
+  getElevAngle(): number;
   getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues>;
   getElementList(): Promise<string[]>;
   getPMCList(): Promise<number[]>;
@@ -44,6 +48,7 @@ export interface PseudoIntensityDataQuerierSource {
 }
 
 export interface SpectrumDataQuerierSource {
+  getMaxSpectrumChannel(): number;
   getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues>;
   // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
   getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues>;
