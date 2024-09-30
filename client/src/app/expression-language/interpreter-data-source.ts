@@ -418,4 +418,25 @@ export class InterpreterDataSource {
 
     return await lastValueFrom(this._memoService.memoise(key, arr).pipe(map(() => true)));
   }
+
+  // Properties we can query
+  getScanId(): string {
+    return this.quantDataSource.getScanId();
+  }
+
+  getQuantId(): string {
+    return this.quantDataSource.getQuantId();
+  }
+
+  getInstrument(): string {
+    return this.quantDataSource.getInstrument();
+  }
+
+  getElevAngle(): number {
+    return this.quantDataSource.getElevAngle();
+  }
+
+  getMaxSpectrumChannel(): number {
+    return this.spectrumDataSource.getMaxSpectrumChannel();
+  }
 }

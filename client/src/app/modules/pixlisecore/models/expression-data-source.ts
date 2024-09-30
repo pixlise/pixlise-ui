@@ -13,12 +13,12 @@ import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
-import { ScanEntryRange, ScanMetaDataType } from "src/app/generated-protos/scan";
+import { ScanEntryRange, scanInstrumentToJSON, ScanMetaDataType } from "src/app/generated-protos/scan";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { Quantification, Quantification_QuantDataType } from "src/app/generated-protos/quantification";
-import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { encodeIndexList } from "src/app/utils/utils";
+import { encodeIndexList, SpectrumChannels } from "src/app/utils/utils";
 import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { SpectrumType } from "src/app/generated-protos/spectrum";
@@ -69,6 +69,7 @@ export class ExpressionDataSource
   // The things we're supposed to request on demand
   private _scanId: string = "";
   private _quantId: string = "";
+  private _instrument: string = "";
   private _encodedIndexes: number[] = [];
 
   // And where to turn to get it:
@@ -137,11 +138,16 @@ export class ExpressionDataSource
     }
 
     // Once we obtained the indexes, we can retrieve everything else required
-    return indexes.pipe(
-      map((scanEntryIndexes: number[]) => {
-        this._scanEntryIndexesRequested = scanEntryIndexes;
+    return combineLatest([indexes, cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } }))]).pipe(
+      map((result: [number[], ScanListResp]) => {
+        this._scanEntryIndexesRequested = result[0];
 
-        this._encodedIndexes = encodeIndexList(scanEntryIndexes);
+        this._encodedIndexes = encodeIndexList(result[0]);
+
+        // Also save the instrument
+        if (result[1].scans.length > 0) {
+          this._instrument = scanInstrumentToJSON(result[1].scans[0].instrument);
+        }
       })
     );
   }
@@ -431,6 +437,22 @@ export class ExpressionDataSource
   }
 
   // QuantifiedDataQuerierSource
+  getScanId(): string {
+    return this._scanId;
+  }
+
+  getQuantId(): string {
+    return this._quantId;
+  }
+
+  getInstrument(): string {
+    return this._instrument;
+  }
+
+  getElevAngle(): number {
+    return 70;
+  }
+
   async getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues> {
     if (this._debug) {
       this.logFunc(`getQuantifiedDataForDetector(${detectorId}, ${dataLabel})`);
@@ -691,6 +713,10 @@ export class ExpressionDataSource
   }
 
   // SpectrumDataQuerierSource
+  getMaxSpectrumChannel(): number {
+    return SpectrumChannels;
+  }
+
   async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
     const cachedResult = this._spectrumDataService?.getSpectrumRangeMapData(this._scanId, channelStart, channelEnd, detectorExpr);
 

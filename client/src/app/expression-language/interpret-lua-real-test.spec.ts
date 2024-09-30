@@ -30,7 +30,7 @@
 import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 //import { InterpreterDataSource } from "./interpreter-data-source";
 import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
-import { decompressZeroRunLengthEncoding } from "../utils/utils";
+import { decompressZeroRunLengthEncoding, SpectrumChannels } from "../utils/utils";
 import { Diffraction, Diffraction_Location } from "src/app/generated-protos/files/diffraction";
 import { Experiment, Experiment_Location_MetaDataItem, Experiment_MetaDataType } from "src/app/generated-protos/files/experiment";
 import { Quantification } from "src/app/generated-protos/quantification";
@@ -360,8 +360,8 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
     let endChannel = args[1] as number;
     const detector = args[2] as string;
 
-    if (endChannel > 4096) {
-      endChannel = 4096;
+    if (endChannel > SpectrumChannels) {
+      endChannel = SpectrumChannels;
     }
 
     const pmcValues: PMCDataValue[] = [];
@@ -397,7 +397,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
         }
 
         if (readTypeOK && detOK) {
-          const spectrum = decompressZeroRunLengthEncoding(det.spectrum, 4096);
+          const spectrum = decompressZeroRunLengthEncoding(det.spectrum, SpectrumChannels);
           let total = 0;
           for (let idx = startChannel; idx < endChannel; idx++) {
             total += spectrum[idx];

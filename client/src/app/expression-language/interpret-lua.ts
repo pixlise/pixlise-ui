@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, combineLatest, firstValueFrom, from, lastValueFrom, of } from "rxjs";
+import { Observable, combineLatest, from, lastValueFrom, of } from "rxjs";
 import { map, mergeMap, concatMap, catchError, finalize, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -63,9 +63,7 @@ export class LuaDataQuerier {
   private _dataSource: InterpreterDataSource | null = null;
   private _customInjectFunctionData: Map<string, any> | null = null;
 
-  constructor(
-    private _debug: boolean //private _luaUseReplay: boolean,
-  ) {
+  constructor(private _debug: boolean) {
     this._logId = "[" + this._id + "] ";
   }
 
@@ -139,12 +137,7 @@ export class LuaDataQuerier {
         console.log(this._logId + "Lua Engine std libs loaded " + (t1 - t0).toLocaleString() + "ms...");
 
         // Set up the functions Lua can call to get data, eg element()
-        //if(!this._luaUseReplay)
-        {
-          // NOTE: we DON'T do this if we're replaying, because we want Lua implemented
-          //       functions to hijack these calls instead!
-          this.setupPIXLISELuaFunctions();
-        }
+        this.setupPIXLISELuaFunctions();
 
         // Add PIXLISE Lua libraries
         const builtInLibNames = DataModuleHelpers.getBuiltInModuleNames();
@@ -186,7 +179,17 @@ export class LuaDataQuerier {
     console.log(this._logId + " Added Lua module: " + moduleName + " in " + (t1 - t0).toLocaleString() + "ms...");
   }
 
-  private LuaDefs = new Map<string, { value: any; argsIfFunc?: number }>([
+  private makeLuaConstants(): Map<string, any> {
+    return new Map<string, any>([
+      ["scanId", this._dataSource!.getScanId()],
+      ["quantId", this._dataSource!.getQuantId()],
+      ["maxSpectrumChannel", this._dataSource!.getMaxSpectrumChannel()],
+      ["instrument", this._dataSource!.getInstrument()],
+      ["elevAngle", 70], // TODO: retrieve this for real!
+    ]);
+  }
+
+  private _luaFunctionDefs = new Map<string, { value: any; argsIfFunc?: number; debugTiming: boolean }>([
     // Variables
     //["instrument", { value: "PIXL" }],
     // Functions
@@ -199,6 +202,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`element(${a},${b},${c})`, t0, this._dataSource!.readElement([a, b, c]));
         },
         argsIfFunc: 3,
+        debugTiming: true,
       },
     ],
     [
@@ -210,6 +214,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`elementSum(${a},${b})`, t0, this._dataSource!.readElementSum([a, b]));
         },
         argsIfFunc: 2,
+        debugTiming: true,
       },
     ],
     [
@@ -221,6 +226,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`data(${a}, ${b})`, t0, this._dataSource!.readMap([a, b]));
         },
         argsIfFunc: 2,
+        debugTiming: true,
       },
     ],
     [
@@ -232,6 +238,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`spectrum(${a},${b},${c})`, t0, this._dataSource!.readSpectrum([a, b, c]));
         },
         argsIfFunc: 3,
+        debugTiming: true,
       },
     ],
     [
@@ -243,6 +250,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`spectrumDiff(${a},${b},${c})`, t0, this._dataSource!.readSpectrumDifferences([a, b, c]));
         },
         argsIfFunc: 3,
+        debugTiming: true,
       },
     ],
     [
@@ -254,6 +262,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`pseudo(${a})`, t0, this._dataSource!.readPseudoIntensity([a]));
         },
         argsIfFunc: 1,
+        debugTiming: true,
       },
     ],
     [
@@ -265,6 +274,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`housekeeping(${a})`, t0, this._dataSource!.readHousekeepingData([a]));
         },
         argsIfFunc: 1,
+        debugTiming: true,
       },
     ],
     [
@@ -276,6 +286,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`diffractionPeaks(${a},${b})`, t0, this._dataSource!.readDiffractionData([a, b]));
         },
         argsIfFunc: 2,
+        debugTiming: true,
       },
     ],
     [
@@ -287,6 +298,7 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync("roughness()", t0, this._dataSource!.readRoughnessData([]));
         },
         argsIfFunc: 0,
+        debugTiming: true,
       },
     ],
     [
@@ -298,16 +310,18 @@ export class LuaDataQuerier {
           return this.makeLuaTableAsync(`position(${a})`, t0, this._dataSource!.readPosition([a]));
         },
         argsIfFunc: 1,
+        debugTiming: true,
       },
     ],
     [
       "makeMap_async",
       {
-          value: async (a: any) => {
+        value: async (a: any) => {
           const t0 = performance.now();
           return this.makeLuaTableAsync(`makeMap(${a})`, t0, this._dataSource!.makeMap([a]));
         },
         argsIfFunc: 1,
+        debugTiming: true,
       },
     ],
     [
@@ -324,6 +338,7 @@ export class LuaDataQuerier {
           return this._dataSource!.getMemoised([k]);
         },
         argsIfFunc: 1,
+        debugTiming: true,
       },
     ],
     [
@@ -340,6 +355,7 @@ export class LuaDataQuerier {
           return this._dataSource!.memoise([k, table]);
         },
         argsIfFunc: 2,
+        debugTiming: true,
       },
     ],
     [
@@ -394,6 +410,30 @@ export class LuaDataQuerier {
           return values;
         },
         argsIfFunc: 1,
+        debugTiming: true,
+      },
+    ],
+    [
+      "atomicMass",
+      {
+        value: (symbol: string) => {
+          return periodicTableDB.getMolecularMass(symbol);
+        },
+        argsIfFunc: 1,
+        debugTiming: false,
+      },
+    ],
+    [
+      "exists_async",
+      {
+        value: (dataType: string, column: string) => {
+          if (!this._dataSource) {
+            return false;
+          }
+          return this._dataSource.exists(dataType, column);
+        },
+        argsIfFunc: 2,
+        debugTiming: false,
       },
     ],
   ]);
@@ -404,26 +444,14 @@ export class LuaDataQuerier {
       return;
     }
 
-    // Implementing original expression language
-    let prefix = "";
-    if (this._debug) {
-      prefix = "P";
-    }
+    for (const [name, item] of this._luaFunctionDefs) {
+      let prefix = "";
+      if (this._debug && item.debugTiming) {
+        prefix = "P";
+      }
 
-    for (const [name, item] of this.LuaDefs) {
       this._lua.global.set(prefix + name, item.value);
     }
-
-    // Special simple ones, we don't have debugging for these
-    this._lua.global.set("atomicMass", (symbol: string) => {
-      return periodicTableDB.getMolecularMass(symbol);
-    });
-    this._lua.global.set("exists_async", async (dataType: string, column: string) => {
-      if (!this._dataSource) {
-        return false;
-      }
-      return this._dataSource.exists(dataType, column);
-    });
   }
 
   // See: https://github.com/pixlise/wasmoon
@@ -477,8 +505,10 @@ export class LuaDataQuerier {
 
         // We're inited, now run!
         allSource += sourceCode;
-        const codeParts = this.formatLuaCallable(allSource, exprFuncName /*, imports*/);
-        const execSource = codeParts.join("");
+        const codeParts = this.formatLuaCallable(exprFuncName /*, imports*/);
+
+        // Form the code we're running
+        const execSource = codeParts.preSource + allSource + "\n" + codeParts.postSource;
         return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse, maxTimeoutMs, recordExpressionInputs);
       })
     );
@@ -512,8 +542,8 @@ export class LuaDataQuerier {
     }
 
     for (const funcName of injectedFunctions) {
-      let prefix = this._debug ? "P" : "";
-      let prefixFuncName = prefix + funcName;
+      const prefix = this._debug ? "P" : "";
+      const prefixFuncName = prefix + funcName;
 
       this._lua.global.set(prefixFuncName, lastValueFrom(of([])));
     }
@@ -595,23 +625,23 @@ export class LuaDataQuerier {
         //this._lua.global.dumpStack(console.error);
 
         /* NOTE: This doesn't print any more than the above...
-                        // Print out everything...
-                        for(let c = 1; c < 10; c++)
-                        {
-                            const traceback = LuaDataQuerier._lua.global.lua.lua_tolstring(LuaDataQuerier._lua.global.address, -c, null);
-                            console.log(traceback);
-                        }
-                    */
+            // Print out everything...
+            for(let c = 1; c < 10; c++)
+            {
+                const traceback = LuaDataQuerier._lua.global.lua.lua_tolstring(LuaDataQuerier._lua.global.address, -c, null);
+                console.log(traceback);
+            }
+        */
         throw parsedErr;
       }),
       finalize(() => {
         // Clean up injected functions
-        let injectedFunctionNames = new Set<string>(Array.from(this._customInjectFunctionData?.keys() || []));
+        const injectedFunctionNames = new Set<string>(Array.from(this._customInjectFunctionData?.keys() || []));
         this.cleanupInjectedFunctions(injectedFunctionNames);
         /*
-                    NOTE: we used to clear the func name we just ran but it's now a local variable so Lua automatically cleans it up
-                    this._lua.global.set(exprFuncName, null);
-                    */
+        NOTE: we used to clear the func name we just ran but it's now a local variable so Lua automatically cleans it up
+        this._lua.global.set(exprFuncName, null);
+        */
         // Close the lua environment, so it can be freed
         if (cleanupLua) {
           this.shutdown();
@@ -736,44 +766,47 @@ export class LuaDataQuerier {
   // - The source code itself
   // - Inserted code after source
 
-  private formatLuaCallable(sourceCode: string, luaExprFuncName: string /*, moduleImports: string*/): string[] {
+  private formatLuaCallable(luaExprFuncName: string /*, moduleImports: string*/): { preSource: string; postSource: string } {
     const result: string[] = [];
 
     // Make it into a function, so if we get called again, we overwrite
     let genStart = "";
-    /*genStart = this._luaLibImports+moduleImports+"\n";
-        if(this._luaUseReplay)
-        {
-            // Reset replay
-            genStart += "FuncRunner.resetReplay()\n";
-        }
-        */
+
+    // Set any constants
+    const constants = this.makeLuaConstants();
+    for (const [name, value] of constants) {
+      let valSet = value;
+      if (typeof value == "string") {
+        valSet = `"${value}"`;
+      }
+
+      genStart += `local ${name} <const> = ${valSet}\n`;
+    }
 
     if (this._debug) {
       // If we're debugging, we wrap the user code in a function and call that, return its result
       // and this makes us able to put some debugging/profiling around it
-      genStart += "local function " + luaExprFuncName + "()\n";
+      genStart += `local function ${luaExprFuncName}()\n`;
     }
 
     result.push(genStart);
 
-    result.push(sourceCode + "\n");
-
+    let genEnd = "";
     if (this._debug) {
-      let genEnd = "end\n";
+      genEnd = "end\n";
 
       genEnd += "t0=os.clock()\n";
       genEnd += "times = {}\n";
 
       // Add timing and wrappers for our functions
-      for (const [name, item] of this.LuaDefs) {
-        if (typeof item.value == "function") {
+      for (const [name, item] of this._luaFunctionDefs) {
+        if (item.debugTiming) {
           genEnd += `times["${name}"] = 0\n`;
         }
       }
 
-      for (const [name, item] of this.LuaDefs) {
-        if (typeof item.value == "function") {
+      for (const [name, item] of this._luaFunctionDefs) {
+        if (item.debugTiming) {
           // Add a wrapper with timing code around it that accumulates it
           genEnd += "function " + name + "(";
 
@@ -808,7 +841,7 @@ export class LuaDataQuerier {
       result.push(genEnd);
     }
 
-    return result;
+    return { preSource: genStart, postSource: genEnd };
   }
 
   // Expecting results to come back as table with 2 arrays in it, one for pmc, one for values

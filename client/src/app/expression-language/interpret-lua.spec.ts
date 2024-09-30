@@ -199,6 +199,29 @@ describe("LuaDataQuerier runQuery()", () => {
     );
   });
 
+  it("works with PIXLISE supplied consts", done => {
+    const lua = new LuaDataQuerier(false);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["getScanId", "getQuantId", "getInstrument", "getMaxSpectrumChannel", "getElevAngle"], []);
+    ds.getScanId.and.returnValue("scan123");
+    ds.getQuantId.and.returnValue("quant123");
+    ds.getInstrument.and.returnValue("PIXL_FM");
+    ds.getMaxSpectrumChannel.and.returnValue(4096);
+    ds.getElevAngle.and.returnValue(70);
+
+    lua
+      .runQuery(`return instrument..","..scanId..","..quantId..","..maxSpectrumChannel..","..elevAngle`, new Map<string, string>(), ds, true, true, false)
+      .subscribe({
+        // Result
+        next: value => {
+          expect(value.resultValues).toEqual("PIXL_FM,scan123,quant123,4096,70");
+        },
+        // Error handler
+        //error: null,
+        // Finalizer
+        complete: done,
+      });
+  });
+
   /* Input recording no longer works since everything went async
   it("should run simple expression (and record inputs)", done => {
     const lua = new LuaDataQuerier(false);
