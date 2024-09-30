@@ -866,6 +866,10 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         if (mistOpacity !== undefined) {
           locOpacity = mistOpacity;
         }
+
+        if (roi.roi.mistROIItem?.formula) {
+          roiLayer.customTooltip = roi.roi.mistROIItem.formula;
+        }
       }
 
       roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], [], locOpacity));

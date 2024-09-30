@@ -34,10 +34,11 @@ import {
   CanvasInteractionResult,
   CanvasMouseEventId,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { drawToolTip, CANVAS_FONT_SIZE } from "src/app/utils/drawing";
+import { drawToolTip, CANVAS_FONT_SIZE, TooltipText } from "src/app/utils/drawing";
 import { IContextImageModel } from "../context-image-model-interface";
 import { BaseUIElement } from "./base-ui-element";
 import { IToolHost } from "../tools/base-context-image-tool";
+import { RGBA } from "../../../../../utils/colours";
 
 // Draws a tooltip when the mouse is over an ROI showing the ROI name
 class ROI {
@@ -58,7 +59,29 @@ export class ROIToolTip extends BaseUIElement {
   override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
     // Draw the physical image scale (mm)
     if (this._lastROIPointedTo) {
-      drawToolTip(screenContext, this._lastMouseCanvasPoint, false, false, this._lastROIPointedTo.name, this._lastROIPointedTo.description, CANVAS_FONT_SIZE);
+      let tooltips: TooltipText[] = [];
+      this._lastROIPointedTo.description.split("\n").forEach(line => {
+        if (line.length > 0) {
+          // let splitLines = line.match(/.{1,50}/g);
+          // splitLines?.forEach(splitLine => {
+          //   tooltips.push({
+          //     text: splitLine,
+          //     colour: RGBA.fromString("#ffffff"),
+          //   });
+          // });
+          tooltips.push({
+            text: line,
+            colour: RGBA.fromString("#ffffff"),
+          });
+        }
+      });
+
+      // this._lastROIPointedTo.description.split("\n").map(line => ({
+      //   text: line,
+      //   colour: RGBA.fromString("#ffffff"),
+      // }));
+
+      drawToolTip(screenContext, this._lastMouseCanvasPoint, false, false, this._lastROIPointedTo.name, tooltips, CANVAS_FONT_SIZE);
     }
   }
 
@@ -94,7 +117,11 @@ export class ROIToolTip extends BaseUIElement {
 
             if (!ptInHole) {
               // Point is within poly, and not within one of its holes, so we're done
-              return new ROI(roi.name, `${roi.polygons.length} Points`);
+              let tooltip = `${roi.polygons.length} Points`;
+              if (roi.customTooltip) {
+                tooltip += `\n${roi.customTooltip}`;
+              }
+              return new ROI(roi.name, tooltip);
             }
           }
         }

@@ -6,7 +6,8 @@ export class ContextImageRegionLayer {
     public roiId: string = "",
     public name: string = "",
     public colour: RGBA = Colours.WHITE,
-    public opacity: number = 1
+    public opacity: number = 1,
+    public customTooltip: string = ""
   ) {}
   pixelMask: HTMLImageElement | null = null;
   polygons: RegionDisplayPolygon[] = [];
