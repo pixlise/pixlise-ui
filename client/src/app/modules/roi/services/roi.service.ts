@@ -151,6 +151,7 @@ export class ROIService {
 
   listROIs() {
     this.searchROIs(SearchParams.create({}), false);
+    this.searchROIs(SearchParams.create({}), true);
   }
 
   listMistROIs(scanId: string) {
