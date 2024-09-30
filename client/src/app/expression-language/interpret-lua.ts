@@ -186,170 +186,214 @@ export class LuaDataQuerier {
     console.log(this._logId + " Added Lua module: " + moduleName + " in " + (t1 - t0).toLocaleString() + "ms...");
   }
 
-  private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
-  private LuaCallableFunctions = new Map<string, any>([
+  private LuaDefs = new Map<string, { value: any; argsIfFunc?: number }>([
+    // Variables
+    //["instrument", { value: "PIXL" }],
+    // Functions
     [
       "element_async",
-      async (a: any, b: any, c: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
-        return this.makeLuaTableAsync(`element(${a},${b},${c})`, t0, this._dataSource!.readElement([a, b, c]));
+      {
+        value: async (a: any, b: any, c: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
+          return this.makeLuaTableAsync(`element(${a},${b},${c})`, t0, this._dataSource!.readElement([a, b, c]));
+        },
+        argsIfFunc: 3,
       },
     ],
     [
       "elementSum_async",
-      async (a: any, b: any) => {
-        const t0 = performance.now();
-        // Dont save runtime stat here, this works for any quant
-        return this.makeLuaTableAsync(`elementSum(${a},${b})`, t0, this._dataSource!.readElementSum([a, b]));
+      {
+        value: async (a: any, b: any) => {
+          const t0 = performance.now();
+          // Dont save runtime stat here, this works for any quant
+          return this.makeLuaTableAsync(`elementSum(${a},${b})`, t0, this._dataSource!.readElementSum([a, b]));
+        },
+        argsIfFunc: 2,
       },
     ],
     [
       "data_async",
-      async (a: any, b: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-        return this.makeLuaTableAsync(`data(${a}, ${b})`, t0, this._dataSource!.readMap([a, b]));
+      {
+        value: async (a: any, b: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
+          return this.makeLuaTableAsync(`data(${a}, ${b})`, t0, this._dataSource!.readMap([a, b]));
+        },
+        argsIfFunc: 2,
       },
     ],
     [
       "spectrum_async",
-      async (a: any, b: any, c: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-        return this.makeLuaTableAsync(`spectrum(${a},${b},${c})`, t0, this._dataSource!.readSpectrum([a, b, c]));
+      {
+        value: async (a: any, b: any, c: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
+          return this.makeLuaTableAsync(`spectrum(${a},${b},${c})`, t0, this._dataSource!.readSpectrum([a, b, c]));
+        },
+        argsIfFunc: 3,
       },
     ],
     [
       "spectrumDiff_async",
-      async (a: any, b: any, c: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-        return this.makeLuaTableAsync(`spectrumDiff(${a},${b},${c})`, t0, this._dataSource!.readSpectrumDifferences([a, b, c]));
+      {
+        value: async (a: any, b: any, c: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
+          return this.makeLuaTableAsync(`spectrumDiff(${a},${b},${c})`, t0, this._dataSource!.readSpectrumDifferences([a, b, c]));
+        },
+        argsIfFunc: 3,
       },
     ],
     [
       "pseudo_async",
-      async (a: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
-        return this.makeLuaTableAsync(`pseudo(${a})`, t0, this._dataSource!.readPseudoIntensity([a]));
+      {
+        value: async (a: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
+          return this.makeLuaTableAsync(`pseudo(${a})`, t0, this._dataSource!.readPseudoIntensity([a]));
+        },
+        argsIfFunc: 1,
       },
     ],
     [
       "housekeeping_async",
-      async (a: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + a);
-        return this.makeLuaTableAsync(`housekeeping(${a})`, t0, this._dataSource!.readHousekeepingData([a]));
+      {
+        value: async (a: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + a);
+          return this.makeLuaTableAsync(`housekeeping(${a})`, t0, this._dataSource!.readHousekeepingData([a]));
+        },
+        argsIfFunc: 1,
       },
     ],
     [
       "diffractionPeaks_async",
-      async (a: any, b: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
-        return this.makeLuaTableAsync(`diffractionPeaks(${a},${b})`, t0, this._dataSource!.readDiffractionData([a, b]));
+      {
+        value: async (a: any, b: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
+          return this.makeLuaTableAsync(`diffractionPeaks(${a},${b})`, t0, this._dataSource!.readDiffractionData([a, b]));
+        },
+        argsIfFunc: 2,
       },
     ],
     [
       "roughness_async",
-      async () => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
-        return this.makeLuaTableAsync("roughness()", t0, this._dataSource!.readRoughnessData([]));
+      {
+        value: async () => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
+          return this.makeLuaTableAsync("roughness()", t0, this._dataSource!.readRoughnessData([]));
+        },
+        argsIfFunc: 0,
       },
     ],
     [
       "position_async",
-      async (a: any) => {
-        const t0 = performance.now();
-        this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
-        return this.makeLuaTableAsync(`position(${a})`, t0, this._dataSource!.readPosition([a]));
+      {
+        value: async (a: any) => {
+          const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
+          return this.makeLuaTableAsync(`position(${a})`, t0, this._dataSource!.readPosition([a]));
+        },
+        argsIfFunc: 1,
       },
     ],
     [
       "makeMap_async",
-      async (a: any) => {
-        const t0 = performance.now();
-        return this.makeLuaTableAsync(`makeMap(${a})`, t0, this._dataSource!.makeMap([a]));
+      {
+          value: async (a: any) => {
+          const t0 = performance.now();
+          return this.makeLuaTableAsync(`makeMap(${a})`, t0, this._dataSource!.makeMap([a]));
+        },
+        argsIfFunc: 1,
       },
     ],
     [
       "readCache_async",
-      async (k: any) => {
-        const caller = `readCache(${k})`;
+      {
+        value: async (k: any) => {
+          const caller = `readCache(${k})`;
 
-        if (this._debugJSTiming) {
-          console.log(caller);
-          this._jsFuncCalls.push(caller);
-        }
+          if (this._debugJSTiming) {
+            console.log(caller);
+            this._jsFuncCalls.push(caller);
+          }
 
-        return this._dataSource!.getMemoised([k]);
+          return this._dataSource!.getMemoised([k]);
+        },
+        argsIfFunc: 1,
       },
     ],
     [
       "writeCache_async",
-      async (k: any, table: any) => {
-        const caller = `writeCache(${k})`;
+      {
+        value: async (k: any, table: any) => {
+          const caller = `writeCache(${k})`;
 
-        if (this._debugJSTiming) {
-          console.log(caller);
-          this._jsFuncCalls.push(caller);
-        }
+          if (this._debugJSTiming) {
+            console.log(caller);
+            this._jsFuncCalls.push(caller);
+          }
 
-        return this._dataSource!.memoise([k, table]);
+          return this._dataSource!.memoise([k, table]);
+        },
+        argsIfFunc: 2,
       },
     ],
     [
       "getVariogramInputs",
-      (useTestData: any) => {
-        let values = this._customInjectFunctionData?.get("getVariogramInputs") || [];
-        if (values.length === 0 && useTestData) {
-          values = [
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 8, value: 3, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 9, value: 9, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 10, value: 13, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 11, value: 13, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 12, value: 6, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 13, value: 2, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 14, value: 1, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 15, value: 1, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 16, value: 0.8, isUndefined: false, label: "" },
-            ],
-            [
-              { pmc: 7, value: 0.75, isUndefined: false, label: "" },
-              { pmc: 17, value: 0.85, isUndefined: false, label: "" },
-            ],
-          ];
-        }
-        return values;
+      {
+        value: (useTestData: any) => {
+          let values = this._customInjectFunctionData?.get("getVariogramInputs") || [];
+          if (values.length === 0 && useTestData) {
+            values = [
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 8, value: 3, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 9, value: 9, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 10, value: 13, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 11, value: 13, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 12, value: 6, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 13, value: 2, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 14, value: 1, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 15, value: 1, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 16, value: 0.8, isUndefined: false, label: "" },
+              ],
+              [
+                { pmc: 7, value: 0.75, isUndefined: false, label: "" },
+                { pmc: 17, value: 0.85, isUndefined: false, label: "" },
+              ],
+            ];
+          }
+          return values;
+        },
+        argsIfFunc: 1,
       },
     ],
   ]);
@@ -366,8 +410,8 @@ export class LuaDataQuerier {
       prefix = "P";
     }
 
-    for (const [funcName, func] of this.LuaCallableFunctions) {
-      this._lua.global.set(prefix + funcName, func);
+    for (const [name, item] of this.LuaDefs) {
+      this._lua.global.set(prefix + name, item.value);
     }
 
     // Special simple ones, we don't have debugging for these
@@ -721,35 +765,36 @@ export class LuaDataQuerier {
       genEnd += "t0=os.clock()\n";
       genEnd += "times = {}\n";
 
-      const luaFunctionNames = Array.from(this.LuaCallableFunctions.keys());
-      for (const funcName of luaFunctionNames) {
-        genEnd += `times["${funcName}"] = 0\n`;
+      // Add timing and wrappers for our functions
+      for (const [name, item] of this.LuaDefs) {
+        if (typeof item.value == "function") {
+          genEnd += `times["${name}"] = 0\n`;
+        }
       }
 
-      // Add wrappers for our functions
+      for (const [name, item] of this.LuaDefs) {
+        if (typeof item.value == "function") {
+          // Add a wrapper with timing code around it that accumulates it
+          genEnd += "function " + name + "(";
 
-      for (let f = 0; f < luaFunctionNames.length; f++) {
-        // Add a wrapper with timing code around it that accumulates it
-        const funcName = luaFunctionNames[f];
-        genEnd += "function " + funcName + "(";
+          let argList = "";
+          for (let c = 0; c < (item?.argsIfFunc || 0); c++) {
+            if (argList.length > 0) {
+              argList += ",";
+            }
 
-        let argList = "";
-        for (let c = 0; c < this.LuaFunctionArgCounts[f]; c++) {
-          if (argList.length > 0) {
-            argList += ",";
+            argList += "a" + c;
           }
-
-          argList += "a" + c;
+          genEnd += argList + ")";
+          genEnd += `
+    local t0=os.clock()
+    local funcResult = P${name}(${argList})
+    local t1=os.clock()
+    times["${name}"] = times["${name}"]+(t1-t0)
+    return funcResult
+  end
+  `;
         }
-        genEnd += argList + ")";
-        genEnd += `
-  local t0=os.clock()
-  local funcResult = P${funcName}(${argList})
-  local t1=os.clock()
-  times["${funcName}"] = times["${funcName}"]+(t1-t0)
-  return funcResult
-end
-`;
       }
 
       genEnd += "result = " + luaExprFuncName + "()\n";
