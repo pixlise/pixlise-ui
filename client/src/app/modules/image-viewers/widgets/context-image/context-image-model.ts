@@ -868,8 +868,6 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         }
       }
 
-      console.log("Region opacity: ", locOpacity, roi.roi.isMIST, roi.roi.mistROIItem);
-
       roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], [], locOpacity));
     }
 

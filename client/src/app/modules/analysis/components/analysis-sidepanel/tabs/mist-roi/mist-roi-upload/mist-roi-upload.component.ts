@@ -43,7 +43,7 @@ import { UserOptionsService } from "src/app/modules/settings/settings.module";
 export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
   static readonly DatasetIDHeader = "DatasetID";
-  static readonly ConfidenceHeader = "Confidence";
+  static readonly ConfidenceHeader = "Reproducibility";
 
   static readonly ConfidenceLevelMap: Record<string, number> = {
     high: 1,
@@ -215,10 +215,16 @@ export class MistRoiUploadComponent implements OnInit {
       }
 
       let confidenceLevel: string = rawItem[MistROIUploadData.ConfidenceHeader];
-      let confidencePercent = MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()] ?? Number(confidenceLevel);
-      if (confidencePercent === undefined || isNaN(confidencePercent)) {
-        confidencePercent = 1;
+      let confidencePercent = 1;
+      if (MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()]) {
+        confidencePercent = MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()];
+      } else if (!isNaN(Number(confidenceLevel))) {
+        confidencePercent = Number(confidenceLevel) / 100;
       }
+      //   MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()] ?? Number(confidenceLevel);
+      // if (confidencePercent === undefined || isNaN(confidencePercent)) {
+      //   confidencePercent = 1;
+      // }
 
       let uniqueID = `${scanId}-${rawItem.ClassificationTrail}`;
       if (uniqueROIs[uniqueID]) {
