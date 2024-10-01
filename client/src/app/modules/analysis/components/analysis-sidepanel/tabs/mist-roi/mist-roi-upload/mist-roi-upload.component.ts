@@ -43,6 +43,13 @@ import { UserOptionsService } from "src/app/modules/settings/settings.module";
 export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
   static readonly DatasetIDHeader = "DatasetID";
+  static readonly ConfidenceHeader = "Reproducibility";
+
+  static readonly ConfidenceLevelMap: Record<string, number> = {
+    high: 1,
+    medium: 0.5,
+    low: 0.25,
+  };
 
   constructor(
     public scanId: string = "",
@@ -81,7 +88,7 @@ export class MistRoiUploadComponent implements OnInit {
   expectedHeaders = MistROIUploadData.MIST_ROI_HEADERS;
 
   datasetIDHeader = MistROIUploadData.DatasetIDHeader;
-  optionalHeaders = [MistROIUploadData.DatasetIDHeader];
+  optionalHeaders = [MistROIUploadData.DatasetIDHeader, MistROIUploadData.ConfidenceHeader];
 
   allScans: ScanItem[] = [];
   configuredScans: ScanItem[] = [];
@@ -207,9 +214,29 @@ export class MistRoiUploadComponent implements OnInit {
         continue;
       }
 
+      let confidenceLevel: string = rawItem[MistROIUploadData.ConfidenceHeader];
+      let confidencePercent = 1;
+      if (MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()]) {
+        confidencePercent = MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()];
+      } else if (!isNaN(Number(confidenceLevel))) {
+        confidencePercent = Number(confidenceLevel) / 100;
+      }
+      //   MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()] ?? Number(confidenceLevel);
+      // if (confidencePercent === undefined || isNaN(confidencePercent)) {
+      //   confidencePercent = 1;
+      // }
+
       let uniqueID = `${scanId}-${rawItem.ClassificationTrail}`;
       if (uniqueROIs[uniqueID]) {
         uniqueROIs[uniqueID].scanEntryIndexesEncoded.push(rawItem.PMC);
+        if (uniqueROIs[uniqueID].mistROIItem) {
+          // Have to support backwards compatibility with old MIST ROI files where the confidence map was not included
+          if (!uniqueROIs[uniqueID].mistROIItem.pmcConfidenceMap) {
+            uniqueROIs[uniqueID].mistROIItem.pmcConfidenceMap = { [rawItem.PMC]: confidencePercent };
+          } else {
+            uniqueROIs[uniqueID].mistROIItem.pmcConfidenceMap[rawItem.PMC] = confidencePercent;
+          }
+        }
       } else {
         let mineralGroupID = rawItem.ClassificationTrail.substring(rawItem.ClassificationTrail.lastIndexOf(".") + 1);
         let name = rawItem.species && rawItem.species.length > 0 ? rawItem.species : mineralGroupID;
@@ -228,6 +255,7 @@ export class MistRoiUploadComponent implements OnInit {
             mineralGroupID: mineralGroupID,
             idDepth: rawItem.ID_Depth,
             formula: rawItem.formula,
+            pmcConfidenceMap: { [rawItem.PMC]: confidencePercent },
           },
         });
 
@@ -236,6 +264,7 @@ export class MistRoiUploadComponent implements OnInit {
     }
 
     this.uniqueROIs = uniqueROIs;
+    console.log("uniqueROIs", uniqueROIs);
     this.uploadedScanIds = Array.from(scanIds);
     this.uploadToSubDatasets = this.uploadedScanIds.length > 1;
 

@@ -365,6 +365,29 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
           },
         },
         {
+          id: "roiExpressionCode",
+          name: "Expression Source Code .lua/.csv/.md",
+          type: "checkbox",
+          description: "Export the runnable expression source code along with data",
+          disabledText: "Select expressions to enable",
+          disabled: false,
+          selected: false,
+          count: 0,
+          updateCounts: (selection, selected) => {
+            const countMap: Record<string, number> = { roiExpressionCode: 0 };
+
+            const scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
+            scanOptions.forEach(scanOption => {
+              const scanId = scanOption.id.replace("scan-", "");
+              const expressionIds = scanOption.subOptions?.find(subOption => subOption.id === scanId + "_expressions")?.selectedExpressions?.map(exp => exp.id) || [];
+              // Adding 1 for All Points
+              countMap["roiExpressionCode"] += expressionIds.length;
+            });
+
+            return countMap;
+          },
+        },
+        {
           id: "images",
           name: "Context Images .png",
           type: "images",
@@ -481,6 +504,10 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     if (request.dataProducts["roiExpressionValues"]?.selected) {
       let singleCSV = request.options["singleROICSV"]?.selected || false;
       exportRequests.push(this._exporterService.getROIExpressionValues(scanId, quantId, roiIds, expressionIds, singleCSV));
+    }
+
+    if (request.dataProducts["roiExpressionCode"]?.selected) {
+      exportRequests.push(this._exporterService.exportExpressionCode(scanId, quantId, expressionIds));
     }
 
     if (exportRequests.length === 0) {

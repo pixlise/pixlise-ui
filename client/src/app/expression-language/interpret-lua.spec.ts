@@ -31,6 +31,14 @@ import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 //import { InterpreterDataSource } from "./interpreter-data-source";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 
+export const mockFuncs = ["getScanId", "getQuantId", "getInstrument", "getMaxSpectrumChannel", "getElevAngle"];
+export function setupMock(ds: any) {
+  ds.getScanId.and.returnValue("scan123");
+  ds.getQuantId.and.returnValue("quant123");
+  ds.getInstrument.and.returnValue("PIXL_FM");
+  ds.getMaxSpectrumChannel.and.returnValue(4096);
+  ds.getElevAngle.and.returnValue(70);
+}
 describe("LuaDataQuerier parseLuaError()", () => {
   it("should parse (JS function err)", () => {
     const err = new Error(
@@ -114,9 +122,10 @@ describe("LuaDataQuerier parseLuaError()", () => {
 describe("LuaDataQuerier runQuery()", () => {
   it("should run simple func returning string", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
-    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult("helloworld333", false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -134,9 +143,10 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should reject string result if asked to", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
-    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false /*, false*/).subscribe(
+    lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, false, false).subscribe(
       // Result
       null,
       // Error handler
@@ -149,9 +159,10 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should run simple func returning number", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
-    lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult(7, false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -167,14 +178,15 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should run fail if unknown lua func called", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
+    setupMock(ds);
 
-    lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return nonExistantFunc("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       null,
       // Error handler
       err => {
-        expect(err.message).toEqual("Runtime error on line 1: attempt to call a nil value (global 'nonExistantFunc')");
+        expect(err.message).toEqual("Runtime error on line 6: attempt to call a nil value (global 'nonExistantFunc')");
         done();
       }
     );
@@ -182,11 +194,12 @@ describe("LuaDataQuerier runQuery()", () => {
 
   it("should run simple expression", done => {
     const lua = new LuaDataQuerier(false);
-    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     const Ca = PMCDataValues.makeWithValues([new PMCDataValue(4, 10), new PMCDataValue(5, 11), new PMCDataValue(7, 12)]);
+    setupMock(ds);
     ds.readElement.and.returnValue(Promise.resolve(Ca));
 
-    lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true /*, false*/).subscribe(
+    lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
         const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
@@ -198,6 +211,26 @@ describe("LuaDataQuerier runQuery()", () => {
       done
     );
   });
+
+  it("works with PIXLISE supplied consts", done => {
+    const lua = new LuaDataQuerier(false);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", mockFuncs, []);
+    setupMock(ds);
+
+    lua
+      .runQuery(`return instrument..","..scanId..","..quantId..","..maxSpectrumChannel..","..elevAngle`, new Map<string, string>(), ds, true, true, false)
+      .subscribe({
+        // Result
+        next: value => {
+          expect(value.resultValues).toEqual("PIXL_FM,scan123,quant123,4096,70");
+        },
+        // Error handler
+        //error: null,
+        // Finalizer
+        complete: done,
+      });
+  });
+
   /* Input recording no longer works since everything went async
   it("should run simple expression (and record inputs)", done => {
     const lua = new LuaDataQuerier(false);
@@ -217,4 +250,101 @@ describe("LuaDataQuerier runQuery()", () => {
       done
     );
   });*/
+});
+
+describe("LuaDataQuerier runQuery() caching", () => {
+  it("should save expression cache value when requested", done => {
+    const lua = new LuaDataQuerier(false);
+    const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", "memoise", "getMemoised", ...mockFuncs], []);
+    setupMock(ds);
+
+    const mapValues = PMCDataValues.makeWithValues([
+      new PMCDataValue(5, 3.45),
+      new PMCDataValue(7, 7.93),
+      new PMCDataValue(8, 4.33),
+      new PMCDataValue(9, 20.37),
+      new PMCDataValue(1055, 10.72),
+      new PMCDataValue(1056, 12.29),
+    ]);
+
+    const jsCachedItem = {
+      anum: 72.94,
+      elements: ["CaO", "FeT", "MnT"],
+      amap: [
+        [5, 7, 8, 9, 1055, 1056],
+        [3.45, 7.93, 4.33, 20.37, 10.72, 12.29],
+      ],
+    };
+
+    //ds.readElement.and.returnValue(Promise.resolve(Ca));
+    ds.memoise.and.callFake((args: any[]) => {
+      const k = args[0];
+      expect(k).toEqual("GeoData");
+
+      const v = args[1];
+      expect(v).toEqual(jsCachedItem);
+      // console.log("memoise: " + k);
+      // console.log(args[1]);
+      return Promise.resolve(true);
+    });
+    ds.getMemoised.and.callFake((k: string) => {
+      if (k == "GeoData") {
+        return Promise.resolve(jsCachedItem);
+      }
+      return Promise.resolve(null);
+    });
+
+    lua
+      .runQuery(
+        `local amap = {{5, 7, 8, 9, 1055, 1056}, {3.45, 7.93, 4.33, 20.37, 10.72, 12.29}}
+local tocache = {}
+tocache["amap"] = amap
+tocache["anum"] = 72.94
+tocache["elements"] = {"CaO", "FeT", "MnT"}
+
+--print(DebugHelp.printTable("tocache", tocache))
+local x = writeCache("GeoData", tocache)
+if x ~= true then
+  return "writeCache(GeoData) unexpected result: "..x
+end
+
+local notHere = readCache("DoesntExist")
+if notHere ~= nil then
+  return "readCache(DoesntExist) unexpected result: "..notHere
+end
+
+local readWorked = readCache("GeoData")
+if readWorked["anum"] ~= 72.94 or
+    readWorked["elements"][1] ~= "CaO" or
+    readWorked["elements"][2] ~= "FeT" or
+    readWorked["elements"][3] ~= "MnT" or
+    #readWorked["amap"] ~= 2 or
+    #readWorked["amap"][1] ~= 6 or
+    readWorked["amap"][1][4] ~= 9 or
+    readWorked["amap"][2][4] ~= 20.37 then
+  print("BAD RESULT: ")
+  DebugHelp.printTable("readWorked", readWorked)
+
+  return "readCache(GeoData) returned unexpected value"
+end
+
+return readWorked["amap"]`,
+        new Map<string, string>(),
+        ds,
+        true,
+        true,
+        false
+      )
+      .subscribe(
+        // Result
+        value => {
+          const exp = new DataQueryResult(mapValues, true, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+          expect(value).toEqual(exp);
+        },
+        // Error handler
+        null,
+        // Finalizer
+        done
+      );
+  });
 });

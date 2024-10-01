@@ -46,7 +46,6 @@ export type PushButtonStyle =
   | "orange"
   | "dark-outline"
   | "hover-yellow"
-  | "v3Button"
   | "changelog-new"
   | "changelog-viewed";
 
@@ -96,7 +95,6 @@ export class PushButtonComponent implements OnInit {
       "orange",
       "dark-outline",
       "hover-yellow",
-      "v3Button",
       "changelog-new",
       "changelog-viewed",
     ];

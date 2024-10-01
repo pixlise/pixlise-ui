@@ -5,7 +5,7 @@ import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { Subscription } from "rxjs";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.component";
-import { COLOURS, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
+import { COLOURS, COLOUR_MAP, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
@@ -13,6 +13,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserInfo } from "src/app/generated-protos/user";
 import { PredefinedROIID } from "../../../../models/RegionOfInterest";
+import { RGBA } from "../../../../utils/colours";
 
 export type SubItemOptionSection = {
   title: string;
@@ -37,6 +38,8 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @Input() selected = false;
   @Input() isVisible = false;
   @Input() colorChangeOnly = false;
+
+  customSelectedColour: string = "";
 
   @Input() colorOptions: ColourOption[] = COLOURS;
   @Input() shapeOptions: ROIShape[] = ROI_SHAPES;
@@ -239,6 +242,29 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   set selectedColour(value: string) {
     this._selectedColour = value;
     this.colour = findColourOption(value);
+  }
+
+  get isCustomColour(): boolean {
+    return !COLOUR_MAP.get(this._selectedColour);
+  }
+
+  get rawSelectedColour(): string {
+    return this._selectedColour;
+  }
+
+  set rawSelectedColour(value: string) {
+    this._selectedColour = value;
+  }
+
+  onSelectCustomColour() {
+    let option: ColourOption = {
+      name: "Custom",
+      colour: this.customSelectedColour,
+      rgba: RGBA.fromString(this.customSelectedColour),
+      colourBlindSafe: false,
+    };
+
+    this.colour = option;
   }
 
   get shape(): ROIShape {
@@ -549,4 +575,6 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
       this._selectionService.setSelection(new BeamSelection(pmcSelection), pixelSelection);
     }
   }
+
+  onNewColour(): void {}
 }

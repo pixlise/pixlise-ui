@@ -195,7 +195,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             return new SelectionChangerImageInfo([], "", this._contextDataService);
           }
           return new SelectionChangerImageInfo(this.mdl.scanIds, this.mdl.imageName, this._contextDataService);
-        }
+        },
       },
       bottomToolbar: [],
     };
@@ -710,7 +710,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   private loadROIRegion(roi: ROILayerVisibility, setROIVisible: boolean = false): Observable<ROIItem> {
     // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
-    return this._roiService.loadROI(roi.id).pipe(
+    return this._roiService.loadROI(roi.id, true).pipe(
       tap({
         next: (roiLoaded: ROIItem) => {
           // We need to be able to convert PMCs to location indexes...

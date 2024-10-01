@@ -506,3 +506,24 @@ h3 {
   --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
   --mdc-typography-button-font-weight: 800;
 }
+
+.new-color {
+  color-picker {
+    .color-picker {
+      background-color: #2a3137;
+
+      .box {
+        input {
+          background: #454c50;
+          color: rgb(var(--clr-gray-30));
+        }
+      }
+
+      .hue {
+        .cursor {
+          border-color: white;
+        }
+      }
+    }
+  }
+}

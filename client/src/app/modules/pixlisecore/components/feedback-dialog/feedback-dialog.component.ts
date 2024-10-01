@@ -34,14 +34,12 @@ export class FeedbackDialogComponent {
     this.dialogRef.close(false);
   }
 
-  onSubmitIssue(backToV3: boolean = false): void {
+  onSubmitIssue(): void {
     let strippedIssue = this.userIssue.trim();
     if (strippedIssue.length > 0) {
       this._snackService.openSuccess("Thanks for the feedback!");
       this.userIssue = "";
-      SentryHelper.logMsg(false, "User Feedback (Back to V3): \n" + strippedIssue);
-    } else if (backToV3) {
-      SentryHelper.logMsg(false, "User Feedback (Back to V3): No feedback given");
+      SentryHelper.logMsg(false, "User Feedback: \n" + strippedIssue);
     }
 
     this.dialogRef.close(true);

@@ -357,6 +357,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         this._expressionService.fetchExpression(id);
       }
     });
+
+    this.restoreSelectedSection();
   }
 
   ngOnDestroy(): void {
@@ -757,7 +759,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSubSectionSelect(section: string, subSection: string) {
+  onSubSectionSelect(section: string, subSection: string, cacheSelection: boolean = true): void {
     if (section === "Elements") {
       this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: subSection };
     } else if (section !== this.activeBrowseGroup) {
@@ -783,6 +785,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     this.activeBrowseGroup = section;
     this.activeBrowseSection = subSection;
+
+    if (cacheSelection) {
+      this.cacheSelectedSection();
+    }
   }
 
   get isShowingExpressionGroups(): boolean {
@@ -849,6 +855,29 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       "recentExpressions",
       JSON.stringify(this.recentExpressions.filter(expression => !expression.expression.id.startsWith("loading-")).slice(0, 10))
     );
+  }
+
+  cacheSelectedSection(): void {
+    localStorage.setItem(
+      "selectedExpressionSection",
+      JSON.stringify({
+        activeBrowseGroup: this.activeBrowseGroup,
+        activeBrowseSection: this.activeBrowseSection,
+      })
+    );
+  }
+
+  restoreSelectedSection(): void {
+    const selectedSection = localStorage.getItem("selectedExpressionSection");
+    if (selectedSection) {
+      const parsedSection = JSON.parse(selectedSection);
+
+      if (parsedSection?.activeBrowseGroup && parsedSection?.activeBrowseSection) {
+        let activeBrowseGroup = parsedSection.activeBrowseGroup;
+        let activeBrowseSection = parsedSection.activeBrowseSection;
+        this.onSubSectionSelect(activeBrowseGroup, activeBrowseSection, false);
+      }
+    }
   }
 
   updateRecentExpression(expression: DataExpression | ExpressionGroup): void {

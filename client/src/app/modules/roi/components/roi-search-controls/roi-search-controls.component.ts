@@ -90,10 +90,23 @@ export class ROISearchControlsComponent {
         this._currentUserId = this._userOptionsService.userDetails.info?.id || "";
       })
     );
+
+    this.restoreSelectedROITypes();
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  cacheSelectedROITypes() {
+    localStorage.setItem("selectedROITypes", JSON.stringify(this._selectedROITypes));
+  }
+
+  restoreSelectedROITypes() {
+    let selectedROITypes = localStorage.getItem("selectedROITypes");
+    if (selectedROITypes) {
+      this.selectedROITypes = JSON.parse(selectedROITypes);
+    }
   }
 
   get summaries(): ROIItemSummary[] {
@@ -141,6 +154,7 @@ export class ROISearchControlsComponent {
       this._roiService.searchROIs(SearchParams.create({ scanId: this.visibleScanId }), true);
     }
     this.filterROIsForDisplay();
+    this.cacheSelectedROITypes();
   }
 
   get canCreateROIs(): boolean {

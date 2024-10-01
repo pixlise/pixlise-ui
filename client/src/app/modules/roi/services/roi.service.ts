@@ -151,6 +151,7 @@ export class ROIService {
 
   listROIs() {
     this.searchROIs(SearchParams.create({}), false);
+    this.searchROIs(SearchParams.create({}), true);
   }
 
   listMistROIs(scanId: string) {
@@ -506,7 +507,7 @@ export class ROIService {
         this.displaySettingsMap$.next(this.displaySettingsMap$.value);
       }
     } else {
-      this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
+      this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id, isMIST: true })).subscribe({
         next: res => {
           if (res.regionOfInterest) {
             res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
@@ -524,7 +525,7 @@ export class ROIService {
     }
   }
 
-  loadROI(id: string): Observable<ROIItem> {
+  loadROI(id: string, includeMISTIfExists: boolean = false): Observable<ROIItem> {
     if (this.roiItems$.value[id]) {
       return of(this.roiItems$.value[id]);
     } else if (PredefinedROIID.isAllPointsROI(id)) {
@@ -536,7 +537,7 @@ export class ROIService {
       }
     }
 
-    return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id })).pipe(
+    return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id, isMIST: includeMISTIfExists })).pipe(
       map((roiResp: RegionOfInterestGetResp) => {
         if (roiResp.regionOfInterest === undefined) {
           this._snackBarService.openError(`Region Of Interest data not returned from cachedDataService for ${id}`);
@@ -763,7 +764,7 @@ export class ROIService {
   }
 
   editROISummary(newROISummary: ROIItemSummary) {
-    this.loadROI(newROISummary.id)
+    this.loadROI(newROISummary.id, true)
       .pipe(
         map(roi => {
           roi.name = newROISummary.name;

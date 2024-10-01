@@ -38,10 +38,35 @@ function position(axis)
     return position_async(axis):await()
 end
 
+local lastMap = {}
 function makeMap(value)
-    return makeMap_async(value):await()
+    -- If we have one saved, just set the value in the same kind of map
+    if #lastMap > 0 then
+        local values = {}
+        for k, v in ipairs(lastMap[2]) do
+            if v == nil then
+                values[k] = nil
+            else
+                values[k] = value
+            end
+        end
+        return { lastMap[1], values }
+    end
+
+    local m = makeMap_async(value):await()
+    -- Cache it
+    lastMap = m
+    return m
 end
 
 function exists(dataType, column)
     return exists_async(dataType, column):await()
+end
+
+function writeCache(k, v)
+    return writeCache_async(k, v):await()
+end
+
+function readCache(k)
+    return readCache_async(k):await()
 end
