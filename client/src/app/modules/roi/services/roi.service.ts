@@ -708,6 +708,14 @@ export class ROIService {
             mistROIScanIdsToDelete.forEach(scanId => {
               if (this.mistROIsByScanId$.value[scanId]) {
                 this.mistROIsByScanId$.value[scanId] = {};
+                // Delete all mist ROIs for this scan
+                Object.entries(this.roiSummaries$.value).forEach(([roiId, roi]) => {
+                  if (roi && roi.scanId === scanId && roi.isMIST) {
+                    delete this.roiItems$.value[roiId];
+                    delete this.roiSummaries$.value[roiId];
+                    delete this.displaySettingsMap$.value[roiId];
+                  }
+                });
               }
             });
 
@@ -743,10 +751,13 @@ export class ROIService {
                 roi.isMIST = isMIST;
                 this.mistROIsByScanId$.value[scanId][roi.id] = ROIService.formSummaryFromROI(roi);
               }
+
+              this.roiSummaries$.value[roi.id] = ROIService.formSummaryFromROI(roi);
             });
 
             this.roiItems$.next(this.roiItems$.value);
             this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+            this.roiSummaries$.next(this.roiSummaries$.value);
 
             this._snackBarService.openSuccess(`Successfully bulk created ${res.regionsOfInterest.length} ROIs!`);
           } else {
