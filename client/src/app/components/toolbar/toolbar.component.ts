@@ -708,25 +708,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     return "https://discuss." + EnvConfigurationInitService.appConfig.appDomain;
   }
 
-  private closeIssueDialog(): void {
-    if (this.submitIssueDialog && this.submitIssueDialog instanceof PushButtonComponent) {
-      (this.submitIssueDialog as PushButtonComponent).closeDialog();
-    }
-  }
-
-  onSubmitIssue(leftPage: boolean): void {
-    let strippedIssue = this.userIssue.trim();
-    if (strippedIssue.length > 0) {
-      this._snackService.openSuccess("Thanks for the feedback!");
-      this.userIssue = "";
-      SentryHelper.logMsg(false, "User Feedback (Back to V3): \n" + strippedIssue);
-    } else if (leftPage) {
-      SentryHelper.logMsg(false, "User Feedback (Back to V3): No feedback given");
-    }
-
-    this.closeIssueDialog();
-  }
-
   closeChangeLogDialog(): void {
     if (this.changeLogBtn && this.changeLogBtn instanceof PushButtonComponent) {
       (this.changeLogBtn as PushButtonComponent).closeDialog();
