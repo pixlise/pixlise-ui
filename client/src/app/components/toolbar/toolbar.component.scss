@@ -138,10 +138,6 @@
           }
         }
       }
-
-      .back-to-v3 {
-        white-space: pre;
-      }
     }
   }
 }
@@ -243,25 +239,6 @@ user-icon {
     padding-left: 16px;
 
     action-button {
-      margin-left: auto;
-    }
-  }
-
-  .v3-container {
-    display: flex;
-    align-items: center;
-
-    padding-left: 16px;
-
-    border-top: 1px solid rgb(68, 76, 80);
-    padding-top: 8px;
-
-    margin-right: -16px;
-    padding-right: 16px;
-
-    color: rgb(var(--clr-gray-30));
-
-    .back-to-v3 {
       margin-left: auto;
     }
   }

@@ -5,6 +5,8 @@
 - ROI Picker now remembers your last selected sections
 - MIST ROIs can now include a per-PMC confidence value column that affects ROI opacity on context image
 - **Custom ROI Colors** Adds support for custom ROI colors via a color picker. Preset colors should still be preferred where possible.
+- Expression language (in Lua only) now has 2 new functions: `readCache` and `writeCache` to allow reuse of calculated data between other expressions. Also added new constants: `instrument`, `scanId`, `quantId`, `maxSpectrumChannel` and `elevAngle`. Running expressions is also about 10% faster due to not recomputing the results of `spectrum()` calls when the same channels are requested.
+- Removed Back to V3 button
 
 ## 4.44.0 (2024-09-27)
 
@@ -19,7 +21,6 @@
 ### Bug Fixes
 - Fixes bug with sharing workspaces that include expression groups
 - Allows longer RGB Mix names to be saved
-
 
 ## 4.42.0 (2024-09-18)
 
