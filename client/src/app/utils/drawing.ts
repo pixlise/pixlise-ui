@@ -390,7 +390,7 @@ export function drawToolTip(
     messages = messages.concat(message);
   }
 
-  const maxWidth = Math.max(screenContext.measureText(title).width, ...messages.map(msg => screenContext.measureText(msg.text).width));
+  const maxWidth = LABEL_TXT_GAP * 4.5 + Math.max(screenContext.measureText(title).width, ...messages.map(msg => screenContext.measureText(msg.text).width));
 
   const rect = new Rect(pos.x, pos.y, LABEL_TXT_GAP * 3 + maxWidth, LABEL_TXT_GAP + messages.length * (fontSize + LABEL_TXT_GAP));
 

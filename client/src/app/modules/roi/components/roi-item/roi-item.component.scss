@@ -404,3 +404,16 @@
     width: 12px;
   }
 }
+
+.new-color {
+  display: flex;
+  align-items: center;
+
+  .custom-color-container {
+    display: flex;
+    align-items: center;
+
+    margin: -8px;
+    margin-right: -20px;
+  }
+}

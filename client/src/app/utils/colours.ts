@@ -61,6 +61,18 @@ export class RGBA {
   static fromString(rgbaStr: string): RGBA {
     let result = Colours.WHITE;
 
+    if (rgbaStr.startsWith("#")) {
+      // We're expecting a hex string
+      let hex = rgbaStr.substring(1);
+      if (hex.length == 6) {
+        result = new RGBA(parseInt(hex.substring(0, 2), 16), parseInt(hex.substring(2, 4), 16), parseInt(hex.substring(4, 6), 16), 255);
+      } else if (hex.length == 8) {
+        result = new RGBA(parseInt(hex.substring(0, 2), 16), parseInt(hex.substring(2, 4), 16), parseInt(hex.substring(4, 6), 16), parseInt(hex.substring(6, 8), 16));
+      }
+
+      return result;
+    }
+
     const regex = /^rgb(?<isAlpha>a)?\((?<r>\d+),\s*(?<g>\d+),\s*(?<b>\d+)(?:,\s*(?<a>\d+(?:\.\d+)?))?\)$/;
     const match = rgbaStr.match(regex);
     if (match && match.groups) {

@@ -31,9 +31,17 @@ export function drawRegion(
     screenContext.strokeStyle = drawColour.asStringWithA(region.opacity);
     screenContext.lineWidth = 2 / worldTransform.getScale().x;
   }
-  screenContext.fillStyle = drawColour.asStringWithA(region.opacity * opacityMult);
+
+  let defaultFill = drawColour.asStringWithA(region.opacity * opacityMult);
+  screenContext.fillStyle = defaultFill;
 
   for (const poly of region.polygons) {
+    if (poly.opacity !== undefined) {
+      screenContext.fillStyle = drawColour.asStringWithA(region.opacity * opacityMult * poly.opacity);
+    } else {
+      screenContext.fillStyle = defaultFill;
+    }
+
     drawPolygon(screenContext, poly);
 
     screenContext.fill();
@@ -42,6 +50,8 @@ export function drawRegion(
       screenContext.stroke();
     }
   }
+
+  screenContext.fillStyle = defaultFill;
 }
 
 function drawPolygon(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, polygon: RegionDisplayPolygon): void {

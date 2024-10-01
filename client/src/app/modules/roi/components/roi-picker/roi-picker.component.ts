@@ -196,6 +196,10 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
       this.filteredSummaries.forEach(summary => {
         this.selectedROIs[summary.id] = summary;
         this._roiService.fetchROI(summary.id, true);
+
+        if (!summary.displaySettings) {
+          this._roiService.nextDisplaySettings(summary?.scanId, summary?.id);
+        }
       });
 
       if (this.data.liveUpdate) {
@@ -271,7 +275,7 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
     }
 
     let regionRequests = selectedROISummaries.map(summary => {
-      return this._roiService.loadROI(summary.id);
+      return this._roiService.loadROI(summary.id, true);
     });
 
     combineLatest(regionRequests).subscribe({
