@@ -215,23 +215,20 @@ export class MistRoiUploadComponent implements OnInit {
       }
 
       let confidenceLevel: string = rawItem[MistROIUploadData.ConfidenceHeader];
+      let confidenceKey = `${confidenceLevel}`.toLowerCase().trim();
       let confidencePercent = 1;
-      if (MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()]) {
-        confidencePercent = MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()];
+      if (MistROIUploadData.ConfidenceLevelMap[confidenceKey] !== undefined) {
+        confidencePercent = MistROIUploadData.ConfidenceLevelMap[confidenceKey];
       } else if (!isNaN(Number(confidenceLevel))) {
         confidencePercent = Number(confidenceLevel) / 100;
       }
-      //   MistROIUploadData.ConfidenceLevelMap[confidenceLevel.toLowerCase()] ?? Number(confidenceLevel);
-      // if (confidencePercent === undefined || isNaN(confidencePercent)) {
-      //   confidencePercent = 1;
-      // }
 
       let uniqueID = `${scanId}-${rawItem.ClassificationTrail}`;
       if (uniqueROIs[uniqueID]) {
         uniqueROIs[uniqueID].scanEntryIndexesEncoded.push(rawItem.PMC);
         if (uniqueROIs[uniqueID].mistROIItem) {
           // Have to support backwards compatibility with old MIST ROI files where the confidence map was not included
-          if (!uniqueROIs[uniqueID].mistROIItem.pmcConfidenceMap) {
+          if (!uniqueROIs[uniqueID].mistROIItem?.pmcConfidenceMap) {
             uniqueROIs[uniqueID].mistROIItem.pmcConfidenceMap = { [rawItem.PMC]: confidencePercent };
           } else {
             uniqueROIs[uniqueID].mistROIItem.pmcConfidenceMap[rawItem.PMC] = confidencePercent;
@@ -264,7 +261,6 @@ export class MistRoiUploadComponent implements OnInit {
     }
 
     this.uniqueROIs = uniqueROIs;
-    console.log("uniqueROIs", uniqueROIs);
     this.uploadedScanIds = Array.from(scanIds);
     this.uploadToSubDatasets = this.uploadedScanIds.length > 1;
 

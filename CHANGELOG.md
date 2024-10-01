@@ -1,4 +1,10 @@
-## 4.45.0 (Latest)
+## 4.46.0 (Latest)
+
+### Bug Fixes
+- Fixes issue with MIST ROI reproducibility column not being applied correctly to some scans
+- Fixes stale ROI list in ROI picker when MIST ROIs are overwritten/replaced from side panel
+
+## 4.45.0 (2024-09-30)
 
 ### Features
 - Expression Picker now remembers your last opened section
