@@ -854,15 +854,21 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       return of(roiLayer);
     }
 
+    const locToPMCLookup = new Map<number, number>();
+    scanMdl.scanPoints.forEach(pt => {
+      locToPMCLookup.set(pt.locationIdx, pt.PMC);
+    });
+
     for (const locIdx of roi.locIdxs) {
       if (locIdx < 0 || locIdx >= scanMdl.scanPointPolygons.length) {
         console.error("makeRegion failed for: " + roiId + " - locIdx: " + locIdx + " did not have corresponding polygon");
         return of(roiLayer);
       }
 
+      let pmc = locToPMCLookup.get(locIdx);
       let locOpacity = 1;
-      if (roi.roi.isMIST) {
-        let mistOpacity = roi.roi?.mistROIItem?.pmcConfidenceMap[locIdx];
+      if (roi.roi.isMIST && pmc !== undefined) {
+        let mistOpacity = roi.roi?.mistROIItem?.pmcConfidenceMap[pmc];
         if (mistOpacity !== undefined) {
           locOpacity = mistOpacity;
         }
