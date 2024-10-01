@@ -185,7 +185,7 @@ export class LuaDataQuerier {
       ["quantId", this._dataSource!.getQuantId()],
       ["maxSpectrumChannel", this._dataSource!.getMaxSpectrumChannel()],
       ["instrument", this._dataSource!.getInstrument()],
-      ["elevAngle", 70], // TODO: retrieve this for real!
+      ["elevAngle", this._dataSource!.getElevAngle()],
     ]);
   }
 

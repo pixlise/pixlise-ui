@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, share, shareReplay } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, share, shareReplay, switchMap } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -30,6 +30,7 @@ import { DefaultDetectorId } from "src/app/expression-language/predefined-expres
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
 import { SpectrumDataService } from "../services/spectrum-data.service";
+import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 
 // What we consider to be a "roughness" item for the purposes of diffraction:
 const roughnessItemThreshold = 0.16;
@@ -79,6 +80,8 @@ export class ExpressionDataSource
   private _debug = false;
   private _prepTime = performance.now();
   private _lastTime = performance.now();
+
+  private _elevAngle: number = 0;
 
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
@@ -139,15 +142,24 @@ export class ExpressionDataSource
 
     // Once we obtained the indexes, we can retrieve everything else required
     return combineLatest([indexes, cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } }))]).pipe(
-      map((result: [number[], ScanListResp]) => {
-        this._scanEntryIndexesRequested = result[0];
+      switchMap((result: [number[], ScanListResp]) => {
+        const idxs = result[0];
 
-        this._encodedIndexes = encodeIndexList(result[0]);
+        this._scanEntryIndexesRequested = idxs;
+        this._encodedIndexes = encodeIndexList(idxs);
 
-        // Also save the instrument
-        if (result[1].scans.length > 0) {
-          this._instrument = scanInstrumentToJSON(result[1].scans[0].instrument);
+        const scanListResp = result[1];
+        if (scanListResp.scans.length <= 0) {
+          throw new Error("Failed to look up scan: " + scanId);
+        } else {
+          this._instrument = scanInstrumentToJSON(scanListResp.scans[0].instrument);
         }
+
+        return cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: scanListResp.scans[0].instrumentConfig })).pipe(
+          map((resp: DetectorConfigResp) => {
+            this._elevAngle = resp.config?.elevAngle || 0;
+          })
+        );
       })
     );
   }
@@ -450,7 +462,7 @@ export class ExpressionDataSource
   }
 
   getElevAngle(): number {
-    return 70;
+    return this._elevAngle;
   }
 
   async getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues> {
