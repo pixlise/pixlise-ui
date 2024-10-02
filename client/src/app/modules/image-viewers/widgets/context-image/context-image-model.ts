@@ -640,7 +640,14 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     if (!from.drawImage) {
       this.image = null;
     } else {
-      this.image = from.raw?.image || null;
+      // NOTE: we have a case here where the image isn't restored. If the raw data has no image, but DOES have an RGBU image
+      // we can would have to regenerate the display image. Because that's extra work, check in an existing drawer
+      // to see if it has an image, and reuse that
+      if (!from.raw?.image && from.raw?.rgbuSourceImage && from.drawModel.image) {
+        this.image = from.drawModel.image;
+      } else {
+        this.image = from.raw?.image || null;
+      }
     }
 
     // Apply brightness

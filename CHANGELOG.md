@@ -1,3 +1,8 @@
+## 4.47.0 (Latest)
+
+### Bug Fixes
+- Fixes export of context image being blank when RGBU image is selected
+
 ## 4.46.0 (Latest)
 
 ### Bug Fixes
