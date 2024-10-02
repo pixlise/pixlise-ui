@@ -1,9 +1,14 @@
-## 4.47.0 (Latest)
+## 4.48.0 (Latest)
+
+### Features
+- Lua expressions now support waiting on calculations by another expression to allow reducing the total amount of calculations on a given workspace tab.
+
+## 4.47.0 (2024-10-02)
 
 ### Bug Fixes
 - Fixes export of context image being blank when RGBU image is selected
 
-## 4.46.0 (Latest)
+## 4.46.0 (2024-10-02)
 
 ### Bug Fixes
 - Fixes issue with MIST ROI reproducibility column not being applied correctly to some scans
