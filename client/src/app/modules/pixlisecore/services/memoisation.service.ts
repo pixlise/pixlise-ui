@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService } from "./apidata.service";
-import { Observable, catchError, firstValueFrom, from, map, of } from "rxjs";
+import { Observable, firstValueFrom, from, map, of } from "rxjs";
 import { MemoiseWriteReq, MemoiseWriteResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetReq } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
@@ -9,8 +9,6 @@ import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SentryHelper } from "src/app/utils/utils";
-import { WSError } from "./wsMessageHandler";
-import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { environment } from "src/environments/environment";
 
 @Injectable({
@@ -39,7 +37,7 @@ export class MemoisationService {
     return from(this._localStorageService.clearUnsavedMemoData());
   }
 
-  memoise(key: string, data: Uint8Array): Observable<void> {
+  memoise(key: string, data: Uint8Array): Observable<MemoisedItem> {
     if (environment.skipMemoizeKeys.indexOf(key) > -1) {
       console.warn("Skipping memoisation of: " + key);
       return of();
@@ -58,7 +56,7 @@ export class MemoisationService {
       }
     }
 
-    console.debug("Memoised: " + key);
+    console.debug(`Memoising: ${key}...`);
 
     // Save it in memory (we'll update the time stamp soon)
     const ts = Date.now() / 1000;
@@ -81,13 +79,12 @@ export class MemoisationService {
 
         // Cache it to local storage
         this._localStorageService.storeMemoData(memoData);
-
-        return;
+        return memoData;
       })
     );
   }
 
-  get(key: string): Observable<MemoisedItem> {
+  getMemoised(key: string): Observable<MemoisedItem> {
     console.debug("Checking for memoised: " + key);
 
     // If we have it locally, stop here
@@ -105,7 +102,7 @@ export class MemoisationService {
             return memoData;
           } else {
             // Get from API
-            return await this.getFromAPI(key);
+            return firstValueFrom(this.getFromAPI(key));
           }
         })
         .catch(async err => {
@@ -117,36 +114,31 @@ export class MemoisationService {
           }
 
           // Get from API
-          return await this.getFromAPI(key);
+          return firstValueFrom(this.getFromAPI(key));
         })
     );
   }
 
-  private async getFromAPI(key: string): Promise<MemoisedItem> {
-    // Get from API
-    const apiResponse = await firstValueFrom(
-      this._dataService.sendMemoiseGetRequest(MemoiseGetReq.create({ key })).pipe(
-        map((resp: MemoiseGetResp) => {
-          if (!resp.item) {
-            const err = new Error("MemoiseGetResp returned empty message for key: " + key);
-            console.error(err);
-            throw err;
-          }
+  private getFromAPI(key: string): Observable<MemoisedItem> {
+    return this._dataService.sendMemoiseGetRequest(MemoiseGetReq.create({ key })).pipe(
+      map((resp: MemoiseGetResp) => {
+        if (!resp.item) {
+          const err = new Error("MemoiseGetResp returned empty message for key: " + key);
+          console.error(err);
+          throw err;
+        }
 
-          // Store it locally
-          this._local.set(key, resp.item);
-          this._localStorageService.storeMemoData(resp.item);
+        // Store it locally
+        this._local.set(key, resp.item);
+        this._localStorageService.storeMemoData(resp.item);
 
-          return resp.item;
-        }) /*,
-        catchError(err => {
-          console.log("Not memoised: " + key);
-          throw new Error(err);
-        })*/
-      )
+        return resp.item;
+      }) /*,
+      catchError(err => {
+        console.log("Not memoised: " + key);
+        throw new Error(err);
+      })*/
     );
-
-    return apiResponse;
   }
 
   // We should use hashes stored in the API or something...

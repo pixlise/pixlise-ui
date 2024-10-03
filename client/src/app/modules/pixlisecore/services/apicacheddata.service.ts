@@ -628,7 +628,7 @@ export class APICachedDataService {
   getCachedVariogramPoints(cacheKey: string): Observable<{ found: boolean; varioPoints: VariogramPoint[][] }> {
     let result = this._variogramPointsMap.get(cacheKey);
     if (result === undefined) {
-      return this._memoisationService.get(cacheKey).pipe(
+      return this._memoisationService.getMemoised(cacheKey).pipe(
         map(response => {
           if (response) {
             let varioPoints = this.convertMemoizedToVariogramPoints(response.data);

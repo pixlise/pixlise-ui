@@ -16,6 +16,10 @@ PIXLISE is deployed to https://www.pixlise.org
 * `/client` contains source code of angular client that runs as a single page web app
 * `/data-formats` git sub-module for data-formats repository should check out to here
 
+### Related repositories
+
+https://github.com/pixlise/periodic-table-gen contains the code generator for rawPeriodicTable.ts - in case it ever changes... not likely.
+
 ### Setting up for PIXLISE UI development
 - Pull down git sub-modules:
 Make sure you have the git submodules inited - pixlise now contains data-formats as a submodule. Once you have done a git clone of the pixlise repository, you will need to run:
