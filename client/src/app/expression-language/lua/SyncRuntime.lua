@@ -67,6 +67,6 @@ function writeCache(k, v)
     return writeCache_async(k, v):await()
 end
 
-function readCache(k)
-    return readCache_async(k):await()
+function readCache(k, w)
+    return readCache_async(k, w):await()
 end
