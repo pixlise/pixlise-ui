@@ -327,15 +327,15 @@ export class LuaDataQuerier {
     [
       "readCache_async",
       {
-        value: async (k: any) => {
-          const caller = `readCache(${k})`;
+        value: async (k: any, waitFlag: any) => {
+          const caller = `readCache(${k}, ${waitFlag})`;
 
           if (this._debugJSTiming) {
             console.log(caller);
             this._jsFuncCalls.push(caller);
           }
 
-          return this._dataSource!.getMemoised([k]);
+          return this._dataSource!.getMemoised([k, waitFlag]);
         },
         argsIfFunc: 1,
         debugTiming: true,

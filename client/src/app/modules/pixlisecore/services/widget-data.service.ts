@@ -61,6 +61,7 @@ import { BuiltInTags } from "../../tags/models/tag.model";
 import { SpectrumDataService } from "./spectrum-data.service";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
+import { ExpressionMemoisationService } from "./expression-memoisation.service";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -171,7 +172,8 @@ export class WidgetDataService {
     private _spectrumDataService: SpectrumDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
-    private _memoisationService: MemoisationService
+    private _memoisationService: MemoisationService,
+    private _exprMemoisationService: ExpressionMemoisationService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -365,7 +367,7 @@ export class WidgetDataService {
 
     // Try the local cache first
     // TODO: what if expression or ROI is edited??? We need to either clear the cache or store timestamps!
-    return this._memoisationService.get(cacheKey).pipe(
+    return this._memoisationService.getMemoised(cacheKey).pipe(
       map((item: MemoisedItem) => {
         // We got something! return this straight away...
         console.info("Query restored from memoised result: " + cacheKey);
@@ -425,7 +427,7 @@ export class WidgetDataService {
                 // Also, add to memoisation cache
                 if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
                   const encodedResult = this.toMemoised(result);
-                  this._memoisationService.memoise(cacheKey, encodedResult);
+                  this._memoisationService.memoise(cacheKey, encodedResult).subscribe();
                 }
 
                 return result;
@@ -659,7 +661,7 @@ export class WidgetDataService {
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._memoisationService);
+            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)
