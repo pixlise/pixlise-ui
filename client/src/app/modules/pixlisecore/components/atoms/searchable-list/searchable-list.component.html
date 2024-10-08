@@ -1,0 +1,21 @@
+<div>
+  <div class="search-btn" [matMenuTriggerFor]="menu" (onMenuOpen)="onItemSearchMenu()">
+    <img class="selected-icon" *ngIf="defaultItem?.icon" [src]="defaultItem?.icon" />
+    {{ defaultItem && value === defaultItem.id ? defaultItem.name : selectedItem ? nameFn(selectedItem) : value || placeholder }}
+    <action-button class="dropdown-btn" action="closeAccordion"></action-button>
+  </div>
+  <mat-menu #menu="matMenu" class="search-menu">
+    <div class="search-container">
+      <input class="item-search" [placeholder]="placeholder" [(ngModel)]="searchText" (click)="onAddItemSearchClick($event)" autofocus />
+    </div>
+    <button *ngIf="defaultItem" mat-menu-item (click)="onInternalSelect(defaultItem)">
+      <div class="option-container">
+        <img class="selected-icon" *ngIf="defaultItem?.icon" [src]="defaultItem?.icon" />
+        {{ defaultItem.name }}
+      </div>
+    </button>
+    <button mat-menu-item *ngFor="let item of addItemList" (click)="onInternalSelect(item)">
+      {{ nameFn(item) }}
+    </button>
+  </mat-menu>
+</div>

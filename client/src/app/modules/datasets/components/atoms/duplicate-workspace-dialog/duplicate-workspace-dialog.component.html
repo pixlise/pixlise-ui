@@ -1,0 +1,117 @@
+<div class="dlg-border-with-backdrop permissions-dlg duplicate-workspace-dialog">
+  <h1>Duplicate Workspace (Snapshot)</h1>
+  <h5 class="confirm-text">Creates a copy of the workspace layout, datasets, expressions, and ROIs.</h5>
+  <div class="input-container">
+    <h4>Workspace Name</h4>
+    <input class="text-field" [(ngModel)]="workspaceName" type="text" autocomplete="off" data-lpignore="true" [placeholder]="workspacePlaceholder" />
+  </div>
+  <div class="replaceable-products">
+    <div class="header">
+      <h4>Datasets & ROIs</h4>
+      <div class="replace">
+        <h5>Replace</h5>
+        <switch-button [active]="replaceDataProducts" (onToggle)="replaceDataProducts = !replaceDataProducts" [disabled]="!canReplaceDataProducts"></switch-button>
+      </div>
+    </div>
+    <div class="datasets">
+      <div *ngFor="let datasetProduct of datasetProducts" class="dataset">
+        <div class="dataset-header">
+          <div class="product-current">
+            <action-button
+              (onClick)="datasetProduct.accordionOpen = !datasetProduct.accordionOpen"
+              [action]="datasetProduct.accordionOpen ? 'closeAccordion' : 'openAccordion'"></action-button>
+            <img src="assets/icons/datasets.svg" alt="Dataset" />
+            <h5 [ngStyle]="{ 'max-width': replaceDataProducts ? '175px' : '300px' }">{{ datasetProduct?.scanItem?.title || "N/A" }}</h5>
+          </div>
+          <div *ngIf="replaceDataProducts" class="product-replace">
+            <!-- <push-button [matMenuTriggerFor]="menu">Scan</push-button>
+            <mat-menu #menu="matMenu" class="scan-menu">
+              <div class="search-container">
+                <input class="scan-search" placeholder="Search scans" [(ngModel)]="scanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
+              </div>
+              <button
+                mat-menu-item
+                *ngFor="let scan of addScanList"
+                (click)="idReplacements[datasetProduct.scanItem.id] = scan.id"
+                [disabled]="idReplacements[datasetProduct.scanItem.id] === scan.id">
+                Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
+              </button>
+            </mat-menu> -->
+            <searchable-list
+              [nameFn]="getScanName"
+              [items]="allScans"
+              [defaultItem]="{ id: 'no-replace', name: 'Don\'t Replace', icon: 'assets/icons/arrow-right.svg' }"
+              [value]="idReplacements[datasetProduct.scanItem.id] || 'no-replace'"
+              (onSelect)="idReplacements[datasetProduct.scanItem.id] = $event.id"></searchable-list>
+            <!-- <mat-select
+              class="replace-select"
+              [value]="idReplacements[datasetProduct.scanItem.id] || 'no-replace'"
+              (selectionChange)="idReplacements[datasetProduct.scanItem.id] = $event.value">
+              <mat-select-trigger>
+                <div
+                  class="content"
+                  *ngIf="
+                    !idReplacements[datasetProduct.scanItem.id] ||
+                    idReplacements[datasetProduct.scanItem.id] === 'no-replace' ||
+                    idReplacements[datasetProduct.scanItem.id] === datasetProduct.scanItem.id
+                  ">
+                  <img src="assets/icons/arrow-right.svg" />Don't Replace
+                </div>
+                <div
+                  class="content"
+                  *ngIf="
+                    idReplacements[datasetProduct.scanItem.id] &&
+                    idReplacements[datasetProduct.scanItem.id] !== 'no-replace' &&
+                    idReplacements[datasetProduct.scanItem.id] !== datasetProduct.scanItem.id
+                  ">
+                  {{ idReplacements[datasetProduct.scanItem.id] }}
+                </div>
+              </mat-select-trigger>
+
+              <mat-option [value]="scan.id" *ngFor="let scan of allScans">{{ scan.title }}</mat-option>
+              <mat-option class="no-replace" value="no-replace">
+                <div class="content"><img src="assets/icons/arrow-right.svg" /> Don't Replace</div>
+              </mat-option>
+            </mat-select> -->
+          </div>
+        </div>
+        <div *ngIf="datasetProduct.accordionOpen" class="dataset-products">
+          <div *ngIf="datasetProduct.quants.length === 0 && datasetProduct.rois.length === 0" class="no-products">
+            <h5>No Quants or ROIs to replace</h5>
+          </div>
+          <div *ngFor="let quant of datasetProduct.quants" class="product">
+            <div class="product-current">
+              <img src="assets/icons/quant.svg" />
+              <h5 [ngStyle]="{ 'max-width': replaceDataProducts ? '175px' : '300px' }">{{ quant.params?.userParams?.["name"] || "N/A" }}</h5>
+            </div>
+            <div *ngIf="replaceDataProducts" class="product-replace">
+              <mat-select class="replace-select" [value]="idReplacements[quant.id] || 'no-replace'">
+                <mat-option [value]="quant.id" *ngFor="let quant of quantsForScans[datasetProduct.scanItem.id] || []">{{
+                  quant.params?.userParams?.["name"] || quant.id
+                }}</mat-option>
+                <mat-option value="no-replace"> <img src="assets/icons/arrow-right.svg" /> Don't Replace</mat-option>
+              </mat-select>
+            </div>
+          </div>
+          <div *ngFor="let roi of datasetProduct.rois" class="product">
+            <div class="product-current">
+              <img src="assets/icons/roi.svg" />
+              <h5 [ngStyle]="{ 'max-width': replaceDataProducts ? '175px' : '300px' }">{{ roi?.name }}</h5>
+            </div>
+            <div *ngIf="replaceDataProducts" class="product-replace">
+              <mat-select class="replace-select" [value]="idReplacements[roi.id] || 'no-replace'">
+                <mat-option [value]="roi.id" *ngFor="let roi of roisForScans[datasetProduct.scanItem.id]">{{ roi.name }}</mat-option>
+                <mat-option value="no-replace"> <img src="assets/icons/arrow-right.svg" /> Don't Replace</mat-option>
+              </mat-select>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="replaceDataProducts" class="replace-divider"></div>
+      </div>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+      <push-button class="cancel-btn" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onConfirm()">Duplicate</push-button>
+    </div>
+  </div>
+</div>

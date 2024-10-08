@@ -66,6 +66,8 @@ import { TextFileViewingDialogComponent } from "./components/atoms/text-file-vie
 import { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 import { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
 import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
+import { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
+import { MatMenuModule } from "@angular/material/menu";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -85,6 +87,7 @@ export { TableComponent } from "./components/atoms/table/table.component";
 export { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 export { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
 export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
+export { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 
 @NgModule({
   declarations: [
@@ -141,8 +144,9 @@ export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-b
     TextFileViewingDialogComponent,
     LayoutPreviewBox,
     UserIconComponent,
+    SearchableListComponent,
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule],
+  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule, MatMenuModule],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,
@@ -192,6 +196,7 @@ export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-b
     TextFileViewingDialogComponent,
     LayoutPreviewBox,
     UserIconComponent,
+    SearchableListComponent,
   ],
   providers: [
     /*APICommService, APIDataService*/

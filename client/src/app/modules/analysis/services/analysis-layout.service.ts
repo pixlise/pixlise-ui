@@ -629,10 +629,10 @@ export class AnalysisLayoutService implements OnDestroy {
     return this.availableScanQuants$.value[scanId]?.find(quant => quant.id === quantId);
   }
 
-  getLoadedROIIDsFromActiveScreenConfiguration(): string[] {
+  getROIIDsFromScreenConfiguration(screenConfiguration: ScreenConfiguration): string[] {
     let rois: string[] = [];
 
-    this.activeScreenConfiguration$.value?.layouts.forEach(layout => {
+    screenConfiguration.layouts.forEach(layout => {
       layout.widgets.forEach(widget => {
         if (widget?.data && widget?.type) {
           let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
@@ -681,6 +681,14 @@ export class AnalysisLayoutService implements OnDestroy {
     rois = Array.from(new Set(rois));
 
     return rois;
+  }
+
+  getLoadedROIIDsFromActiveScreenConfiguration(): string[] {
+    if (!this.activeScreenConfiguration$.value) {
+      return [];
+    }
+
+    return this.getROIIDsFromScreenConfiguration(this.activeScreenConfiguration$.value);
   }
 
   private _getAllLoadedExpressionIdsFromActiveScreenConfiguration(): string[] {
