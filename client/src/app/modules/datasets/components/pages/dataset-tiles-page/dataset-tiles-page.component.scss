@@ -416,6 +416,8 @@ input {
     margin-left: 8px;
 
     .cell {
+      cursor: pointer;
+      user-select: none;
       display: flex;
       align-items: center;
       width: 20%;
@@ -426,13 +428,17 @@ input {
       font-feature-settings:
         "clig" off,
         "liga" off;
-      /* Interface/Bold */
       font-family: Inter;
       font-size: 12px;
       font-style: normal;
       font-weight: 700;
       line-height: normal;
       letter-spacing: 0.18px;
+
+      .active-sort-container {
+        display: flex;
+        align-items: center;
+      }
     }
   }
 
@@ -487,6 +493,7 @@ input {
         display: flex;
         padding: 0px 6px;
         margin-right: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.24);
       }
 
       &.workspace-tags {
@@ -530,5 +537,189 @@ input {
         flex: 0 !important;
       }
     }
+  }
+}
+
+.tab {
+  &.snapshots {
+    .snapshots-container {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 445px);
+      overflow-y: auto;
+
+      .snapshot {
+        display: flex;
+        align-items: center;
+        border: 1px solid #293137;
+        background: #222829;
+
+        .info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 8px;
+
+          .snapshot-date {
+            color: #bcbcbc;
+          }
+        }
+
+        .action-btns {
+          display: flex;
+          align-items: center;
+          margin-left: auto;
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+}
+
+.cell {
+  &.workspace-creator {
+    width: 60px !important;
+    justify-content: center;
+  }
+
+  &.workspace-title {
+    width: 30% !important;
+  }
+
+  &.workspace-datasets {
+    width: 15% !important;
+  }
+
+  &.workspace-snapshots {
+    width: 120px !important;
+
+    .snapshot-count-container {
+      display: flex;
+      width: 100%;
+
+      justify-content: center;
+
+      .snapshot-count {
+        border-radius: 16px;
+        background: #444c50;
+        display: flex;
+        padding: 0px 16px;
+        margin-right: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.24);
+
+        &.empty {
+          color: #bcbcbc;
+        }
+
+        &.has-snapshots {
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}
+
+.new-workspace-dialog {
+  width: 400px;
+
+  .title {
+    display: flex;
+    align-items: center;
+
+    h1 {
+      margin-right: auto;
+    }
+  }
+
+  h5 {
+    color: rgb(var(--clr-gray-30));
+    margin: 0;
+  }
+
+  .input-container {
+    display: flex;
+    margin-bottom: 8px;
+
+    input {
+      background-color: rgb(68, 76, 80);
+      color: rgb(190, 192, 194);
+      border: 1px solid rgb(84, 95, 100);
+      border-radius: 4px;
+    }
+
+    textarea {
+      width: 100%;
+    }
+  }
+
+  .scan-select-container {
+    margin-bottom: 8px;
+    gap: 4px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .button-container {
+    display: flex;
+    align-items: center;
+
+    .cancel-btn {
+      margin-right: auto;
+    }
+  }
+
+  .selected-scans-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .selected-scan {
+      display: flex;
+      align-items: center;
+      padding: 4px 8px;
+      margin: 4px;
+      border-radius: 4px;
+      background: #444c50;
+      color: #bcbcbc;
+      justify-content: space-between;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 105px;
+      max-width: 175px;
+      overflow: hidden;
+      border: 1px solid rgb(84, 95, 100);
+
+      .selected-scan-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .empty-field {
+      color: #bcbcbc;
+      height: 45px;
+      align-items: center;
+      display: flex;
+    }
+  }
+}
+
+.search-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  .scan-search {
+    width: calc(100% - 6px);
+    min-width: 258px;
+    height: 24px;
+    border-radius: 0;
+
+    background-color: rgb(68, 76, 80);
+    color: rgb(190, 192, 194);
+    border: 1px solid rgb(84, 95, 100);
   }
 }

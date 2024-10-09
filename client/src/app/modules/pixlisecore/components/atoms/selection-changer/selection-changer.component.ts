@@ -27,11 +27,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { UNICODE_CARET_DOWN } from "src/app/utils/utils";
-import { SelectionService } from "../../../pixlisecore.module";
+import { ContextImageDataService, SelectionService, SnackbarService } from "../../../pixlisecore.module";
 import { SelectionHistoryItem } from "../../../services/selection.service";
 import {
   SelectionOptionsDialogData,
@@ -44,12 +44,22 @@ import { APICachedDataService } from "../../../services/apicacheddata.service";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
+export class SelectionChangerImageInfo {
+  constructor(
+    public scanIds: string[],
+    public image: string,
+    public contextImageSvc: ContextImageDataService
+  ) {}
+}
+
 @Component({
   selector: "selection-changer",
   templateUrl: "./selection-changer.component.html",
   styleUrls: ["./selection-changer.component.scss"],
 })
 export class SelectionChangerComponent implements OnInit, OnDestroy {
+  @Input() imageInfo: SelectionChangerImageInfo | undefined = undefined;
+
   private _subs = new Subscription();
 
   private _defaultLeftText = "No Selection";
@@ -62,6 +72,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     private _selectionService: SelectionService,
     private _userOptionsService: UserOptionsService,
     private _cachedDataService: APICachedDataService,
+    private _snackServie: SnackbarService,
     public dialog: MatDialog
   ) {}
 
@@ -125,6 +136,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     dialogConfig.data = new SelectionOptionsDialogData(
       this._hasDwells.get(this._analysisLayoutService.defaultScanId) || false, // Only show dwell if we have any
       this.userCanCreateROI,
+      !!this.imageInfo && !!this.imageInfo.contextImageSvc,
       allScanIds,
       new ElementRef(event.currentTarget)
     );
@@ -149,6 +161,15 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
         this._selectionService.selectAllPMCs([choice.value]);
       } else if (choice.result == SelectionOption.SEL_INVERT) {
         this._selectionService.invertPMCSelection(this.getSelectionScanIds());
+      } else if (choice.result == SelectionOption.SEL_NEARBY_PIXELS) {
+        if (this.imageInfo && this.imageInfo.scanIds.length > 0) {
+          this._selectionService.selectNearbyPixels(this.imageInfo?.scanIds, this.imageInfo?.contextImageSvc);
+        } else {
+          this._snackServie.openWarning(
+            "Cannot select pixels when viewing non-RGBU image",
+            "Select Nearby Pixels requires an RGBU image to be visible on context image"
+          );
+        }
       } else {
         alert("Error: selection failed - not implemented!");
       }

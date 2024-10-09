@@ -27,12 +27,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/core";
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { AuthService } from "@auth0/auth0-angular";
 import { Subscription } from "rxjs";
+import { BackupDBReq, BackupDBResp, DBAdminConfigGetReq, DBAdminConfigGetResp, RestoreDBReq, RestoreDBResp } from "src/app/generated-protos/system";
 import { UserDetails } from "src/app/generated-protos/user";
 import { UserGroupRelationship } from "src/app/generated-protos/user-group";
+import { UserImpersonateGetReq, UserImpersonateGetResp, UserImpersonateReq, UserImpersonateResp } from "src/app/generated-protos/user-management-msgs";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
@@ -41,7 +44,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
   templateUrl: "./user-menu-panel.component.html",
   styleUrls: ["./user-menu-panel.component.scss"],
 })
-export class UserMenuPanelComponent {
+export class UserMenuPanelComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
   @Output() close = new EventEmitter();
 
@@ -59,6 +62,11 @@ export class UserMenuPanelComponent {
   isOpen = false;
 
   isAdminOfAnyGroup = false;
+  isPIXLISEAdmin = false;
+  impersonateUserEnabled = false;
+  impersonatingUserName: string | undefined;
+  backupEnabled = false;
+  restoreEnabled = false;
 
   trigger: any;
 
@@ -67,7 +75,9 @@ export class UserMenuPanelComponent {
     private _route: ActivatedRoute,
     private _groupsService: GroupsService,
     private _authService: AuthService,
-    private _userOptionsService: UserOptionsService
+    private _userOptionsService: UserOptionsService,
+    private _dataService: APIDataService,
+    private _snackService: SnackbarService
   ) {}
 
   ngOnInit(): void {
@@ -79,9 +89,33 @@ export class UserMenuPanelComponent {
 
     this._subs.add(
       this._groupsService.groupsChanged$.subscribe(() => {
+        this.isPIXLISEAdmin = this._userOptionsService.hasFeatureAccess("admin"); // TODO: is this right??
         this.isAdminOfAnyGroup =
           this._userOptionsService.hasFeatureAccess("admin") ||
           !!this._groupsService.groups.find(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN);
+
+        // Now if we're PIXLISE admins, check if we're impersonating anyone
+        if (this.isPIXLISEAdmin) {
+          this._subs.add(
+            this._dataService.sendDBAdminConfigGetRequest(DBAdminConfigGetReq.create({})).subscribe((resp: DBAdminConfigGetResp) => {
+              this.backupEnabled = resp.canBackup;
+              this.restoreEnabled = resp.canRestore;
+              this.impersonateUserEnabled = resp.impersonateEnabled;
+
+              if (this.impersonateUserEnabled) {
+                this._subs.add(
+                  this._dataService.sendUserImpersonateGetRequest(UserImpersonateGetReq.create({})).subscribe((resp: UserImpersonateGetResp) => {
+                    if (resp.sessionUser && resp.sessionUser.id.length > 0) {
+                      this.impersonatingUserName = resp.sessionUser?.name || resp.sessionUser?.email || resp.sessionUser?.id || "UNKNOWN";
+                    } else {
+                      this.impersonatingUserName = "";
+                    }
+                  })
+                );
+              }
+            })
+          );
+        }
       })
     );
   }
@@ -127,5 +161,57 @@ export class UserMenuPanelComponent {
 
   get dataCollectionActive(): boolean {
     return this._userOptionsService.currentDataCollectionAgreementAccepted;
+  }
+
+  onImpersonate() {
+    let userId = "";
+    if (this.impersonatingUserName !== undefined && this.impersonatingUserName.length <= 0) {
+      // Ask who to impersonate
+      userId = prompt("Enter user id to impersonate (or blank to stop impersonating)") || "";
+      if (!userId) {
+        return;
+      }
+    }
+
+    this._dataService.sendUserImpersonateRequest(UserImpersonateReq.create({ userId })).subscribe({
+      next: (resp: UserImpersonateResp) => {
+        if (resp.sessionUser && resp.sessionUser.id) {
+          this._snackService.openSuccess(
+            `Reload PIXLISE tab to impersonate user: ${resp.sessionUser?.name}, email: ${resp.sessionUser?.email}, user id: ${resp.sessionUser?.id}`
+          );
+        } else {
+          this._snackService.openSuccess(`Reload PIXLISE tab to stop impersonation`)
+        }
+      },
+      error: err => {
+        this._snackService.openError("Failed to impersonate user", err);
+      },
+    });
+  }
+
+  onBackupData() {
+    if (confirm("Are you sure you want to start a PIXLISE backup operation? This will take a while...")) {
+      this._dataService.sendBackupDBRequest(BackupDBReq.create({})).subscribe({
+        next: (resp: BackupDBResp) => {
+          this._snackService.open("Backup started");
+        },
+        error: err => {
+          this._snackService.openError("Backup failed", err);
+        }
+      });
+    }
+  }
+
+  onRestoreData() {
+    if (confirm("Are you sure you want to restore the PIXLISE backup?")) {
+      this._dataService.sendRestoreDBRequest(RestoreDBReq.create({})).subscribe({
+        next: (resp: RestoreDBResp) => {
+          this._snackService.open("Restore started");
+        },
+        error: err => {
+          this._snackService.openError("Restore failed", err);
+        }
+      });
+    }
   }
 }

@@ -39,8 +39,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <span class="name-line">
         <input class="text-field" [(ngModel)]="workspaceName" type="text" autocomplete="off" data-lpignore="true" [placeholder]="placeholderName" />
         <tag-picker type="workspace" [selectedTagIDs]="workspaceTags" [showCurrentTagsSection]="true" (onTagSelectionChanged)="onTagChange($event)"></tag-picker>
-        <!-- <share-ownership-item-button [id]="screenConfig?.id || ''" [ownershipSummary]="screenConfig?.owner || null" [type]="objectType">
-        </share-ownership-item-button> -->
       </span>
     </div>
     <div class="workspace-field description-field">
@@ -68,16 +66,46 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
   </div>
 
-  <h5 class="tabs-label">Tabs</h5>
-  <div class="tabs-container">
-    <div class="user-tabs">
+  <div class="configuration-tabs">
+    <h5 (click)="activeConfigurationTab = 'workspace'" class="tabs-label tab {{ activeConfigurationTab === 'workspace' ? 'active' : '' }}">Tabs</h5>
+    <h5 (click)="activeConfigurationTab = 'snapshots'" class="sharing-label tab {{ activeConfigurationTab === 'snapshots' ? 'active' : '' }}">
+      Sharing {{ snapshots.length > 0 ? "(" + snapshots.length + " snapshots)" : "" }}
+    </h5>
+  </div>
+  <div *ngIf="activeConfigurationTab === 'workspace'" class="tabs-container">
+    <div class="user-tabs" cdkDropList (cdkDropListDropped)="dropTab($event)">
+      <div
+        class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }}"
+        *ngFor="let tab of builtInTabs; let i = index"
+        #tooltip="matTooltip"
+        [matTooltip]="tab.tooltip || ''"
+        [matTooltipShowDelay]="1000">
+        <div class="tab-info">
+          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
+          <div *ngIf="tab.label" class="tab-label">
+            <span *ngIf="editingTabIndex !== i" class="view-label" (dblclick)="onEditTab(tab, i)">{{ tab.label }}</span>
+            <input *ngIf="editingTabIndex === i" class="edit-label" [(ngModel)]="newTabName" type="text" autocomplete="off" data-lpignore="true" />
+          </div>
+        </div>
+        <action-button
+          *ngIf="canDeleteTab(tab)"
+          class="delete-tab"
+          action="delete"
+          color="#BCBCBC"
+          confirmText="Are you sure you want to delete this tab?"
+          (onClick)="onCloseTab(tab)"></action-button>
+      </div>
       <div
         class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }}"
         *ngFor="let tab of openTabs; let i = index"
         #tooltip="matTooltip"
         [matTooltip]="tab.tooltip || ''"
-        [matTooltipShowDelay]="1000">
+        [matTooltipShowDelay]="1000"
+        cdkDrag
+        [cdkDragData]="tab"
+        cdkDragLockAxis="y">
         <div class="tab-info">
+          <img cdkDragHandle class="drag-icon" src="assets/button-icons/drag-handle.svg" />
           <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
           <div *ngIf="tab.label" class="tab-label">
             <span *ngIf="editingTabIndex !== i" class="view-label" (dblclick)="onEditTab(tab, i)">{{ tab.label }}</span>
@@ -100,6 +128,31 @@ POSSIBILITY OF SUCH DAMAGE.
           color="#BCBCBC"
           confirmText="Are you sure you want to delete this tab?"
           (onClick)="onCloseTab(tab)"></action-button>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="activeConfigurationTab === 'snapshots'" class="snapshots-container">
+    <push-button class="share-btn" buttonStyle="gray-title" (onClick)="onShareSnapshot()">
+      <div class="share-btn-title">
+        <img src="assets/button-icons/share.svg" />
+        <span class="label">Share workspace snapshot</span>
+      </div>
+    </push-button>
+    <div class="existing-snapshots">
+      <div class="snapshot" *ngFor="let snapshot of snapshots; let i = index">
+        <div class="snapshot-info">
+          <div class="snapshot-name" #tooltip="matTooltip" [matTooltip]="snapshot.name" [matTooltipDisabled]="!snapshot.name || snapshot.name.length < 30">
+            {{ snapshot.name ? snapshot.name : "N/A" }}
+          </div>
+          <div class="snapshot-date">{{ (snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
+        </div>
+        <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot)"></action-button>
+        <action-button
+          class="snapshot-delete"
+          action="delete"
+          color="#BCBCBC"
+          confirmText="Are you sure you want to delete this snapshot?"
+          (onClick)="onDeleteSnapshot(snapshot)"></action-button>
       </div>
     </div>
   </div>

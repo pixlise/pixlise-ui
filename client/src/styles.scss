@@ -347,6 +347,7 @@ h3 {
 
 .mdc-tooltip__surface {
   max-width: fit-content !important;
+  box-shadow: 0px 0px 8px 0px rgb(0 0 0 / 50%);
 }
 
 .role-option {
@@ -504,4 +505,25 @@ h3 {
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
   --mdc-typography-button-font-weight: 800;
+}
+
+.new-color {
+  color-picker {
+    .color-picker {
+      background-color: #2a3137;
+
+      .box {
+        input {
+          background: #454c50;
+          color: rgb(var(--clr-gray-30));
+        }
+      }
+
+      .hue {
+        .cursor {
+          border-color: white;
+        }
+      }
+    }
+  }
 }

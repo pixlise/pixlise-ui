@@ -10,7 +10,7 @@ import {
 import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
-import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
+import { JobStatus_JobType, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 
 // NOTE: This is scoped to the spectrum widget (and its children) ONLY!
 
@@ -32,17 +32,23 @@ export class SpectrumService implements OnDestroy {
     this._subs.add(
       this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
         if (!upd.status) {
-          this._snackBarService.openError("Quantification job update did not include job status");
+          // Only complain if it also didn't contain result data - as it might be a quant fit job that just completed
+          if (!upd.resultData) {
+            this._snackBarService.openError("Quantification job update did not include job status");
+          }
         } else {
-          const msg = `Quantification ${jobStatus_StatusToJSON(upd.status.status)}: ${upd.status.message}`;
-          const detail = `Job Id is: ${upd.status.jobId}`;
+          // Only show quant map jobs which are long-lived, not quant fit/other short jobs
+          if (upd.status.jobType == JobStatus_JobType.JT_RUN_QUANT) {
+            const msg = `Quantification ${jobStatus_StatusToJSON(upd.status.status)}: ${upd.status.message}`;
+            const detail = `Job Id is: ${upd.status.jobId}`;
 
-          if (upd.status.status == JobStatus_Status.COMPLETE) {
-            this._snackBarService.openSuccess(msg, detail);
-          } else if (upd.status.status == JobStatus_Status.ERROR) {
-            this._snackBarService.openError(msg, detail);
-          } else {
-            this._snackBarService.open(msg, detail);
+            if (upd.status.status == JobStatus_Status.COMPLETE) {
+              this._snackBarService.openSuccess(msg, detail);
+            } else if (upd.status.status == JobStatus_Status.ERROR) {
+              this._snackBarService.openError(msg, detail);
+            } else {
+              this._snackBarService.open(msg, detail);
+            }
           }
         }
       })

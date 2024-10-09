@@ -37,10 +37,11 @@ import { SpectrumService } from "../../../services/spectrum.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { QuantCreateReq, QuantCreateResp } from "src/app/generated-protos/quantification-create";
+import { QuantCreateReq, QuantCreateResp, QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { QuantLastOutputGetReq, QuantLastOutputGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import saveAs from "file-saver";
 import { QuantOutputType } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 
 export class SpectrumFitData {
   constructor(
@@ -50,6 +51,8 @@ export class SpectrumFitData {
 }
 
 const NoFitYetMessage = "Please generate a fit first from Run PIQUANT tab via the Spectral Fit mode.";
+const GeneratingFitMessage = "Generating fit lines";
+const LoadingLastFitMessage = "Loading last fit";
 
 @Component({
   selector: "spectrum-fit",
@@ -60,6 +63,8 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   message: string = NoFitYetMessage;
+  waiting: boolean = false;
+  waitMessage: string = "";
   quantificationEnabled: boolean = false;
 
   constructor(
@@ -96,11 +101,15 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
       })
     );
 
+    const scanId = this.getSingleScanId();
+    if (scanId.length <= 0) {
+      return;
+    }
+
     if (!this._spectrumService.mdl.fitRawCSV) {
-      const scanId = this.getSingleScanId();
-      if (scanId.length <= 0) {
-        return;
-      }
+      // Try to load the last fit data
+      this.waiting = true;
+      this.waitMessage = LoadingLastFitMessage;
 
       this._dataService
         .sendQuantLastOutputGetRequest(
@@ -113,12 +122,27 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (resp: QuantLastOutputGetResp) => {
             const csv = resp.output;
+            this.waiting = false;
+            this.waitMessage = "";
             this._spectrumService.mdl.setFitLineData(scanId, csv);
           },
           error: err => {
+            this.waiting = false;
+            this.waitMessage = "";
             console.log(httpErrorToString(err, "Failed to retrieve last fit CSV, maybe there wasn't one"));
           },
         });
+    }
+
+    // Check if we have an id we're waiting for
+    if (this._spectrumService.mdl.fitIdWaitingFor.length > 0) {
+      // Show the wait state
+      this.waiting = true;
+      this.waitMessage = GeneratingFitMessage;
+      this.message = "";
+
+      // Wait for to update so we know when to get out of wait mode
+      this.listenForQuantFitUpdate(scanId, this._spectrumService.mdl.fitIdWaitingFor);
     }
   }
 
@@ -214,26 +238,66 @@ export class SpectrumFitContainerComponent implements OnInit, OnDestroy {
       // We've got the params, now pass to PIQUANT
       this._snackBarService.openSuccess("Generating fit with PIQUANT quant command... (may take 1-2 minutes)");
 
+      this.waiting = true;
+      this.waitMessage = GeneratingFitMessage;
+      this.message = "";
+
       this._dataService.sendQuantCreateRequest(QuantCreateReq.create({ params: createdParams })).subscribe({
         next: (resp: QuantCreateResp) => {
           if (!resp.status) {
             this._snackBarService.openError("Fit start did not return job status");
+            this.waiting = false;
           } else {
-            if (!resp.resultData || resp.resultData.byteLength <= 0) {
-              this._snackBarService.openError("Fit did not return result data");
-            } else {
-              // The returned data is a CSV, so don't print it!
-              console.log("PIQUANT returned " + resp.resultData.byteLength + " bytes");
+            // Ensure job was started
+            if (resp.status.status == JobStatus_Status.ERROR) {
+              this.waiting = false;
+              this._snackBarService.openError(`PIQUANT Fit failed to start, error: started with unexpected status: ${resp.status.message}`);
+            } else if (resp.status.status == JobStatus_Status.STARTING) {
+              this._snackBarService.open("PIQUANT Fit started", "This may take 1-2 minutes, please wait and the result will be displayed");
+              this._spectrumService.mdl.fitIdWaitingFor = resp.status.jobId; // Remember the job id in case this dialog is closed/reopened
 
-              const csv = new TextDecoder().decode(resp.resultData);
-              this._spectrumService.mdl.setFitLineData(createdParams.scanId, csv);
+              // At this point we subscribe to updates to listen for status changes
+              this.listenForQuantFitUpdate(createdParams.scanId, resp.status.jobId);
+            } else {
+              this.waiting = false;
+              this._snackBarService.openError(`Fit started with unexpected status: ${jobStatus_StatusToJSON(resp.status.status)}. Message: ${resp.status.message}`);
             }
           }
         },
         error: err => {
           this._snackBarService.openError("Failed to generate fit lines with PIQUANT. See logs", err);
+          this.waiting = false;
         },
       });
+    });
+  }
+
+  private listenForQuantFitUpdate(scanId: string, jobId: string) {
+    const s = this._dataService.quantCreateUpd$.subscribe({
+      next: (upd: QuantCreateUpd) => {
+        if (upd.status && upd.status.jobId === jobId) {
+          this.waiting = false;
+
+          if (upd.status.status == JobStatus_Status.COMPLETE) {
+            // Should have result data!
+            if (upd.resultData && upd.resultData.byteLength > 0) {
+              // The returned data is a CSV, so don't print it!
+              console.log("PIQUANT returned " + upd.resultData.byteLength + " bytes");
+
+              const csv = new TextDecoder().decode(upd.resultData);
+              this._spectrumService.mdl.setFitLineData(scanId, csv);
+            } else {
+              this._snackBarService.openError("PIQUANT Fit did not return result data");
+            }
+
+            s.unsubscribe();
+          }
+        }
+      },
+      error: err => {
+        this.waiting = false;
+        this._snackBarService.openError(`PIQUANT Fit status update encountered an error: ${err}`);
+      },
     });
   }
 }

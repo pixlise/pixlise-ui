@@ -30,12 +30,11 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
-import { SentryHelper } from "src/app/utils/utils";
 
 @Component({
   selector: "scan-configuration",
@@ -95,13 +94,36 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   loadScreenConfiguration(screenConfig: ScreenConfiguration) {
     this.scanConfigurations = Object.values(JSON.parse(JSON.stringify(screenConfig.scanConfigurations)));
     this.selectedScanIds = new Set<string>();
-    this.scanConfigurations.forEach(config => {
-      this.selectedScanIds.add(config.id);
-      this._analysisLayoutService.fetchQuantsForScan(config.id);
+
+    let quantReqs = this.scanConfigurations.map(config => {
+      return this._analysisLayoutService.fetchQuantsForScanAsync(config.id);
     });
 
-    this.sortScans();
-    this.hasConfigChanged = false;
+    combineLatest(quantReqs).subscribe(scans => {
+      let updatedScan = false;
+      scans.forEach((quants, i) => {
+        let scanConfig = this.scanConfigurations[i];
+        this.scanQuants[scanConfig.id] = quants;
+
+        // If the scan has quants, but no selected quant id, set the default quant
+        if (!scanConfig.quantId && quants && quants.length > 0) {
+          let defaultQuant = this._analysisLayoutService.getDefaultQuant(quants);
+
+          if (defaultQuant) {
+            scanConfig.quantId = defaultQuant.id;
+            updatedScan = true;
+          }
+        }
+      });
+
+      this.sortScans();
+      if (updatedScan) {
+        this.hasConfigChanged = true;
+        this.onSave();
+      } else {
+        this.hasConfigChanged = false;
+      }
+    });
   }
 
   private sortScans() {
@@ -169,10 +191,26 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
       this.scanSearchText = "";
     }, 500);
 
-    this._analysisLayoutService.fetchQuantsForScan(scanId);
+    this._analysisLayoutService.fetchQuantsForScan(scanId, quants => {
+      this.scanQuants[scanId] = quants;
+      if (quants) {
+        let defaultQuant = this._analysisLayoutService.getDefaultQuant(quants);
 
-    this.scanConfigurations.push(ScanConfiguration.create({ id: scanId }));
-    this.selectedScanIds.add(scanId);
+        if (defaultQuant) {
+          this.scanConfigurations.push(ScanConfiguration.create({ id: scanId, quantId: defaultQuant.id }));
+        } else {
+          this.scanConfigurations.push(ScanConfiguration.create({ id: scanId }));
+        }
+      } else {
+        this.scanConfigurations.push(ScanConfiguration.create({ id: scanId }));
+      }
+
+      this.selectedScanIds.add(scanId);
+
+      // Save the configuration
+      this.hasConfigChanged = true;
+      this.onSave();
+    });
   }
 
   onRemoveConfiguration(scanId: string) {
@@ -186,6 +224,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     if (index >= 0) {
       this.scanConfigurations[index] = config;
       this.hasConfigChanged = true;
+      this.onSave();
     }
   }
 

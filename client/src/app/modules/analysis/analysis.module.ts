@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { AnalysisPageComponent } from "./pages/analysis-page/analysis-page.component";
 import { RouterModule, Routes } from "@angular/router";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 import { AnalysisSidepanelComponent } from "./components/analysis-sidepanel/analysis-sidepanel.component";
 import { ROITabComponent } from "./components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { ROIModule } from "../roi/roi.module";
@@ -88,6 +89,7 @@ const APP_ROUTES: Routes = [
     MatButtonModule,
     MatMenuModule,
     MarkdownModule,
+    DragDropModule,
   ],
   exports: [AnalysisPageComponent, NewTabPageComponent, AnalysisSidepanelComponent],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!

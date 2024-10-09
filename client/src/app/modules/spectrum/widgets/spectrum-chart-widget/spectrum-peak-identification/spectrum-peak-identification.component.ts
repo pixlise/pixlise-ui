@@ -38,8 +38,10 @@ import { SpectrumChartModel } from "../spectrum-model";
 import { QuantJobsComponent } from "./tabs/quant-jobs.component";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
-import { JobStatus_Status } from "src/app/generated-protos/job";
+import { JobStatus_JobType, JobStatus_Status } from "src/app/generated-protos/job";
 import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
+import { AuthService } from "@auth0/auth0-angular";
+import { Permissions } from "src/app/utils/permissions";
 
 export class SpectrumPeakIdentificationData {
   constructor(
@@ -67,9 +69,12 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
 
   jobsRunning: number = 0;
 
+  userCanViewQuantJobs: boolean = false;
+
   constructor(
     private resolver: ComponentFactoryResolver,
     private _dataService: APIDataService,
+    private _authService: AuthService,
     public dialogRef: MatDialogRef<SpectrumPeakIdentificationComponent>,
     @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData
   ) {}
@@ -78,6 +83,13 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
         this.updateJobsRunning();
+      })
+    );
+    this._subs.add(
+      this._authService.idTokenClaims$.subscribe(idToken => {
+        if (idToken) {
+          this.userCanViewQuantJobs = Permissions.hasPermissionSet(idToken, Permissions.permissionCreateQuantification);
+        }
       })
     );
 
@@ -104,7 +116,7 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
       this.jobsRunning = 0;
 
       for (const job of jobListResp.jobs) {
-        if (job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR) {
+        if (job.jobType == JobStatus_JobType.JT_RUN_QUANT && job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR) {
           this.jobsRunning++;
         }
       }

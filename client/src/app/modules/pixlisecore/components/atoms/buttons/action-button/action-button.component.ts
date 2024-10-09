@@ -64,6 +64,7 @@ const customActionIcons = {
   sendToTop: "assets/button-icons/send-to-top.svg",
   zoomIn: "assets/button-icons/zoom-in.svg",
   zoomOut: "assets/button-icons/zoom-out.svg",
+  share: "assets/button-icons/share.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;

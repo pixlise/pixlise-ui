@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap } from "rxjs";
+import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
 import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
 import { APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
@@ -36,7 +36,11 @@ import { Quantification } from "src/app/generated-protos/quantification";
 import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
-import { ScanImage } from "src/app/generated-protos/image";
+import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
+import { ExpressionExporter } from "src/app/expression-language/expression-export";
+import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
+import { LoadedSources } from "../../pixlisecore/services/widget-data.service";
+import { DataExpression } from "src/app/generated-protos/expressions";
 
 @Injectable({
   providedIn: "root",
@@ -166,7 +170,7 @@ export class DataExporterService {
                 }
 
                 // TABLE 4
-                if (detector == DetectorOrder[0]) {
+                if (detector == DetectorOrder[1]) {
                   let table4Line = "";
                   spectrum.counts.forEach(count => {
                     table4Line += `,${count ?? ""}`;
@@ -294,12 +298,12 @@ export class DataExporterService {
     const metaIdxs: number[] = [];
 
     for (const label of metaLabels) {
-      for (let c = 0; c < scanMeta.metaLabels.length; c++) {
-        if (label == scanMeta.metaLabels[c]) {
-          metaIdxs.push(c);
-          break;
-        }
+      const idx = scanMeta.metaLabels.indexOf(label);
+      if (idx < 0) {
+        throw new Error(`Failed to find meta label index for: ${label}`);
       }
+
+      metaIdxs.push(idx);
     }
 
     const meta: Map<string, number[]> = new Map<string, number[]>();
@@ -407,15 +411,7 @@ msa += `#XPOSITION   : 0.000
         const scanMeta = resps[0] as ScanMetaLabelsAndTypesResp;
         const spectrumResp = resps[1] as SpectrumResp;
 
-        let metaLiveTimeIdx = -1;
-
-        for (let c = 0; c < scanMeta.metaLabels.length; c++) {
-          if (scanMeta.metaLabels[c] == "LIVETIME") {
-            metaLiveTimeIdx = c;
-            break;
-          }
-        }
-
+        const metaLiveTimeIdx = scanMeta.metaLabels.indexOf("LIVETIME");
         if (metaLiveTimeIdx < 0) {
           throw new Error("Failed to get LIVETIME meta index from scan: " + scanId);
         }
@@ -516,10 +512,17 @@ msa += `#XPOSITION   : 0.000
       map(([beamLocations, scanEntries, imageIJs]) => {
         const csvs: WidgetExportFile[] = [];
         if (beamLocations.beamLocations && scanEntries.entries && imageIJs.size > 0) {
-          const imageKeyOrder = [...imageIJs.keys()];
-          let data = "PMC,X,Y,Z";
-          imageKeyOrder.forEach(imageKey => {
+          if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
+            console.error("Beam locations and scan entries do not match");
+            this._snackService.openError("Error exporting data", "Beam locations and scan entries do not match");
+            return { csvs };
+          }
+
+          for (const imageKey of imageIJs.keys()) {
             const imageName = getPathBase(imageKey);
+
+            // Export all coordinates for this image name
+            let data = "PMC,X,Y,Z";
 
             const verMap = imageIJs.get(imageKey);
             if (verMap) {
@@ -527,27 +530,19 @@ msa += `#XPOSITION   : 0.000
                 data += `,${imageName}_v${ver}_i,${imageName}_v${ver}_j`;
               }
             }
-          });
 
-          if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
-            console.error("Beam locations and scan entries do not match");
-            this._snackService.openError("Error exporting data", "Beam locations and scan entries do not match");
-            return { csvs };
-          }
+            for (let i = 0; i < beamLocations.beamLocations.length; i++) {
+              const entry = scanEntries.entries[i];
+              if (!entry.location) {
+                continue;
+              }
 
-          for (let i = 0; i < beamLocations.beamLocations.length; i++) {
-            const entry = scanEntries.entries[i];
-            if (!entry.location) {
-              continue;
-            }
+              // Round to 5 decimal places
+              const location = beamLocations.beamLocations[i];
+              const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
+              data += `\n${entry.id},${x},${y},${z}`;
 
-            // Round to 5 decimal places
-            const location = beamLocations.beamLocations[i];
-            const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
-            data += `\n${entry.id},${x},${y},${z}`;
-
-            // Add image coordinate headers
-            imageKeyOrder.forEach(imageKey => {
+              // Add image coordinate headers
               const verMap = imageIJs.get(imageKey);
               let wrote = false;
               if (verMap) {
@@ -558,15 +553,15 @@ msa += `#XPOSITION   : 0.000
                     wrote = true;
                   }
                 }
-              }
 
-              if (!wrote) {
-                data += ",,";
+                if (!wrote) {
+                  data += ",,";
+                }
               }
-            });
+            }
+
+            csvs.push({ fileName: `${scanId}-${imageName}-beam-locations.csv`, data });
           }
-
-          csvs.push({ fileName: `${scanId}-beam-locations.csv`, data });
         } else {
           console.error("Missing data for beam locations export");
           this._snackService.openError("Error exporting data", "Missing data for beam locations export");
@@ -581,16 +576,18 @@ msa += `#XPOSITION   : 0.000
     return this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [scanId] })).pipe(
       switchMap(images => {
         const imagesIJ: Map<string, Map<number, Coordinate2D[]>> = new Map();
+        const matchedImages = new Map<string, ImageMatchTransform>();
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
           const imagePaths = images.images
             .filter((img: ScanImage) => {
-              if (img.originScanId !== scanId) {
-                return false;
+              const hasMatchInfo = img.matchInfo && img.matchInfo.beamImageFileName.length > 0;
+              if (img.matchInfo && /* <-- this is to shut the linter up */ hasMatchInfo) {
+                matchedImages.set(img.imagePath, img.matchInfo);
               }
 
               const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
-              return (fields?.producer || "") === "J";
+              return (img.originScanId === scanId && (fields?.producer || "") === "J") || hasMatchInfo;
             })
             .map(image => image.imagePath);
 
@@ -604,18 +601,20 @@ msa += `#XPOSITION   : 0.000
 
               for (let i = 0; i < imageBeamVersions.length; i++) {
                 const beamVers = imageBeamVersions[i];
-                for (const ver of beamVers.beamVersionPerScan[scanId].versions) {
-                  const sendVer: { [x: string]: number } = {};
-                  sendVer[scanId] = ver;
+                if (beamVers && beamVers.beamVersionPerScan[scanId]) {
+                  for (const ver of beamVers.beamVersionPerScan[scanId].versions) {
+                    const sendVer: { [x: string]: number } = {};
+                    sendVer[scanId] = ver;
 
-                  beamRequests$.push(
-                    this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imagePaths[i], scanBeamVersions: sendVer })).pipe(
-                      catchError(err => {
-                        console.error("Failed to get beam locations for image", imagePaths[i], err);
-                        return of(null);
-                      })
-                    )
-                  );
+                    beamRequests$.push(
+                      this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imagePaths[i], scanBeamVersions: sendVer })).pipe(
+                        catchError(err => {
+                          console.error("Failed to get beam locations for image", imagePaths[i], err);
+                          return of(null);
+                        })
+                      )
+                    );
+                  }
                 }
               }
 
@@ -636,7 +635,22 @@ msa += `#XPOSITION   : 0.000
                             verMap = new Map<number, Coordinate2D[]>();
                           }
 
-                          verMap.set(version, locations.locations);
+                          // If this one is "matched", we have to apply the transform to the ijs
+                          // NOTE: This transform is applied differently to the one in the context image - there we're transforming the image to match
+                          // the same ij locations, but here we're transforming the ijs to fit the image!
+                          const matchedInfo = matchedImages.get(imageName);
+                          if (matchedInfo) {
+                            const transformedLocations: Coordinate2D[] = [];
+                            for (const loc of locations.locations) {
+                              transformedLocations.push(
+                                Coordinate2D.create({ i: loc.i * matchedInfo.xScale - matchedInfo.xOffset, j: loc.j * matchedInfo.yScale - matchedInfo.yOffset })
+                              );
+                            }
+                            verMap.set(version, transformedLocations);
+                          } else {
+                            // Just store as is
+                            verMap.set(version, locations.locations);
+                          }
 
                           imagesIJ.set(imageName, verMap);
                         }
@@ -985,6 +999,31 @@ msa += `#XPOSITION   : 0.000
         });
 
         return { images, tiffImages };
+      })
+    );
+  }
+
+  exportExpressionCode(scanId: string, quantId: string, expressionIds: string[]): Observable<WidgetExportData> {
+    // For now, we only export the first expression...
+    if (expressionIds.length < 1) {
+      return throwError(() => new Error("At least one expression must be selected when exporting expression code"));
+    }
+
+    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: expressionIds[0] })).pipe(
+      switchMap((resp: ExpressionGetResp) => {
+        if (!resp.expression) {
+          throw new Error(`Expression ${expressionIds[0]} failed to load`);
+        }
+
+        const expExp = new ExpressionExporter();
+        return expExp.exportExpressionCode(
+          resp.expression as DataExpression,
+          scanId,
+          quantId,
+          this._cachedDataService,
+          this._spectrumDataService,
+          this._energyCalibrationService
+        );
       })
     );
   }

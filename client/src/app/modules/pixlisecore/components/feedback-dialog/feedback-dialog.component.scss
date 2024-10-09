@@ -44,34 +44,4 @@
       text-decoration: none;
     }
   }
-
-  .link-to-v3 {
-    // margin-left: auto;
-  }
-}
-
-.link-to-v3 {
-  color: black;
-  background-color: rgb(255, 255, 141);
-
-  // color: #f8f8f8;
-  text-align: center;
-  font-feature-settings:
-    "clig" off,
-    "liga" off;
-  font-family: Inter;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 16px;
-  border-radius: 4px;
-  // background: #444c50;
-  padding: 4px 8px;
-  margin-right: 4px;
-  cursor: pointer;
-
-  &:hover {
-    color: rgb(var(--clr-gray-60));
-    text-decoration: none;
-  }
 }

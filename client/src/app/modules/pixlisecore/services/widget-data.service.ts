@@ -55,12 +55,13 @@ import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { environment } from "src/environments/environment";
 import { BuiltInTags } from "../../tags/models/tag.model";
 import { SpectrumDataService } from "./spectrum-data.service";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
+import { ExpressionMemoisationService } from "./expression-memoisation.service";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -141,10 +142,10 @@ export class RegionDataResults {
   }
 }
 
-class LoadedSources {
+export class LoadedSources {
   constructor(
     public expressionSrc: string,
-    public modules: Map<string, DataModuleVersion>
+    public modules: DataModuleVersionWithRef[]
   ) {}
 }
 
@@ -171,7 +172,8 @@ export class WidgetDataService {
     private _spectrumDataService: SpectrumDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
-    private _memoisationService: MemoisationService
+    private _memoisationService: MemoisationService,
+    private _exprMemoisationService: ExpressionMemoisationService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -345,6 +347,7 @@ export class WidgetDataService {
             "",
             "",
             new Map<string, PMCDataValues>(),
+            new Map<string, string>(),
             err,
             DataExpression.create({
               id: query.exprId,
@@ -359,13 +362,13 @@ export class WidgetDataService {
 
   private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
     // If it's not memomisable, just return the calculated value straight away
-    if (DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+    if (environment.disableExpressionMemoisation || DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
     }
 
     // Try the local cache first
     // TODO: what if expression or ROI is edited??? We need to either clear the cache or store timestamps!
-    return this._memoisationService.get(cacheKey).pipe(
+    return this._memoisationService.getMemoised(cacheKey).pipe(
       map((item: MemoisedItem) => {
         // We got something! return this straight away...
         console.info("Query restored from memoised result: " + cacheKey);
@@ -425,7 +428,7 @@ export class WidgetDataService {
                 // Also, add to memoisation cache
                 if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
                   const encodedResult = this.toMemoised(result);
-                  this._memoisationService.memoise(cacheKey, encodedResult);
+                  this._memoisationService.memoise(cacheKey, encodedResult).subscribe();
                 }
 
                 return result;
@@ -450,7 +453,7 @@ export class WidgetDataService {
               SentryHelper.logMsg(true, errorMsg);
             }
 
-            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg, expr));
+            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), errorMsg, expr));
           })
         );
       }),
@@ -460,7 +463,7 @@ export class WidgetDataService {
         // Don't need this in sentry!
         console.error(errorMsg);
 
-        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
+        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), errorMsg));
       })
     );
   }
@@ -556,6 +559,7 @@ export class WidgetDataService {
       "", // stdout
       "", // stderr
       new Map<string, PMCDataValues>(), // recordedExpressionInputs
+      new Map<string, string>(), // recorded expression values
       "", // errorMsg
       memResult.expression
     );
@@ -638,7 +642,7 @@ export class WidgetDataService {
     }
 
     const calibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
-    const expr$ = this.loadCodeForExpression(expression);
+    const expr$ = loadCodeForExpression(expression, this._cachedDataService);
 
     // Load both of these
     return combineLatest([calibration$, expr$]).pipe(
@@ -651,7 +655,7 @@ export class WidgetDataService {
           throw new Error("loadCodeForExpression did not return expression source code for: " + expression.id);
         }
 
-        const modSources = this.makeRunnableModules(sources.modules);
+        const modSources = WidgetDataService.makeRunnableModules(sources.modules);
 
         // Pass in the source and module sources separately
         const querier = new DataQuerier();
@@ -659,7 +663,7 @@ export class WidgetDataService {
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
+            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)
@@ -719,72 +723,19 @@ export class WidgetDataService {
     );
   }
 
-  private makeRunnableModules(loadedModules: Map<string, DataModuleVersion>): Map<string, string> {
+  public static makeRunnableModules(loadedModules: DataModuleVersionWithRef[]): Map<string, string> {
     // Build the map required by runQuery. NOTE: here we pass the module name, not the ID!
     const modSources = new Map<string, string>();
-    for (const [modName, mod] of loadedModules) {
-      modSources.set(modName, mod.sourceCode);
+    for (const mod of loadedModules) {
+      modSources.set(mod.name, mod.moduleVersion.sourceCode);
     }
 
     return modSources;
   }
 
-  private loadCodeForExpression(expression: DataExpression): Observable<LoadedSources> {
-    // Filter out crazy cases
-    if (expression.sourceCode.length <= 0) {
-      throw new Error(`Expression ${expression.id} source code is empty`);
-    }
-
-    if (expression.moduleReferences.length > 0 && expression.sourceLanguage != EXPR_LANGUAGE_LUA) {
-      throw new Error(`Expression ${expression.id} references modules, but source language is not Lua`);
-    }
-
-    // If we are a simple loaded expression that doesn't have references, early out!
-    const result = new LoadedSources(expression.sourceCode, new Map<string, DataModuleVersion>());
-    if (expression.sourceCode.length > 0 && expression.moduleReferences.length <= 0) {
-      return of(result);
-    }
-
-    // Read the module sources
-    const waitModules$: Observable<DataModuleVersionWithRef>[] = [];
-    for (const ref of expression.moduleReferences) {
-      waitModules$.push(
-        this._cachedDataService.getDataModule(DataModuleGetReq.create({ id: ref.moduleId, version: ref.version })).pipe(
-          map((value: DataModuleGetResp) => {
-            if (value.module === undefined) {
-              throw new Error(`Module ${ref.moduleId} version ${ref.version} came back empty`);
-            }
-
-            const moduleVersion = value.module.versions.find(
-              v => v.version?.major === ref.version?.major && v.version?.minor === ref.version?.minor && v.version?.patch === ref.version?.patch
-            );
-            if (!moduleVersion) {
-              throw new Error(`Module (${ref.moduleId}) does not contain version: ${ref.version}`);
-            }
-
-            return { id: value.module.id, name: value.module.name, moduleVersion };
-          })
-        )
-      );
-    }
-
-    const allResults$ = combineLatest(waitModules$);
-    return allResults$.pipe(
-      map((sources: unknown[]) => {
-        // At this point, we should have all the source code we're interested in. Combine them!
-        for (const src of sources) {
-          const version = src as DataModuleVersionWithRef;
-          result.modules.set(version.name, version.moduleVersion);
-        }
-
-        return result;
-      })
-    );
-  }
-
   private processGetDataResult(result: DataQueryResult, query: DataSourceParams, allowAnyResponse: boolean): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
-    let isPMCTable = Array.isArray(pmcValues?.values) && (pmcValues.values.length <= 0 || pmcValues.values[0] instanceof PMCDataValue);
+    const isPMCTable = Array.isArray(pmcValues?.values) && (pmcValues.values.length <= 0 || pmcValues.values[0] instanceof PMCDataValue);
     // If we have an error OR we require a PMC table as a result and didn't receive one...
     if (result.errorMsg || (!allowAnyResponse && !isPMCTable)) {
       let msg = result.errorMsg;
@@ -800,7 +751,8 @@ export class WidgetDataService {
           result.runtimeMs,
           result.stderr,
           result.stderr,
-          result.recordedExpressionInputs
+          result.recordedExpressionInputs,
+          result.recordedExpressionInputValues
         ),
         /*result.errorMsg.length > 0
           ? new WidgetError(result.errorMsg, "The expression failed, check configuration and try again")
@@ -824,7 +776,16 @@ export class WidgetDataService {
     }
 
     const resultItem = new RegionDataResultItem(
-      new DataQueryResult(valuesToWrite, result.isPMCTable, result.dataRequired, result.runtimeMs, result.stderr, result.stderr, result.recordedExpressionInputs),
+      new DataQueryResult(
+        valuesToWrite,
+        result.isPMCTable,
+        result.dataRequired,
+        result.runtimeMs,
+        result.stderr,
+        result.stderr,
+        result.recordedExpressionInputs,
+        result.recordedExpressionInputValues
+      ),
       null,
       valuesToWrite?.warning || "",
       result.expression,

@@ -52,6 +52,8 @@ export const environment = {
   },
   largeMessageLogThresholdBytes: 102400,
   marsViewerUrlRoot: "https://marsviewer.sops.m20.jpl.nasa.gov",
+  skipMemoizeKeys: [],
+  disableExpressionMemoisation: true,
 };
 
 /*

@@ -32,17 +32,40 @@ import {
   HousekeepingDataQuerierSource,
   PseudoIntensityDataQuerierSource,
   QuantifiedDataQuerierSource,
+  SpectrumDataQuerierSource,
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { PixliseDataQuerier, ExpressionParts } from "src/app/expression-language/interpret-pixlise";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
+import { MemoisationService } from "../modules/pixlisecore/services/memoisation.service";
+import { SpectrumChannels } from "../utils/utils";
+import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
 
 class MockSource implements QuantifiedDataQuerierSource {
   constructor(
     public data: Record<string, any>,
     protected _elemList: string[],
-    protected _pmcs: number[]
+    protected _pmcs: number[],
+    private _scanId: string,
+    private _quantId: string,
+    private _instrument: string
   ) {}
+
+  getScanId(): string {
+    return this._scanId;
+  }
+
+  getQuantId(): string {
+    return this._quantId;
+  }
+
+  getInstrument(): string {
+    return this._instrument;
+  }
+
+  getElevAngle(): number {
+    return 70;
+  }
 
   getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues> {
     const label = dataLabel + "_" + detectorId;
@@ -115,6 +138,20 @@ class MockHousekeepingSource implements HousekeepingDataQuerierSource {
   }
 }
 
+class MockSpectrumDataQuerierSource implements SpectrumDataQuerierSource {
+  getMaxSpectrumChannel(): number {
+    return SpectrumChannels;
+  }
+
+  getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
+    return Promise.resolve(new PMCDataValues());
+  }
+
+  getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues> {
+    return Promise.resolve(new PMCDataValues());
+  }
+}
+
 class MockDiffractionSource implements DiffractionPeakQuerierSource {
   idx = 0;
 
@@ -160,11 +197,12 @@ const housekeepingSrcData = {
 
 function makeDataSource(pmcResults: { [key: string]: PMCDataValues }, elems: string[], pmcs: number[], diffractionSrcData: PMCDataValues[]) {
   return new InterpreterDataSource(
-    new MockSource(pmcResults, elems, pmcs),
+    new MockSource(pmcResults, elems, pmcs, "scan123", "quant123", "PIXL_FM"),
     new MockPseudoSource(pseudoSrcData),
     new MockHousekeepingSource(housekeepingSrcData),
-    null,
-    new MockDiffractionSource(diffractionSrcData)
+    new MockSpectrumDataQuerierSource(),
+    new MockDiffractionSource(diffractionSrcData),
+    {} as ExpressionMemoisationService
   );
 }
 

@@ -135,6 +135,10 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
   }
 
   getItemTypeName(): string {
+    if (this.type === ObjectType.OT_SCREEN_CONFIG) {
+      return "Workspace";
+    }
+
     let typeName = objectTypeToJSON(this.type).replace("OT_", "");
     if (typeName.length > 0) {
       typeName = typeName

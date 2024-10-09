@@ -28,16 +28,29 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { map, Subscription, switchMap } from "rxjs";
+import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
 import { FullScreenLayout, ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
 import { getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
-import { ObjectType } from "../../../../../../generated-protos/ownership-access";
-import { SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
+import { ObjectType, OwnershipSummary, UserGroupList } from "../../../../../../generated-protos/ownership-access";
+import { APIDataService, SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
 import { NavigationTab } from "../../../../services/analysis-layout.service";
 import { TabLinks } from "../../../../../../models/TabLinks";
 import { ActivatedRoute } from "@angular/router";
+import {
+  ShareDialogComponent,
+  ShareDialogData,
+  ShareDialogResponse,
+  SharingSubItem,
+} from "../../../../../pixlisecore/components/atoms/share-ownership-item/share-dialog/share-dialog.component";
+import { GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "../../../../../../generated-protos/ownership-access-msgs";
+import { APICachedDataService } from "../../../../../pixlisecore/services/apicacheddata.service";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../../../../generated-protos/roi-msgs";
+import { ExpressionGetReq, ExpressionGetResp } from "../../../../../../generated-protos/expression-msgs";
+import { QuantGetReq, QuantGetResp } from "../../../../../../generated-protos/quantification-retrieval-msgs";
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
+import { ExpressionGroupGetResp } from "../../../../../../generated-protos/expression-group-msgs";
 
 @Component({
   selector: "workspace-configuration",
@@ -62,6 +75,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   private _tagsChanged: boolean = false;
 
   public screenConfig: ScreenConfiguration | null = null;
+  public snapshots: ScreenConfiguration[] = [];
 
   public openTabs: NavigationTab[] = [];
   public newTabName: string = "";
@@ -69,11 +83,21 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   queryParam: Record<string, string> = {};
 
+  public activeConfigurationTab: "workspace" | "snapshots" = "workspace";
+
+  public builtInTabs: NavigationTab[] = [
+    { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
+    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
+  ];
+
   constructor(
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackbarService: SnackbarService,
-    private _route: ActivatedRoute
+    private _route: ActivatedRoute,
+    private _apiDataService: APIDataService,
+    private _apiCachedDataService: APICachedDataService
   ) {}
 
   get hasWorkspaceChanged(): boolean {
@@ -110,6 +134,18 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     );
 
     this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$
+        .pipe(
+          switchMap(screenConfig => {
+            return this._analysisLayoutService.fetchWorkspaceSnapshots(screenConfig.id);
+          })
+        )
+        .subscribe(snapshots => {
+          this.snapshots = snapshots;
+        })
+    );
+
+    this._subs.add(
       this._route.queryParams.subscribe(params => {
         this.queryParam = { ...params };
       })
@@ -120,6 +156,12 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         this.openTabs = tabs;
         this.newTabName = "";
         this.editingTabIndex = null;
+
+        this.openTabs.forEach(tab => {
+          if (tab.url === TabLinks.analysis && tab.params && Object.keys(tab.params).length > 0) {
+            tab.active = Object.keys(tab.params).every(key => this.queryParam[key] == tab?.params?.[key]);
+          }
+        });
       })
     );
   }
@@ -299,5 +341,241 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       this.descriptionMode = "View";
       this._snackbarService.openSuccess("Workspace configuration saved!");
     }
+  }
+
+  onDeleteSnapshot(snapshot: ScreenConfiguration): void {
+    if (!snapshot?.id) {
+      return;
+    }
+
+    this._analysisLayoutService.deleteScreenConfiguration(snapshot.id, () => {
+      this._analysisLayoutService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
+        this.snapshots = snapshots;
+      });
+    });
+  }
+
+  private updateSnapshotPermissions(id: string, sharingChangeResponse: ShareDialogResponse, workspaceOwnershipResp: GetOwnershipResp): void {
+    // We need to share the new workspace snapshot with the same permissions as the original workspace
+    let editors: UserGroupList = sharingChangeResponse.addEditors;
+    let viewers: UserGroupList = sharingChangeResponse.addViewers;
+
+    // Add back the original editors/viewers as long as they're not in the delete list
+    if (sharingChangeResponse.deleteEditors) {
+      workspaceOwnershipResp.ownership?.editors?.groupIds.forEach(groupId => {
+        if (!sharingChangeResponse.deleteEditors?.groupIds.includes(groupId)) {
+          editors.groupIds.push(groupId);
+        }
+      });
+
+      workspaceOwnershipResp.ownership?.editors?.userIds.forEach(userId => {
+        if (!sharingChangeResponse.deleteEditors?.userIds.includes(userId)) {
+          editors.userIds.push(userId);
+        }
+      });
+
+      workspaceOwnershipResp.ownership?.viewers?.groupIds.forEach(groupId => {
+        if (!sharingChangeResponse.deleteViewers?.groupIds.includes(groupId)) {
+          viewers.groupIds.push(groupId);
+        }
+      });
+
+      workspaceOwnershipResp.ownership?.viewers?.userIds.forEach(userId => {
+        if (!sharingChangeResponse.deleteViewers?.userIds.includes(userId)) {
+          viewers.userIds.push(userId);
+        }
+      });
+    }
+
+    this._apiDataService
+      .sendObjectEditAccessRequest(
+        ObjectEditAccessReq.create({
+          objectId: id,
+          objectType: this.objectType,
+          addEditors: editors,
+          addViewers: viewers,
+          deleteEditors: UserGroupList.create({}),
+          deleteViewers: UserGroupList.create({}),
+        })
+      )
+      .pipe(editResp => {
+        return this._analysisLayoutService.fetchWorkspaceSnapshots(this.screenConfig!.id);
+      })
+      .subscribe(snapshots => {
+        this.snapshots = snapshots;
+      });
+  }
+
+  onShareSnapshot(existingSnapshot: ScreenConfiguration | null = null): void {
+    let objectId = existingSnapshot?.id || this.screenConfig?.id;
+    let ownershipSummary = existingSnapshot?.owner || this.screenConfig?.owner;
+
+    this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId, objectType: this.objectType })).subscribe(workspaceOwnershipResp => {
+      if (!workspaceOwnershipResp || !workspaceOwnershipResp.ownership || !objectId || !ownershipSummary) {
+        this._snackbarService.openError(`Could not find ownership information for item (${this.screenConfig?.id}, ${this.objectType}).`);
+        return;
+      }
+
+      let workspaceId = this.screenConfig?.id || "";
+      let roiIds = this._analysisLayoutService.getLoadedROIIDsFromActiveScreenConfiguration();
+      let expressionIds = this._analysisLayoutService.getLoadedExpressionIDsFromActiveScreenConfiguration();
+      let expressionGroupIds = this._analysisLayoutService.getLoadedExpressionGroupIDsFromActiveScreenConfiguration();
+      let quantIds = this._analysisLayoutService.getLoadedQuantificationIDsFromActiveScreenConfiguration();
+
+      let workspaceSubItem: SharingSubItem = {
+        id: workspaceId,
+        type: ObjectType.OT_SCREEN_CONFIG,
+        typeName: "Workspace",
+        name: this.workspaceName || this.placeholderName || "",
+        ownershipSummary: ownershipSummary,
+        ownershipItem: workspaceOwnershipResp.ownership,
+      };
+
+      let roiRequests = roiIds.map(roiId => {
+        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: roiId, objectType: ObjectType.OT_ROI }));
+        let itemReq = this._apiCachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }));
+        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
+      });
+
+      let expressionRequests = expressionIds.map(expressionId => {
+        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: expressionId, objectType: ObjectType.OT_EXPRESSION }));
+        let itemReq = this._apiCachedDataService.getExpression(ExpressionGetReq.create({ id: expressionId }));
+        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
+      });
+
+      let expressionGroupRequests = expressionGroupIds.map(expressionGroupId => {
+        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(
+          GetOwnershipReq.create({ objectId: expressionGroupId, objectType: ObjectType.OT_EXPRESSION_GROUP })
+        );
+        let itemReq = this._apiCachedDataService.getExpressionGroup(ExpressionGetReq.create({ id: expressionGroupId }));
+        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
+      });
+
+      let quantRequests = quantIds.map(quantId => {
+        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: quantId, objectType: ObjectType.OT_QUANTIFICATION }));
+        let itemReq = this._apiCachedDataService.getQuant(QuantGetReq.create({ quantId }));
+        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
+      });
+
+      let requests = [...roiRequests, ...expressionRequests, ...expressionGroupRequests, ...quantRequests];
+      combineLatest(requests).subscribe(res => {
+        let subItems: SharingSubItem[] = res.map(({ ownership, item }, i) => {
+          if (!ownership || !item) {
+            return {
+              id: "",
+              type: ObjectType.OT_SCREEN_CONFIG,
+              typeName: "Workspace",
+              name: "",
+              ownershipSummary: OwnershipSummary.create({}),
+            } as SharingSubItem;
+          }
+
+          if (i < roiRequests.length) {
+            let roiResp = item as RegionOfInterestGetResp;
+            return {
+              id: roiResp.regionOfInterest?.id || "",
+              type: ObjectType.OT_ROI,
+              typeName: "Region of Interest",
+              name: roiResp.regionOfInterest?.name || "",
+              ownershipSummary: roiResp.regionOfInterest?.owner,
+              ownershipItem: ownership,
+            } as SharingSubItem;
+          } else if (i < roiRequests.length + expressionGroupRequests.length) {
+            let expressionGroupResp = item as ExpressionGroupGetResp;
+            return {
+              id: expressionGroupResp.group?.id || "",
+              type: ObjectType.OT_EXPRESSION_GROUP,
+              typeName: "Expression Group",
+              name: expressionGroupResp.group?.name || "",
+              ownershipSummary: expressionGroupResp.group?.owner,
+              ownershipItem: ownership,
+            } as SharingSubItem;
+          } else if (i < roiRequests.length + expressionGroupRequests.length + expressionRequests.length) {
+            let expressionResp = item as ExpressionGetResp;
+            return {
+              id: expressionResp.expression?.id || "",
+              type: ObjectType.OT_EXPRESSION,
+              typeName: "Expression",
+              name: expressionResp.expression?.name || "",
+              ownershipSummary: expressionResp.expression?.owner,
+              ownershipItem: ownership,
+            } as SharingSubItem;
+          } else {
+            let quantResp = item as QuantGetResp;
+            return {
+              id: quantResp.summary?.id || "",
+              type: ObjectType.OT_QUANTIFICATION,
+              typeName: "Quantification",
+              name: quantResp.summary?.params?.userParams?.name || quantResp.summary?.id || "",
+              ownershipSummary: quantResp.summary?.owner,
+              ownershipItem: ownership,
+            } as SharingSubItem;
+          }
+        });
+
+        subItems = subItems.filter(item => item?.id) as SharingSubItem[];
+
+        if (!workspaceOwnershipResp?.ownership) {
+          return;
+        }
+
+        const dialogConfig = new MatDialogConfig<ShareDialogData>();
+        dialogConfig.data = {
+          ownershipSummary: ownershipSummary || null,
+          ownershipItem: workspaceOwnershipResp.ownership,
+          typeName: "Workspace Snapshot",
+          title: existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
+          subItems: [workspaceSubItem, ...subItems],
+          excludeSubIds: [objectId || ""],
+          preventSelfAssignment: true,
+          restrictSubItemSharingToViewer: true,
+        };
+
+        const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
+        dialogRef.afterClosed().subscribe((sharingChangeResponse: ShareDialogResponse) => {
+          if (!sharingChangeResponse) {
+            return;
+          }
+
+          // At this point, we've shared all sub-items, now we need to create the new workspace snapshot and share it
+          if (existingSnapshot) {
+            this.updateSnapshotPermissions(objectId, sharingChangeResponse, workspaceOwnershipResp);
+          } else {
+            // Create a new snapshot
+            let newScreenConfig = ScreenConfiguration.create(this.screenConfig!);
+            newScreenConfig.snapshotParentId = this.screenConfig!.id;
+            newScreenConfig.name = this.workspaceName || this.placeholderName || "";
+            newScreenConfig.id = "";
+            this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
+              if (!newScreenConfig.id) {
+                return;
+              }
+
+              this.updateSnapshotPermissions(newScreenConfig.id, sharingChangeResponse, workspaceOwnershipResp);
+            });
+          }
+        });
+      });
+    });
+  }
+
+  dropTab(event: CdkDragDrop<NavigationTab>) {
+    let moveFromIndex = event.previousIndex;
+    let moveToIndex = event.currentIndex;
+
+    moveItemInArray(this.openTabs, moveFromIndex, moveToIndex);
+
+    let layouts = this._analysisLayoutService.activeScreenConfiguration$.value.layouts;
+    // If current open tab is moveFromLayoutIndex, then move it to moveToLayoutIndex
+    let currentTab = parseInt(this.queryParam["tab"] || "0");
+    moveItemInArray(layouts, moveFromIndex, moveToIndex);
+    this._analysisLayoutService.activeScreenConfiguration$.value.layouts = layouts;
+    this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value, undefined, false, () => {
+      if (currentTab === moveFromIndex) {
+        this._analysisLayoutService.setActiveScreenConfigurationTabIndex(moveToIndex);
+      }
+
+      this._analysisLayoutService.loadActiveLayoutAnalysisTabs();
+    });
   }
 }

@@ -40,6 +40,7 @@ import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/com
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { UserOptionsService } from "src/app/modules/settings/settings.module";
 import { Colours } from "src/app/utils/colours";
 
 export type HighlightedROIs = {
@@ -88,6 +89,7 @@ export class ROITabComponent implements OnInit {
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
+    private _userOptionsService: UserOptionsService,
     public dialog: MatDialog
   ) {}
 
@@ -169,7 +171,7 @@ export class ROITabComponent implements OnInit {
   }
 
   get canCreateROIs(): boolean {
-    return true;
+    return this._userOptionsService.hasFeatureAccess("editROI");
   }
 
   get showSearch(): boolean {
@@ -226,17 +228,7 @@ export class ROITabComponent implements OnInit {
   }
 
   onNewROI() {
-    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
-    dialogConfig.data = {
-      defaultScanId: this._visibleScanId,
-    };
-
-    let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((created: boolean) => {
-      if (created) {
-        this._selectionService.clearSelection([this._visibleScanId]);
-      }
-    });
+    this._selectionService.newROIFromSelection();
   }
 
   onSaveNewROI() {

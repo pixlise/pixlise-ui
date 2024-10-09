@@ -1,0 +1,12 @@
+<div class="dlg-border-with-backdrop permissions-dlg confirm-input-dialog">
+  <h1>{{ data.title || "Confirm" }}</h1>
+  <h5 class="confirm-text">{{ data.confirmInputText }}</h5>
+  <div class="input-container">
+    <input class="text-field" [(ngModel)]="value" type="text" autocomplete="off" data-lpignore="true" [placeholder]="data.inputPlaceholder || 'Input Value'" />
+  </div>
+  <div class="gap-separated-horizontal-elements button-container">
+    <push-button class="cancel-btn" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button *ngIf="data.middleButtonText" buttonStyle="gray" (onClick)="onMiddleButton()">{{ data.middleButtonText }}</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()">{{ data.confirmButtonText || "Confirm" }}</push-button>
+  </div>
+</div>

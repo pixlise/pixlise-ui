@@ -50,4 +50,10 @@
             background-color: $clr-gray-70; // apparently this should work... rgba(var($clr-gray-100), 0.15);
         }
     }
+
+    .disabled {
+        cursor: default;
+        color: $clr-gray-50;
+        background-color: $clr-gray-90;
+    }
 }

@@ -8,7 +8,6 @@
   </div>
   <textarea [(ngModel)]="userIssue" [rows]="10" class="feedback-textarea" placeholder="Type your issue here"></textarea>
   <div class="bottom-buttons">
-    <push-button class="submit-and-stay" buttonStyle="v3Button" (click)="onSubmitIssue(false)" #submitIssue>Submit feedback</push-button>
-    <a (click)="onSubmitIssue(true)" class="link-to-v3" href="https://v3.pixlise.org" target="_blank">Open v3</a>
+    <push-button class="submit-and-stay" (click)="onSubmitIssue()" #submitIssue>Submit feedback</push-button>
   </div>
 </div>

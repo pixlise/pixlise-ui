@@ -56,6 +56,24 @@
         <roi-shape [scale]="4" [color]="option.colour" [borderColor]="selectedColour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
         <div *ngIf="selectedColour === option.colour" class="active-color"></div>
       </div>
+      <div class="new-color">
+        <push-button
+          buttonStyle="outline"
+          title="New Colour"
+          [(colorPicker)]="customSelectedColour"
+          [cpEyeDropper]="true"
+          cpPosition="auto"
+          [cpAlphaChannel]="'disabled'"
+          (colorPickerSelect)="onSelectCustomColour()">
+          <div class="custom-color-container">
+            <img src="assets/button-icons/plus-white.svg" />
+            <div class="color-option {{ isCustomColour ? 'selected' : '' }}">
+              <roi-shape [scale]="4" [color]="rawSelectedColour" [borderColor]="isCustomColour ? '#fff' : ''" shape="circle"></roi-shape>
+              <div *ngIf="isCustomColour" class="active-color"></div>
+            </div>
+          </div>
+        </push-button>
+      </div>
     </div>
     <div class="bottom-buttons">
       <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColour()">Clear</push-button>
@@ -66,7 +84,13 @@
 <ng-template #roiSettingsMenu>
   <div class="roi-settings">
     <div class="settings-buttons">
-      <action-button title="Delete this ROI" action="delete" confirmText="Are you sure you want to delete ROI: {{ name }}?" (onClick)="onDelete()"> </action-button>
+      <action-button
+        [disabled]="!canEdit"
+        title="Delete this ROI"
+        action="delete"
+        confirmText="Are you sure you want to delete ROI: {{ name }}?"
+        (onClick)="onDelete()">
+      </action-button>
       <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
       <widget-settings-menu *ngIf="!isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
@@ -218,7 +242,7 @@
 
         <div class="right-btns">
           <push-button (onClick)="onSelect()">Select</push-button>
-          <action-button action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
+          <action-button [disabled]="!canEdit" title="Edit ROI name/description" action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
           <icon-button
             [icon]="showScanEntryPoints ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
             [hasBackground]="false"
@@ -236,12 +260,17 @@
           </h5>
           <div class="selection-btns">
             <push-button
+              [disabled]="!canEdit"
               (onClick)="onSaveSelectionToROI()"
               buttonStyle="outline"
               title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
               >Save Selection to ROI</push-button
             >
-            <push-button (onClick)="onAddRGBUPixelsToROI()" buttonStyle="outline" title="Adds pixels within bounding polygons of Scan Entry points to ROI"
+            <push-button
+              [disabled]="!canEdit"
+              (onClick)="onAddRGBUPixelsToROI()"
+              buttonStyle="outline"
+              title="Adds pixels within bounding polygons of Scan Entry points to ROI"
               >Add RGBU Pixels to ROI</push-button
             >
           </div>
@@ -266,7 +295,7 @@
                   action="close"
                   color="rgb(188, 188, 188)"
                   (onClick)="onDeleteScanEntryIdx(entryIdx)"
-                  [disabled]="scanEntryIndicesByDataset[scanId]?.length === 1"
+                  [disabled]="!canEdit || scanEntryIndicesByDataset[scanId]?.length === 1"
                   [tooltipTitle]="scanEntryIndicesByDataset[scanId]?.length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC'"></action-button>
               </div>
             </cdk-virtual-scroll-viewport>

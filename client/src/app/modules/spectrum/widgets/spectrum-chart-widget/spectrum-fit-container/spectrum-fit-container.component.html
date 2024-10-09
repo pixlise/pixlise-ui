@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <fit-line-config *ngIf="!message"></fit-line-config>
             <div *ngIf="message" class="fit-message">
                 <app-widget-display-message
+                    *ngIf="message"
                     [message]="message"
                     [large]="false">
                 </app-widget-display-message>
@@ -54,15 +55,31 @@ POSSIBILITY OF SUCH DAMAGE.
         <fit-elements></fit-elements>
     </div>
     <div class="fit-bottom-buttons">
-        <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+        <div class="group">
+            <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+            <ng-container *ngIf="waiting">
+                <div>{{waitMessage}}</div>
+                <wait-spinner></wait-spinner>
+            </ng-container>
+        </div>
 
         <div class="group">
-            <ng-container *ngIf="quantificationEnabled">
-                <push-button buttonStyle="outline" (onClick)="onViewLogs()" [disabled]="!hasFitData">Logs</push-button>
-                <push-button buttonStyle="outline" (onClick)="onExport()" [disabled]="!hasFitData">Export Fit</push-button>
-                <push-button buttonStyle="yellow" (onClick)="onReQuantify()">Re-Quantify</push-button>
-            </ng-container>
-            <div *ngIf="!quantificationEnabled" class="quant-disabled">Quantification Disabled</div>
+            <push-button
+                [disabled]="!quantificationEnabled || !hasFitData"
+                buttonStyle="outline"
+                (onClick)="onViewLogs()"
+                [title]="quantificationEnabled ? 'Download the PIQUANT log from the last quant command' : 'Your account is not configured to allow quantification features'">Logs</push-button>
+            <push-button
+                [disabled]="!quantificationEnabled || !hasFitData"
+                buttonStyle="outline"
+                (onClick)="onExport()"
+                [title]="quantificationEnabled ? 'Export fit data shown on chart' : 'Your account is not configured to allow quantification features'">Export Fit</push-button>
+            <push-button
+                [disabled]="!quantificationEnabled"
+                buttonStyle="yellow"
+                (onClick)="onReQuantify()"
+                [title]="quantificationEnabled ? 'Run PIQUANT to generate fit lines using the quant command' : 'Your account is not configured to allow quantification features'"
+                >Re-Quantify</push-button>
         </div>
     </div>
 </div>

@@ -151,6 +151,7 @@ export class ROIService {
 
   listROIs() {
     this.searchROIs(SearchParams.create({}), false);
+    this.searchROIs(SearchParams.create({}), true);
   }
 
   listMistROIs(scanId: string) {
@@ -506,7 +507,7 @@ export class ROIService {
         this.displaySettingsMap$.next(this.displaySettingsMap$.value);
       }
     } else {
-      this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
+      this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id, isMIST: true })).subscribe({
         next: res => {
           if (res.regionOfInterest) {
             res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
@@ -524,7 +525,7 @@ export class ROIService {
     }
   }
 
-  loadROI(id: string): Observable<ROIItem> {
+  loadROI(id: string, includeMISTIfExists: boolean = false): Observable<ROIItem> {
     if (this.roiItems$.value[id]) {
       return of(this.roiItems$.value[id]);
     } else if (PredefinedROIID.isAllPointsROI(id)) {
@@ -536,7 +537,7 @@ export class ROIService {
       }
     }
 
-    return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id })).pipe(
+    return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id, isMIST: includeMISTIfExists })).pipe(
       map((roiResp: RegionOfInterestGetResp) => {
         if (roiResp.regionOfInterest === undefined) {
           this._snackBarService.openError(`Region Of Interest data not returned from cachedDataService for ${id}`);
@@ -622,6 +623,9 @@ export class ROIService {
 
     if (roiToWrite.pixelIndexesEncoded && roiToWrite.pixelIndexesEncoded.length > 0) {
       roiToWrite.pixelIndexesEncoded = encodeIndexList(roiToWrite.pixelIndexesEncoded);
+    } else {
+      // No pixels selected, so no need to send an image name
+      roiToWrite.imageName = "";
     }
 
     this._dataService
@@ -704,6 +708,14 @@ export class ROIService {
             mistROIScanIdsToDelete.forEach(scanId => {
               if (this.mistROIsByScanId$.value[scanId]) {
                 this.mistROIsByScanId$.value[scanId] = {};
+                // Delete all mist ROIs for this scan
+                Object.entries(this.roiSummaries$.value).forEach(([roiId, roi]) => {
+                  if (roi && roi.scanId === scanId && roi.isMIST) {
+                    delete this.roiItems$.value[roiId];
+                    delete this.roiSummaries$.value[roiId];
+                    delete this.displaySettingsMap$.value[roiId];
+                  }
+                });
               }
             });
 
@@ -739,10 +751,13 @@ export class ROIService {
                 roi.isMIST = isMIST;
                 this.mistROIsByScanId$.value[scanId][roi.id] = ROIService.formSummaryFromROI(roi);
               }
+
+              this.roiSummaries$.value[roi.id] = ROIService.formSummaryFromROI(roi);
             });
 
             this.roiItems$.next(this.roiItems$.value);
             this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+            this.roiSummaries$.next(this.roiSummaries$.value);
 
             this._snackBarService.openSuccess(`Successfully bulk created ${res.regionsOfInterest.length} ROIs!`);
           } else {
@@ -760,7 +775,7 @@ export class ROIService {
   }
 
   editROISummary(newROISummary: ROIItemSummary) {
-    this.loadROI(newROISummary.id)
+    this.loadROI(newROISummary.id, true)
       .pipe(
         map(roi => {
           roi.name = newROISummary.name;

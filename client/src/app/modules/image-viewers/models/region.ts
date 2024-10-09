@@ -6,7 +6,8 @@ export class ContextImageRegionLayer {
     public roiId: string = "",
     public name: string = "",
     public colour: RGBA = Colours.WHITE,
-    public opacity: number = 1
+    public opacity: number = 1,
+    public customTooltip: string = ""
   ) {}
   pixelMask: HTMLImageElement | null = null;
   polygons: RegionDisplayPolygon[] = [];
@@ -18,7 +19,8 @@ export class RegionDisplayPolygon {
 
   constructor(
     public boundaryPoints: Point[],
-    public holePolygons: Point[][]
+    public holePolygons: Point[][],
+    public opacity: number = 1
   ) {
     this.updateBBoxes();
   }

@@ -36,6 +36,10 @@ import {
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { MinMax } from "../models/BasicTypes";
+import { catchError, lastValueFrom, map, of } from "rxjs";
+import { MemoisedItem } from "../generated-protos/memoisation";
+import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
 
 export class InterpreterDataSource {
   constructor(
@@ -43,7 +47,8 @@ export class InterpreterDataSource {
     public pseudoDataSource: PseudoIntensityDataQuerierSource,
     public housekeepingDataSource: HousekeepingDataQuerierSource,
     public spectrumDataSource: SpectrumDataQuerierSource,
-    public diffractionSource: DiffractionPeakQuerierSource
+    public diffractionSource: DiffractionPeakQuerierSource,
+    private _exprMemoService?: ExpressionMemoisationService
   ) {}
 
   ////////////////////////////////////// Calling Quant Data Source //////////////////////////////////////
@@ -73,10 +78,10 @@ export class InterpreterDataSource {
       return result;
     }
 
-    return this.convertToMmol(argList[0], result);
+    return InterpreterDataSource.convertToMmol(argList[0], result);
   }
 
-  private convertToMmol(formula: string, values: PMCDataValues): PMCDataValues {
+  public static convertToMmol(formula: string, values: PMCDataValues): PMCDataValues {
     const result: PMCDataValue[] = [];
 
     let conversion = 1;
@@ -103,7 +108,7 @@ export class InterpreterDataSource {
       formula = formula.substring(0, formula.length - 2);
     }
 
-    let mass = periodicTableDB.getMolecularMass(formula);
+    const mass = periodicTableDB.getMolecularMass(formula);
     if (mass > 0) {
       // Success parsing it, work out the conversion factor:
       // This came from an email from Joel Hurowitz:
@@ -113,6 +118,7 @@ export class InterpreterDataSource {
       conversion *= 10 / mass; // AKA: 1/100/mass*1000;
     }
 
+    const range = new MinMax();
     for (let c = 0; c < values.values.length; c++) {
       let valToSave = 0;
       if (!values.values[c].isUndefined) {
@@ -120,9 +126,10 @@ export class InterpreterDataSource {
       }
 
       result.push(new PMCDataValue(values.values[c].pmc, valToSave, values.values[c].isUndefined));
+      range.expand(valToSave);
     }
 
-    return PMCDataValues.makeWithValues(result);
+    return PMCDataValues.makeWithValuesMinMax(result, range, false);
   }
 
   // Expects: %, A for example, calls element() for each element there is, and returns the sum of the values
@@ -270,13 +277,14 @@ export class InterpreterDataSource {
     const mapValue = argList[0];
 
     return this.quantDataSource.getPMCList().then((pmcs: number[]) => {
-      const values: PMCDataValue[] = [];
+      const result = new PMCDataValues();
+      result.isBinary = true; // pre-set for detection in addValue
 
       for (const pmc of pmcs) {
-        values.push(new PMCDataValue(pmc, mapValue));
+        result.addValue(new PMCDataValue(pmc, mapValue));
       }
 
-      return PMCDataValues.makeWithValues(values);
+      return result;
     });
   }
 
@@ -361,4 +369,74 @@ export class InterpreterDataSource {
   }
 
   public static validExistsDataTypes = ["element", "detector", "data", "housekeeping", "pseudo"];
+
+  public async getMemoised(argList: any[]): Promise<Uint8Array | null> {
+    if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "boolean") {
+      throw new Error("getMemoised() expects 2 parameters: key, waitIfInProgress. Received: " + argList.length + " parameters");
+    }
+
+    if (!this._exprMemoService) {
+      throw new Error("getMemoised() failed, service not available");
+    }
+
+    const key = "exprcachev1_" + argList[0];
+    return await lastValueFrom(
+      this._exprMemoService.getExprMemoised(key, true).pipe(
+        map((memItem: MemoisedItem) => {
+          // Parse to JS object
+          const str = new TextDecoder().decode(memItem.data);
+          return JSON.parse(str);
+        }),
+        catchError(err => {
+          console.error(`InterpreterDataSource: Failed to get memoised value for : ${key}: ${err}`);
+          return of(null);
+        })
+      )
+    );
+  }
+
+  public async memoise(argList: any[]): Promise<boolean> {
+    if (argList.length != 2 || typeof argList[0] != "string") {
+      throw new Error("memoise() expects 2 parameters: key, data. Received: " + argList.length + " parameters");
+    }
+
+    if (!this._exprMemoService) {
+      throw new Error("memoise() failed, service not available");
+    }
+
+    const key = "exprcachev1_" + argList[0];
+    const table = argList[1];
+
+    // Make sure table "looks" like a table
+    if (Object.keys(table).length <= 0) {
+      throw new Error("memoise() failed: table has no keys");
+    }
+
+    // Dump table as JSON to byte array so we can memoise it
+    const str = JSON.stringify(table);
+    const arr = new TextEncoder().encode(str);
+
+    return await lastValueFrom(this._exprMemoService.memoise(key, arr).pipe(map(() => true)));
+  }
+
+  // Properties we can query
+  getScanId(): string {
+    return this.quantDataSource.getScanId();
+  }
+
+  getQuantId(): string {
+    return this.quantDataSource.getQuantId();
+  }
+
+  getInstrument(): string {
+    return this.quantDataSource.getInstrument();
+  }
+
+  getElevAngle(): number {
+    return this.quantDataSource.getElevAngle();
+  }
+
+  getMaxSpectrumChannel(): number {
+    return this.spectrumDataSource.getMaxSpectrumChannel();
+  }
 }

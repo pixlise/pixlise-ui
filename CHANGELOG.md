@@ -1,15 +1,97 @@
-## 4.38.0 (Latest)
+## 4.48.0 (Latest)
+
+### Features
+- Lua expressions now support waiting on calculations by another expression to allow reducing the total amount of calculations on a given workspace tab.
+
+## 4.47.0 (2024-10-02)
+
+### Bug Fixes
+- Fixes export of context image being blank when RGBU image is selected
+
+## 4.46.0 (2024-10-02)
+
+### Bug Fixes
+- Fixes issue with MIST ROI reproducibility column not being applied correctly to some scans
+- Fixes stale ROI list in ROI picker when MIST ROIs are overwritten/replaced from side panel
+
+## 4.45.0 (2024-09-30)
+
+### Features
+- Expression Picker now remembers your last opened section
+- ROI Picker now remembers your last selected sections
+- MIST ROIs can now include a per-PMC confidence value column that affects ROI opacity on context image
+- **Custom ROI Colors** Adds support for custom ROI colors via a color picker. Preset colors should still be preferred where possible.
+- Expression language (in Lua only) now has 2 new functions: `readCache` and `writeCache` to allow reuse of calculated data between other expressions. Also added new constants: `instrument`, `scanId`, `quantId`, `maxSpectrumChannel` and `elevAngle`. Running expressions is also about 10% faster due to not recomputing the results of `spectrum()` calls when the same channels are requested.
+- Removed Back to V3 button
+
+## 4.44.0 (2024-09-27)
+
+### Bug Fixes
+- Fixes spectrum export exporting detector A values for detector B
+
+## 4.43.0 (2024-09-26)
+
+### Features
+- **Reorderable Workspace Tabs** You can now reorder workspace tabs by dragging and dropping them in the workspace tab list.
+
+### Bug Fixes
+- Fixes bug with sharing workspaces that include expression groups
+- Allows longer RGB Mix names to be saved
+
+## 4.42.0 (2024-09-18)
+
+### Bug Fixes
+
+- Fixes issue with exporter where if no beam location versions are found for a given image, it failed the entire export
+- Fixes an issue with admin accounts viewing the backup/restore features if they're disabled
+
+## 4.41.0 (2024-09-16)
+
+### Features
+
+- **Workspace Snapshot Sharing** Workspaces can now be shared as snapshots. This allows for sharing a workspace with a specific configuration, including all tabs, settings, and data. Snapshots can be shared with other users or saved for later use. Snapshots are read-only and cannot be edited after being created, but can be duplicated.
+  - All sub-items (expressions, ROIs, quants, etc.) are (attempted to be) shared on snapshot-share, but if the user doesn't have edit permissions for a sub-item, they will not be able to update its sharing settings and this shows up as a warning. This sharing issue can be resolved either before or after sharing a workspace and workspaces/all sub-items can be "re-shared" later.
+- **Workspace Duplicating** Workspaces can now be duplicated. This allows for creating a copy of a workspace with all tabs, settings, and data. Duplicated workspaces can be edited and saved as new workspaces.
+- **Default Quant Selection** When creating a new workspace, a default quant is now selected (workspace configuration is also automatically saved on quant change). Default quant selection is made by the following priority hierarchy:
+  - AutoQuant PIXL (A/B)
+  - AutoQuant PIXL (Combined)
+  - AutoQuant PDS (A/B)
+  - AutoQuant PDS (Combined)
+  - < Any default imported quant >
+  - First user-created A/B quant
+  - First user-created Combined quant
+- **New Workspace Improvements** Clicking the "New Workspace" button now opens a dialog to configure the workspace name, description, tags, and scans before creation. Additionally, holding "Cmd" (or "Ctrl" on Windows) and clicking scans will now add default select them for the new workspace.
+- **Workspace Searching Improvements** Workspace search now includes searching by snapshots and creator names. Also, you can click on column names to sort the workspace list. Lastly, your "Workspaces" or "Datasets" selection will be remembered when you navigate back to the workspace list.
+- **Backup & Restore** For PIXLISE Devs/Admins to be able to back up all PIXLISE data and restore onto another environment in a more automated way.
+
+### Bug Fixes
+
+- Fixes logout bug when clicked from the public site (redirects to wrong URL)
+- Fixes bug when plotting sigma values on Parallel Coordinates Plot with ratio columns showing
+- Fixes bug when creating new ROI from the ROI sidepanel instead of the selection dropdown (footprint was being selected)
+- Fixed intermittent connection error 18798 when UI was reconnecting to server
+
+## 4.40.0 (2024-09-05)
+
+### Features
+
+- **Exporting beam locations for uploaded images** Images uploaded and "matched" to existing MCC images now also have coordinates exported when ticking the "Beam Locations" option on export tab. We now export one CSV file per image name because we were getting way too many columns in one file.
+
+## 4.38.0 (2024-09-04)
 
 ### Features
 
 - **Redesigned Multi-Dataset Parallel Coordinates Plot** Parallel Coordinates plot now works with multiple datasets, picking up images from the ROI or defaulting to the MSA image in the case of All Points. Also allows toggling between mean/median, different sigma levels, and excluding zeros.
 - **Duplicate Workspace Tab** Allows for duplicating a workspace tab, including all settings and configurations, from the workspace tab on the sidebar.
 - **Select Nearby Pixels** Feature is back on the Selection (left) side-bar. If you click it, pixels in the RGBU MSA image get selected. If you're currently not viewing this on the context image, it still happens and switching the context image to the RGBU MSA image will display the selection.
+- **User Permissions applied to UI** In UI elements that allow quantification creation, viewing quant job list or ROI editing, we consistantly now show the feature as disabled if user has no permissions.
 
 ### Bug Fixes
 
 - Multi-Quant side-bar display issues
-- Importer lambda now prints out what triggered it first thing in case we need to re-run it. Also gets auto-deployed now.
+- Importer lambda now prints out what triggered it first thing in case we need to re-run it. Also gets auto-deployed now
+- Spectrum chart Display Fit feature is now more robust, and shows "spinners" when fit is being loaded or generated
+- Made PIQUANT map/fit options clearer for different user account permissions
 
 ## 4.37.0 (2024-08-20)
 
