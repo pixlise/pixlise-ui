@@ -287,7 +287,8 @@ describe("LuaDataQuerier runQuery() caching", () => {
       // console.log(args[1]);
       return Promise.resolve(true);
     });
-    ds.getMemoised.and.callFake((k: string) => {
+    ds.getMemoised.and.callFake((args: any[]) => {
+      const k = args[0];
       if (k == "GeoData") {
         return Promise.resolve(jsCachedItem);
       }
@@ -308,13 +309,14 @@ if x ~= true then
   return "writeCache(GeoData) unexpected result: "..x
 end
 
-local notHere = readCache("DoesntExist")
+local notHere = readCache("DoesntExist", false)
 if notHere ~= nil then
-  return "readCache(DoesntExist) unexpected result: "..notHere
+  return "readCache(DoesntExist, false) unexpected result: "..notHere
 end
 
-local readWorked = readCache("GeoData")
-if readWorked["anum"] ~= 72.94 or
+local readWorked = readCache("GeoData", false)
+if readWorked == nil or
+    readWorked["anum"] ~= 72.94 or
     readWorked["elements"][1] ~= "CaO" or
     readWorked["elements"][2] ~= "FeT" or
     readWorked["elements"][3] ~= "MnT" or
@@ -325,7 +327,7 @@ if readWorked["anum"] ~= 72.94 or
   print("BAD RESULT: ")
   DebugHelp.printTable("readWorked", readWorked)
 
-  return "readCache(GeoData) returned unexpected value"
+  return "readCache(GeoData, false) returned unexpected value"
 end
 
 return readWorked["amap"]`,
