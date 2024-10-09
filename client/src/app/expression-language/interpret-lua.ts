@@ -50,6 +50,7 @@ export class LuaDataQuerier {
   private _lua: LuaEngine | null = null;
   private _logTables: boolean = false;
   private _loggedTables = new Map<string, PMCDataValues>();
+  private _loggedValues = new Map<string, string>();
   private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
   private _totalJSFunctionTime = 0; // Total time spent in JS functions called from Lua
   private _debugJSTiming = true; // Enable to debug
@@ -223,7 +224,7 @@ export class LuaDataQuerier {
         value: async (a: any, b: any) => {
           const t0 = performance.now();
           this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-          return this.makeLuaTableAsync(`data(${a}, ${b})`, t0, this._dataSource!.readMap([a, b]));
+          return this.makeLuaTableAsync(`data(${a},${b})`, t0, this._dataSource!.readMap([a, b]));
         },
         argsIfFunc: 2,
         debugTiming: true,
@@ -417,7 +418,12 @@ export class LuaDataQuerier {
       "atomicMass",
       {
         value: (symbol: string) => {
-          return periodicTableDB.getMolecularMass(symbol);
+          const mass = periodicTableDB.getMolecularMass(symbol);
+          if (this._logTables) {
+            this._loggedValues.set(`atomicMass-${symbol}`, `${mass}`);
+          }
+
+          return mass;
         },
         argsIfFunc: 1,
         debugTiming: false,
@@ -426,11 +432,16 @@ export class LuaDataQuerier {
     [
       "exists_async",
       {
-        value: (dataType: string, column: string) => {
+        value: async (dataType: string, column: string) => {
           if (!this._dataSource) {
             return false;
           }
-          return this._dataSource.exists(dataType, column);
+
+          const exists = await this._dataSource.exists(dataType, column);
+          if (this._logTables) {
+            this._loggedValues.set(`exists-${dataType}-${column}`, `${exists}`);
+          }
+          return exists;
         },
         argsIfFunc: 2,
         debugTiming: false,
@@ -577,6 +588,7 @@ export class LuaDataQuerier {
     // If we want to record tables (well, any inputs) that the expression requires to run, remember this
     this._logTables = recordExpressionInputs;
     this._loggedTables.clear();
+    this._loggedValues.clear();
 
     return this.runLuaCode(sourceCode, maxTimeoutMs).pipe(
       map(result => {
@@ -603,7 +615,8 @@ export class LuaDataQuerier {
             runtimeMs,
             this._runtimeStdOut,
             this._runtimeStdErr,
-            this._loggedTables
+            this._loggedTables,
+            this._loggedValues
           );
         }
 

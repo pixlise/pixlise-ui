@@ -347,6 +347,7 @@ export class WidgetDataService {
             "",
             "",
             new Map<string, PMCDataValues>(),
+            new Map<string, string>(),
             err,
             DataExpression.create({
               id: query.exprId,
@@ -361,7 +362,7 @@ export class WidgetDataService {
 
   private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
     // If it's not memomisable, just return the calculated value straight away
-    if (DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+    if (environment.disableExpressionMemoisation || DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
     }
 
@@ -452,7 +453,7 @@ export class WidgetDataService {
               SentryHelper.logMsg(true, errorMsg);
             }
 
-            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg, expr));
+            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), errorMsg, expr));
           })
         );
       }),
@@ -462,7 +463,7 @@ export class WidgetDataService {
         // Don't need this in sentry!
         console.error(errorMsg);
 
-        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
+        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), errorMsg));
       })
     );
   }
@@ -558,6 +559,7 @@ export class WidgetDataService {
       "", // stdout
       "", // stderr
       new Map<string, PMCDataValues>(), // recordedExpressionInputs
+      new Map<string, string>(), // recorded expression values
       "", // errorMsg
       memResult.expression
     );
@@ -749,7 +751,8 @@ export class WidgetDataService {
           result.runtimeMs,
           result.stderr,
           result.stderr,
-          result.recordedExpressionInputs
+          result.recordedExpressionInputs,
+          result.recordedExpressionInputValues
         ),
         /*result.errorMsg.length > 0
           ? new WidgetError(result.errorMsg, "The expression failed, check configuration and try again")
@@ -773,7 +776,16 @@ export class WidgetDataService {
     }
 
     const resultItem = new RegionDataResultItem(
-      new DataQueryResult(valuesToWrite, result.isPMCTable, result.dataRequired, result.runtimeMs, result.stderr, result.stderr, result.recordedExpressionInputs),
+      new DataQueryResult(
+        valuesToWrite,
+        result.isPMCTable,
+        result.dataRequired,
+        result.runtimeMs,
+        result.stderr,
+        result.stderr,
+        result.recordedExpressionInputs,
+        result.recordedExpressionInputValues
+      ),
       null,
       valuesToWrite?.warning || "",
       result.expression,

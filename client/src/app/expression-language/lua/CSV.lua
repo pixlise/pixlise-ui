@@ -103,6 +103,19 @@ CSV.load = function(filename, delimiter, header)
 	return t_csv, t_header
 end
 
+CSV.loadLookup = function(filename, delimiter, header)
+	-- Read CSV into a single lookup table
+	local inputValuesCSV = CSV.load(filename, delimiter, header)
+	if inputValuesCSV == nil then
+		return nil
+	end
+	local lookup = {}
+	for r, items in pairs(inputValuesCSV) do
+		lookup[items[1]] = items[2]
+	end
+	return lookup
+end
+
 local function format_csv(strIn, sep)
 	local str, matches = string.gsub(strIn or "", '"', '""')
 	if (string.find(str, "[%"..sep.."\r\n]") or (matches > 0)) then

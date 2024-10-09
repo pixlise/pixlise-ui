@@ -1,5 +1,5 @@
 import { DatePipe } from "@angular/common";
-import { Observable, throwError, concatMap, from, switchMap, map, combineLatest } from "rxjs";
+import { Observable, throwError, switchMap, map, combineLatest } from "rxjs";
 import { DataExpression } from "../generated-protos/expressions";
 import { DataQueryResult, PMCDataValues } from "./data-values";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "./expression-language";
@@ -33,7 +33,7 @@ export class ExpressionExporter {
 
     const req$: any[] = [loadCodeForExpression(expression, cachedDataService), energyCalibrationService.getCurrentCalibration(scanId)];
 
-    const builtInMods = DataModuleHelpers.getBuiltInModuleNames();
+    const builtInMods = DataModuleHelpers.getExportModuleNames();
     for (const lib of builtInMods) {
       req$.push(DataModuleHelpers.getBuiltInModuleSource(lib));
     }
@@ -130,6 +130,20 @@ export class ExpressionExporter {
                   });
                 }
 
+                // Some functions called from expressions return values not maps, these are saved in one file here
+                if (queryResult.recordedExpressionInputValues.size > 0) {
+                  let data = "";
+                  for (const [k, v] of queryResult.recordedExpressionInputValues) {
+                    data += `"${k}","${v}"\n`;
+                  }
+
+                  result.csvs!.push({
+                    fileName: "expression-input-values.csv",
+                    subFolder: "expression/input-data",
+                    data: data,
+                  });
+                }
+
                 if (queryResult.isPMCTable) {
                   result.csvs!.push({
                     fileName: "PIXLISE_output.csv",
@@ -194,10 +208,16 @@ To run this expression, for example on a Windows machine where the lua
 executable is called lua54.exe:
 \`lua54 Main.lua\`
 
-If the expression executes successfully and returns map data, it will be printed
-to stdout in CSV format (as rows of PMCs,values). To do something more substancial
-with the output see the comments at the bottom of Main.lua showing how to access
-the returned value and do something with it!
+If the expression executes successfully and returns map data, the first few rows will
+be printed to stdout in CSV format (as rows of PMCs,values). The output will also be compared
+(in memory) with the ouutput file exported from PIXLISE to ensure the calculations run
+in this local Lua environment are the same as what PIXLISE does. See the code at the end of
+Main.lua to see how to read the output data, or debug/time how long it takes, etc.
+
+**NOTE:** If you specify a number as an argument, like:
+\`lua54 Main.lua 20\`
+
+The expression will be run 20 times (after the initial run) to calculate the average run-time.
 
 ## Export contents
 
@@ -279,8 +299,7 @@ the expression did not generated valid output)
   private makeExportableMainFile(exprName: string): string {
     let builtInRequireLines = "";
 
-    const builtInMods = DataModuleHelpers.getBuiltInModuleNames();
-    for (const builtInMod of builtInMods) {
+    for (const builtInMod of DataModuleHelpers.getExportModuleNames()) {
       builtInRequireLines += `${builtInMod} = require("${builtInMod}")\n`;
     }
 
@@ -295,25 +314,82 @@ require("PixliseRuntime")
 -- Built-in module imports:
 ${builtInRequireLines}
 
--- We define a function around the expression code, so we can execute it at will
--- and store its return value as needed
-function TheExpression()
-
--- Include the actual expression
-return require("${exprName}")
-
+-- We read the expression code in and define a function for it so we can execute it at will
+function readAll(file)
+    local f = assert(io.open(file, "rb"))
+    local content = f:read("*all")
+    f:close()
+    return content
 end
 
+local TheExpression = load(readAll("${exprName}.lua"))
+
 -- Run the expression, write the results to stdout as CSV
+print("Running expression...")
+
+local t0 = os.clock()
 local r = TheExpression()
+local t1 = os.clock()
+
+print("\\nRuntime: "..(t1-t0).."sec generating "..#r[1].." values")
+
+print("\\nResults:")
 for idx, mapPMC in ipairs(r[1]) do
-print(mapPMC..","..r[2][idx])
+    print(mapPMC..","..r[2][idx])
+    if idx > 10 then
+        print("... not printing more rows!\\n")
+        break
+    end
 end
 
 -- NOTE: This could easily be modified to do something with the value, for example:
 -- Map.getPMCValue(TheExpression(), 4) would return the value for PMC 4
 -- Outputting as CSV:
 -- writeCSV("output.csv", TheExpression())
+
+-- Verify that the output is what we expect (output dir contains the result calculated in PIXLISE)
+local expectedCSVPath = "./output-data/PIXLISE_output.csv"
+local expectedValuesCSV = CSV.load(expectedCSVPath, ",", false)
+
+local matches = 0
+local count = 0
+for k, pmcVal in ipairs(expectedValuesCSV) do
+    local ok = true
+    if tonumber(pmcVal[1]) ~= r[1][k] then
+        print("Output: row "..k.." expected PMC "..pmcVal[1]..", got: "..r[1][k])
+        ok = false
+    end
+    if tonumber(pmcVal[2]) ~= r[2][k] then
+        print("Output: row "..k.." expected value "..pmcVal[2]..", got: "..r[2][k])
+        ok = false
+    end
+
+    if ok then
+        matches = matches+1
+    end
+    count = count+1
+end
+
+print("\\n"..matches.."/"..count.." rows equal expected output\\n")
+
+local n = tonumber(arg[1])
+if n ~= nil and n > 0 then
+  print("Running expression "..n.." more times to get average run time...")
+
+  local totalRuntime = 0
+  for i = 1,n,1 do
+      print("Running: "..i.."/"..n)
+      local t0_ = os.clock()
+      local r = TheExpression()
+      local t1_ = os.clock()
+
+      print("  Runtime: "..(t1_-t0_).."sec generating "..#r[1].." values")
+
+      totalRuntime = totalRuntime + (t1_ - t0_)
+  end
+
+  print("Avg Runtime: "..(totalRuntime/n).."sec")
+end
 `;
   }
 

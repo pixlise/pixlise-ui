@@ -63,8 +63,13 @@ export class DataModuleHelpers {
   // NOTE: these are static so the code can be shared with LuaDataQuerier. We want these to look the same
   // modules up, and not download them too often.
   static getBuiltInModuleNames(): string[] {
-    // NOTE: we also have FuncRunner for running replay data... bit of a hack for testing
     return DataModuleHelpers._builtInModuleNames;
+  }
+
+  static getExportModuleNames(): string[] {
+    let mods = [...DataModuleHelpers._exportedBuiltInModuleNames, ...DataModuleHelpers._builtInModuleNames];
+    mods = mods.filter((mod: string) => mod != "SyncRuntime");
+    return mods;
   }
 
   static getBuiltInModuleSource(name: string): Observable<string> {

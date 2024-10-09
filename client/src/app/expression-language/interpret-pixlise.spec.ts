@@ -39,6 +39,7 @@ import { PixliseDataQuerier, ExpressionParts } from "src/app/expression-language
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { MemoisationService } from "../modules/pixlisecore/services/memoisation.service";
 import { SpectrumChannels } from "../utils/utils";
+import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
 
 class MockSource implements QuantifiedDataQuerierSource {
   constructor(
@@ -201,7 +202,7 @@ function makeDataSource(pmcResults: { [key: string]: PMCDataValues }, elems: str
     new MockHousekeepingSource(housekeepingSrcData),
     new MockSpectrumDataQuerierSource(),
     new MockDiffractionSource(diffractionSrcData),
-    {} as MemoisationService
+    {} as ExpressionMemoisationService
   );
 }
 
