@@ -40,7 +40,7 @@ import { Colours, RGBA, ColourRamp } from "src/app/utils/colours";
 import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { RGBUMineralPoint, RGBUPlotData, RGBUAxisUnit, RGBURatioPoint, ROICount, RGBUMineralRatios } from "./rgbu-plot-data";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { Subject } from "rxjs";
+import { Observable, of, Subject } from "rxjs";
 import { BaseChartModel } from "../../base/model-interfaces";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
@@ -313,7 +313,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return rgbuPlotData;
   }
 
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext: CanvasRenderingContext2D): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext: CanvasRenderingContext2D): Observable<void> {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       // Calculate the points
@@ -330,7 +330,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
         this.initAxes(canvasParams, panZoom, 0);
 
         if (!this._xAxis || !this._yAxis || !screenContext) {
-          return;
+          return of(void 0);
         }
 
         // All this for variable y-axis label widths!!
@@ -347,6 +347,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
         this._recalcNeeded = false;
       }
     }
+    return of(void 0);
   }
 
   private initAxes(canvasParams: CanvasParams, transform: PanZoom, leftAxisLabelWidthPx: number): void {

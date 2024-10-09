@@ -40,7 +40,7 @@ export class MemoisationService {
   memoise(key: string, data: Uint8Array): Observable<MemoisedItem> {
     if (environment.skipMemoizeKeys.indexOf(key) > -1) {
       console.warn("Skipping memoisation of: " + key);
-      return of();
+      return of(MemoisedItem.create({ key: key, data: data }));
     }
 
     // Only memoise if it's changed
@@ -50,7 +50,7 @@ export class MemoisationService {
       if (idx < 0) {
         // Stop here, we've already got this memoised
         console.warn("Already memoised: " + key);
-        return of();
+        return of(MemoisedItem.create({ key: key, data: data }));
       } else {
         SentryHelper.logMsg(false, `Memoised data ${key} changed at idx ${idx}`);
       }

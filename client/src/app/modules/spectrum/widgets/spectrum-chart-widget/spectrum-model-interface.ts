@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Subject } from "rxjs";
+import { Observable, Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { ChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
@@ -81,7 +81,7 @@ export interface ISpectrumChartModel {
 
   transform: PanZoom;
 
-  recalcDisplayDataIfNeeded(viewport: CanvasParams): void;
+  recalcDisplayDataIfNeeded(viewport: CanvasParams): Observable<void>;
 
   needsDraw$: Subject<void>;
 

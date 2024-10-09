@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { BehaviorSubject, ReplaySubject, Subject } from "rxjs";
+import { BehaviorSubject, Observable, of, ReplaySubject, Subject } from "rxjs";
 import { ObjectCreator, MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -927,13 +927,14 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   // Rebuilding this models display data
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this.regenerateDrawModel(canvasParams);
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }
+    return of(void 0);
   }
 
   private regenerateDrawModel(viewport: CanvasParams) {
