@@ -177,7 +177,7 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
         }
 
         //  expect(value.resultValues.values).toEqual(PMCDataValues.makeWithValues(expectedOutputValues));
-        //const exp = new DataQueryResult(1, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+        //const exp = new DataQueryResult(1, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), "");
         //expect(value).toEqual(exp);
       },
       // Error handler

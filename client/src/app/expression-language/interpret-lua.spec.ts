@@ -128,7 +128,7 @@ describe("LuaDataQuerier runQuery()", () => {
     lua.runQuery('return "hello".."world"..333', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
-        const exp = new DataQueryResult("helloworld333", false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+        const exp = new DataQueryResult("helloworld333", false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), "");
         expect(value.runtimeMs > 0);
         expect(value).toEqual(exp);
       },
@@ -165,7 +165,7 @@ describe("LuaDataQuerier runQuery()", () => {
     lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
-        const exp = new DataQueryResult(7, false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+        const exp = new DataQueryResult(7, false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), "");
         expect(value.runtimeMs > 0);
         expect(value).toEqual(exp);
       },
@@ -202,7 +202,7 @@ describe("LuaDataQuerier runQuery()", () => {
     lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true, false).subscribe(
       // Result
       value => {
-        const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+        const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), "");
         expect(value).toEqual(exp);
       },
       // Error handler
@@ -241,7 +241,7 @@ describe("LuaDataQuerier runQuery()", () => {
     lua.runQuery('return element("Ca", "%", "B")', new Map<string, string>(), ds, true, true, true).subscribe(
       // Result
       value => {
-        const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>([["elem-Ca-%-B", Ca]]), "");
+        const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>([["elem-Ca-%-B", Ca]]), new Map<string, string>(), "");
         expect(value).toEqual(exp);
       },
       // Error handler
@@ -338,7 +338,7 @@ return readWorked["amap"]`,
       .subscribe(
         // Result
         value => {
-          const exp = new DataQueryResult(mapValues, true, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+          const exp = new DataQueryResult(mapValues, true, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), "");
           expect(value).toEqual(exp);
         },
         // Error handler

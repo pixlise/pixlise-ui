@@ -89,6 +89,7 @@ export class DataQueryResult {
     public stdout: string,
     public stderr: string,
     public recordedExpressionInputs: Map<string, PMCDataValues>,
+    public recordedExpressionInputValues: Map<string, string>,
     public errorMsg: string = "",
     public expression: DataExpression | null = null,
     public region: RegionSettings | null = null
