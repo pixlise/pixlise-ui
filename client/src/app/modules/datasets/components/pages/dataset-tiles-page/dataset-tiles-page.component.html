@@ -103,16 +103,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #openWorkspaceOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <!-- <push-button
-      *ngIf="userCanEdit && selectedWorkspace"
-      confirmInputText="Enter a name for the new workspace"
-      confirmInputTitle="Duplicate Snapshot"
-      [confirmInputPlaceholder]="selectedWorkspace.name || 'Workspace Name'"
-      confirmInputMiddleButtonText="Duplicate"
-      confirmInputButtonText="Duplicate & Open"
-      (onClick)="onDuplicateClick(selectedWorkspace, $event)"
-      buttonStyle="gray"
-      >Duplicate</push-button -->
     <push-button *ngIf="userCanEdit" (onClick)="onOpenDuplicateWorkspaceDialog()" buttonStyle="gray">Duplicate</push-button>
 
     <push-button
@@ -331,11 +321,6 @@ POSSIBILITY OF SUCH DAMAGE.
             <push-button
               *ngIf="!selectedWorkspace.owner?.canEdit || selectedWorkspace.snapshotParentId"
               buttonStyle="yellow"
-              confirmInputText="Enter a name for the new workspace"
-              confirmInputTitle="Duplicate Snapshot"
-              [confirmInputPlaceholder]="selectedWorkspace.name || 'Workspace Name'"
-              confirmInputMiddleButtonText="Duplicate"
-              confirmInputButtonText="Duplicate & Open"
               (onClick)="onDuplicateLatestClick(selectedWorkspace.snapshotParentId, $event)"
               >Duplicate
             </push-button>
@@ -393,17 +378,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</span>
               </div>
               <div class="action-btns">
-                <push-button
-                  *ngIf="item.snapshotParentId"
-                  confirmInputText="Enter a name for the new workspace"
-                  confirmInputTitle="Duplicate Snapshot"
-                  [confirmInputPlaceholder]="item.name || 'Workspace Name'"
-                  confirmInputMiddleButtonText="Duplicate"
-                  confirmInputButtonText="Duplicate & Open"
-                  (onClick)="onDuplicateClick(item, $event)"
-                  buttonStyle="gray"
-                  >Duplicate</push-button
-                >
+                <push-button *ngIf="item.snapshotParentId" (onClick)="onDuplicateClick(item, $event)" buttonStyle="gray">Duplicate</push-button>
                 <push-button *ngIf="!item.snapshotParentId" (onClick)="onOpenWorkspace(item)" buttonStyle="gray">Open</push-button>
               </div>
             </div>
@@ -414,8 +389,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <!-- Datasets Mode -->
     <div *ngIf="datasetListingAllowed && datasetsMode" class="meta-summary" aria-label="DatasetMetaSummary">
-      <!-- <h2 class="meta-title">Metadata</h2> -->
-
       <app-widget-display-message *ngIf="!selectedScan" [message]="noSelectedScanMsg"> </app-widget-display-message>
 
       <div class="info-panel" *ngIf="selectedScan !== null">

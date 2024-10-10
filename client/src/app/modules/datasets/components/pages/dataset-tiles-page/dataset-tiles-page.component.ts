@@ -877,8 +877,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((result: DuplicateWorkspaceDialogResult) => {
+    dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
       this.onSearchWorkspsaces();
+      if (response.shouldOpen) {
+        this.onOpenWorkspace(response.workspace);
+      }
     });
   }
 
@@ -914,10 +917,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       }
     }
 
-    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, undefined, openWorkspace, createdWorkspace => {
+    const dialogConfig = new MatDialogConfig<DuplicateWorkspaceDialogData>();
+    dialogConfig.data = {
+      workspace: newWorkspace,
+      workspaceId: workspace.id,
+    } as DuplicateWorkspaceDialogData;
+
+    const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
       this.onSearchWorkspsaces();
-      if (openWorkspace) {
-        this.onOpenWorkspace(createdWorkspace);
+      if (response.shouldOpen) {
+        this.onOpenWorkspace(response.workspace);
       }
     });
   }

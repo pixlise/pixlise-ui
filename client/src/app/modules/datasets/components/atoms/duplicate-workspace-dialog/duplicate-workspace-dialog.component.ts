@@ -25,7 +25,10 @@ export interface DuplicateWorkspaceDialogData {
   workspaceId: string;
 }
 
-export interface DuplicateWorkspaceDialogResult {}
+export interface DuplicateWorkspaceDialogResult {
+  shouldOpen: boolean;
+  workspace: ScreenConfiguration;
+}
 
 export type DatasetProducts = {
   rois: ROIItem[];
@@ -562,7 +565,7 @@ export class DuplicateWorkspaceDialogComponent {
     this.dialogRef.close();
   }
 
-  onConfirm(): void {
+  onConfirm(shouldOpen: boolean = false): void {
     if (!this._newWorkspace) {
       return;
     }
@@ -588,9 +591,12 @@ export class DuplicateWorkspaceDialogComponent {
       });
     });
 
-    this._analysisLayoutService.writeScreenConfiguration(this._newWorkspace, undefined, false, () => {
+    this._analysisLayoutService.writeScreenConfiguration(this._newWorkspace, undefined, shouldOpen, response => {
       this._snackbarService.openSuccess(`Workspace ${this._newWorkspace!.name} duplicated successfully`);
-      this.dialogRef.close(true);
+      this.dialogRef.close({
+        shouldOpen: shouldOpen,
+        workspace: response,
+      });
     });
   }
 
