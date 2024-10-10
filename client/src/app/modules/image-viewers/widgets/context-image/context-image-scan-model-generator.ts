@@ -26,6 +26,7 @@ import { radToDeg } from "src/app/utils/utils";
 import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { RGBA } from "src/app/utils/colours";
 import { ContextImageScanModel, convertLocationComponentToPixelPosition } from "./context-image-model";
+import { environment } from "src/environments/environment";
 
 // Just a namespace really that collects a bunch of code that calculates the model data (footprints, polygons, bounding boxes, etc)
 export class ContextImageScanModelGenerator {
@@ -183,7 +184,11 @@ export class ContextImageScanModelGenerator {
         if (!beamIJs) {
           imageIJPoint = new Point(beamXYZ.x, beamXYZ.y);
         } else if (imageIJ) {
-          imageIJPoint = new Point(imageIJ.i, imageIJ.j);
+          if (environment.readBeamIJSwapped) {
+            imageIJPoint = new Point(imageIJ.i, imageIJ.j); // backwards (the old, buggy way it was for 5 years after project inception)
+          } else {
+            imageIJPoint = new Point(imageIJ.j, imageIJ.i); // i=row (aka y), j=col (aka x)
+          }
         }
 
         // Expand the x,y,z bbox:
@@ -195,7 +200,16 @@ export class ContextImageScanModelGenerator {
           // And the i,j bbox
           // Not sure why this was rounded in past, but keeping this convention going forward until
           // a need arises to change it
-          const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.i, imageIJ.j);
+          let pixlX = imageIJ.j;
+          let pixlY = imageIJ.i;
+
+          if (environment.readBeamIJSwapped) {
+            // backwards (the old, buggy way it was for 5 years after project inception)
+            pixlX = imageIJ.i;
+            pixlY = imageIJ.j;
+          }
+
+          const roundedIJ = convertLocationComponentToPixelPosition(pixlX, pixlY);
           if (firstBeam) {
             this._locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
             firstBeam = false;
