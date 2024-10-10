@@ -483,7 +483,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   }
 
   // Rebuilding this models display data
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     // Sometimes the colour scale wants a recalc, so check for that here
     let forceRecalcDrawModel = false;
     for (const scale of this._colourScales) {
@@ -495,25 +495,29 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (forceRecalcDrawModel || this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       //console.warn("drawModel.regenerate called...");
-      this._drawModel.regenerate(canvasParams, this).subscribe(() => {
-        //console.warn("regenerate completion...");
-        // If we don't have colour scales, but do have RGBU data and are in ratio mode, we can generate a scale from that
-        this.buildRGBUColourScaleIfNeeded();
+      return this._drawModel.regenerate(canvasParams, this).pipe(
+        tap(() => {
+          //console.warn("regenerate completion...");
+          // If we don't have colour scales, but do have RGBU data and are in ratio mode, we can generate a scale from that
+          this.buildRGBUColourScaleIfNeeded();
 
-        // Also recalculate draw models of any colour scales we're showing
-        for (const scale of this._colourScales) {
-          scale.recalcDisplayData(canvasParams);
-        }
+          // Also recalculate draw models of any colour scales we're showing
+          for (const scale of this._colourScales) {
+            scale.recalcDisplayData(canvasParams);
+          }
 
-        this._lastCalcCanvasParams = canvasParams;
-        this._recalcNeeded = false;
+          this._lastCalcCanvasParams = canvasParams;
+          this._recalcNeeded = false;
 
-        this.drawModel.drawnData = null;
-        this.needsDraw$.next();
-      });
+          this.drawModel.drawnData = null;
+          this.needsDraw$.next();
+        })
+      );
     } /*else {
       console.warn("SKIPPED drawModel.regenerate...");
     }*/
+
+    return of(void 0);
   }
 
   getClosestLocationIdxToPoint(worldPt: Point): ClosestPoint {
@@ -643,11 +647,11 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       // NOTE: we have a case here where the image isn't restored. If the raw data has no image, but DOES have an RGBU image
       // we can would have to regenerate the display image. Because that's extra work, check in an existing drawer
       // to see if it has an image, and reuse that
-      if (!from.raw?.image && from.raw?.rgbuSourceImage && from.drawModel.image) {
-        this.image = from.drawModel.image;
-      } else {
-        this.image = from.raw?.image || null;
-      }
+      // if (!from.raw?.image && from.raw?.rgbuSourceImage && from.drawModel.image) {
+      //   this.image = from.drawModel.image;
+      // } else {
+      this.image = from.raw?.image || null;
+      //}
     }
 
     // Apply brightness

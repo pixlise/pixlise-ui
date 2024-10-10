@@ -1,5 +1,6 @@
 import { Point, PointWithRayLabel } from "src/app/models/Geometry";
 import { CanvasParams } from "../../widget/components/interactive-canvas/interactive-canvas.component";
+import { Observable } from "rxjs";
 
 // For use with cached drawer
 export interface BaseChartDrawModel {
@@ -7,7 +8,7 @@ export interface BaseChartDrawModel {
 }
 
 export interface BaseChartModel {
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext?: CanvasRenderingContext2D): void;
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext?: CanvasRenderingContext2D): Observable<void>;
   drawModel: BaseChartDrawModel;
   hasRawData(): boolean;
 }
