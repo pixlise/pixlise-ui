@@ -1,7 +1,15 @@
 ## 4.48.0 (Latest)
 
 ### Features
-- Lua expressions now support waiting on calculations by another expression to allow reducing the total amount of calculations on a given workspace tab.
+- Lua expressions now support waiting on calculations by another expression to allow reducing the total amount of calculations on a given workspace tab. This is done through the readCache/writeCache functions, where readCache() takes a 2nd parameter, which if set to true, will wait for anything already calculating to complete. If nothing is calculating, the caller is expected to call writeCache() for that same key to save a value for other expressions to use.
+- Brought back Lua function export feature. Exports code/modules along with the data the expression needs. It can be run on your local machine using the lua interpreter. See the README.md file included with an export
+- Improved Lua expression execution time by optimising Map library. Runs about 15-20% faster.
+- We now run 2 expressions as part of our automated test suite: "SiO2'" and "Diffraction Map (B)". Results are compared to expected outputs.
+- Added ability for PIXLISE to display beam location i,j values correctly once data is corrected (they're stored as j,i throughout the pipeline).
+- Documented where PIXLISE periodic table and XRF data comes from, in case it needs to be traced/referenced as part of publications
+
+### Bug Fixes
+- Fixes "disimprovement" from last release: Exporting of RGBU context image worked, but RGBU channel selection now didn't trigger image re-rendering. This should now work reliably for both cases.
 
 ## 4.47.0 (2024-10-02)
 
