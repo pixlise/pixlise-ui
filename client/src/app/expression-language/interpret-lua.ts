@@ -53,7 +53,7 @@ export class LuaDataQuerier {
   private _loggedValues = new Map<string, string>();
   private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
   private _totalJSFunctionTime = 0; // Total time spent in JS functions called from Lua
-  private _debugJSTiming = true; // Enable to debug
+  private _debugJSTiming = environment.luaJSDebugTiming; // Enable to debug
   private _jsFuncCalls: string[] = [];
   //private _luaLibImports = "";
 
@@ -604,10 +604,13 @@ export class LuaDataQuerier {
           }
 
           if (this._debugJSTiming) {
-            console.log(`Total JS function time: ${this._totalJSFunctionTime.toLocaleString()}ms`);
+            console.log(`${this._logId}Total JS function time: ${this._totalJSFunctionTime.toLocaleString()}ms`);
           }
 
           const runtimeMs = performance.now() - t0;
+
+          console.log(`${this._logId}Expression complete`);
+
           return new DataQueryResult(
             formattedData,
             isPMCTable,
@@ -620,7 +623,9 @@ export class LuaDataQuerier {
           );
         }
 
-        throw new Error("Expression: did not return a value");
+        const msg = "Expression: did not return a value";
+        console.log(`${this._logId}${msg}`);
+        throw new Error(msg);
       }),
       catchError(err => {
         const parsedErr = this.parseLuaError(err, sourceCode, maxTimeoutMs);
@@ -658,6 +663,8 @@ export class LuaDataQuerier {
         // Close the lua environment, so it can be freed
         if (cleanupLua) {
           this.shutdown();
+        } else {
+          console.log(`${this._logId}Shutdown skipped`);
         }
       })
     );
