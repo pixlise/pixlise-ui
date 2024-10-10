@@ -9,7 +9,7 @@ import { APIDataService, SelectionService, SnackbarService } from "../../pixlise
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationListReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
-import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { FullScreenLayout, ScanCalibrationConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
@@ -627,6 +627,237 @@ export class AnalysisLayoutService implements OnDestroy {
 
   getLoadedQuant(scanId: string, quantId: string): QuantificationSummary | undefined {
     return this.availableScanQuants$.value[scanId]?.find(quant => quant.id === quantId);
+  }
+
+  removeIdFromScreenConfiguration(screenConfiguration: ScreenConfiguration, id: string): ScreenConfiguration {
+    let newScreenConfiguration = { ...screenConfiguration };
+    Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
+      if (scanId === id) {
+        delete newScreenConfiguration.scanConfigurations[scanId];
+        return;
+      }
+
+      if (scanConfig.quantId === id) {
+        scanConfig.quantId = "";
+      }
+    });
+
+    newScreenConfiguration.layouts = screenConfiguration.layouts.map(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          if (widgetData?.scanId === id) {
+            widgetData.scanId = "";
+          }
+
+          if (widgetData?.visibleROIs) {
+            let visibleROIs = widgetData.visibleROIs as VisibleROI[];
+            widgetData.visibleROIs = visibleROIs.filter(roi => roi.id !== id);
+          }
+
+          if (widgetData?.roi) {
+            if (widgetData.roi === id) {
+              widgetData.roi = "";
+            }
+          }
+
+          if (widgetData?.roiLayers) {
+            let roiLayers = widgetData.roiLayers as ROILayerVisibility[];
+            widgetData.roiLayers = roiLayers.filter(roiLayer => roiLayer.id !== id);
+          }
+
+          if (widgetData?.roiIds) {
+            let roiIds = widgetData.roiIds as string[];
+            widgetData.roiIds = roiIds.filter(roiId => roiId !== id);
+          }
+
+          if (widgetData?.spectrumLines) {
+            let spectrumLines = widgetData.spectrumLines as SpectrumLines[];
+            widgetData.spectrumLines = spectrumLines.filter(spectrumLines => spectrumLines.roiID !== id);
+          }
+
+          if (widgetData?.imageName === id) {
+            widgetData.imageName = "";
+          }
+
+          if (widgetData?.contextImage?.contextImage === id) {
+            widgetData.contextImage.contextImage = "";
+          }
+        }
+      });
+
+      return layout;
+    });
+
+    // Convert workspace to JSON, do a final ID strip, then convert back to object
+    let newScreenConfigurationStr = JSON.stringify(newScreenConfiguration).replace(new RegExp(id, "g"), "");
+    if (newScreenConfigurationStr) {
+      newScreenConfiguration = ScreenConfiguration.create(JSON.parse(newScreenConfigurationStr));
+    }
+
+    return newScreenConfiguration;
+  }
+
+  private _replaceIDInStringFields = (json: any, oldId: string, newId: string) => {
+    if (typeof json === "object" && json !== null) {
+      for (let key in json) {
+        if (typeof json[key] === "object") {
+          this._replaceIDInStringFields(json[key], oldId, newId);
+        } else if (json[key] === oldId) {
+          json[key] = newId;
+        } else if (
+          typeof json[key] === "string" &&
+          json[key].includes(oldId) &&
+          (PredefinedROIID.isPredefined(json[key]) || DataExpressionId.isPredefinedExpression(json[key]))
+        ) {
+          // Replace scan id in predefined ids
+          json[key] = json[key].replace(new RegExp(oldId, "g"), newId);
+        }
+      }
+    }
+  };
+
+  replaceIdInScreenConfiguration(screenConfiguration: ScreenConfiguration, oldId: string, newId: string): ScreenConfiguration {
+    let newScreenConfiguration = { ...screenConfiguration };
+    Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
+      if (scanId === oldId) {
+        delete newScreenConfiguration.scanConfigurations[scanId];
+        newScreenConfiguration.scanConfigurations[newId] = {
+          id: newId,
+          colour: scanConfig.colour,
+          quantId: scanConfig.quantId,
+          calibrations: [],
+        };
+      }
+    });
+
+    // Have to loop through again to update the quantIds
+    Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
+      if (scanConfig.quantId === oldId) {
+        scanConfig.quantId = newId;
+      }
+    });
+
+    newScreenConfiguration.layouts = screenConfiguration.layouts.map(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          if (widgetData?.visibleROIs) {
+            let visibleROIs = widgetData.visibleROIs as VisibleROI[];
+            widgetData.visibleROIs = visibleROIs.map(roi => {
+              if (roi.id === oldId) {
+                roi.id = newId;
+              } else if (roi.scanId === oldId) {
+                roi.scanId = newId;
+              }
+
+              return roi;
+            });
+          }
+
+          if (widgetData?.roi) {
+            if (widgetData.roi === oldId) {
+              widgetData.roi = newId;
+            }
+          }
+
+          if (widgetData?.roiLayers) {
+            let roiLayers = widgetData.roiLayers as ROILayerVisibility[];
+            widgetData.roiLayers = roiLayers.map(roiLayer => {
+              if (roiLayer.id === oldId) {
+                roiLayer.id = newId;
+              } else if (roiLayer.scanId === oldId) {
+                roiLayer.scanId = newId;
+              }
+
+              return roiLayer;
+            });
+          }
+
+          if (widgetData?.roiIds) {
+            let roiIds = widgetData.roiIds as string[];
+            widgetData.roiIds = roiIds.map(roiId => {
+              if (roiId === oldId) {
+                return newId;
+              }
+
+              return roiId;
+            });
+          }
+
+          if (widgetData?.spectrumLines) {
+            let spectrumLines = widgetData.spectrumLines as SpectrumLines[];
+            widgetData.spectrumLines = spectrumLines.map(spectrumLines => {
+              if (spectrumLines.roiID === oldId) {
+                spectrumLines.roiID = newId;
+              }
+
+              return spectrumLines;
+            });
+          }
+        }
+      });
+      return layout;
+    });
+
+    // More broad replace of the ID in the JSON
+    this._replaceIDInStringFields(newScreenConfiguration, oldId, newId);
+    return newScreenConfiguration;
+  }
+
+  getImageIDsFromScreenConfiguration(screenConfiguration: ScreenConfiguration): string[] {
+    let imageIDs: string[] = [];
+
+    screenConfiguration.layouts.forEach(layout => {
+      layout.widgets.forEach(widget => {
+        if (widget?.data && widget?.type) {
+          let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
+          let widgetData = (widget.data as any)[widgetKey];
+          if (!widgetData) {
+            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            return;
+          }
+
+          if (widgetKey === "contextImage") {
+            let contextImage = widget.data.contextImage;
+            if (contextImage) {
+              imageIDs.push(contextImage.contextImage);
+            }
+          } else if (widgetKey === "rgbuPlot") {
+            let rgbuPlot = widget.data.rgbuPlot;
+            if (rgbuPlot) {
+              imageIDs.push(rgbuPlot.imageName);
+            }
+          } else if (widgetKey === "singleAxisRGBU") {
+            let singleAxisRGBU = widget.data.singleAxisRGBU;
+            if (singleAxisRGBU) {
+              imageIDs.push(singleAxisRGBU.imageName);
+            }
+          } else if (widgetKey === "rgbuImage") {
+            let rgbuImage = widget.data.rgbuImage;
+            if (rgbuImage) {
+              imageIDs.push(rgbuImage.imageName);
+            }
+          }
+        }
+      });
+    });
+
+    imageIDs = Array.from(new Set(imageIDs));
+
+    return imageIDs;
   }
 
   getROIIDsFromScreenConfiguration(screenConfiguration: ScreenConfiguration): string[] {

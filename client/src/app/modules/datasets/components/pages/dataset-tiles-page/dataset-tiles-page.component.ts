@@ -877,7 +877,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((result: DuplicateWorkspaceDialogResult) => {});
+    dialogRef.afterClosed().subscribe((result: DuplicateWorkspaceDialogResult) => {
+      this.onSearchWorkspsaces();
+    });
   }
 
   onDuplicateClick(workspace: ScreenConfiguration, response: { value: string; middleButtonClicked: boolean }): void {

@@ -46,7 +46,6 @@ h5 {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
 
   .header {
     display: flex;
@@ -94,7 +93,8 @@ h5 {
   display: flex;
   flex-direction: column;
 
-  padding: 8px;
+  // padding: 8px;
+  padding-top: 8px;
   padding-right: 6px;
   gap: 8px;
   flex: 1;
@@ -121,6 +121,9 @@ h5 {
     gap: 8px;
     position: relative;
 
+    border-bottom: 1px solid #454c50;
+    padding-bottom: 8px;
+
     .dataset-header {
       display: flex;
       align-items: center;
@@ -135,7 +138,11 @@ h5 {
 
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 4px;
+
+        img {
+          margin-right: 8px;
+        }
       }
 
       .product-replace {
@@ -144,9 +151,9 @@ h5 {
         align-items: center;
         gap: 8px;
 
-        searchable-list {
-          margin-left: 4px;
-        }
+        // searchable-list {
+        //   margin-left: 4px;
+        // }
 
         mat-select {
           &.replace-select {
@@ -181,14 +188,21 @@ h5 {
           align-items: center;
           gap: 8px;
 
-          img {
-            margin-left: 32px;
+          .product-type {
+            margin-left: 28px;
+
+            width: 24px;
+            display: flex;
+            align-items: center;
+
+            img {
+            }
           }
 
           h5 {
-            // max-width: 175px;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
           }
         }
 
@@ -238,4 +252,13 @@ mat-select-trigger {
     margin: 0;
     margin-left: 56px;
   }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+
+  margin-bottom: 8px;
 }

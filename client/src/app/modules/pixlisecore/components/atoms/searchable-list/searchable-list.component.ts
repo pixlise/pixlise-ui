@@ -29,10 +29,14 @@
 
 import { Component, OnInit, Input, Output, EventEmitter } from "@angular/core";
 
-export type DefaultSearchableListItem = {
+export type SearchableListItem = {
   id: string;
   name: string;
   icon?: string;
+  rightIcon?: string;
+  rightText?: string;
+  color?: string;
+  default?: boolean;
 };
 
 @Component({
@@ -44,21 +48,46 @@ export class SearchableListComponent implements OnInit {
   private _searchText: string = "";
 
   @Input() placeholder: string = "Search...";
-  @Input() idField: string = "id";
-  @Input() defaultItem: DefaultSearchableListItem | null = null;
-  @Input() items: any[] = [];
-  @Input() nameFn: (item: any) => string = (item: any) => item as string;
+  @Input() disabledValues: string[] = [];
+  private _items: SearchableListItem[] = [];
   @Output() onSelect = new EventEmitter<any>();
 
+  private _defaultValue: string = "";
   private _value: string = "";
-  selectedItem: any = null;
+  selectedItem: SearchableListItem | null = null;
 
-  addItemList: any[] = [];
+  addItemList: SearchableListItem[] = [];
 
   constructor() {}
 
   ngOnInit(): void {
     this.onSearchList(this._searchText);
+  }
+
+  get items(): SearchableListItem[] {
+    return this._items;
+  }
+
+  @Input() set items(items: SearchableListItem[]) {
+    this._items = items;
+    this.value = this._value;
+    this.onSearchList(this._searchText);
+  }
+
+  get defaultValue(): string {
+    return this._defaultValue;
+  }
+
+  @Input() set defaultValue(value: string) {
+    this._defaultValue = value;
+    if (!this._value) {
+      this._value = value;
+      this.selectedItem = this.items.find(item => item.id === value) || null;
+    }
+  }
+
+  get isNonDefaultSelected(): boolean {
+    return this._value !== this._defaultValue;
   }
 
   get value(): string {
@@ -67,7 +96,11 @@ export class SearchableListComponent implements OnInit {
 
   @Input() set value(value: string) {
     this._value = value;
-    this.selectedItem = this.defaultItem?.id === value ? this.defaultItem : this.items.find(item => item[this.idField] === value);
+    if (!value && this._defaultValue) {
+      this._value = this._defaultValue;
+    }
+
+    this.selectedItem = this.items.find(item => item.id === this._value) || null;
   }
 
   onInternalSelect(value: any): void {
@@ -85,7 +118,8 @@ export class SearchableListComponent implements OnInit {
   }
 
   onSearchList(text: string) {
-    this.addItemList = this.items.filter(item => this.nameFn(item).toLowerCase().includes(text.toLowerCase()));
+    this.addItemList = this.items.filter(item => item.name.toLowerCase().includes(text.toLowerCase()));
+    this.onItemSearchMenu();
   }
 
   onAddItemSearchClick(evt: any) {
