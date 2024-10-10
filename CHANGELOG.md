@@ -1,4 +1,15 @@
-## 4.48.0 (Latest)
+## 4.49.0 (Latest)
+
+### Features
+- **Workspace Templating** Allows workspaces to be duplicated and different scans, ROIs, quantifications, and images to be substituted in.
+  - This feature is a part of the workspace "Duplicate" workflow and is available as a new toggle
+  - When you first substitute a scan, Pixlise will attempt to match existing data to the new scan. If it can't, it will mark the invalid data for removal and it won't be included in the duplicated workspace (this can be overridden if desired by choosing a valid option from the respective dropdown).
+    - Matching logic is as follows for the different types of data:
+      - **ROIs:** Match first by exact name (case insensitive), then by tags. If there are multiple ROIs that all have the tags in the original ROI, then the best name match is chosen. If no match is still found, then we look again at the name and try to find any that are 1 character different (eg. Olivine vs olivines).
+      - **Quantifications:** Match first by exact name (case insensitive). If no exact match, then filter down to all quants that are the same type (A/B or Combined) and then find the quant with the most overlapping elements. If there's a tie, prefer the one with the most similar name.
+      - **Images:** Match first by exact name (unlikely to ever match). If no exact match, then first check if it's a known type (MSA or VIS). If not, then filter down to images that have the same file extension (eg. PNG, TIF) and check the SDS fields from the filename (eg. camSpecific, colourFilter, instrument, etc.) and find the image with the most overlapping fields. If there's a tie, prefer the one with the closest count of PMCs.
+
+## 4.48.0 (2024-10-09)
 
 ### Features
 - Lua expressions now support waiting on calculations by another expression to allow reducing the total amount of calculations on a given workspace tab. This is done through the readCache/writeCache functions, where readCache() takes a 2nd parameter, which if set to true, will wait for anything already calculating to complete. If nothing is calculating, the caller is expected to call writeCache() for that same key to save a value for other expressions to use.

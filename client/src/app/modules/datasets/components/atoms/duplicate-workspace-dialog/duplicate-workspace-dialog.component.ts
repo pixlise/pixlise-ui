@@ -515,7 +515,7 @@ export class DuplicateWorkspaceDialogComponent {
               }
             });
 
-            if (bestNonExactMatch && bestLevenshteinDistance <= 1) {
+            if (bestNonExactMatch && (bestLevenshteinDistance <= 1 || tagMatchedROIs.length > 0)) {
               this.idReplacements[existingRoi.id] = bestNonExactMatch;
             } else {
               this.idReplacements[existingRoi.id] = "remove";
