@@ -123,6 +123,7 @@ export class DuplicateWorkspaceDialogComponent {
 
           if (datasetId) {
             quantsForScansRequests.push(this._analysisLayoutService.fetchQuantsForScanAsync(datasetId));
+            roisForScansRequests.push(this._roiService.searchROIsAsync(SearchParams.create({ scanId: datasetId }), false));
             roisForScansRequests.push(this._roiService.searchROIsAsync(SearchParams.create({ scanId: datasetId }), true));
             scanIds.push(datasetId);
           }
@@ -457,74 +458,80 @@ export class DuplicateWorkspaceDialogComponent {
       },
     });
 
-    this._roiService.searchROIsAsync(SearchParams.create({ scanId: newScanId }), true).subscribe(rois => {
-      this.searchableRoisForScans[newScanId] = [
-        ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-        ...Object.values(rois).map(roi => ({
-          icon: "assets/icons/roi.svg",
-          id: roi.id,
-          name: roi.name,
-        })),
-      ];
+    this._roiService.searchROIsAsync(SearchParams.create({ scanId: newScanId }), true).subscribe(mistROIs => {
+      this._roiService.searchROIsAsync(SearchParams.create({ scanId: newScanId }), false).subscribe(rois => {
+        Object.entries(mistROIs).forEach(([id, roi]) => {
+          rois[id] = roi;
+        });
 
-      if (!this.productsByDataset[scanId].accordionOpen && Object.keys(rois).length > 0) {
-        this.productsByDataset[scanId].accordionOpen = newScanId !== "no-replace" && newScanId !== "remove";
-      }
+        this.searchableRoisForScans[newScanId] = [
+          ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
+          ...Object.values(rois).map(roi => ({
+            icon: "assets/icons/roi.svg",
+            id: roi.id,
+            name: roi.name,
+          })),
+        ];
 
-      // Find best guess for replacement
-      this.productsByDataset[scanId].rois.forEach(existingRoi => {
-        let bestGuess = this.searchableRoisForScans[newScanId].find(roi => roi.name.toLowerCase() === existingRoi.name.toLowerCase());
+        if (!this.productsByDataset[scanId].accordionOpen && Object.keys(rois).length > 0) {
+          this.productsByDataset[scanId].accordionOpen = newScanId !== "no-replace" && newScanId !== "remove";
+        }
 
-        if (bestGuess) {
-          this.idReplacements[existingRoi.id] = bestGuess.id;
-        } else if (existingRoi.isMIST) {
-          // If we can't find a perfect match and this is a MIST ROI, remove it
-          this.idReplacements[existingRoi.id] = "remove";
-        } else {
-          // Match on tags if we can't find an exact name match
-          // If we have a single tag match, use that
-          // If we have multiple tag matches, use the one with the most similar name
+        // Find best guess for replacement
+        this.productsByDataset[scanId].rois.forEach(existingRoi => {
+          let bestGuess = this.searchableRoisForScans[newScanId].find(roi => roi.name.toLowerCase() === existingRoi.name.toLowerCase());
 
-          let roisToSearch = this.searchableRoisForScans[newScanId];
-          let tagMatchedROIs: ROIItemSummary[] = [];
-          let tagCount = 0;
-          Object.values(rois).forEach(roi => {
-            let matchingTagCount = roi.tags.filter(tag => existingRoi.tags.includes(tag)).length;
-            if (matchingTagCount > tagCount) {
-              tagMatchedROIs = [roi];
-              tagCount = matchingTagCount;
-            } else if (matchingTagCount === tagCount) {
-              tagMatchedROIs.push(roi);
-            }
-          });
-
-          if (tagCount > 0 && tagMatchedROIs.length === 1) {
-            this.idReplacements[existingRoi.id] = tagMatchedROIs[0].id;
+          if (bestGuess) {
+            this.idReplacements[existingRoi.id] = bestGuess.id;
+          } else if (existingRoi.isMIST) {
+            // If we can't find a perfect match and this is a MIST ROI, remove it
+            this.idReplacements[existingRoi.id] = "remove";
           } else {
-            if (tagMatchedROIs.length > 1) {
-              roisToSearch = roisToSearch.filter(roi => {
-                return tagMatchedROIs.find(match => match.id === roi.id);
-              });
-            }
+            // Match on tags if we can't find an exact name match
+            // If we have a single tag match, use that
+            // If we have multiple tag matches, use the one with the most similar name
 
-            // Can't find an exact match, so expand search to include similar names with a levenshtein distance of 1
-            let bestNonExactMatch: string = "";
-            let bestLevenshteinDistance = -1;
-            roisToSearch.forEach(roi => {
-              let distance = levenshteinDistance(roi.name, existingRoi.name);
-              if (bestLevenshteinDistance === -1 || distance < bestLevenshteinDistance) {
-                bestNonExactMatch = roi.id;
-                bestLevenshteinDistance = distance;
+            let roisToSearch = this.searchableRoisForScans[newScanId];
+            let tagMatchedROIs: ROIItemSummary[] = [];
+            let tagCount = 0;
+            Object.values(rois).forEach(roi => {
+              let matchingTagCount = roi.tags.filter(tag => existingRoi.tags.includes(tag)).length;
+              if (matchingTagCount > tagCount) {
+                tagMatchedROIs = [roi];
+                tagCount = matchingTagCount;
+              } else if (matchingTagCount === tagCount) {
+                tagMatchedROIs.push(roi);
               }
             });
 
-            if (bestNonExactMatch && (bestLevenshteinDistance <= 1 || tagMatchedROIs.length > 0)) {
-              this.idReplacements[existingRoi.id] = bestNonExactMatch;
+            if (tagCount > 0 && tagMatchedROIs.length === 1) {
+              this.idReplacements[existingRoi.id] = tagMatchedROIs[0].id;
             } else {
-              this.idReplacements[existingRoi.id] = "remove";
+              if (tagMatchedROIs.length > 1) {
+                roisToSearch = roisToSearch.filter(roi => {
+                  return tagMatchedROIs.find(match => match.id === roi.id);
+                });
+              }
+
+              // Can't find an exact match, so expand search to include similar names with a levenshtein distance of 1
+              let bestNonExactMatch: string = "";
+              let bestLevenshteinDistance = -1;
+              roisToSearch.forEach(roi => {
+                let distance = levenshteinDistance(roi.name, existingRoi.name);
+                if (bestLevenshteinDistance === -1 || distance < bestLevenshteinDistance) {
+                  bestNonExactMatch = roi.id;
+                  bestLevenshteinDistance = distance;
+                }
+              });
+
+              if (bestNonExactMatch && (bestLevenshteinDistance <= 1 || tagMatchedROIs.length > 0)) {
+                this.idReplacements[existingRoi.id] = bestNonExactMatch;
+              } else {
+                this.idReplacements[existingRoi.id] = "remove";
+              }
             }
           }
-        }
+        });
       });
     });
   }
