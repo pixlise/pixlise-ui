@@ -37,6 +37,7 @@ export const environment = {
   configName: "local-development-pixlise-config.json",
   expressionResultCacheThresholdMs: 100, // Don't cache things unless they take over an hour to run
   luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
+  luaJSDebugTiming: true, // Print out functions called from Lua to JS, also monitors time taken in JS functions
   initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
   initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
   newLuaPerExpression: false, // Should we create a new Lua WASM instance per expression run?
