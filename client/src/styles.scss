@@ -386,7 +386,8 @@ h3 {
 .mdc-menu-surface {
   --mdc-theme-surface: #2b3135;
 
-  &.scan-menu {
+  &.scan-menu,
+  &.search-menu {
     max-height: 500px !important;
   }
 }
@@ -525,5 +526,11 @@ h3 {
         }
       }
     }
+  }
+}
+
+.mat-mdc-menu-item {
+  &.selected {
+    background-color: rgba(255, 255, 255, 0.08);
   }
 }

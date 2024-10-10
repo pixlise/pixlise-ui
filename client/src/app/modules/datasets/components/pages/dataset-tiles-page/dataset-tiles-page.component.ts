@@ -63,6 +63,11 @@ import { TabLinks } from "../../../../../models/TabLinks";
 import EditorConfig from "../../../../code-editor/models/editor-config";
 import { PushButtonComponent } from "../../../../pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { QuantificationSummary } from "../../../../../generated-protos/quantification-meta";
+import {
+  DuplicateWorkspaceDialogComponent,
+  DuplicateWorkspaceDialogData,
+  DuplicateWorkspaceDialogResult,
+} from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 
 class SummaryItem {
   constructor(
@@ -839,6 +844,47 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  onOpenDuplicateWorkspaceDialog(): void {
+    if (!this.selectedWorkspace) {
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig<DuplicateWorkspaceDialogData>();
+    let newWorkspace = ScreenConfiguration.create(this.selectedWorkspace);
+    newWorkspace.id = "";
+    newWorkspace.owner = undefined;
+    newWorkspace.snapshotParentId = "";
+    if (this.selectedWorkspaceName) {
+      newWorkspace.name = this.selectedWorkspaceName;
+    }
+
+    if (newWorkspace.name) {
+      let matchRegex = /\(Copy\s*(?<copyCount>\d*)\)$/i;
+      let match = newWorkspace.name.match(matchRegex);
+
+      if (match) {
+        let copyCount = parseInt(match.groups?.["copyCount"] || "1");
+        newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+      } else {
+        newWorkspace.name += " (Copy)";
+      }
+    }
+
+    dialogConfig.data = {
+      workspace: newWorkspace,
+      workspaceId: this.selectedWorkspace.id,
+    } as DuplicateWorkspaceDialogData;
+
+    const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
+      this.onSearchWorkspsaces();
+      if (response.shouldOpen) {
+        this.onOpenWorkspace(response.workspace);
+      }
+    });
+  }
+
   onDuplicateClick(workspace: ScreenConfiguration, response: { value: string; middleButtonClicked: boolean }): void {
     this.onDuplicateSnapshot(workspace, response?.value, !response?.middleButtonClicked);
   }
@@ -871,10 +917,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       }
     }
 
-    this._analysisLayoutService.writeScreenConfiguration(newWorkspace, undefined, openWorkspace, createdWorkspace => {
+    const dialogConfig = new MatDialogConfig<DuplicateWorkspaceDialogData>();
+    dialogConfig.data = {
+      workspace: newWorkspace,
+      workspaceId: workspace.id,
+    } as DuplicateWorkspaceDialogData;
+
+    const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
       this.onSearchWorkspsaces();
-      if (openWorkspace) {
-        this.onOpenWorkspace(createdWorkspace);
+      if (response.shouldOpen) {
+        this.onOpenWorkspace(response.workspace);
       }
     });
   }
