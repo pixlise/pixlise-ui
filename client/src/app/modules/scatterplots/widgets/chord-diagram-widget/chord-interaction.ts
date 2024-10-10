@@ -50,7 +50,7 @@ export class ChordDiagramInteraction implements CanvasInteractionHandler {
   }
 
   mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
+    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams).subscribe();
 
     if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
       const hoverNode = this.checkHoverNode(event.canvasPoint);

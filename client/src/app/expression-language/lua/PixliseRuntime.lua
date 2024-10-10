@@ -1,3 +1,5 @@
+-- Module exported from PIXLISE (www.pixlise.org)
+--     Module name: PixliseRuntime
 -- This file re-implements functions defined in the PIXLISE runtime
 -- meaning we can execute our Lua code outside PIXLISE!
 
@@ -26,7 +28,7 @@ local function unrotateCSVTable(t)
 end
 
 local function readCSV(name)
-	return rotateCSVTable(CSV.load("input-data/"..name..".csv", ",", false))
+	return rotateCSVTable(CSV.load("input-data/"..name..").csv", ",", false))
 end
 
 function writeCSV(name, pixliseMap)
@@ -37,35 +39,35 @@ end
 -- NOTE: All of these are for accessing data, and the relevant CSVs must
 --       be accessible, as we treat CSVs as the replacement for the runtime!
 function element(symbol, column, detector)
-    return readCSV("elem-"..symbol.."-"..column.."-"..detector)
+    return readCSV("element("..symbol..","..column..","..detector)
 end
 
 function elementSum(column, detector)
-    return readCSV("elemSum-"..column.."-"..detector)
+    return readCSV("elemSum("..column..","..detector)
 end
 
 function data(column, detector)
-    return readCSV("data-"..column.."-"..detector)
+    return readCSV("data("..column..","..detector)
 end
 
 function spectrum(startChannel, endChannel, detector)
-    return readCSV("spectrum-"..startChannel.."-"..endChannel.."-"..detector)
+    return readCSV("spectrum("..math.floor(startChannel)..","..math.floor(endChannel)..","..detector)
 end
 
 function spectrumDiff(startChannel, endChannel, op)
-    return readCSV("spectrumDiff-"..startChannel.."-"..endChannel.."-"..op)
+    return readCSV("spectrumDiff("..math.floor(startChannel)..","..math.floor(endChannel)..","..op)
 end
 
 function pseudo(elem)
-    return readCSV("pseudo-"..elem)
+    return readCSV("pseudo("..elem)
 end
 
 function housekeeping(column)
-    return readCSV("housekeeping-"..column)
+    return readCSV("housekeeping("..column)
 end
 
 function diffractionPeaks(eVstart, eVend)
-    return readCSV("diffractionPeaks-"..eVstart.."-"..eVend)
+    return readCSV("diffractionPeaks("..eVstart..","..eVend)
 end
 
 function roughness()
@@ -73,9 +75,46 @@ function roughness()
 end
 
 function position(axis)
-    return readCSV("position-"..axis)
+    return readCSV("position("..axis)
 end
 
+local lastMap = {}
 function makeMap(value)
-    return readCSV("makeMap-"..value)
+    -- If we have one saved, just set the value in the same kind of map
+    if #lastMap > 0 then
+        local values = {}
+        for k, v in ipairs(lastMap[2]) do
+            if v == nil then
+                values[k] = nil
+            else
+                values[k] = value
+            end
+        end
+        return { lastMap[1], values }
+    end
+
+    local m = readCSV("makeMap("..value)
+    -- Cache it
+    lastMap = m
+    return m
+end
+
+local inputValues = CSV.loadLookup("input-data/expression-input-values.csv", ",", false)
+
+function exists(dataType, column)
+    local k = "exists-"..dataType.."-"..column
+    return inputValues[k] == "true"
+end
+
+function atomicMass(symbol)
+    local k = "atomicMass-"..symbol
+    return tonumber(inputValues[k])
+end
+
+function writeCache(k, v)
+    return true
+end
+
+function readCache(k, w)
+    return nil
 end

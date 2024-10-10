@@ -41,7 +41,7 @@ export class HistogramToolHost implements CanvasInteractionHandler {
   constructor(private _mdl: HistogramModel) {}
 
   mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
+    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams).subscribe();
 
     if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
       // Hover handling if mouse is over a bar

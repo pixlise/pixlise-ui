@@ -37,9 +37,9 @@ import {
 import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { MinMax } from "../models/BasicTypes";
-import { MemoisationService } from "../modules/pixlisecore/services/memoisation.service";
 import { catchError, lastValueFrom, map, of } from "rxjs";
 import { MemoisedItem } from "../generated-protos/memoisation";
+import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
 
 export class InterpreterDataSource {
   constructor(
@@ -48,7 +48,7 @@ export class InterpreterDataSource {
     public housekeepingDataSource: HousekeepingDataQuerierSource,
     public spectrumDataSource: SpectrumDataQuerierSource,
     public diffractionSource: DiffractionPeakQuerierSource,
-    private _memoService?: MemoisationService
+    private _exprMemoService?: ExpressionMemoisationService
   ) {}
 
   ////////////////////////////////////// Calling Quant Data Source //////////////////////////////////////
@@ -371,17 +371,17 @@ export class InterpreterDataSource {
   public static validExistsDataTypes = ["element", "detector", "data", "housekeeping", "pseudo"];
 
   public async getMemoised(argList: any[]): Promise<Uint8Array | null> {
-    if (argList.length != 1 || typeof argList[0] != "string") {
-      throw new Error("getMemoised() expects 1 parameter: key. Received: " + argList.length + " parameters");
+    if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "boolean") {
+      throw new Error("getMemoised() expects 2 parameters: key, waitIfInProgress. Received: " + argList.length + " parameters");
     }
 
-    if (!this._memoService) {
+    if (!this._exprMemoService) {
       throw new Error("getMemoised() failed, service not available");
     }
 
     const key = "exprcachev1_" + argList[0];
     return await lastValueFrom(
-      this._memoService.get(key).pipe(
+      this._exprMemoService.getExprMemoised(key, true).pipe(
         map((memItem: MemoisedItem) => {
           // Parse to JS object
           const str = new TextDecoder().decode(memItem.data);
@@ -400,7 +400,7 @@ export class InterpreterDataSource {
       throw new Error("memoise() expects 2 parameters: key, data. Received: " + argList.length + " parameters");
     }
 
-    if (!this._memoService) {
+    if (!this._exprMemoService) {
       throw new Error("memoise() failed, service not available");
     }
 
@@ -416,7 +416,7 @@ export class InterpreterDataSource {
     const str = JSON.stringify(table);
     const arr = new TextEncoder().encode(str);
 
-    return await lastValueFrom(this._memoService.memoise(key, arr).pipe(map(() => true)));
+    return await lastValueFrom(this._exprMemoService.memoise(key, arr).pipe(map(() => true)));
   }
 
   // Properties we can query

@@ -69,7 +69,16 @@ export class PixliseDataQuerier {
 
     if (result instanceof PMCDataValues) {
       const runtimeMs = performance.now() - t0;
-      return new DataQueryResult(result as PMCDataValues, true, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "", new Map<string, PMCDataValues>());
+      return new DataQueryResult(
+        result as PMCDataValues,
+        true,
+        Array.from(this._runtimeDataRequired.keys()),
+        runtimeMs,
+        "",
+        "",
+        new Map<string, PMCDataValues>(),
+        new Map<string, string>()
+      );
     }
 
     throw new Error("Expression did not result in usable map data. Result was: " + result);

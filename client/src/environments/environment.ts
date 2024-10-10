@@ -37,6 +37,7 @@ export const environment = {
   configName: "local-development-pixlise-config.json",
   expressionResultCacheThresholdMs: 100, // Don't cache things unless they take over an hour to run
   luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
+  luaJSDebugTiming: true, // Print out functions called from Lua to JS, also monitors time taken in JS functions
   initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
   initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
   newLuaPerExpression: false, // Should we create a new Lua WASM instance per expression run?
@@ -52,11 +53,9 @@ export const environment = {
   },
   largeMessageLogThresholdBytes: 102400,
   marsViewerUrlRoot: "https://marsviewer.sops.m20.jpl.nasa.gov",
-  skipMemoizeKeys: [
-    '{"scanId":"430834177","exprId":"m1jronthh7qkdx6q","quantId":"quant-nr4q8ak4ncyf3br2","roiId":"AllPoints-430834177","units":0},Resp:false,exprMod:1715638046,spectra:3298,74,0',
-    '{"scanId":"371196417","exprId":"m1jronthh7qkdx6q","quantId":"zm1asxqm0r0nmspb","roiId":"AllPoints-371196417","units":0},Resp:false,exprMod:1726802104,spectra:1650,32,0',
-    '{"scanId":"371196417","exprId":"m1jronthh7qkdx6q","quantId":"quant-616i0uwwtns0yfbt","roiId":"AllPoints-371196417","units":0},Resp:false,exprMod:1727181150,spectra:1650,32,0',
-  ],
+  skipMemoizeKeys: [],
+  disableExpressionMemoisation: true,
+  readBeamIJSwapped: true,
 };
 
 /*

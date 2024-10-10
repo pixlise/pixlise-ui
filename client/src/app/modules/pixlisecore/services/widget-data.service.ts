@@ -61,6 +61,7 @@ import { BuiltInTags } from "../../tags/models/tag.model";
 import { SpectrumDataService } from "./spectrum-data.service";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
+import { ExpressionMemoisationService } from "./expression-memoisation.service";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -171,7 +172,8 @@ export class WidgetDataService {
     private _spectrumDataService: SpectrumDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
-    private _memoisationService: MemoisationService
+    private _memoisationService: MemoisationService,
+    private _exprMemoisationService: ExpressionMemoisationService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -345,6 +347,7 @@ export class WidgetDataService {
             "",
             "",
             new Map<string, PMCDataValues>(),
+            new Map<string, string>(),
             err,
             DataExpression.create({
               id: query.exprId,
@@ -359,13 +362,13 @@ export class WidgetDataService {
 
   private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
     // If it's not memomisable, just return the calculated value straight away
-    if (DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+    if (environment.disableExpressionMemoisation || DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
     }
 
     // Try the local cache first
     // TODO: what if expression or ROI is edited??? We need to either clear the cache or store timestamps!
-    return this._memoisationService.get(cacheKey).pipe(
+    return this._memoisationService.getMemoised(cacheKey).pipe(
       map((item: MemoisedItem) => {
         // We got something! return this straight away...
         console.info("Query restored from memoised result: " + cacheKey);
@@ -425,7 +428,7 @@ export class WidgetDataService {
                 // Also, add to memoisation cache
                 if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
                   const encodedResult = this.toMemoised(result);
-                  this._memoisationService.memoise(cacheKey, encodedResult);
+                  this._memoisationService.memoise(cacheKey, encodedResult).subscribe();
                 }
 
                 return result;
@@ -450,7 +453,7 @@ export class WidgetDataService {
               SentryHelper.logMsg(true, errorMsg);
             }
 
-            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg, expr));
+            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), errorMsg, expr));
           })
         );
       }),
@@ -460,7 +463,7 @@ export class WidgetDataService {
         // Don't need this in sentry!
         console.error(errorMsg);
 
-        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
+        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), new Map<string, string>(), errorMsg));
       })
     );
   }
@@ -556,6 +559,7 @@ export class WidgetDataService {
       "", // stdout
       "", // stderr
       new Map<string, PMCDataValues>(), // recordedExpressionInputs
+      new Map<string, string>(), // recorded expression values
       "", // errorMsg
       memResult.expression
     );
@@ -659,7 +663,7 @@ export class WidgetDataService {
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._memoisationService);
+            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)
@@ -747,7 +751,8 @@ export class WidgetDataService {
           result.runtimeMs,
           result.stderr,
           result.stderr,
-          result.recordedExpressionInputs
+          result.recordedExpressionInputs,
+          result.recordedExpressionInputValues
         ),
         /*result.errorMsg.length > 0
           ? new WidgetError(result.errorMsg, "The expression failed, check configuration and try again")
@@ -771,7 +776,16 @@ export class WidgetDataService {
     }
 
     const resultItem = new RegionDataResultItem(
-      new DataQueryResult(valuesToWrite, result.isPMCTable, result.dataRequired, result.runtimeMs, result.stderr, result.stderr, result.recordedExpressionInputs),
+      new DataQueryResult(
+        valuesToWrite,
+        result.isPMCTable,
+        result.dataRequired,
+        result.runtimeMs,
+        result.stderr,
+        result.stderr,
+        result.recordedExpressionInputs,
+        result.recordedExpressionInputValues
+      ),
       null,
       valuesToWrite?.warning || "",
       result.expression,

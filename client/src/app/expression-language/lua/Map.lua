@@ -38,7 +38,9 @@ Map = {
     opUnder = 8,
     opOverUndef = 9,
     opUnderUndef = 10,
-    opAverage = 11
+    opAverage = 11,
+    opAnd = 12,
+    opOr = 13,
 }
 
 local function getSourceLine(source, lineNumber)
@@ -126,14 +128,6 @@ local function assertType(cond, varChecked, restrictionMsg)
     assert(false, makeAssertReport(varChecked, restrictionMsg))
 end
 
-local function handleBadValue(s)
-    -- Check if it's NaN or infinite
-    --if s ~= s then -- or s == infinity or s == -infinity then
-    --    s = 0
-    --end
-    return s
-end
-
 local function unorderedOp(op, v1, v2)
     assertType(v1 ~= nil, v1, "not nil")
     assertType(v2 ~= nil, v2, "not nil")
@@ -151,7 +145,20 @@ local function unorderedOp(op, v1, v2)
         return math.min(v1, v2)
     elseif op == Map.opMax then
         return math.max(v1, v2)
+    elseif op == Map.opMin then
+        return math.min(v1, v2)
+    elseif op == Map.opAnd then
+        if v1 ~= 0 and v2 ~= 0 then
+            return 1
+        end
+        return 0
+    elseif op == Map.opOr then
+        if v1 ~= 0 or v2 ~= 0 then
+            return 1
+        end
+        return 0
     end
+
     error("unorderedOp unexpected op: "..op)
 end
 
@@ -183,10 +190,11 @@ local function op(op, ...)
     end
 
     -- Init values to be a copy of whatever we've decided to start with
-    local values = {}
-    for k, v in ipairs(startValues) do
-        values[k] = v
-    end
+    local values = {table.unpack(startValues)}
+    -- NOTE: The following is SLOWER than the above!
+    --for k, v in ipairs(startValues) do
+    --    values[k] = v
+    --end
 
     for argi, arg in ipairs({...}) do
         -- Don't involve the one we started with, it's already included in the op
@@ -257,6 +265,24 @@ function Map.abs(m)
     return {m[1], values}
 end
 
+-- Returns a new map where each value is the logical and of corresponding
+-- value in arguments. Note that at least one of the arguments
+-- is required to be a map, while numbers are treated like a map
+-- where all PMCs have that same value. Returns a new map of the
+-- same dimension an input map
+function Map.And(...)
+    return op(Map.opAnd, table.unpack({...}))
+end
+
+-- Returns a new map where each value is the logical or of corresponding
+-- value in arguments. Note that at least one of the arguments
+-- is required to be a map, while numbers are treated like a map
+-- where all PMCs have that same value. Returns a new map of the
+-- same dimension an input map
+function Map.Or(...)
+    return op(Map.opOr, table.unpack({...}))
+end
+
 -- Separate implementations because order matters
 
 local function opWithScalarRaw(m, s, scalarLeft, op)
@@ -265,11 +291,11 @@ local function opWithScalarRaw(m, s, scalarLeft, op)
     if op == Map.opDivide then
         if scalarLeft then
             for k, v in ipairs(m[2]) do
-                values[k] = handleBadValue(s / v)
+                values[k] = s / v
             end
         else
             for k, v in ipairs(m[2]) do
-                values[k] = handleBadValue(v / s)
+                values[k] = v / s
             end
         end
     elseif op == Map.opSubtract then
@@ -294,7 +320,7 @@ local function opWithMaps(m1, m2, op)
 
     if op == Map.opDivide then
         for k, v in ipairs(m1[2]) do
-            values[k] = handleBadValue(v / m2[2][k])
+            values[k] = v / m2[2][k]
         end
     elseif op == Map.opSubtract then
         for k, v in ipairs(m1[2]) do
@@ -430,7 +456,7 @@ local function mapFunc(m, f)
     assertType(type(m) == "table", m, "table")
     local values = {}
     for k, v in ipairs(m[2]) do
-        values[k] = handleBadValue(f(v))
+        values[k] = f(v)
     end
     return {m[1], values}
 end
@@ -497,7 +523,22 @@ function Map.pow(m, exp)
     assertType(type(exp) == "number", exp, "number")
     local values = {}
     for k, v in ipairs(m[2]) do
-        values[k] = handleBadValue(v ^ exp)
+        values[k] = v ^ exp
+    end
+    return {m[1], values}
+end
+
+-- Returns a new map where each value is logical not of corresponding value in m
+-- m: Map to not
+function Map.Not(m)
+    assertType(type(m) == "table", m, "table")
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        if v ~= 0 then
+            values[k] = 0
+        else
+            values[k] = 1
+        end
     end
     return {m[1], values}
 end

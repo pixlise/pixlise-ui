@@ -1,4 +1,4 @@
-import { combineLatest, Subject } from "rxjs";
+import { combineLatest, Observable, of, Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -44,13 +44,14 @@ export class MultiChannelViewerModel implements CanvasDrawNotifier {
     return this.raw != null;
   }
 
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this.regenerate();
 
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }
+    return of(void 0);
   }
 
   setRecalcNeeded() {

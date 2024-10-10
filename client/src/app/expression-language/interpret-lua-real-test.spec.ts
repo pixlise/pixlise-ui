@@ -28,7 +28,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
-//import { InterpreterDataSource } from "./interpreter-data-source";
 import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
 import { decompressZeroRunLengthEncoding, SpectrumChannels } from "../utils/utils";
 import { Diffraction, Diffraction_Location } from "src/app/generated-protos/files/diffraction";
@@ -48,8 +47,6 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
   let datasetBin: Experiment;
   let diffractionBin: Diffraction;
   let quantBin: Quantification;
-  let exprSiO2prime: string = "";
-  let expectedOutput: object = {};
   const modules = new Map<string, string>();
   let spectrumEnergyCalibration: SpectrumEnergyCalibration[] = [];
 
@@ -74,11 +71,9 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
       datasetBin = Experiment.decode(new Uint8Array(results[0], 0, results[0].byteLength));
       diffractionBin = Diffraction.decode(new Uint8Array(results[1], 0, results[1].byteLength));
       quantBin = Quantification.decode(new Uint8Array(results[2], 0, results[2].byteLength));
-      exprSiO2prime = new TextDecoder().decode(results[3]);
       modules.set("Locations", new TextDecoder().decode(results[4]));
       modules.set("Estimate", new TextDecoder().decode(results[5]));
       modules.set("GeoAndDiffCorrection", new TextDecoder().decode(results[6]));
-      expectedOutput = JSON.parse(new TextDecoder().decode(results[7]));
 
       spectrumEnergyCalibration = readBulkSpectrumCalibration(datasetBin);
       const diffPerLoc: DetectedDiffractionPerLocation[] = readDiffraction(datasetBin, diffractionBin);
@@ -95,52 +90,94 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
     });
   });
 
-  // Also attempt to test:
-  // Diffraction Map (B) from 10/19/2023
+  it("should run complex expression SiO2'", done => {
+    testExpression(
+      scanId,
+      datasetBin,
+      diffractionInfoRead,
+      quantBin,
+      modules,
+      "m1jronthh7qkdx6q",
+      [
+        "spectrum",
+        "diffraction",
+        "expr-data-livetime(A)",
+        "expr-data-livetime(B)",
+        "expr-elem-SiO2-%-as-mmol(A)",
+        "expr-elem-SiO2-err(A)",
+        "expr-elem-SiO2-%-as-mmol(B)",
+        "expr-elem-SiO2-err(B)",
+        "expr-elem-CaO-%-as-mmol(A)",
+        "expr-elem-CaO-err(A)",
+        "expr-elem-CaO-%-as-mmol(B)",
+        "expr-elem-CaO-err(B)",
+        "expr-elem-Na2O-%-as-mmol(A)",
+        "expr-elem-Na2O-err(A)",
+        "expr-elem-Na2O-%-as-mmol(B)",
+        "expr-elem-Na2O-err(B)",
+        "expr-elem-K2O-%-as-mmol(A)",
+        "expr-elem-K2O-err(A)",
+        "expr-elem-K2O-%-as-mmol(B)",
+        "expr-elem-K2O-err(B)",
+        "expr-elem-MgO-%-as-mmol(A)",
+        "expr-elem-MgO-err(A)",
+        "expr-elem-MgO-%-as-mmol(B)",
+        "expr-elem-MgO-err(B)",
+        "expr-elem-FeO-T-%-as-mmol(A)",
+        "expr-elem-FeO-T-err(A)",
+        "expr-elem-FeO-T-%-as-mmol(B)",
+        "expr-elem-FeO-T-err(B)",
+        "expr-elem-MnO-%-as-mmol(A)",
+        "expr-elem-MnO-err(A)",
+        "expr-elem-MnO-%-as-mmol(B)",
+        "expr-elem-MnO-err(B)",
+      ],
+      done
+    );
+  });
 
-  it("should run complex expression", done => {
-    const lua = new LuaDataQuerier(false);
-    const ds = makeDataSource(scanId, datasetBin, diffractionInfoRead.allPeaks, quantBin);
+  it("should run heavy computation expression Diffraction Map (B)", done => {
+    testExpression(
+      scanId,
+      datasetBin,
+      diffractionInfoRead,
+      quantBin,
+      modules,
+      "750idrpn2ql3j4fu",
+      [
+        "spectrum",
+        "diffraction",
+      ],
+      done
+    );
+  });
+});
 
-    lua.runQuery(exprSiO2prime, modules, ds, true, false, false, 600000, null).subscribe({
+function testExpression(
+  scanId: string,
+  datasetBin: Experiment,
+  diffractionInfoRead: { allPeaks: DiffractionPeak[] },
+  quantBin: Quantification,
+  modules: Map<string, string>,
+  expressionId: string,
+  expDataRequired: string[],
+  done: DoneFn
+) {
+  const lua = new LuaDataQuerier(false);
+  const ds = makeDataSource(scanId, datasetBin, diffractionInfoRead.allPeaks, quantBin);
+
+  Promise.all([
+    // NOTE: These are only served by karma if they're mentioned in karma.conf.js
+    readTestFile(`expressions/${expressionId}.lua`),
+    readTestFile(`expected-output/${expressionId}.json`),
+  ]).then((results: [ArrayBuffer, ArrayBuffer]) => {
+    const expr: string = new TextDecoder().decode(results[0]);
+    const expectedOutput = JSON.parse(new TextDecoder().decode(results[1]));
+
+    lua.runQuery(expr, modules, ds, true, false, false, 600000, null).subscribe({
       // Result
       next: value => {
         console.log(`Test Query took: ${value.runtimeMs.toLocaleString()}ms`);
-
-        const expDataRequired = [
-          "spectrum",
-          "diffraction",
-          "expr-data-livetime(A)",
-          "expr-data-livetime(B)",
-          "expr-elem-SiO2-%-as-mmol(A)",
-          "expr-elem-SiO2-err(A)",
-          "expr-elem-SiO2-%-as-mmol(B)",
-          "expr-elem-SiO2-err(B)",
-          "expr-elem-CaO-%-as-mmol(A)",
-          "expr-elem-CaO-err(A)",
-          "expr-elem-CaO-%-as-mmol(B)",
-          "expr-elem-CaO-err(B)",
-          "expr-elem-Na2O-%-as-mmol(A)",
-          "expr-elem-Na2O-err(A)",
-          "expr-elem-Na2O-%-as-mmol(B)",
-          "expr-elem-Na2O-err(B)",
-          "expr-elem-K2O-%-as-mmol(A)",
-          "expr-elem-K2O-err(A)",
-          "expr-elem-K2O-%-as-mmol(B)",
-          "expr-elem-K2O-err(B)",
-          "expr-elem-MgO-%-as-mmol(A)",
-          "expr-elem-MgO-err(A)",
-          "expr-elem-MgO-%-as-mmol(B)",
-          "expr-elem-MgO-err(B)",
-          "expr-elem-FeO-T-%-as-mmol(A)",
-          "expr-elem-FeO-T-err(A)",
-          "expr-elem-FeO-T-%-as-mmol(B)",
-          "expr-elem-FeO-T-err(B)",
-          "expr-elem-MnO-%-as-mmol(A)",
-          "expr-elem-MnO-err(A)",
-          "expr-elem-MnO-%-as-mmol(B)",
-          "expr-elem-MnO-err(B)",
-        ];
 
         expect(value.dataRequired).toEqual(expDataRequired);
 
@@ -161,10 +198,6 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
               Math.round(expectedOutputValues[c].value * 10000) / 10000
             }\n`;
           }
-
-          // expect(`${value.resultValues.values[c].pmc}=${Math.round(value.resultValues.values[c].value * 10000) / 10000}`).toEqual(
-          //   `${expectedOutputValues[c].pmc}=${Math.round(expectedOutputValues[c].value * 10000) / 10000}`
-          // );
         }
 
         expect(valuesEqual).toEqual(expectedOutputValues.length);
@@ -175,10 +208,6 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
             }%) Differences in expression output\nPMC = calculated vs expected\n` + diff
           );
         }
-
-        //  expect(value.resultValues.values).toEqual(PMCDataValues.makeWithValues(expectedOutputValues));
-        //const exp = new DataQueryResult(1, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
-        //expect(value).toEqual(exp);
       },
       // Error handler
       error: err => {
@@ -188,7 +217,7 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
       complete: done,
     });
   });
-});
+}
 
 function readBulkSpectrumCalibration(datasetBin: Experiment): SpectrumEnergyCalibration[] {
   const result: SpectrumEnergyCalibration[] = [];

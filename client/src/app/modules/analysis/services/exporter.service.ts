@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap } from "rxjs";
+import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
 import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
 import { APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
@@ -1006,7 +1006,7 @@ msa += `#XPOSITION   : 0.000
   exportExpressionCode(scanId: string, quantId: string, expressionIds: string[]): Observable<WidgetExportData> {
     // For now, we only export the first expression...
     if (expressionIds.length < 1) {
-      throw new Error("At least one expression must be selected when exporting expression code");
+      return throwError(() => new Error("At least one expression must be selected when exporting expression code"));
     }
 
     return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: expressionIds[0] })).pipe(

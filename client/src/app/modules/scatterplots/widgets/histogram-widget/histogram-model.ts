@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { Observable, of, Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point, Rect } from "src/app/models/Geometry";
 import { ChartAxis, LabelledChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
@@ -70,13 +70,14 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     this.hoverPoint = pt;
   }
 
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this._drawModel.regenerate(this._raw, this.logScale, canvasParams);
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }
+    return of(void 0);
   }
 
   // Returns error message if one is generated

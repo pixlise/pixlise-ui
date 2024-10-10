@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { Observable, of, Subject } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { MinMax } from "src/app/models/BasicTypes";
@@ -217,13 +217,14 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
     }
   }
 
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this.regenerateDrawModel(this._raw, canvasParams);
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }
+    return of(void 0);
   }
 
   // For now an ugly solution that makes this compile...

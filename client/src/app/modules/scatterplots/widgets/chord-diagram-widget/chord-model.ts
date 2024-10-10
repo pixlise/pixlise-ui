@@ -2,7 +2,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Point, Rect } from "src/app/models/Geometry";
 import { CANVAS_FONT_SIZE, CANVAS_FONT_WIDTH_PERCENT } from "src/app/utils/drawing";
-import { Subject } from "rxjs";
+import { Observable, of, Subject } from "rxjs";
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -75,13 +75,14 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
     this._recalcNeeded = true;
   }
 
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this._drawModel.regenerate(this._raw, canvasParams);
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }
+    return of(void 0);
   }
 
   // Returns error msg if one is generated
