@@ -63,6 +63,11 @@ import { TabLinks } from "../../../../../models/TabLinks";
 import EditorConfig from "../../../../code-editor/models/editor-config";
 import { PushButtonComponent } from "../../../../pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { QuantificationSummary } from "../../../../../generated-protos/quantification-meta";
+import {
+  DuplicateWorkspaceDialogComponent,
+  DuplicateWorkspaceDialogData,
+  DuplicateWorkspaceDialogResult,
+} from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 
 class SummaryItem {
   constructor(
@@ -836,6 +841,44 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     return Object.keys(workspace.scanConfigurations).map(scanId => {
       let scan = this.allScans.find(scan => scan.id === scanId);
       return scan?.title || scanId;
+    });
+  }
+
+  onOpenDuplicateWorkspaceDialog(): void {
+    if (!this.selectedWorkspace) {
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig<DuplicateWorkspaceDialogData>();
+    let newWorkspace = ScreenConfiguration.create(this.selectedWorkspace);
+    newWorkspace.id = "";
+    newWorkspace.owner = undefined;
+    newWorkspace.snapshotParentId = "";
+    if (this.selectedWorkspaceName) {
+      newWorkspace.name = this.selectedWorkspaceName;
+    }
+
+    if (newWorkspace.name) {
+      let matchRegex = /\(Copy\s*(?<copyCount>\d*)\)$/i;
+      let match = newWorkspace.name.match(matchRegex);
+
+      if (match) {
+        let copyCount = parseInt(match.groups?.["copyCount"] || "1");
+        newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+      } else {
+        newWorkspace.name += " (Copy)";
+      }
+    }
+
+    dialogConfig.data = {
+      workspace: newWorkspace,
+      workspaceId: this.selectedWorkspace.id,
+    } as DuplicateWorkspaceDialogData;
+
+    const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((result: DuplicateWorkspaceDialogResult) => {
+      this.onSearchWorkspsaces();
     });
   }
 

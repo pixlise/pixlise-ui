@@ -14,6 +14,7 @@ import { NgxDropzoneModule } from "ngx-dropzone";
 import { TagsModule } from "../tags/tags.module";
 import { MarkdownModule } from "ngx-markdown";
 import { MatMenuModule } from "@angular/material/menu";
+import { DuplicateWorkspaceDialogComponent } from "./components/atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 
 const APP_ROUTES: Routes = [
   {
@@ -39,7 +40,14 @@ const APP_ROUTES: Routes = [
 ];
 
 @NgModule({
-  declarations: [DatasetTilesPageComponent, DataSetSummaryComponent, AddDatasetDialogComponent, FilterDialogComponent, LogViewerComponent],
+  declarations: [
+    DatasetTilesPageComponent,
+    DataSetSummaryComponent,
+    AddDatasetDialogComponent,
+    FilterDialogComponent,
+    LogViewerComponent,
+    DuplicateWorkspaceDialogComponent,
+  ],
   imports: [
     CommonModule,
     FormsModule,

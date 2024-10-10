@@ -1,0 +1,34 @@
+<div class="search-list {{ isNonDefaultSelected ? 'non-default' : '' }}">
+  <div class="search-btn" [matMenuTriggerFor]="menu" (onMenuOpen)="onItemSearchMenu()" [ngStyle]="{ color: selectedItem?.color || '#fff' }">
+    <img class="selected-icon" *ngIf="selectedItem?.icon" [src]="selectedItem?.icon" />
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="selectedItem?.name || value || placeholder"
+      [matTooltipShowDelay]="500"
+      [matTooltipDisabled]="!selectedItem || (selectedItem?.name?.length || 0) < 30"
+      class="title-container {{ selectedItem?.default ? 'default' : '' }}"
+      >{{ selectedItem ? selectedItem.name : value || placeholder }}</span
+    >
+    <action-button class="dropdown-btn" action="closeAccordion"></action-button>
+  </div>
+  <mat-menu #menu="matMenu" class="search-menu">
+    <div class="search-container">
+      <input class="item-search" [placeholder]="placeholder" [(ngModel)]="searchText" (click)="onAddItemSearchClick($event)" autofocus />
+    </div>
+    <div class="options-container">
+      <button
+        mat-menu-item
+        [disabled]="disabledValues.includes(item.id)"
+        *ngFor="let item of addItemList"
+        (click)="onInternalSelect(item)"
+        class="item {{ item.id === selectedItem?.id ? 'selected' : '' }}">
+        <div class="option-container" [ngStyle]="{ color: item.color || '#fff' }">
+          <img class="selected-icon" *ngIf="item?.icon" [src]="item?.icon" />
+          <span class="title-container {{ item?.default ? 'default' : '' }}">{{ item.name }}</span>
+          <img *ngIf="item.rightIcon" class="right-icon" [src]="item.rightIcon" />
+          <span *ngIf="item.rightText" class="right-text">{{ item.rightText }}</span>
+        </div>
+      </button>
+    </div>
+  </mat-menu>
+</div>

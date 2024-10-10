@@ -103,7 +103,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #openWorkspaceOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <push-button
+    <!-- <push-button
       *ngIf="userCanEdit && selectedWorkspace"
       confirmInputText="Enter a name for the new workspace"
       confirmInputTitle="Duplicate Snapshot"
@@ -112,8 +112,9 @@ POSSIBILITY OF SUCH DAMAGE.
       confirmInputButtonText="Duplicate & Open"
       (onClick)="onDuplicateClick(selectedWorkspace, $event)"
       buttonStyle="gray"
-      >Duplicate</push-button
-    >
+      >Duplicate</push-button -->
+    <push-button *ngIf="userCanEdit" (onClick)="onOpenDuplicateWorkspaceDialog()" buttonStyle="gray">Duplicate</push-button>
+
     <push-button
       *ngIf="userCanEdit"
       confirmText="Are you sure you want to delete this workspace ({{ selectedWorkspace?.name || selectedWorkspace?.id }})?"
