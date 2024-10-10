@@ -293,7 +293,7 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
       this.triggerRedraw();
     }
 
-    const canvasContext = (<HTMLCanvasElement>canvasElem).getContext("2d", { colorSpace: "display-p3" });
+    const canvasContext = (<HTMLCanvasElement>canvasElem).getContext("2d", { colorSpace: "display-p3" }) || (<HTMLCanvasElement>canvasElem).getContext("2d");
     if (canvasContext) {
       this._screenContext = canvasContext;
     }
