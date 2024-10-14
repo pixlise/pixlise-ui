@@ -1,4 +1,8 @@
-## 4.49.0 (Latest)
+## 4.50.0 (Latest)
+### Features
+- Subtle custom color selection for ROI design improvements
+
+## 4.49.0 (2024-10-10)
 
 ### Features
 - **Workspace Templating** Allows workspaces to be duplicated and different scans, ROIs, quantifications, and images to be substituted in.
