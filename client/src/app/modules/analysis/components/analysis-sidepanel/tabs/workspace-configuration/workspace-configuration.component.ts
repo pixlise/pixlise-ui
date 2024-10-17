@@ -51,6 +51,7 @@ import { ExpressionGetReq, ExpressionGetResp } from "../../../../../../generated
 import { QuantGetReq, QuantGetResp } from "../../../../../../generated-protos/quantification-retrieval-msgs";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { ExpressionGroupGetResp } from "../../../../../../generated-protos/expression-group-msgs";
+import { WorkspaceService } from "../../../../services/workspaces.service";
 
 @Component({
   selector: "workspace-configuration",
@@ -94,6 +95,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   constructor(
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
+    private _workspaceService: WorkspaceService,
     private _snackbarService: SnackbarService,
     private _route: ActivatedRoute,
     private _apiDataService: APIDataService,
@@ -137,7 +139,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       this._analysisLayoutService.activeScreenConfiguration$
         .pipe(
           switchMap(screenConfig => {
-            return this._analysisLayoutService.fetchWorkspaceSnapshots(screenConfig.id);
+            return this._workspaceService.fetchWorkspaceSnapshots(screenConfig.id);
           })
         )
         .subscribe(snapshots => {
@@ -349,7 +351,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.deleteScreenConfiguration(snapshot.id, () => {
-      this._analysisLayoutService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
+      this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
         this.snapshots = snapshots;
       });
     });
@@ -399,7 +401,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         })
       )
       .pipe(editResp => {
-        return this._analysisLayoutService.fetchWorkspaceSnapshots(this.screenConfig!.id);
+        return this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id);
       })
       .subscribe(snapshots => {
         this.snapshots = snapshots;

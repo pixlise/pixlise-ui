@@ -26,6 +26,7 @@ import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 import { TabLinks } from "../../../models/TabLinks";
 import { PredefinedROIID } from "../../../models/RegionOfInterest";
+import { ScanImage } from "../../../generated-protos/image";
 
 export class DefaultExpressions {
   constructor(
@@ -252,19 +253,10 @@ export class AnalysisLayoutService implements OnDestroy {
         return tab;
       });
 
-      let tabs = [
-        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        ...analysisTabs,
-        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-      ];
+      let tabs = [...analysisTabs];
       this.activeScreenConfigurationTabs$.next(tabs);
     } else {
-      this.activeScreenConfigurationTabs$.next([
-        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-      ]);
+      this.activeScreenConfigurationTabs$.next([]);
     }
   }
 
@@ -286,27 +278,18 @@ export class AnalysisLayoutService implements OnDestroy {
     return screenConfiguration;
   }
 
+  getScanName(scan: ScanItem): string {
+    return scan?.meta && scan?.title ? `Sol ${scan.meta["Sol"]}: ${scan.title}` : scan?.title;
+  }
+
+  getImageName(image: ScanImage) {
+    return image.imagePath.split("/").pop() || "";
+  }
+
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
     });
-  }
-
-  fetchWorkspaceSnapshots(workspaceId: string): Observable<ScreenConfiguration[]> {
-    return this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create({ snapshotParentId: workspaceId })).pipe(
-      map(res => {
-        let snapshots = res.screenConfigurations;
-        snapshots.sort((a, b) => {
-          return (a.owner?.createdUnixSec || 0) - (b.owner?.createdUnixSec || 0);
-        });
-
-        return snapshots;
-      }),
-      catchError(err => {
-        this._snackService.openError(err);
-        return of([]);
-      })
-    );
   }
 
   deleteQuant(quantId: string) {
@@ -560,8 +543,12 @@ export class AnalysisLayoutService implements OnDestroy {
     return isFirefox(navigator?.userAgent || "");
   }
 
+  get defaultScanIdFromRoute(): string {
+    return this._route?.snapshot?.queryParams[EditorConfig.scanIdParam] || "";
+  }
+
   get defaultScanId(): string {
-    let scanId = this._route?.snapshot?.queryParams[EditorConfig.scanIdParam];
+    let scanId = this.defaultScanIdFromRoute;
 
     let scanConfigs = this.activeScreenConfiguration$.value?.scanConfigurations;
     if (!scanId && scanConfigs && Object.keys(scanConfigs).length > 0) {

@@ -1,0 +1,148 @@
+.replace-scan-dialog {
+  min-width: 500px;
+  max-height: 400px;
+
+  padding: 8px;
+
+  display: flex;
+  flex-direction: column;
+
+  .title {
+    h1 {
+      margin-bottom: 8px;
+    }
+  }
+}
+
+.dataset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  background: #222829;
+  overflow-y: auto;
+
+  border: 1px solid #454c50;
+  border-radius: 8px;
+  padding: 8px;
+
+  max-height: 308px;
+
+  .dataset-header {
+    display: flex;
+    align-items: center;
+
+    h5 {
+      margin: 0;
+    }
+
+    .product-current {
+      flex: 1;
+      height: 30px;
+
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      img {
+        margin-right: 8px;
+      }
+    }
+
+    .product-replace {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      // searchable-list {
+      //   margin-left: 4px;
+      // }
+
+      mat-select {
+        &.replace-select {
+          width: 200px !important;
+
+          background-color: #444c50 !important;
+          border-radius: 4px !important;
+          border: 1px solid rgba(0, 0, 0, 0.16);
+        }
+      }
+    }
+  }
+
+  .dataset-products {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .product {
+      display: flex;
+      align-items: center;
+
+      h5 {
+        margin: 0;
+      }
+
+      .product-current {
+        flex: 1;
+        height: 30px;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .product-type {
+          margin-left: 28px;
+
+          width: 24px;
+          display: flex;
+          align-items: center;
+
+          img {
+          }
+        }
+
+        h5 {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+
+      .product-replace {
+        flex: 1;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        mat-select {
+          margin-left: auto;
+
+          &.replace-select {
+            width: 200px !important;
+
+            background-color: #444c50 !important;
+            border-radius: 4px !important;
+            border: 1px solid rgba(0, 0, 0, 0.16);
+          }
+        }
+      }
+    }
+  }
+}
+
+.bottom-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px;
+  margin-top: auto;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}

@@ -53,6 +53,10 @@ POSSIBILITY OF SUCH DAMAGE.
       <img *ngIf="config.calibrations && config.calibrations.length > 0" class="menu-icon" src="assets/button-icons/yellow-tick.svg" />
       <span class="menu-text">Calibration</span>
     </div>
+    <div class="menu-item" (click)="onReplaceScan()">
+      <img class="menu-icon" src="assets/icons/datasets.svg" />
+      <span class="menu-text">Replace Scan</span>
+    </div>
     <div class="menu-item" (click)="onRemoveConfiguration()">
       <img class="menu-icon" src="assets/button-icons/delete.svg" />
       <span class="menu-text">Remove</span>
