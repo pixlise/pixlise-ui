@@ -33,6 +33,7 @@ import { Colours } from "src/app/utils/colours";
 import { DiffractionHistogramModel } from "./model";
 import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { ChartAxisDrawer } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { Observable, of } from "rxjs";
 
 export class DiffractionHistogramDrawer implements CanvasDrawer {
   protected _mdl: DiffractionHistogramModel;
@@ -43,8 +44,9 @@ export class DiffractionHistogramDrawer implements CanvasDrawer {
     this._mdl = mdl;
   }
 
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     this.drawScreenSpace(screenContext, drawParams);
+    return of(void 0);
   }
 
   drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}

@@ -33,7 +33,7 @@ import { drawFilledCircle, drawTextWithBackground, OutlineDrawer, OUTLINE_LINE_W
 import { RGBUPlotDrawModel, RGBUPlotModel } from "../rgbu-plot-widget/rgbu-plot-model";
 import { RGBUMineralPoint } from "../rgbu-plot-widget/rgbu-plot-data";
 import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 
 export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {

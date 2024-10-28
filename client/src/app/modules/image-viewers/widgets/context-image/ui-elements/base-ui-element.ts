@@ -39,6 +39,7 @@ import { Colours } from "src/app/utils/colours";
 import { IContextImageModel } from "../context-image-model-interface";
 import { IToolHost } from "../tools/base-context-image-tool";
 import { Rect } from "src/app/models/Geometry";
+import { Observable, of } from "rxjs";
 
 export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
   constructor(
@@ -56,8 +57,9 @@ export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
   }
 
   // CanvasDrawer
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // Default is do nothing...
+    return of(void 0);
   }
 
   // Internal draw helpers

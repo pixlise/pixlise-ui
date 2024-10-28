@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { Subject, Subscription, fromEvent } from "rxjs";
+import { Observable, Subject, Subscription, fromEvent } from "rxjs";
 import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
 import { addVectors, getMatrixAs2x3Array, Point, Rect, subtractVectors } from "src/app/models/Geometry";
@@ -81,7 +81,7 @@ export interface CanvasDrawer {
   // modes (eg for Export) and we don't have to then refactor everything implementing this interface
   // as this has happened in the past too!
 
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void;
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void>;
 
   // Optional parameters just for export
   showSwapButton?: boolean;
@@ -530,8 +530,9 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
     const drawParams = new CanvasDrawParameters(transform, viewport, exportItemIDs);
 
     screenContext.save();
-    drawer.draw(screenContext, drawParams);
-    screenContext.restore();
+    drawer.draw(screenContext, drawParams).subscribe(() => {
+      screenContext.restore();
+    });
   }
 
   protected screenToCanvasSpace(pt: Point): Point {
