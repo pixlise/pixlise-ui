@@ -21,7 +21,7 @@ export class NotificationSubscriptions {
   // At time of writing, these are defined in the API at api\notificationSender\notifications.go
   public static readonly NOTIF_TOPIC_SCAN_NEW = "New Dataset Available";
   public static readonly NOTIF_TOPIC_SCAN_UPDATED = "Dataset Updated";
-  public static readonly NOTIF_TOPIC_QUANT_COMPLETE = "Qunatification Complete";
+  public static readonly NOTIF_TOPIC_QUANT_COMPLETE = "Quantification Complete";
   public static readonly NOTIF_TOPIC_IMAGE_NEW = "New Image For Dataset";
   public static readonly NOTIF_TOPIC_OBJECT_SHARED = "Object Shared";
 
