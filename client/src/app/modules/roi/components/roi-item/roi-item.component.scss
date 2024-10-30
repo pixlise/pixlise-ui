@@ -310,6 +310,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
+      cursor: pointer;
 
       &.selected {
         border-radius: 50%;
@@ -408,12 +409,31 @@
 .new-color {
   display: flex;
   align-items: center;
+  width: 36px;
+  margin-left: 16px;
+  cursor: pointer;
 
   .custom-color-container {
     display: flex;
     align-items: center;
 
     margin: -8px;
-    margin-right: -20px;
+
+    .color-option {
+      position: relative;
+
+      roi-shape {
+        z-index: 1;
+      }
+
+      .active-color {
+        z-index: 2;
+      }
+
+      .color-wheel {
+        position: absolute;
+        width: 28px;
+      }
+    }
   }
 }

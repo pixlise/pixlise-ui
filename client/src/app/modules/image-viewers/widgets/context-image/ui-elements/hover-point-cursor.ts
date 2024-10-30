@@ -41,6 +41,7 @@ import { BaseUIElement } from "./base-ui-element";
 import { ScanPoint } from "../../../models/scan-point";
 import { ContextImageScanDrawModel } from "../../../models/context-image-draw-model";
 import { IToolHost } from "../tools/base-context-image-tool";
+import { Observable, of } from "rxjs";
 
 // Draws the highlighted point. Also listens for any stray mouse events and sets the point hovered over as the hover point
 export class HoverPointCursor extends BaseUIElement {
@@ -115,7 +116,7 @@ export class HoverPointCursor extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     let drawnCornerBoxWidth = 0;
     for (const mdl of this._ctx.drawModel.scanDrawModels.values()) {
       if (mdl.hoverEntryIdx >= 0 && mdl.scanPoints[mdl.hoverEntryIdx].coord) {
@@ -129,6 +130,7 @@ export class HoverPointCursor extends BaseUIElement {
     if (this._ctx.rgbuImageScaleData && this._ratioValue !== null) {
       this.drawForRatioImage(screenContext, drawParams, this._ratioValue, this._ctx.rgbuImageScaleData.name, drawnCornerBoxWidth);
     }
+    return of(void 0);
   }
 
   private _drawPadding = 4;

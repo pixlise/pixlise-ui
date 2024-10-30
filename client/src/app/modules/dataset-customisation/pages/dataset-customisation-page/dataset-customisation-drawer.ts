@@ -2,17 +2,19 @@ import { ContextImageDrawer } from "src/app/modules/image-viewers/image-viewers.
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
 import { CanvasDrawParameters, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { drawImageOrMaskWithOptionalTransform } from "src/app/modules/image-viewers/widgets/context-image/drawlib/draw-image";
+import { Observable, of } from "rxjs";
 
 class OverlayImageDrawer implements CanvasDrawer {
   constructor(private _mdl: DatasetCustomisationModel) {}
 
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // We draw the overlay image only
     if (this._mdl.overlayImage) {
       screenContext.globalAlpha = this._mdl.overlayOpacity;
       drawImageOrMaskWithOptionalTransform(screenContext, this._mdl.overlayImage, this._mdl.overlayImageTransform);
       screenContext.globalAlpha = 1;
     }
+    return of(void 0);
   }
 }
 

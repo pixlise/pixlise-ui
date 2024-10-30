@@ -56,23 +56,24 @@
         <roi-shape [scale]="4" [color]="option.colour" [borderColor]="selectedColour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
         <div *ngIf="selectedColour === option.colour" class="active-color"></div>
       </div>
-      <div class="new-color">
-        <push-button
-          buttonStyle="outline"
-          title="New Colour"
-          [(colorPicker)]="customSelectedColour"
-          [cpEyeDropper]="true"
-          cpPosition="auto"
-          [cpAlphaChannel]="'disabled'"
-          (colorPickerSelect)="onSelectCustomColour()">
-          <div class="custom-color-container">
-            <img src="assets/button-icons/plus-white.svg" />
-            <div class="color-option {{ isCustomColour ? 'selected' : '' }}">
-              <roi-shape [scale]="4" [color]="rawSelectedColour" [borderColor]="isCustomColour ? '#fff' : ''" shape="circle"></roi-shape>
-              <div *ngIf="isCustomColour" class="active-color"></div>
-            </div>
+      <div
+        class="new-color"
+        [(colorPicker)]="customSelectedColour"
+        [cpEyeDropper]="true"
+        cpPosition="auto"
+        [cpAlphaChannel]="'disabled'"
+        (colorPickerSelect)="onSelectCustomColour()">
+        <div class="custom-color-container">
+          <div class="color-option {{ isCustomColour ? 'selected' : '' }}">
+            <img class="color-wheel" src="assets/button-icons/colour-wheel.svg" />
+            <roi-shape
+              [scale]="3"
+              [color]="isCustomColour ? rawSelectedColour : 'transparent'"
+              [borderColor]="isCustomColour ? 'rgb(var(--clr-gray-80))' : ''"
+              shape="circle"></roi-shape>
+            <div *ngIf="isCustomColour" class="active-color"></div>
           </div>
-        </push-button>
+        </div>
       </div>
     </div>
     <div class="bottom-buttons">

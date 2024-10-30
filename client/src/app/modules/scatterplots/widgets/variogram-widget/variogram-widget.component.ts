@@ -537,10 +537,11 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
   }
 
   // CanvasDrawer
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (this.drawer) {
-      this.drawer.draw(screenContext, drawParams);
+      return this.drawer.draw(screenContext, drawParams);
     }
+    return of(void 0);
   }
 
   onRegions(): void {

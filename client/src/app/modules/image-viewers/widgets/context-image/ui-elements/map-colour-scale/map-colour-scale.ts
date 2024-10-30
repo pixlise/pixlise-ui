@@ -40,6 +40,7 @@ import { MapColourScaleDrawer } from "./map-colour-scale-drawer";
 import { MapColourScaleModel } from "./map-colour-scale-model";
 import { MapColourScaleInteraction } from "./map-colour-scale-interaction";
 import { Point, Rect, addVectors, getVectorBetweenPoints } from "src/app/models/Geometry";
+import { Observable, of } from "rxjs";
 
 // NOTE: this draws one or more colour scale as a movable and interactive UI element. The model it operates
 // on must be created as part of the ContextImageModel
@@ -63,9 +64,9 @@ export class MapColourScale extends BaseUIElement {
     return histogram.values.length != 2 || histogram.max() != 0;
   }
 */
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (this._ctx.colourScales.length <= 0) {
-      return;
+      return of(void 0);
     }
 
     // Translate to where it actually should be
@@ -81,6 +82,7 @@ export class MapColourScale extends BaseUIElement {
     }
 
     screenContext.restore();
+    return of(void 0);
   }
 
   private drawScreenSpaceScale(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters, mdl: MapColourScaleModel) {

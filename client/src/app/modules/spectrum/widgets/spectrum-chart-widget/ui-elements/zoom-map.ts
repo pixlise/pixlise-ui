@@ -38,6 +38,7 @@ import {
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseUIElement } from "./base-ui-element";
+import { Observable, of } from "rxjs";
 
 export class ZoomMap extends BaseUIElement {
   public static readonly maxHeight = 140;
@@ -80,7 +81,7 @@ export class ZoomMap extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     const rect = this.calcWindowRect(drawParams.drawViewport);
 
     // Draw in top-right corner
@@ -93,7 +94,7 @@ export class ZoomMap extends BaseUIElement {
     screenContext.strokeRect(rect.x, rect.y, rect.w, rect.h);
 
     if (this._ctx.spectrumLines.length <= 0) {
-      return;
+      return of(void 0);
     }
 
     // Now make sure we don't draw outside of the rect
@@ -151,6 +152,7 @@ export class ZoomMap extends BaseUIElement {
     screenContext.strokeRect(visibleRect.x, visibleRect.y, visibleRect.w, visibleRect.h);
 
     screenContext.restore();
+    return of(void 0);
   }
 
   // Returns the rect of where we're drawing the map

@@ -42,6 +42,7 @@ import { CANVAS_FONT_SIZE_TITLE, drawTextWithBackground } from "src/app/utils/dr
 import { nearestRoundValue } from "src/app/utils/utils";
 import { IContextImageModel } from "../context-image-model-interface";
 import { IToolHost } from "../tools/base-context-image-tool";
+import { Observable, of } from "rxjs";
 
 class scalePosition {
   constructor(
@@ -106,14 +107,14 @@ export class PhysicalScale extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (!this._ctx.imageName) {
       // No physical scale to draw if we don't have an image to calculate scale with
-      return;
+    } else {
+      // Draw the physical image scale (mm)
+      this.drawPhysicalScale(screenContext, drawParams.drawViewport, drawParams.worldTransform);
     }
-
-    // Draw the physical image scale (mm)
-    this.drawPhysicalScale(screenContext, drawParams.drawViewport, drawParams.worldTransform);
+    return of(void 0);
   }
 
   protected getPosition(viewport: CanvasParams, transform: CanvasWorldTransform): scalePosition {

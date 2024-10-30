@@ -1,4 +1,4 @@
-import { combineLatest, Observable, of } from "rxjs";
+import { combineLatest, forkJoin, Observable, of } from "rxjs";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { BinaryChartModel } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-model";
 import { TernaryChartModel } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-model";
@@ -99,10 +99,10 @@ export class NaryChartExporter {
 
         let requests = [
           requestCSVData ? this.exportPlotData(mdl) : of(null),
-          requestPlotImage ? exportPlotImage(this.drawer, this.transform, mdl.keyItems, showKey, darkMode, 1200, 800) : of(null),
-          requestLargePlotImage ? exportPlotImage(this.drawer, this.transform, mdl.keyItems, showKey, darkMode, 4096, 2160) : of(null),
+          requestPlotImage ? exportPlotImage(this.drawer, this.transform, mdl.keyItems, showKey, darkMode, 1200, 800, 1) : of(null),
+          requestLargePlotImage ? exportPlotImage(this.drawer, this.transform, mdl.keyItems, showKey, darkMode, 1200, 800, 4) : of(null),
         ];
-        combineLatest(requests).subscribe({
+        forkJoin(requests).subscribe({
           next: ([csvData, plotImage, largePlotImage]) => {
             let images: WidgetExportFile[] = [];
             let csvs: WidgetExportFile[] = [];
