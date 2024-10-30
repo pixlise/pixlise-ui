@@ -342,6 +342,16 @@ export class AnalysisLayoutService implements OnDestroy {
     this.activeScreenConfigurationId$.next("");
   }
 
+  clearActiveScreenConfiguration() {
+    this.clearScreenConfigurationCache();
+    // Remove from query params
+    let queryParams = { ...this._route.snapshot.queryParams };
+    delete queryParams["id"];
+    delete queryParams["scan_id"];
+
+    this._router.navigate([TabLinks.analysis], { queryParams });
+  }
+
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true, showSnackOnError: boolean = true) {
     this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
       next: res => {
@@ -437,8 +447,8 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
-  deleteScreenConfiguration(id: string, callback: () => void = () => {}) {
-    this._dataService.sendScreenConfigurationDeleteRequest({ id }).subscribe(res => {
+  deleteScreenConfiguration(id: string, callback: () => void = () => {}, preserveDanglingWidgetReferences: boolean = false) {
+    this._dataService.sendScreenConfigurationDeleteRequest({ id, preserveDanglingWidgetReferences }).subscribe(res => {
       if (res.id) {
         this.screenConfigurations$.value.delete(id);
         this.screenConfigurations$.next(this.screenConfigurations$.value);
@@ -617,7 +627,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   removeIdFromScreenConfiguration(screenConfiguration: ScreenConfiguration, id: string): ScreenConfiguration {
-    let newScreenConfiguration = { ...screenConfiguration };
+    let newScreenConfiguration = ScreenConfiguration.create(screenConfiguration);
     Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
       if (scanId === id) {
         delete newScreenConfiguration.scanConfigurations[scanId];
@@ -711,7 +721,7 @@ export class AnalysisLayoutService implements OnDestroy {
   };
 
   replaceIdInScreenConfiguration(screenConfiguration: ScreenConfiguration, oldId: string, newId: string): ScreenConfiguration {
-    let newScreenConfiguration = { ...screenConfiguration };
+    let newScreenConfiguration = ScreenConfiguration.create(screenConfiguration);
     Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
       if (scanId === oldId) {
         delete newScreenConfiguration.scanConfigurations[scanId];
@@ -737,7 +747,7 @@ export class AnalysisLayoutService implements OnDestroy {
           let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
           let widgetData = (widget.data as any)[widgetKey];
           if (!widgetData) {
-            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
             return;
           }
 
@@ -921,8 +931,6 @@ export class AnalysisLayoutService implements OnDestroy {
             console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
             return;
           }
-
-          console.log(widgetData, widget.type, widgetKey, widgetData?.expressionIDs);
 
           if (widgetData?.expressionIDs) {
             widgetData.expressionIDs.forEach((expressionId: string) => {

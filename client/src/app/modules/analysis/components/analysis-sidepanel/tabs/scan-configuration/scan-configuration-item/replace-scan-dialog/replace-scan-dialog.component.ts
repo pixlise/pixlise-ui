@@ -65,6 +65,12 @@ export class ReplaceScanDialog implements OnDestroy {
     this.loading = true;
     this._subs.add(
       this._analysisLayoutService.activeScreenConfigurationId$.subscribe(activeId => {
+        if (!activeId) {
+          this._newWorkspace = ScreenConfiguration.create();
+          this.loading = false;
+          return;
+        }
+
         this._workspaceService.fetchWorkspaceProducts(activeId).subscribe({
           next: ({ workspace, products }) => {
             if (!workspace) {
@@ -141,25 +147,53 @@ export class ReplaceScanDialog implements OnDestroy {
   }
 
   onConfirm(): void {
-    let workspace = this._analysisLayoutService.activeScreenConfiguration$.value;
+    let workspace = this._newWorkspace;
     if (!workspace) {
       return;
     }
 
     Object.entries(this.idReplacements).forEach(([oldId, newId]) => {
       if (newId === "remove") {
-        workspace = this._analysisLayoutService.removeIdFromScreenConfiguration(workspace, oldId);
+        workspace = this._analysisLayoutService.removeIdFromScreenConfiguration(workspace!, oldId);
       } else if (newId !== "no-replace") {
-        workspace = this._analysisLayoutService.replaceIdInScreenConfiguration(workspace, oldId, newId);
+        workspace = this._analysisLayoutService.replaceIdInScreenConfiguration(workspace!, oldId, newId);
       }
     });
 
     let scanId = this._analysisLayoutService.defaultScanIdFromRoute || undefined;
-    this._analysisLayoutService.writeScreenConfiguration(workspace, scanId, true, response => {
-      this._snackbarService.openSuccess(`Scan replaced successfully`);
-      this._analysisLayoutService.activeScreenConfiguration$.next(response);
-      this.dialogRef.close({
-        workspace: response,
+
+    let originalId = workspace.id;
+    workspace.id = "";
+
+    // Remove all ids from widgets as we don't want to duplicate them
+    workspace.layouts.forEach(layout => {
+      layout.widgets.forEach(widget => {
+        widget.id = "";
+      });
+    });
+
+    // Create new workspace
+    this._analysisLayoutService.writeScreenConfiguration(workspace!, undefined, true, response => {
+      if (!response) {
+        return;
+      }
+
+      let tempId = response.id;
+
+      response.id = originalId;
+      // Update existing workspace with new workspace
+      this._analysisLayoutService.writeScreenConfiguration(response, scanId, true, originalWorkspace => {
+        // Delete the temp workspace
+        this._analysisLayoutService.deleteScreenConfiguration(
+          tempId,
+          () => {
+            this._snackbarService.openSuccess(`Scan replaced successfully`);
+            this.dialogRef.close({
+              workspace: response,
+            });
+          },
+          true
+        );
       });
     });
   }
