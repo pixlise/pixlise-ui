@@ -33,7 +33,7 @@ import { drawFilledCircle, drawTextWithBackground, OutlineDrawer } from "src/app
 import { RGBUPlotDrawModel, RGBUPlotModel } from "./rgbu-plot-model";
 import { RGBUMineralPoint } from "./rgbu-plot-data";
 import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
 
 export class RGBUPlotDrawer extends CachedCanvasChartDrawer {

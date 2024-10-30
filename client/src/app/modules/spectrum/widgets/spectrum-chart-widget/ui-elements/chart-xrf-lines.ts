@@ -41,6 +41,7 @@ import { Colours, RGBA } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE } from "src/app/utils/drawing";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseUIElement } from "./base-ui-element";
+import { Observable, of } from "rxjs";
 
 class XRFLinesToTag {
   constructor(
@@ -107,10 +108,10 @@ export class ChartXRFLines extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // If x-axis isn't calibrated, we don't draw
     if (!this._ctx.xAxisEnergyScale) {
-      return;
+      return of(void 0);
     }
 
     this.cacheSpectrumElementYs();
@@ -138,6 +139,7 @@ export class ChartXRFLines extends BaseUIElement {
 
     // Pile-up locations
     this.drawPileupLines(ctx, this.clrPileupLine);
+    return of(void 0);
   }
 
   private isPickedLineHighlighted(): boolean {

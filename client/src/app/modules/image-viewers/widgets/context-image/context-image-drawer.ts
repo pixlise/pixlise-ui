@@ -1,4 +1,4 @@
-import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { ContextImageModel } from "./context-image-model";
 import { CanvasDrawParameters, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";

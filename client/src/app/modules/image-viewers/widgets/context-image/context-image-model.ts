@@ -510,7 +510,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
           this._recalcNeeded = false;
 
           this.drawModel.drawnData = null;
-          this.needsDraw$.next();
+          //this.needsDraw$.next();
         })
       );
     } /*else {

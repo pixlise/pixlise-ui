@@ -36,6 +36,7 @@ import {
   CanvasDrawParameters,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
+import { Observable, of } from "rxjs";
 
 // TODO: Mostly copied from context image, can probably unify
 export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
@@ -51,7 +52,8 @@ export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
   }
 
   // CanvasDrawer
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // Default is do nothing...
+    return of(void 0);
   }
 }

@@ -123,8 +123,8 @@ export class VariogramChartExporter {
         let requests = [
           requestBinnedCSVData ? this.exportBinnedPlotData(mdl, binnedPointDataForExport) : of(null),
           requestRawCSVData ? this.exportRawPlotData(mdl, rawPointData) : of(null),
-          requestPlotImage ? exportPlotImage(this.drawer, this.transform, [], false, darkMode, 1200, 800) : of(null),
-          requestLargePlotImage ? exportPlotImage(this.drawer, this.transform, [], false, darkMode, 4096, 2160) : of(null),
+          requestPlotImage ? exportPlotImage(this.drawer, this.transform, [], false, darkMode, 1200, 800, 1) : of(null),
+          requestLargePlotImage ? exportPlotImage(this.drawer, this.transform, [], false, darkMode, 1200, 800, 4) : of(null),
         ];
         combineLatest(requests).subscribe({
           next: ([binnedCSVData, rawCSVData, plotImage, largePlotImage]) => {

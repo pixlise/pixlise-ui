@@ -41,6 +41,7 @@ import { Colours } from "src/app/utils/colours";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { Observable, of } from "rxjs";
 
 export enum ContextImageToolId {
   DRAW_LINE,
@@ -88,7 +89,9 @@ export class BaseContextImageTool implements CanvasInteractionHandler, CanvasDra
   }
 
   // CanvasDrawer
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {}
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
+    return of(void 0);
+  }
 
   // Internal drawing helpers
   private defaultLineWidth = 1;

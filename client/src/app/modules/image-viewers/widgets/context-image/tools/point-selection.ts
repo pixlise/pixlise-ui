@@ -39,6 +39,7 @@ import {
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../context-image-model-interface";
 import { Point } from "src/app/models/Geometry";
+import { Observable, of } from "rxjs";
 
 const buttonIconPaintBrush = "assets/button-icons/tool-paint-brush.svg";
 const buttonIconPointInvestigation = "assets/button-icons/tool-point-select.svg";
@@ -137,7 +138,7 @@ export class PointSelection extends BaseContextImageTool {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // If we're deleting, draw with a different colour
     const clr = this.getModeColour();
 
@@ -159,6 +160,7 @@ export class PointSelection extends BaseContextImageTool {
         }
       }
     }
+    return of(void 0);
   }
 
   // Return true if something was changed

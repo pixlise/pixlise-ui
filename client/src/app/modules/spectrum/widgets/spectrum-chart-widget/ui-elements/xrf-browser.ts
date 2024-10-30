@@ -39,6 +39,7 @@ import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseUIElement } from "./base-ui-element";
+import { Observable, of } from "rxjs";
 
 const triangleHeight = 12;
 
@@ -85,13 +86,14 @@ export class XRFBrowser extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (this._ctx.xrfNearMouse.keV <= 0) {
-      return;
+      return of(void 0);
     }
 
     this.drawCursor(screenContext, drawParams.drawViewport);
     this.drawGhostLines(screenContext, drawParams.drawViewport);
+    return of(void 0);
   }
 
   private calcCursorPosPx(viewport: CanvasParams): Rect {

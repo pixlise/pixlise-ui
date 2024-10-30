@@ -2,7 +2,7 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
 import { MultiChannelViewerModel } from "./multi-channel-viewer-model";
-import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 
 export class MultiChannelViewerDrawer extends CachedCanvasChartDrawer {

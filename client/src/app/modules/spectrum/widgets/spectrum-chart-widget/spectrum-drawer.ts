@@ -34,7 +34,7 @@ import { CanvasDrawParameters, CanvasParams } from "src/app/modules/widget/compo
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumChartToolHost } from "./tools/tool-host";
-import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { SpectrumChartModel, fitElementLinePrefix } from "./spectrum-model";
 

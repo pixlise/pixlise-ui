@@ -38,6 +38,7 @@ import {
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseSpectrumTool, ISpectrumToolHost, SpectrumToolId } from "./base-tool";
+import { Observable, of } from "rxjs";
 
 // Mostly copied from context image zoom tool, but different because:
 // We have non-uniform x/y scaling, so we'd have to draw our rect in worldspace with different x/y scaling, so instead
@@ -115,7 +116,7 @@ export class SpectrumZoom extends BaseSpectrumTool {
   }
 
   // The following all deal in screen space (well, canvas space), so no transform applied
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (this._zoomRectStartCanvasPt && this._zoomRectCurrCanvasPt) {
       // Draw zoom rect preview
       const rect = this.makeZoomRect(this._zoomRectStartCanvasPt, this._zoomRectCurrCanvasPt);
@@ -126,6 +127,7 @@ export class SpectrumZoom extends BaseSpectrumTool {
       this.drawCtrlPoint(screenContext, this._zoomRectStartCanvasPt);
       this.drawCtrlPoint(screenContext, this._zoomRectCurrCanvasPt);
     }
+    return of(void 0);
   }
 
   protected makeZoomRect(zoomRectStartCanvasPt: Point, zoomRectCurrCanvasPt: Point): Rect {
