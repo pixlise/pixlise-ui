@@ -30,7 +30,7 @@
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 
-import { Subscription } from "rxjs";
+import { Observable, of, Subscription } from "rxjs";
 import { Rect } from "src/app/models/Geometry";
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
@@ -383,9 +383,9 @@ export class RangeSelect extends BaseSpectrumTool {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (!this._ctx.xAxisEnergyScale || !this._ctx.xAxis || !this._ctx.yAxis) {
-      return;
+      return of(void 0);
     }
 
     let chartRect = new Rect(this._ctx.xAxis.startPx, 0, this._ctx.xAxis.pxLength, this._ctx.yAxis.pxLength);
@@ -407,6 +407,7 @@ export class RangeSelect extends BaseSpectrumTool {
       ctx.fillRect(maxPx, chartRect.y, chartRect.maxX() - maxPx, chartRect.h);
       this.drawHandle(ctx, maxPx, chartRect.y, chartRect.maxY(), false, this._rangeMax, this._hover == HandleState.RIGHT);
     }
+    return of(void 0);
   }
 
   private getLeftHandlePx(): number {

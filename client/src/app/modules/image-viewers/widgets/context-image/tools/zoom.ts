@@ -38,6 +38,7 @@ import {
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
 import { IContextImageModel } from "../context-image-model-interface";
+import { Observable, of } from "rxjs";
 
 export class ContextImageZoom extends BaseContextImageTool {
   private _zoomRectStartPt: Point | null = null;
@@ -88,7 +89,7 @@ export class ContextImageZoom extends BaseContextImageTool {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (this._zoomRectStartPt && this._zoomRectCurrPt) {
       // Draw zoom rect preview
       const rect = this.makeZoomRect();
@@ -99,6 +100,7 @@ export class ContextImageZoom extends BaseContextImageTool {
       this.drawCtrlPoint(screenContext, this._zoomRectStartPt);
       this.drawCtrlPoint(screenContext, this._zoomRectCurrPt);
     }
+    return of(void 0);
   }
 
   protected makeZoomRect(): Rect {

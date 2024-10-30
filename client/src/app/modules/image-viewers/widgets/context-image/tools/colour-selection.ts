@@ -134,7 +134,7 @@ export class ColourSelection extends BaseContextImageTool {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // If we have selected pixels, we need to generate an image to overlay on top of the context image at this point
     if (this.selectedPixelsMask) {
       screenContext.drawImage(this.selectedPixelsMask, 0, 0, this.selectedPixelsMask.width, this.selectedPixelsMask.height);
@@ -189,6 +189,8 @@ export class ColourSelection extends BaseContextImageTool {
       screenContext.strokeStyle = Colours.WHITE.asString(); //this.getToolColour();
       screenContext.strokeRect(this.mouseDownToShow.x - ptRadius, this.mouseDownToShow.y - ptRadius, ptDiameter, ptDiameter);
     }
+
+    return of(void 0);
   }
 
   private reset(): void {

@@ -39,6 +39,7 @@ import { IContextImageModel } from "../context-image-model-interface";
 import { BaseUIElement } from "./base-ui-element";
 import { IToolHost } from "../tools/base-context-image-tool";
 import { RGBA } from "../../../../../utils/colours";
+import { Observable, of } from "rxjs";
 
 // Draws a tooltip when the mouse is over an ROI showing the ROI name
 class ROI {
@@ -56,7 +57,7 @@ export class ROIToolTip extends BaseUIElement {
     super(ctx, host);
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // Draw the physical image scale (mm)
     if (this._lastROIPointedTo) {
       let tooltips: TooltipText[] = [];
@@ -83,6 +84,7 @@ export class ROIToolTip extends BaseUIElement {
 
       drawToolTip(screenContext, this._lastMouseCanvasPoint, false, false, this._lastROIPointedTo.name, tooltips, CANVAS_FONT_SIZE);
     }
+    return of(void 0);
   }
 
   override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {

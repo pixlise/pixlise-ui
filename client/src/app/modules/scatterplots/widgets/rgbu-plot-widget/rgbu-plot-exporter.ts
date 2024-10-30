@@ -1,4 +1,4 @@
-import { combineLatest, Observable, of } from "rxjs";
+import { combineLatest, forkJoin, Observable, of } from "rxjs";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUPlotModel } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-model";
@@ -21,18 +21,18 @@ export class RGBUPlotExporter {
     private transform: PanZoom
   ) {}
 
-  exportRGBUPlotImage(mdl: RGBUPlotModel, includeKey: boolean, darkMode: boolean, exportWidth: number = 800): Observable<string> {
-    let canvasParams = mdl.lastCalcCanvasParams;
-    let width = canvasParams?.width ?? 1;
-    let height = canvasParams?.height || 1;
+  private exportRGBUPlotImage(mdl: RGBUPlotModel, includeKey: boolean, darkMode: boolean, exportWidth: number, dpi: number): Observable<string> {
+    const canvasParams = mdl.lastCalcCanvasParams;
+    const width = canvasParams?.width ?? 1;
+    const height = canvasParams?.height || 1;
 
-    let ratio = width / height;
-    let exportHeight = exportWidth / ratio;
+    const ratio = width / height;
+    const exportHeight = exportWidth / ratio;
 
-    return exportPlotImage(this.drawer, this.transform, mdl.keyItems, includeKey, darkMode, exportWidth, exportHeight);
+    return exportPlotImage(this.drawer, this.transform, mdl.keyItems, includeKey, darkMode, exportWidth, exportHeight, dpi);
   }
 
-  getImageShortName(imageName: string): string {
+  private getImageShortName(imageName: string): string {
     let imageShortName = getPathBase(imageName);
     if (imageName?.includes("MSA_")) {
       imageShortName = "MSA";
@@ -44,19 +44,19 @@ export class RGBUPlotExporter {
   }
 
   getExportOptions(mdl: RGBUPlotModel, scanId: string, widgetName: string = "RGBU Plot"): WidgetExportDialogData {
-    let imageShortName = this.getImageShortName(mdl.imageName);
+    const imageShortName = this.getImageShortName(mdl.imageName);
 
     return {
       title: `Export ${widgetName}`,
       defaultZipName: `${scanId} - ${imageShortName} - ${widgetName}`,
       options: [
-        {
+        /*{
           id: "darkMode",
           name: "Dark Mode",
           type: "checkbox",
           description: "Export the plots in dark mode",
           selected: true,
-        },
+        },*/
         {
           id: "key",
           name: "Visible Key",
@@ -99,7 +99,7 @@ export class RGBUPlotExporter {
       if (request.dataProducts) {
         let imageShortName = this.getImageShortName(mdl.imageName);
 
-        let darkMode = request.options["darkMode"]?.selected || false;
+        let darkMode = false; //request.options["darkMode"]?.selected || false;
         let showKey = request.options["key"]?.selected || false;
 
         let requestRawImage = request.dataProducts["rawImage"]?.selected;
@@ -108,10 +108,10 @@ export class RGBUPlotExporter {
 
         let requests = [
           requestRawImage ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName) : of(null),
-          requestPlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 800) : of(null),
-          requestLargePlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 1600) : of(null),
+          requestPlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 800, 1) : of(null),
+          requestLargePlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, 800, 4) : of(null),
         ];
-        combineLatest(requests).subscribe({
+        forkJoin(requests).subscribe({
           next: ([rawImage, plotImage, largePlotImage]) => {
             let images: WidgetExportFile[] = [];
 

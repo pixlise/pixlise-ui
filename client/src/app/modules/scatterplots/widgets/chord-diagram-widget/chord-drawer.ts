@@ -3,6 +3,7 @@ import { CanvasDrawer, CanvasParams, CanvasDrawParameters } from "src/app/module
 import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE, drawErrorIcon } from "src/app/utils/drawing";
 import { ChordViewNode, ChordDrawMode, ChordDiagramModel, ChordDiagramDrawModel } from "./chord-model";
+import { Observable, of } from "rxjs";
 
 export class ChordDiagramDrawer implements CanvasDrawer {
   private COLOUR_NODE = "rgba(245, 247, 250, 0.4)";
@@ -17,10 +18,11 @@ export class ChordDiagramDrawer implements CanvasDrawer {
 
   constructor(protected _mdl: ChordDiagramModel) {}
 
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport).subscribe(() => {
       this.drawChordDiagram(this._mdl.drawModel, screenContext, drawParams.drawViewport);
     });
+    return of(void 0);
   }
 
   private drawChordDiagram(drawModel: ChordDiagramDrawModel, screenContext: CanvasRenderingContext2D, viewport: CanvasParams): void {
