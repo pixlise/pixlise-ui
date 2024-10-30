@@ -1,4 +1,10 @@
-## 4.50.0 (Latest)
+## 4.51.0 (Latest)
+
+### Features
+- Replace dataset from active workspace in dataset config tab under three dots menu
+  - This dialog is the same as the Workspace Templating "replace scan" feature, but acts as a shortcut to replace and reload the active workspace
+
+## 4.50.0 (2024-10-29)
 
 ### Features
 - Subtle custom color selection for ROI design improvements

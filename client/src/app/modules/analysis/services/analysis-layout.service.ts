@@ -26,6 +26,7 @@ import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 import { TabLinks } from "../../../models/TabLinks";
 import { PredefinedROIID } from "../../../models/RegionOfInterest";
+import { ScanImage } from "../../../generated-protos/image";
 
 export class DefaultExpressions {
   constructor(
@@ -252,19 +253,10 @@ export class AnalysisLayoutService implements OnDestroy {
         return tab;
       });
 
-      let tabs = [
-        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        ...analysisTabs,
-        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-      ];
+      let tabs = [...analysisTabs];
       this.activeScreenConfigurationTabs$.next(tabs);
     } else {
-      this.activeScreenConfigurationTabs$.next([
-        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-      ]);
+      this.activeScreenConfigurationTabs$.next([]);
     }
   }
 
@@ -286,27 +278,18 @@ export class AnalysisLayoutService implements OnDestroy {
     return screenConfiguration;
   }
 
+  getScanName(scan: ScanItem): string {
+    return scan?.meta && scan?.title ? `Sol ${scan.meta["Sol"]}: ${scan.title}` : scan?.title;
+  }
+
+  getImageName(image: ScanImage) {
+    return image.imagePath.split("/").pop() || "";
+  }
+
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
     });
-  }
-
-  fetchWorkspaceSnapshots(workspaceId: string): Observable<ScreenConfiguration[]> {
-    return this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create({ snapshotParentId: workspaceId })).pipe(
-      map(res => {
-        let snapshots = res.screenConfigurations;
-        snapshots.sort((a, b) => {
-          return (a.owner?.createdUnixSec || 0) - (b.owner?.createdUnixSec || 0);
-        });
-
-        return snapshots;
-      }),
-      catchError(err => {
-        this._snackService.openError(err);
-        return of([]);
-      })
-    );
   }
 
   deleteQuant(quantId: string) {
@@ -357,6 +340,16 @@ export class AnalysisLayoutService implements OnDestroy {
     localStorage?.removeItem("lastLoadedScreenConfigurationId");
     this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
     this.activeScreenConfigurationId$.next("");
+  }
+
+  clearActiveScreenConfiguration() {
+    this.clearScreenConfigurationCache();
+    // Remove from query params
+    let queryParams = { ...this._route.snapshot.queryParams };
+    delete queryParams["id"];
+    delete queryParams["scan_id"];
+
+    this._router.navigate([TabLinks.analysis], { queryParams });
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true, showSnackOnError: boolean = true) {
@@ -454,8 +447,8 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
-  deleteScreenConfiguration(id: string, callback: () => void = () => {}) {
-    this._dataService.sendScreenConfigurationDeleteRequest({ id }).subscribe(res => {
+  deleteScreenConfiguration(id: string, callback: () => void = () => {}, preserveDanglingWidgetReferences: boolean = false) {
+    this._dataService.sendScreenConfigurationDeleteRequest({ id, preserveDanglingWidgetReferences }).subscribe(res => {
       if (res.id) {
         this.screenConfigurations$.value.delete(id);
         this.screenConfigurations$.next(this.screenConfigurations$.value);
@@ -560,8 +553,12 @@ export class AnalysisLayoutService implements OnDestroy {
     return isFirefox(navigator?.userAgent || "");
   }
 
+  get defaultScanIdFromRoute(): string {
+    return this._route?.snapshot?.queryParams[EditorConfig.scanIdParam] || "";
+  }
+
   get defaultScanId(): string {
-    let scanId = this._route?.snapshot?.queryParams[EditorConfig.scanIdParam];
+    let scanId = this.defaultScanIdFromRoute;
 
     let scanConfigs = this.activeScreenConfiguration$.value?.scanConfigurations;
     if (!scanId && scanConfigs && Object.keys(scanConfigs).length > 0) {
@@ -630,7 +627,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   removeIdFromScreenConfiguration(screenConfiguration: ScreenConfiguration, id: string): ScreenConfiguration {
-    let newScreenConfiguration = { ...screenConfiguration };
+    let newScreenConfiguration = ScreenConfiguration.create(screenConfiguration);
     Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
       if (scanId === id) {
         delete newScreenConfiguration.scanConfigurations[scanId];
@@ -724,7 +721,7 @@ export class AnalysisLayoutService implements OnDestroy {
   };
 
   replaceIdInScreenConfiguration(screenConfiguration: ScreenConfiguration, oldId: string, newId: string): ScreenConfiguration {
-    let newScreenConfiguration = { ...screenConfiguration };
+    let newScreenConfiguration = ScreenConfiguration.create(screenConfiguration);
     Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
       if (scanId === oldId) {
         delete newScreenConfiguration.scanConfigurations[scanId];
@@ -750,7 +747,7 @@ export class AnalysisLayoutService implements OnDestroy {
           let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
           let widgetData = (widget.data as any)[widgetKey];
           if (!widgetData) {
-            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
             return;
           }
 
@@ -934,8 +931,6 @@ export class AnalysisLayoutService implements OnDestroy {
             console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
             return;
           }
-
-          console.log(widgetData, widget.type, widgetKey, widgetData?.expressionIDs);
 
           if (widgetData?.expressionIDs) {
             widgetData.expressionIDs.forEach((expressionId: string) => {

@@ -49,6 +49,7 @@ export class AnalysisPageComponent {
         .pipe(
           switchMap(([screen, id, soloViewWidgetId, tabNumber]) => {
             if (!screen || !id || screen.id !== id) {
+              this.loadedScreenConfiguration = createDefaultScreenConfiguration();
               return of(null);
             }
 
