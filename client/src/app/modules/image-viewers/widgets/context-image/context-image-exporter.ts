@@ -1,4 +1,5 @@
-import { combineLatest, Observable, of } from "rxjs";
+import { floor } from "mathjs";
+import { combineLatest, forkJoin, Observable, of, tap } from "rxjs";
 import { ContextImageModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { ContextImageDrawModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model";
 import { SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -21,16 +22,7 @@ export class ContextImageExporter {
     private drawer: CanvasDrawer,
     private transform: PanZoom
   ) {}
-
-  exportRGBUPlotImage(mdl: ContextImageModel, includeKey: boolean, darkMode: boolean, width: number = 1200, height: number = 800): Observable<string> {
-    let canvasParams = new CanvasParams(width, height, 1);
-
-    let keyItems: WidgetKeyItem[] = [];
-
-    return exportPlotImage(this.drawer, this.transform, keyItems, includeKey, darkMode, canvasParams.width, canvasParams.height);
-  }
-
-  getImageShortName(imageName: string): string {
+  private getImageShortName(imageName: string): string {
     let imageShortName = getPathBase(imageName);
     if (imageName?.includes("MSA_")) {
       imageShortName = "MSA";
@@ -42,7 +34,7 @@ export class ContextImageExporter {
   }
 
   getExportOptions(mdl: ContextImageModel, scanId: string, widgetName: string = "Context Image"): WidgetExportDialogData {
-    let imageShortName = this.getImageShortName(mdl.imageName);
+    const imageShortName = this.getImageShortName(mdl.imageName);
 
     return {
       title: `Export ${widgetName}`,
@@ -108,15 +100,23 @@ export class ContextImageExporter {
           ? this._endpointsService.loadRGBUImageTIFPreview(mdl.imageName)
           : this._endpointsService.loadImagePreviewForPath(mdl.imageName);
 
-        let width = drawMdl.image?.width || 1200;
-        let height = drawMdl.image?.height || 800;
+        // Default to some size resembling the MCC image aspect
+        const width = 752; //drawMdl.image?.width || 1200;
+        let height = 580;
 
-        let requests = [
+        // If we have a current aspect ratio, preserve it!
+        if (drawMdl.image && drawMdl.image.width > 0 && drawMdl.image.height > 0) {
+          const ratio = drawMdl.image.width / drawMdl.image.height;
+          height = floor(width / ratio);
+        }
+
+        const requests = [
           requestRawImage ? rawImageRequest : of(null),
-          requestPlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, width, height) : of(null),
-          requestLargePlotImage ? this.exportRGBUPlotImage(mdl, showKey, darkMode, width * 2, height * 2) : of(null),
+          requestPlotImage ? exportPlotImage(this.drawer, this.transform, [], showKey, darkMode, width, height, 1) : of(null),
+          requestLargePlotImage ? exportPlotImage(this.drawer, this.transform, [], showKey, darkMode, width, height, 5) : of(null),
         ];
-        combineLatest(requests).subscribe({
+
+        forkJoin(requests).subscribe({
           next: ([rawImage, plotImage, largePlotImage]) => {
             let images: WidgetExportFile[] = [];
 
