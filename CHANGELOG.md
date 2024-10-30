@@ -1,6 +1,13 @@
 ## 4.50.0 (Latest)
+
 ### Features
 - Subtle custom color selection for ROI design improvements
+
+### Bug Fixes
+- Exporting context image was still creating some black images at times, should not happen again
+- Exporting "large" versions of plots didn't correctly change the DPI to ensure we have high resolution axis/keys/etc. The width/height of small vs large images exported have been adjusted.
+- Removed "dark mode" from RGBU export for now because it ended up exporting only a few black spots
+- Fixed a spelling mistake
 
 ## 4.49.0 (2024-10-10)
 
