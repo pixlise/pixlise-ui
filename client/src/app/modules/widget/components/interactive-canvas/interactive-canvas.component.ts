@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { Observable, Subject, Subscription, fromEvent } from "rxjs";
+import { Observable, Subject, Subscription, fromEvent, of } from "rxjs";
 import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
 import { addVectors, getMatrixAs2x3Array, Point, Rect, subtractVectors } from "src/app/models/Geometry";
@@ -271,7 +271,7 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
   triggerRedraw(): void {
     window.requestAnimationFrame(() => {
       if (this._screenContext && this._viewport && this.transform && this.drawer) {
-        InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer);
+        InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer).subscribe();
       }
     });
   }
@@ -507,10 +507,10 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
     transform: CanvasWorldTransform,
     drawer: CanvasDrawer,
     exportItemIDs: string[] = []
-  ): void {
+  ): Observable<void> {
     //let t0 = performance.now();
     if (!screenContext || !viewport || !transform || !drawer) {
-      return;
+      return of(void 0);
     }
 
     // Clear the frame as we know its dimensions
@@ -530,9 +530,10 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
     const drawParams = new CanvasDrawParameters(transform, viewport, exportItemIDs);
 
     screenContext.save();
-    drawer.draw(screenContext, drawParams).subscribe(() => {
-      screenContext.restore();
-    });
+    return drawer.draw(screenContext, drawParams).pipe(
+      tap(() => {
+        screenContext.restore();
+    }));
   }
 
   protected screenToCanvasSpace(pt: Point): Point {
