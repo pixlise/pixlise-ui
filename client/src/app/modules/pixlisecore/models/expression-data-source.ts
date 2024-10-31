@@ -204,7 +204,7 @@ export class ExpressionDataSource
     );
   }
 
-  private getDetectedDiffraction(): Observable<DetectedDiffractionPeaksResp> {
+  public getDetectedDiffraction(): Observable<DetectedDiffractionPeaksResp> {
     if (!this._cachedDataService) {
       return throwError(() => new Error("getDetectedDiffraction: no data available"));
     }
@@ -881,9 +881,8 @@ export class ExpressionDataSource
       this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
 
-    // NOTE: this.getDetectedDiffraction() not needed here because this operates on the previously read diffraction data in: this._allPeaks
     return await lastValueFrom(
-      combineLatest([this.getDetectedDiffractionStatus(), this.getDiffractionPeakManualList()]).pipe(
+      combineLatest([this.getDetectedDiffractionStatus(), this.getDiffractionPeakManualList(), this.getDetectedDiffraction()]).pipe(
         map(([diffractionStatusData, userDiffractionPeakData]) => {
           // Detected Diffraction data is fetched for the Roughness and Diffraction tabs
           // We can continue here on fail, but without this data those tabs won't load

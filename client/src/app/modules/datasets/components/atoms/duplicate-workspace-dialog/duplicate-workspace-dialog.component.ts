@@ -19,6 +19,7 @@ import { levenshteinDistance } from "../../../../../utils/search";
 import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "../../../../../generated-protos/image-msgs";
 import { ScanImage } from "../../../../../generated-protos/image";
 import { SDSFields } from "../../../../../utils/utils";
+import { DuplicateDatasetProducts, WorkspaceService } from "../../../../analysis/services/workspaces.service";
 
 export interface DuplicateWorkspaceDialogData {
   workspace: ScreenConfiguration;
@@ -29,15 +30,6 @@ export interface DuplicateWorkspaceDialogResult {
   shouldOpen: boolean;
   workspace: ScreenConfiguration;
 }
-
-export type DatasetProducts = {
-  rois: ROIItem[];
-  quants: QuantificationSummary[];
-  accordionOpen: boolean;
-  scanItem: ScanItem;
-  scanName: string;
-  images: ScanImage[];
-};
 
 @Component({
   selector: "duplicate-workspace-dialog",
@@ -54,18 +46,13 @@ export class DuplicateWorkspaceDialogComponent {
   replaceDataProducts: boolean = false;
   canReplaceDataProducts: boolean = true;
 
-  public static DEFAULT_DUPLICATE_OPTIONS = [
-    { id: "no-replace", name: "Don't Replace", icon: "assets/icons/arrow-right.svg", color: "#bcbcbc", default: true },
-    { id: "remove", name: "Remove", icon: "assets/button-icons/delete-gray.svg", color: "#bcbcbc", default: true },
-  ];
-
   allScanSearchableItems: SearchableListItem[] = [];
   allScans: ScanItem[] = [];
 
   searchableImagesForScan: { [scanId: string]: SearchableListItem[] } = {};
   searchableQuantsForScans: { [scanId: string]: SearchableListItem[] } = {};
   searchableRoisForScans: { [scanId: string]: SearchableListItem[] } = {};
-  productsByDataset: { [datasetId: string]: DatasetProducts } = {};
+  productsByDataset: { [datasetId: string]: DuplicateDatasetProducts } = {};
 
   idReplacements: { [id: string]: string } = {};
 
@@ -77,6 +64,7 @@ export class DuplicateWorkspaceDialogComponent {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: DuplicateWorkspaceDialogData,
     private _analysisLayoutService: AnalysisLayoutService,
+    private _workspaceService: WorkspaceService,
     private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
     private _apiDataService: APIDataService,
@@ -88,186 +76,53 @@ export class DuplicateWorkspaceDialogComponent {
 
   ngOnInit(): void {
     this.loading = true;
-    this._apiDataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id: this.data.workspaceId })).subscribe({
-      next: response => {
-        let workspace = response?.screenConfiguration;
-        if (!workspace) {
-          return;
-        }
 
-        this._newWorkspace = ScreenConfiguration.create(workspace);
+    this._subs.add(
+      this._cachedDataService.getScanList(ScanListReq.create()).subscribe(scanList => {
+        this.allScans = scanList.scans;
+        this.allScanSearchableItems = [
+          ...WorkspaceService.DEFAULT_DUPLICATE_OPTIONS,
+          ...scanList.scans.map(scan => ({
+            icon: "assets/icons/datasets.svg",
+            id: scan.id,
+            name: this.getScanName(scan),
+          })),
+        ];
+      })
+    );
 
-        let workspaceRoiIds = this._analysisLayoutService.getROIIDsFromScreenConfiguration(workspace);
-        let workspaceImageIds = this._analysisLayoutService.getImageIDsFromScreenConfiguration(workspace);
-
-        let roiRequests: Observable<RegionOfInterestGetResp | null>[] = workspaceRoiIds.map(roiId =>
-          this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }))
-        );
-        if (roiRequests.length === 0) {
-          roiRequests.push(of(null));
-        }
-
-        let imageRequests: Observable<ImageGetResp | null>[] = workspaceImageIds.map(imageId => {
-          return this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imageId }));
-        });
-
-        let quantRequests: Observable<QuantGetResp | null>[] = [];
-        let quantsForScansRequests: Observable<QuantificationSummary[]>[] = [];
-        let roisForScansRequests: Observable<Record<string, ROIItemSummary>>[] = [];
-
-        let scanIds: string[] = [];
-        Object.entries(this.data.workspace.scanConfigurations).forEach(([datasetId, scanConfig]) => {
-          if (scanConfig.quantId) {
-            quantRequests.push(this._cachedDataService.getQuant(QuantGetReq.create({ quantId: scanConfig.quantId })));
+    this._subs.add(
+      this._workspaceService.fetchWorkspaceProducts(this.data.workspaceId, this.data.workspace.scanConfigurations).subscribe({
+        next: ({ workspace, products }) => {
+          if (!workspace) {
+            return;
           }
 
-          if (datasetId) {
-            quantsForScansRequests.push(this._analysisLayoutService.fetchQuantsForScanAsync(datasetId));
-            roisForScansRequests.push(this._roiService.searchROIsAsync(SearchParams.create({ scanId: datasetId }), false));
-            roisForScansRequests.push(this._roiService.searchROIsAsync(SearchParams.create({ scanId: datasetId }), true));
-            scanIds.push(datasetId);
-          }
-        });
+          this.loading = false;
+          this._newWorkspace = ScreenConfiguration.create(workspace);
 
-        let imagesForScanReq = this._cachedDataService.getImageList(ImageListReq.create({ scanIds: scanIds }));
-
-        if (quantRequests.length === 0) {
-          quantRequests.push(of(null));
-        }
-
-        this._subs.add(
-          this._cachedDataService.getScanList(ScanListReq.create()).subscribe(scanList => {
-            let scanItems = scanList.scans;
-            this.allScans = scanItems;
-            this.allScanSearchableItems = [
-              ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-              ...scanItems.map(scan => ({
-                icon: "assets/icons/datasets.svg",
-                id: scan.id,
-                name: this.getScanName(scan),
-              })),
-            ];
-
-            this.onSearchAddScanList(this._scanSearchText);
-
-            combineLatest([...roiRequests, ...quantRequests, ...quantsForScansRequests, ...roisForScansRequests, ...imageRequests, imagesForScanReq]).subscribe({
-              next: response => {
-                this.loading = false;
-
-                let rois = response
-                  .slice(0, roiRequests.length)
-                  .map(roi => (roi as RegionOfInterestGetResp)?.regionOfInterest)
-                  .filter(roi => roi) as ROIItem[];
-                let quants = response
-                  .slice(roiRequests.length, roiRequests.length + quantRequests.length)
-                  .map(quant => (quant as QuantGetResp)?.summary)
-                  .filter(quant => quant) as QuantificationSummary[];
-
-                let quantsForScans = response
-                  .slice(roiRequests.length + quantRequests.length, roiRequests.length + quantRequests.length + quantsForScansRequests.length)
-                  .map(quants => quants as QuantificationSummary[])
-                  .filter(quants => quants);
-
-                let roisForScans = response
-                  .slice(
-                    roiRequests.length + quantRequests.length + quantsForScansRequests.length,
-                    roiRequests.length + quantRequests.length + quantsForScansRequests.length + roisForScansRequests.length
-                  )
-                  .map(rois => rois as Record<string, ROIItemSummary>);
-
-                let imagesInWorkspace = response
-                  .slice(
-                    roiRequests.length + quantRequests.length + quantsForScansRequests.length + roisForScansRequests.length,
-                    roiRequests.length + quantRequests.length + quantsForScansRequests.length + roisForScansRequests.length + imageRequests.length
-                  )
-                  .map(image => image as ImageGetResp);
-
-                let imagesForScansResp = response.slice(
-                  roiRequests.length + quantRequests.length + quantsForScansRequests.length + roisForScansRequests.length + imageRequests.length
-                );
-
-                let allImages: ScanImage[] = [];
-
-                if (imagesForScansResp.length > 0) {
-                  let imageListing = imagesForScansResp[0] as ImageListResp;
-                  if (imageListing?.images) {
-                    allImages = imageListing.images;
-                  }
-                }
-                roisForScans.forEach((rois, i) => {
-                  Object.values(rois).forEach(roi => {
-                    this.searchableRoisForScans[roi.scanId] = this.searchableRoisForScans[roi.scanId] || [
-                      ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-                    ];
-                    this.searchableRoisForScans[roi.scanId].push({
-                      icon: "assets/icons/roi.svg",
-                      id: roi.id,
-                      name: roi.name,
-                    });
-                  });
-                });
-
-                quantsForScans.forEach((quants, i) => {
-                  let scanId = quants[0].scanId;
-                  this.searchableQuantsForScans[scanId] = [
-                    ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-                    ...quants.map(quant => ({
-                      icon: "assets/icons/quant.svg",
-                      id: quant.id,
-                      name: quant.params?.userParams?.name || quant.id,
-                    })),
-                  ];
-                });
-
-                allImages.forEach(image => {
-                  let scanId = image?.originScanId || image?.associatedScanIds?.[0];
-                  if (!scanId) {
-                    return;
-                  }
-
-                  this.searchableImagesForScan[scanId] = this.searchableImagesForScan[scanId] || [...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS];
-                  this.searchableImagesForScan[scanId].push({
-                    icon: "assets/icons/image-gray.svg",
-                    id: image.imagePath,
-                    name: this.getImageName(image),
-                  });
-                });
-
-                Object.entries(this.data.workspace.scanConfigurations).forEach(([datasetId, scanConfig]) => {
-                  let scanItem = scanItems.find(scan => scan.id === scanConfig.id);
-                  if (!scanItem) {
-                    return;
-                  }
-
-                  let roisForDataset = rois.filter(roi => roi.scanId === datasetId);
-                  let quantsForDataset = quants.filter(quant => quant.scanId === datasetId);
-                  let imagesForDataset = imagesInWorkspace
-                    .filter(image => (image?.image && image.image.originScanId === datasetId) || image.image?.associatedScanIds?.includes(datasetId))
-                    .map(image => image.image) as ScanImage[];
-
-                  this.productsByDataset[datasetId] = {
-                    rois: roisForDataset,
-                    quants: quantsForDataset,
-                    images: imagesForDataset,
-                    accordionOpen: false,
-                    scanItem: scanItem,
-                    scanName: this.getScanName(scanItem),
-                  };
-                });
-              },
-              error: () => {
-                this.loading = false;
-                this._snackbarService.openError("Failed to load workspace items");
-              },
-            });
-          })
-        );
-      },
-      error: () => {
-        this.loading = false;
-        this._snackbarService.openError("Failed to load workspace");
-      },
-    });
+          this.productsByDataset = {};
+          Object.entries(products).forEach(([datasetId, datasetProducts]) => {
+            this.productsByDataset[datasetId] = {
+              rois: datasetProducts.workspaceROIs,
+              quants: datasetProducts.workspaceQuants,
+              images: datasetProducts.workspaceImages,
+              accordionOpen: false,
+              scanItem: datasetProducts.scanItem,
+              scanName: datasetProducts.scanName,
+            };
+            this.searchableImagesForScan[datasetId] = datasetProducts.searchableImages;
+            this.searchableQuantsForScans[datasetId] = datasetProducts.searchableQuants;
+            this.searchableRoisForScans[datasetId] = datasetProducts.searchableROIs;
+          });
+        },
+        error: err => {
+          this.loading = false;
+          console.error(err);
+          this._snackbarService.openError("Failed to load workspace");
+        },
+      })
+    );
   }
 
   getImageName(image: ScanImage) {
@@ -275,265 +130,23 @@ export class DuplicateWorkspaceDialogComponent {
   }
 
   replaceScan(scanId: string, newScanId: string): void {
-    this.idReplacements[scanId] = newScanId;
-
-    this.productsByDataset[scanId].accordionOpen =
-      (this.searchableRoisForScans[newScanId]?.length > 0 || this.searchableQuantsForScans[newScanId]?.length > 0) &&
-      newScanId !== "no-replace" &&
-      newScanId !== "remove";
-
-    this._analysisLayoutService.fetchQuantsForScanAsync(newScanId).subscribe(quants => {
-      this.searchableQuantsForScans[newScanId] = [
-        ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-        ...quants.map(quant => ({
-          icon: "assets/icons/quant.svg",
-          id: quant.id,
-          name: quant.params?.userParams?.name || quant.id,
-        })),
-      ];
-
-      if (!this.productsByDataset[scanId].accordionOpen && quants.length > 0) {
-        this.productsByDataset[scanId].accordionOpen = newScanId !== "no-replace" && newScanId !== "remove";
-      }
-
-      // Find best guess for replacement
-      this.productsByDataset[scanId].quants.forEach(existingQuant => {
-        let bestGuess = this.searchableQuantsForScans[newScanId].find(
-          quant => quant.name.toLowerCase() === (existingQuant.params?.userParams?.name || "").toLowerCase()
-        );
-
-        if (bestGuess) {
-          this.idReplacements[existingQuant.id] = bestGuess.id;
-        } else {
-          // We don't want to remove a quant unless we absolutely have to, so look for one that matches quant mode
-          // and has many of the same overlapping elements
-          let existingQuantMode = existingQuant.params?.userParams?.quantMode;
-          let existingElements = existingQuant.params?.userParams?.elements || [];
-
-          let bestNonNameMatch: string = "";
-          let bestOverlapCount = 0;
-          let bestLevenshteinDistance = -1;
-
-          let sameModeQuants = quants.filter(quant => quant.params?.userParams?.quantMode === existingQuantMode);
-          sameModeQuants.forEach(quant => {
-            let overlappingElements = quant.params?.userParams?.elements?.filter(element => existingElements.includes(element)) || [];
-
-            if (overlappingElements.length > bestOverlapCount) {
-              bestNonNameMatch = quant.id;
-              bestOverlapCount = overlappingElements.length;
-              if (quant.params?.userParams?.name && existingQuant.params?.userParams?.name) {
-                bestLevenshteinDistance = levenshteinDistance(quant.params.userParams.name, existingQuant.params.userParams.name);
-              } else {
-                bestLevenshteinDistance = -1;
-              }
-            } else if (overlappingElements.length === bestOverlapCount) {
-              // If we have a tie, prefer the one with the most similar name
-              if (quant.params?.userParams?.name && existingQuant.params?.userParams?.name) {
-                let distance = levenshteinDistance(quant.params.userParams.name, existingQuant.params.userParams.name);
-                if (distance < bestLevenshteinDistance) {
-                  bestNonNameMatch = quant.id;
-                  bestLevenshteinDistance = distance;
-                }
-              }
-            }
-          });
-
-          if (bestNonNameMatch) {
-            this.idReplacements[existingQuant.id] = bestNonNameMatch;
-          } else {
-            // If we can't find a good match, remove the quant. It will be brought back using auto logic on first load
-            this.idReplacements[existingQuant.id] = "remove";
-          }
-        }
+    this._workspaceService
+      .replaceScan(
+        this.idReplacements,
+        this.productsByDataset,
+        this.searchableRoisForScans,
+        this.searchableQuantsForScans,
+        this.searchableImagesForScan,
+        scanId,
+        newScanId
+      )
+      .subscribe(({ idReplacements, duplicateProducts, searchableROIsForScans, searchableQuantsForScans, searchableImagesForScans }) => {
+        this.idReplacements = idReplacements;
+        this.productsByDataset = duplicateProducts;
+        this.searchableRoisForScans = searchableROIsForScans;
+        this.searchableQuantsForScans = searchableQuantsForScans;
+        this.searchableImagesForScan = searchableImagesForScans;
       });
-    });
-
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [newScanId] })).subscribe({
-      next: response => {
-        let images = response?.images || [];
-        this.searchableImagesForScan[newScanId] = [
-          ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-          ...images.map(image => ({
-            icon: "assets/icons/image-gray.svg",
-            id: image.imagePath,
-            name: this.getImageName(image),
-          })),
-        ];
-
-        if (!this.productsByDataset[scanId].accordionOpen && images.length > 0) {
-          this.productsByDataset[scanId].accordionOpen = newScanId !== "no-replace" && newScanId !== "remove";
-        }
-
-        this.productsByDataset[scanId].images.forEach(existingImage => {
-          let existingBaseName = this.getImageName(existingImage);
-          let bestGuess = this.searchableImagesForScan[newScanId].find(image => {
-            return image.name.toLowerCase() === existingBaseName.toLowerCase();
-          });
-
-          if (bestGuess) {
-            this.idReplacements[existingImage.imagePath] = bestGuess.id;
-          } else {
-            // Check if is _MSA or is _VIS first and then find the respective
-            let existingIsMSA = existingBaseName.includes("MSA_");
-            if (existingIsMSA) {
-              let newMSA = this.searchableImagesForScan[newScanId].find(image => image.name.includes("MSA_"));
-              if (newMSA) {
-                this.idReplacements[existingImage.imagePath] = newMSA.id;
-                return;
-              }
-            } else if (existingBaseName.includes("VIS_")) {
-              let newVIS = this.searchableImagesForScan[newScanId].find(image => image.name.includes("VIS_"));
-              if (newVIS) {
-                this.idReplacements[existingImage.imagePath] = newVIS.id;
-                return;
-              }
-            }
-            // Else check SDS field and find largest overlapping PMCs
-            // Also check ROIs to see if any have pixels/associated scans that overlap with the image
-            // SDSFields.makeFromFileName()
-            else {
-              let existingSDS = SDSFields.makeFromFileName(existingBaseName);
-              let existingExtension = existingBaseName.split(".").pop() || "";
-              let bestSDSMatch: string = "";
-              let bestPMCCount = 0;
-              let bestFieldMatchCount = 0;
-
-              let fieldsToCheck = [
-                "camSpecific",
-                "colourFilter",
-                "compression",
-                "downsample",
-                "driveStr",
-                "geometry",
-                "instrument",
-                "prodType",
-                "producer",
-                "special",
-                "thumbnail",
-                "venue",
-              ] as (keyof SDSFields)[];
-
-              let imagesWithMatchingExtension = this.searchableImagesForScan[newScanId].filter(image => image.name.endsWith(existingExtension));
-              if (!existingSDS && imagesWithMatchingExtension.length > 0) {
-                this.idReplacements[existingImage.imagePath] = imagesWithMatchingExtension[0].id;
-                return;
-              }
-
-              imagesWithMatchingExtension.forEach(image => {
-                let sds = SDSFields.makeFromFileName(image.name);
-                if (!sds) {
-                  return;
-                }
-
-                let fieldMatchCount = 0;
-                fieldsToCheck.forEach(field => {
-                  if (existingSDS![field] === sds[field]) {
-                    fieldMatchCount++;
-                  }
-                });
-
-                if (fieldMatchCount > bestFieldMatchCount) {
-                  bestSDSMatch = image.id;
-                  bestFieldMatchCount = fieldMatchCount;
-                } else if (fieldMatchCount === bestFieldMatchCount) {
-                  let existingPMCCount = existingSDS!.PMC;
-                  if (Math.abs(sds.PMC - existingPMCCount) < Math.abs(bestPMCCount - existingPMCCount)) {
-                    bestSDSMatch = image.id;
-                    bestPMCCount = sds.PMC;
-                  }
-                }
-              });
-
-              if (bestSDSMatch) {
-                this.idReplacements[existingImage.imagePath] = bestSDSMatch;
-              } else {
-                this.idReplacements[existingImage.imagePath] = "remove";
-              }
-            }
-          }
-        });
-      },
-      error: () => {
-        this._snackbarService.openError("Failed to load images for scan");
-      },
-    });
-
-    this._roiService.searchROIsAsync(SearchParams.create({ scanId: newScanId }), true).subscribe(mistROIs => {
-      this._roiService.searchROIsAsync(SearchParams.create({ scanId: newScanId }), false).subscribe(rois => {
-        Object.entries(mistROIs).forEach(([id, roi]) => {
-          rois[id] = roi;
-        });
-
-        this.searchableRoisForScans[newScanId] = [
-          ...DuplicateWorkspaceDialogComponent.DEFAULT_DUPLICATE_OPTIONS,
-          ...Object.values(rois).map(roi => ({
-            icon: "assets/icons/roi.svg",
-            id: roi.id,
-            name: roi.name,
-          })),
-        ];
-
-        if (!this.productsByDataset[scanId].accordionOpen && Object.keys(rois).length > 0) {
-          this.productsByDataset[scanId].accordionOpen = newScanId !== "no-replace" && newScanId !== "remove";
-        }
-
-        // Find best guess for replacement
-        this.productsByDataset[scanId].rois.forEach(existingRoi => {
-          let bestGuess = this.searchableRoisForScans[newScanId].find(roi => roi.name.toLowerCase() === existingRoi.name.toLowerCase());
-
-          if (bestGuess) {
-            this.idReplacements[existingRoi.id] = bestGuess.id;
-          } else if (existingRoi.isMIST) {
-            // If we can't find a perfect match and this is a MIST ROI, remove it
-            this.idReplacements[existingRoi.id] = "remove";
-          } else {
-            // Match on tags if we can't find an exact name match
-            // If we have a single tag match, use that
-            // If we have multiple tag matches, use the one with the most similar name
-
-            let roisToSearch = this.searchableRoisForScans[newScanId];
-            let tagMatchedROIs: ROIItemSummary[] = [];
-            let tagCount = 0;
-            Object.values(rois).forEach(roi => {
-              let matchingTagCount = roi.tags.filter(tag => existingRoi.tags.includes(tag)).length;
-              if (matchingTagCount > tagCount) {
-                tagMatchedROIs = [roi];
-                tagCount = matchingTagCount;
-              } else if (matchingTagCount === tagCount) {
-                tagMatchedROIs.push(roi);
-              }
-            });
-
-            if (tagCount > 0 && tagMatchedROIs.length === 1) {
-              this.idReplacements[existingRoi.id] = tagMatchedROIs[0].id;
-            } else {
-              if (tagMatchedROIs.length > 1) {
-                roisToSearch = roisToSearch.filter(roi => {
-                  return tagMatchedROIs.find(match => match.id === roi.id);
-                });
-              }
-
-              // Can't find an exact match, so expand search to include similar names with a levenshtein distance of 1
-              let bestNonExactMatch: string = "";
-              let bestLevenshteinDistance = -1;
-              roisToSearch.forEach(roi => {
-                let distance = levenshteinDistance(roi.name, existingRoi.name);
-                if (bestLevenshteinDistance === -1 || distance < bestLevenshteinDistance) {
-                  bestNonExactMatch = roi.id;
-                  bestLevenshteinDistance = distance;
-                }
-              });
-
-              if (bestNonExactMatch && (bestLevenshteinDistance <= 1 || tagMatchedROIs.length > 0)) {
-                this.idReplacements[existingRoi.id] = bestNonExactMatch;
-              } else {
-                this.idReplacements[existingRoi.id] = "remove";
-              }
-            }
-          }
-        });
-      });
-    });
   }
 
   get scanSearchText() {
