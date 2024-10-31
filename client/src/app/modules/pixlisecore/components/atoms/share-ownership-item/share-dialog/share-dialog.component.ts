@@ -52,6 +52,7 @@ export type SharingSubItem = {
 
 export type ShareDialogData = {
   title?: string;
+  description?: string;
   ownershipSummary: OwnershipSummary | null;
   ownershipItem: OwnershipItem;
   typeName: string;
@@ -59,6 +60,7 @@ export type ShareDialogData = {
   preventSelfAssignment?: boolean;
   restrictSubItemSharingToViewer?: boolean;
   excludeSubIds?: string[];
+  isReviewerSnapshot?: boolean;
 };
 
 export type ShareDialogResponse = {
@@ -133,6 +135,18 @@ export class ShareDialogComponent implements OnInit {
 
   selectedSubItemId: string = "";
 
+  reviewTimeOptions: { value: number; label: string }[] = [
+    { value: 0, label: "Forever" },
+    { value: 1, label: "1 Day" },
+    { value: 7, label: "7 Days" },
+    { value: 30, label: "30 Days" },
+    { value: 90, label: "90 Days" },
+    { value: 365, label: "1 Year" },
+  ];
+  reviewerAccessTime: { value: number; label: string } = this.reviewTimeOptions[0];
+  reviewerSnapshotLink: string = "";
+  copiedReviewerSnapshotLink: boolean = false;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ShareDialogData,
     public dialogRef: MatDialogRef<ShareDialogComponent, ShareDialogResponse>,
@@ -199,6 +213,11 @@ export class ShareDialogComponent implements OnInit {
     }
 
     this.calculateSubItemViewershipChanges();
+
+    // Set reviewerSnapshotLink to current URL
+    if (this.data.isReviewerSnapshot) {
+      this.reviewerSnapshotLink = window.location.href;
+    }
   }
 
   calculateSubItemViewershipChanges() {
@@ -612,6 +631,20 @@ export class ShareDialogComponent implements OnInit {
         userIds: Array.from(this.removedUserViewers),
         groupIds: Array.from(this.removedGroupViewers),
       }),
+    });
+  }
+
+  onReviewerAccessTimeChange(evt: MatSelectChange) {
+    this.reviewerAccessTime = evt.value;
+  }
+
+  copyReviewLinkToClipboard() {
+    navigator.clipboard.writeText(this.reviewerSnapshotLink).then(() => {
+      this._snackbarService.openSuccess("Link copied to clipboard");
+      this.copiedReviewerSnapshotLink = true;
+      setTimeout(() => {
+        this.copiedReviewerSnapshotLink = false;
+      }, 3000);
     });
   }
 

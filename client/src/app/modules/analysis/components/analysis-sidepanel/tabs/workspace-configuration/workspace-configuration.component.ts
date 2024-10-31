@@ -84,7 +84,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   queryParam: Record<string, string> = {};
 
-  public activeConfigurationTab: "workspace" | "snapshots" = "workspace";
+  public activeConfigurationTab: "workspace" | "snapshots" | "review" = "workspace";
 
   public builtInTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
@@ -408,7 +408,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       });
   }
 
-  onShareSnapshot(existingSnapshot: ScreenConfiguration | null = null): void {
+  onShareSnapshot(existingSnapshot: ScreenConfiguration | null = null, isReviewerSnapshot: boolean = false): void {
     let objectId = existingSnapshot?.id || this.screenConfig?.id;
     let ownershipSummary = existingSnapshot?.owner || this.screenConfig?.owner;
 
@@ -526,11 +526,15 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           ownershipSummary: ownershipSummary || null,
           ownershipItem: workspaceOwnershipResp.ownership,
           typeName: "Workspace Snapshot",
-          title: existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
+          title: isReviewerSnapshot ? "Create reviewer snapshot" : existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
           subItems: [workspaceSubItem, ...subItems],
           excludeSubIds: [objectId || ""],
           preventSelfAssignment: true,
           restrictSubItemSharingToViewer: true,
+          isReviewerSnapshot: isReviewerSnapshot,
+          description: isReviewerSnapshot
+            ? "Create a snapshot with a permanent link for reviewers. Anyone with the link will be able to access tabs, datasets, ROIs, and expressions currently used in the workspace. Future changes won’t be shared."
+            : "",
         };
 
         const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);

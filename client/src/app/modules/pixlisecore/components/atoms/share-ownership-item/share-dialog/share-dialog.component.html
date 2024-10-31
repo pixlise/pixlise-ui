@@ -57,8 +57,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="share-dialog">
   <h1>{{ dialogTitle }}</h1>
+  <div *ngIf="data.description" class="description-container">
+    <h5>{{ data.description }}</h5>
+  </div>
   <div class="fields">
-    <div class="search-field">
+    <div *ngIf="!data.isReviewerSnapshot" class="search-field">
       <div class="auto-container" *ngIf="isSearchingGroups">
         <input [disabled]="!canEdit" type="text" placeholder="Search Groups..." matInput [matAutocomplete]="groupAuto" [(ngModel)]="searchField" />
         <mat-autocomplete #groupAuto="matAutocomplete">
@@ -88,8 +91,26 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
 
-    <h1>Has access</h1>
-    <div class="access-list">
+    <h1 *ngIf="data.isReviewerSnapshot" class="link-to-review">Link to review snapshot</h1>
+    <div *ngIf="data.isReviewerSnapshot" class="review-link-container">
+      <input readonly type="text" placeholder="Link to review snapshot" matInput [(ngModel)]="reviewerSnapshotLink" />
+
+      <div class="copy-container">
+        <img [src]="copiedReviewerSnapshotLink ? 'assets/button-icons/copy.svg' : 'assets/button-icons/copy.svg'" (click)="copyReviewLinkToClipboard()" />
+      </div>
+    </div>
+
+    <h1 class="has-access">Has access</h1>
+    <div *ngIf="data.isReviewerSnapshot" class="access-list review-time">
+      <mat-select [(ngModel)]="reviewerAccessTime" (selectionChange)="onReviewerAccessTimeChange($event)">
+        <mat-select-trigger class="access-dropdown"><img src="assets/icons/clock.svg" />{{ reviewerAccessTime.label }}</mat-select-trigger>
+
+        <mat-option *ngFor="let timeOption of reviewTimeOptions" [value]="timeOption">{{ timeOption.label }}</mat-option>
+      </mat-select>
+      <span class="accessor">Anyone with link</span>
+      <span class="access-type">Viewer</span>
+    </div>
+    <div *ngIf="!data.isReviewerSnapshot" class="access-list">
       <div *ngFor="let member of members; trackBy: trackByMemberId" class="member-item">
         <div class="error-icon" *ngIf="memberSharingErrorChangeMap.get(member.id)">
           <img
@@ -141,7 +162,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="sub-items" *ngIf="subItems.length > 0">
       <div class="title">
         <h1>Included in {{ data.typeName }} Sharing</h1>
-        <div class="share-subitems">
+        <div *ngIf="!data.isReviewerSnapshot" class="share-subitems">
           <span class="share-sub-label">Share with Sub Items:</span>
           <action-button [action]="shareWithSubItems ? 'checkOn' : 'checkOff'" (onClick)="shareWithSubItems = !shareWithSubItems"></action-button>
         </div>
@@ -210,7 +231,7 @@ POSSIBILITY OF SUCH DAMAGE.
         (onClick)="onConfirm()"
         #tooltip="matTooltip"
         [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
-        >Confirm</push-button
+        >{{ data.isReviewerSnapshot ? "Create reviewer snapshot" : "Confirm" }}</push-button
       >
     </div>
   </div>

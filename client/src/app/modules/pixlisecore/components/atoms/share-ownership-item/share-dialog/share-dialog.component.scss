@@ -371,3 +371,81 @@
     color: #bec0c2;
   }
 }
+
+.description-container {
+  h5 {
+    color: #bec0c2;
+    font-size: 12px;
+  }
+}
+
+.link-to-review,
+.has-access {
+  color: #ffffff;
+  font-family: Inter;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  text-transform: none;
+  margin-bottom: 8px;
+}
+
+.review-time {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  padding-right: 8px;
+  margin-bottom: 16px;
+
+  .accessor {
+    margin-left: 8px;
+  }
+
+  .access-type {
+    margin-left: auto;
+    color: #bec0c2;
+  }
+
+  mat-select {
+    background-color: #444c50 !important;
+  }
+
+  .access-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    color: #bec0c2;
+
+    font-family: Inter;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+  }
+}
+
+.review-link-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  input {
+    background-color: #444c50;
+    border: 1px solid #545f64;
+    flex: 1;
+  }
+
+  .copy-container {
+    cursor: pointer;
+    background-color: #444c50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 4px;
+
+    &:hover {
+      background-color: #545f64;
+    }
+  }
+}
