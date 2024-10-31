@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
+import { catchError, combineLatest, forkJoin, from, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
 import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
 import { APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
@@ -690,7 +690,9 @@ msa += `#XPOSITION   : 0.000
         return dataSource
           .prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), currentCalibrations)
           .pipe(
-            switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
+            switchMap(() => {
+              return from(dataSource.getDetectedDiffraction());
+            }),
             map(() => ({ manualPeaks, currentCalibrations, dataSource }))
           );
       })
