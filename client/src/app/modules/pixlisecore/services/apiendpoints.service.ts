@@ -259,20 +259,16 @@ export class APIEndpointsService {
     );
   }
 
-  uploadBreadboardScanZip(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {
+  uploadScanZip(scanId: string, zipName: string, imageData: ArrayBuffer): Observable<void> {
     const httpOptions = {
       headers: new HttpHeaders({
         "Content-Type": "application/octet-stream",
       }),
-      params: new HttpParams().set("scan", scanId).set("filename", imageName),
+      params: new HttpParams().set("scan", scanId).set("filename", zipName),
     };
 
     const apiUrl = APIPaths.getWithHost("scan");
-    return this.http.put<void>(apiUrl, imageData, httpOptions).pipe(
-      map(() => {
-        console.log("Image " + imageName + " uploaded");
-      })
-    );
+    return this.http.put<void>(apiUrl, imageData, httpOptions);
   }
 
   uploadImage(req: ImageUploadHttpRequest): Observable<void> {

@@ -97,6 +97,8 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   }
 
   setStatus(status: JobStatus_Status, statusMessage: string) {
+    console.log(`Add Dataset Dialog status: ${status}, message: ${statusMessage}...`);
+
     if (status == JobStatus_Status.UNKNOWN || statusMessage.length > 0) {
       this._modeTitle = statusMessage;
     } else {
@@ -138,9 +140,11 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
         this.complete = false;
 
         // First, we upload the file via HTTP
-        this._endpointService.uploadBreadboardScanZip(uploadId, zipName, fileBytes).subscribe({
+        this._endpointService.uploadScanZip(uploadId, zipName, fileBytes).subscribe({
           next: () => {
             // Now that it's uploaded...
+            console.log(`Scan ${zipName} uploaded ${fileBytes} bytes. Starting import...`);
+
             // Then we send the scan upload message which picks up that file and processes it
             this._dataService
               .sendScanUploadRequest(
