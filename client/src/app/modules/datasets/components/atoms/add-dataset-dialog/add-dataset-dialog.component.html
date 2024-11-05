@@ -53,8 +53,8 @@ POSSIBILITY OF SUCH DAMAGE.
                     [value]="detector">{{detector}}</mat-option>
             </mat-select>
         </div>
-        <div class="row" *ngIf="detector != 'pixl-em'">
-            <span>Dataset Name</span>
+        <div class="row">
+            <span>{{datasetIdFieldName}}</span>
             <input [(ngModel)]="nameHint" type="text" placeholder="Name of dataset">
         </div>
         <div class="important">{{formatHelp}}</div>

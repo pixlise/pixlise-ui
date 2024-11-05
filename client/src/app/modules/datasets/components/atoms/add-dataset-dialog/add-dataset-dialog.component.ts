@@ -119,15 +119,12 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     }
 
     let uploadId = "upload-" + Date.now();
-
-    if (this.detector != "pixl-em") {
-      if (this.nameHint.length <= 0) {
-        alert("Please enter a name");
-        return;
-      }
-
-      uploadId = this.nameHint;
+    if (this.nameHint.length <= 0) {
+      alert("Please enter a name");
+      return;
     }
+
+    uploadId = this.nameHint;
 
     const zipName = this.droppedFiles[0].name;
 
@@ -192,6 +189,13 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     }
 
     return "";
+  }
+
+  get datasetIdFieldName(): string {
+    if (this.detector == "pixl-em") {
+      return "RTT to import";
+    }
+    return "Dataset Name";
   }
 
   onChangeDetector(detector: string) {
