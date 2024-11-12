@@ -31,6 +31,8 @@ export class UserOptionsService {
       name: "",
       email: "",
       iconURL: "",
+      reviewerWorkspaceId: "",
+      expirationDateUnixSec: 0,
     },
     dataCollectionVersion: "",
     permissions: [],

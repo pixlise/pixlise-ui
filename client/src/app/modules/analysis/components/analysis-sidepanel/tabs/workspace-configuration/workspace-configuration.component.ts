@@ -77,6 +77,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   public screenConfig: ScreenConfiguration | null = null;
   public snapshots: ScreenConfiguration[] = [];
+  public reviewerSnapshots: ScreenConfiguration[] = [];
 
   public openTabs: NavigationTab[] = [];
   public newTabName: string = "";
@@ -144,6 +145,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         )
         .subscribe(snapshots => {
           this.snapshots = snapshots;
+          this.reviewerSnapshots = snapshots.filter(snapshot => !!snapshot.reviewerId);
         })
     );
 
@@ -353,6 +355,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     this._analysisLayoutService.deleteScreenConfiguration(snapshot.id, () => {
       this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
         this.snapshots = snapshots;
+        this.reviewerSnapshots = snapshots.filter(snapshot => !!snapshot.reviewerId);
       });
     });
   }
@@ -405,6 +408,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       })
       .subscribe(snapshots => {
         this.snapshots = snapshots;
+        this.reviewerSnapshots = snapshots.filter(snapshot => !!snapshot.reviewerId);
       });
   }
 
@@ -552,6 +556,9 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
             newScreenConfig.snapshotParentId = this.screenConfig!.id;
             newScreenConfig.name = this.workspaceName || this.placeholderName || "";
             newScreenConfig.id = "";
+            if (isReviewerSnapshot) {
+              newScreenConfig.reviewerId = sharingChangeResponse.reviewerId || "";
+            }
             this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
               if (!newScreenConfig.id) {
                 return;
@@ -562,6 +569,12 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           }
         });
       });
+    });
+  }
+
+  onCopy(link: string) {
+    navigator.clipboard.writeText(link).then(() => {
+      this._snackbarService.openSuccess("Link copied to clipboard!");
     });
   }
 

@@ -68,6 +68,7 @@ import {
   DuplicateWorkspaceDialogData,
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
+import { environment } from "../../../../../../environments/environment";
 
 class SummaryItem {
   constructor(
@@ -210,6 +211,21 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         error: err => {
           this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
         },
+      })
+    );
+
+    // Subscribe to route
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        if (params["magic_link"]) {
+          console.log("Magic link detected, logging in...", params["magic_link"]);
+          this._authService.loginWithRedirect({
+            appState: {
+              target: environment.authTarget,
+              redirectUri: window.location.origin,
+            },
+          });
+        }
       })
     );
 

@@ -441,8 +441,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
+    padding: 4px;
     border-radius: 4px;
+
+    action-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+    }
 
     &:hover {
       background-color: #545f64;

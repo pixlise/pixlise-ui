@@ -54,6 +54,8 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
       name: "",
       email: "",
       iconURL: "",
+      reviewerWorkspaceId: "",
+      expirationDateUnixSec: 0,
     },
     dataCollectionVersion: "",
     permissions: [],
@@ -180,7 +182,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
             `Reload PIXLISE tab to impersonate user: ${resp.sessionUser?.name}, email: ${resp.sessionUser?.email}, user id: ${resp.sessionUser?.id}`
           );
         } else {
-          this._snackService.openSuccess(`Reload PIXLISE tab to stop impersonation`)
+          this._snackService.openSuccess(`Reload PIXLISE tab to stop impersonation`);
         }
       },
       error: err => {
@@ -197,7 +199,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this._snackService.openError("Backup failed", err);
-        }
+        },
       });
     }
   }
@@ -210,7 +212,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this._snackService.openError("Restore failed", err);
-        }
+        },
       });
     }
   }

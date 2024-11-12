@@ -218,10 +218,17 @@
 
     .snapshot {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       background: #293137;
+      border-radius: 4px;
+    }
+
+    .snapshot-info-container {
+      display: flex;
+      align-items: center;
       flex: 1;
       padding: 8px;
+      padding-bottom: 4px;
       gap: 8px;
 
       .existing-share-btn {
@@ -344,4 +351,36 @@
 
 .drag-icon {
   cursor: grab;
+}
+
+.reviewer-link-container {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 4px;
+
+  background-color: #444c50;
+  border: 1px solid #545f64;
+  border-radius: 4px;
+
+  padding: 0 4px;
+  width: 255px;
+  margin: auto;
+  margin-bottom: 4px;
+
+  .reviewer-link {
+    font-family: Inter;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    text-align: left;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  action-button {
+    margin-left: auto;
+  }
 }
