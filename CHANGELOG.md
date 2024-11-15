@@ -1,4 +1,13 @@
-## 4.52.0 (Latest)
+## 4.53.0 (Latest)
+
+### Features
+- Added ability to upload PIXL EM datasets. Requires zipping up the SDF-Peek output directory (or a subset of files). Click the "Upload" button on the dataset tiles page and you can select the dataset type "pixl-em", enter the RTT of the dataset you're wanting to import (SDF-Peek output may contain data from multiple RTTs, so you have to specify which one you're importing). The upload screen has more instructions too.
+- Dataset import pipeline is now optimised, existing datasets are quicker to import because they are not spanned across multiple zip files. We now have a tool we can run to optimise this in future if it gets fragmented.
+
+### Bug Fixes
+- Fixed display of test Sol numbers for datasets - year was off by one
+
+## 4.52.0 (2024-11-15)
 
 ### Bug Fixes
 - Fixed issue when attempting to just change the color order of an existing RGB Mix expression in the expression picker
