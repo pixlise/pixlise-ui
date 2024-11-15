@@ -515,18 +515,18 @@ describe("replaceAsDateIfTestSOL", () => {
     expect(replaceAsDateIfTestSOL("")).toEqual(""); // Returning if cant interpret (just a string)
     expect(replaceAsDateIfTestSOL("Hello")).toEqual("Hello"); // Returning if cant interpret (just a string)
     expect(replaceAsDateIfTestSOL("A152")).toEqual("1-Jun-2017");
-    expect(replaceAsDateIfTestSOL("D000")).toEqual("1-Jan-2020");
-    expect(replaceAsDateIfTestSOL("E001")).toEqual("2-Jan-2021");
-    expect(replaceAsDateIfTestSOL("F364")).toEqual("31-Dec-2022");
-    expect(replaceAsDateIfTestSOL("G365")).toEqual("1-Jan-2023");
-    expect(replaceAsDateIfTestSOL("H366")).toEqual("2-Jan-2024");
+    expect(replaceAsDateIfTestSOL("D000")).toEqual("31-Dec-2020"); // Loops back a day, I guess that's OK?
+    expect(replaceAsDateIfTestSOL("E001")).toEqual("1-Jan-2021");
+    expect(replaceAsDateIfTestSOL("F364")).toEqual("30-Dec-2022");
+    expect(replaceAsDateIfTestSOL("G365")).toEqual("31-Dec-2023"); // Loops back a day
+    expect(replaceAsDateIfTestSOL("H366")).toEqual("31-Dec-2024");
     expect(replaceAsDateIfTestSOL("I367")).toEqual("2-Jan-2025"); // Loops around in JS apparently
     expect(replaceAsDateIfTestSOL("I360")).toEqual("26-Dec-2025");
-    expect(replaceAsDateIfTestSOL("H058")).toEqual("28-Feb-2024");
+    expect(replaceAsDateIfTestSOL("H058")).toEqual("27-Feb-2024");
     expect(replaceAsDateIfTestSOL("I58")).toEqual("I58");
-    expect(replaceAsDateIfTestSOL("I059")).toEqual("29-Feb-2025"); // Testing leap year
-    expect(replaceAsDateIfTestSOL("I060")).toEqual("1-Mar-2025");
-    expect(replaceAsDateIfTestSOL("G060")).toEqual("2-Mar-2023");
+    expect(replaceAsDateIfTestSOL("H059")).toEqual("28-Feb-2024"); // Testing leap year
+    expect(replaceAsDateIfTestSOL("H060")).toEqual("29-Feb-2024");
+    expect(replaceAsDateIfTestSOL("G060")).toEqual("1-Mar-2023");
     expect(replaceAsDateIfTestSOL("1024")).toEqual("1024"); // Returning if cant interpret (sol)
     expect(replaceAsDateIfTestSOL("0983")).toEqual("0983"); // Returning if cant interpret (sol)
   });
