@@ -1095,8 +1095,15 @@ export function replaceAsDateIfTestSOL(sol: string): string {
   if (sol[0] >= "A" && sol[0] <= "Z" && sol.length == 4) {
     const dayOfYear = Number.parseInt(sol.substring(1)) + 1; // Are we zero based? 000=Jan 1? Probably... JS treats that as Dec31 though
     if (!isNaN(dayOfYear)) {
-      // OK we're probably dealing with an encoded test date. H=2023, so work from there
-      const year = 2016 + (sol.charCodeAt(0) - "A".charCodeAt(0));
+      // OK we're probably dealing with an encoded test date:
+      /*
+      The Primary timestamp of coarser granularity than the Secondary timestamp (documented later).  Value type is based on either of four scenarios:
+      Flight Cruise
+      Year-DOY (4 alphanumeric) - This field stores two metadata items in the order:
+      a)    One alpha character in range “A-Z” to designate Earth Year portion of the UTC-like time value, representing Years 2017 to 2042
+      b)    Three integers in range “001-365” representing Day-of-Year (DOY)
+      */
+      const year = 2017 + (sol.charCodeAt(0) - "A".charCodeAt(0));
 
       const yearStart = new Date(year, 0); // initialize a date in `year-01-01`
       const theDate = new Date(yearStart.setDate(dayOfYear));
