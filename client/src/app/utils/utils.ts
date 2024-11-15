@@ -1093,7 +1093,8 @@ export function rawProtoMessageToDebugString(buffer: ArrayBuffer, charLimit: num
 
 export function replaceAsDateIfTestSOL(sol: string): string {
   if (sol[0] >= "A" && sol[0] <= "Z" && sol.length == 4) {
-    const dayOfYear = Number.parseInt(sol.substring(1)) + 1; // Are we zero based? 000=Jan 1? Probably... JS treats that as Dec31 though
+    const dayOfYear = Number.parseInt(sol.substring(1)); // Go implementation has first day of year being 001 so match that 001=Jan 1 NOTE: JS treats that as Dec31 though
+
     if (!isNaN(dayOfYear)) {
       // OK we're probably dealing with an encoded test date:
       /*
