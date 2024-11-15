@@ -1136,11 +1136,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       .filter(group => group) as DataExpression[];
 
     if (rgbMixExpressions.length >= 3) {
-      // If the selected group alredy has an id, and it has the same RGB mix entries as the one we're about to create, don't create it!
-      // it can be used as-is directly.
+      // If the selected group alredy has an id, and it has the same RGB mix entries in the same order as the one we're
+      // about to create, don't create it! it can be used as-is directly.
       if (
         this.selectedGroup.id.length > 0 &&
-        setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id)))
+        setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id))) &&
+        this.selectedGroup.groupItems.every((groupItem, i) => groupItem?.expressionId === rgbMixExpressions[i]?.id)
       ) {
         this._analysisLayoutService.expressionPickerResponse$.next({
           selectedGroup: this.selectedGroup,

@@ -1,4 +1,9 @@
-## 4.51.0 (Latest)
+## 4.52.0 (Latest)
+
+### Bug Fixes
+- Fixed issue when attempting to just change the color order of an existing RGB Mix expression in the expression picker
+
+## 4.51.0 (2024-10-30)
 
 ### Features
 - Replace dataset from active workspace in dataset config tab under three dots menu
