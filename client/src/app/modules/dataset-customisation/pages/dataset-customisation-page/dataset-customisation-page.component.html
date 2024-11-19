@@ -60,8 +60,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <wait-spinner *ngIf="title === null"></wait-spinner>
         <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="10"></textarea>
-        <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
-        <push-button (onClick)="onRunAutoQuant()" buttonStyle="yellow">Run Auto-Quantification</push-button>
+        <push-button (onClick)="onSaveTitleDescription()" buttonStyle="outline">Save Title/Description</push-button>
+        <push-button (onClick)="onRunAutoQuant()" buttonStyle="outline">Run Auto-Quantification</push-button>
       </div>
       <div *ngIf="scanId" class="meta-entry column">
         <div class="txt-dlg-heading">Default Image</div>
@@ -104,7 +104,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="menu-title">
       <div class="txt-widget-title">Uploaded Images</div>
-      <icon-button icon="assets/button-icons/plus-white.svg" (click)="onAddImage()"></icon-button>
+      <push-button (click)="onAddImage()" buttonStyle="outline">Upload</push-button>
     </div>
     <!-- scrollable list of files -->
     <div class="scrollable-container">
