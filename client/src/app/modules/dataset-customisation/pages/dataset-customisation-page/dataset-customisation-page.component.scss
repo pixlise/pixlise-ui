@@ -192,6 +192,21 @@
         }
       }
 
+      .image-status {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+
+        .row {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+        }
+
+        padding: $sz-half;
+        color: $clr-gray-30;
+      }
+
       .img-view {
         height: 100%;
       }

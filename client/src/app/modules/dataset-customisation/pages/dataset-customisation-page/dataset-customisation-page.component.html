@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [type]="scanItemType"></share-ownership-item-button>
         </div>
 
-        <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
+        <wait-spinner *ngIf="title === null"></wait-spinner>
         <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="10"></textarea>
         <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
         <push-button (onClick)="onRunAutoQuant()" buttonStyle="yellow">Run Auto-Quantification</push-button>
@@ -111,14 +111,14 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="list-subheading">
         <span>Beam Matched Images</span>
       </div>
-      <div *ngFor="let item of matchedImages" class="image-item clickable" (click)="onSelectImage('matched', item)">
-        <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ justName(item.imagePath) }}</span>
+      <div *ngFor="let item of matchedImages" class="image-item">
+        <span class="clickable image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500" (click)="onSelectImage('matched', item)">{{ justName(item.imagePath) }}</span>
         <action-button
           [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
           action="delete"
           (onClick)="onDeleteImage('matched', item)"></action-button>
       </div>
-      <mat-spinner *ngIf="matchedImages === null" [diameter]="24" color="accent"></mat-spinner>
+      <wait-spinner *ngIf="matchedImages === null"></wait-spinner>
       <div *ngIf="matchedImages !== null && matchedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
 
       <div class="list-subheading">
@@ -132,7 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
           [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
           (onClick)="onDeleteImage('unaligned', item)"></action-button>
       </div>
-      <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
+      <wait-spinner *ngIf="unalignedImages === null"></wait-spinner>
       <div *ngIf="unalignedImages !== null && unalignedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
     </div>
   </div>
@@ -164,7 +164,12 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
         </ng-container>
       </div>
-
+      <div *ngIf="hasWaitItems" class="image-status">
+        <div class="row">
+          <wait-spinner></wait-spinner>
+          <div>{{waitItemsDisplay}}</div>
+        </div>
+      </div>
       <interactive-canvas
         *ngIf="hasImageSelected"
         class="img-view"

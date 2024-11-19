@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, tap, throwError } from "rxjs";
+import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, throwError } from "rxjs";
 import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
@@ -31,7 +31,7 @@ export class APIEndpointsService {
       throw new Error("No image path provided");
     }
 
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
 
     return from(this.localStorageService.getImage(apiUrl)).pipe(
       switchMap(imageData => {
@@ -105,14 +105,43 @@ export class APIEndpointsService {
   }
 
   loadRawImageFromURL(imagePath: string): Observable<ArrayBuffer> {
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
-    return this.http.get(apiUrl, { responseType: "arraybuffer" });
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
+    return this.http.get(apiUrl, this.makeImageGetHeaders(true));
+  }
+
+  private makeImageGetHeaders(useDiskCache: boolean): {
+    headers?:
+      | HttpHeaders
+      | {
+          [header: string]: string | string[];
+        };
+    responseType: "arraybuffer";
+  } {
+    /*if (!useDiskCache) {
+      return {
+        headers: {
+          //"Access-Control-Allow-Origin": "*",
+          //"Cache-Control": "no-cache, no-store, must-revalidate, post-check=0, pre-check=0",
+          Expires: "0",
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+        responseType: "arraybuffer" as const,
+      };
+    }
+    */
+    return {
+      responseType: "arraybuffer" as const,
+    };
   }
 
   private loadImageFromURL(url: string, maxCacheSize: number = DefaultMaxCachedImageSizeBytes): Observable<HTMLImageElement> {
+    // We don't want these cached by the browser (we implement our own local storage caching) so add some "salt" to the URL
+    url += "?nocache=" + Date.now();
+
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
-      this.http.get(url, { responseType: "arraybuffer" }).subscribe({
+      this.http.get(url, this.makeImageGetHeaders(false)).subscribe({
         next: (arrayBuf: ArrayBuffer) => {
           const img = new Image();
 
@@ -139,7 +168,7 @@ export class APIEndpointsService {
           // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
           img.src = dataURL;
 
-          // Only store if it's not too big (15 mb)
+          // Only store if it's not too big (10 mb)
           if (dataURL.length < maxCacheSize) {
             this.localStorageService.storeImage(dataURL, url, url, img.height, img.width, dataURL.length);
           }
@@ -180,7 +209,7 @@ export class APIEndpointsService {
   }
 
   loadRGBUImageTIFPreview(imagePath: string, maxAgeSec: number = DefaultMaxTIFImageCacheAgeSec): Observable<string> {
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
     const tiffPreviewKey = `tiff-preview-${apiUrl}`;
 
     return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
@@ -220,7 +249,7 @@ export class APIEndpointsService {
       return throwError(() => new Error("No image path provided"));
     }
 
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
 
     return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
       switchMap(imageData => {
@@ -238,8 +267,8 @@ export class APIEndpointsService {
         if (img) {
           return of(img);
         } else {
-          const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
-          return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
+          const apiUrl = APIEndpointsService.getImageURL(imagePath);
+          return this.http.get(apiUrl, this.makeImageGetHeaders(true)).pipe(
             mergeMap((bytes: ArrayBuffer) => {
               // Only store if it's not too big
               const maxCacheSize: number = DefaultMaxCachedTIFImageSizeBytes;
@@ -257,6 +286,11 @@ export class APIEndpointsService {
       }),
       shareReplay(1)
     );
+  }
+
+  public static getImageURL(imagePath: string): string {
+    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    return apiUrl;
   }
 
   uploadScanZip(scanId: string, zipName: string, imageData: ArrayBuffer): Observable<void> {
