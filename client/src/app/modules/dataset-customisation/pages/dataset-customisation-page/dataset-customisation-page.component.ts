@@ -83,14 +83,14 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   showLog = false;
 
-  private readonly waitGetDefaultImage = "Get Default Image";
+  private readonly waitGetDefaultImage = "Load Default Image";
   private readonly waitSaveDefaultImage = "Save Default Image";
-  private readonly waitScan = "Get Scan";
-  private readonly waitGetImageList = "Get Image List";
-  private readonly waitGetMatchedImage = "Get Matched Image";
-  private readonly waitGetUploadedImage = "Get Uploaded Image";
+  private readonly waitScan = "Load Scan";
+  private readonly waitGetImageList = "List Images";
+  private readonly waitGetMatchedImage = "Load Matched Image";
+  private readonly waitGetUploadedImage = "Load Uploaded Image";
   private readonly waitSaveAlignment = "Save Alignment";
-  private readonly waitGetAlignment = "Get Alignment";
+  private readonly waitGetAlignment = "Load Alignment";
   private readonly waitDeleteImage = "Delete Image";
   private readonly waitUploadImage = "Uploading Image";
 
