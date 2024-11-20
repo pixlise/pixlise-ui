@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -188,6 +188,12 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  @HostListener("window:resize", ["$event"])
+  onResize() {
+    // Window resized, notify all canvases
+    this._analysisLayoutService.notifyWindowResize();
   }
 
   setWait(name: string, isWait: boolean) {
