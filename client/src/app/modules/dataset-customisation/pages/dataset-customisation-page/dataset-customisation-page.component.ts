@@ -5,7 +5,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
-import { Observable, of, Subscription } from "rxjs";
+import { Observable, of, Subscription, throwError } from "rxjs";
 import {
   ImageListReq,
   ImageListResp,
@@ -43,6 +43,7 @@ import { ObjectType } from "../../../../generated-protos/ownership-access";
 import { rgbBytesToImage } from "src/app/utils/drawing";
 import { UserOptionsService } from "src/app/modules/settings/settings.module";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 
 @Component({
   selector: "app-dataset-customisation-page",
@@ -56,14 +57,11 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   drawer: CanvasDrawer;
   private _interaction: AlignmentInteraction;
 
-  cursorShown: string = "";
+  cursorShown: string = CursorId.panCursor;
 
   scanItemType: ObjectType = ObjectType.OT_SCAN;
   scanItem: ScanItem = ScanItem.create();
 
-  title: string | null = null;
-  description: string = "";
-  tags: string[] = [];
   defaultContextImage: string = "";
   selectedQuantId: string = "";
   quantifiedElements: string[] = [];
@@ -81,18 +79,18 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   private _loadedImageTransform: ImageMatchTransform | null = null;
 
-  showLog = false;
-
   private readonly waitGetDefaultImage = "Load Default Image";
   private readonly waitSaveDefaultImage = "Save Default Image";
   private readonly waitScan = "Load Scan";
   private readonly waitGetImageList = "List Images";
   private readonly waitGetMatchedImage = "Load Matched Image";
-  private readonly waitGetUploadedImage = "Load Uploaded Image";
+  private readonly waitGetUploadedImage = "Load Selected Image";
   private readonly waitSaveAlignment = "Save Alignment";
   private readonly waitGetAlignment = "Load Alignment";
   private readonly waitDeleteImage = "Delete Image";
   private readonly waitUploadImage = "Uploading Image";
+  private readonly waitGetQuant = "Load Quantification";
+  private readonly waitMakeMap = "Element Map";
 
   waitItems: Map<string, boolean> = new Map<string, boolean>([
     [this.waitGetDefaultImage, false],
@@ -105,9 +103,16 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     [this.waitGetAlignment, false],
     [this.waitDeleteImage, false],
     [this.waitUploadImage, false],
+    [this.waitGetQuant, false],
+    [this.waitMakeMap, false],
   ]);
   hasWaitItems: boolean = false;
   waitItemsDisplay: string = "";
+
+  // Just temporarily remember images that were deleted, so
+  // if we re-request them we include "salt" in their URL to
+  // bypass cache, otherwise we keep loading the same image!
+  private _deletedImages = new Set<string>();
 
   private _images: ScanImage[] = [];
 
@@ -162,21 +167,15 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         next: resp => {
           const scanItem = resp?.scan;
           if (scanItem) {
-            this.title = scanItem.title;
-            this.description = scanItem.description;
-            this.tags = scanItem.tags;
             this.scanItem = scanItem;
           }
         },
         error: err => {
           this._snackService.openError(err);
-          this.title = ""; // To clear the spinner
-          this.description = "";
-          this.tags = [];
         },
         complete: () => {
           this.setWait(this.waitScan, false);
-        }
+        },
       })
     );
 
@@ -277,15 +276,23 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     return this._images;
   }
 
-  get selectedImageLabel(): string {
-    return this.mdl.overlayImagePath ? this.mdl.overlayImagePath : "Select one from below!";
+  get selectedImageLabelDisp(): string {
+    return this.mdl.overlayImagePath ? getPathBase(this.mdl.overlayImagePath) : "Select one from list!";
+  }
+
+  get selectedImageLabelFull(): string {
+    return this.mdl.overlayImagePath ? this.mdl.overlayImagePath : "Select one from list!";
   }
 
   get hasImageSelected(): boolean {
     return this.mdl.overlayImagePath.length > 0;
   }
 
-  get alignToImageLabel(): string {
+  get alignToImageLabelDisp(): string {
+    return this.mdl.imageName ? getPathBase(this.mdl.imageName) : "(None)";
+  }
+
+  get alignToImageLabelFull(): string {
     return this.mdl.imageName ? this.mdl.imageName : "(None)";
   }
 
@@ -299,47 +306,6 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   reDraw() {
     this.mdl.needsDraw$.next();
-  }
-
-  onTagSelectionChanged(tags: string[]) {
-    this.tags = tags;
-
-    this._snackService.open("Don't forget to click Save Title/Description to save edited tags");
-
-    // Save the scan item with the new tags
-    //this.selectedTagIDs = tagIDs;
-    //this._roiService.editROISummary(this.summary);
-  }
-
-  onSaveTitleDescription() {
-    const scanId = this.getScanId();
-    if (!scanId) {
-      return;
-    }
-
-    if (!this.title) {
-      this._snackService.openError("Cannot set an empty title");
-      return;
-    }
-
-    this._dataService
-      .sendScanMetaWriteRequest(
-        ScanMetaWriteReq.create({
-          scanId: scanId,
-          title: this.title,
-          description: this.description,
-          tags: this.tags,
-        })
-      )
-      .subscribe({
-        next: (resp: ScanMetaWriteResp) => {
-          this._snackService.openSuccess("Title/description changed");
-        },
-        error: err => {
-          this._snackService.openError(err);
-          this.title = ""; // To clear the spinner
-        },
-      });
   }
 
   onChangeDefaultImage(selection: ImageSelection): void {
@@ -501,6 +467,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this._dataService.sendImageDeleteRequest(ImageDeleteReq.create({ name: img.imagePath })).subscribe({
       next: (resp: ImageDeleteResp) => {
         this._snackService.openSuccess("Image deleted", "Deleted image: " + img.imagePath);
+        this._deletedImages.add(img.imagePath);
 
         // Delete from cache too!
         const imageUrl = APIEndpointsService.getImageURL(img.imagePath);
@@ -544,6 +511,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       this.mdl.overlayImageTransform = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
 
       this.mdl.imageName = img.matchInfo.beamImageFileName;
+
       this.reloadModel();
     } else if (this.mdl.imageName) {
       this.clearModel();
@@ -668,10 +636,16 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this.selectedQuantId = quantId;
 
     // Load this quant summary to get the element list
-    this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).subscribe((resp: QuantGetResp) => {
-      if (resp && resp.summary) {
-        this.quantifiedElements = resp.summary.elements;
-      }
+    this.setWait(this.waitGetQuant, true);
+    this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).subscribe({
+      next: (resp: QuantGetResp) => {
+        if (resp && resp.summary) {
+          this.quantifiedElements = resp.summary.elements;
+        }
+      },
+      complete: () => {
+        this.setWait(this.waitGetQuant, false);
+      },
     });
   }
 
@@ -690,6 +664,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   onQuantElementChanged(change: MatSelectChange) {
+    this.setWait(this.waitMakeMap, true);
     const exprId = DataExpressionId.makePredefinedQuantElementExpression(change.value, "%");
     this.mdl.expressionIds = [exprId];
 
@@ -788,6 +763,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         } else {
           this.reDraw();
         }
+
+        this.setWait(this.waitMakeMap, false);
       },
       complete: () => {
         this.setWait(this.waitGetMatchedImage, false);
@@ -801,17 +778,34 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this.reDraw();
   }
 
-  private reloadOverlayImage() {
-    if (!this.mdl.overlayImagePath) {
-      this.mdl.overlayImage = null;
-    } else {
-      const path = (this.mdl?.overlayImagePath || "").toLowerCase().trim().split("?")[0];
+  private loadImage(imgPath: string): Observable<HTMLImageElement> {
+    if (!imgPath) {
+      return throwError(() => {
+        return new Error("no image name specified when loading image on dataset edit page");
+      });
+    }
 
+    const pathLower = imgPath.toLowerCase().trim().split("?")[0];
+
+    if (this._deletedImages.has(imgPath)) {
+      // This was recently deleted, to ensure we don't read from disk cache, add "salt". This is
+      // to prevent a user re-uploading a new copy of an image (with the same name) from being stuck
+      // seeing their previous copy. NOTE, this doesn't persist beyond page reloads, but by then maybe
+      // local cache won't be preventing it from loading?
+      imgPath += "?nocache=" + Date.now();
+    }
+
+    if (pathLower && pathLower.endsWith(".tif")) {
+      return this._endpointsService.loadRGBTIFFDisplayImage(imgPath);
+    }
+    return this._endpointsService.loadImageForPath(imgPath);
+  }
+
+  private reloadOverlayImage() {
+    this.mdl.overlayImage = null;
+    if (this.mdl.overlayImagePath) {
       this.setWait(this.waitGetUploadedImage, true);
-      const obs$: Observable<HTMLImageElement> =
-        path && path.endsWith(".tif")
-          ? this._endpointsService.loadRGBTIFFDisplayImage(this.mdl.overlayImagePath)
-          : this._endpointsService.loadImageForPath(this.mdl.overlayImagePath);
+      const obs$: Observable<HTMLImageElement> = this.loadImage(this.mdl?.overlayImagePath || "");
       obs$.subscribe({
         next: img => {
           // NOTE: we don't apply brightness here - should we?

@@ -30,33 +30,47 @@
 @import "variables.scss";
 @import "atoms.scss";
 
+
 .customisation-container {
   display: flex;
   flex-direction: row;
   //flex: 1 1 100%;
   //flex: 1 1 1e-9px;
 
-  width: 100%;
-  height: calc(100vh - 42px);
+  min-width: 0;
+  flex-grow: 1;
+  //width: 100%;
+  height: calc(100vh - 64px);
 
   gap: $sz-unit;
+  padding: $sz-unit;
 
-  background-color: #1b1d1e;
-  //margin: $sz-half;
+  background-color: $clr-gray-100;
+
+  .padded {
+    padding: $sz-unit;
+  }
+  h2 {
+    font-size: 16px;
+    line-height: 20px;
+  }
 
   .left-menu {
     display: flex;
     flex-direction: column;
-    padding: $sz-unit;
-    height: 100%;
-    min-width: 280px;
+    flex-grow: 1;
+    min-width: 500px;
+    gap: $sz-unit;
+
+    .fill {
+      flex-grow: 1;
+    }
 
     .menu-title {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
       align-items: center;
-      padding: $sz-half;
       gap: $sz-unit;
     }
 
@@ -94,24 +108,22 @@
         }
 
         &.title-area {
-          input {
-            width: inherit;
-          }
-
           .title-row {
             display: flex;
+            gap: $sz-unit;
             width: 100%;
           }
         }
 
         .mat-mdc-select {
-          width: 100% !important;
+          //width: 100% !important;
           margin: 0px;
         }
 
-        .align-image-label {
+        .image-label {
           overflow: hidden;
           text-overflow: ellipsis;
+          font-weight: 400;
         }
       }
     }
@@ -120,10 +132,11 @@
       display: flex;
       flex-direction: column;
 
-      max-height: calc(100vh - 144px) !important;
+      max-height: 400px;
       overflow-y: auto;
 
       color: $clr-gray-20;
+      background-color: $clr-gray-90;
 
       .list-subheading {
         display: flex;
@@ -162,6 +175,7 @@
       display: flex;
       flex-direction: column;
       flex: 1 1 100%;
+      //position: absolute;
 
       .image-edit-toolbar {
         display: flex;
@@ -180,7 +194,7 @@
         }
 
         .meta-edit input {
-          width: 50px;
+          width: 60px;
         }
 
         .display-settings {
@@ -190,21 +204,6 @@
 
           gap: $sz-unit;
         }
-      }
-
-      .image-status {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-around;
-
-        .row {
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-        }
-
-        padding: $sz-half;
-        color: $clr-gray-30;
       }
 
       .img-view {
@@ -217,12 +216,28 @@
         justify-content: space-around;
         align-items: center;
 
+        position: absolute;
+        top: 45%;
+        right: 0;
+
+        width: calc(100vw - 400px);
+
         text-align: center;
-        font-weight: bold;
-        height: 100%;
+        //font-weight: bold;
         user-select: none;
-        color: $clr-gray-40;
         font-size: 18px;
+
+        .row {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: $sz-unit;
+
+          padding: $sz-unit;
+          border-radius: $sz-unit;
+          color: $clr-gray-30;
+          background-color: $clr-gray-90;
+        }
       }
     }
   }
