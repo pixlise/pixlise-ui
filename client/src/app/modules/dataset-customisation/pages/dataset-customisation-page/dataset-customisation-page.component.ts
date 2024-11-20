@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { ContextImageItem, ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -19,7 +19,6 @@ import {
 } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanGetReq, ScanTriggerAutoQuantReq } from "src/app/generated-protos/scan-msgs";
-import { ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
 import { DatasetCustomisationDrawer } from "./dataset-customisation-drawer";
@@ -41,7 +40,6 @@ import { ImageSelection } from "src/app/modules/image-viewers/components/context
 import { ScanItem } from "../../../../generated-protos/scan";
 import { ObjectType } from "../../../../generated-protos/ownership-access";
 import { rgbBytesToImage } from "src/app/utils/drawing";
-import { UserOptionsService } from "src/app/modules/settings/settings.module";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 
@@ -616,7 +614,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   onChangeOverlayOpacity(val: SliderValue): void {
-    this.mdl.overlayOpacity = val.value;
+    this.mdl.overlayOpacity = Math.floor(val.value * 100) / 100;
     this.reDraw();
   }
 
@@ -625,7 +623,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   onChangeOverlayBrightness(val: SliderValue): void {
-    this.mdl.overlayBrightness = val.value;
+    this.mdl.overlayBrightness = Math.floor(val.value * 100) / 100;
 
     if (val.finish) {
       this.reloadOverlayImage();
@@ -841,7 +839,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         return;
       }
 
-      src.onload = () => {
+      const process = () => {
         offscreenContext.drawImage(src, 0, 0);
         const imgData = offscreenContext.getImageData(0, 0, src.width, src.height);
         const imgBytes = new Uint8Array(imgData.width * imgData.height * 3);
@@ -869,12 +867,18 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         });
       };
 
-      src.onerror = () => {
-        const errStr = "Failed process overlay image!";
-        console.error(errStr);
-        observer.error(errStr);
-        this.setWait(this.waitGetUploadedImage, false);
-      };
+      if (src.complete) {
+        process();
+      } else {
+        src.onload = process;
+
+        src.onerror = () => {
+          const errStr = "Failed process overlay image!";
+          console.error(errStr);
+          observer.error(errStr);
+          this.setWait(this.waitGetUploadedImage, false);
+        };
+      }
     });
   }
 

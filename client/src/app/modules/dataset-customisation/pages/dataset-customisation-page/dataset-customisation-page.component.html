@@ -141,10 +141,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <push-button (onClick)="onApplyMeta()" buttonStyle="yellow">Save Alignment</push-button>
           </div>
           <div class="display-settings">
-            <div>Opacity</div>
+            <div>Opacity ({{(overlayOpacity * 100)|number:'1.0-0'}}%)</div>
             <slider [value]="overlayOpacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOverlayOpacity($event)"></slider>
-            <div>Brightness</div>
-            <slider [value]="overlayBrightness" [minValue]="1" [maxValue]="10" (onChange)="onChangeOverlayBrightness($event)"></slider>
+            <div>Brightness ({{(overlayBrightness * 100)|number:'1.0-0'}}%)</div>
+            <slider [value]="overlayBrightness" [minValue]="0.1" [maxValue]="3" (onChange)="onChangeOverlayBrightness($event)"></slider>
             <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display Options</push-button>
           </div>
         </ng-container>
