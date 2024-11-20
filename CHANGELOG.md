@@ -1,4 +1,16 @@
-## 4.53.0 (Latest)
+## 4.54.0 (Latest)
+
+### New Features
+- Dataset Customisation page now shows spinners while it's doing things because until now it provided little feedback. The layout was changed to be a little more useful, and redundant features like dataset name/description/tag editing were removed (they have been available on the dataset tiles page for several months now). Brightness and Opacity are now displayed as a % and more accurately controllable.
+
+### Bug Fixes
+- Fixed context image pan/zoom, in some conditions it caused a division by zero and was written to view state, where it then failed to reload
+- Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
+- Dataset Customisation: fixed bug where deleting an uploaded image, and uploading a new one with the same name doesn't clear cache, old image is displayed.
+- Dataset Customisation: Fixed issue with brighness slider on image upload, which now allows dimming as well as brightening.
+- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slignt memory usage improvement
+
+## 4.53.0 (2024-11-15)
 
 ### Features
 - Added ability to upload PIXL EM datasets. Requires zipping up the SDF-Peek output directory (or a subset of files). Click the "Upload" button on the dataset tiles page and you can select the dataset type "pixl-em", enter the RTT of the dataset you're wanting to import (SDF-Peek output may contain data from multiple RTTs, so you have to specify which one you're importing). The upload screen has more instructions too.

@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 export enum CursorId {
-  panCursor = "panCursor",
+  panCursor = "panCursor", // arrows in 4 directions
   zoomCursor = "zoomCursor",
   rotateCursor = "rotateCursor",
   lassoCursorAdd = "lassoCursorAdd",
@@ -43,9 +43,9 @@ export enum CursorId {
   lineCursorAdd = "lineCursorAdd",
   lineCursorDel = "lineCursorDel",
   pmcInspectorCursor = "pmcInspectorCursor",
-  defaultPointer = "defaultPointer",
-  crosshairCursor = "crosshairCursor",
-  pointerCursor = "pointerCursor",
+  defaultPointer = "defaultPointer", // OS arrow
+  crosshairCursor = "crosshairCursor", // +
+  pointerCursor = "pointerCursor", // finger pointer
   histogramBarPickCursor = "histogramBarPickCursor",
   histogramBarPickAddCursor = "histogramBarPickAddCursor",
   histogramBarPickDelCursor = "histogramBarPickDelCursor",

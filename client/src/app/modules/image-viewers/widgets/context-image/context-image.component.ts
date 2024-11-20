@@ -43,6 +43,7 @@ import {
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
+import { isValidNumber, SentryHelper } from "src/app/utils/utils";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -1314,6 +1315,21 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       for (const m of scanMdl.maps) {
         opacityLookup.set(m.expressionId, m.opacity);
       }
+    }
+
+    // Ensure we don't send up garbage, we've had it fail to reload after these were NaNs or whatever
+    if (
+      !isValidNumber(this.mdl.transform.pan.x, true) ||
+      !isValidNumber(this.mdl.transform.pan.y, true) ||
+      !isValidNumber(this.mdl.transform.scale.x, false) ||
+      !isValidNumber(this.mdl.transform.scale.y, false)
+    ) {
+      SentryHelper.logMsg(
+        true,
+        `Replacing invalid pan (${this.mdl.transform.pan.x}, ${this.mdl.transform.pan.y})/zoom(${this.mdl.transform.scale.x},${this.mdl.transform.scale.y}) with defaults before saving view state`
+      );
+      this.mdl.transform.pan = new Point(0, 0);
+      this.mdl.transform.scale = new Point(1, 1);
     }
 
     this.onSaveWidgetData.emit(
