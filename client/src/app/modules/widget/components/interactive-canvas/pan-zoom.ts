@@ -32,6 +32,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { getMatrixAs2x3Array, getTransformMatrix, inverseMatrix, Point, pointByMatrix, Rect, vectorsEqual } from "src/app/models/Geometry";
 // import { CanvasParams, CanvasWorldTransform } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { CanvasParams, CanvasWorldTransform } from "./interactive-canvas.component";
+import { isValidNumber, SentryHelper } from "src/app/utils/utils";
 
 export interface PanRestrictor {
   restrict(panZoom: PanZoom): void;
@@ -109,8 +110,8 @@ export class PanZoom implements CanvasWorldTransform {
   private _timerSubs: Subscription | null = null;
 
   constructor(
-    protected _zoomLimitX: MinMax = new MinMax(0.2),
-    protected _zoomLimitY: MinMax = new MinMax(0.2),
+    protected _zoomLimitX: MinMax = new MinMax(0.2, 10000),
+    protected _zoomLimitY: MinMax = new MinMax(0.2, 10000),
     protected _panRestrictor: PanRestrictor | null = null
   ) {
     this.reset();
@@ -176,7 +177,7 @@ export class PanZoom implements CanvasWorldTransform {
       this.clearTransformTimer();
     }
   }
-
+/*
   setZoomLimits(xLimits: MinMax, yLimits: MinMax): void {
     // Set the zoom limits
     // If unchanged, don't do anything (prevents a transformChangeComplete$ being sent unnecessarily)
@@ -190,7 +191,7 @@ export class PanZoom implements CanvasWorldTransform {
     // Enforce the new limits
     this.setScale(this.scale);
   }
-
+*/
   isZoomXAtMinLimit(): boolean {
     return this.scale.x <= (this._zoomLimitX?.min || this.scale.x);
   }
@@ -329,11 +330,25 @@ rectRequested.w.toLocaleString()+'x'+rectRequested.h.toLocaleString()+
 
   private filterScale(scale: Point): Point {
     let result = new Point(scale.x, scale.y);
+
+    // Firstly, check if they're valid
+    if (!isValidNumber(result.x, false) || !isValidNumber(result.y, false)) {
+      SentryHelper.logMsg(true, `Replacing invalid zoom(${result.x},${result.y}) with 1,1 before saving view state`);
+      result = new Point(1, 1);
+    }
+
     if (this._zoomLimitX.min !== null && result.x < this._zoomLimitX.min) {
       result.x = this._zoomLimitX.min;
     }
+    if (this._zoomLimitX.max !== null && result.x > this._zoomLimitX.max) {
+      result.x = this._zoomLimitX.max;
+    }
+
     if (this._zoomLimitY.min !== null && result.y < this._zoomLimitY.min) {
       result.y = this._zoomLimitY.min;
+    }
+    if (this._zoomLimitY.max !== null && result.y > this._zoomLimitY.max) {
+      result.y = this._zoomLimitY.max;
     }
     return result;
   }
