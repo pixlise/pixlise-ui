@@ -2,6 +2,7 @@
 
 ### Bug Fixes
 - Fixed context image pan/zoom, in some conditions it caused a division by zero and was written to view state, where it then failed to reload
+- Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
 
 ## 4.53.0 (2024-11-15)
 
