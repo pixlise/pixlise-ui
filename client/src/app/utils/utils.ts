@@ -1138,3 +1138,11 @@ export function doesVersionDiffer(versionA: string, versionB: string): boolean {
 
   return versionB != versionA;
 }
+
+export function isValidNumber(n: number, allowZero: boolean): boolean {
+  if (!allowZero && n === 0) {
+    return false;
+  }
+
+  return !isNaN(n) && n !== Infinity && n !== -Infinity && n !== undefined && n !== null;
+}
