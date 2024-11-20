@@ -1,4 +1,10 @@
-## 4.53.0 (Latest)
+## 4.54.0 (Latest)
+
+### Bug Fixes
+- Fixed context image pan/zoom, in some conditions it caused a division by zero and was written to view state, where it then failed to reload
+- Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
+
+## 4.53.0 (2024-11-15)
 
 ### Features
 - Added ability to upload PIXL EM datasets. Requires zipping up the SDF-Peek output directory (or a subset of files). Click the "Upload" button on the dataset tiles page and you can select the dataset type "pixl-em", enter the RTT of the dataset you're wanting to import (SDF-Peek output may contain data from multiple RTTs, so you have to specify which one you're importing). The upload screen has more instructions too.
