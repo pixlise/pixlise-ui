@@ -8,7 +8,7 @@
 - Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
 - Dataset Customisation: fixed bug where deleting an uploaded image, and uploading a new one with the same name doesn't clear cache, old image is displayed.
 - Dataset Customisation: Fixed issue with brighness slider on image upload, which now allows dimming as well as brightening.
-- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slignt memory usage improvement
+- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slight memory usage improvement
 
 ## 4.53.0 (2024-11-15)
 
