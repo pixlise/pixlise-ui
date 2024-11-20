@@ -163,7 +163,7 @@ export class APICommService implements OnDestroy {
 
               // Only show the connected message if we have previously disconnected
               if (!this.isConnected) {
-                this._snackService.openSuccess(`Connected to PIXLISE server!`);
+                this._snackService.openSuccess(`Connected to PIXLISE server`);
                 this.isConnected = true;
               }
               connectEvent();

@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, tap, throwError } from "rxjs";
+import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, throwError } from "rxjs";
 import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
@@ -8,9 +8,6 @@ import { APIPaths } from "src/app/utils/api-helpers";
 import { Uint8ToString } from "src/app/utils/utils";
 import { ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
-
-const DefaultMaxImageCacheAgeSec = 60 * 60 * 24 * 2;
-const DefaultMaxCachedImageSizeBytes = 1024 * 1024 * 10;
 
 const DefaultMaxTIFImageCacheAgeSec = 60 * 60 * 2;
 const DefaultMaxCachedTIFImageSizeBytes = 1024 * 1024 * 15;
@@ -24,65 +21,24 @@ export class APIEndpointsService {
     private localStorageService: LocalStorageService
   ) {}
 
-  // Assumes the path is going to get us the image, might have to include the scan id in it
-  // Loads image from local storage if available and under the max age, otherwise downloads it from the server
-  loadImageForPath(imagePath: string, maxAgeSec: number = DefaultMaxImageCacheAgeSec): Observable<HTMLImageElement> {
+  // Path being the key of the image in the images DB, so scanid/filename.png for example
+  loadImageForPath(imagePath: string): Observable<HTMLImageElement> {
     if (!imagePath) {
       throw new Error("No image path provided");
     }
 
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
-
-    return from(this.localStorageService.getImage(apiUrl)).pipe(
-      switchMap(imageData => {
-        // If we have it and it's not older than maxAge (2 days), use it
-        if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
-          return new Observable<HTMLImageElement>(observer => {
-            const img = new Image();
-
-            img.onload = event => {
-              console.log("  Loaded image from cache: " + apiUrl + ". Dimensions: " + img.width + "x" + img.height);
-              observer.next(img);
-              observer.complete();
-            };
-
-            img.onerror = event => {
-              // event doesn't seem to provide us much, usually just says "error" inside it... found that this
-              // last occurred when a bug allowed us to try to load a tif image with this function!
-              const errStr = "Failed to load image from cache: " + apiUrl;
-              console.error(errStr);
-              observer.error(errStr);
-            };
-
-            img.src = imageData.data;
-          });
-        } else {
-          return this.loadImageFromURL(apiUrl).pipe(
-            catchError(err => {
-              return throwError(() => err);
-            })
-          );
-        }
-      }),
-      catchError(err => {
-        console.error(err);
-        return this.loadImageFromURL(apiUrl).pipe(
-          catchError(err => {
-            console.error(err);
-            return throwError(() => err);
-          })
-        );
-      }),
-      shareReplay(1)
-    );
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
+    return this.loadImageFromURL(apiUrl);
   }
 
-  loadImagePreviewForPath(imagePath: string, maxAgeSec: number = DefaultMaxImageCacheAgeSec): Observable<string> {
+  // TODO: Refactor this? Is the toDataURL call going to return the same thing that is constructed
+  //       along the way to loading it (within loadImageForPath)?
+  loadImagePreviewForPath(imagePath: string): Observable<string> {
     if (!imagePath) {
       throw new Error("No image path provided");
     }
 
-    return this.loadImageForPath(imagePath, maxAgeSec).pipe(
+    return this.loadImageForPath(imagePath).pipe(
       switchMap(img => {
         return new Observable<string>(observer => {
           const canvas = document.createElement("canvas");
@@ -105,11 +61,11 @@ export class APIEndpointsService {
   }
 
   loadRawImageFromURL(imagePath: string): Observable<ArrayBuffer> {
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
     return this.http.get(apiUrl, { responseType: "arraybuffer" });
   }
 
-  private loadImageFromURL(url: string, maxCacheSize: number = DefaultMaxCachedImageSizeBytes): Observable<HTMLImageElement> {
+  private loadImageFromURL(url: string): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
       this.http.get(url, { responseType: "arraybuffer" }).subscribe({
@@ -125,7 +81,7 @@ export class APIEndpointsService {
           img.onerror = event => {
             // event doesn't seem to provide us much, usually just says "error" inside it... found that this
             // last occurred when a bug allowed us to try to load a tif image with this function!
-            const errStr = "Failed to download context image: " + url;
+            const errStr = "Failed to download image: " + url;
             console.error(errStr);
             observer.error(errStr);
           };
@@ -138,11 +94,6 @@ export class APIEndpointsService {
           const dataURL = "data:image;base64," + base64;
           // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
           img.src = dataURL;
-
-          // Only store if it's not too big (15 mb)
-          if (dataURL.length < maxCacheSize) {
-            this.localStorageService.storeImage(dataURL, url, url, img.height, img.width, dataURL.length);
-          }
         },
         error: err => {
           if (err instanceof HttpErrorResponse && err.status == 404) {
@@ -180,7 +131,7 @@ export class APIEndpointsService {
   }
 
   loadRGBUImageTIFPreview(imagePath: string, maxAgeSec: number = DefaultMaxTIFImageCacheAgeSec): Observable<string> {
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
     const tiffPreviewKey = `tiff-preview-${apiUrl}`;
 
     return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
@@ -220,7 +171,7 @@ export class APIEndpointsService {
       return throwError(() => new Error("No image path provided"));
     }
 
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIEndpointsService.getImageURL(imagePath);
 
     return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
       switchMap(imageData => {
@@ -238,7 +189,7 @@ export class APIEndpointsService {
         if (img) {
           return of(img);
         } else {
-          const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+          const apiUrl = APIEndpointsService.getImageURL(imagePath);
           return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
             mergeMap((bytes: ArrayBuffer) => {
               // Only store if it's not too big
@@ -257,6 +208,11 @@ export class APIEndpointsService {
       }),
       shareReplay(1)
     );
+  }
+
+  public static getImageURL(imagePath: string): string {
+    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    return apiUrl;
   }
 
   uploadScanZip(scanId: string, zipName: string, imageData: ArrayBuffer): Observable<void> {

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { CachedImageItem, CachedRGBUImageItem, CachedSpectraItem, db } from "../models/local-storage-db";
-import { liveQuery } from "dexie";
+import { liveQuery, PromiseExtended } from "dexie";
 import { SnackbarDataItem } from "./snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -89,6 +89,10 @@ export class LocalStorageService {
 
   async getImage(url: string): Promise<CachedImageItem | undefined> {
     return await db.images.get(url);
+  }
+
+  deleteImage(key: string): Promise<void> {
+    return db.images.delete(key);
   }
 
   async clearImages() {

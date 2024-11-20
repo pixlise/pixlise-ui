@@ -34,106 +34,91 @@ POSSIBILITY OF SUCH DAMAGE.
     <app-toolbar titleToShow="Edit: {{datasetID}}"></app-toolbar> -->
 
   <!-- left pane browsable stuff -->
-  <div class="left-menu panel" aria-label="DatasetEditLeftMenu">
-    <div class="menu-title">
-      <div class="txt-widget-title">Customisations</div>
-    </div>
-    <div class="menu-section">
-      <div class="meta-entry column title-area">
-        <div class="txt-dlg-heading">Scan Title & Description</div>
-        <div class="title-row">
-          <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title..." />
-          <tag-picker
-            type="scan"
-            placeholderText="Search Scan Tags ..."
-            [selectedTagIDs]="tags"
-            [showCurrentTagsSection]="true"
-            [editable]="true"
-            (onTagSelectionChanged)="onTagSelectionChanged($event)">
-          </tag-picker>
-          <share-ownership-item-button
-            *ngIf="scanItem.id"
-            [id]="scanItem.id"
-            [ownershipSummary]="scanItem.owner || null"
-            [type]="scanItemType"></share-ownership-item-button>
+  <div class="left-menu" aria-label="DatasetEditLeftMenu">
+    <div class="panel padded">
+      <h2>Scan Settings</h2>
+      <div class="menu-section">
+        <div class="meta-entry column title-area">
+          <div class="txt-dlg-heading">Sharing, Quantification</div>
+          <div class="title-row">
+            <share-ownership-item-button
+              *ngIf="scanItem.id"
+              [id]="scanItem.id"
+              [ownershipSummary]="scanItem.owner || null"
+              [type]="scanItemType"></share-ownership-item-button>
+            <push-button (onClick)="onRunAutoQuant()" buttonStyle="outline">Run Auto-Quantification</push-button>
+          </div>
         </div>
+        <div *ngIf="scanId" class="meta-entry column">
+          <div class="txt-dlg-heading">Default Image</div>
+          <image-picker
+            [scanIds]="[scanId]"
+            [currentImage]="defaultContextImage"
+            [includeHideOption]="false"
+            (selectedImage)="onChangeDefaultImage($event)"></image-picker>
+        </div>
+      </div>
+    </div>
+    <div class="panel fill">
+      <div class="menu-title padded">
+        <h2>Uploaded Images</h2>
+        <push-button (click)="onAddImage()" buttonStyle="outline">Upload New</push-button>
+      </div>
+      <!-- scrollable list of files -->
+      <div class="scrollable-container">
+        <div class="list-subheading">Beam Matched Images</div>
+        <div *ngFor="let item of matchedImages" class="image-item">
+          <span class="clickable image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500" (click)="onSelectImage('matched', item)">{{ justName(item.imagePath) }}</span>
+          <action-button
+            [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
+            action="delete"
+            (onClick)="onDeleteImage('matched', item)"></action-button>
+        </div>
+        <wait-spinner *ngIf="matchedImages === null"></wait-spinner>
+        <div *ngIf="matchedImages !== null && matchedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
 
-        <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
-        <textarea *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description..." [rows]="10"></textarea>
-        <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
-        <push-button (onClick)="onRunAutoQuant()" buttonStyle="yellow">Run Auto-Quantification</push-button>
-      </div>
-      <div *ngIf="scanId" class="meta-entry column">
-        <div class="txt-dlg-heading">Default Image</div>
-        <image-picker
-          [scanIds]="[scanId]"
-          [currentImage]="defaultContextImage"
-          [includeHideOption]="false"
-          (selectedImage)="onChangeDefaultImage($event)"></image-picker>
+        <div class="list-subheading">Other Context Images</div>
+
+        <div *ngFor="let item of unalignedImages" class="image-item clickable">
+          <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500" (click)="onSelectImage('unaligned', item)">{{ item.imagePath }}</span>
+          <action-button
+            action="delete"
+            [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
+            (onClick)="onDeleteImage('unaligned', item)"></action-button>
+        </div>
+        <wait-spinner *ngIf="unalignedImages === null"></wait-spinner>
+        <div *ngIf="unalignedImages !== null && unalignedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
       </div>
     </div>
-    <div class="menu-title">
-      <div class="txt-widget-title">Alignment Settings</div>
-    </div>
-    <div *ngIf="scanId" class="menu-section">
-      <div class="meta-entry column">
-        <div class="txt-dlg-heading">Selected Image</div>
-        <span>{{ selectedImageLabel }}</span>
-      </div>
-      <div *ngIf="mdl.overlayImagePath" class="meta-entry column">
-        <div class="txt-dlg-heading">Align-To Image</div>
-        <span #tooltip="matTooltip" [matTooltip]="alignToImageLabel" [matTooltipShowDelay]="500" class="align-image-label">{{ alignToImageLabel }}</span>
-        <!-- <image-picker [scanIds]="[scanId]" [currentImage]="alignToImage" [includeHideOption]="false" [onlyInstrumentImages]="true" (selectedImage)="onChangeAlignToImage($event)"></image-picker> -->
-      </div>
-      <ng-container *ngIf="mdl.imageName">
+    <div class="panel padded">
+      <h2>View Options</h2>
+      <div *ngIf="scanId" class="menu-section">
         <div class="meta-entry column">
-          <div class="txt-dlg-heading">Quantification</div>
-          <div class="row">
-            <quantification-selector [scanId]="scanId" [selectedQuantID]="selectedQuantId" (selectQuant)="onSelectQuantForScan($event)"></quantification-selector>
-          </div>
+          <div class="txt-dlg-heading">Selected Image</div>
+          <span #tooltip="matTooltip" [matTooltip]="selectedImageLabelFull" [matTooltipShowDelay]="500" class="image-label">{{ selectedImageLabelDisp }}</span>
         </div>
-        <div *ngIf="selectedQuantId" class="meta-entry column">
-          <div class="txt-dlg-heading">Element Map</div>
-          <div class="row">
-            <mat-select [(ngModel)]="selectedElementMap" (selectionChange)="onQuantElementChanged($event)">
-              <mat-option *ngFor="let elem of quantifiedElements" [value]="elem">{{ elem }}</mat-option>
-            </mat-select>
-          </div>
+        <div *ngIf="mdl.overlayImagePath" class="meta-entry column">
+          <div class="txt-dlg-heading">Align-To Image</div>
+          <span #tooltip="matTooltip" [matTooltip]="alignToImageLabelFull" [matTooltipShowDelay]="500" class="image-label">{{ alignToImageLabelDisp }}</span>
+          <!-- <image-picker [scanIds]="[scanId]" [currentImage]="alignToImage" [includeHideOption]="false" [onlyInstrumentImages]="true" (selectedImage)="onChangeAlignToImage($event)"></image-picker> -->
         </div>
-      </ng-container>
-    </div>
-    <div class="menu-title">
-      <div class="txt-widget-title">Uploaded Images</div>
-      <icon-button icon="assets/button-icons/plus-white.svg" (click)="onAddImage()"></icon-button>
-    </div>
-    <!-- scrollable list of files -->
-    <div class="scrollable-container">
-      <div class="list-subheading">
-        <span>Beam Matched Images</span>
+        <ng-container *ngIf="mdl.imageName">
+          <div class="meta-entry column">
+            <div class="txt-dlg-heading">Scan Quantification</div>
+            <div class="row">
+              <quantification-selector [scanId]="scanId" [selectedQuantID]="selectedQuantId" [openUp]="true" (selectQuant)="onSelectQuantForScan($event)"></quantification-selector>
+            </div>
+          </div>
+          <div *ngIf="selectedQuantId" class="meta-entry column">
+            <div class="txt-dlg-heading">Element Map Displayed</div>
+            <div class="row">
+              <mat-select [(ngModel)]="selectedElementMap" (selectionChange)="onQuantElementChanged($event)">
+                <mat-option *ngFor="let elem of quantifiedElements" [value]="elem">{{ elem }}</mat-option>
+              </mat-select>
+            </div>
+          </div>
+        </ng-container>
       </div>
-      <div *ngFor="let item of matchedImages" class="image-item clickable" (click)="onSelectImage('matched', item)">
-        <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ justName(item.imagePath) }}</span>
-        <action-button
-          [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
-          action="delete"
-          (onClick)="onDeleteImage('matched', item)"></action-button>
-      </div>
-      <mat-spinner *ngIf="matchedImages === null" [diameter]="24" color="accent"></mat-spinner>
-      <div *ngIf="matchedImages !== null && matchedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
-
-      <div class="list-subheading">
-        <span>Other Context Images</span>
-      </div>
-
-      <div *ngFor="let item of unalignedImages" class="image-item clickable" (click)="onSelectImage('unaligned', item)">
-        <span class="image-name" #tooltip="matTooltip" [matTooltip]="item.imagePath" [matTooltipShowDelay]="500">{{ item.imagePath }}</span>
-        <action-button
-          action="delete"
-          [confirmText]="'Are you sure you want to delete image ' + item.imagePath + '?'"
-          (onClick)="onDeleteImage('unaligned', item)"></action-button>
-      </div>
-      <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
-      <div *ngIf="unalignedImages !== null && unalignedImages.length <= 0" class="setting-row none-text">{{ "(None)" }}</div>
     </div>
   </div>
   <!-- right pane, showing details -->
@@ -143,28 +128,27 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="txt-widget-title">Alignment</div>
         <ng-container>
           <div class="meta-edit">
-            <div class="txt-meta">Offset:</div>
+            <div>Offset:</div>
             <input [(ngModel)]="xOffset" type="number" placeholder="X" />
-            <div class="txt-meta">,</div>
+            <div>,</div>
             <input [(ngModel)]="yOffset" type="number" placeholder="Y" />
-            <div class="txt-meta">Scale:</div>
+            <div>Scale:</div>
             <input [(ngModel)]="xScale" type="text" placeholder="X" />
-            <div class="txt-meta">,</div>
+            <div>,</div>
             <input [(ngModel)]="yScale" type="text" placeholder="Y" />
             <push-button (onClick)="onPreviewMeta()" buttonStyle="outline">Preview</push-button>
             <push-button (onClick)="onResetMeta()" buttonStyle="outline">Reset</push-button>
             <push-button (onClick)="onApplyMeta()" buttonStyle="yellow">Save Alignment</push-button>
           </div>
           <div class="display-settings">
-            <div class="txt-meta">Opacity</div>
+            <div>Opacity ({{(overlayOpacity * 100)|number:'1.0-0'}}%)</div>
             <slider [value]="overlayOpacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOverlayOpacity($event)"></slider>
-            <div class="txt-meta">Brightness</div>
-            <slider [value]="overlayBrightness" [minValue]="1" [maxValue]="10" (onChange)="onChangeOverlayBrightness($event)"></slider>
+            <div>Brightness ({{(overlayBrightness * 100)|number:'1.0-0'}}%)</div>
+            <slider [value]="overlayBrightness" [minValue]="0.1" [maxValue]="3" (onChange)="onChangeOverlayBrightness($event)"></slider>
             <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display Options</push-button>
           </div>
         </ng-container>
       </div>
-
       <interactive-canvas
         *ngIf="hasImageSelected"
         class="img-view"
@@ -175,15 +159,22 @@ POSSIBILITY OF SUCH DAMAGE.
         [transform]="transform">
       </interactive-canvas>
 
-      <div *ngIf="!hasImageSelected" class="help">
-        <span>Select an image to align or upload images/customise dataset on the left!</span>
-      </div>
-    </div>
-
-    <div *ngIf="showLog" class="panel log-area">
-      <!--
-                <log-viewer title="Dataset Regeneration Log" [logID]="logId"></log-viewer>
--->
+      <ng-container *ngIf="hasWaitItems; else elseCheckImage">
+        <div class="help">
+          <div class="row">
+            <wait-spinner></wait-spinner>
+            <div>{{waitItemsDisplay}}</div>
+          </div>
+        </div>
+      </ng-container>
+  
+      <ng-template #elseCheckImage>
+        <div *ngIf="!hasImageSelected" class="help">
+          <div class="row">
+            <span>No image selected</span>
+          </div>
+        </div>
+      </ng-template>
     </div>
   </div>
 </div>

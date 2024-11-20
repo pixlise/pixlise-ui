@@ -360,9 +360,11 @@ export class ImagePickerDialogComponent implements OnInit {
 
   loadSelectedImageDetails(): void {
     this.selectedImageDetails = "Loading...";
-    this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: this.selectedImagePath })).subscribe((resp: any) => {
-      this.selectedImageDetails = makeImageTooltip(resp.image);
-    });
+    if (this.selectedImagePath.length > 0) {
+      this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: this.selectedImagePath })).subscribe((resp: any) => {
+        this.selectedImageDetails = makeImageTooltip(resp.image);
+      });
+    }
   }
 
   onSelectImage(image: ImageChoice): void {
