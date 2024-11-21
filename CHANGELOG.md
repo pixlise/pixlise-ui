@@ -2,6 +2,7 @@
 
 ### New Features
 - Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
+- Added element set functionality in the Display Fit dialog
 
 ### Bug Fixes
 

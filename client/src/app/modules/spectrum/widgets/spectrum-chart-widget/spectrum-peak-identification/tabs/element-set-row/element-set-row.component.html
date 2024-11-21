@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div class="right-container">
     <!-- *ngIf="item.creator && !item.shared" -->
-    <share-ownership-item-button *ngIf="canEdit" [id]="item?.id || ''" [type]="objectType" [ownershipSummary]="item?.owner || null"> </share-ownership-item-button>
+    <share-ownership-item-button *ngIf="enableSharing && canEdit" [id]="item?.id || ''" [type]="objectType" [ownershipSummary]="item?.owner || null"> </share-ownership-item-button>
 
     <!-- *ngIf="canDelete(item.id, item.creator, item.shared)" -->
     <icon-button *ngIf="showDeleteButton" (click)="onDeleteElementSet()" title="Delete Element Set" icon="assets/button-icons/delete.svg"></icon-button>
