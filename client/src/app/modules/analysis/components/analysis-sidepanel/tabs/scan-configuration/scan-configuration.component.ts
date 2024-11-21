@@ -35,6 +35,8 @@ import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos
 import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
+import { filterScans, sortScans } from "src/app/utils/search";
+import { getScanTitle } from "src/app/utils/utils";
 
 @Component({
   selector: "scan-configuration",
@@ -126,6 +128,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Sorts the scan configurations list
   private sortScans() {
     // Only sort if we have scans and idToScan
     if (this.scanConfigurations && this.scanConfigurations.length > 0 && this.idToScan && Object.keys(this.idToScan).length > 0) {
@@ -178,7 +181,8 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    this.addScanList = this.allScans.filter(scan => scan.title.toLowerCase().includes(text.toLowerCase()));
+    const filtered = filterScans(text, [], this.allScans);
+    this.addScanList = sortScans(filtered);
   }
 
   onAddScan(scanId: string) {
@@ -246,5 +250,10 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     });
 
     this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+  }
+
+  getScanTitle(scan: ScanItem): string {
+    // Provide the util function
+    return getScanTitle(scan);
   }
 }

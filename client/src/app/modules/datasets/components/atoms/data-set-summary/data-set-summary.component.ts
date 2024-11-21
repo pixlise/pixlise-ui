@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, S
 import { Subscription } from "rxjs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { replaceAsDateIfTestSOL } from "src/app/utils/utils";
+import { getScanTitle } from "src/app/utils/utils";
 
 @Component({
   selector: "data-set-summary",
@@ -64,17 +64,7 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     // Prepend SOL if it's there
-    this._title = "";
-    const sol = summary.meta["Sol"] || "";
-    if (sol) {
-      const testSOLAsDate = replaceAsDateIfTestSOL(sol);
-      if (testSOLAsDate.length != sol.length) {
-        this._title = testSOLAsDate + ": ";
-      } else {
-        this._title += "SOL-" + sol + ": ";
-      }
-    }
-    this._title += summary.title;
+    this._title = getScanTitle(summary);
 
     const missing = ""; // TODO: DataSetSummary.listMissingData(summary);
     if (missing.length > 0) {

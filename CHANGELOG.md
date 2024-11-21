@@ -1,4 +1,11 @@
-## 4.54.0 (Latest)
+## 4.55.0 (Latest)
+
+### New Features
+- Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
+
+### Bug Fixes
+
+## 4.54.0 (2024-11-20)
 
 ### New Features
 - Dataset Customisation page now shows spinners while it's doing things because until now it provided little feedback. The layout was changed to be a little more useful, and redundant features like dataset name/description/tag editing were removed (they have been available on the dataset tiles page for several months now). Brightness and Opacity are now displayed as a % and more accurately controllable.

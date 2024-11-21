@@ -66,7 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="scan-configuration">
   <div class="top-line">
-    <div class="scan-name">SOL-{{ scan?.meta?.["Sol"] || "N/A" }}: {{ scan?.title || "N/A" }}</div>
+    <div class="scan-name">Sol {{ scan?.meta?.["Sol"] || "N/A" }}: {{ scan?.title || "N/A" }}</div>
     <widget-settings-menu [settingsDialog]="scanColorPicker" #scanColorPickerButton>
       <div class="color-shape-picker" #tooltip="matTooltip" matTooltip="Choose default color for All Scan Points" [matTooltipShowDelay]="500">
         <roi-shape [scale]="2" [color]="config.colour || 'white'" shape="circle"></roi-shape>
