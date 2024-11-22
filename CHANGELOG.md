@@ -1,4 +1,15 @@
-## 4.54.0 (Latest)
+## 4.55.0 (Latest)
+
+### New Features
+- Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
+- Added element set functionality in the Display Fit dialog
+- Quantification table now works across multiple scans properly. When we added this functionality to the rest of PIXLISE the quant table wasn't fully implemented. You can now select quants from multiple scans, and separately ROIs from multiple scans. When they overlap, a table will get generated.
+
+### Bug Fixes
+- Made element list on Display Fit scroll properly if too many selected to fit
+- Small picker dialog (eg when picking quants on quant table) is now scrollable to support case of multiple scans more flexibly
+
+## 4.54.0 (2024-11-20)
 
 ### New Features
 - Dataset Customisation page now shows spinners while it's doing things because until now it provided little feedback. The layout was changed to be a little more useful, and redundant features like dataset name/description/tag editing were removed (they have been available on the dataset tiles page for several months now). Brightness and Opacity are now displayed as a % and more accurately controllable.
@@ -8,7 +19,7 @@
 - Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
 - Dataset Customisation: fixed bug where deleting an uploaded image, and uploading a new one with the same name doesn't clear cache, old image is displayed.
 - Dataset Customisation: Fixed issue with brighness slider on image upload, which now allows dimming as well as brightening.
-- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slignt memory usage improvement
+- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slight memory usage improvement
 
 ## 4.53.0 (2024-11-15)
 

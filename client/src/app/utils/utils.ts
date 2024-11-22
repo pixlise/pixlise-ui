@@ -31,6 +31,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
+import { ScanItem } from "../generated-protos/scan";
 
 export class SentryHelper {
   // Can be called from anywhere we see a weird case or an error that we used to just log to
@@ -1115,6 +1116,23 @@ export function replaceAsDateIfTestSOL(sol: string): string {
   }
 
   return sol;
+}
+
+export function getScanTitle(scan: ScanItem): string {
+  let title = "";
+  const sol = scan.meta["Sol"] || "";
+  const testSOLAsDate = replaceAsDateIfTestSOL(sol);
+  if (testSOLAsDate.length != sol.length) {
+    title = testSOLAsDate;
+  } else if (sol) {
+    title = `Sol ${sol}`;
+  }
+
+  if (title.length > 0) {
+    title += ": ";
+  }
+  title += scan.title;
+  return title;
 }
 
 export function isFirefox(userAgent: string): boolean {
