@@ -3,9 +3,11 @@
 ### New Features
 - Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
 - Added element set functionality in the Display Fit dialog
+- Quantification table now works across multiple scans properly. When we added this functionality to the rest of PIXLISE the quant table wasn't fully implemented. You can now select quants from multiple scans, and separately ROIs from multiple scans. When they overlap, a table will get generated.
 
 ### Bug Fixes
 - Made element list on Display Fit scroll properly if too many selected to fit
+- Small picker dialog (eg when picking quants on quant table) is now scrollable to support case of multiple scans more flexibly
 
 ## 4.54.0 (2024-11-20)
 
