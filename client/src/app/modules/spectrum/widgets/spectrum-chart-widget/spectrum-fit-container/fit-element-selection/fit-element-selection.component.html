@@ -31,18 +31,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="fit-selection-container">
     <div class="top-toolbar top-toolbar-shadow">
-        <span>Element Selection</span>
+      <div class="clickable" [ngClass]='{"tab-selected": showPeriodicTable}' (click)="onTabPeriodicTable()">Periodic Table</div>
+      <div class="clickable" [ngClass]='{"tab-selected": !showPeriodicTable}' (click)="onTabElementSets()">Element Sets</div>
     </div>
     <div class="scrollable">
-        <periodic-table
-            [grayedElements]="unselectableElements"
-            [selectedElements]='selectedElements'
-            [selectedAltElements]='selectedAltElements'
-            [onlyAllowSelectableItems]='false'
-            [darkerSelectableElements]='darkerSelectableElements'
-            tooltipExtraForDarkerSelectable="Element has not been fitted. Click to add then re-quantify with this element included."
-            (onElementClicked)='onElementClicked($event)'
-            (onElementHover)='onElementHover($event)'>
-        </periodic-table>
+      <periodic-table
+          *ngIf="showPeriodicTable"
+          [grayedElements]="unselectableElements"
+          [selectedElements]='selectedElements'
+          [selectedAltElements]='selectedAltElements'
+          [onlyAllowSelectableItems]='false'
+          [darkerSelectableElements]='darkerSelectableElements'
+          tooltipExtraForDarkerSelectable="Element has not been fitted. Click to add then re-quantify with this element included."
+          (onElementClicked)='onElementClicked($event)'
+          (onElementHover)='onElementHover($event)'>
+      </periodic-table>
+      <element-sets
+        *ngIf="!showPeriodicTable"
+        (onUse)="onUseElementSet($event)">
+      </element-sets>
     </div>
 </div>

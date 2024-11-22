@@ -2,8 +2,10 @@
 
 ### New Features
 - Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
+- Added element set functionality in the Display Fit dialog
 
 ### Bug Fixes
+- Made element list on Display Fit scroll properly if too many selected to fit
 
 ## 4.54.0 (2024-11-20)
 
