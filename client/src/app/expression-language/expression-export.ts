@@ -17,6 +17,7 @@ import { SpectrumDataService } from "../modules/pixlisecore/services/spectrum-da
 
 export class ExpressionExporter {
   exportExpressionCode(
+    userId: string,
     expression: DataExpression,
     scanId: string,
     quantId: string,
@@ -25,7 +26,7 @@ export class ExpressionExporter {
     energyCalibrationService: EnergyCalibrationService
   ): Observable<WidgetExportData> {
     const result: WidgetExportData = { luas: [], mds: [], csvs: [] };
-    const querier = new DataQuerier();
+    const querier = new DataQuerier(userId);
 
     if (expression.sourceLanguage != EXPR_LANGUAGE_LUA) {
       return throwError(() => new Error("Only expressions written in the Lua programming language can be exported"));
