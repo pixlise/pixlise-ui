@@ -1,4 +1,9 @@
-## 4.55.0 (Latest)
+## 4.56.0 (Latest)
+
+### Bug Fixes
+- Fixed exporter issue where zip file contained empty folders or was missing files. Was due to invalid file names being generated for files in the zip file because they contained things like ROI names (which may have a /, % or > character in them!). Zip file generation now converts file names to be something valid, by replacing the bad characters with a _. The names may not be as expected by the person exporting, but at least their computer won't scoff at the names, and allow viewing exported files!
+
+## 4.55.0 (2024-11-22)
 
 ### New Features
 - Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
