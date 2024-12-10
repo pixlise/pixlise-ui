@@ -450,7 +450,7 @@ msa += `#XPOSITION   : 0.000
 
                 const roiBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} bulk sum`, spectra, scanMeta);
                 if (roiBulkMSA) {
-                  msas.push({ fileName: `${scanId}-bulk-sum-${roiResp.regionOfInterest.name}.msa`, data: roiBulkMSA });
+                  msas.push({ fileName: `${scanId}-BulkSum-${roiResp.regionOfInterest.name}.msa`, data: roiBulkMSA });
                 }
               }
 
@@ -459,7 +459,7 @@ msa += `#XPOSITION   : 0.000
 
                 const roiMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} max value`, spectra, scanMeta);
                 if (roiMaxMSA) {
-                  msas.push({ fileName: `${scanId}-max-value-${roiResp.regionOfInterest.name}.msa`, data: roiMaxMSA });
+                  msas.push({ fileName: `${scanId}-MaxValue-${roiResp.regionOfInterest.name}.msa`, data: roiMaxMSA });
                 }
               }
             }
@@ -468,13 +468,13 @@ msa += `#XPOSITION   : 0.000
           // All Points bulk sum
           const allPointsBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points bulk sum`, spectrumResp.bulkSpectra, scanMeta);
           if (allPointsBulkMSA) {
-            msas.push({ fileName: `${scanId}-bulk-sum-AllPoints.msa`, data: allPointsBulkMSA });
+            msas.push({ fileName: `${scanId}-BulkSum-AllPoints.msa`, data: allPointsBulkMSA });
           }
 
           // All Points max value
           const allPointsMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points max value`, spectrumResp.maxSpectra, scanMeta);
           if (allPointsMaxMSA) {
-            msas.push({ fileName: `${scanId}-max-value-AllPoints.msa`, data: allPointsMaxMSA });
+            msas.push({ fileName: `${scanId}-MaxValue-AllPoints.msa`, data: allPointsMaxMSA });
           }
         } else {
           console.error("Missing data for spectra metadata export");

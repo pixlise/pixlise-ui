@@ -13,7 +13,7 @@ import { SentryHelper, isFirefox, randomString, rawProtoMessageToDebugString } f
 import { getMessageName } from "./wsMessageHandler";
 
 import * as Sentry from "@sentry/browser";
-import { AuthService } from "@auth0/auth0-angular";
+import { AuthService, User } from "@auth0/auth0-angular";
 import { SnackbarService } from "./snackbar.service";
 import { Router } from "@angular/router";
 
@@ -39,12 +39,12 @@ export class APICommService implements OnDestroy {
   ) {
     console.log(`APICommService [${this._id}] created`);
 
-    this._authService.user$.subscribe((user: undefined | null | Sentry.User) => {
+    this._authService.user$.subscribe((user: undefined | null | User) => {
       // Once we have user info, tell sentry the details so any errors can get logged against this user info
       if (!user) {
         Sentry.setUser(null);
       } else {
-        Sentry.setUser({ id: user.id, username: user.username, email: user.email });
+        Sentry.setUser({ id: user.sub, username: user.name, email: user.email });
       }
     });
 
