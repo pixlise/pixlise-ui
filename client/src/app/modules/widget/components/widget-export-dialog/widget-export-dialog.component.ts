@@ -43,6 +43,7 @@ import { MatSelectChange } from "@angular/material/select";
 import { ROIItemSummary } from "../../../../generated-protos/roi";
 import { DataExpression } from "../../../../generated-protos/expressions";
 import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
+import { makeValidFileName } from "src/app/utils/utils";
 
 @Component({
   selector: "widget-export-dialog",
@@ -313,7 +314,8 @@ export class WidgetExportDialogComponent implements OnInit {
           if (item?.fileName && item?.data) {
             let itemFolder: JSZip = item?.subFolder ? baseFolder.folder(item.subFolder) ?? baseFolder : baseFolder;
 
-            let fileName = item.fileName.replace(extension, "") + extension;
+            // Fix any weirdness in the file name, for example if it contained an ROI with a / or other odd character in it
+            const fileName = makeValidFileName(item.fileName.replace(extension, "") + extension);
             item?.fileName && item?.data && itemFolder.file(fileName, item.data, { base64 });
           }
         });

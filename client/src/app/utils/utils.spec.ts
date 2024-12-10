@@ -228,6 +228,7 @@ describe("makeValidFileName", () => {
     expect(makeValidFileName("File: Name ${32}.txt")).toEqual("File_ Name _{32}.txt");
     expect(makeValidFileName("file/one.txt")).toEqual("file_one.txt");
     expect(makeValidFileName("file\\one^.txt")).toEqual("file_one_.txt");
+    expect(makeValidFileName("file\\one>20%.txt")).toEqual("file_one_20_.txt");
   });
 });
 

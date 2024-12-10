@@ -546,7 +546,7 @@ export function parseNumberRangeString(nums: string): Set<number> {
 
 export function makeValidFileName(name: string): string {
   //return name.replace(/\!|\@|\#|$|\%|^|\&|*|?|\\|\/|\$/g, "_");
-  return name.replace(/\\|!|@|#|\*|&|\?|\^|%|\$|\:|\//g, "_");
+  return name.replace(/\\|!|@|#|\*|&|\?|\^|%|\$|>|<|:|\//g, "_");
 }
 
 // Using Go terminology, just gets last part of path or "" if path ends in /
