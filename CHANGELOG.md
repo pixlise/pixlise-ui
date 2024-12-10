@@ -2,6 +2,11 @@
 
 ### Bug Fixes
 - Fixed exporter issue where zip file contained empty folders or was missing files. Was due to invalid file names being generated for files in the zip file because they contained things like ROI names (which may have a /, % or > character in them!). Zip file generation now converts file names to be something valid, by replacing the bad characters with a _. The names may not be as expected by the person exporting, but at least their computer won't scoff at the names, and allow viewing exported files!
+- PIXLISE data backups for very large files were failing and causing the API to restart. These are now streamed instead of read into memory in one go.
+- Fixed issue with importing datasets where in some cases it would try to import multiple sets of files that were uploaded incorrectly and failing to complete.
+- Importer now correctly reports free disk space when it starts reading in uploaded files (was reporting 0 bytes).
+- EM importer wasn't able to read EM data correctly in cases where it differed significantly from FM SDF Peek output. It seems a different version of SDF Peek is used, so importer had to be updated to be more flexible when some rows are written in different formats, RTTs and SCLKs written in different ways, etc. Also ensured EM datasets are imported with the correct detector config applied.
+- EM importer failing (returning an error) was causing API to crash due to trying to set owner of the invalid imported scan. 
 
 ## 4.55.0 (2024-11-22)
 
