@@ -52,6 +52,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </ng-container>
     <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
     <push-button *ngIf="!isReadOnlyUser" buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
+    <div *ngIf="user.info?.expirationDateUnixSec">
+      <div class="gap-separated-horizontal-elements user-field">
+        <div>Account Expires:</div>
+        <div>{{ (user.info?.expirationDateUnixSec || 0) * 1000 | date: "medium" }}</div>
+      </div>
+    </div>
     <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
   </section>
 </div>

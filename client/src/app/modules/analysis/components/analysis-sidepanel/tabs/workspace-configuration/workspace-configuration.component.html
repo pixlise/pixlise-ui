@@ -183,7 +183,11 @@ POSSIBILITY OF SUCH DAMAGE.
               [matTooltipDisabled]="!snapshot.snapshot.name || snapshot.snapshot.name.length < 30">
               {{ snapshot.snapshot.name ? snapshot.snapshot.name : "N/A" }}
             </div>
-            <div class="snapshot-date">{{ (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
+            <div class="snapshot-date">Created: {{ (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
+            <div class="snapshot-date">
+              Expires:
+              {{ snapshot.snapshot.reviewerExpirationDateUnixSec ? ((snapshot.snapshot.reviewerExpirationDateUnixSec || 0) * 1000 | date: "short") : "Never" }}
+            </div>
           </div>
           <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot.snapshot)"></action-button>
           <action-button

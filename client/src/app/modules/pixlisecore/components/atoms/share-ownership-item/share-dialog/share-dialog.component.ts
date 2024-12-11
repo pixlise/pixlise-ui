@@ -72,6 +72,7 @@ export type ShareDialogResponse = {
   addViewers: UserGroupList;
   deleteViewers: UserGroupList;
   reviewerId?: string;
+  reviewerAccessTime?: number;
 };
 
 type MembershipItem = {
@@ -636,6 +637,7 @@ export class ShareDialogComponent implements OnInit {
         groupIds: Array.from(this.removedGroupViewers),
       }),
       reviewerId: this.reviewerSnapshotLink || "",
+      reviewerAccessTime: this.reviewerAccessTime.value,
     });
   }
 

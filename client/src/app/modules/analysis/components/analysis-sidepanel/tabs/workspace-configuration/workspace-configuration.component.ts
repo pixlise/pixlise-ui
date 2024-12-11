@@ -586,6 +586,12 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
             newScreenConfig.id = "";
             if (isReviewerSnapshot) {
               newScreenConfig.reviewerId = sharingChangeResponse.reviewerId || "";
+              if (sharingChangeResponse.reviewerAccessTime) {
+                // Actual expiration time for auth purposes is calculated in the API,
+                // but this is a "close enough" approximation for displaying in the UI without making another API call
+                let currentTimeMS = new Date().getTime();
+                newScreenConfig.reviewerExpirationDateUnixSec = sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000;
+              }
             }
             this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
               if (!newScreenConfig.id) {
