@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
-import { Observable, switchMap, map, retry, catchError, throwError } from "rxjs";
+import { Observable, switchMap, map, retry, catchError } from "rxjs";
 
 import { environment } from "src/environments/environment";
 
@@ -13,9 +13,8 @@ import { SentryHelper, isFirefox, randomString, rawProtoMessageToDebugString } f
 import { getMessageName } from "./wsMessageHandler";
 
 import * as Sentry from "@sentry/browser";
-import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { SnackbarService } from "./snackbar.service";
-import { Router } from "@angular/router";
 
 @Injectable({
   providedIn: "root",
@@ -33,9 +32,8 @@ export class APICommService implements OnDestroy {
 
   constructor(
     private http: HttpClient,
-    private _router: Router,
     private _authService: AuthService,
-    private _snackService: SnackbarService,
+    private _snackService: SnackbarService
   ) {
     console.log(`APICommService [${this._id}] created`);
 

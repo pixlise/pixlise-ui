@@ -30,9 +30,9 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
+import { combineLatest, map, Subscription, switchMap } from "rxjs";
 import { FullScreenLayout, ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
-import { getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
+import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
 import { ObjectType, OwnershipSummary, UserGroupList } from "../../../../../../generated-protos/ownership-access";
 import { APIDataService, SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
 import { NavigationTab } from "../../../../services/analysis-layout.service";
@@ -77,7 +77,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   public screenConfig: ScreenConfiguration | null = null;
   public snapshots: ScreenConfiguration[] = [];
-  public reviewerSnapshots: ScreenConfiguration[] = [];
+  public reviewerSnapshots: { snapshot: ScreenConfiguration; link: string }[] = [];
 
   public openTabs: NavigationTab[] = [];
   public newTabName: string = "";
@@ -144,8 +144,15 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           })
         )
         .subscribe(snapshots => {
-          this.snapshots = snapshots;
-          this.reviewerSnapshots = snapshots.filter(snapshot => !!snapshot.reviewerId);
+          this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
+          this.reviewerSnapshots = snapshots
+            .filter(snapshot => !!snapshot.reviewerId)
+            .map(snapshot => {
+              return {
+                snapshot: snapshot,
+                link: this.generateLinkFromId(snapshot.id),
+              };
+            });
         })
     );
 
@@ -347,6 +354,10 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     }
   }
 
+  generateLinkFromId(id: string): string {
+    return `${window.location.protocol}//${window.location.host}/magiclink?ml=${encodeUrlSafeBase64(id)}`;
+  }
+
   onDeleteSnapshot(snapshot: ScreenConfiguration): void {
     if (!snapshot?.id) {
       return;
@@ -354,8 +365,15 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
     this._analysisLayoutService.deleteScreenConfiguration(snapshot.id, () => {
       this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
-        this.snapshots = snapshots;
-        this.reviewerSnapshots = snapshots.filter(snapshot => !!snapshot.reviewerId);
+        this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
+        this.reviewerSnapshots = snapshots
+          .filter(snapshot => !!snapshot.reviewerId)
+          .map(snapshot => {
+            return {
+              snapshot: snapshot,
+              link: this.generateLinkFromId(snapshot.id),
+            };
+          });
       });
     });
   }
@@ -407,8 +425,18 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         return this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id);
       })
       .subscribe(snapshots => {
-        this.snapshots = snapshots;
-        this.reviewerSnapshots = snapshots.filter(snapshot => !!snapshot.reviewerId);
+        this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
+        this.reviewerSnapshots = snapshots
+          .filter(snapshot => !!snapshot.reviewerId)
+          .map(snapshot => {
+            return {
+              snapshot: snapshot,
+              link: this.generateLinkFromId(snapshot.id),
+            };
+          });
+
+        // Copy to clipboard
+        this.onCopy(this.generateLinkFromId(id));
       });
   }
 
@@ -572,7 +600,11 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     });
   }
 
-  onCopy(link: string) {
+  idToBase64(id: string): string {
+    return btoa(id);
+  }
+
+  onCopy(link: string): void {
     navigator.clipboard.writeText(link).then(() => {
       this._snackbarService.openSuccess("Link copied to clipboard!");
     });

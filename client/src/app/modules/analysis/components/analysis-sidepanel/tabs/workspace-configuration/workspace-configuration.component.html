@@ -161,9 +161,14 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <div *ngIf="activeConfigurationTab === 'review'" class="snapshots-container">
-    <push-button class="share-btn" buttonStyle="gray-title" (onClick)="onShareSnapshot(null, true)">
+    <push-button
+      [tooltipTitle]="reviewerSnapshots.length >= 1 ? 'Delete the existing reviewer snapshot to create another' : ''"
+      class="share-btn"
+      buttonStyle="gray-title"
+      (onClick)="onShareSnapshot(null, true)"
+      [disabled]="reviewerSnapshots.length >= 1">
       <div class="share-btn-title">
-        <img src="assets/button-icons/share.svg" />
+        <img src="assets/button-icons/share.svg" [ngClass]="{ disabled: reviewerSnapshots.length >= 1 }" />
         <span class="label">Create link for reviewers</span>
       </div>
     </push-button>
@@ -171,24 +176,28 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="snapshot" *ngFor="let snapshot of reviewerSnapshots; let i = index">
         <div class="snapshot-info-container">
           <div class="snapshot-info">
-            <div class="snapshot-name" #tooltip="matTooltip" [matTooltip]="snapshot.name" [matTooltipDisabled]="!snapshot.name || snapshot.name.length < 30">
-              {{ snapshot.name ? snapshot.name : "N/A" }}
+            <div
+              class="snapshot-name"
+              #tooltip="matTooltip"
+              [matTooltip]="snapshot.snapshot.name"
+              [matTooltipDisabled]="!snapshot.snapshot.name || snapshot.snapshot.name.length < 30">
+              {{ snapshot.snapshot.name ? snapshot.snapshot.name : "N/A" }}
             </div>
-            <div class="snapshot-date">{{ (snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
+            <div class="snapshot-date">{{ (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
           </div>
-          <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot)"></action-button>
+          <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot.snapshot)"></action-button>
           <action-button
             class="snapshot-delete"
             action="delete"
             color="#BCBCBC"
             confirmText="Are you sure you want to delete this snapshot?"
-            (onClick)="onDeleteSnapshot(snapshot)"></action-button>
+            (onClick)="onDeleteSnapshot(snapshot.snapshot)"></action-button>
         </div>
         <div class="reviewer-link-container">
-          <span *ngIf="snapshot.reviewerId" class="reviewer-link" #tooltip="matTooltip" [matTooltip]="snapshot.reviewerId">
-            {{ snapshot.reviewerId }}
+          <span *ngIf="snapshot.snapshot.reviewerId" class="reviewer-link" #tooltip="matTooltip" [matTooltip]="snapshot.link">
+            {{ snapshot.link ? snapshot.link : "N/A" }}
           </span>
-          <action-button class="copy-link" action="copy" (onClick)="onCopy(snapshot.reviewerId)"></action-button>
+          <action-button class="copy-link" action="copy" (onClick)="onCopy(snapshot.link)"></action-button>
         </div>
       </div>
     </div>

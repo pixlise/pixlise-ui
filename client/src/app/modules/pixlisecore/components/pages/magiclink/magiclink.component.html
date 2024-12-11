@@ -29,29 +29,17 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="panel">
-  <section class="user-info-container">
-    <div class="user-info">
-      <div class="gap-separated-horizontal-elements user-field">
-        <div>{{ userName }}</div>
-      </div>
-      <div class="gap-separated-horizontal-elements user-field">
-        <div>{{ userEmail }}</div>
-      </div>
-    </div>
-    <user-icon *ngIf="user !== null" class="user-icon" [userId]="user?.info?.id || ''" size="40px"></user-icon>
-  </section>
-  <section class="buttons">
-    <ng-container *ngIf="isPIXLISEAdmin">
-      <wait-spinner *ngIf="impersonateUserEnabled && impersonatingUserName === undefined">Loading Impersonation Setting</wait-spinner>
-      <push-button *ngIf="impersonateUserEnabled" buttonStyle="yellow" (onClick)="onImpersonate()">{{
-        impersonatingUserName ? "Stop Impersonating: " + impersonatingUserName : "Impersonate User..."
-      }}</push-button>
-      <push-button *ngIf="backupEnabled" buttonStyle="hover-yellow" (onClick)="onBackupData()">Backup Data</push-button>
-      <push-button *ngIf="restoreEnabled" buttonStyle="hover-yellow" (onClick)="onRestoreData()">Restore Data</push-button>
+<div class="auth-page">
+  <div class="page-card">
+    <ng-container *ngIf="errorString">
+      <img src="assets/PIXLISE.svg" alt="PIXLISE logo" />
     </ng-container>
-    <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
-    <push-button *ngIf="!isReadOnlyUser" buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
-    <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
-  </section>
+    <ng-container *ngIf="!errorString">
+      <h2>Validating Magic Link</h2>
+      <wait-spinner></wait-spinner>
+    </ng-container>
+    <ng-container *ngIf="errorString">
+      <div class="error-message">{{ errorString }}</div>
+    </ng-container>
+  </div>
 </div>

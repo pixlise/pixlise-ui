@@ -40,7 +40,8 @@ import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { JobStatus_JobType, JobStatus_Status } from "src/app/generated-protos/job";
 import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Permissions } from "src/app/utils/permissions";
 
 export class SpectrumPeakIdentificationData {

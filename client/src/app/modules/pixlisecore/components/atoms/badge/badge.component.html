@@ -29,4 +29,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="badge {{ badgeStyle }}" [ngStyle]="badgeBorderColor ? { border: '1px solid' + badgeBorderColor } : {}">{{ value }}</div>
+<div
+  class="badge {{ badgeStyle }}"
+  [ngStyle]="badgeBorderColor ? { border: '1px solid' + badgeBorderColor } : {}"
+  [ngClass]="{ 'wide-field': value && value.length >= 3 }">
+  {{ value }}
+</div>

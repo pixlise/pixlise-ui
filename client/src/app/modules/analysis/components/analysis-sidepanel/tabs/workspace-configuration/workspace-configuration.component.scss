@@ -379,8 +379,13 @@
 
     text-overflow: ellipsis;
     overflow: hidden;
+    white-space: pre;
   }
   action-button {
     margin-left: auto;
   }
+}
+
+img.disabled {
+  filter: brightness(0.5);
 }

@@ -8,6 +8,7 @@ import { APIPaths } from "src/app/utils/api-helpers";
 import { Uint8ToString } from "src/app/utils/utils";
 import { ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
+import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
 
 const DefaultMaxImageCacheAgeSec = 60 * 60 * 24 * 2;
 const DefaultMaxCachedImageSizeBytes = 1024 * 1024 * 10;
@@ -311,5 +312,10 @@ export class APIEndpointsService {
     }
 
     return true;
+  }
+
+  magicLinkLogin(magiclinkReq: ReviewerMagicLinkLoginReq): Observable<ReviewerMagicLinkLoginResp> {
+    const apiUrl = APIPaths.getWithHost("magiclink");
+    return this.http.post<ReviewerMagicLinkLoginResp>(apiUrl, magiclinkReq);
   }
 }

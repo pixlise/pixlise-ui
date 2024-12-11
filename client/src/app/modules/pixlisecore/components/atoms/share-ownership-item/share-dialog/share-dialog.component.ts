@@ -41,6 +41,8 @@ import { UsersService } from "src/app/modules/settings/services/users.service";
 import { ObjectEditAccessReq, ObjectEditAccessResp } from "../../../../../../generated-protos/ownership-access-msgs";
 import { APIDataService, SnackbarService } from "../../../../pixlisecore.module";
 import { ReviewerMagicLinkCreateReq } from "../../../../../../generated-protos/user-management-msgs";
+import { EnvConfigurationInitService } from "../../../../../../services/env-configuration-init.service";
+import { encodeUrlSafeBase64 } from "../../../../../../utils/utils";
 
 export type SharingSubItem = {
   id: string;
@@ -654,15 +656,21 @@ export class ShareDialogComponent implements OnInit {
   onConfirm(): void {
     this.calculateChanges();
 
+    let appConfig = EnvConfigurationInitService.appConfig;
+
     if (this.data.isReviewerSnapshot) {
       this._apiDataService
         .sendReviewerMagicLinkCreateRequest(
-          ReviewerMagicLinkCreateReq.create({ accessLength: this.reviewerAccessTime.value, workspaceId: this.data.ownershipItem.id })
+          ReviewerMagicLinkCreateReq.create({
+            accessLength: this.reviewerAccessTime.value,
+            workspaceId: this.data.ownershipItem.id,
+            clientId: appConfig.auth0_client,
+            audience: appConfig.auth0_audience,
+          })
         )
         .subscribe({
           next: res => {
             this.reviewerSnapshotLink = res.magicLink;
-            this.copyReviewLinkToClipboard();
 
             // res.magicLink is new user id for the reviewer, add it to the list of viewers
             this.newUserViewers.add(res.magicLink);

@@ -46,12 +46,12 @@ export class SettingsSidebarComponent {
     this.notifications = NotificationSubscriptions.allNotifications.map(notification => new NotificationSetting(notification));
 
     // Do a deep copy of user info
-    let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec } = this._userOptionsService.userDetails.info!;
-    this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec };
+    let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info!;
+    this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
 
     this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec } = this._userOptionsService.userDetails.info!;
-      this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec };
+      let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info!;
+      this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
 
       this._userOptionsService.notificationSubscriptions.topics.forEach((topic: NotificationTopic) => {
         let existing = this.notifications.find(existingNotification => existingNotification.id === topic.name);

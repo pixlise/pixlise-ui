@@ -364,3 +364,28 @@ user-icon {
     background-color: #293137;
   }
 }
+
+.read-only-container {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+
+  .read-only {
+    color: #bcbcbc;
+
+    font-feature-settings:
+      "liga" off,
+      "clig" off;
+
+    font-family: Inter;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 16px;
+    text-transform: uppercase;
+
+    padding: 4px 8px;
+    background: #454b50;
+    border-radius: 4px;
+  }
+}

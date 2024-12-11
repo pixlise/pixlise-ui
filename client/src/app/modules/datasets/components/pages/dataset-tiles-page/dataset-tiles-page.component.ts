@@ -32,7 +32,8 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { combineLatest, last, Observable, Subscription } from "rxjs";
 
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
@@ -214,21 +215,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Subscribe to route
-    this._subs.add(
-      this._route.queryParams.subscribe(params => {
-        if (params["magic_link"]) {
-          console.log("Magic link detected, logging in...", params["magic_link"]);
-          this._authService.loginWithRedirect({
-            appState: {
-              target: environment.authTarget,
-              redirectUri: window.location.origin,
-            },
-          });
-        }
-      })
-    );
-
     this._subs.add(
       this._dataService.scanListUpd$.subscribe((upd: ScanListUpd) => {
         this.onSearch();
@@ -254,7 +240,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this.clearSelection();
     this.onSearch();
-    this.onSearchWorkspsaces();
+    this.onSearchWorkspaces();
   }
 
   ngOnDestroy() {
@@ -403,7 +389,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspace.name = this.selectedWorkspaceName;
 
     this._analysisLayoutService.writeScreenConfiguration(this.selectedWorkspace, undefined, false, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
   }
 
@@ -424,7 +410,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     workspace.tags = this.selectedWorkspaceTags;
 
     this._analysisLayoutService.writeScreenConfiguration(workspace, undefined, false, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
   }
 
@@ -444,7 +430,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.deleteScreenConfiguration(this.selectedWorkspace.id, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
     this.clearSelection();
   }
@@ -566,7 +552,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       });
 
       this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
-        this.onSearchWorkspsaces();
+        this.onSearchWorkspaces();
         this.navigateToWorkspace(screenConfig.id);
       });
 
@@ -580,7 +566,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, null, screenConfig => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       this.navigateToWorkspace(screenConfig.id);
     });
   }
@@ -894,7 +880,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       if (response.shouldOpen) {
         this.onOpenWorkspace(response.workspace);
       }
@@ -942,7 +928,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       if (response.shouldOpen) {
         this.onOpenWorkspace(response.workspace);
       }
@@ -956,7 +942,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSearchWorkspsaces(): void {
+  onSearchWorkspaces(): void {
     this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create()).subscribe({
       next: (resp: ScreenConfigurationListResp) => {
         let workspaces = resp.screenConfigurations;
@@ -1030,7 +1016,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onSearch(): void {
     if (this.workspacesMode) {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       return;
     }
 
@@ -1368,6 +1354,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   private clearSelection(): void {
+    this.errorString = "";
+    this.loading = false;
     this.selectedScan = null;
     this.selectedScanTitle = "";
     this.selectedScanDescription = "";

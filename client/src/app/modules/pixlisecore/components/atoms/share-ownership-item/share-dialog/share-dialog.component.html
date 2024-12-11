@@ -91,14 +91,14 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
 
-    <h1 *ngIf="data.isReviewerSnapshot" class="link-to-review">Link to review snapshot</h1>
+    <!-- <h1 *ngIf="data.isReviewerSnapshot" class="link-to-review">Link to review snapshot</h1>
     <div *ngIf="data.isReviewerSnapshot" class="review-link-container">
       <input readonly type="text" placeholder="Link to review snapshot" matInput [(ngModel)]="reviewerSnapshotLink" />
 
       <div class="copy-container" (click)="copyReviewLinkToClipboard()">
         <action-button [action]="copiedReviewerSnapshotLink ? 'check' : 'copy'"></action-button>
       </div>
-    </div>
+    </div> -->
 
     <h1 class="has-access">Has access</h1>
     <div *ngIf="data.isReviewerSnapshot" class="access-list review-time">

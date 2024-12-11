@@ -28,8 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/core";
-import { ActivatedRoute, Route, Router } from "@angular/router";
-import { AuthService } from "@auth0/auth0-angular";
+import { ActivatedRoute, Router } from "@angular/router";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Subscription } from "rxjs";
 import { BackupDBReq, BackupDBResp, DBAdminConfigGetReq, DBAdminConfigGetResp, RestoreDBReq, RestoreDBResp } from "src/app/generated-protos/system";
 import { UserDetails } from "src/app/generated-protos/user";
@@ -56,6 +56,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
       iconURL: "",
       reviewerWorkspaceId: "",
       expirationDateUnixSec: 0,
+      nonSecretPassword: "",
     },
     dataCollectionVersion: "",
     permissions: [],
@@ -72,6 +73,8 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
 
   trigger: any;
 
+  isReadOnlyUser = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -86,12 +89,13 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._userOptionsService.userOptionsChanged$.subscribe(() => {
         this.user = this._userOptionsService.userDetails;
+        this.isReadOnlyUser = !this._userOptionsService.hasFeatureAccess("editUserDetails");
       })
     );
 
     this._subs.add(
       this._groupsService.groupsChanged$.subscribe(() => {
-        this.isPIXLISEAdmin = this._userOptionsService.hasFeatureAccess("admin"); // TODO: is this right??
+        this.isPIXLISEAdmin = this._userOptionsService.hasFeatureAccess("admin");
         this.isAdminOfAnyGroup =
           this._userOptionsService.hasFeatureAccess("admin") ||
           !!this._groupsService.groups.find(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN);
