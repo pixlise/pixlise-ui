@@ -126,7 +126,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
                   let scan = scans.find(s => s.id === scanId);
                   if (scan) {
                     let sol = scan?.meta?.["Sol"] || "N/A";
-                    this.placeholderName = `SOL-${sol}: ${scan?.title || "N/A"}`;
+                    this.placeholderName = `Sol ${sol}: ${scan?.title || "N/A"}`;
                   }
                 }
               })

@@ -81,6 +81,10 @@ export class NavTopMenuComponent implements OnInit {
   }
 
   onLogout(): void {
+    // Clear reviewer tokens from sesion storage
+    sessionStorage.removeItem("reviewer_access_token");
+    sessionStorage.removeItem("reviewer_id_token");
+
     const returnTo = location.protocol + "//" + location.host;
     this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }

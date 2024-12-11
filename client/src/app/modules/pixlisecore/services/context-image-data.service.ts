@@ -25,6 +25,7 @@ import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
+import { getPathBase } from "src/app/utils/utils";
 
 export type SyncedTransform = {
   scale: Point;
@@ -72,7 +73,20 @@ export class ContextImageDataService {
 
   getModelData(imageName: string, beamLocationVersions: Map<string, number>, widgetId: string): Observable<ContextImageModelLoadedData> {
     if (beamLocationVersions.size > 0) {
-      this._lastBeamLocationVersionsLoaded.set(imageName, beamLocationVersions);
+      // NOTE: we only set the beam locations for scan ids that match. Some may not!
+      const justImg = getPathBase(imageName);
+      const imgScanId = imageName.substring(0, imageName.length - justImg.length - 1);
+
+      const settableBeamVers = new Map<string, number>();
+      for (const [scanId, ver] of beamLocationVersions.entries()) {
+        if (scanId == imgScanId) {
+          settableBeamVers.set(scanId, ver);
+        }
+      }
+      if (settableBeamVers.size > 0) {
+        this._lastBeamLocationVersionsLoaded.set(imageName, settableBeamVers);
+      }
+      beamLocationVersions = settableBeamVers;
     } else {
       const lastBeamVers = this._lastBeamLocationVersionsLoaded.get(imageName);
       if (lastBeamVers && lastBeamVers.size > 0) {

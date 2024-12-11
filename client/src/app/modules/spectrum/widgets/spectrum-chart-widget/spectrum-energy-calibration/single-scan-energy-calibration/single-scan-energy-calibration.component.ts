@@ -141,21 +141,25 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
 
   private readUserEntry() {
     // Make sure they are valid strings
-    const eVStartNumA = Number.parseFloat(this.eVStartA);
-    const eVPerChannelNumA = Number.parseFloat(this.eVPerChannelA);
+    let eVStartNumA = Number.parseFloat(this.eVStartA);
+    let eVPerChannelNumA = Number.parseFloat(this.eVPerChannelA);
 
-    const eVStartNumB = Number.parseFloat(this.eVStartB);
-    const eVPerChannelNumB = Number.parseFloat(this.eVPerChannelB);
+    let eVStartNumB = Number.parseFloat(this.eVStartB);
+    let eVPerChannelNumB = Number.parseFloat(this.eVPerChannelB);
 
-    // if (isNaN(eVStartNumA) || isNaN(eVPerChannelNumA) || isNaN(eVStartNumB) || isNaN(eVPerChannelNumB)) {
-    //   alert("Please enter a number for eV Start and eV per channel for each detector.");
-    //   return;
-    // }
-
-    // if (eVPerChannelNumA <= 0 || eVPerChannelNumB <= 0) {
-    //   alert("eV per channel values must be greater than 0");
-    //   return;
-    // }
+    // If we get NaNs, enter non-mathematically-broken values
+    if (isNaN(eVStartNumA)) {
+      eVStartNumA = 0;
+    }
+    if (isNaN(eVPerChannelNumA)) {
+      eVPerChannelNumA = 1;
+    }
+    if (isNaN(eVStartNumB)) {
+      eVStartNumB = 0;
+    }
+    if (isNaN(eVPerChannelNumB)) {
+      eVPerChannelNumB = 1;
+    }
 
     // Read them into whatever scan ID is asked
     this.setCalibration([new SpectrumEnergyCalibration(eVStartNumA, eVPerChannelNumA, "A"), new SpectrumEnergyCalibration(eVStartNumB, eVPerChannelNumB, "B")]);

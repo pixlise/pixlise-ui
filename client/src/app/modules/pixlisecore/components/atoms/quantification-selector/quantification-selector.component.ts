@@ -51,6 +51,7 @@ export class QuantificationSelectorComponent implements OnInit {
   @Input() roiID: string = "";
   @Input() hideMulti: boolean = false;
   @Input() showNoneOption: boolean = false;
+  @Input() openUp: boolean = false;
 
   @Output() selectQuant: EventEmitter<string> = new EventEmitter<string>();
 

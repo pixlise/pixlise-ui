@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <input class="scan-search" placeholder="Search scans" [(ngModel)]="scanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
     </div>
     <button mat-menu-item *ngFor="let scan of addScanList" (click)="onAddScan(scan.id)" [disabled]="selectedScanIds.has(scan.id)">
-      Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
+      {{ getScanTitle(scan) }}
     </button>
   </mat-menu>
   <section class="scan-configurations">

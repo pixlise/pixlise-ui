@@ -38,8 +38,8 @@ export const SPECIAL_QUANT_ID = "loaded_quantification";
   templateUrl: "./element-set-row.component.html",
   styleUrls: ["./element-set-row.component.scss"],
 })
-export class ElementSetRowComponent implements OnInit {
-  @Input() showShareButton: boolean = false;
+export class ElementSetRowComponent {
+  @Input() enableSharing: boolean = false;
   @Input() showDeleteButton: boolean = false;
   @Input() item: ElementSetSummary | null = null;
 
@@ -47,18 +47,11 @@ export class ElementSetRowComponent implements OnInit {
 
   @Output() onUse = new EventEmitter();
   @Output() onDelete = new EventEmitter();
-  @Output() onShare = new EventEmitter();
 
   constructor() {}
 
-  ngOnInit(): void {}
-
   onUseElementSet(): void {
     this.onUse.emit(this.item);
-  }
-
-  onShareElementSet(): void {
-    this.onShare.emit(this.item);
   }
 
   onDeleteElementSet(): void {

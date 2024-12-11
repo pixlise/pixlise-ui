@@ -223,7 +223,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
               let scan = scans.find(s => s.id === scanId);
               if (scan) {
                 let sol = scan?.meta?.["Sol"] || "N/A";
-                this._dataSetLoadedName = `SOL-${sol}: ${scan?.title || "N/A"}`;
+                this._dataSetLoadedName = `Sol ${sol}: ${scan?.title || "N/A"}`;
                 this.updateToolbar();
               }
             })

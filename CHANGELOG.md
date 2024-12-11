@@ -1,4 +1,46 @@
-## 4.52.0 (Latest)
+## 4.56.0 (Latest)
+
+### Bug Fixes
+- Fixed exporter issue where zip file contained empty folders or was missing files. Was due to invalid file names being generated for files in the zip file because they contained things like ROI names (which may have a /, % or > character in them!). Zip file generation now converts file names to be something valid, by replacing the bad characters with a _. The names may not be as expected by the person exporting, but at least their computer won't scoff at the names, and allow viewing exported files!
+- PIXLISE data backups for very large files were failing and causing the API to restart. These are now streamed instead of read into memory in one go.
+- Fixed issue with importing datasets where in some cases it would try to import multiple sets of files that were uploaded incorrectly and failing to complete.
+- Importer now correctly reports free disk space when it starts reading in uploaded files (was reporting 0 bytes).
+- EM importer wasn't able to read EM data correctly in cases where it differed significantly from FM SDF Peek output. It seems a different version of SDF Peek is used, so importer had to be updated to be more flexible when some rows are written in different formats, RTTs and SCLKs written in different ways, etc. Also ensured EM datasets are imported with the correct detector config applied.
+- EM importer failing (returning an error) was causing API to crash due to trying to set owner of the invalid imported scan. 
+
+## 4.55.0 (2024-11-22)
+
+### New Features
+- Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
+- Added element set functionality in the Display Fit dialog
+- Quantification table now works across multiple scans properly. When we added this functionality to the rest of PIXLISE the quant table wasn't fully implemented. You can now select quants from multiple scans, and separately ROIs from multiple scans. When they overlap, a table will get generated.
+
+### Bug Fixes
+- Made element list on Display Fit scroll properly if too many selected to fit
+- Small picker dialog (eg when picking quants on quant table) is now scrollable to support case of multiple scans more flexibly
+
+## 4.54.0 (2024-11-20)
+
+### New Features
+- Dataset Customisation page now shows spinners while it's doing things because until now it provided little feedback. The layout was changed to be a little more useful, and redundant features like dataset name/description/tag editing were removed (they have been available on the dataset tiles page for several months now). Brightness and Opacity are now displayed as a % and more accurately controllable.
+
+### Bug Fixes
+- Fixed context image pan/zoom, in some conditions it caused a division by zero and was written to view state, where it then failed to reload
+- Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
+- Dataset Customisation: fixed bug where deleting an uploaded image, and uploading a new one with the same name doesn't clear cache, old image is displayed.
+- Dataset Customisation: Fixed issue with brighness slider on image upload, which now allows dimming as well as brightening.
+- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slight memory usage improvement
+
+## 4.53.0 (2024-11-15)
+
+### Features
+- Added ability to upload PIXL EM datasets. Requires zipping up the SDF-Peek output directory (or a subset of files). Click the "Upload" button on the dataset tiles page and you can select the dataset type "pixl-em", enter the RTT of the dataset you're wanting to import (SDF-Peek output may contain data from multiple RTTs, so you have to specify which one you're importing). The upload screen has more instructions too.
+- Dataset import pipeline is now optimised, existing datasets are quicker to import because they are not spanned across multiple zip files. We now have a tool we can run to optimise this in future if it gets fragmented.
+
+### Bug Fixes
+- Fixed display of test Sol numbers for datasets - year was off by one
+
+## 4.52.0 (2024-11-15)
 
 ### Bug Fixes
 - Fixed issue when attempting to just change the color order of an existing RGB Mix expression in the expression picker

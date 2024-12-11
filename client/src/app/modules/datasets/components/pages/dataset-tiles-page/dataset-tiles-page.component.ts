@@ -70,6 +70,7 @@ import {
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 import { environment } from "../../../../../../environments/environment";
+import { filterScans, sortScans } from "src/app/utils/search";
 
 class SummaryItem {
   constructor(
@@ -707,54 +708,13 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  getDatasetSearchFields(scan: ScanItem): string[] {
-    return [
-      scan?.title || "",
-      scan?.description || "",
-      scan?.instrumentConfig || "",
-      scan?.meta?.["Sol"] ?? "",
-      scan?.meta?.["Target"] ?? "",
-      scan?.meta?.["Site"] ?? "",
-      scan?.meta?.["DriveId"] ?? "",
-      scan?.meta?.["RTT"] ?? "",
-      scan?.meta?.["SCLK"] ?? "",
-    ];
-  }
-
   filterScans() {
-    if (this._searchString.length === 0 && this.filterTags.length === 0) {
-      this.filteredScans = this.scans;
-      return;
-    }
-
-    // Filter by title, description
-    this.filteredScans = this.scans
-      .filter(scan => {
-        if (this.filterTags.length > 0 && !this.filterTags.some(tag => scan.tags?.includes(tag))) {
-          return false;
-        }
-
-        let searchFields = this.getDatasetSearchFields(scan);
-        return searchFields.some(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-      })
-      .sort((scanA, scanB) => {
-        let scanASearchFields = this.getDatasetSearchFields(scanA);
-        let scanBSearchFields = this.getDatasetSearchFields(scanB);
-
-        // Sort by matching order and then by date modified
-        let aMatch = scanASearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-        let bMatch = scanBSearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-
-        if (aMatch == bMatch) {
-          return scanB.completeTimeStampUnixSec - scanA.completeTimeStampUnixSec;
-        } else {
-          return aMatch - bMatch;
-        }
-      });
+    this.filteredScans = filterScans(this._searchString, this.filterTags, this.scans);
+    this.filteredScans = sortScans(this.filteredScans);
   }
 
   getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
-    let id = workspace.snapshotParentId || workspace.id;
+    const id = workspace.snapshotParentId || workspace.id;
     return this.snapshots.get(id)?.map(snapshot => snapshot.name) || [];
   }
 
@@ -1045,7 +1005,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.errorString = "";
 
         this.scans = resp.scans;
-        this.sortScans(this.scans);
         this.filterScans();
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
@@ -1073,66 +1032,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       for (const id of Object.keys(resp.defaultImagesPerScanId)) {
         this.scanDefaultImages.set(id, resp.defaultImagesPerScanId[id]);
       }
-    });
-  }
-
-  private getSortValue(a: any, b: any): number {
-    if (a < b) {
-      return 1;
-    } else if (a > b) {
-      return -1;
-    }
-    return 0;
-  }
-
-  private sortScans(scans: ScanItem[]) {
-    // First, sort datasets by SOL alphabetically, because we have some starting with letters to denote
-    // that they are test datasets. Then we sort numerically within the lettered sections
-    scans.sort((a: ScanItem, b: ScanItem) => {
-      // If there is a sol on both...
-      const aSol = a.meta["Sol"] || "",
-        bSol = b.meta["Sol"] || "";
-
-      if (aSol === bSol && aSol.length > 0) {
-        // Don't let empty strings all fall into here!
-        // They're equal, sort by name
-        return this.getSortValue(a.title, b.title);
-      }
-
-      // If they don't match and one is empty, put empty at the end always
-      if (aSol != bSol) {
-        if (aSol.length <= 0) {
-          // a is empty, goes last
-          return 1;
-        } else if (bSol.length <= 0) {
-          // b is empty, goes last
-          return -1;
-        }
-      }
-
-      // SOLs are strings, and can start with letters. We want the letter part alphabetically sorted, and any numbers
-      // after it sorted numerically
-      const aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
-      const bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
-
-      const aSolNum = Number.parseInt(aSol.substring(aLetter.length));
-      const bSolNum = Number.parseInt(bSol.substring(bLetter.length));
-
-      // If neither or both have the same letter, sort by number
-      if (aLetter == bLetter) {
-        return this.getSortValue(aSolNum, bSolNum);
-      }
-
-      // The one with no letter goes first
-      if (aLetter.length <= 0 && bLetter.length > 0) {
-        return -1;
-      }
-
-      if (aLetter.length > 0 && bLetter.length <= 0) {
-        return 1;
-      }
-
-      return this.getSortValue(aLetter, bLetter);
     });
   }
 

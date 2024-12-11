@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ElementSetSummary } from "src/app/generated-protos/element-set";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -35,7 +35,6 @@ import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { TabSelectors } from "../tab-selectors";
 import { SPECIAL_QUANT_ID } from "./element-set-row/element-set-row.component";
-import { string, boolean } from "mathjs";
 import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -54,6 +53,8 @@ import {
   styleUrls: ["./element-sets.component.scss"],
 })
 export class ElementSetsComponent implements OnInit, OnDestroy {
+  @Output() onUse = new EventEmitter();
+
   private _subs = new Subscription();
   private _rawElementSetSummaries: Map<string, ElementSetSummary> = new Map<string, ElementSetSummary>();
 
@@ -170,22 +171,14 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
   }
 
   private applyElementSet(id: string, lines: XRFLineGroup[]): void {
-    this.mdl.xrfLinesPicked = lines;
-  }
-
-  onShareElementSet(item: ElementSetSummary): void {
-    alert("Not implemented yet");
-    return;
-    if (confirm('Are you sure you want to share a copy of element set "' + item.name + '" with other users?')) {
-      //   this._elementSetService.share(item.id).subscribe(
-      //     (sharedId: string) => {
-      //       // Don't need to do anything, this would force a listing...
-      //     },
-      //     err => {
-      //       alert("Failed to share element set: " + name);
-      //     }
-      //   );
+    // If something is listening, we just return it via the event... this is for cases like when we're OUTSIDE of the
+    // quant dialog and have a listener configured. Otherwise we are just updating the spectrum model directly...
+    if (this.onUse.observed) {
+      this.onUse.emit({ id: id, lines: lines });
+      return;
     }
+
+    this.mdl.xrfLinesPicked = lines;
   }
 
   onDeleteElementSet(item: ElementSetSummary): void {
