@@ -1,4 +1,13 @@
-## 4.56.0 (Latest)
+## 4.57.0 (Latest)
+
+### New Features
+- Reviewer Workspaces: A new workspace type that allows for reviewing datasets. Reviewer workspaces are read-only and have an associated magic link that can be shared and accessed by anyone even without a PIXLISE account. 
+  - Reviewer workspaces can be created from the "Workspace" tab in the sidebar under "Review".
+  - Only one reviewer workspace can be created per workspace and it can be set to last indefinitely or expire after a set period.
+  - NOTE: Datasets included in a reviewer workspace must be shared with the Public group to be accessible by reviewers.
+
+
+## 4.56.0 (2024-12-09)
 
 ### Bug Fixes
 - Fixed exporter issue where zip file contained empty folders or was missing files. Was due to invalid file names being generated for files in the zip file because they contained things like ROI names (which may have a /, % or > character in them!). Zip file generation now converts file names to be something valid, by replacing the bad characters with a _. The names may not be as expected by the person exporting, but at least their computer won't scoff at the names, and allow viewing exported files!
