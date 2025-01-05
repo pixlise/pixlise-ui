@@ -658,10 +658,15 @@ export class WidgetDataService {
           throw new Error("loadCodeForExpression did not return expression source code for: " + expression.id);
         }
 
+        const userId = user?.sub || "";
+        if (!userId) {
+          throw new Error("No user id loaded for expression runner");
+        }
+
         const modSources = WidgetDataService.makeRunnableModules(sources.modules);
 
         // Pass in the source and module sources separately
-        const querier = new DataQuerier(user?.sub || "");
+        const querier = new DataQuerier(userId);
         const dataSource = new ExpressionDataSource();
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
