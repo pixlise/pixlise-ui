@@ -163,7 +163,7 @@ function testExpression(
   expDataRequired: string[],
   done: DoneFn
 ) {
-  const lua = new LuaDataQuerier(false);
+  const lua = new LuaDataQuerier(false, "user123");
   const ds = makeDataSource(scanId, datasetBin, diffractionInfoRead.allPeaks, quantBin);
 
   Promise.all([

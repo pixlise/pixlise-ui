@@ -1,6 +1,6 @@
 import { readSol } from "./search";
 
-fdescribe("searchScan", () => {
+describe("searchScan", () => {
   //beforeEach(() => TestBed.configureTestingModule({}));
 
   it("readSol should work", () => {
