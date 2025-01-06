@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="dropdown-line clickable" title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
   <wait-spinner *ngIf="loading"></wait-spinner>
   <div *ngIf="errorText.length > 0" class="error">ERROR: {{errorText}}</div>
+  <img *ngIf="showWarning" class="warn" src="assets/icons/error-triangle.svg">
   <div *ngIf="errorText.length <= 0" class="txt">{{ currentFileName }}</div>
   <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false" aria-hidden="true">
     <path class="downarrow" d="M7 10l5 5 5-5z"></path>

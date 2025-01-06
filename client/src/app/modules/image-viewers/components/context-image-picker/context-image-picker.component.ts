@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, S
 import { Subscription } from "rxjs";
 import { SDSFields, getPathBase, invalidPMC } from "src/app/utils/utils";
 import { ContextImageItemTransform } from "../../models/image-transform";
-import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { makeImageTooltip } from "src/app/utils/image-details";
 import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -175,6 +175,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   contextImagePath: string = "";
   contextImageItemShowingTooltip: string = "";
   contextImages: DisplayContextImageItem[] = [];
+  showWarning = false;
 
   loading: boolean = false;
   errorText: string = "";
@@ -185,65 +186,51 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   ) {}
 
   ngOnInit() {
-    this.refreshImageList();
+    this.updateCurrentImageDisplayed();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     // TODO: do we need the paranoid current != previous check?
     if (changes["currentImage"] && changes["currentImage"].currentValue !== changes["currentImage"].previousValue) {
-      this.refreshImageList();
+      this.updateCurrentImageDisplayed();
     }
   }
 
-  private refreshImageList() {
-    if (this.scanIds.length <= 0) {
-      return;
-    }
-
-    this.loading = true;
-    this.errorText = "";
-
-    this._dataService.sendImageListRequest(ImageListReq.create({ scanIds: this.scanIds })).subscribe({
-      next: (resp: ImageListResp) => {
+  private checkImage(imagePath: string, callback: (item: ContextImageItem, tooltip: string) => void) {
+    this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: imagePath })).subscribe({
+      next: (resp: ImageGetResp) => {
+        // NOTE: Image returned may not be the same one we requested - we may be receiving a newer version of the image. Use whatever
+        // is returned, and point it out to the user too
         this.loading = false;
         this.errorText = "";
 
-        this.contextImages = [];
-        this.contextImageItemShowing = null;
-
-        for (let c = 0; c < resp.images.length; c++) {
-          const img = resp.images[c];
-
-          if (this.onlyInstrumentImages && img.source != ScanImageSource.SI_INSTRUMENT) {
-            // We're only showing images that came from the instrument
-            continue;
-          }
-
-          let matchInfo: ContextImageItemTransform | null = null;
-          if (img.matchInfo) {
-            matchInfo = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
-          }
-
-          const item = new ContextImageItem(
-            img.imagePath,
-            invalidPMC, // pmc
-            false, // has beam
-            -1, // beam idx
-            matchInfo
-          );
-
-          const tooltip = getPathBase(img.imagePath) + "\n\nDetails:\n" + makeImageTooltip(img);
-
-          let selected = false;
-          if (img.imagePath === this.currentImage) {
-            this.contextImageItemShowing = item;
-            this.contextImageItemShowingTooltip = tooltip;
-            this.contextImagePath = img.imagePath;
-            selected = true;
-          }
-
-          this.contextImages.push(new DisplayContextImageItem(item, selected, tooltip));
+        if (!resp.image) {
+          return;
         }
+
+        const img = resp.image;
+
+        if (this.onlyInstrumentImages && img.source != ScanImageSource.SI_INSTRUMENT) {
+          // We're only showing images that came from the instrument
+          return;
+        }
+
+        let matchInfo: ContextImageItemTransform | null = null;
+        if (img.matchInfo) {
+          matchInfo = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
+        }
+
+        const item = new ContextImageItem(
+          img.imagePath,
+          invalidPMC, // pmc
+          false, // has beam
+          -1, // beam idx
+          matchInfo
+        );
+
+        const tooltip = getPathBase(img.imagePath) + "\n\nDetails:\n" + makeImageTooltip(img);
+
+        callback(item, tooltip);
       },
       error: err => {
         this.loading = false;
@@ -251,77 +238,28 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       },
     });
   }
-  /*
-  onGotModel(): void {
-    this._subs.add(
-      this._datasetService.dataset$.subscribe((dataset: DataSet) => {
-        if (dataset) {
-          // Set up context image list & select the one that's shown
-          this.contextImages = [];
 
-          let contextImagesToRead = Array.from(dataset.contextImages);
+  private updateCurrentImageDisplayed() {
+    if (this.scanIds.length <= 0) {
+      return;
+    }
 
-          let gdsImgs: DisplayContextImageItem[] = [];
-          let rgbuImgs: DisplayContextImageItem[] = [];
-          let matchedImgs: DisplayContextImageItem[] = [];
-          let otherImgs: DisplayContextImageItem[] = [];
+    this.loading = true;
+    this.errorText = "";
 
-          for (let img of contextImagesToRead) {
-            let tooltip = this.makeTooltip(img.path);
-            let dispItem = new DisplayContextImageItem(img, false, tooltip);
+    this.checkImage(this.currentImage, (item: ContextImageItem, tooltip: string) => {
+      this.contextImageItemShowingTooltip = "";
+      this.showWarning = false;
+      if (item.path !== this.currentImage) {
+        this.contextImageItemShowingTooltip = `NOTE: Image selected is: "${this.currentImage}"\nPIXLISE server provided: "${item.path}"\nThe server returns the latest version of the image requested, so your workspace may simply be referencing an older version of the image. If the image looks correct, this can be ignored.\n\n`;
+        this.showWarning = true;
+      }
 
-            if (img.path.toUpperCase().endsWith(".TIF")) {
-              rgbuImgs.push(dispItem);
-            } else if (img.imagePMC > DataSet.invalidPMC) {
-              if (!img.imageDrawTransform) {
-                gdsImgs.push(dispItem);
-              } else {
-                matchedImgs.push(dispItem);
-              }
-            } else {
-              otherImgs.push(dispItem);
-            }
-          }
-
-          let sortFunc = (a: DisplayContextImageItem, b: DisplayContextImageItem) => {
-            if (a.item.imagePMC == b.item.imagePMC) {
-              return a.item.path.localeCompare(b.item.path);
-            } else if (a.item.imagePMC > b.item.imagePMC) {
-              return 1;
-            } else {
-              return -1;
-            }
-          };
-
-          gdsImgs.sort(sortFunc);
-          rgbuImgs.sort(sortFunc);
-          matchedImgs.sort(sortFunc);
-          otherImgs.sort(sortFunc);
-
-          this.contextImages.push(...gdsImgs);
-          this.contextImages.push(...rgbuImgs);
-          this.contextImages.push(...matchedImgs);
-          this.contextImages.push(...otherImgs);
-
-          this.updateSelected();
-        }
-      })
-    );
-
-    this._subs.add(
-      this._contextImageService.mdl.contextImageItemShowing$.subscribe((contextImgShowing: ContextImageItem) => {
-        if (contextImgShowing) {
-          this.contextImageItemShowing = contextImgShowing;
-          this.contextImageItemShowingTooltip = this.makeTooltip(contextImgShowing.path);
-        } else {
-          this.contextImageItemShowing = null;
-          this.contextImageItemShowingTooltip = "";
-        }
-
-        this.updateSelected();
-      })
-    );
-  }*/
+      this.contextImageItemShowing = item;
+      this.contextImageItemShowingTooltip += tooltip;
+      this.contextImagePath = item.path;
+    });
+  }
 
   onImagePicker() {
     const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
@@ -338,11 +276,15 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((response: ImagePickerDialogResponse) => {
       if (response?.selectedImagePath) {
-        // img.item.path is the name of the image, not the path, so we need to match by name
-        let selected = this.contextImages.find(img => img?.item?.path && response.selectedImagePath === img.item.path);
-        if (selected) {
-          this.onSetImage(selected, response.selectedImageScanId || "");
-        }
+        // Load the image requested
+        this.checkImage(response?.selectedImagePath, (item: ContextImageItem, tooltip: string) => {
+          let selected = false;
+          if (item.path === this.currentImage) {
+            selected = true;
+          }
+
+          this.onSetImage(new DisplayContextImageItem(item, selected, tooltip), response?.selectedImageScanId || "");
+        });
       }
     });
   }
@@ -354,7 +296,6 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   onSetImage(img: DisplayContextImageItem | null, scanId: string) {
     this.selectedImage.emit({ path: img ? img.item.path : "", scanId });
     this.currentImage = img?.item.path || "";
-    this.refreshImageList();
   }
 
   onOpenExternal(img: DisplayContextImageItem, event: any) {
