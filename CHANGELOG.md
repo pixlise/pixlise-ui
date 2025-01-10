@@ -1,4 +1,9 @@
-## 4.57.0 (Latest)
+## 4.58.0 (Latest)
+
+### Bug Fixes
+- Order beam location versions from latest to oldest on dropdown
+
+## 4.57.0 (2025-01-10)
 
 ### New Features
 - Reviewer Workspaces: A new workspace type that allows for reviewing datasets. Reviewer workspaces are read-only and have an associated magic link that can be shared and accessed by anyone even without a PIXLISE account. 
