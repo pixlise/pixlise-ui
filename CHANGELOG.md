@@ -5,7 +5,11 @@
   - Reviewer workspaces can be created from the "Workspace" tab in the sidebar under "Review".
   - Only one reviewer workspace can be created per workspace and it can be set to last indefinitely or expire after a set period.
   - NOTE: Datasets included in a reviewer workspace must be shared with the Public group to be accessible by reviewers.
-
+- Confusion around image versions and what beam location versions exist for them has now been resolved:
+  - No matter what image you have selected, the lateset version of that image will be displayed.
+  - Context image's image options dialog now shows a warning if the displayed image is a newer version than the selected one to make it clear (see tooltip).
+  - Beam locations are now stored independently of the image version, so you should be able to load beam location version 1, 2 or 3 if it's available for a given image as opposed to previously hunting through all versions of an image.
+  - Importer has been updated to save beam locations in the new way too.
 
 ## 4.56.0 (2024-12-09)
 
