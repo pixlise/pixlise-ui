@@ -62,6 +62,7 @@ import { SpectrumDataService } from "./spectrum-data.service";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
 import { ExpressionMemoisationService } from "./expression-memoisation.service";
+import { AuthService, User } from "@auth0/auth0-angular";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -173,7 +174,8 @@ export class WidgetDataService {
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _memoisationService: MemoisationService,
-    private _exprMemoisationService: ExpressionMemoisationService
+    private _exprMemoisationService: ExpressionMemoisationService,
+    private _authService: AuthService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -645,20 +647,26 @@ export class WidgetDataService {
     const expr$ = loadCodeForExpression(expression, this._cachedDataService);
 
     // Load both of these
-    return combineLatest([calibration$, expr$]).pipe(
-      concatMap((loadResult: [SpectrumEnergyCalibration[], LoadedSources]) => {
+    return combineLatest([calibration$, expr$, this._authService.user$]).pipe(
+      concatMap((loadResult: [SpectrumEnergyCalibration[], LoadedSources, User | null | undefined]) => {
         const calibration = loadResult[0];
         const sources = loadResult[1];
+        const user = loadResult[2];
         // We now have the ready-to-go source code, run the query
         // At this point we should have the expression source and 0 or more modules
         if (!sources.expressionSrc) {
           throw new Error("loadCodeForExpression did not return expression source code for: " + expression.id);
         }
 
+        const userId = user?.sub || "";
+        if (!userId) {
+          throw new Error("No user id loaded for expression runner");
+        }
+
         const modSources = WidgetDataService.makeRunnableModules(sources.modules);
 
         // Pass in the source and module sources separately
-        const querier = new DataQuerier();
+        const querier = new DataQuerier(userId);
         const dataSource = new ExpressionDataSource();
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(

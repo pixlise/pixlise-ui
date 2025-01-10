@@ -10,6 +10,7 @@
   - Context image's image options dialog now shows a warning if the displayed image is a newer version than the selected one to make it clear (see tooltip).
   - Beam locations are now stored independently of the image version, so you should be able to load beam location version 1, 2 or 3 if it's available for a given image as opposed to previously hunting through all versions of an image.
   - Importer has been updated to save beam locations in the new way too.
+- Lua expressions now have access to a new userId field, to assist with caching purposes
 
 ## 4.56.0 (2024-12-09)
 

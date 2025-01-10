@@ -1,4 +1,5 @@
 import { Component } from "@angular/core";
+import { AuthService, User } from "@auth0/auth0-angular";
 import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -35,7 +36,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
   constructor(
     private _snackService: SnackbarService,
     private _exporterService: DataExporterService,
-    private _analysisLayoutService: AnalysisLayoutService
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _authService: AuthService
   ) {
     let data: WidgetExportDialogData = {
       title: "",
@@ -409,7 +411,14 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
 
   onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
     return new Observable<WidgetExportData>(observer => {
-      if (request.dataProducts) {
+      if (!request.dataProducts) {
+        // TODO: should we do something here?
+        return;
+      }
+
+      this._authService.user$.subscribe((user: User | null | undefined) => {
+        const userId = user?.sub || "";
+
         let requests = this.options
           .filter(option => {
             if (!option.selected || !option.id.startsWith("scan-")) {
@@ -420,7 +429,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
             let quantId = option.subOptions?.find(subOption => subOption.id === scanId + "_quant")?.selectedOption;
             return scanId && quantId;
           })
-          .map(option => this.getExportProductsForScan(option, request));
+          .map(option => this.getExportProductsForScan(userId, option, request));
 
         if (request.dataProducts["images"]?.selected && request.dataProducts["images"]?.selectedImagePaths) {
           let includeRawTIFFs = request.options["includeTIFF"]?.selected || false;
@@ -459,11 +468,11 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
             observer.complete();
           },
         });
-      }
+      });
     });
   }
 
-  getExportProductsForScan(scanGroupOption: WidgetExportOption, request: WidgetExportRequest): Observable<WidgetExportData> {
+  private getExportProductsForScan(userId: string, scanGroupOption: WidgetExportOption, request: WidgetExportRequest): Observable<WidgetExportData> {
     let scanId = scanGroupOption.id.replace("scan-", "");
     let scanName = this.allScans.find(scan => scan.id === scanId)?.title || scanId;
     let quantId = scanGroupOption.subOptions!.find(subOption => subOption.id === scanId + "_quant")!.selectedOption!;
@@ -507,7 +516,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     }
 
     if (request.dataProducts["roiExpressionCode"]?.selected) {
-      exportRequests.push(this._exporterService.exportExpressionCode(scanId, quantId, expressionIds));
+      exportRequests.push(this._exporterService.exportExpressionCode(userId, scanId, quantId, expressionIds));
     }
 
     if (exportRequests.length === 0) {

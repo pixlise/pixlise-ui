@@ -45,9 +45,9 @@ export class DataQuerier {
   private _luaTranspiler: LuaTranspiler | undefined;
   private _resultComparer: ResultComparer | undefined;
 
-  constructor() {
+  constructor(userId: string) {
     this._interpretPixlise = new PixliseDataQuerier();
-    this._interpretLua = new LuaDataQuerier(environment.luaDebug);
+    this._interpretLua = new LuaDataQuerier(environment.luaDebug, userId);
     if (environment.initExpressionLanguageComparer || environment.initLuaTranspiler) {
       this._luaTranspiler = new LuaTranspiler();
     }
