@@ -18,6 +18,8 @@ export type ScreenTemplate = {
 export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
   id: "",
   snapshotParentId: "",
+  reviewerId: "",
+  reviewerExpirationDateUnixSec: 0,
   name: "",
   description: "",
   tags: [],

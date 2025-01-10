@@ -68,6 +68,7 @@ import { UserIconComponent } from "./components/atoms/user-icon/user-icon.compon
 import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 import { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 import { MatMenuModule } from "@angular/material/menu";
+import { MagicLinkComponent } from "./components/pages/magiclink/magiclink.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -107,6 +108,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     WidgetSettingsMenuComponent,
     MenuPanelHostComponent,
     AuthenticateComponent,
+    MagicLinkComponent,
     RouteNotFoundComponent,
     SnackBarPopupComponent,
     UserMenuPanelComponent,
@@ -164,6 +166,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     WidgetSettingsMenuComponent,
     MenuPanelHostComponent,
     AuthenticateComponent,
+    MagicLinkComponent,
     RouteNotFoundComponent,
     IconButtonComponent,
     ConfirmDialogComponent,

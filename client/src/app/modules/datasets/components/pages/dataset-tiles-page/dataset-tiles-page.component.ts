@@ -32,7 +32,8 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { combineLatest, last, Observable, Subscription } from "rxjs";
 
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
@@ -68,6 +69,7 @@ import {
   DuplicateWorkspaceDialogData,
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
+import { environment } from "../../../../../../environments/environment";
 import { filterScans, sortScans } from "src/app/utils/search";
 
 class SummaryItem {
@@ -239,7 +241,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this.clearSelection();
     this.onSearch();
-    this.onSearchWorkspsaces();
+    this.onSearchWorkspaces();
   }
 
   ngOnDestroy() {
@@ -388,7 +390,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspace.name = this.selectedWorkspaceName;
 
     this._analysisLayoutService.writeScreenConfiguration(this.selectedWorkspace, undefined, false, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
   }
 
@@ -409,7 +411,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     workspace.tags = this.selectedWorkspaceTags;
 
     this._analysisLayoutService.writeScreenConfiguration(workspace, undefined, false, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
   }
 
@@ -429,7 +431,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.deleteScreenConfiguration(this.selectedWorkspace.id, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
     this.clearSelection();
   }
@@ -551,7 +553,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       });
 
       this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
-        this.onSearchWorkspsaces();
+        this.onSearchWorkspaces();
         this.navigateToWorkspace(screenConfig.id);
       });
 
@@ -565,7 +567,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, null, screenConfig => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       this.navigateToWorkspace(screenConfig.id);
     });
   }
@@ -838,7 +840,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       if (response.shouldOpen) {
         this.onOpenWorkspace(response.workspace);
       }
@@ -886,7 +888,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       if (response.shouldOpen) {
         this.onOpenWorkspace(response.workspace);
       }
@@ -900,7 +902,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSearchWorkspsaces(): void {
+  onSearchWorkspaces(): void {
     this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create()).subscribe({
       next: (resp: ScreenConfigurationListResp) => {
         let workspaces = resp.screenConfigurations;
@@ -974,7 +976,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onSearch(): void {
     if (this.workspacesMode) {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       return;
     }
 
@@ -1251,6 +1253,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   private clearSelection(): void {
+    this.errorString = "";
+    this.loading = false;
     this.selectedScan = null;
     this.selectedScanTitle = "";
     this.selectedScanDescription = "";

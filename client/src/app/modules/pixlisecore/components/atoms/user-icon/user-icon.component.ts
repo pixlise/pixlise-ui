@@ -20,6 +20,7 @@ export class UserIconComponent {
   private _userId: string = "";
 
   userInfo: UserInfo | null = null;
+  isReviewer: boolean = false;
 
   constructor(
     private _userOptionsService: UserOptionsService,
@@ -84,6 +85,8 @@ export class UserIconComponent {
         this.iconAbbreviation = this.generateAbbreviation("");
       }
     }
+
+    this.isReviewer = (this.userInfo && !this.userInfo.iconURL && this.userInfo.email.startsWith("reviewer-")) || false;
   }
 
   ngOnInit() {}

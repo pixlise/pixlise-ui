@@ -27,30 +27,47 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, Input } from "@angular/core";
-
-// import { AuthenticationService } from "src/app/services/authentication.service";
-import { Navigation } from "../../navigation";
-import { DefaultLoggedInLink } from "../../navigation";
-// import { AuthService } from "@auth0/auth0-angular";
-import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Subscription } from "rxjs";
+import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { ActivatedRoute } from "@angular/router";
 
 @Component({
-  selector: "footer",
-  templateUrl: "./footer.component.html",
-  styleUrls: ["./footer.component.scss"],
+  selector: "app-magic-link",
+  templateUrl: "./magiclink.component.html",
+  styleUrls: ["./magiclink.component.scss"],
 })
-export class FooterComponent implements OnInit {
-  @Input() showLogos: boolean = false;
-  @Input() showTeam: boolean = false;
+export class MagicLinkComponent implements OnInit, OnDestroy {
+  private _subs = new Subscription();
 
-  navigation: Navigation = new Navigation();
+  errorString: string = "";
 
-  constructor(private _authService: AuthService) {}
+  constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _route: ActivatedRoute
+  ) {}
 
-  ngOnInit(): void {}
+  ngOnInit() {
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        if (params?.["ml"]) {
+          this._analysisLayoutService.loginWithMagicLink(params["ml"]);
+        }
+      })
+    );
 
-  onLogin() {
-    // this._authService.login(DefaultLoggedInLink, false);
+    this._subs.add(
+      this._analysisLayoutService.magicLinkStatus$.subscribe(status => {
+        if (status === "failed") {
+          this.errorString = "Error logging in with magic link";
+        } else {
+          this.errorString = "";
+        }
+      })
+    );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 }

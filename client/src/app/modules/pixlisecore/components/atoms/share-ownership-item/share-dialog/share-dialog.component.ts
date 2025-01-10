@@ -40,6 +40,9 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { UsersService } from "src/app/modules/settings/services/users.service";
 import { ObjectEditAccessReq, ObjectEditAccessResp } from "../../../../../../generated-protos/ownership-access-msgs";
 import { APIDataService, SnackbarService } from "../../../../pixlisecore.module";
+import { ReviewerMagicLinkCreateReq } from "../../../../../../generated-protos/user-management-msgs";
+import { EnvConfigurationInitService } from "../../../../../../services/env-configuration-init.service";
+import { encodeUrlSafeBase64 } from "../../../../../../utils/utils";
 
 export type SharingSubItem = {
   id: string;
@@ -52,6 +55,7 @@ export type SharingSubItem = {
 
 export type ShareDialogData = {
   title?: string;
+  description?: string;
   ownershipSummary: OwnershipSummary | null;
   ownershipItem: OwnershipItem;
   typeName: string;
@@ -59,6 +63,7 @@ export type ShareDialogData = {
   preventSelfAssignment?: boolean;
   restrictSubItemSharingToViewer?: boolean;
   excludeSubIds?: string[];
+  isReviewerSnapshot?: boolean;
 };
 
 export type ShareDialogResponse = {
@@ -66,6 +71,8 @@ export type ShareDialogResponse = {
   deleteEditors: UserGroupList;
   addViewers: UserGroupList;
   deleteViewers: UserGroupList;
+  reviewerId?: string;
+  reviewerAccessTime?: number;
 };
 
 type MembershipItem = {
@@ -133,6 +140,18 @@ export class ShareDialogComponent implements OnInit {
 
   selectedSubItemId: string = "";
 
+  reviewTimeOptions: { value: number; label: string }[] = [
+    { value: 0, label: "Forever" },
+    { value: 1 * 60 * 60 * 24, label: "1 Day" },
+    { value: 7 * 60 * 60 * 24, label: "7 Days" },
+    { value: 30 * 60 * 60 * 24, label: "30 Days" },
+    { value: 90 * 60 * 60 * 24, label: "90 Days" },
+    { value: 365 * 60 * 60 * 24, label: "1 Year" },
+  ];
+  reviewerAccessTime: { value: number; label: string } = this.reviewTimeOptions[0];
+  reviewerSnapshotLink: string = "";
+  copiedReviewerSnapshotLink: boolean = false;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ShareDialogData,
     public dialogRef: MatDialogRef<ShareDialogComponent, ShareDialogResponse>,
@@ -199,6 +218,11 @@ export class ShareDialogComponent implements OnInit {
     }
 
     this.calculateSubItemViewershipChanges();
+
+    // Set reviewerSnapshotLink to current URL
+    if (this.data.isReviewerSnapshot) {
+      this.reviewerSnapshotLink = window.location.href;
+    }
   }
 
   calculateSubItemViewershipChanges() {
@@ -612,24 +636,79 @@ export class ShareDialogComponent implements OnInit {
         userIds: Array.from(this.removedUserViewers),
         groupIds: Array.from(this.removedGroupViewers),
       }),
+      reviewerId: this.reviewerSnapshotLink || "",
+      reviewerAccessTime: this.reviewerAccessTime.value,
+    });
+  }
+
+  onReviewerAccessTimeChange(evt: MatSelectChange) {
+    this.reviewerAccessTime = evt.value;
+  }
+
+  copyReviewLinkToClipboard() {
+    navigator.clipboard.writeText(this.reviewerSnapshotLink).then(() => {
+      this._snackbarService.openSuccess("Link copied to clipboard");
+      this.copiedReviewerSnapshotLink = true;
+      setTimeout(() => {
+        this.copiedReviewerSnapshotLink = false;
+      }, 1000);
     });
   }
 
   onConfirm(): void {
     this.calculateChanges();
 
-    this.updateSubExpressions().subscribe({
-      next: res => {
-        if (this.shareWithSubItems && this.subItems.length !== res?.length) {
-          console.warn(`Could not update all sub-expressions. ${res?.length} out of ${this.subItems.length} were updated.`);
-        }
+    let appConfig = EnvConfigurationInitService.appConfig;
 
-        this.closeWithResult();
-      },
-      error: err => {
-        console.error(err);
-        this._snackbarService.openError("Could not update sub-expressions", err);
-      },
-    });
+    if (this.data.isReviewerSnapshot) {
+      this._apiDataService
+        .sendReviewerMagicLinkCreateRequest(
+          ReviewerMagicLinkCreateReq.create({
+            accessLength: this.reviewerAccessTime.value,
+            workspaceId: this.data.ownershipItem.id,
+            clientId: appConfig.auth0_client,
+            audience: appConfig.auth0_audience,
+          })
+        )
+        .subscribe({
+          next: res => {
+            this.reviewerSnapshotLink = res.magicLink;
+
+            // res.magicLink is new user id for the reviewer, add it to the list of viewers
+            this.newUserViewers.add(res.magicLink);
+
+            this.updateSubExpressions().subscribe({
+              next: res => {
+                if (this.shareWithSubItems && this.subItems.length !== res?.length) {
+                  console.warn(`Could not update all sub-expressions. ${res?.length} out of ${this.subItems.length} were updated.`);
+                }
+
+                this.closeWithResult();
+              },
+              error: err => {
+                console.error(err);
+                this._snackbarService.openError("Could not update sub-expressions", err);
+              },
+            });
+          },
+          error: err => {
+            this._snackbarService.openError("Failed to create reviewer snapshot link", err);
+          },
+        });
+    } else {
+      this.updateSubExpressions().subscribe({
+        next: res => {
+          if (this.shareWithSubItems && this.subItems.length !== res?.length) {
+            console.warn(`Could not update all sub-expressions. ${res?.length} out of ${this.subItems.length} were updated.`);
+          }
+
+          this.closeWithResult();
+        },
+        error: err => {
+          console.error(err);
+          this._snackbarService.openError("Could not update sub-expressions", err);
+        },
+      });
+    }
   }
 }

@@ -8,8 +8,8 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScreenConfigurationGetReq, ScreenConfigurationListReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
-import { FullScreenLayout, ScanCalibrationConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
+import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
@@ -22,11 +22,16 @@ import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
-import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
+import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 import { TabLinks } from "../../../models/TabLinks";
 import { PredefinedROIID } from "../../../models/RegionOfInterest";
 import { ScanImage } from "../../../generated-protos/image";
+import { EnvConfigurationInitService } from "../../../services/env-configuration-init.service";
+import { ReviewerMagicLinkLoginReq } from "../../../generated-protos/user-management-msgs";
+import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
+import { HttpClient } from "@angular/common/http";
+import { UserOptionsService } from "../../settings/settings.module";
 
 export class DefaultExpressions {
   constructor(
@@ -89,19 +94,32 @@ export class AnalysisLayoutService implements OnDestroy {
 
   lastLoadedScreenConfigurationId: string = "";
 
+  // Track if the user can edit (any) screen configuration
+  readOnlyMode = true;
+  magicLinkStatus$ = new BehaviorSubject<string>("");
+
   constructor(
+    private http: HttpClient,
     private _route: ActivatedRoute,
     private _router: Router,
     private _dataService: APIDataService,
+    private _apiEndpointsService: APIEndpointsService,
     private _cachedDataService: APICachedDataService,
     private _snackService: SnackbarService,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _userOptionsService: UserOptionsService
   ) {
     this.fetchAvailableScans();
     this.fetchLastLoadedScreenConfigurationId();
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
     }
+
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this.readOnlyMode = !this._userOptionsService.hasFeatureAccess("editViewState");
+      })
+    );
 
     // Subscribe to query params - has to be done from the constructor here since OnInit doesn't fire on Injectables
     this._subs.add(
@@ -423,6 +441,20 @@ export class AnalysisLayoutService implements OnDestroy {
       return;
     }
 
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      // If user is attempting to update screen config in read only mode, just update locally
+      if (screenConfiguration.id) {
+        if (setActive) {
+          this.activeScreenConfiguration$.next(screenConfiguration);
+          this.activeScreenConfigurationId$.next(screenConfiguration.id);
+        }
+        callback(screenConfiguration);
+        this.screenConfigurations$.next(this.screenConfigurations$.value.set(screenConfiguration.id, screenConfiguration));
+      }
+      return;
+    }
+
     this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe({
       next: res => {
         if (res.screenConfiguration) {
@@ -448,6 +480,11 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   deleteScreenConfiguration(id: string, callback: () => void = () => {}, preserveDanglingWidgetReferences: boolean = false) {
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      return;
+    }
+
     this._dataService.sendScreenConfigurationDeleteRequest({ id, preserveDanglingWidgetReferences }).subscribe(res => {
       if (res.id) {
         this.screenConfigurations$.value.delete(id);
@@ -465,6 +502,11 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   updateActiveLayoutWidgetType(widgetId: string, layoutIndex: number, widgetType: string) {
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      return;
+    }
+
     const screenConfiguration = this.activeScreenConfiguration$.value;
     if (screenConfiguration.id && screenConfiguration.layouts.length > layoutIndex) {
       const widget = screenConfiguration.layouts[layoutIndex].widgets.find(widget => widget.id === widgetId);
@@ -476,6 +518,11 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   writeWidgetData(widgetData: WidgetData) {
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      return;
+    }
+
     this._dataService.sendWidgetDataWriteRequest(WidgetDataWriteReq.create({ widgetData })).subscribe(res => {
       if (res.widgetData) {
         this.widgetData$.next(this.widgetData$.value.set(res.widgetData.id, res.widgetData));
@@ -1012,5 +1059,55 @@ export class AnalysisLayoutService implements OnDestroy {
     }
 
     return quantificationIDs;
+  }
+
+  loginWithMagicLink(magicLink: string) {
+    let decodedWorkspaceId = decodeUrlSafeBase64(magicLink);
+    let appConfig = EnvConfigurationInitService.appConfig;
+    this._apiEndpointsService
+      .magicLinkLogin(
+        ReviewerMagicLinkLoginReq.create({
+          magicLink: decodedWorkspaceId,
+          clientId: appConfig.auth0_client,
+          domain: appConfig.auth0_domain,
+          audience: appConfig.auth0_audience,
+          redirectURI: `${window.location.origin}/authenticate`,
+        })
+      )
+      .subscribe({
+        next: res => {
+          const loginUrl = `https://${appConfig.auth0_domain}/oauth/token`;
+
+          this.http
+            .post(loginUrl, {
+              grant_type: "password",
+              username: res.email,
+              password: res.nonSecretPassword,
+              client_id: appConfig.auth0_client,
+              audience: appConfig.auth0_audience,
+              scope: "openid profile email",
+            })
+            .subscribe({
+              next: (loginResponse: any) => {
+                sessionStorage.setItem("reviewer_access_token", loginResponse.access_token);
+                sessionStorage.setItem("reviewer_id_token", loginResponse.id_token);
+                this.readOnlyMode = true;
+                this.magicLinkStatus$.next("success");
+
+                this._router.navigate([TabLinks.analysis], { queryParams: { id: decodedWorkspaceId } });
+              },
+              error: err => {
+                console.error("Login failed: ", err);
+                this._snackService.openError("Error logging in with magic link", err?.error || err);
+                this.magicLinkStatus$.next("failed");
+              },
+            });
+        },
+        error: err => {
+          console.error("Error logging in with magic link: ", err);
+          this._snackService.openError("Error logging in with magic link", err?.error || err);
+          this.magicLinkStatus$.next("failed");
+        },
+      });
   }
 }

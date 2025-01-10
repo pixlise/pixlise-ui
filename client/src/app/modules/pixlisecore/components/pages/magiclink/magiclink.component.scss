@@ -27,30 +27,44 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, Input } from "@angular/core";
+@import 'variables.scss';
 
-// import { AuthenticationService } from "src/app/services/authentication.service";
-import { Navigation } from "../../navigation";
-import { DefaultLoggedInLink } from "../../navigation";
-// import { AuthService } from "@auth0/auth0-angular";
-import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
+.auth-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
 
-@Component({
-  selector: "footer",
-  templateUrl: "./footer.component.html",
-  styleUrls: ["./footer.component.scss"],
-})
-export class FooterComponent implements OnInit {
-  @Input() showLogos: boolean = false;
-  @Input() showTeam: boolean = false;
+    background-image: url("/assets/images/bg-mission.jpg");
+    background-size: cover;
+    height: 100vh;
 
-  navigation: Navigation = new Navigation();
+    .page-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
+        gap: 16px;
 
-  constructor(private _authService: AuthService) {}
+        background-color: $clr-gray-90;
+        //box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.25);
 
-  ngOnInit(): void {}
+        width: 700px;
+        border-radius: 16px;
+        padding: 24px;
 
-  onLogin() {
-    // this._authService.login(DefaultLoggedInLink, false);
-  }
+        img {
+            width: 128px;
+        }
+
+        div {
+            color: $clr-gray-20;
+            font-size: 16px;
+            white-space: pre;
+        }
+
+        .button-gap {
+            margin-top: 8px;
+        }
+    }
 }

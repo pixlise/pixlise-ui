@@ -30,7 +30,8 @@
 import { Component, inject } from "@angular/core";
 import { MonacoEditorService } from "./modules/code-editor/services/monaco-editor.service";
 import { Router } from "@angular/router";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
 @Component({
   selector: "app-root",
@@ -59,6 +60,6 @@ export class AppComponent {
   }
 
   get isPublicPage(): boolean {
-    return this._router.url == "/" || this._router.url == "/authenticate" || this._router.url.includes("/public/");
+    return this._router.url == "/" || this._router.url == "/authenticate" || this._router.url.includes("/public/") || this._router.url.includes("/magiclink");
   }
 }

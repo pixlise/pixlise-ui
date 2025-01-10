@@ -3,7 +3,6 @@
   <section
     class="screen-container"
     *ngIf="loadedScreenConfiguration && activeLayout && loadedScreenConfiguration.layouts.length > activeLayoutIndex && !soloViewWidget">
-    <!-- *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index; trackBy: trackByLayoutId" -->
     <section
       class="widgets-container"
       [ngStyle]="{

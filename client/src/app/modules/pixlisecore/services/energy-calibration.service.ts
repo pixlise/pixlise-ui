@@ -9,6 +9,7 @@ import { ExpressionDataSource } from "../models/expression-data-source";
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { AnalysisLayoutService } from "../../analysis/analysis.module";
 import { SpectrumDataService } from "./spectrum-data.service";
+import { SentryHelper } from "src/app/utils/utils";
 
 @Injectable({
   providedIn: "root",
@@ -16,6 +17,9 @@ import { SpectrumDataService } from "./spectrum-data.service";
 export class EnergyCalibrationService {
   // The currently applied calibration
   private _currentCalibration: Map<string, SpectrumEnergyCalibration[]> = new Map<string, SpectrumEnergyCalibration[]>();
+
+  // For rate limiting messages about this...
+  private _scanIdsComplainedAbout = new Set<string>();
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -99,25 +103,32 @@ export class EnergyCalibrationService {
         const eVStartMetaIdx = metaResp.metaLabels.indexOf("OFFSET");
         const eVperChannelMetaIdx = metaResp.metaLabels.indexOf("XPERCHAN");
 
-        for (const spectrum of spectrumResp.bulkSpectra) {
-          let eVstart = 0;
-          let eVperChannel = 1;
+        if (!this._scanIdsComplainedAbout.has(scanId)) {
+          SentryHelper.logMsg(true, `Scan: ${scanId} did not have OFFSET or XPERCHAN defined`);
+          this._scanIdsComplainedAbout.add(scanId);
+        }
 
-          const eVstartMeta = spectrum.meta[eVStartMetaIdx];
-          if (eVstartMeta.fvalue !== undefined) {
-            eVstart = eVstartMeta.fvalue;
-          } else if (eVstartMeta.ivalue !== undefined) {
-            eVstart = eVstartMeta.ivalue;
+        if (eVStartMetaIdx > -1 && eVperChannelMetaIdx > -1) {
+          for (const spectrum of spectrumResp.bulkSpectra) {
+            let eVstart = 0;
+            let eVperChannel = 1;
+
+            const eVstartMeta = spectrum.meta[eVStartMetaIdx];
+            if (eVstartMeta.fvalue !== undefined) {
+              eVstart = eVstartMeta.fvalue;
+            } else if (eVstartMeta.ivalue !== undefined) {
+              eVstart = eVstartMeta.ivalue;
+            }
+
+            const eVperChannelMeta = spectrum.meta[eVperChannelMetaIdx];
+            if (eVperChannelMeta.fvalue !== undefined) {
+              eVperChannel = eVperChannelMeta.fvalue;
+            } else if (eVperChannelMeta.ivalue !== undefined) {
+              eVperChannel = eVperChannelMeta.ivalue;
+            }
+
+            calibration.push(new SpectrumEnergyCalibration(eVstart, eVperChannel, spectrum.detector));
           }
-
-          const eVperChannelMeta = spectrum.meta[eVperChannelMetaIdx];
-          if (eVperChannelMeta.fvalue !== undefined) {
-            eVperChannel = eVperChannelMeta.fvalue;
-          } else if (eVperChannelMeta.ivalue !== undefined) {
-            eVperChannel = eVperChannelMeta.ivalue;
-          }
-
-          calibration.push(new SpectrumEnergyCalibration(eVstart, eVperChannel, spectrum.detector));
         }
 
         return calibration;

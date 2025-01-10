@@ -40,6 +40,13 @@
   height: 12px;
   text-align: center;
 
+  &.wide-field {
+    width: 14px;
+    height: 8px;
+    border-radius: 4px;
+    margin-top: 2px;
+  }
+
   padding: 2px;
   display: flex;
   align-items: center;

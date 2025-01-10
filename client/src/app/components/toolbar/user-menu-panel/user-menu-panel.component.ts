@@ -28,8 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, OnDestroy, OnInit, Output } from "@angular/core";
-import { ActivatedRoute, Route, Router } from "@angular/router";
-import { AuthService } from "@auth0/auth0-angular";
+import { ActivatedRoute, Router } from "@angular/router";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Subscription } from "rxjs";
 import { BackupDBReq, BackupDBResp, DBAdminConfigGetReq, DBAdminConfigGetResp, RestoreDBReq, RestoreDBResp } from "src/app/generated-protos/system";
 import { UserDetails } from "src/app/generated-protos/user";
@@ -54,6 +54,9 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
       name: "",
       email: "",
       iconURL: "",
+      reviewerWorkspaceId: "",
+      expirationDateUnixSec: 0,
+      nonSecretPassword: "",
     },
     dataCollectionVersion: "",
     permissions: [],
@@ -70,6 +73,8 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
 
   trigger: any;
 
+  isReadOnlyUser = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -84,12 +89,13 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._userOptionsService.userOptionsChanged$.subscribe(() => {
         this.user = this._userOptionsService.userDetails;
+        this.isReadOnlyUser = !this._userOptionsService.hasFeatureAccess("editUserDetails");
       })
     );
 
     this._subs.add(
       this._groupsService.groupsChanged$.subscribe(() => {
-        this.isPIXLISEAdmin = this._userOptionsService.hasFeatureAccess("admin"); // TODO: is this right??
+        this.isPIXLISEAdmin = this._userOptionsService.hasFeatureAccess("admin");
         this.isAdminOfAnyGroup =
           this._userOptionsService.hasFeatureAccess("admin") ||
           !!this._groupsService.groups.find(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN);
@@ -129,6 +135,10 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
   }
 
   onLogout(): void {
+    // Clear reviewer tokens from sesion storage
+    sessionStorage.removeItem("reviewer_access_token");
+    sessionStorage.removeItem("reviewer_id_token");
+
     const returnTo = location.protocol + "//" + location.host;
     this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }
@@ -180,7 +190,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
             `Reload PIXLISE tab to impersonate user: ${resp.sessionUser?.name}, email: ${resp.sessionUser?.email}, user id: ${resp.sessionUser?.id}`
           );
         } else {
-          this._snackService.openSuccess(`Reload PIXLISE tab to stop impersonation`)
+          this._snackService.openSuccess(`Reload PIXLISE tab to stop impersonation`);
         }
       },
       error: err => {
@@ -197,7 +207,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this._snackService.openError("Backup failed", err);
-        }
+        },
       });
     }
   }
@@ -210,7 +220,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this._snackService.openError("Restore failed", err);
-        }
+        },
       });
     }
   }

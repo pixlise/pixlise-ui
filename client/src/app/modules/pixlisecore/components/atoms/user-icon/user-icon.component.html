@@ -1,4 +1,7 @@
 <span class="user-icon" [ngStyle]="{ width: size, height: size }">
   <img *ngIf="iconURL || !iconAbbreviation" [ngStyle]="{ height: size }" src="{{ iconURL || defaultIconURL }}" />
-  <span *ngIf="!iconURL && iconAbbreviation" class="icon-abbreviation">{{ iconAbbreviation }}</span>
+  <span *ngIf="!iconURL && !isReviewer && iconAbbreviation" class="icon-abbreviation" [ngStyle]="{ width: size, height: size }">{{ iconAbbreviation }}</span>
+  <span *ngIf="!iconURL && isReviewer" class="icon-abbreviation" [ngStyle]="{ width: size, height: size }">
+    <mat-icon class="icon-abbreviation">star</mat-icon>
+  </span>
 </span>
