@@ -16,7 +16,7 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 import { HttpClient } from "@angular/common/http";
 import { makeHeaders } from "src/app/utils/api-helpers";
 import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from "../models/notification.model";
-import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { FeatureRequest, PermissionsModel } from "../models/permissions.model";
 
 @Injectable({
@@ -31,6 +31,9 @@ export class UserOptionsService {
       name: "",
       email: "",
       iconURL: "",
+      reviewerWorkspaceId: "",
+      expirationDateUnixSec: 0,
+      nonSecretPassword: "",
     },
     dataCollectionVersion: "",
     permissions: [],

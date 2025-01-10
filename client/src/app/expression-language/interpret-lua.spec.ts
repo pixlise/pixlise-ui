@@ -47,7 +47,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
     err.stack =
       'Error: element() expression expects 3 parameters: element, datatype, detector Id. Received: ["Fe","%",null]\n    at InterpreterDataSource.readElement (http://localhost:4200/main.js:54096:19) [<root>]\n    at LuaDataQuerier.LreadElement (http://localhost:4200/main.js:53475:51) [<root>]\n    at http://localhost:4200/main.js:53144:52 [<root>]\n    at http://localhost:4200/vendor.js:142222:33 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[322]:0x207fd [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[260]:0x1a6a8 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[219]:0x15ccc [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[620]:0x38c42 [<root>]\n    at lb (http://localhost:4200/vendor.js:146145:18) [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[146]:0xbb10 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[433]:0x2e938 [<root>]\n    at c.ccall (http://localhost:4200/vendor.js:146183:17) [<root>]\n    at LuaWasm.pointersToBeFreed [as lua_resume] (http://localhost:4200/vendor.js:146660:41) [<root>]\n    at Thread.resume (http://localhost:4200/vendor.js:141522:36) [<root>]';
 
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
     expect(err2.message).toEqual(err.message);
@@ -59,7 +59,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
     err.stack =
       "Error: Lua Error(ErrorSyntax/3)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at Thread.loadString (http://localhost:4200/vendor.js:141507:14) [<root>]\n    at http://localhost:4200/vendor.js:142799:49 [<root>]\n    at http://localhost:4200/vendor.js:142827:11 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at LuaEngine.callByteCode (http://localhost:4200/vendor.js:142838:9) [<root>]\n    at LuaEngine.doString (http://localhost:4200/vendor.js:142799:19) [<root>]\n    at LuaDataQuerier.runQueryInternal (http://localhost:4200/main.js:53302:69) [<root>]\n    at MergeMapSubscriber.project (http://localhost:4200/main.js:53298:25) [<root>]";
 
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
     expect(err2.line).toEqual(7);
@@ -74,7 +74,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
     err.stack =
       "Error: Lua Error(ErrorSyntax/3)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at Thread.loadString (http://localhost:4200/vendor.js:141507:14) [<root>]\n    at http://localhost:4200/vendor.js:142799:49 [<root>]\n    at http://localhost:4200/vendor.js:142827:11 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at LuaEngine.callByteCode (http://localhost:4200/vendor.js:142838:9) [<root>]\n    at LuaEngine.doString (http://localhost:4200/vendor.js:142799:19) [<root>]\n    at LuaDataQuerier.runQueryInternal (http://localhost:4200/main.js:53302:69) [<root>]\n    at MergeMapSubscriber.project (http://localhost:4200/main.js:53298:25) [<root>]";
 
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
     expect(err2.line).toEqual(7);
@@ -91,7 +91,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
     err.stack =
       "Error: Lua Error(ErrorRun/2)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at http://localhost:4200/vendor.js:141589:17 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at Thread.run (http://localhost:4200/vendor.js:141597:9) [<root>]\n    at http://localhost:4200/vendor.js:142828:39 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]";
 
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
     expect(err2["line"]).toEqual(5);
@@ -108,7 +108,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
     err.stack =
       "Error: Lua Error(ErrorRun/2)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at http://localhost:4200/vendor.js:141589:17 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at Thread.run (http://localhost:4200/vendor.js:141597:9) [<root>]\n    at http://localhost:4200/vendor.js:142828:39 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]";
 
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
     expect(err2.line).toEqual(6);
@@ -121,7 +121,7 @@ describe("LuaDataQuerier parseLuaError()", () => {
 
 describe("LuaDataQuerier runQuery()", () => {
   it("should run simple func returning string", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     setupMock(ds);
 
@@ -142,7 +142,7 @@ describe("LuaDataQuerier runQuery()", () => {
   });
 
   it("should reject string result if asked to", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     setupMock(ds);
 
@@ -158,7 +158,7 @@ describe("LuaDataQuerier runQuery()", () => {
   });
 
   it("should run simple func returning number", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     setupMock(ds);
 
@@ -177,7 +177,7 @@ describe("LuaDataQuerier runQuery()", () => {
   });
 
   it("should run fail if unknown lua func called", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     setupMock(ds);
 
@@ -186,14 +186,14 @@ describe("LuaDataQuerier runQuery()", () => {
       null,
       // Error handler
       err => {
-        expect(err.message).toEqual("Runtime error on line 6: attempt to call a nil value (global 'nonExistantFunc')");
+        expect(err.message).toEqual("Runtime error on line 7: attempt to call a nil value (global 'nonExistantFunc')");
         done();
       }
     );
   });
 
   it("should run simple expression", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", ...mockFuncs], []);
     const Ca = PMCDataValues.makeWithValues([new PMCDataValue(4, 10), new PMCDataValue(5, 11), new PMCDataValue(7, 12)]);
     setupMock(ds);
@@ -213,7 +213,7 @@ describe("LuaDataQuerier runQuery()", () => {
   });
 
   it("works with PIXLISE supplied consts", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", mockFuncs, []);
     setupMock(ds);
 
@@ -254,7 +254,7 @@ describe("LuaDataQuerier runQuery()", () => {
 
 describe("LuaDataQuerier runQuery() caching", () => {
   it("should save expression cache value when requested", done => {
-    const lua = new LuaDataQuerier(false);
+    const lua = new LuaDataQuerier(false, "user123");
     const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement", "memoise", "getMemoised", ...mockFuncs], []);
     setupMock(ds);
 

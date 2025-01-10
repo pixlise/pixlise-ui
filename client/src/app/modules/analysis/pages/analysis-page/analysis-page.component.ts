@@ -29,11 +29,19 @@ export class AnalysisPageComponent {
   soloViewWidgetId: string | null = null;
   soloViewWidget: WidgetLayoutConfiguration | null = null;
 
+  activeMagicLink: string | null = null;
+
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _usersService: UsersService,
     private _route: ActivatedRoute
   ) {}
+
+  decodeUrlSafeBase64 = (input: string): string => {
+    const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
+    const padding = base64.length % 4 === 0 ? "" : "=".repeat(4 - (base64.length % 4));
+    return atob(base64 + padding);
+  };
 
   ngOnInit(): void {
     this._subs.add(
@@ -45,10 +53,17 @@ export class AnalysisPageComponent {
           map(params => parseInt(params?.["tab"] || "0")),
           distinctUntilChanged()
         ),
+        this._route.queryParams.pipe(
+          map(params => String(params?.["ml"] || "")),
+          distinctUntilChanged()
+        ),
       ])
         .pipe(
-          switchMap(([screen, id, soloViewWidgetId, tabNumber]) => {
-            if (!screen || !id || screen.id !== id) {
+          switchMap(([screen, id, soloViewWidgetId, tabNumber, magicLink]) => {
+            if (magicLink && magicLink !== this.activeMagicLink) {
+              this.activeMagicLink = magicLink;
+              this._analysisLayoutService.loginWithMagicLink(magicLink);
+            } else if (!screen || !id || screen.id !== id) {
               this.loadedScreenConfiguration = createDefaultScreenConfiguration();
               return of(null);
             }

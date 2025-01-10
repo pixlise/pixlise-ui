@@ -46,5 +46,10 @@ POSSIBILITY OF SUCH DAMAGE.
   <img src="{{ iconURL }}" />
   <wait-spinner *ngIf="loading"></wait-spinner>
   <!-- TODO: was <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"> -->
-  <badge *ngIf="notificationCount > 0" class="notifications" [value]="notificationCount.toString()" title="{{ notificationCount }} active notifications"> </badge>
+  <badge
+    *ngIf="notificationCount > 0"
+    class="notifications"
+    [value]="notificationCount > 99 ? '99+' : notificationCount.toString()"
+    title="{{ notificationCount }} active notifications">
+  </badge>
 </div>

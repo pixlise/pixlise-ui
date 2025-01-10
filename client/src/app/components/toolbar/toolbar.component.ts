@@ -44,7 +44,6 @@ import { NotificationsService } from "src/app/modules/settings/services/notifica
 import { AnalysisLayoutService, NavigationTab } from "src/app/modules/analysis/services/analysis-layout.service";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
-import { SentryHelper } from "../../utils/utils";
 import { MarkdownModule } from "ngx-markdown";
 import { TabLinks } from "../../models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
@@ -120,12 +119,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
   ];
 
-  allTabs: NavigationTab[] = [
-    // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
-    // { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL, params: { tab: "0" } },
-    // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
-    // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
-  ];
+  allTabs: NavigationTab[] = [];
   openTabs: NavigationTab[] = [];
 
   editingAnnotationIndex: number = -1;
@@ -288,6 +282,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       userOverlayPos,
       true
     );
+  }
+
+  get readOnlyMode(): boolean {
+    return this._analysisLayoutService.readOnlyMode;
   }
 
   onLogoClick(): void {

@@ -34,7 +34,8 @@ import { Navigation } from "../../navigation";
 
 import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Subscription } from "rxjs";
 
 @Component({
@@ -80,6 +81,10 @@ export class NavTopMenuComponent implements OnInit {
   }
 
   onLogout(): void {
+    // Clear reviewer tokens from sesion storage
+    sessionStorage.removeItem("reviewer_access_token");
+    sessionStorage.removeItem("reviewer_id_token");
+
     const returnTo = location.protocol + "//" + location.host;
     this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }

@@ -1157,6 +1157,17 @@ export function doesVersionDiffer(versionA: string, versionB: string): boolean {
   return versionB != versionA;
 }
 
+export function encodeUrlSafeBase64(input: string): string {
+  const base64 = btoa(input);
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+export function decodeUrlSafeBase64(input: string): string {
+  const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = base64.length % 4 === 0 ? "" : "=".repeat(4 - (base64.length % 4));
+  return atob(base64 + padding);
+}
+
 export function isValidNumber(n: number, allowZero: boolean): boolean {
   if (!allowZero && n === 0) {
     return false;
