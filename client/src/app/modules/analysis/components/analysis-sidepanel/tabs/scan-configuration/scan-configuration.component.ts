@@ -181,7 +181,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    const filtered = filterScans(text, [], this.allScans);
+    const filtered = filterScans(text, [], [], this.allScans);
     this.addScanList = sortScans(filtered);
   }
 

@@ -137,12 +137,20 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectedTagIDs]="filterTags"
         [showCurrentTagsSection]="false"
         (onTagSelectionChanged)="onFilterTagChange($event)"></tag-picker>
+      <icon-button
+        title="Instrument Filter"
+        (click)="onFilterMenu($event)"
+        type="filter"
+        [notificationCount]="selectedInstruments.length"
+        badgeText="instruments selected"></icon-button>
+      <div class="dim">{{searchResultSummary}}</div>
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
       <push-button
         #newWorkspaceButton
         [notificationCount]="newWorkspaceScans.length"
+        badgeText="scans selected"
         [customDialog]="newWorkspaceDialog"
         buttonStyle="gray"
         title="Create a new workspace"
