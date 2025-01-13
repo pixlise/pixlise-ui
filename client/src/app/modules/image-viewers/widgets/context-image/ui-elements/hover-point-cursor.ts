@@ -119,7 +119,7 @@ export class HoverPointCursor extends BaseUIElement {
   override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     let drawnCornerBoxWidth = 0;
     for (const mdl of this._ctx.drawModel.scanDrawModels.values()) {
-      if (mdl.hoverEntryIdx >= 0 && mdl.scanPoints[mdl.hoverEntryIdx].coord) {
+      if (mdl.hoverEntryIdx >= 0 && mdl.scanPoints[mdl.hoverEntryIdx]?.coord) {
         drawnCornerBoxWidth = this.drawForScanPoint(screenContext, drawParams, mdl.scanPoints[mdl.hoverEntryIdx], mdl);
 
         // There should only be one set as hovering anyway...
