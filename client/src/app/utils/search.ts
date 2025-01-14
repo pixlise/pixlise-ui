@@ -1,4 +1,4 @@
-import { scanInstrumentToJSON, ScanItem } from "../generated-protos/scan";
+import { ScanInstrument, scanInstrumentToJSON, ScanItem } from "../generated-protos/scan";
 
 /**
  * Calculate the number of operations required to transform string a into string b
@@ -62,7 +62,7 @@ function getDatasetSearchFields(scan: ScanItem): string[] {
   ];
 }
 
-export function filterScans(searchString: string, instruments: string[], filterTags: string[], scans: ScanItem[]): ScanItem[] {
+export function filterScans(searchString: string, instruments: ScanInstrument[], filterTags: string[], scans: ScanItem[]): ScanItem[] {
   let filtered: ScanItem[] = [];
 
   const searchStringLower = searchString.toLowerCase();
@@ -74,7 +74,7 @@ export function filterScans(searchString: string, instruments: string[], filterT
         return false;
       }
 
-      if (instruments.length > 0 && instruments.indexOf(scanInstrumentToJSON(scan.instrument)) < 0) {
+      if (instruments.length > 0 && instruments.indexOf(scan.instrument) < 0) {
         return false;
       }
 

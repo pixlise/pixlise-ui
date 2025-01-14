@@ -37,7 +37,7 @@ import { CustomAuthService as AuthService } from "src/app/services/custom-auth-s
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
-import { ScanDataType, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
+import { ScanDataType, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
@@ -697,7 +697,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   filterScans() {
-    this.filteredScans = filterScans(this._searchString, this.selectedInstruments, this.filterTags, this.scans);
+    const instr: ScanInstrument[] = [];
+    for (const selInstr of this.selectedInstruments) {
+      instr.push(scanInstrumentFromJSON(selInstr));
+    }
+
+    this.filteredScans = filterScans(this._searchString, instr, this.filterTags, this.scans);
     this.filteredScans = sortScans(this.filteredScans);
   }
 
