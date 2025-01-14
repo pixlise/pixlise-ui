@@ -36,7 +36,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
 import { filterScans, sortScans } from "src/app/utils/search";
-import { getScanTitle } from "src/app/utils/utils";
+import { getScanTitle, SentryHelper } from "src/app/utils/utils";
 
 @Component({
   selector: "scan-configuration",
@@ -97,19 +97,25 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     this.scanConfigurations = Object.values(JSON.parse(JSON.stringify(screenConfig.scanConfigurations)));
     this.selectedScanIds = new Set<string>();
 
-    let quantReqs = this.scanConfigurations.map(config => {
+    const quantReqs = this.scanConfigurations.map(config => {
       return this._analysisLayoutService.fetchQuantsForScanAsync(config.id);
     });
 
     combineLatest(quantReqs).subscribe(scans => {
       let updatedScan = false;
       scans.forEach((quants, i) => {
-        let scanConfig = this.scanConfigurations[i];
+        const scanConfig = this.scanConfigurations[i];
+
+        if (!scanConfig) {
+          SentryHelper.logMsg(true, `scanConfigurations item ${i} is undefined/null for screen config: ${screenConfig.id}`);
+          return;
+        }
+
         this.scanQuants[scanConfig.id] = quants;
 
         // If the scan has quants, but no selected quant id, set the default quant
         if (!scanConfig.quantId && quants && quants.length > 0) {
-          let defaultQuant = this._analysisLayoutService.getDefaultQuant(quants);
+          const defaultQuant = this._analysisLayoutService.getDefaultQuant(quants);
 
           if (defaultQuant) {
             scanConfig.quantId = defaultQuant.id;
