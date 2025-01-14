@@ -105,7 +105,7 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
       // Right aligned - we want this near the triangle
       screenContext.textAlign = "right";
       screenContext.fillText(
-        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[0].toLocaleString() : "No Value",
+        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[0]?.toLocaleString() || "?" : "No Value",
         drawModel.hoverLabelA.x,
         drawModel.hoverLabelA.y
       );
@@ -113,12 +113,12 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
       // Left aligned, these are on the other side of the triangle...
       screenContext.textAlign = "left";
       screenContext.fillText(
-        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[1].toLocaleString() : "No Value",
+        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[1]?.toLocaleString() || "?" : "No Value",
         drawModel.hoverLabelB.x,
         drawModel.hoverLabelB.y
       );
       screenContext.fillText(
-        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[2].toLocaleString() : "No Value",
+        this._mdl.hoverPointData.values.length > 0 ? this._mdl.hoverPointData.values[2]?.toLocaleString() || "?" : "No Value",
         drawModel.hoverLabelC.x + 12,
         drawModel.hoverLabelC.y + 12
       );
