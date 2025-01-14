@@ -1,4 +1,12 @@
-## 4.58.0 (Latest)
+## 4.59.0 (Latest)
+
+### New Features
+- Added instrument filter on dataset tiles page. If nothing selected, all datasets shown, but can filter down to just what's selected.
+
+### Bug Fixes
+- Various small bug fixes that were detected by our error logging system. Seemingly people have had times when they hovered over a PMC with missing data and maybe they saw an error dialog even though it's a valid situation. Hopefully these are resolved now.
+
+## 4.58.0 (2025-01-10)
 
 ### Bug Fixes
 - Order beam location versions from latest to oldest on dropdown
@@ -11,7 +19,7 @@
   - Only one reviewer workspace can be created per workspace and it can be set to last indefinitely or expire after a set period.
   - NOTE: Datasets included in a reviewer workspace must be shared with the Public group to be accessible by reviewers.
 - Confusion around image versions and what beam location versions exist for them has now been resolved:
-  - No matter what image you have selected, the lateset version of that image will be displayed.
+  - No matter what image you have selected, the latest version of that image will be displayed.
   - Context image's image options dialog now shows a warning if the displayed image is a newer version than the selected one to make it clear (see tooltip).
   - Beam locations are now stored independently of the image version, so you should be able to load beam location version 1, 2 or 3 if it's available for a given image as opposed to previously hunting through all versions of an image.
   - Importer has been updated to save beam locations in the new way too.

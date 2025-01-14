@@ -103,11 +103,6 @@ export class EnergyCalibrationService {
         const eVStartMetaIdx = metaResp.metaLabels.indexOf("OFFSET");
         const eVperChannelMetaIdx = metaResp.metaLabels.indexOf("XPERCHAN");
 
-        if (!this._scanIdsComplainedAbout.has(scanId)) {
-          SentryHelper.logMsg(true, `Scan: ${scanId} did not have OFFSET or XPERCHAN defined`);
-          this._scanIdsComplainedAbout.add(scanId);
-        }
-
         if (eVStartMetaIdx > -1 && eVperChannelMetaIdx > -1) {
           for (const spectrum of spectrumResp.bulkSpectra) {
             let eVstart = 0;
@@ -128,6 +123,11 @@ export class EnergyCalibrationService {
             }
 
             calibration.push(new SpectrumEnergyCalibration(eVstart, eVperChannel, spectrum.detector));
+          }
+        } else {
+          if (!this._scanIdsComplainedAbout.has(scanId)) {
+            SentryHelper.logMsg(true, `Scan: ${scanId} did not have OFFSET or XPERCHAN defined`);
+            this._scanIdsComplainedAbout.add(scanId);
           }
         }
 
