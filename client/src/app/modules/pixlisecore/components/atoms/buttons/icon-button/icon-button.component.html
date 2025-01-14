@@ -50,6 +50,6 @@ POSSIBILITY OF SUCH DAMAGE.
     *ngIf="notificationCount > 0"
     class="notifications"
     [value]="notificationCount > 99 ? '99+' : notificationCount.toString()"
-    title="{{ notificationCount }} active notifications">
+    title="{{ notificationCount }} {{ badgeText }}">
   </badge>
 </div>

@@ -37,7 +37,7 @@ import { CustomAuthService as AuthService } from "src/app/services/custom-auth-s
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
-import { ScanDataType, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
+import { ScanDataType, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
@@ -69,7 +69,6 @@ import {
   DuplicateWorkspaceDialogData,
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
-import { environment } from "../../../../../../environments/environment";
 import { filterScans, sortScans } from "src/app/utils/search";
 
 class SummaryItem {
@@ -123,11 +122,13 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   errorString: string = "";
   loading = false;
 
+  searchResultSummary = "";
+  selectedInstruments: string[] = [];
+  possibleInstruments: string[] = [];
+
   noSelectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
   noSelectedWorkspaceMsg = HelpMessage.NO_SELECTED_WORKSPACE;
 
-  private _allGroups: string[] = [];
-  private _selectedGroups: string[] = [];
   private _userCanEdit: boolean = false;
 
   private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
@@ -192,20 +193,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
               // User has no permissions at all, admins would've set them this way!
               // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
             } else {
-              // If the user is set to have no permissions, we show that error and don't bother requesting
-              //if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
-              // Show a special error in this case - user has been set to have no permissions
-              // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
-              /*} else*/ {
-                // Don't have no-permission set, so see if the user is allowed to access any groups
-                // this._allGroups = Permissions.getGroupsPermissionAllows(claims);
-                this._selectedGroups = Array.from(this._allGroups);
-                // if(this._allGroups.length <= 0)
-                // {
-                //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
-                // }
-              }
-
               this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
             }
           }
@@ -231,6 +218,16 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = scans;
+
+        // Get unique instrument list
+        const instruments = new Set<ScanInstrument>();
+        for (const scan of scans) {
+          instruments.add(scan.instrument);
+        }
+        this.possibleInstruments = Array.from(instruments)
+          .sort()
+          .map(x => scanInstrumentToJSON(x));
+
         this.onSearchAddScanList(this._newWorkspaceScanSearchText);
         this.idToScan = {};
         scans.forEach(scan => {
@@ -595,15 +592,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     return this._filter.itemCount();
   }
 
-  get groupCount(): number {
-    if (this._selectedGroups.length == this._allGroups.length) {
-      // Nothing special about all groups being turned on!
-      return 0;
-    }
-
-    return this._selectedGroups.length;
-  }
-
   protected setDatasetListingNotAllowedError(err: string): void {
     this.datasetListingAllowed = false;
     this.errorString = err;
@@ -709,7 +697,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   filterScans() {
-    this.filteredScans = filterScans(this._searchString, this.filterTags, this.scans);
+    const instr: ScanInstrument[] = [];
+    for (const selInstr of this.selectedInstruments) {
+      instr.push(scanInstrumentFromJSON(selInstr));
+    }
+
+    this.filteredScans = filterScans(this._searchString, instr, this.filterTags, this.scans);
     this.filteredScans = sortScans(this.filteredScans);
   }
 
@@ -985,12 +978,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     let searchString = this._filter.toSearchString();
 
-    // Combine groups if we need to
-    if (this._allGroups.length != this._selectedGroups.length) {
-      const groupStr = this._selectedGroups.join("|");
-      searchString = DatasetFilter.appendTerm(searchString, "group_id=" + groupStr);
-    }
-
     // Finally, add the title text search string
     if (this._searchString.length > 0) {
       searchString = DatasetFilter.appendTerm(searchString, "title=" + this._searchString);
@@ -1008,6 +995,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.filterScans();
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
+        } else {
+          this.searchResultSummary = this.filteredScans.length + " items";
         }
 
         const scanIds = this.scans.map(item => item.id);
@@ -1051,23 +1040,23 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onGroups(event: MouseEvent): void {
+  onFilterMenu(event: MouseEvent) {
     const dialogConfig = new MatDialogConfig();
     dialogConfig.backdropClass = "empty-overlay-backdrop";
 
     const items: PickerDialogItem[] = [];
-    items.push(new PickerDialogItem("", "Groups", "", true));
+    items.push(new PickerDialogItem("", "Instrument Filter", "", true));
 
-    for (const perm of this._allGroups) {
-      items.push(new PickerDialogItem(perm, perm, "", true));
+    for (const instr of this.possibleInstruments) {
+      items.push(new PickerDialogItem(instr, instr, "", true));
     }
 
-    dialogConfig.data = new PickerDialogData(true, false, false, false, items, this._selectedGroups, "", new ElementRef(event.currentTarget));
+    dialogConfig.data = new PickerDialogData(true, true, false, false, items, this.selectedInstruments, "", new ElementRef(event.currentTarget));
 
     const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
     dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
       if (ids) {
-        this._selectedGroups = ids;
+        this.selectedInstruments = ids;
         this.onSearch();
       }
     });
@@ -1079,7 +1068,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspaceDescription = workspace.description || "";
     this.selectedWorkspaceTags = workspace.tags || [];
 
-    let lastModifiedTimeStr = new Date(workspace.modifiedUnixSec * 1000).toLocaleString();
+    const lastModifiedTimeStr = new Date(workspace.modifiedUnixSec * 1000).toLocaleString();
 
     this.selectedWorkspaceSummaryItems = [
       new SummaryItem("Creator:", workspace.owner?.creatorUser?.name || ""),

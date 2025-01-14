@@ -205,11 +205,13 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
             // Find data to show
             const coords = this.drawModel.pointGroupCoords[groupIdx];
 
-            this.hoverPoint = coords[hoverValIndex];
-            this.hoverScanId = hoverScanId;
-            this.hoverPointData = group.valuesPerScanEntry[hoverValIndex];
-            this.hoverShape = group.shape;
-            this.needsDraw$.next();
+            if (coords && coords.length >= hoverValIndex && coords[hoverValIndex]) {
+              this.hoverPoint = coords[hoverValIndex];
+              this.hoverScanId = hoverScanId;
+              this.hoverPointData = group.valuesPerScanEntry[hoverValIndex];
+              this.hoverShape = group.shape;
+              this.needsDraw$.next();
+            }
           }
           return;
         }
