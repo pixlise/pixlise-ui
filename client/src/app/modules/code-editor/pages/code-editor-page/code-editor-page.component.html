@@ -36,13 +36,38 @@
   </div>
 </ng-template>
 
+<ng-template #newEditorDialog>
+  <div class="new-editor-dialog">
+    <push-button buttonStyle="gray-title" (onClick)="onCreateNewExpression()" class="create-btn">
+      <span class="inner-btn-container">
+        <img class="icon" src="assets/button-icons/plus-white.svg" />
+        <span class="label">Expression</span>
+      </span>
+    </push-button>
+    <push-button buttonStyle="gray-title" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">
+      <span class="inner-btn-container">
+        <img class="icon" src="assets/button-icons/plus-white.svg" />
+        <span class="label">Module</span>
+      </span>
+    </push-button>
+  </div>
+</ng-template>
+
 <div class="code-editor" aria-label="CodeEditor">
   <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}" aria-label="CodeEditorExplorer">
     <div class="top-header">
       <h2 *ngIf="isSidebarOpen" class="explorer-header">
         Explorer
         <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
-        <push-button buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn">
+        <push-button buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">
+          <widget-settings-menu [settingsDialog]="newEditorDialog" #newEditorDialogBtn>
+            <div class="new-btn-container">
+              <img class="icon" src="assets/button-icons/plus-white.svg" />
+              <span class="label">New</span>
+            </div>
+          </widget-settings-menu>
+        </push-button>
+        <push-button buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn" [customStyle]="{ padding: '4px 8px' }">
           <img class="icon" src="assets/button-icons/search.svg" />
           <span class="label">Browse</span>
         </push-button>
@@ -100,14 +125,6 @@
           </div>
         </div>
       </div>
-      <section class="create-btns">
-        <push-button [flexBtn]="true" buttonStyle="gray-title" (onClick)="onCreateNewExpression()" class="create-btn">
-          <span class="inner-btn-container"> <img class="icon" src="assets/button-icons/plus-white.svg" /> <span class="label">Expression</span></span>
-        </push-button>
-        <push-button [flexBtn]="true" buttonStyle="gray-title" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">
-          <span class="inner-btn-container"> <img class="icon" src="assets/button-icons/plus-white.svg" /> <span class="label">Module</span></span>
-        </push-button>
-      </section>
     </section>
   </section>
   <section class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}" aria-label="CodeEditorContainer">
@@ -161,6 +178,23 @@
       </push-button>
     </div>
     <section class="editors">
+      <section *ngIf="!topExpression && !(isSplitScreen && bottomExpression)" class="empty-editor">
+        <div class="new-btn-container" (click)="addExpressions()">
+          <img class="icon" src="assets/button-icons/search.svg" />
+          <span class="title">Browse</span>
+        </div>
+        <div class="new-btn-container" (click)="onCreateNewExpression()">
+          <img class="icon" src="assets/button-icons/plus-white.svg" />
+          <span class="title">New Expression</span>
+        </div>
+
+        <widget-settings-menu [settingsDialog]="newModuleDialog" #newModuleDialogBtn>
+          <div class="new-btn-container">
+            <img class="icon" src="assets/button-icons/plus-white.svg" />
+            <span class="title">New Module</span>
+          </div>
+        </widget-settings-menu>
+      </section>
       <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}" aria-label="CodeEditorTopEdit">
         <expression-text-editor
           *ngIf="topExpression"
@@ -253,7 +287,9 @@
       <push-button buttonStyle="yellow" (onClick)="onSave()" [disabled]="!activeExpressionChanged" class="save-btn">Save</push-button>
     </div>
   </section>
-  <section class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}" aria-label="CodeEditorVisualisation">
+  <section
+    class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}"
+    aria-label="CodeEditorVisualisation">
     <div class="top-header">
       <h2>Visualization: Viz</h2>
       <div class="timeout">
