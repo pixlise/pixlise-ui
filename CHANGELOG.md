@@ -1,4 +1,14 @@
-## 4.59.0 (Latest)
+## 4.60.0 (Latest)
+
+### New Features
+- Adds new entry point for browsing and creating expressions and modules in the code editor
+  - Replaces empty expression with new create buttons
+  - Adds "New" menu button in the top left Explorer panel
+
+### Bug Fixes
+- Fixed issue where last used expression loses modules when user switches tab and then switches back to the code editor
+
+## 4.59.0 (2025-01-13)
 
 ### New Features
 - Added instrument filter on dataset tiles page. If nothing selected, all datasets shown, but can filter down to just what's selected.
