@@ -134,7 +134,7 @@ export class QuantJobsComponent implements OnInit {
           this.setCreator(job.requestorUserId);
           return;
         } else if (job.status != JobStatus_Status.COMPLETE) {
-          this.message = "Can't display details, quantification is still running...";
+          this.message = `Can't display details for still active job ${job.jobId}...`;
           return;
         }
         break;
