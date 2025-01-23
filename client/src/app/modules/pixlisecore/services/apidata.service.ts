@@ -18,7 +18,6 @@ const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
 })
 export class APIDataService extends WSMessageHandler implements OnDestroy {
   private _subs = new Subscription();
-  private _isConnected = false;
 
   private _id = randomString(6);
 
@@ -78,15 +77,24 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   }
 
   private onConnected() {
-    // Find all outstanding requests
+    // Find all outstanding requests. NOTE we send the spectrum requests last, because they might be sitting around a while
+    // but any other message would make the UI more responsive
     const reqs = [];
     for (const outstanding of this._outstandingRequests.values()) {
-      reqs.push(outstanding.req);
-      outstanding.resetCreateTime(); // Reset its creation time because we're about to send it to our new connection!
+      if (outstanding.req.spectrumReq === undefined) {
+        reqs.push(outstanding.req);
+        outstanding.resetCreateTime(); // Reset its creation time because we're about to send it to our new connection!
+      }
+    }
+
+    for (const outstanding of this._outstandingRequests.values()) {
+      if (outstanding.req.spectrumReq !== undefined) {
+        reqs.push(outstanding.req);
+        outstanding.resetCreateTime(); // Reset its creation time because we're about to send it to our new connection!
+      }
     }
 
     console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${reqs.length} items`);
-    this._isConnected = true;
 
     // Send everything in the queue
     // TODO: Should this be in random order? That way on repeated disconnection we eventually whittle down
