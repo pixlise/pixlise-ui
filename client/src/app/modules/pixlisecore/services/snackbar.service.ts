@@ -66,8 +66,11 @@ export class SnackbarService {
       newDetails = (message as WSError).errorText;
     } else if (message instanceof HttpErrorResponse) {
       const httpError = message as HttpErrorResponse;
-      messageText = `Request failed: ${httpError.name} - ${httpError.message}`;
-      newDetails = (message as HttpErrorResponse).message;
+      messageText = httpError.error;
+      if (messageText.length <= 0) {
+        messageText = httpError.message;
+      }
+      newDetails = `Request failed: ${httpError.name} - ${httpError.message}`;
     } else if (typeof message === "object" && message?.errorText) {
       messageText = message.errorText;
     } else if (typeof message === "object" && message?.message) {
