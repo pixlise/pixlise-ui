@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from "@angular/core";
+import { EventEmitter, Injectable, OnDestroy } from "@angular/core";
 
 import { APICommService } from "./apicomm.service";
 
@@ -20,6 +20,9 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   private _subs = new Subscription();
 
   private _id = randomString(6);
+
+  outstandingRequests$: Subject<string> = new Subject<string>();
+  private _lastOutstandingRequestInfo = "";
 
   // Generating message IDs:
   // These are what we send up, API generates reply with same ID in it to specify what it's replying to. This can be
@@ -94,6 +97,8 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       }
     }
 
+    this.updateOutstandingInfo();
+
     console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${reqs.length} items`);
 
     // Send everything in the queue
@@ -114,6 +119,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   protected sendRequest(wsmsg: WSMessage, subj: Subject<any>): void {
     wsmsg.msgId = this.nextMsgId();
     this._outstandingRequests.set(wsmsg.msgId, new WSOustandingReq(wsmsg, subj));
+    this.updateOutstandingInfo();
 
     // If we're not yet connected, queue this up
     if (!this._apiComms.isConnected) {
@@ -134,6 +140,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       }
     } else {
       console.log("<--Recd for msgId:" + wsmsg.msgId);
+      this.updateOutstandingInfo();
     }
   }
 
@@ -150,6 +157,41 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
         // This has timed out, error out or retry or something
         req.sub.error(new WSError(ResponseStatus.WS_TIMEOUT, "Request timed out for: " + getMessageName(req.req), "Try reloading the PIXLISE tab"));
       }
+    }
+  }
+
+  private updateOutstandingInfo() {
+    let msg = "";
+    if (this._outstandingRequests.size > 0) {
+      let msgCount = 0;
+      let spectrumCount = 0;
+
+      for (const req of this._outstandingRequests.values()) {
+        if (req.req.spectrumReq) {
+          spectrumCount++;
+        } else {
+          msgCount++;
+        }
+      }
+
+      if (msgCount > 0 || spectrumCount > 0) {
+        msg += "Waiting for: ";
+      }
+
+      if (msgCount > 0) {
+        msg += `${msgCount} requests`;
+      }
+      if (spectrumCount > 0) {
+        if (msgCount > 0) {
+          msg += ", ";
+        }
+        msg += `${spectrumCount} spectrum requests`;
+      }
+    }
+
+    if (msg != this._lastOutstandingRequestInfo) {
+      this.outstandingRequests$.next(msg);
+      this._lastOutstandingRequestInfo = msg;
     }
   }
 }

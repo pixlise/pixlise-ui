@@ -35,7 +35,7 @@ import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
-import { PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CommonModule } from "@angular/common";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
@@ -143,6 +143,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   editingTabIndex: number | null = null;
   newTabName: string = "";
 
+  outstandingInfo: string = "";
+
   constructor(
     private router: Router,
     private _route: ActivatedRoute,
@@ -153,7 +155,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private titleService: Title, // public dialog: MatDialog,
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _dataService: APIDataService
   ) {}
 
   ngOnInit() {
@@ -229,6 +232,12 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             })
           );
         }
+      })
+    );
+
+    this._subs.add(
+      this._dataService.outstandingRequests$.subscribe((outstandingInfo: string) => {
+        this.outstandingInfo = outstandingInfo;
       })
     );
   }
