@@ -197,6 +197,12 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   }
 
   private checkImage(imagePath: string, callback: (item: ContextImageItem, tooltip: string) => void) {
+    if (imagePath.length <= 0) {
+      this.loading = false;
+      this.errorText = "";
+      return;
+    }
+
     this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: imagePath })).subscribe({
       next: (resp: ImageGetResp) => {
         // NOTE: Image returned may not be the same one we requested - we may be receiving a newer version of the image. Use whatever
