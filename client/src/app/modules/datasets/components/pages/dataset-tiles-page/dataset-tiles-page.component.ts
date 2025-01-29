@@ -70,6 +70,7 @@ import {
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 import { filterScans, sortScans } from "src/app/utils/search";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
 
 class SummaryItem {
   constructor(
@@ -116,11 +117,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   selectedScanSummaryItems: SummaryItem[] = [];
   selectedScanTrackingItems: SummaryItem[] = [];
+  selectedScanAccess: SummaryItem[] = [];
   selectedMissingData: string = "";
   selectedScanContextImage: string = "";
 
   errorString: string = "";
   loading = false;
+
+  scanItemType: ObjectType = ObjectType.OT_SCAN;
 
   searchResultSummary = "";
   selectedInstruments: string[] = [];
@@ -1196,6 +1200,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this.selectedScanTrackingItems.push(new SummaryItem("PIXLISE ID:", this.selectedScan.id));
+
+    this.selectedScanAccess = [];
+    this.selectedScanAccess.push(new SummaryItem("User can edit", event.owner?.canEdit ? "yes" : "no"));
+    this.selectedScanAccess.push(new SummaryItem("Is Scan Shared", event.owner?.sharedWithOthers ? "yes" : "no"));
+    /*this.selectedScanAccess.push(new SummaryItem("Editing Groups", `${event.owner?.editorGroupCount || 0}`));
+    this.selectedScanAccess.push(new SummaryItem("Editing Users", `${event.owner?.editorUserCount || 0}`));
+    this.selectedScanAccess.push(new SummaryItem("Viewing Groups", `${event.owner?.viewerGroupCount || 0}`));
+    this.selectedScanAccess.push(new SummaryItem("Viewing Users", `${event.owner?.viewerUserCount || 0}`));*/
 
     // TODO:
     const missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
