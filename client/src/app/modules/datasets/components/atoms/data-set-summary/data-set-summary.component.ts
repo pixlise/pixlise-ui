@@ -81,9 +81,11 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
       /*const dotpos = loadImg.lastIndexOf(".");
       loadImg = loadImg.substring(0, dotpos - 1) + "-width240" + loadImg.substring(dotpos);*/
       loadImg += "?minwidth=240";
-      this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
-        this._thumbnail = img.src;
-      });
+      this._subs.add(
+        this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
+          this._thumbnail = img.src;
+        })
+      );
     }
 
     if (changes["summary"]) {
