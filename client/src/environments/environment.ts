@@ -45,7 +45,8 @@ export const environment = {
   expressionLanguageCompareDiffAllowed: 0.0000001, // Absolute difference allowed between output values of Lua vs PIXLISE expressions
   expressionExecStatSaveIntervalSec: 600, // How long to wait before we save exec stats for an expression again
   luaTimeoutMs: 600000, // Max time we allow a Lua call to take to run
-  wsTimeout: 60000, // Time it takes for a socket to time out on web socket
+  wsTimeout: 180000, // Time it takes for a socket to time out on web socket
+  maxOutstandingAPIRequests: 10, // How many requests we send through to API before starting to locally queue them in memory
   authTarget: "/datasets",
   authorizationParams: {
     audience: "pixlise-backend",

@@ -227,8 +227,8 @@ input {
       .meta-heading {
         color: $clr-gray-30;
         text-transform: uppercase;
-        font-weight: 400;
-        font-size: 12px;
+        font-weight: bold;
+        font-size: 14px;
         padding: $sz-unit;
       }
 
@@ -269,6 +269,12 @@ input {
       }
     }
   }
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .tab-switcher {

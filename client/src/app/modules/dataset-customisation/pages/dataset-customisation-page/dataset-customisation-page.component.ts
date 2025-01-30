@@ -457,6 +457,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
             },
             error: err => {
               this._snackService.openError(err);
+              this.setWait(this.waitUploadImage, false);
             },
             complete: () => {
               this.setWait(this.waitUploadImage, false);
