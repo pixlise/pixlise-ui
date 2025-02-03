@@ -26,14 +26,20 @@ export function makeImageTooltip(forImage: ScanImage): string {
   if (lbl.startsWith("SI_")) {
     lbl = lbl.substring(3);
   }
-  result += `Image Source: ${lbl}`;
+  result += `Image Source: ${lbl}\n`;
+
+  if (forImage.matchInfo) {
+    result += "\nMatch Transformation:\n";
+    result += ` Offset: ${forImage.matchInfo.xOffset}, ${forImage.matchInfo.yOffset}\n`;
+    result += ` Scale: ${forImage.matchInfo.xScale}, ${forImage.matchInfo.yScale}\n`;
+  }
 
   const fields = SDSFields.makeFromFileName(name);
   if (!fields) {
     return result; //'Cannot decode file name';
   }
 
-  result += `\n\nSol: ${fields.SOL}\n`;
+  result += `\nSol: ${fields.SOL}\n`;
   if (fields.PMC >= 0) {
     result += `PMC: ${fields.PMC}\n`;
   }
@@ -74,6 +80,5 @@ export function makeImageTooltip(forImage: ScanImage): string {
   }
 
   result += `Compression: ${fields.compressionLong}\n`;
-
   return result;
 }
