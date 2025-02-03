@@ -59,6 +59,15 @@ export class ExpressionsService {
     });
   }
 
+  fetchModulesAsync(): Observable<Record<string, DataModule>> {
+    return this._cacheService.getModuleList(DataModuleListReq.create({})).pipe(
+      map(res => {
+        this.modules$.next(res.modules);
+        return res.modules;
+      })
+    );
+  }
+
   getLatestModuleVersion(id: string, isEditable: boolean = false): DataModuleVersion | null {
     let module = this.modules$.value[id];
     if (!module) {
