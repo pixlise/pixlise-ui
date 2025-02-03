@@ -15,7 +15,7 @@
 - Import dialog now tails the log for longer, and tries to detect end of log messages to stop refreshing
 - Fixed issue where last used expression loses modules when user switches tab and then switches back to the code editor
 - Popup (bottom-left) "snack" style error messages weren't showing the HTTP error text correctly
-- Fixes issue where dataset replacement for older beam geometry context images wasn't working correctly
+- Fixes issue where dataset replacement for earlier downlinked context images wasn't working correctly
 
 ## 4.59.0 (2025-01-14)
 
