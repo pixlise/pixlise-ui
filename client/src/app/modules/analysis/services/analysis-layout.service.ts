@@ -789,7 +789,7 @@ export class AnalysisLayoutService implements OnDestroy {
     });
 
     newScreenConfiguration.layouts = screenConfiguration.layouts.map(layout => {
-      layout.widgets.forEach(widget => {
+      layout.widgets.forEach((widget, i) => {
         if (widget?.data && widget?.type) {
           let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
           let widgetData = (widget.data as any)[widgetKey];
@@ -850,6 +850,18 @@ export class AnalysisLayoutService implements OnDestroy {
 
               return spectrumLines;
             });
+          }
+
+          if (widgetData?.contextImage) {
+            console.log("Has context image context image id", widgetData.contextImage, widgetData.contextImage === oldId, oldId, newId);
+            if (widgetData.contextImage === oldId) {
+              console.log("Replacing context image id", oldId, newId);
+              widgetData.contextImage = newId;
+            }
+          }
+
+          if (widgetData) {
+            layout.widgets[i].data![widgetKey] = widgetData;
           }
         }
       });

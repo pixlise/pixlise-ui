@@ -513,6 +513,20 @@ POSSIBILITY OF SUCH DAMAGE.
               <span class="meta-value">{{ item.value }}</span>
             </div>
           </div>
+          <div class="row">
+            <div class="meta-heading">Access</div>
+            <share-ownership-item-button
+              *ngIf="selectedScan.id"
+              [id]="selectedScan.id"
+              [ownershipSummary]="selectedScan.owner || null"
+              [type]="scanItemType"></share-ownership-item-button>
+          </div>
+          <div class="meta-area align-start fx-column">
+            <div *ngFor="let item of selectedScanAccess" class="summary-item">
+              <span class="meta-name">{{ item.label }}</span>
+              <span class="meta-value">{{ item.value }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

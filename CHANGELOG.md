@@ -1,4 +1,23 @@
-## 4.59.0 (Latest)
+## 4.60.0 (Latest)
+
+### New Features
+- Optimised request sending to have an outgoing queue, and we only send a configurable amount of requests at a time. This also allows us to prioritise messages, eg spectrum requests can be last, we want other widgets to get working sooner on load.
+- When selecting dataset tiles, the right side summary now shows some info about ownership of the dataset, along with a sharing button
+- While PIXLISE is waiting on responses to requests from the server it now shows a loading animation in the top toolbar. Mouse hovering over it explains what it's waiting for. This should help clarify what PIXLISE is doing when loading larger datasets.
+- Adds new entry point for browsing and creating expressions and modules in the code editor
+  - Replaces empty expression with new create buttons
+  - Adds "New" menu button in the top left Explorer panel
+
+### Bug Fixes
+- Fixed issues with setting uploaded image match transforms to non-integer values, sometimes mongo DB was failing to convert a float64 to float32 precision and bombed out
+- Small fixes to dataset customisation page, with better error handling
+- Image picker now works correctly when there are no images (previously it was showing errors)
+- Import dialog now tails the log for longer, and tries to detect end of log messages to stop refreshing
+- Fixed issue where last used expression loses modules when user switches tab and then switches back to the code editor
+- Popup (bottom-left) "snack" style error messages weren't showing the HTTP error text correctly
+- Fixes issue where dataset replacement for earlier downlinked context images wasn't working correctly
+
+## 4.59.0 (2025-01-14)
 
 ### New Features
 - Added instrument filter on dataset tiles page. If nothing selected, all datasets shown, but can filter down to just what's selected.

@@ -408,6 +408,13 @@ export class CodeEditorPageComponent implements OnInit {
         }
       })
     );
+
+    // Captures the load, switch tabs, come back edge case
+    if (this.topModules.length === 0 && this.topExpression) {
+      this._expressionsService.fetchModulesAsync().subscribe(modules => {
+        this.updateTopModules(modules);
+      });
+    }
   }
 
   getVisibleModuleVersions(module: DataModule): string[] {
@@ -490,6 +497,8 @@ export class CodeEditorPageComponent implements OnInit {
         this.topModules.push(new DataExpressionModule(moduleMap[moduleRef.moduleId], moduleRef));
       }
     });
+
+    this.storeMetadata();
   }
 
   onToggleExpressionConsoleSolo() {
@@ -513,7 +522,14 @@ export class CodeEditorPageComponent implements OnInit {
         }
 
         if (this.topExpression) {
-          this.updateTopModules(this.modules);
+          let modulesMap = this._expressionsService.modules$.value;
+          if (this.modules.length === 0) {
+            this._expressionsService.fetchModulesAsync().subscribe(modules => {
+              this.updateTopModules(modules);
+            });
+          } else {
+            this.updateTopModules(modulesMap);
+          }
           // this.topModules = [];
 
           // this.topExpression.moduleReferences.forEach(moduleRef => {
@@ -1175,8 +1191,21 @@ export class CodeEditorPageComponent implements OnInit {
 
     if (this.topExpression) {
       // Refresh the top modules so they include the latest module versions
-      this.updateTopModules();
-      this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
+      if (this.modules.length > 0 && this.topExpression.moduleReferences.length > 0) {
+        let modulesMap: Record<string, DataModule> = {};
+        this.modules.forEach(module => {
+          modulesMap[module.id] = module;
+        });
+        this.updateTopModules(modulesMap);
+        this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
+      } else {
+        this._expressionsService.fetchModulesAsync().subscribe(modules => {
+          this.updateTopModules(modules);
+          if (this.topExpression) {
+            this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
+          }
+        });
+      }
     }
   }
 

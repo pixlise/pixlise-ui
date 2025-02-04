@@ -189,9 +189,19 @@ export class WorkspaceService implements OnDestroy {
 
                   let roisForDataset = rois.filter(roi => roi.scanId === datasetId);
                   let quantsForDataset = quants.filter(quant => quant.scanId === datasetId);
-                  let imagesForDataset = imagesInWorkspace
-                    .filter(image => (image?.image && image.image.originScanId === datasetId) || image.image?.associatedScanIds?.includes(datasetId))
-                    .map(image => image.image) as ScanImage[];
+                  let imagesForDataset = (
+                    imagesInWorkspace.map((image, i) => {
+                      let datasetImage = image?.image;
+                      if (datasetImage?.imagePath && datasetImage.imagePath !== workspaceImageIds[i]) {
+                        console.warn(
+                          `Different image returned (Requested: "${workspaceImageIds[i]}", Received: ${datasetImage?.imagePath}). Injecting original ID into new image object...`
+                        );
+                        datasetImage.imagePath = workspaceImageIds[i];
+                      }
+
+                      return datasetImage;
+                    }) as ScanImage[]
+                  ).filter(image => (image && image.originScanId === datasetId) || image?.associatedScanIds?.includes(datasetId));
 
                   productsByDataset[datasetId] = {
                     workspaceROIs: roisForDataset,
@@ -229,7 +239,7 @@ export class WorkspaceService implements OnDestroy {
                   ];
                 });
 
-                allImages.forEach(image => {
+                allImages.forEach((image, i) => {
                   let scanId = image?.originScanId || image?.associatedScanIds?.[0];
                   if (!scanId) {
                     return;
