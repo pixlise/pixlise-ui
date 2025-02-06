@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription, combineLatest, concatMap, map, switchMap, tap } from "rxjs";
+import { Observable, Subscription, combineLatest, concatMap, first, map, switchMap, tap } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import {
@@ -209,66 +209,68 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
       }
     }
 
-    combineLatest(tables$).subscribe({
-      next: (results: TableData[]) => {
-        this.regionDataTables = [];
+    combineLatest(tables$)
+      .pipe(first())
+      .subscribe({
+        next: (results: TableData[]) => {
+          this.regionDataTables = [];
 
-        for (const table of results) {
-          this.regionDataTables.push(table);
-        }
+          for (const table of results) {
+            this.regionDataTables.push(table);
+          }
 
-        // Ensure each table has the same element list
-        let emptyValues = [];
-        const uniqueLabels = new Set<string>();
-        for (const table of this.regionDataTables) {
-          for (const r of table.rows) {
-            uniqueLabels.add(r.label);
-            if (r.values.length > emptyValues.length) {
-              emptyValues = [];
-              for (let c = 0; c < r.values.length; c++) {
-                emptyValues.push(0);
+          // Ensure each table has the same element list
+          let emptyValues = [];
+          const uniqueLabels = new Set<string>();
+          for (const table of this.regionDataTables) {
+            for (const r of table.rows) {
+              uniqueLabels.add(r.label);
+              if (r.values.length > emptyValues.length) {
+                emptyValues = [];
+                for (let c = 0; c < r.values.length; c++) {
+                  emptyValues.push(0);
+                }
               }
             }
           }
-        }
 
-        const allLabels = [];
-        for (const label of Array.from(uniqueLabels).sort()) {
-          allLabels.push(label);
-        }
-
-        for (const table of this.regionDataTables) {
-          const rowLookup = new Map<string, TableRow>();
-          for (const row of table.rows) {
-            rowLookup.set(row.label, row);
+          const allLabels = [];
+          for (const label of Array.from(uniqueLabels).sort()) {
+            allLabels.push(label);
           }
 
-          const rows: TableRow[] = [];
-          for (const label of allLabels) {
-            const existingRow = rowLookup.get(label);
-            if (existingRow) {
-              rows.push(existingRow);
-            } else {
-              rows.push(new TableRow(label, emptyValues, []));
+          for (const table of this.regionDataTables) {
+            const rowLookup = new Map<string, TableRow>();
+            for (const row of table.rows) {
+              rowLookup.set(row.label, row);
             }
+
+            const rows: TableRow[] = [];
+            for (const label of allLabels) {
+              const existingRow = rowLookup.get(label);
+              if (existingRow) {
+                rows.push(existingRow);
+              } else {
+                rows.push(new TableRow(label, emptyValues, []));
+              }
+            }
+
+            table.rows = rows;
           }
 
-          table.rows = rows;
-        }
-
-        this.isWidgetDataLoading = false;
-      },
-      error: err => {
-        this.isWidgetDataLoading = false;
-        this._snackService.openError(err);
-      },
-    });
+          this.isWidgetDataLoading = false;
+        },
+        error: err => {
+          this.isWidgetDataLoading = false;
+          this._snackService.openError(err);
+        },
+      });
   }
 
   private makeTable(scanId: string, roiId: string, quantId: string): Observable<TableData> {
     // Get the quant for this table
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId })).pipe(
-      concatMap((resp: QuantGetResp) => {
+      switchMap((resp: QuantGetResp) => {
         if (!resp.summary) {
           throw new Error("Failed to get quant summary for: " + quantId);
         }

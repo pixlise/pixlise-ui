@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { catchError, map, Observable, Subscription } from "rxjs";
+import { catchError, first, map, Observable, Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
@@ -155,26 +155,17 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
     }
 
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err)).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-    });
+    this._widgetData
+      .getData(query)
+      .pipe(first())
+      .subscribe({
+        next: data => {
+          this.setData(data).pipe(first()).subscribe();
+        },
+        error: err => {
+          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+        },
+      });
   }
 
   private setData(data: RegionDataResults): Observable<void> {
@@ -186,6 +177,11 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
             this._snackService.openError(err.message, err.description);
           }
         }
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
       }),
       catchError(err => {
         this._snackService.openError("Failed to set data", `${err}`);

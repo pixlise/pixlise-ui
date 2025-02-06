@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { catchError, map, Observable, Subject, Subscription, takeUntil } from "rxjs";
+import { catchError, first, map, Observable, Subject, Subscription, takeUntil, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
@@ -35,6 +35,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -176,7 +177,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       return;
     }
 
-
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
 
@@ -189,37 +189,34 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       }
     }
 
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err)).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-    });
+    this._widgetData
+      .getData(query)
+      .pipe(first())
+      .subscribe({
+        next: data => {
+          this.setData(data).pipe(first()).subscribe();
+        },
+        error: err => {
+          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+        },
+      });
   }
 
-  private setData(data: RegionDataResults): Observable<void> {
+  private setData(data: RegionDataResults): Observable<ScanItem[]> {
     return this._analysisLayoutService.availableScans$.pipe(
-      map(scans => {
+      tap(scans => {
         const errs = this.mdl.setData(data, scans);
         if (errs.length > 0) {
           for (const err of errs) {
             this._snackService.openError(err.message, err.description);
           }
         }
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
       }),
       catchError(err => {
         this._snackService.openError("Failed to set data", `${err}`);
