@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, Input, OnDestroy } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 
@@ -38,7 +38,7 @@ import { Subscription } from "rxjs";
   templateUrl: "./screen-capture-button.component.html",
   styleUrls: ["./screen-capture-button.component.scss"],
 })
-export class ScreenCaptureButtonComponent implements OnInit {
+export class ScreenCaptureButtonComponent implements OnDestroy {
   private _subs = new Subscription();
 
   @Input() datasetID: string = "";
@@ -51,15 +51,15 @@ export class ScreenCaptureButtonComponent implements OnInit {
     // private _authService: AuthenticationService,
     private dialog: MatDialog
   ) {}
-
+/*
   ngOnInit(): void {
-    // this._subs.add(
-    //   this._authService.isPublicUser$.subscribe(isPublicUser => {
-    //     this.isPublicUser = isPublicUser;
-    //   })
-    // );
+    this._subs.add(
+      this._authService.isPublicUser$.subscribe(isPublicUser => {
+        this.isPublicUser = isPublicUser;
+      })
+    );
   }
-
+*/
   ngOnDestroy() {
     this._subs.unsubscribe();
   }

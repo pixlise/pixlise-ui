@@ -189,6 +189,10 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     this.updateCurrentImageDisplayed();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     // TODO: do we need the paranoid current != previous check?
     if (changes["currentImage"] && changes["currentImage"].currentValue !== changes["currentImage"].previousValue) {
@@ -293,10 +297,6 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
         });
       }
     });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onSetImage(img: DisplayContextImageItem | null, scanId: string) {

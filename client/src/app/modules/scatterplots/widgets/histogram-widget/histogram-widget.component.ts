@@ -28,7 +28,6 @@ import {
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIService } from "../../../roi/services/roi.service";
-import { RegionSettings } from "../../../roi/models/roi-region";
 
 @Component({
   selector: "histogram-widget",
@@ -96,98 +95,6 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         },
       },
     };
-  }
-
-  private setInitialConfig() {
-    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
-    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
-    this._analysisLayoutService.makeExpressionList(this.scanId, 10).subscribe((exprs: DefaultExpressions) => {
-      this.mdl.expressionIds = exprs.exprIds;
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
-  }
-
-  onSoloView() {
-    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
-      this._analysisLayoutService.soloViewWidgetId$.next("");
-    } else {
-      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
-    }
-  }
-
-  override injectExpression(liveExpression: LiveExpression) {
-    this.scanId = liveExpression.scanId;
-    this.quantId = liveExpression.quantId;
-
-    this._analysisLayoutService.makeExpressionList(this.scanId, 10, this.quantId).subscribe((exprs: DefaultExpressions) => {
-      if (exprs.exprIds.length > 0) {
-        this.mdl.expressionIds = [liveExpression.expressionId, ...exprs.exprIds.slice(0, 9)];
-      }
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
-  }
-
-  private update() {
-    this.isWidgetDataLoading = true;
-    const query: DataSourceParams[] = [];
-
-    // NOTE: processQueryResult depends on the order of the following for loops...
-    for (const exprId of this.mdl.expressionIds) {
-      for (const [scanId, ids] of this.mdl.dataSourceIds) {
-        for (const roiId of ids.roiIds) {
-          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
-
-          // Get the error column if this was a predefined expression
-          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
-          if (elem.length > 0) {
-            // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
-            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
-
-            // Try query it
-            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
-          }
-        }
-      }
-    }
-
-    this._widgetData
-      .getData(query)
-      .pipe(first())
-      .subscribe({
-        next: data => {
-          this.setData(data).pipe(first()).subscribe();
-        },
-        error: err => {
-          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
-        },
-      });
-  }
-
-  private setData(data: RegionDataResults): Observable<void> {
-    return this._analysisLayoutService.availableScans$.pipe(
-      map(scans => {
-        const errs = this.mdl.setData(data, scans);
-        if (errs.length > 0) {
-          for (const err of errs) {
-            this._snackService.openError(err.message, err.description);
-          }
-        }
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
-
-        this.isWidgetDataLoading = false;
-      }),
-      catchError(err => {
-        this._snackService.openError("Failed to set data", `${err}`);
-        return [];
-      })
-    );
   }
 
   ngOnInit() {
@@ -296,6 +203,98 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private setInitialConfig() {
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
+    this._analysisLayoutService.makeExpressionList(this.scanId, 10).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
+
+  override injectExpression(liveExpression: LiveExpression) {
+    this.scanId = liveExpression.scanId;
+    this.quantId = liveExpression.quantId;
+
+    this._analysisLayoutService.makeExpressionList(this.scanId, 10, this.quantId).subscribe((exprs: DefaultExpressions) => {
+      if (exprs.exprIds.length > 0) {
+        this.mdl.expressionIds = [liveExpression.expressionId, ...exprs.exprIds.slice(0, 9)];
+      }
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  private update() {
+    this.isWidgetDataLoading = true;
+    const query: DataSourceParams[] = [];
+
+    // NOTE: processQueryResult depends on the order of the following for loops...
+    for (const exprId of this.mdl.expressionIds) {
+      for (const [scanId, ids] of this.mdl.dataSourceIds) {
+        for (const roiId of ids.roiIds) {
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+
+          // Get the error column if this was a predefined expression
+          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+          if (elem.length > 0) {
+            // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
+            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+            // Try query it
+            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          }
+        }
+      }
+    }
+
+    this._widgetData
+      .getData(query)
+      .pipe(first())
+      .subscribe({
+        next: data => {
+          this.setData(data).pipe(first()).subscribe();
+        },
+        error: err => {
+          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+        },
+      });
+  }
+
+  private setData(data: RegionDataResults): Observable<void> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      map(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   reDraw() {

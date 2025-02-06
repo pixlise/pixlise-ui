@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, SimpleChange, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChange, ViewChild } from "@angular/core";
 import { Subscription } from "rxjs";
 // import { DataExpression } from "src/app/models/Expression";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -129,7 +129,7 @@ export class MarkPosition {
   styleUrls: ["./expression-text-editor.component.scss"],
   providers: [MonacoEditorService],
 })
-export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
+export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChanges {
   private _subs = new Subscription();
   private _expr: DataExpression = DataExpression.create();
 
@@ -186,6 +186,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Make a copy of incoming expression, so we don't edit what's there!
     this._expr = this.copyExpression(this.expression);
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   ngOnChanges(changes: any) {
@@ -388,10 +392,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     this._monacoService.loadingFinished.subscribe(() => {
       this.createMonacoModel();
     });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   get diffText(): string {

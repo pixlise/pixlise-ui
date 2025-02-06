@@ -146,85 +146,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     };
   }
 
-  private setInitialConfig() {
-    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
-    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
-    this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
-      this.mdl.expressionIds = exprs.exprIds;
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
-  }
-
-  get topAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.cornerC || null;
-  }
-
-  get bottomLeftAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.cornerA || null;
-  }
-
-  get bottomRightAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.cornerB || null;
-  }
-
-  private update() {
-    this.isWidgetDataLoading = true;
-    if (this.mdl.expressionIds.length !== 3) {
-      this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
-      this.isWidgetDataLoading = false;
-      return;
-    }
-
-    const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
-    const query: DataSourceParams[] = [];
-
-    // NOTE: processQueryResult depends on the order of the following for loops...
-    for (const [scanId, ids] of this.mdl.dataSourceIds) {
-      for (const roiId of ids.roiIds) {
-        for (const exprId of this.mdl.expressionIds) {
-          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
-        }
-      }
-    }
-
-    this._widgetData
-      .getData(query)
-      .pipe(first())
-      .subscribe({
-        next: data => {
-          this.setData(data).pipe(first()).subscribe();
-        },
-        error: err => {
-          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
-        },
-      });
-  }
-
-  private setData(data: RegionDataResults): Observable<ScanItem[]> {
-    return this._analysisLayoutService.availableScans$.pipe(
-      tap(scans => {
-        const errs = this.mdl.setData(data, scans);
-        if (errs.length > 0) {
-          for (const err of errs) {
-            this._snackService.openError(err.message, err.description);
-          }
-        }
-
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
-
-        this.isWidgetDataLoading = false;
-      }),
-      catchError(err => {
-        this._snackService.openError("Failed to set data", `${err}`);
-        return [];
-      })
-    );
-  }
-
   ngOnInit() {
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
@@ -358,6 +279,85 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this.destroy$.next();
     this.destroy$.complete();
     this._subs.unsubscribe();
+  }
+
+  private setInitialConfig() {
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
+    this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  get topAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerC || null;
+  }
+
+  get bottomLeftAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerA || null;
+  }
+
+  get bottomRightAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerB || null;
+  }
+
+  private update() {
+    this.isWidgetDataLoading = true;
+    if (this.mdl.expressionIds.length !== 3) {
+      this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
+      this.isWidgetDataLoading = false;
+      return;
+    }
+
+    const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
+    const query: DataSourceParams[] = [];
+
+    // NOTE: processQueryResult depends on the order of the following for loops...
+    for (const [scanId, ids] of this.mdl.dataSourceIds) {
+      for (const roiId of ids.roiIds) {
+        for (const exprId of this.mdl.expressionIds) {
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
+        }
+      }
+    }
+
+    this._widgetData
+      .getData(query)
+      .pipe(first())
+      .subscribe({
+        next: data => {
+          this.setData(data).pipe(first()).subscribe();
+        },
+        error: err => {
+          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+        },
+      });
+  }
+
+  private setData(data: RegionDataResults): Observable<ScanItem[]> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      tap(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   override injectExpression(liveExpression: LiveExpression) {

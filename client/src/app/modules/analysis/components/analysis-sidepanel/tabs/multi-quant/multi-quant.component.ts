@@ -93,6 +93,15 @@ export class MultiQuantComponent implements OnInit, OnDestroy {
     this.subscribeZStackTable();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+
+    // Closing the side-bar panel hides the special PMC colouring on context image
+    this.resetContextImageColouring();
+
+    this.closeCreateMQModal();
+  }
+
   private subscribeZStackTable(): void {
     this._subs.add(
       this._multiQuantService.multiQuantZStackSummaryTable$.subscribe({
@@ -112,15 +121,6 @@ export class MultiQuantComponent implements OnInit, OnDestroy {
         },
       })
     );
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
-
-    // Closing the side-bar panel hides the special PMC colouring on context image
-    this.resetContextImageColouring();
-
-    this.closeCreateMQModal();
   }
 
   get selectedScanId() {

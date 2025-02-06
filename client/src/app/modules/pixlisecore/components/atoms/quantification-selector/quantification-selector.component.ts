@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
 import { Subscription } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { QuantModes } from "src/app/models/Quantification";
@@ -39,7 +39,7 @@ import { QuantSelection, QuantSelectorPanelSettings } from "../quant-selector-pa
   templateUrl: "./quantification-selector.component.html",
   styleUrls: ["./quantification-selector.component.scss"],
 })
-export class QuantificationSelectorComponent implements OnInit {
+export class QuantificationSelectorComponent implements OnInit, OnDestroy, OnChanges {
   private subs = new Subscription();
 
   @ViewChild("panelFoldoutButton") panelFoldoutButton!: ElementRef;

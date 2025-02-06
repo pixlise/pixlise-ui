@@ -27,8 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -36,7 +36,6 @@ import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-confi
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -54,7 +53,7 @@ export type HighlightedROIs = {
   templateUrl: "./roi-tab.component.html",
   styleUrls: ["./roi-tab.component.scss"],
 })
-export class ROITabComponent implements OnInit {
+export class ROITabComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   @ViewChild("newROIButton") newROIButton!: ElementRef;

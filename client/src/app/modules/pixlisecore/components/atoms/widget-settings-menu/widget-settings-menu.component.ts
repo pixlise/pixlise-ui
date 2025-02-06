@@ -29,7 +29,7 @@
 
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayConfig, OverlayRef } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
-import { Component, ElementRef, EventEmitter, Injector, Input, OnInit, Output, TemplateRef, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Injector, Input, OnDestroy, OnInit, Output, TemplateRef, ViewChild, ViewContainerRef } from "@angular/core";
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/menu-panel-host.component";
 
@@ -53,7 +53,7 @@ import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/men
   templateUrl: "./widget-settings-menu.component.html",
   styleUrls: ["./widget-settings-menu.component.scss"],
 })
-export class WidgetSettingsMenuComponent implements OnInit {
+export class WidgetSettingsMenuComponent implements OnDestroy {
   @ViewChild(CdkOverlayOrigin, { read: ElementRef }) _overlayOrigin: ElementRef | undefined;
 
   @Input() settingsDialog: TemplateRef<any> | null = null;
@@ -71,8 +71,6 @@ export class WidgetSettingsMenuComponent implements OnInit {
     public viewContainerRef: ViewContainerRef,
     private injector: Injector
   ) {}
-
-  ngOnInit(): void {}
 
   ngOnDestroy() {
     this.hidePanel();
