@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
@@ -23,7 +23,7 @@ import { UserInfo } from "src/app/generated-protos/user";
   templateUrl: "./expression-layer.component.html",
   styleUrls: ["./expression-layer.component.scss"],
 })
-export class ExpressionLayerComponent implements OnInit {
+export class ExpressionLayerComponent implements OnInit, OnDestroy {
   @ViewChild("moreOptionsButton") moreOptionsButton!: ElementRef;
 
   private _subs = new Subscription();
@@ -115,6 +115,10 @@ export class ExpressionLayerComponent implements OnInit {
     );
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   updateUser() {
     let cachedUsers = this._usersService?.cachedUsers;
     let userId = this.expression?.owner?.creatorUser?.id || "";
@@ -123,10 +127,6 @@ export class ExpressionLayerComponent implements OnInit {
     } else if (this.expression?.owner?.creatorUser) {
       this.creatorUser = UserInfo.create(this.expression.owner.creatorUser);
     }
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   get objectType(): ObjectType {

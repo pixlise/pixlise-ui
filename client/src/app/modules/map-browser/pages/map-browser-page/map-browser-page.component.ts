@@ -1,4 +1,4 @@
-import { Component, HostListener } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import {
   FullScreenLayout,
   ScanConfiguration,
@@ -22,7 +22,7 @@ import { LiveExpression } from "src/app/modules/widget/models/base-widget.model"
   templateUrl: "./map-browser-page.component.html",
   styleUrls: ["./map-browser-page.component.scss"],
 })
-export class MapBrowserPageComponent {
+export class MapBrowserPageComponent implements OnInit, OnDestroy {
   public static defaultWidgetsPerPageOptions = [4, 9, 12, 16];
 
   private _subs: Subscription = new Subscription();

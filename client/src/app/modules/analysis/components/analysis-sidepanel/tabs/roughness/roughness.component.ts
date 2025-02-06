@@ -214,6 +214,10 @@ export class RoughnessComponent implements OnInit, OnDestroy {
     );
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   trackByPeakId(index: number, item: RoughnessItem): string {
     return `${item.pmc}-${item.id}-${item.globalDifference}`;
   }
@@ -336,10 +340,6 @@ export class RoughnessComponent implements OnInit, OnDestroy {
           this.updateDisplayList();
         })
     );
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {
