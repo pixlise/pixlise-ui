@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
-import { map, catchError, shareReplay } from "rxjs/operators";
+import { map, catchError, shareReplay, switchMap } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -401,7 +401,7 @@ export class WidgetDataService {
     // Firstly, we need the expression being run - note it could be a "predefined" one, so we have some
     // special handling here that ends up just returning an expression!
     return this.getExpression(query.exprId).pipe(
-      concatMap((expr: DataExpression) => {
+      switchMap((expr: DataExpression) => {
         allowAnyResponse = allowAnyResponse || BuiltInTags.hasAllowAnyExpressionResponseTag(expr.tags);
         return this.runExpression(
           expr,
