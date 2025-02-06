@@ -3,7 +3,7 @@
   [ngClass]="{ 'axis-switcher-vertical': info && info.vertical }"
   #tooltip="matTooltip"
   matTooltipClass="multiline-tooltip"
-  [matTooltip]="info?.errorMsgLong || ''">
+  [matTooltip]="info?.errorMsgLong || (info?.label || '')">
   <img *ngIf="info && (info.errorMsgShort || info.modulesOutOfDate)" src="assets/icons/error-triangle.svg" alt="Error" />
   <span class="label">{{ info ? info.label : "(not assigned)" }}</span>
 </div>
