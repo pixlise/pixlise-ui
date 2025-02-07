@@ -43,6 +43,7 @@ import {
   decompressZeroRunLengthEncoding,
   replaceAsDateIfTestSOL,
   doesVersionDiffer,
+  makeValidFloatString,
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation
@@ -560,5 +561,15 @@ describe("doesVersionDiffer", () => {
     expect(doesVersionDiffer("1.0.0", "v1.1.0")).toEqual(true); // supposed to ignore v
 
     expect(doesVersionDiffer("v0.3.30", "Matterhorn")).toEqual(true);
+  });
+});
+
+describe("makeValidFloatString", () => {
+  it("makeValidFloatString works", () => {
+    expect(makeValidFloatString("1.04")).toEqual("1.04");
+    expect(makeValidFloatString("1,04")).toEqual("1.04");
+    expect(makeValidFloatString("1.000.032,04")).toEqual("1.04");
+    expect(makeValidFloatString("1.000")).toEqual("1.000");
+    expect(makeValidFloatString("1,000")).toEqual("1.000");
   });
 });
