@@ -152,10 +152,12 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           } else {
             this.defaultContextImage = def;
           }
-        },
-        complete: () => {
           this.setWait(this.waitGetDefaultImage, false);
         },
+        error: err => {
+          console.error(`Failed to get default image: ${err}`);
+          this.setWait(this.waitGetDefaultImage, false);
+        }
       })
     );
 
@@ -167,11 +169,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           if (scanItem) {
             this.scanItem = scanItem;
           }
+          this.setWait(this.waitScan, false);
         },
         error: err => {
           this._snackService.openError(err);
-        },
-        complete: () => {
           this.setWait(this.waitScan, false);
         },
       })
@@ -251,8 +252,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         if (resp.images.length <= 0) {
           this._snackService.openWarning("Scan has no images", "You can upload images and align them to scan locations on this page");
         }
+        this.setWait(this.waitGetImageList, false);
       },
-      complete: () => {
+      error: err => {
+        console.error(`Failed to list iamges: ${err}`);
         this.setWait(this.waitGetImageList, false);
       },
     });
@@ -326,11 +329,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       next: (resp: ImageSetDefaultResp) => {
         //this.defaultContextImage = imgName;
         this._snackService.openSuccess("Default image changed", `Dataset ${this.scanId} now has default image set to: ${selection.path}`);
+        this.setWait(this.waitSaveDefaultImage, false);
       },
       error: err => {
         this._snackService.openError(err);
-      },
-      complete: () => {
         this.setWait(this.waitSaveDefaultImage, false);
       },
     });
@@ -454,12 +456,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
             next: () => {
               this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}`);
               this.refreshImages();
+              this.setWait(this.waitUploadImage, false);
             },
             error: err => {
               this._snackService.openError(err);
-              this.setWait(this.waitUploadImage, false);
-            },
-            complete: () => {
               this.setWait(this.waitUploadImage, false);
             },
           });
@@ -492,11 +492,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           }
           this.refreshImages();
         });
+        this.setWait(this.waitDeleteImage, false);
       },
       error: err => {
         this._snackService.openError(`Error deleting ${imgType} image: ${img?.imagePath}`, err);
-      },
-      complete: () => {
         this.setWait(this.waitDeleteImage, false);
       },
     });
@@ -588,11 +587,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (resp: ImageSetMatchTransformResp) => {
             this._snackService.openSuccess("Alignment saved successfully");
+            this.setWait(this.waitGetAlignment, false);
           },
           error: err => {
             this._snackService.openError(err);
-          },
-          complete: () => {
             this.setWait(this.waitGetAlignment, false);
           },
         });
@@ -647,8 +645,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         if (resp && resp.summary) {
           this.quantifiedElements = resp.summary.elements;
         }
+        this.setWait(this.waitGetQuant, false);
       },
-      complete: () => {
+      error: err => {
+        console.error(`Failed to get quant: ${err}`);
         this.setWait(this.waitGetQuant, false);
       },
     });
@@ -770,8 +770,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         }
 
         this.setWait(this.waitMakeMap, false);
+        this.setWait(this.waitGetMatchedImage, false);
       },
-      complete: () => {
+      error: err => {
+        console.error(`Failed to generate context image model: ${err}`);
         this.setWait(this.waitGetMatchedImage, false);
       },
     });
@@ -863,12 +865,11 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           next: (img: HTMLImageElement) => {
             observer.next(img);
             observer.complete();
+            this.setWait(this.waitGetUploadedImage, false);
           },
           error: err => {
             console.error(err);
             observer.error(err);
-          },
-          complete: () => {
             this.setWait(this.waitGetUploadedImage, false);
           },
         });

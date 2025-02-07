@@ -224,12 +224,12 @@ export class MultiQuantComponent implements OnInit, OnDestroy {
         next: (resp: QuantCombineResp) => {
           this.waitingForCreate = false;
           this.message = "Multi-quant created with id: " + resp.jobId;
+          this.createName = "";
+          this.createDescription = "";
         },
         error: err => {
           this.waitingForCreate = false;
           this.message = httpErrorToString(err, "Multi-quant creation failed");
-        },
-        complete: () => {
           this.createName = "";
           this.createDescription = "";
         },
