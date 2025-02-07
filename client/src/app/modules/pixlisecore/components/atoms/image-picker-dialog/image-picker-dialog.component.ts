@@ -384,6 +384,11 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
         }
       }
       // else: Single select - don't allow unselecting the only selected image
+      else {
+        this.selectedImagePath = "";
+        this.selectedChoice = null;
+        this.selectedImageDetails = "";
+      }
     } else if (this.selectedImagePath !== image.path) {
       this.selectedImagePath = image.path;
       this.selectedChoice = image;
