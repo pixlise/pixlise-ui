@@ -568,7 +568,7 @@ describe("makeValidFloatString", () => {
   it("makeValidFloatString works", () => {
     expect(makeValidFloatString("1.04")).toEqual("1.04");
     expect(makeValidFloatString("1,04")).toEqual("1.04");
-    expect(makeValidFloatString("1.000.032,04")).toEqual("1.04");
+    expect(makeValidFloatString("1.000.032,04")).toEqual("1000032.04");
     expect(makeValidFloatString("1.000")).toEqual("1.000");
     expect(makeValidFloatString("1,000")).toEqual("1.000");
   });
