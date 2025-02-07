@@ -287,7 +287,9 @@ export class SelectionService {
       );
     }
 
-    combineLatest(wait$).subscribe(results => {});
+    if (wait$.length > 0) {
+      combineLatest(wait$).subscribe();
+    }
   }
 
   toggleCropSelection(): void {
