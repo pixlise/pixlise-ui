@@ -1,4 +1,13 @@
-## 4.60.0 (Latest)
+## 4.61.0 (Latest)
+
+### New Features
+- Expression Cache Controls
+  - Minor feature that allows you to clear your local and remote cache for any given expression in your workspace from expression layer 3-dots menu
+  - Can also delete all cached versions of an exression from the "Metadata" dialog in the code editor
+- Code Editor Expression Exporting
+  - Added a new export button to the code editor console, which allows you to export the current output as a CSV
+
+## 4.60.0 (2025-02-03)
 
 ### New Features
 - Optimised request sending to have an outgoing queue, and we only send a configurable amount of requests at a time. This also allows us to prioritise messages, eg spectrum requests can be last, we want other widgets to get working sooner on load.
