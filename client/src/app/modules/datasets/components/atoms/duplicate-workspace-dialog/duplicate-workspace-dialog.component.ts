@@ -119,7 +119,7 @@ export class DuplicateWorkspaceDialogComponent {
         error: err => {
           this.loading = false;
           console.error(err);
-          this._snackbarService.openError("Failed to load workspace");
+          this._snackbarService.openError("Failed to load workspace", err);
         },
       })
     );

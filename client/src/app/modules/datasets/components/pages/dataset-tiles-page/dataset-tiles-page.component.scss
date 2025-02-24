@@ -313,9 +313,13 @@ input {
       display: flex;
       flex-direction: column;
 
-      .meta-area {
-        flex: 1;
+      &.description {
+        .meta-area {
+          flex: 1;
+        }
+      }
 
+      .meta-area {
         .text-field {
           flex: 1;
           margin: 8px 0;
@@ -732,5 +736,16 @@ input {
     background-color: rgb(68, 76, 80);
     color: rgb(190, 192, 194);
     border: 1px solid rgb(84, 95, 100);
+  }
+}
+
+.manage-cache {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+
+  .manage-cache-btn {
+    display: flex;
+    width: fit-content;
   }
 }

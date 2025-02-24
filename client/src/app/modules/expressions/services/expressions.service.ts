@@ -27,6 +27,7 @@ import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.se
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ColourRamp } from "src/app/utils/colours";
 import { getPredefinedExpression } from "../../../expression-language/predefined-expressions";
+import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
 
 @Injectable({
   providedIn: "root",
@@ -50,7 +51,8 @@ export class ExpressionsService {
   constructor(
     private _snackBarService: SnackbarService,
     private _cacheService: APICachedDataService,
-    private _dataService: APIDataService
+    private _dataService: APIDataService,
+    private _memoService: MemoisationService
   ) {}
 
   fetchModules() {
@@ -419,6 +421,14 @@ export class ExpressionsService {
       this.expressions$.next(this.expressions$.value);
       this._cacheService.exprListReqMapCacheInvalid = true;
       this._cacheService.removeExpressionRequestFromCache(ExpressionGetReq.create({ id }));
+    });
+  }
+
+  clearExpressionFromCache(id: string) {
+    this._cacheService.exprListReqMapCacheInvalid = true;
+    this._cacheService.removeExpressionRequestFromCache(ExpressionGetReq.create({ id }));
+    this._memoService.delete(id).subscribe(res => {
+      console.log(`Cleared ${id} from cache`, res);
     });
   }
 

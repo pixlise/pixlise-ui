@@ -284,11 +284,14 @@ export class ExpressionLayerComponent implements OnInit {
     if (expr.recentExecStats) {
       // Try to define slow, medium, fast expressions
       desc += "\nExecution speed: ";
-      if (expr.recentExecStats.runtimeMsPer1000Pts < 200) { // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
+      if (expr.recentExecStats.runtimeMsPer1000Pts < 200) {
+        // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
         desc += "fast";
-      } else if (expr.recentExecStats.runtimeMsPer1000Pts < 2000) { // 2000ms per 1000 points, so about 12 seconds for a large scan
+      } else if (expr.recentExecStats.runtimeMsPer1000Pts < 2000) {
+        // 2000ms per 1000 points, so about 12 seconds for a large scan
         desc += "medium";
-      } else { // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
+      } else {
+        // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
         desc += "slow";
       }
       desc += "\n";
@@ -456,5 +459,30 @@ export class ExpressionLayerComponent implements OnInit {
     if (this.selectAuthorToFilter && this.expression?.owner?.creatorUser?.id) {
       this.onFilterAuthor.emit(this.expression.owner.creatorUser.id);
     }
+  }
+
+  onConfirmClearFromCache(): void {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = {
+      confirmText: `Are you sure you want to clear cached versions of this expression (${
+        this.expression?.name || this.expression?.id
+      }) for every scan in the workspace?`,
+    };
+    let dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed && this.expression) {
+        this.onClearFromCache();
+      }
+    });
+  }
+
+  onClearFromCache(): void {
+    if (!this.expression?.id) {
+      return;
+    }
+
+    this._analysisLayoutService.clearExpressionCacheForWorkspace(this.expression.id);
+    this.closeMoreOptionsMenu();
   }
 }

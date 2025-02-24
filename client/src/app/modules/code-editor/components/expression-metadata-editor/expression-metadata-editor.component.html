@@ -74,7 +74,16 @@ POSSIBILITY OF SUCH DAMAGE.
     </span>
     <div class="metadata-fields">
       <h5 class="metadata-label">Description</h5>
-      <textarea [(ngModel)]="description">{{ description }}</textarea>
+      <textarea [disabled]="!isEditable" [(ngModel)]="description">{{ description }}</textarea>
+    </div>
+    <div *ngIf="!isModule && expression?.id" class="metadata-fields">
+      <h5 class="metadata-label">Manage Cache</h5>
+      <push-button
+        class="clear-cache-btn"
+        confirmText="Are you sure you want to clear all cached versions of this expression?"
+        (onClick)="clearCacheForSelectedExpression()"
+        >Clear Cache</push-button
+      >
     </div>
     <div *ngIf="isModule && releaseNotes.length > 0" class="release-notes">
       <div *ngFor="let release of releaseNotes; let i = index" class="grouped-release">
