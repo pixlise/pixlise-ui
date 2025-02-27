@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, map, of, timer } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, forkJoin, map, of, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
@@ -32,6 +32,8 @@ import { ReviewerMagicLinkLoginReq } from "../../../generated-protos/user-manage
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { HttpClient } from "@angular/common/http";
 import { UserOptionsService } from "../../settings/settings.module";
+import { MemoiseDeleteByRegexReq } from "../../../generated-protos/memoisation-msgs";
+import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
 
 export class DefaultExpressions {
   constructor(
@@ -107,7 +109,8 @@ export class AnalysisLayoutService implements OnDestroy {
     private _cachedDataService: APICachedDataService,
     private _snackService: SnackbarService,
     private _selectionService: SelectionService,
-    private _userOptionsService: UserOptionsService
+    private _userOptionsService: UserOptionsService,
+    private _memoService: MemoisationService
   ) {
     this.fetchAvailableScans();
     this.fetchLastLoadedScreenConfigurationId();
@@ -1121,5 +1124,32 @@ export class AnalysisLayoutService implements OnDestroy {
           this.magicLinkStatus$.next("failed");
         },
       });
+  }
+
+  clearExpressionFromCache(expressionId: string): Observable<number> {
+    let pattern = `,\"exprId\":\"${expressionId}\".*`;
+
+    return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
+      map(res => res[1]?.numDeleted)
+    );
+  }
+
+  clearExpressionCacheForScan(expressionId: string, scanId: string): Observable<number> {
+    let pattern = `{\"scanId\":\"${scanId}\",\"exprId\":\"${expressionId}\".*`;
+
+    return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
+      map(res => res[1]?.numDeleted || 0)
+    );
+  }
+
+  clearExpressionCacheForWorkspace(expressionId: string) {
+    let scanIds = this.activeScreenConfiguration$.value?.scanConfigurations ? Object.keys(this.activeScreenConfiguration$.value.scanConfigurations) : [];
+    forkJoin(scanIds.map(scanId => this.clearExpressionCacheForScan(expressionId, scanId))).subscribe(res => {
+      console.log(`Cleared ${res.reduce((acc, curr) => acc + curr, 0)} items from remote expression cache for expression: ${expressionId}`);
+      this._snackService.openSuccess(
+        `Cleared ${res.reduce((acc, curr) => acc + curr || 0, 0)} items from remote expression cache`,
+        `Expression: ${expressionId}, Scans: ${scanIds.join(", ")}`
+      );
+    });
   }
 }

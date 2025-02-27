@@ -37,6 +37,8 @@ import { DataModuleVersion } from "src/app/generated-protos/modules";
 import { PushButtonStyle } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { TagType } from "src/app/modules/tags/models/tag.model";
+import { AnalysisLayoutService } from "../../../analysis/analysis.module";
+import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 
 type MajorGroupedRelease = {
   majorVersion: DataModuleVersion | null;
@@ -84,6 +86,8 @@ export class ExpressionMetadataEditorComponent implements OnInit {
 
   constructor(
     // private _moduleService: DataModuleService,
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _snackService: SnackbarService,
     private _dialog: MatDialog
   ) {
     this.groupReleaseNotes();
@@ -154,6 +158,10 @@ export class ExpressionMetadataEditorComponent implements OnInit {
     // } else {
     //   return this.expression?.doiMetadata?.doi || "";
     // }
+  }
+
+  get isEditable(): boolean {
+    return this.expression?.owner?.canEdit || false;
   }
 
   get name(): string {
@@ -287,5 +295,16 @@ export class ExpressionMetadataEditorComponent implements OnInit {
     let unixTimeSec = version.timeStampUnixSec || 0;
 
     return new Date(unixTimeSec * 1000).toLocaleDateString();
+  }
+
+  clearCacheForSelectedExpression(): void {
+    if (!this.expression?.id) {
+      return;
+    }
+
+    this._analysisLayoutService.clearExpressionFromCache(this.expression.id).subscribe(count => {
+      console.log(`Cleared ${count} cached items for expression ${this.expression.id}`);
+      this._snackService.openSuccess("Cleared cache for selected expression", `Cleared ${count} cached items for expression ${this.expression?.id}`);
+    });
   }
 }

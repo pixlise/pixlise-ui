@@ -28,7 +28,6 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-
 <ng-template #moreOptionsMenu>
   <div class="layer-options-menu">
     <div *ngIf="!isExpressionGroup" class="option" (click)="onFullScreenCodeEditor()">
@@ -63,6 +62,20 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="option" *ngIf="canEdit" (click)="onDelete()">
       <icon-button icon="assets/button-icons/delete.svg"></icon-button>
       <span class="option-label">Delete</span>
+    </div>
+
+    <!-- <push-button
+      class="option"
+      confirmText="Are you sure you want to clear cached versions of this expression for every scan in the workspace?"
+      (onClick)="onClearFromCache()">
+      <div class="option">
+        <icon-button icon="assets/button-icons/delete.svg"></icon-button>
+        <span class="option-label">Clear Workspace Cache</span>
+      </div>
+    </push-button> -->
+    <div class="option" (click)="onConfirmClearFromCache()">
+      <icon-button icon="assets/button-icons/delete.svg"></icon-button>
+      <span class="option-label">Clear Workspace Cache</span>
     </div>
   </div>
 </ng-template>

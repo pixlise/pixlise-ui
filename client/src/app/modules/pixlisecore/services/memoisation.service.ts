@@ -28,6 +28,16 @@ export class MemoisationService {
     return from(this._localStorageService.deleteMemoKey(key));
   }
 
+  deleteByRegex(pattern: string): Observable<void> {
+    this._local.forEach((value, key) => {
+      if (key.match(pattern)) {
+        this._local.delete(key);
+      }
+    });
+
+    return from(this._localStorageService.deleteMemoKeysByRegex(pattern));
+  }
+
   clearUnsavedMemoData(): Observable<void> {
     this._local.forEach((value, key) => {
       if (key.startsWith(DataExpressionId.UnsavedExpressionPrefix)) {
@@ -38,7 +48,7 @@ export class MemoisationService {
   }
 
   memoise(key: string, data: Uint8Array): Observable<MemoisedItem> {
-    if (environment.skipMemoizeKeys.indexOf(key) > -1) {
+    if ((environment?.skipMemoizeKeys || []).indexOf(key) > -1) {
       console.warn("Skipping memoisation of: " + key);
       return of(MemoisedItem.create({ key: key, data: data }));
     }

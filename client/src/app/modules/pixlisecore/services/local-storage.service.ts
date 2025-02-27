@@ -66,6 +66,10 @@ export class LocalStorageService {
     await db.memoData.delete(key);
   }
 
+  async deleteMemoKeysByRegex(pattern: string) {
+    await db.memoData.filter(item => !!item.key.match(pattern)).delete();
+  }
+
   async clearUnsavedMemoData() {
     await db.memoData.filter(item => item.key.startsWith(DataExpressionId.UnsavedExpressionPrefix)).delete();
   }
@@ -77,7 +81,7 @@ export class LocalStorageService {
   async getMemoData(key: string): Promise<MemoisedItem | undefined> {
     return await db.memoData.get(key);
   }
-/*
+  /*
   async clearMemoData() {
     await db.memoData.clear();
   }*/
@@ -107,7 +111,7 @@ export class LocalStorageService {
   async getRGBUImage(url: string): Promise<CachedRGBUImageItem | undefined> {
     return await db.rgbuImages.get(url);
   }
-/*
+  /*
   async clearRGBUImages() {
     await db.rgbuImages.clear();
   }*/
@@ -154,7 +158,7 @@ export class LocalStorageService {
   async getSpectraForKey(scanId: string): Promise<CachedSpectraItem | undefined> {
     return await db.spectra.get(scanId);
   }
-/*
+  /*
   async clearSpectra() {
     await db.spectra.clear();
   }*/
