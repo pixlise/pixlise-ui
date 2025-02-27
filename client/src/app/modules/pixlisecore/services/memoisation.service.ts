@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService } from "./apidata.service";
-import { Observable, firstValueFrom, from, map, of } from "rxjs";
+import { Observable, catchError, firstValueFrom, from, map, of } from "rxjs";
 import { MemoiseWriteReq, MemoiseWriteResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetReq } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
@@ -65,21 +65,30 @@ export class MemoisationService {
     this._local.set(key, localMemoData);
     this._localStorageService.storeMemoData(localMemoData);
 
+    const updateLocalCache = (key: string, data: Uint8Array, timestampUnixSec: number) => {
+      // Fix up the time stamp
+      let memoData = this._local.get(key);
+      if (memoData) {
+        memoData.memoTimeUnixSec = timestampUnixSec;
+      } else {
+        memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: timestampUnixSec });
+      }
+      this._local.set(key, memoData);
+
+      // Cache it to local storage
+      this._localStorageService.storeMemoData(memoData);
+
+      return memoData;
+    };
+
     // Write it to API
     return this._dataService.sendMemoiseWriteRequest(MemoiseWriteReq.create({ key, data })).pipe(
       map((resp: MemoiseWriteResp) => {
-        // Fix up the time stamp
-        let memoData = this._local.get(key);
-        if (memoData) {
-          memoData.memoTimeUnixSec = resp.memoTimeUnixSec;
-        } else {
-          memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: resp.memoTimeUnixSec });
-        }
-        this._local.set(key, memoData);
-
-        // Cache it to local storage
-        this._localStorageService.storeMemoData(memoData);
-        return memoData;
+        return updateLocalCache(key, data, resp.memoTimeUnixSec);
+      }),
+      catchError(err => {
+        SentryHelper.logMsg(false, `Failed to memoise ${key} containing ${data.length} bytes`);
+        return updateLocalCache(key, data, ts);
       })
     );
   }
