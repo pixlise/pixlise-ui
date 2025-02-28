@@ -98,7 +98,7 @@ export class MemoisationService {
       }),
       catchError(err => {
         SentryHelper.logMsg(false, `Failed to memoise ${key} containing ${data.length} bytes`);
-        return updateLocalCache(key, data, ts);
+        return of(updateLocalCache(key, data, ts));
       })
     );
   }
