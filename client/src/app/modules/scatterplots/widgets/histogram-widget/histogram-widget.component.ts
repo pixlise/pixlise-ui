@@ -28,6 +28,7 @@ import {
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIService } from "../../../roi/services/roi.service";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 
 @Component({
   selector: "histogram-widget",
@@ -35,6 +36,7 @@ import { ROIService } from "../../../roi/services/roi.service";
   styleUrls: ["./histogram-widget.component.scss"],
 })
 export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+  private _lastBeamSelection: BeamSelection | undefined = undefined;
   mdl = new HistogramModel();
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
@@ -108,8 +110,23 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           }
 
           this.mdl.logScale = histogramData.logScale;
-          this.mdl.showStdDeviation = !histogramData.showStdDeviation;
-          this.mdl.showWhiskers = histogramData.showWhiskers;
+
+          // If we have an old style record, try to reinterpret it in the new scheme
+          if (!histogramData.zoomMode) {
+            this.mdl.zoomMode = HistogramModel.ZoomModeAll;
+          } else {
+            this.mdl.zoomMode = histogramData.zoomMode;
+          }
+
+          if (!histogramData.whiskerDisplayMode) {
+            if (histogramData.showWhiskers) {
+              this.mdl.whiskerDisplayMode = histogramData.showStdDeviation ? HistogramModel.WhiskersStdDev : HistogramModel.WhiskersStdErr;
+            } else {
+              this.mdl.whiskerDisplayMode = HistogramModel.WhiskersNone;
+            }
+          } else {
+            this.mdl.whiskerDisplayMode = histogramData.whiskerDisplayMode;
+          }
 
           if (histogramData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
@@ -138,28 +155,14 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
+        // Ensure no selected points regions are in the list...
         for (const [scanId, ids] of this.mdl.dataSourceIds) {
           let dataSource = this.mdl.dataSourceIds.get(scanId);
           dataSource!.roiIds = dataSource!.roiIds.filter(id => !PredefinedROIID.isSelectedPointsROI(id));
         }
 
-        let scanIds = selection?.beamSelection?.getScanIds() || [];
-        if (selection && scanIds.length > 0) {
-          scanIds.forEach(scanId => {
-            let pointsSelected = selection.beamSelection.getSelectedScanEntryPMCs(scanId);
-            if (pointsSelected.size === 0) {
-              return;
-            }
-
-            let selectionPoints = PredefinedROIID.getSelectedPointsForScan(scanId);
-            let dataSource = this.mdl.dataSourceIds.get(scanId);
-            if (dataSource) {
-              dataSource.roiIds = Array.from(new Set([...dataSource.roiIds, selectionPoints]));
-            } else {
-              this.mdl.dataSourceIds.set(scanId, new ScanDataIds(this._analysisLayoutService.getQuantIdForScan(scanId), [selectionPoints]));
-            }
-          });
-        }
+        // Remember the selection because we'll need it
+        this._lastBeamSelection = selection.beamSelection;
 
         // Ensure we have the region settings for the selected points
         this._roiService.getSelectedPointsRegionSettings(this.scanId).subscribe();
@@ -246,7 +249,13 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     for (const exprId of this.mdl.expressionIds) {
       for (const [scanId, ids] of this.mdl.dataSourceIds) {
         for (const roiId of ids.roiIds) {
-          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          let roiIdRequested = roiId;
+          // NOTE: If we're requesting the selected points ROI, we actually want ALL points!
+          if (PredefinedROIID.isSelectedPointsROI(roiId)) {
+            roiIdRequested = PredefinedROIID.getAllPointsForScan(scanId);
+          }
+
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiIdRequested, DataUnit.UNIT_DEFAULT));
 
           // Get the error column if this was a predefined expression
           const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
@@ -256,7 +265,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
             // Try query it
             const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiIdRequested, DataUnit.UNIT_DEFAULT));
           }
         }
       }
@@ -278,7 +287,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   private setData(data: RegionDataResults): Observable<void> {
     return this._analysisLayoutService.availableScans$.pipe(
       map(scans => {
-        const errs = this.mdl.setData(data, scans);
+        const errs = this.mdl.setData(data, scans, this._lastBeamSelection);
         if (errs.length > 0) {
           for (const err of errs) {
             this._snackService.openError(err.message, err.description);
@@ -388,27 +397,36 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         expressionIDs: this.mdl.expressionIds,
         visibleROIs: visibleROIs,
         logScale: this.mdl.logScale,
-        showStdDeviation: this.mdl.showStdDeviation,
+        whiskerDisplayMode: this.mdl.whiskerDisplayMode,
+        zoomMode: this.mdl.zoomMode,
       })
     );
   }
 
-  get showWhiskers(): boolean {
-    return this.mdl.showWhiskers;
+  get whiskerDisplayModes(): string[] {
+    return [HistogramModel.WhiskersNone, HistogramModel.WhiskersStdDev, HistogramModel.WhiskersStdErr];
   }
 
-  onToggleShowWhiskers() {
-    this.mdl.showWhiskers = !this.mdl.showWhiskers;
+  get whiskerDisplayMode(): string {
+    return this.mdl.whiskerDisplayMode;
+  }
+
+  onChangeWhiskerDisplayMode(mode: string): void {
+    this.mdl.whiskerDisplayMode = mode;
     this.update();
     this.saveState();
   }
 
-  get showStdDeviation(): boolean {
-    return this.mdl.showStdDeviation;
+  get zoomModes(): string[] {
+    return [HistogramModel.ZoomModeAll, HistogramModel.ZoomModeWhisker];
   }
 
-  toggleShowStdDeviation() {
-    this.mdl.showStdDeviation = !this.mdl.showStdDeviation;
+  get zoomMode(): string {
+    return this.mdl.zoomMode;
+  }
+
+  onChangeZoomMode(mode: string): void {
+    this.mdl.zoomMode = mode;
     this.update();
     this.saveState();
   }

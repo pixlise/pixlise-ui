@@ -222,6 +222,7 @@ export class WidgetDataService {
       roiId: query.roiId,
       units: query.units,
     };
+
     // We need to get time stamps for each item to make this cache key unique to only this specific version of
     // the quant, scan, ROI, etc
 
@@ -420,7 +421,7 @@ export class WidgetDataService {
 
                 // Filter to just the PMCs that are contained in the region.
                 if (roiSettings.region && roiSettings.region.scanEntryIndexesEncoded.length > 0) {
-                  result.resultValues = this.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
+                  result.resultValues = WidgetDataService.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
                 }
 
                 // Remove from cache, we only want to cache while it's running, subsequent ones should
@@ -470,7 +471,7 @@ export class WidgetDataService {
     );
   }
 
-  private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
+  public static filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
     const resultValues: PMCDataValue[] = [];
 
     // Filter for PMCs requested
