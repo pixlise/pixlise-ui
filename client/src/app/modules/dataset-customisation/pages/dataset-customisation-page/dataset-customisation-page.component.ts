@@ -33,7 +33,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
 import { ColourRamp } from "src/app/utils/colours";
-import { SDSFields, getPathBase } from "src/app/utils/utils";
+import { SDSFields, getPathBase, isValidNumber, makeValidFloatString } from "src/app/utils/utils";
 import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../../components/add-custom-image/add-custom-image.component";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
@@ -152,10 +152,12 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           } else {
             this.defaultContextImage = def;
           }
-        },
-        complete: () => {
           this.setWait(this.waitGetDefaultImage, false);
         },
+        error: err => {
+          console.error(`Failed to get default image: ${err}`);
+          this.setWait(this.waitGetDefaultImage, false);
+        }
       })
     );
 
@@ -167,11 +169,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           if (scanItem) {
             this.scanItem = scanItem;
           }
+          this.setWait(this.waitScan, false);
         },
         error: err => {
           this._snackService.openError(err);
-        },
-        complete: () => {
           this.setWait(this.waitScan, false);
         },
       })
@@ -251,8 +252,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         if (resp.images.length <= 0) {
           this._snackService.openWarning("Scan has no images", "You can upload images and align them to scan locations on this page");
         }
+        this.setWait(this.waitGetImageList, false);
       },
-      complete: () => {
+      error: err => {
+        console.error(`Failed to list iamges: ${err}`);
         this.setWait(this.waitGetImageList, false);
       },
     });
@@ -326,11 +329,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       next: (resp: ImageSetDefaultResp) => {
         //this.defaultContextImage = imgName;
         this._snackService.openSuccess("Default image changed", `Dataset ${this.scanId} now has default image set to: ${selection.path}`);
+        this.setWait(this.waitSaveDefaultImage, false);
       },
       error: err => {
         this._snackService.openError(err);
-      },
-      complete: () => {
         this.setWait(this.waitSaveDefaultImage, false);
       },
     });
@@ -454,12 +456,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
             next: () => {
               this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}`);
               this.refreshImages();
+              this.setWait(this.waitUploadImage, false);
             },
             error: err => {
               this._snackService.openError(err);
-              this.setWait(this.waitUploadImage, false);
-            },
-            complete: () => {
               this.setWait(this.waitUploadImage, false);
             },
           });
@@ -492,11 +492,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           }
           this.refreshImages();
         });
+        this.setWait(this.waitDeleteImage, false);
       },
       error: err => {
         this._snackService.openError(`Error deleting ${imgType} image: ${img?.imagePath}`, err);
-      },
-      complete: () => {
         this.setWait(this.waitDeleteImage, false);
       },
     });
@@ -538,6 +537,19 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   // and set function for the UI inputs, any code that touches the UI inputs should go through here. This way we can recalculate
   // the transform however it makes more sense to the user
   private setTransformInputs(xOffset: number, yOffset: number, xScale: number, yScale: number) {
+    if (!isValidNumber(xOffset, true)) {
+      xOffset = 0;
+    }
+    if (!isValidNumber(yOffset, true)) {
+      yOffset = 0;
+    }
+    if (!isValidNumber(xScale, false)) {
+      xScale = 1;
+    }
+    if (!isValidNumber(yScale, false)) {
+      yScale = 1;
+    }
+
     this.xOffset = (xOffset / xScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
     this.yOffset = (yOffset / yScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
     this.xScale = (1 / xScale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
@@ -545,7 +557,26 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   private getTransformInputs(): ContextImageItemTransform {
-    const result = new ContextImageItemTransform(parseFloat(this.xOffset), parseFloat(this.yOffset), 1 / parseFloat(this.xScale), 1 / parseFloat(this.yScale));
+    // Trying to account for cases where user enters 0,2 instead of 0.2
+    let calcOffsetX = parseFloat(makeValidFloatString(this.xOffset));
+    let calcOffsetY = parseFloat(makeValidFloatString(this.yOffset));
+    let calcScaleX = parseFloat(makeValidFloatString(this.xScale));
+    let calcScaleY = parseFloat(makeValidFloatString(this.yScale));
+
+    if (!isValidNumber(calcOffsetX, true)) {
+      calcOffsetX = 0;
+    }
+    if (!isValidNumber(calcOffsetY, true)) {
+      calcOffsetY = 0;
+    }
+    if (!isValidNumber(calcScaleX, false)) {
+      calcScaleX = 1;
+    }
+    if (!isValidNumber(calcScaleY, false)) {
+      calcScaleY = 1;
+    }
+
+    const result = new ContextImageItemTransform(calcOffsetX, calcOffsetY, 1 / calcScaleX, 1 / calcScaleY);
 
     // Undo the divide of scale
     result.xOffset *= result.xScale;
@@ -588,11 +619,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (resp: ImageSetMatchTransformResp) => {
             this._snackService.openSuccess("Alignment saved successfully");
+            this.setWait(this.waitGetAlignment, false);
           },
           error: err => {
             this._snackService.openError(err);
-          },
-          complete: () => {
             this.setWait(this.waitGetAlignment, false);
           },
         });
@@ -647,8 +677,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         if (resp && resp.summary) {
           this.quantifiedElements = resp.summary.elements;
         }
+        this.setWait(this.waitGetQuant, false);
       },
-      complete: () => {
+      error: err => {
+        console.error(`Failed to get quant: ${err}`);
         this.setWait(this.waitGetQuant, false);
       },
     });
@@ -770,8 +802,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         }
 
         this.setWait(this.waitMakeMap, false);
+        this.setWait(this.waitGetMatchedImage, false);
       },
-      complete: () => {
+      error: err => {
+        console.error(`Failed to generate context image model: ${err}`);
         this.setWait(this.waitGetMatchedImage, false);
       },
     });
@@ -863,12 +897,11 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           next: (img: HTMLImageElement) => {
             observer.next(img);
             observer.complete();
+            this.setWait(this.waitGetUploadedImage, false);
           },
           error: err => {
             console.error(err);
             observer.error(err);
-          },
-          complete: () => {
             this.setWait(this.waitGetUploadedImage, false);
           },
         });

@@ -1,5 +1,5 @@
 import { CdkDrag, CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
-import { Component, EventEmitter, Inject, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { DataExpressionId } from "../../../../../expression-language/expression-id";
 import { ExpressionsService } from "../../../../expressions/services/expressions.service";
@@ -62,7 +62,7 @@ export type LayerOpacityChange = {
   templateUrl: "./layer-visibility-dialog.component.html",
   styleUrls: ["./layer-visibility-dialog.component.scss"],
 })
-export class LayerVisibilityDialogComponent {
+export class LayerVisibilityDialogComponent implements OnInit {
   private _subs: Subscription = new Subscription();
   @Output() selectionChanged = new EventEmitter();
   @Output() visibilityToggle = new EventEmitter<LayerVisibilityChange>();

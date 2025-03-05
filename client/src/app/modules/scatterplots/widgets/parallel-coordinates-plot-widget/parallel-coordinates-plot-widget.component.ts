@@ -277,6 +277,10 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   generateAxisTicks(): void {
     this.axisTicks = [];
     for (let tickNm = this.xAxisWavelengthStart; tickNm <= this.xAxisWavelengthEnd; tickNm += this.axisTickIntervals) {
@@ -299,10 +303,6 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       let allPointsROI = PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId);
       this.loadData([allPointsROI]);
     });
-  }
-
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
   }
 
   get excludeZero(): boolean {

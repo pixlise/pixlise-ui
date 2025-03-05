@@ -1,4 +1,4 @@
-import { Component, HostListener } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
@@ -10,7 +10,7 @@ import { TabLinks } from "../../../../models/TabLinks";
   templateUrl: "./new-tab-page.component.html",
   styleUrls: ["./new-tab-page.component.scss"],
 })
-export class NewTabPageComponent {
+export class NewTabPageComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
   private _keyPresses = new Set<string>();
 

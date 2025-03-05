@@ -159,42 +159,6 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
     };
   }
 
-  private setInitialConfig() {
-    // If we don't have anything showing yet, just show the first one...
-    if (!this._analysisLayoutService.defaultScanId && (!this.scanIds || this.scanIds.length === 0)) {
-      return;
-    }
-
-    const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
-      let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
-
-      // Use the MSA image as the default if it exists, else use the first RGBU image
-      let msaImage = rgbuImages.find(img => img.imagePath.includes("MSA_"));
-      if (msaImage) {
-        this.loadData(msaImage.imagePath, []);
-      } else if (rgbuImages.length > 0) {
-        this.loadData(rgbuImages[0].imagePath, []);
-      }
-    });
-  }
-
-  private saveState(): void {
-    this.onSaveWidgetData.emit(
-      SingleAxisRGBUWidgetState.create({
-        imageName: this.mdl.imageName,
-        minerals: this.mdl.mineralsShown,
-        roiStackedOverlap: this.mdl.roiStackedOverlap,
-        selectedMinValue: this.mdl.selectedMinXValue || undefined,
-        selectedMaxValue: this.mdl.selectedMaxXValue || undefined,
-        channelA: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.numeratorChannelIdx),
-        channelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
-        roiIds: this.mdl.visibleRegionIds,
-        showAllMineralLabels: this.mdl.showAllMineralLabels,
-      })
-    );
-  }
-
   ngOnInit() {
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
@@ -235,6 +199,42 @@ export class SingleAxisRGBUComponent extends BaseWidgetModel implements OnInit, 
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private setInitialConfig() {
+    // If we don't have anything showing yet, just show the first one...
+    if (!this._analysisLayoutService.defaultScanId && (!this.scanIds || this.scanIds.length === 0)) {
+      return;
+    }
+
+    const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
+      let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+
+      // Use the MSA image as the default if it exists, else use the first RGBU image
+      let msaImage = rgbuImages.find(img => img.imagePath.includes("MSA_"));
+      if (msaImage) {
+        this.loadData(msaImage.imagePath, []);
+      } else if (rgbuImages.length > 0) {
+        this.loadData(rgbuImages[0].imagePath, []);
+      }
+    });
+  }
+
+  private saveState(): void {
+    this.onSaveWidgetData.emit(
+      SingleAxisRGBUWidgetState.create({
+        imageName: this.mdl.imageName,
+        minerals: this.mdl.mineralsShown,
+        roiStackedOverlap: this.mdl.roiStackedOverlap,
+        selectedMinValue: this.mdl.selectedMinXValue || undefined,
+        selectedMaxValue: this.mdl.selectedMaxXValue || undefined,
+        channelA: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.numeratorChannelIdx),
+        channelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
+        roiIds: this.mdl.visibleRegionIds,
+        showAllMineralLabels: this.mdl.showAllMineralLabels,
+      })
+    );
   }
 
   get roiStackedOverlap(): boolean {

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
@@ -23,7 +23,7 @@ import { UserInfo } from "src/app/generated-protos/user";
   templateUrl: "./expression-layer.component.html",
   styleUrls: ["./expression-layer.component.scss"],
 })
-export class ExpressionLayerComponent implements OnInit {
+export class ExpressionLayerComponent implements OnInit, OnDestroy {
   @ViewChild("moreOptionsButton") moreOptionsButton!: ElementRef;
 
   private _subs = new Subscription();
@@ -115,6 +115,10 @@ export class ExpressionLayerComponent implements OnInit {
     );
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   updateUser() {
     let cachedUsers = this._usersService?.cachedUsers;
     let userId = this.expression?.owner?.creatorUser?.id || "";
@@ -123,10 +127,6 @@ export class ExpressionLayerComponent implements OnInit {
     } else if (this.expression?.owner?.creatorUser) {
       this.creatorUser = UserInfo.create(this.expression.owner.creatorUser);
     }
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   get objectType(): ObjectType {
@@ -284,11 +284,14 @@ export class ExpressionLayerComponent implements OnInit {
     if (expr.recentExecStats) {
       // Try to define slow, medium, fast expressions
       desc += "\nExecution speed: ";
-      if (expr.recentExecStats.runtimeMsPer1000Pts < 200) { // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
+      if (expr.recentExecStats.runtimeMsPer1000Pts < 200) {
+        // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
         desc += "fast";
-      } else if (expr.recentExecStats.runtimeMsPer1000Pts < 2000) { // 2000ms per 1000 points, so about 12 seconds for a large scan
+      } else if (expr.recentExecStats.runtimeMsPer1000Pts < 2000) {
+        // 2000ms per 1000 points, so about 12 seconds for a large scan
         desc += "medium";
-      } else { // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
+      } else {
+        // 200ms per 1000 points, so about 1200ms for a large scan, that's pretty quick
         desc += "slow";
       }
       desc += "\n";
@@ -456,5 +459,30 @@ export class ExpressionLayerComponent implements OnInit {
     if (this.selectAuthorToFilter && this.expression?.owner?.creatorUser?.id) {
       this.onFilterAuthor.emit(this.expression.owner.creatorUser.id);
     }
+  }
+
+  onConfirmClearFromCache(): void {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = {
+      confirmText: `Are you sure you want to clear cached versions of this expression (${
+        this.expression?.name || this.expression?.id
+      }) for every scan in the workspace?`,
+    };
+    let dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed && this.expression) {
+        this.onClearFromCache();
+      }
+    });
+  }
+
+  onClearFromCache(): void {
+    if (!this.expression?.id) {
+      return;
+    }
+
+    this._analysisLayoutService.clearExpressionCacheForWorkspace(this.expression.id);
+    this.closeMoreOptionsMenu();
   }
 }

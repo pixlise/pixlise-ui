@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, HostListener, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Subscription } from "rxjs";
@@ -64,7 +64,7 @@ import { environment } from "src/environments/environment";
   templateUrl: "./code-editor-page.component.html",
   styleUrls: ["./code-editor-page.component.scss"],
 })
-export class CodeEditorPageComponent implements OnInit {
+export class CodeEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild("preview", { read: ViewContainerRef }) previewContainer: any;
   @ViewChild("newModuleDialogBtn") newModuleDialog!: ElementRef;
 
@@ -417,6 +417,10 @@ export class CodeEditorPageComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   getVisibleModuleVersions(module: DataModule): string[] {
     let visibleModuleVersions: string[] = [];
 
@@ -572,10 +576,6 @@ export class CodeEditorPageComponent implements OnInit {
     delete this.queryParams[EditorConfig.bottomModuleId];
     delete this.queryParams[EditorConfig.topModuleVersion];
     delete this.queryParams[EditorConfig.bottomModuleVersion];
-  }
-
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
   }
 
   getVersionString(version: SemanticVersion | undefined): string {

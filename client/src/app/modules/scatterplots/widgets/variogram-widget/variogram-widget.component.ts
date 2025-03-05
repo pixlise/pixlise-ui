@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { catchError, combineLatest, forkJoin, map, Observable, of, shareReplay, Subject, Subscription, switchMap, take } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
@@ -91,7 +91,7 @@ export type ScanLocation = {
   templateUrl: "./variogram-widget.component.html",
   styleUrls: ["./variogram-widget.component.scss"],
 })
-export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit {
+export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   @Input() widgetPosition: string = "";
 
   private _variogramModel: VariogramModel = new VariogramModel();
@@ -319,6 +319,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
     );
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   setInitialConfig(): void {
     let scanId = this._analysisLayoutService.defaultScanId;
     let allPointsId = PredefinedROIID.getAllPointsForScan(scanId);
@@ -327,10 +331,6 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit 
       this._variogramModel.visibleROIs = [VisibleROI.create({ scanId, id: allPointsId })];
       this.update();
     });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onToggleSolo(): void {

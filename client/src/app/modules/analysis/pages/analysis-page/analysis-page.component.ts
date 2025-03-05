@@ -1,4 +1,4 @@
-import { Component, HostListener } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
@@ -16,7 +16,7 @@ export type ScreenConfigurationCSS = {
   templateUrl: "./analysis-page.component.html",
   styleUrls: ["./analysis-page.component.scss"],
 })
-export class AnalysisPageComponent {
+export class AnalysisPageComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
   private _keyPresses = new Set<string>();
 

@@ -93,6 +93,10 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   loadScreenConfiguration(screenConfig: ScreenConfiguration) {
     this.scanConfigurations = Object.values(JSON.parse(JSON.stringify(screenConfig.scanConfigurations)));
     this.selectedScanIds = new Set<string>();
@@ -160,10 +164,6 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
         }
       });
     }
-  }
-
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
   }
 
   onScanSearchMenu() {

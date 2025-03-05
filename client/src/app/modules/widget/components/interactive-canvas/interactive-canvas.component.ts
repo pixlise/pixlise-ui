@@ -27,11 +27,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { Observable, Subject, Subscription, fromEvent, of } from "rxjs";
-import { tap, throttleTime, debounceTime } from "rxjs/operators";
+import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, ViewChild } from "@angular/core";
+import { Observable, Subject, Subscription, of } from "rxjs";
+import { tap } from "rxjs/operators";
 
-import { addVectors, getMatrixAs2x3Array, Point, Rect, subtractVectors } from "src/app/models/Geometry";
+import { addVectors, Point, Rect } from "src/app/models/Geometry";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 // import { LayoutService } from "src/app/services/layout.service";
 
@@ -194,7 +194,7 @@ export interface CanvasWorldTransform {
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],
 })
-export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, OnDestroy {
+export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
   @Input() drawer: CanvasDrawer | null = null;
   _drawNotifier: CanvasDrawNotifier | null = null;
   @Input() interactionHandler: CanvasInteractionHandler | null = null;
@@ -211,8 +211,6 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
   protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
 
   constructor(private _layoutService: AnalysisLayoutService) {}
-
-  //ngOnInit() {}
 
   ngOnDestroy() {
     this._subs.unsubscribe();

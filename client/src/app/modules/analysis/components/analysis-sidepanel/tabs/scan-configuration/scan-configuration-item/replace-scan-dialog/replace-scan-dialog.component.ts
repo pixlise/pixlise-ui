@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy } from "@angular/core";
+import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { DuplicateDatasetProducts, WorkspaceService } from "../../../../../../services/workspaces.service";
@@ -20,7 +20,7 @@ export type ReplaceScanDialogData = {
   templateUrl: "./replace-scan-dialog.component.html",
   styleUrls: ["./replace-scan-dialog.component.scss"],
 })
-export class ReplaceScanDialog implements OnDestroy {
+export class ReplaceScanDialogComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   loading: boolean = false;
@@ -39,7 +39,7 @@ export class ReplaceScanDialog implements OnDestroy {
   searchableRoisForScans: { [scanId: string]: SearchableListItem[] } = {};
 
   constructor(
-    public dialogRef: MatDialogRef<ReplaceScanDialog>,
+    public dialogRef: MatDialogRef<ReplaceScanDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ReplaceScanDialogData,
     private _workspaceService: WorkspaceService,
     private _analysisLayoutService: AnalysisLayoutService,

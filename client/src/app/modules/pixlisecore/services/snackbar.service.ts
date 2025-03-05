@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { SnackBarPopupComponent } from "../components/atoms/snackbar-popup/snackbar-popup.component";
 import { LocalStorageService } from "./local-storage.service";
@@ -21,7 +21,7 @@ export type SnackbarDataItem = {
 @Injectable({
   providedIn: "root",
 })
-export class SnackbarService {
+export class SnackbarService implements OnDestroy {
   subscriptions: Subscription = new Subscription();
   history: SnackbarDataItem[] = [];
 

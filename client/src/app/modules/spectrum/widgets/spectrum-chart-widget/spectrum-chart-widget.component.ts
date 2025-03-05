@@ -375,6 +375,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this.reDraw();
   }
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
 
   private setInitialConfig() {
     // Show allpoints A/B and selection A/B from the default scan
@@ -398,10 +401,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this.mdl.setLineList(items);
       this.updateLines();
     }
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onSoloView() {

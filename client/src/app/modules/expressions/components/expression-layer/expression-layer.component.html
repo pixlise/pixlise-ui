@@ -28,7 +28,6 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-
 <ng-template #moreOptionsMenu>
   <div class="layer-options-menu">
     <div *ngIf="!isExpressionGroup" class="option" (click)="onFullScreenCodeEditor()">
@@ -64,6 +63,20 @@ POSSIBILITY OF SUCH DAMAGE.
       <icon-button icon="assets/button-icons/delete.svg"></icon-button>
       <span class="option-label">Delete</span>
     </div>
+
+    <!-- <push-button
+      class="option"
+      confirmText="Are you sure you want to clear cached versions of this expression for every scan in the workspace?"
+      (onClick)="onClearFromCache()">
+      <div class="option">
+        <icon-button icon="assets/button-icons/delete.svg"></icon-button>
+        <span class="option-label">Clear Workspace Cache</span>
+      </div>
+    </push-button> -->
+    <div class="option" (click)="onConfirmClearFromCache()">
+      <icon-button icon="assets/button-icons/delete.svg"></icon-button>
+      <span class="option-label">Clear Workspace Cache</span>
+    </div>
   </div>
 </ng-template>
 
@@ -92,7 +105,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </h4>
       <span class="details-line">
         <span class="date">{{ dateCreatedString }}</span>
-        <span class="description">{{ description }}</span>
+        <span class="description" [title]="description">{{ description }}</span>
       </span>
     </div>
     <div class="spacer-gap" (click)="onCheckboxClick()"></div>

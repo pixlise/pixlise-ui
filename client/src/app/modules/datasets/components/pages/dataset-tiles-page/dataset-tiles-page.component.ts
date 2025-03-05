@@ -92,6 +92,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   @ViewChild("newWorkspaceButton") newWorkspaceButton: ElementRef | undefined;
   @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton: ElementRef | undefined;
   @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
+  @ViewChild("manageCacheBtn") manageCacheBtn!: ElementRef;
 
   _searchString: string = "";
 
@@ -511,7 +512,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    this.newWorkspaceAddScanList = this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase()));
+    this.newWorkspaceAddScanList = sortScans(this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase())));
   }
 
   onAddScanSearchClick(evt: any) {
@@ -1281,6 +1282,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   private closeWorkspaceOpenOptionsMenu(): void {
     if (this.openWorkspaceOptionsButton && this.openWorkspaceOptionsButton instanceof WidgetSettingsMenuComponent) {
       (this.openWorkspaceOptionsButton as WidgetSettingsMenuComponent).close();
+    }
+  }
+
+  private closeManageCacheMenu(): void {
+    if (this.manageCacheBtn && this.manageCacheBtn instanceof WidgetSettingsMenuComponent) {
+      (this.manageCacheBtn as WidgetSettingsMenuComponent).close();
     }
   }
 

@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, ViewChildren, ElementRef, QueryList, inject } from "@angular/core";
+import { Component, OnInit, ViewChildren, ElementRef, QueryList, inject, OnDestroy } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 
 import { Navigation } from "../../navigation";
@@ -43,7 +43,7 @@ import { Subscription } from "rxjs";
   templateUrl: "./nav-top-menu.component.html",
   styleUrls: ["./nav-top-menu.component.scss", "./nav-menu/nav-menu.component.scss"],
 })
-export class NavTopMenuComponent implements OnInit {
+export class NavTopMenuComponent implements OnInit, OnDestroy {
   @ViewChildren("childMenu") childMenuElements: QueryList<ElementRef> = new QueryList<ElementRef>();
 
   private _subs: Subscription = new Subscription();

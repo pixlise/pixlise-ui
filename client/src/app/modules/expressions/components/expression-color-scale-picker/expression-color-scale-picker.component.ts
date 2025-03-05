@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input } from "@angular/core";
+import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ExpressionDisplaySettings } from "src/app/generated-protos/expressions";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
@@ -46,7 +46,7 @@ export type ColourRampSelection = {
   templateUrl: "./expression-color-scale-picker.component.html",
   styleUrls: ["./expression-color-scale-picker.component.scss"],
 })
-export class ExpressionColorScalePickerComponent {
+export class ExpressionColorScalePickerComponent implements OnInit, OnDestroy {
   private _id: string = "";
 
   private _subs = new Subscription();

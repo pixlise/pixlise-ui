@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import {
   RegionOfInterestBulkDuplicateReq,
@@ -13,7 +13,7 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
@@ -41,15 +41,15 @@ export type ROISummaries = Record<string, ROIItemSummary>;
 @Injectable({
   providedIn: "root",
 })
-export class ROIService {
+export class ROIService implements OnDestroy {
+  private _subs = new Subscription();
+
   roiSummaries$ = new BehaviorSubject<ROISummaries>({});
   roiItems$ = new BehaviorSubject<Record<string, ROIItem>>({});
   mistROIsByScanId$ = new BehaviorSubject<Record<string, ROISummaries>>({});
 
   displaySettingsMap$ = new BehaviorSubject<Record<string, ROIDisplaySettings>>({}); // Map of ROI ID to display settings
   private _regionMap = new Map<string, Observable<RegionSettings>>(); // Cached region observables
-
-  private _scanShapeMap = new Map<string, ROIShape>();
 
   private _nextScanShapeIndices: Record<string, number> = {};
   private _nextColourIndices: Record<string, number> = {};
@@ -72,38 +72,47 @@ export class ROIService {
   ) {
     this.listROIs();
 
-    combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$]).subscribe({
-      next: ([screenConfig, scans]) => {
+    this._subs.add(
+      combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$]).subscribe({
+        next: ([screenConfig, scans]) => {
+          this._allScans = scans;
+
+          this._allScans.forEach(scan => {
+            let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
+            if (this._regionMap.get(allPointsROI) !== undefined) {
+              this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
+                let settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
+                let scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
+                let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+                settings.displaySettings.colour = scanRGBA;
+
+                this._regionMap.set(allPointsROI, of(settings));
+              });
+            }
+          });
+        },
+      })
+    );
+
+    // SUBS CLEANUP - Does this need to be duplicated from the above??
+    this._subs.add(
+      this._analysisLayoutService.availableScans$.subscribe(scans => {
         this._allScans = scans;
 
         this._allScans.forEach(scan => {
           let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
           if (this._regionMap.get(allPointsROI) !== undefined) {
             this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
-              let settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
-              let scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
-              let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
-              settings.displaySettings.colour = scanRGBA;
-
-              this._regionMap.set(allPointsROI, of(settings));
+              this._regionMap.set(allPointsROI, of(createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title)));
             });
           }
         });
-      },
-    });
+      })
+    );
+  }
 
-    this._analysisLayoutService.availableScans$.subscribe(scans => {
-      this._allScans = scans;
-
-      this._allScans.forEach(scan => {
-        let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
-        if (this._regionMap.get(allPointsROI) !== undefined) {
-          this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
-            this._regionMap.set(allPointsROI, of(createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title)));
-          });
-        }
-      });
-    });
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   generateSelectionROI(selection: SelectionHistoryItem) {

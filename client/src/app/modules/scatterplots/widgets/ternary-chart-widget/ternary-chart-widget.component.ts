@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { catchError, map, Observable, Subject, Subscription, takeUntil } from "rxjs";
+import { catchError, first, map, Observable, Subject, Subscription, takeUntil, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
@@ -35,6 +35,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -143,89 +144,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         },
       },
     };
-  }
-
-  private setInitialConfig() {
-    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
-    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
-    this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
-      this.mdl.expressionIds = exprs.exprIds;
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
-  }
-
-  get topAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.cornerC || null;
-  }
-
-  get bottomLeftAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.cornerA || null;
-  }
-
-  get bottomRightAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.cornerB || null;
-  }
-
-  private update() {
-    this.isWidgetDataLoading = true;
-    if (this.mdl.expressionIds.length !== 3) {
-      this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
-      this.isWidgetDataLoading = false;
-      return;
-    }
-
-
-    const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
-    const query: DataSourceParams[] = [];
-
-    // NOTE: processQueryResult depends on the order of the following for loops...
-    for (const [scanId, ids] of this.mdl.dataSourceIds) {
-      for (const roiId of ids.roiIds) {
-        for (const exprId of this.mdl.expressionIds) {
-          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
-        }
-      }
-    }
-
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err)).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-    });
-  }
-
-  private setData(data: RegionDataResults): Observable<void> {
-    return this._analysisLayoutService.availableScans$.pipe(
-      map(scans => {
-        const errs = this.mdl.setData(data, scans);
-        if (errs.length > 0) {
-          for (const err of errs) {
-            this._snackService.openError(err.message, err.description);
-          }
-        }
-      }),
-      catchError(err => {
-        this._snackService.openError("Failed to set data", `${err}`);
-        return [];
-      })
-    );
   }
 
   ngOnInit() {
@@ -361,6 +279,85 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this.destroy$.next();
     this.destroy$.complete();
     this._subs.unsubscribe();
+  }
+
+  private setInitialConfig() {
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
+    this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  get topAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerC || null;
+  }
+
+  get bottomLeftAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerA || null;
+  }
+
+  get bottomRightAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerB || null;
+  }
+
+  private update() {
+    this.isWidgetDataLoading = true;
+    if (this.mdl.expressionIds.length !== 3) {
+      this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
+      this.isWidgetDataLoading = false;
+      return;
+    }
+
+    const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
+    const query: DataSourceParams[] = [];
+
+    // NOTE: processQueryResult depends on the order of the following for loops...
+    for (const [scanId, ids] of this.mdl.dataSourceIds) {
+      for (const roiId of ids.roiIds) {
+        for (const exprId of this.mdl.expressionIds) {
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
+        }
+      }
+    }
+
+    this._widgetData
+      .getData(query)
+      .pipe(first())
+      .subscribe({
+        next: data => {
+          this.setData(data).pipe(first()).subscribe();
+        },
+        error: err => {
+          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+        },
+      });
+  }
+
+  private setData(data: RegionDataResults): Observable<ScanItem[]> {
+    return this._analysisLayoutService.availableScans$.pipe(
+      tap(scans => {
+        const errs = this.mdl.setData(data, scans);
+        if (errs.length > 0) {
+          for (const err of errs) {
+            this._snackService.openError(err.message, err.description);
+          }
+        }
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
+      }),
+      catchError(err => {
+        this._snackService.openError("Failed to set data", `${err}`);
+        return [];
+      })
+    );
   }
 
   override injectExpression(liveExpression: LiveExpression) {

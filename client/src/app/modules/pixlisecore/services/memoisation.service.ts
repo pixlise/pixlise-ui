@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService } from "./apidata.service";
-import { Observable, firstValueFrom, from, map, of } from "rxjs";
+import { Observable, catchError, firstValueFrom, from, map, of } from "rxjs";
 import { MemoiseWriteReq, MemoiseWriteResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetReq } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
@@ -28,6 +28,16 @@ export class MemoisationService {
     return from(this._localStorageService.deleteMemoKey(key));
   }
 
+  deleteByRegex(pattern: string): Observable<void> {
+    this._local.forEach((value, key) => {
+      if (key.match(pattern)) {
+        this._local.delete(key);
+      }
+    });
+
+    return from(this._localStorageService.deleteMemoKeysByRegex(pattern));
+  }
+
   clearUnsavedMemoData(): Observable<void> {
     this._local.forEach((value, key) => {
       if (key.startsWith(DataExpressionId.UnsavedExpressionPrefix)) {
@@ -38,7 +48,7 @@ export class MemoisationService {
   }
 
   memoise(key: string, data: Uint8Array): Observable<MemoisedItem> {
-    if (environment.skipMemoizeKeys.indexOf(key) > -1) {
+    if ((environment?.skipMemoizeKeys || []).indexOf(key) > -1) {
       console.warn("Skipping memoisation of: " + key);
       return of(MemoisedItem.create({ key: key, data: data }));
     }
@@ -65,21 +75,30 @@ export class MemoisationService {
     this._local.set(key, localMemoData);
     this._localStorageService.storeMemoData(localMemoData);
 
+    const updateLocalCache = (key: string, data: Uint8Array, timestampUnixSec: number) => {
+      // Fix up the time stamp
+      let memoData = this._local.get(key);
+      if (memoData) {
+        memoData.memoTimeUnixSec = timestampUnixSec;
+      } else {
+        memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: timestampUnixSec });
+      }
+      this._local.set(key, memoData);
+
+      // Cache it to local storage
+      this._localStorageService.storeMemoData(memoData);
+
+      return memoData;
+    };
+
     // Write it to API
     return this._dataService.sendMemoiseWriteRequest(MemoiseWriteReq.create({ key, data })).pipe(
       map((resp: MemoiseWriteResp) => {
-        // Fix up the time stamp
-        let memoData = this._local.get(key);
-        if (memoData) {
-          memoData.memoTimeUnixSec = resp.memoTimeUnixSec;
-        } else {
-          memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: resp.memoTimeUnixSec });
-        }
-        this._local.set(key, memoData);
-
-        // Cache it to local storage
-        this._localStorageService.storeMemoData(memoData);
-        return memoData;
+        return updateLocalCache(key, data, resp.memoTimeUnixSec);
+      }),
+      catchError(err => {
+        SentryHelper.logMsg(false, `Failed to memoise ${key} containing ${data.length} bytes`);
+        return of(updateLocalCache(key, data, ts));
       })
     );
   }

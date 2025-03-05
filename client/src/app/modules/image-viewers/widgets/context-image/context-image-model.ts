@@ -530,7 +530,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     if (this._raw) {
       for (const [scanId, scanMdl] of this._raw.scanModels) {
         const result = scanMdl.getClosestLocationIdxToPoint(worldPt, maxDistance);
-        if (closestDist < 0 || result[1] < closestDist) {
+        if (closestDist < 0 || (result[0] > 0 && result[1] < closestDist)) {
           closestDist = result[1];
           closestScanIdx = result[0];
           closestScanId = scanId;
@@ -739,6 +739,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         }
 
         const scanDrawMdl = new ContextImageScanDrawModel(
+          scanMdl.scanTitle,
           scanMdl.scanPoints,
           scanMdl.scanPointPolygons,
           footprint,

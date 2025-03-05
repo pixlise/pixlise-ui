@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of, from } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -81,7 +81,7 @@ export type DiffractionExpressionResponse = {
   templateUrl: "./diffraction.component.html",
   styleUrls: ["./diffraction.component.scss"],
 })
-export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner {
+export class DiffractionTabComponent implements OnInit, OnDestroy, HistogramSelectionOwner {
   public static readonly tableRowLimit = 100;
 
   @ViewChild("newPeakDialogBtn") newPeakDialogBtn!: ElementRef;
@@ -249,6 +249,10 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._analysisLayoutService.delayNotifyCanvasResize(500);
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   trackByPeakId(index: number, item: DiffractionPeak): string {
     return `${item.pmc}-${item.id}-${item.keV}-${item.channel}`;
   }
@@ -404,10 +408,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
           this.loading = false;
         },
       });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onResetBarSelection() {

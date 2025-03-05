@@ -39,7 +39,7 @@ import {
 } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { COLOURS, ColourOption } from "src/app/modules/roi/models/roi-colors";
-import { ReplaceScanDialog, ReplaceScanDialogData } from "./replace-scan-dialog/replace-scan-dialog.component";
+import { ReplaceScanDialogComponent, ReplaceScanDialogData } from "./replace-scan-dialog/replace-scan-dialog.component";
 
 @Component({
   selector: "scan-configuration-item",
@@ -142,7 +142,7 @@ export class ScanConfigurationItemComponent implements OnDestroy {
       scanId: this.scan.id,
     };
 
-    const dialogRef = this.dialog.open(ReplaceScanDialog, dialogConfig);
+    const dialogRef = this.dialog.open(ReplaceScanDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe(result => {});
   }

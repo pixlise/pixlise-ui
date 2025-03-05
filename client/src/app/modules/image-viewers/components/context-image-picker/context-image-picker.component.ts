@@ -189,6 +189,10 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     this.updateCurrentImageDisplayed();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     // TODO: do we need the paranoid current != previous check?
     if (changes["currentImage"] && changes["currentImage"].currentValue !== changes["currentImage"].previousValue) {
@@ -253,6 +257,14 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     this.loading = true;
     this.errorText = "";
 
+    if (!this.currentImage) {
+      this.contextImageItemShowing = null;
+      this.contextImageItemShowingTooltip = "";
+      this.contextImagePath = "";
+      this.loading = false;
+      return;
+    }
+
     this.checkImage(this.currentImage, (item: ContextImageItem, tooltip: string) => {
       this.contextImageItemShowingTooltip = "";
       this.showWarning = false;
@@ -281,7 +293,11 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((response: ImagePickerDialogResponse) => {
-      if (response?.selectedImagePath) {
+      if (!response) {
+        return; // Cancelled, ignore
+      }
+
+      if (response.selectedImagePath) {
         // Load the image requested
         this.checkImage(response?.selectedImagePath, (item: ContextImageItem, tooltip: string) => {
           let selected = false;
@@ -291,17 +307,16 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
 
           this.onSetImage(new DisplayContextImageItem(item, selected, tooltip), response?.selectedImageScanId || "");
         });
+      } else {
+        this.onSetImage(null, response?.selectedImageScanId || "");
       }
     });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onSetImage(img: DisplayContextImageItem | null, scanId: string) {
     this.selectedImage.emit({ path: img ? img.item.path : "", scanId });
     this.currentImage = img?.item.path || "";
+    this.updateCurrentImageDisplayed();
   }
 
   onOpenExternal(img: DisplayContextImageItem, event: any) {

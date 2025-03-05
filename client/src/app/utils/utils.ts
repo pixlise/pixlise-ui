@@ -1175,3 +1175,12 @@ export function isValidNumber(n: number, allowZero: boolean): boolean {
 
   return !isNaN(n) && n !== Infinity && n !== -Infinity && n !== undefined && n !== null;
 }
+
+// Attempting to help with locale issues - if user enters 0.2 vs 0,2 we want to always be reading 0.2
+export function makeValidFloatString(num: string): string {
+  // Check if there's a , in which case we assume we need to switch that to a .
+  if (num.indexOf(",") > -1) {
+    return num.replaceAll(".", "").replaceAll(",", ".");
+  }
+  return num;
+}

@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { AuthService, User } from "@auth0/auth0-angular";
 import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
@@ -21,7 +21,7 @@ import {
   templateUrl: "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.html",
   styleUrls: ["./export.component.scss", "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.scss"],
 })
-export class ExportTabComponent extends WidgetExportDialogComponent {
+export class ExportTabComponent extends WidgetExportDialogComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
   selectedScanIds: Set<string> = new Set();
 
@@ -134,6 +134,10 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
         this.onDownload(data);
       })
     );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   loadScanOptions(): void {

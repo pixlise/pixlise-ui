@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnDestroy, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
+import { AfterViewInit, Component, ComponentFactoryResolver, EventEmitter, Inject, OnDestroy, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
 import { Subscription, timer } from "rxjs";
 import { BrowseOnChartComponent } from "./tabs/browse-on-chart.component";
 import { ElementSetsComponent } from "./tabs/element-sets.component";
@@ -58,7 +58,7 @@ export class PeakIdentificationData {}
   templateUrl: "./spectrum-peak-identification.component.html",
   styleUrls: ["./spectrum-peak-identification.component.scss"],
 })
-export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
+export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild("peakTab", { read: ViewContainerRef }) tabAreaContainer!: any;
 
   private _subs = new Subscription();

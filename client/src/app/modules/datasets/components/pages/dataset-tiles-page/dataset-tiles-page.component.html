@@ -143,7 +143,7 @@ POSSIBILITY OF SUCH DAMAGE.
         type="filter"
         [notificationCount]="selectedInstruments.length"
         badgeText="instruments selected"></icon-button>
-      <div class="dim">{{searchResultSummary}}</div>
+      <div class="dim">{{ searchResultSummary }}</div>
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>

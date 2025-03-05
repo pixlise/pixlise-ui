@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UserInfo } from "src/app/generated-protos/user";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -21,7 +21,7 @@ import { Subscription } from "rxjs";
   standalone: true,
   imports: [CommonModule, PIXLISECoreModule, SettingsModule],
 })
-export class SettingsSidebarComponent {
+export class SettingsSidebarComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   notifications: NotificationSetting[] = [];
