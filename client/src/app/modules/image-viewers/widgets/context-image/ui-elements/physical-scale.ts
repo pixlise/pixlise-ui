@@ -191,12 +191,12 @@ export class PhysicalScale extends BaseUIElement {
     screenContext.textAlign = "end";
     screenContext.font = SCALE_FONT_SIZE + "px Roboto";
 
-    const warning = pos.uniformConversion ? "" : " (approx)";
+    const warning = pos.uniformConversion ? "" : "approx ";
 
     //this.drawStrokedText(screenContext, this.printableValue(pos.roundedmm)+' mm', pos.rect.maxX()-scaleTextPadX, yTop+SCALE_FONT_SIZE);
     drawTextWithBackground(
       screenContext,
-      this.printableValue(pos.roundedmm) + " mm" + warning,
+      warning + this.printableValue(pos.roundedmm) + " mm",
       pos.rect.maxX() - scaleTextPadding,
       yTop - scaleTextPadding,
       SCALE_FONT_SIZE,
