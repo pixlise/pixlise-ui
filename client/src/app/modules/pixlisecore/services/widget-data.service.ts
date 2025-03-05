@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
-import { map, catchError, shareReplay } from "rxjs/operators";
+import { map, catchError, shareReplay, switchMap } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -222,6 +222,7 @@ export class WidgetDataService {
       roiId: query.roiId,
       units: query.units,
     };
+
     // We need to get time stamps for each item to make this cache key unique to only this specific version of
     // the quant, scan, ROI, etc
 
@@ -401,7 +402,7 @@ export class WidgetDataService {
     // Firstly, we need the expression being run - note it could be a "predefined" one, so we have some
     // special handling here that ends up just returning an expression!
     return this.getExpression(query.exprId).pipe(
-      concatMap((expr: DataExpression) => {
+      switchMap((expr: DataExpression) => {
         allowAnyResponse = allowAnyResponse || BuiltInTags.hasAllowAnyExpressionResponseTag(expr.tags);
         return this.runExpression(
           expr,
@@ -420,7 +421,7 @@ export class WidgetDataService {
 
                 // Filter to just the PMCs that are contained in the region.
                 if (roiSettings.region && roiSettings.region.scanEntryIndexesEncoded.length > 0) {
-                  result.resultValues = this.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
+                  result.resultValues = WidgetDataService.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
                 }
 
                 // Remove from cache, we only want to cache while it's running, subsequent ones should
@@ -429,6 +430,14 @@ export class WidgetDataService {
 
                 // Also, add to memoisation cache
                 if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
+                  // WARN If we're saving selected points ROI, this will help us detect future issues
+                  if (PredefinedROIID.isSelectedPointsROI(query.roiId)) {
+                    SentryHelper.logMsg(
+                      false,
+                      `WARNING: Caching Widget query result for selected points! Scan: ${query.scanId}, Expression: ${query.exprId}, Quant: ${query.quantId}, ROI: ${query.roiId}`
+                    );
+                  }
+
                   const encodedResult = this.toMemoised(result);
                   this._memoisationService.memoise(cacheKey, encodedResult).subscribe();
                 }
@@ -470,7 +479,7 @@ export class WidgetDataService {
     );
   }
 
-  private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
+  public static filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
     const resultValues: PMCDataValue[] = [];
 
     // Filter for PMCs requested

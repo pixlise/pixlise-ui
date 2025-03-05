@@ -120,7 +120,13 @@ export class HoverPointCursor extends BaseUIElement {
     let drawnCornerBoxWidth = 0;
     for (const mdl of this._ctx.drawModel.scanDrawModels.values()) {
       if (mdl.hoverEntryIdx >= 0 && mdl.scanPoints[mdl.hoverEntryIdx]?.coord) {
-        drawnCornerBoxWidth = this.drawForScanPoint(screenContext, drawParams, mdl.scanPoints[mdl.hoverEntryIdx], mdl);
+        drawnCornerBoxWidth = this.drawForScanPoint(
+          screenContext,
+          drawParams,
+          this._ctx.drawModel.scanDrawModels.size > 1 ? mdl.title : "",
+          mdl.scanPoints[mdl.hoverEntryIdx],
+          mdl
+        );
 
         // There should only be one set as hovering anyway...
         break;
@@ -135,7 +141,13 @@ export class HoverPointCursor extends BaseUIElement {
 
   private _drawPadding = 4;
 
-  private drawForScanPoint(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters, scanPoint: ScanPoint, mdl: ContextImageScanDrawModel) {
+  private drawForScanPoint(
+    screenContext: CanvasRenderingContext2D,
+    drawParams: CanvasDrawParameters,
+    scanName: string,
+    scanPoint: ScanPoint,
+    mdl: ContextImageScanDrawModel
+  ) {
     let drawnCornerBoxWidth = 0;
 
     // Draw a highlighted location if there is one
@@ -151,7 +163,7 @@ export class HoverPointCursor extends BaseUIElement {
     }
 
     // Drawing in screen space
-    const pmcLabelText = this.getPMCLabel(scanPoint);
+    const pmcLabelText = this.getPMCLabel(scanPoint, scanName);
     this.drawCornerTextBox(pmcLabelText, screenContext, drawParams, 0, this._drawPadding);
     drawnCornerBoxWidth = screenContext.measureText(pmcLabelText).width + this._drawPadding * 2.5;
 
@@ -184,12 +196,16 @@ export class HoverPointCursor extends BaseUIElement {
     screenContext.fillText(text, pos.x + padding, pos.y + padding);
   }
 
-  private getPMCLabel(pt: ScanPoint): string {
+  private getPMCLabel(pt: ScanPoint, scanName: string): string {
     // Write some info about the hovered point
     let pmcLabel = "PMC: " + pt.PMC;
 
     if (pt.hasDwellSpectra) {
       pmcLabel += " Dwell";
+    }
+
+    if (scanName.length > 0) {
+      pmcLabel += " (" + scanName + ")";
     }
 
     return pmcLabel;

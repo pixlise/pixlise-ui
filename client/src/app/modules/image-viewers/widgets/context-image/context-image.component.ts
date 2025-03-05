@@ -545,6 +545,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.reDraw("displaySettings$");
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   get isMapsPage(): boolean {
     return this._analysisLayoutService.isMapsPage;
   }
@@ -780,10 +784,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
         },
       });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   reDraw(reason: string) {

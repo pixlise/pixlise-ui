@@ -1,24 +1,16 @@
 import { Component, HostListener, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
-import { ROIItem, ROIItemSummary } from "../../../../../generated-protos/roi";
 import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
-import { combineLatest, Observable, of, scan, Subscription } from "rxjs";
+import { Subscription } from "rxjs";
 import { APICachedDataService } from "../../../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "../../../../../generated-protos/scan-msgs";
 import { ScanItem } from "../../../../../generated-protos/scan";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../../../generated-protos/roi-msgs";
 import { APIDataService, SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
-import { ScreenConfigurationGetReq } from "../../../../../generated-protos/screen-configuration-msgs";
-import { QuantGetReq, QuantGetResp } from "../../../../../generated-protos/quantification-retrieval-msgs";
-import { QuantificationSummary } from "../../../../../generated-protos/quantification-meta";
 import { ROIService } from "../../../../roi/services/roi.service";
-import { SearchParams } from "../../../../../generated-protos/search-params";
 import { SearchableListItem } from "../../../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
-import { levenshteinDistance } from "../../../../../utils/search";
-import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "../../../../../generated-protos/image-msgs";
+import { sortScans } from "../../../../../utils/search";
 import { ScanImage } from "../../../../../generated-protos/image";
-import { SDSFields } from "../../../../../utils/utils";
 import { DuplicateDatasetProducts, WorkspaceService } from "../../../../analysis/services/workspaces.service";
 
 export interface DuplicateWorkspaceDialogData {
@@ -79,7 +71,7 @@ export class DuplicateWorkspaceDialogComponent {
 
     this._subs.add(
       this._cachedDataService.getScanList(ScanListReq.create()).subscribe(scanList => {
-        this.allScans = scanList.scans;
+        this.allScans = sortScans(scanList.scans);
         this.allScanSearchableItems = [
           ...WorkspaceService.DEFAULT_DUPLICATE_OPTIONS,
           ...scanList.scans.map(scan => ({

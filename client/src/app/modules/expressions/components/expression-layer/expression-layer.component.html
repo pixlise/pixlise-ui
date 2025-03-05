@@ -105,7 +105,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </h4>
       <span class="details-line">
         <span class="date">{{ dateCreatedString }}</span>
-        <span class="description">{{ description }}</span>
+        <span class="description" [title]="description">{{ description }}</span>
       </span>
     </div>
     <div class="spacer-gap" (click)="onCheckboxClick()"></div>

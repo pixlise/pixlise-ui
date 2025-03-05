@@ -195,13 +195,13 @@ export class AnalysisLayoutService implements OnDestroy {
     );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   get isMapsPage(): boolean {
     let strippedURL = this._router.url.split("?")[0];
     return strippedURL.endsWith("/datasets/maps");
-  }
-
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
   }
 
   getCurrentTabId(): number {

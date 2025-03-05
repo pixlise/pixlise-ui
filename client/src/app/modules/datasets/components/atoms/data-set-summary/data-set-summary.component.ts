@@ -58,6 +58,10 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
     this.generateTitle();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   generateTitle(summary: ScanItem | null = this.summary) {
     if (!summary) {
       return;
@@ -91,10 +95,6 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
     if (changes["summary"]) {
       this.generateTitle(changes["summary"].currentValue);
     }
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   get tileImage(): string {

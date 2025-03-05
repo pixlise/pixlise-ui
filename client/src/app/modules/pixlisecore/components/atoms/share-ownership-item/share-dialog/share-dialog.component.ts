@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MatOptionSelectionChange } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MatSelectChange } from "@angular/material/select";
@@ -42,7 +42,6 @@ import { ObjectEditAccessReq, ObjectEditAccessResp } from "../../../../../../gen
 import { APIDataService, SnackbarService } from "../../../../pixlisecore.module";
 import { ReviewerMagicLinkCreateReq } from "../../../../../../generated-protos/user-management-msgs";
 import { EnvConfigurationInitService } from "../../../../../../services/env-configuration-init.service";
-import { encodeUrlSafeBase64 } from "../../../../../../utils/utils";
 
 export type SharingSubItem = {
   id: string;
@@ -89,7 +88,7 @@ type MembershipItem = {
   templateUrl: "./share-dialog.component.html",
   styleUrls: ["./share-dialog.component.scss"],
 })
-export class ShareDialogComponent implements OnInit {
+export class ShareDialogComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   private _isSearchingGroups: boolean = true;
@@ -223,6 +222,10 @@ export class ShareDialogComponent implements OnInit {
     if (this.data.isReviewerSnapshot) {
       this.reviewerSnapshotLink = window.location.href;
     }
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   calculateSubItemViewershipChanges() {
@@ -411,10 +414,6 @@ export class ShareDialogComponent implements OnInit {
 
     this.memberIds = new Set(this.members.map(member => member.id));
     this.calculateChanges();
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   get currentUserId(): string {

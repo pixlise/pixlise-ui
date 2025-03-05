@@ -29,7 +29,7 @@
 
 import { CdkOverlayOrigin, ConnectionPositionPair, HorizontalConnectionPos, Overlay, OverlayConfig, OverlayRef, VerticalConnectionPos } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
-import { Component, EventEmitter, InjectionToken, Injector, Input, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, EventEmitter, InjectionToken, Injector, Input, OnDestroy, Output, ViewChild, ViewContainerRef } from "@angular/core";
 import { QuantSelectorPanelComponent } from "../../quant-selector-panel/quant-selector-panel.component";
 // Possible classes of panels that can be opened
 
@@ -48,7 +48,7 @@ export enum PanelFoldOutDirection {
   templateUrl: "./panel-foldout-button.component.html",
   styleUrls: ["./panel-foldout-button.component.scss"],
 })
-export class PanelFoldoutButtonComponent implements OnInit {
+export class PanelFoldoutButtonComponent implements OnDestroy {
   @Input() foldOutDirection: string = PanelFoldOutDirection.DOWN;
 
   @Input() overlayPanelClass: string = ""; // Must be 1 of the supported classes, see ngOnInit
@@ -74,8 +74,6 @@ export class PanelFoldoutButtonComponent implements OnInit {
     public viewContainerRef: ViewContainerRef,
     private injector: Injector
   ) {}
-
-  ngOnInit() {}
 
   ngOnDestroy() {
     this.hidePanel();

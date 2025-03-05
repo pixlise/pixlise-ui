@@ -9,7 +9,7 @@ import {
   WidgetDataService,
   WidgetKeyItem,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { catchError, map, Observable, Subscription } from "rxjs";
+import { catchError, first, map, Observable, Subscription, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -34,6 +34,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import { NaryChartModel } from "../../base/model";
 import { RGBA } from "../../../../utils/colours";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -190,37 +191,34 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       }
     }
 
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err)).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-    });
+    this._widgetData
+      .getData(query)
+      .pipe(first())
+      .subscribe({
+        next: data => {
+          this.setData(data).pipe(first()).subscribe();
+        },
+        error: err => {
+          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+        },
+      });
   }
 
-  private setData(data: RegionDataResults): Observable<void> {
+  private setData(data: RegionDataResults): Observable<ScanItem[]> {
     return this._analysisLayoutService.availableScans$.pipe(
-      map(scans => {
+      tap(scans => {
         const errs = this.mdl.setData(data, scans);
         if (errs.length > 0) {
           for (const err of errs) {
             this._snackService.openError(err.message, err.description);
           }
         }
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
       }),
       catchError(err => {
         this._snackService.openError("Failed to set data", `${err}`);

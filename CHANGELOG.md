@@ -6,6 +6,10 @@
   - Can also delete all cached versions of an exression from the "Metadata" dialog in the code editor
 - Code Editor Expression Exporting
   - Added a new export button to the code editor console, which allows you to export the current output as a CSV
+- Histogram selection display now updates as selection changes
+- Separate zoom and whiskers display modes added for histogram
+- Hovering over PMCs from multiple scans on the same image now works, scan name is displayed at bottom-right with PMC number
+- PIXL EM importer now sets a default image and a unique RTT aka Dataset ID each time it runs to prevent overwriting the same one if RTT is not changed
 
 ## 4.60.0 (2025-02-03)
 

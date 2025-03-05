@@ -6,15 +6,18 @@ import { CursorId } from "src/app/modules/widget/components/interactive-canvas/c
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { RGBA } from "src/app/utils/colours";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BaseChartDrawModel, BaseChartModel } from "../../base/model-interfaces";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetDataService, WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { ScanItem } from "../../../../generated-protos/scan";
 import { PredefinedROIID } from "../../../../models/RegionOfInterest";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
+import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.component";
 
 export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -42,8 +45,17 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
 
-  showWhiskers: boolean = false;
-  showStdDeviation: boolean = false;
+  whiskerDisplayMode: string = HistogramModel.WhiskersNone;
+
+  public static WhiskersStdDev = "Std Dev";
+  public static WhiskersStdErr = "Std Err";
+  public static WhiskersNone = "None";
+
+  zoomMode: string = HistogramModel.ZoomModeAll;
+
+  public static ZoomModeWhisker = "Whiskers";
+  public static ZoomModeAll = "Show All";
+
   logScale: boolean = false;
 
   get raw(): HistogramData | null {
@@ -81,7 +93,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   }
 
   // Returns error message if one is generated
-  setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
+  setData(data: RegionDataResults, scanItems: ScanItem[], beamSelection: BeamSelection | undefined): WidgetError[] {
     const t0 = performance.now();
 
     this._previousKeyItems = this.keyItems.slice();
@@ -113,11 +125,17 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     }
 
     this._recalcNeeded = true;
-    return this.processQueryResult(t0, yAxisLabel, data, scanItems); // TODO: error column loading
+    return this.processQueryResult(t0, yAxisLabel, data, beamSelection, scanItems); // TODO: error column loading
   }
 
   // Returns error message if one is generated
-  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
+  private processQueryResult(
+    t0: number,
+    yAxisLabel: string,
+    queryData: RegionDataResults,
+    beamSelection: BeamSelection | undefined,
+    scanItems: ScanItem[]
+  ): WidgetError[] {
     const errorMessages: WidgetError[] = [];
 
     const histogramBars: HistogramBars[] = [];
@@ -171,63 +189,10 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
         //continue;
       }
 
-      // Calc sum of concentrations and read out column into an array
-      // TODO: Should this and chord diagram be common code?
-      let concentrationSum = 0;
-      let errorSum = 0;
-      for (let c = 0; c < concentrationCol.values.length; c++) {
-        const concentration = concentrationCol.values[c].value;
-        concentrationSum += concentration;
-
-        if (errorCol) {
-          errorSum += errorCol.values[c].value;
-        }
-      }
-
-      const avg = concentrationCol.values.length > 0 ? concentrationSum / concentrationCol.values.length : 0;
-
-      // Calculate std deviation or std error, depending on setting
-      let minMax = new MinMax(avg, avg);
-
-      const concentrationPrecision = 0.01;
-      const bands: Record<number, number> = {};
-      let stdDevSum = 0;
-      for (let c = 0; c < concentrationCol.values.length; c++) {
-        const concentration = concentrationCol.values[c].value;
-
-        const roundedConcentration = Math.round(concentration / concentrationPrecision) * concentrationPrecision;
-        bands[roundedConcentration] = bands[roundedConcentration] ? bands[roundedConcentration] + 1 : 1;
-
-        const variation = concentration - avg;
-        stdDevSum += variation * variation;
-      }
-
-      const stdDev = concentrationCol.values.length > 0 && stdDevSum > 0 ? Math.sqrt(stdDevSum / (concentrationCol.values.length - 1)) : 0;
-      let stdErr = 0;
-
-      if (this.showStdDeviation) {
-        minMax = new MinMax(avg - stdDev, avg + stdDev);
-      } else {
-        // std error calculated from std dev
-        stdErr = stdDev / Math.sqrt(concentrationCol.values.length);
-        minMax = new MinMax(avg - stdErr, avg + stdErr);
-      }
-
-      let avgError = 0;
-      if (errorCol && errorCol.values && errorCol.values.length > 0) {
-        avgError = errorSum / errorCol.values.length;
-      }
-
-      const concentrationBands: ConcentrationBands = {
-        count: concentrationCol.values.length,
-        precision: concentrationPrecision,
-        bands,
-      };
-
-      let roiId = colData.region?.region.id || "";
+      const roiId = colData.region?.region.id || "";
       let isROIHidden = false;
 
-      let existingKeyItem = this._previousKeyItems.find(key => key.id == roiId);
+      const existingKeyItem = this._previousKeyItems.find(key => key.id == roiId);
       isROIHidden = existingKeyItem ? !existingKeyItem.isVisible : false;
       if (existingKeyItem && !existingKeyItem.isVisible) {
         // This ROI is hidden, so we won't be drawing it, but we need to keep it in the key
@@ -238,21 +203,49 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       }
 
       if (colData.region && !isROIHidden) {
-        bars.push(
-          new HistogramBar(colData.region.region.name, colData.region.displaySettings.colour, avg, minMax, avgError, barErrorMsg, stdDev, stdErr, concentrationBands)
+        // Calc sum of concentrations and read out column into an array
+        let bar = this.calcColumnConcentrations(colData.region.region.name, colData.region.displaySettings.colour, barErrorMsg, concentrationCol, errorCol);
+        bars.push(bar);
+        barGroupValueRange.expandByMinMax(bar.valueRange);
+
+        this.addToKey(
+          colData.region.region.scanId,
+          colData.region.region.id,
+          colData.region.region.name,
+          isROIHidden,
+          colData.region.displaySettings.colour,
+          colData.region.displaySettings.shape,
+          scanItems
         );
-        barGroupValueRange.expandByMinMax(minMax);
 
-        if (!this.keyItems.find(item => item.id === colData?.region?.region.id)) {
-          let scanName = scanItems.find(scan => scan.id === colData.region?.region.scanId)?.title || "";
-          let roiName = colData.region.region.name;
-          if (PredefinedROIID.isAllPointsROI(roiId)) {
-            roiName = "All Points";
+        // Check if there is a selection, if so, filter down and show it too
+        if (beamSelection) {
+          const pmcs = beamSelection.getSelectedScanEntryPMCs(colData.query.scanId);
+
+          if (pmcs.size > 0) {
+            const selColour = Colours.BLUE;
+
+            // Restrict the data down to just what's selected
+            const selValues = WidgetDataService.filterForPMCs(
+              colData.exprResult.resultValues,
+              new Set<number>(beamSelection.getSelectedScanEntryIndexes(colData.query.scanId))
+            );
+
+            bar = this.calcColumnConcentrations(colData.region.region.name + " Selection", selColour, barErrorMsg, selValues, errorCol);
+            bars.push(bar);
+            barGroupValueRange.expandByMinMax(bar.valueRange);
+
+            // Set key stuff
+            this.addToKey(
+              colData.region.region.scanId,
+              PredefinedROIID.getSelectedPointsForScan(colData.query.scanId),
+              "Selected Points",
+              isROIHidden,
+              selColour,
+              colData.region.displaySettings.shape,
+              scanItems
+            );
           }
-
-          this.keyItems.push(
-            new WidgetKeyItem(roiId, roiName, colData.region.displaySettings.colour, null, colData.region.displaySettings.shape, scanName, !isROIHidden, false)
-          );
         }
       }
 
@@ -285,6 +278,82 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     console.log(`  Histogram processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
     return errorMessages;
   }
+
+  private addToKey(scanId: string, roiId: string, roiName: string, hidden: boolean, displayColour: RGBA, displayShape: ROIShape, scanItems: ScanItem[]) {
+    if (!this.keyItems.find(item => item.id === roiId)) {
+      const scanName = scanItems.find(scan => scan.id === scanId)?.title || "";
+      if (PredefinedROIID.isAllPointsROI(roiId)) {
+        roiName = "All Points";
+      }
+
+      this.keyItems.push(new WidgetKeyItem(roiId, roiName, displayColour, null, displayShape, scanName, !hidden, false));
+    }
+  }
+
+  private calcColumnConcentrations(
+    barName: string,
+    barColour: RGBA,
+    barErrorMsg: string,
+    concentrationCol: PMCDataValues,
+    errorCol: PMCDataValues | undefined
+  ): HistogramBar {
+    let concentrationSum = 0;
+    let errorSum = 0;
+    for (let c = 0; c < concentrationCol.values.length; c++) {
+      const concentration = concentrationCol.values[c].value;
+      concentrationSum += concentration;
+
+      if (errorCol) {
+        errorSum += errorCol.values[c].value;
+      }
+    }
+
+    const avg = concentrationCol.values.length > 0 ? concentrationSum / concentrationCol.values.length : 0;
+
+    // Calculate std deviation or std error, depending on setting
+    const concentrationPrecision = 0.01;
+    const bands: Record<number, number> = {};
+    let stdDevSum = 0;
+    for (let c = 0; c < concentrationCol.values.length; c++) {
+      const concentration = concentrationCol.values[c].value;
+
+      const roundedConcentration = Math.round(concentration / concentrationPrecision) * concentrationPrecision;
+      bands[roundedConcentration] = bands[roundedConcentration] ? bands[roundedConcentration] + 1 : 1;
+
+      const variation = concentration - avg;
+      stdDevSum += variation * variation;
+    }
+
+    const stdDev = concentrationCol.values.length > 0 && stdDevSum > 0 ? Math.sqrt(stdDevSum / (concentrationCol.values.length - 1)) : 0;
+    let stdErr = 0;
+
+    let whiskerRange = new MinMax();
+    if (this.whiskerDisplayMode === HistogramModel.WhiskersStdDev) {
+      whiskerRange = new MinMax(avg - stdDev, avg + stdDev);
+    } else if (this.whiskerDisplayMode === HistogramModel.WhiskersStdErr) {
+      // std error calculated from std dev
+      stdErr = stdDev / Math.sqrt(concentrationCol.values.length);
+      whiskerRange = new MinMax(avg - stdErr, avg + stdErr);
+    }
+
+    let minMax = new MinMax(concentrationCol.valueRange.min, concentrationCol.valueRange.max);
+    if (this.zoomMode === HistogramModel.ZoomModeWhisker && this.whiskerDisplayMode !== HistogramModel.WhiskersNone) {
+      minMax = new MinMax(whiskerRange.min, whiskerRange.max);
+    }
+
+    let avgError = 0;
+    if (errorCol && errorCol.values && errorCol.values.length > 0) {
+      avgError = errorSum / errorCol.values.length;
+    }
+
+    const concentrationBands: ConcentrationBands = {
+      count: concentrationCol.values.length,
+      precision: concentrationPrecision,
+      bands,
+    };
+
+    return new HistogramBar(barName, barColour, avg, minMax, whiskerRange, avgError, barErrorMsg, stdDev, stdErr, concentrationBands);
+  }
 }
 
 export type ConcentrationBands = {
@@ -301,6 +370,7 @@ export class HistogramBar {
     public colourRGB: RGBA,
     public meanValue: number,
     public valueRange: MinMax,
+    public whiskerRange: MinMax,
     public errorValue: number,
     public errorMsg: string,
     public stdDev: number,
@@ -440,8 +510,8 @@ export class HistogramDrawModel implements BaseChartDrawModel {
             barHeight = -barHeight;
           }
 
-          const upperWhisker = yAxis.valueToCanvas(bar.valueRange?.max || 0);
-          const lowerWhisker = yAxis.valueToCanvas(bar.valueRange?.min || 0);
+          const upperWhisker = yAxis.valueToCanvas(bar.whiskerRange?.max || 0);
+          const lowerWhisker = yAxis.valueToCanvas(bar.whiskerRange?.min || 0);
           const concentration = new ConcentrationDrawBands([], 0);
           Object.entries(bar.concentrationBands.bands).forEach(([band, count]) => {
             const bandValue = parseFloat(band);

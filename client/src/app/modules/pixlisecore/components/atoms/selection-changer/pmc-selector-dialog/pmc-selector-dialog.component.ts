@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -13,7 +13,7 @@ import { parseNumberRangeString } from "src/app/utils/utils";
   templateUrl: "./pmc-selector-dialog.component.html",
   styleUrls: ["./pmc-selector-dialog.component.scss"],
 })
-export class PMCSelectorDialogComponent implements OnInit {
+export class PMCSelectorDialogComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   allScans: ScanItem[] = [];

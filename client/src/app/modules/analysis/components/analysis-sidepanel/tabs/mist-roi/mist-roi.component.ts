@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { Colours } from "src/app/utils/colours";
@@ -46,7 +46,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
   templateUrl: "./mist-roi.component.html",
   styleUrls: ["./mist-roi.component.scss"],
 })
-export class MistROIComponent implements OnInit {
+export class MistROIComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   private _selectedROIs: ROIItemSummary[] = [];

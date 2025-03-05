@@ -129,12 +129,12 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this.reDraw();
   }
 
-  get syncId(): string {
-    return `${this.currentScanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}`;
-  }
-
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  get syncId(): string {
+    return `${this.currentScanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}`;
   }
 
   private setInitialConfig() {

@@ -79,12 +79,12 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
     );
   }
 
-  private get mdl(): SpectrumChartModel {
-    return this._spectrumService.mdl;
-  }
-
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private get mdl(): SpectrumChartModel {
+    return this._spectrumService.mdl;
   }
 
   get measuredName(): string {

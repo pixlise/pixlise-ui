@@ -512,7 +512,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    this.newWorkspaceAddScanList = this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase()));
+    this.newWorkspaceAddScanList = sortScans(this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase())));
   }
 
   onAddScanSearchClick(evt: any) {
