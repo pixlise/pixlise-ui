@@ -127,6 +127,7 @@ export class PhysicalScale extends BaseUIElement {
     for (const scanMdl of this._ctx.drawModel.scanDrawModels.values()) {
       if (mmConversion > 0 && mmConversion != scanMdl.contextPixelsTommConversion) {
         uniformConversion = false;
+        break;
       }
       mmConversion = scanMdl.contextPixelsTommConversion;
     }
@@ -190,7 +191,7 @@ export class PhysicalScale extends BaseUIElement {
     screenContext.textAlign = "end";
     screenContext.font = SCALE_FONT_SIZE + "px Roboto";
 
-    const warning = pos.uniformConversion ? "" : " (1st scan)";
+    const warning = pos.uniformConversion ? "" : " (approx)";
 
     //this.drawStrokedText(screenContext, this.printableValue(pos.roundedmm)+' mm', pos.rect.maxX()-scaleTextPadX, yTop+SCALE_FONT_SIZE);
     drawTextWithBackground(
