@@ -146,7 +146,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="snapshot-name" #tooltip="matTooltip" [matTooltip]="snapshot.name" [matTooltipDisabled]="!snapshot.name || snapshot.name.length < 30">
               {{ snapshot.name ? snapshot.name : "N/A" }}
             </div>
-            <div class="snapshot-date">{{ (snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
+            <div class="snapshot-date">{{ (snapshot.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</div>
           </div>
           <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot)"></action-button>
           <action-button
@@ -183,10 +183,10 @@ POSSIBILITY OF SUCH DAMAGE.
               [matTooltipDisabled]="!snapshot.snapshot.name || snapshot.snapshot.name.length < 30">
               {{ snapshot.snapshot.name ? snapshot.snapshot.name : "N/A" }}
             </div>
-            <div class="snapshot-date">Created: {{ (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</div>
+            <div class="snapshot-date">Created: {{ (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</div>
             <div class="snapshot-date">
               Expires:
-              {{ snapshot.snapshot.reviewerExpirationDateUnixSec ? ((snapshot.snapshot.reviewerExpirationDateUnixSec || 0) * 1000 | date: "short") : "Never" }}
+              {{ snapshot.snapshot.reviewerExpirationDateUnixSec ? ((snapshot.snapshot.reviewerExpirationDateUnixSec || 0) * 1000 | date: "medium") : "Never" }}
             </div>
           </div>
           <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot.snapshot)"></action-button>

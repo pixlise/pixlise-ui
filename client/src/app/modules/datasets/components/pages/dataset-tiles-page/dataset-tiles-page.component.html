@@ -383,7 +383,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div *ngFor="let item of selectedWorkspaceSnapshots; let i = index" class="snapshot">
               <div class="info">
                 <span class="snapshot-name">{{ item.name || (item.snapshotParentId ? "Snapshot " + (selectedWorkspaceSnapshots.length - i) : "Original") }}</span>
-                <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</span>
+                <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</span>
               </div>
               <div class="action-btns">
                 <push-button *ngIf="item.snapshotParentId" (onClick)="onDuplicateClick(item, $event)" buttonStyle="gray">Duplicate</push-button>
