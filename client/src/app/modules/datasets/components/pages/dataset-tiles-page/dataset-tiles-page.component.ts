@@ -29,8 +29,8 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ActivatedRoute, Route, Router } from "@angular/router";
-import { combineLatest, last, Observable, Subscription } from "rxjs";
+import { ActivatedRoute, Router } from "@angular/router";
+import { combineLatest, Observable, Subscription } from "rxjs";
 
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
@@ -71,6 +71,7 @@ import {
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 import { filterScans, sortScans } from "src/app/utils/search";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { DatasetsService } from "../../../services/datasets.service";
 
 class SummaryItem {
   constructor(
@@ -128,7 +129,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   scanItemType: ObjectType = ObjectType.OT_SCAN;
 
   searchResultSummary = "";
-  selectedInstruments: string[] = [];
   possibleInstruments: string[] = [];
 
   noSelectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
@@ -181,7 +181,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     private _authService: AuthService,
     public dialog: MatDialog,
     private _snackService: SnackbarService,
-    private _taggingService: TagService
+    private _taggingService: TagService,
+    private _tilesService: DatasetsService
   ) {}
 
   ngOnInit() {
@@ -703,12 +704,16 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   filterScans() {
     const instr: ScanInstrument[] = [];
-    for (const selInstr of this.selectedInstruments) {
+    for (const selInstr of this._tilesService.selectedInstruments) {
       instr.push(scanInstrumentFromJSON(selInstr));
     }
 
     this.filteredScans = filterScans(this._searchString, instr, this.filterTags, this.scans);
     this.filteredScans = sortScans(this.filteredScans);
+  }
+
+  get selectedInstrumentCount(): number {
+    return this._tilesService.selectedInstruments.length;
   }
 
   getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
@@ -1056,12 +1061,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       items.push(new PickerDialogItem(instr, instr, "", true));
     }
 
-    dialogConfig.data = new PickerDialogData(true, true, false, false, items, this.selectedInstruments, "", new ElementRef(event.currentTarget));
+    dialogConfig.data = new PickerDialogData(true, true, false, false, items, this._tilesService.selectedInstruments, "", new ElementRef(event.currentTarget));
 
     const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
     dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
       if (ids) {
-        this.selectedInstruments = ids;
+        this._tilesService.selectedInstruments = ids;
         this.onSearch();
       }
     });
