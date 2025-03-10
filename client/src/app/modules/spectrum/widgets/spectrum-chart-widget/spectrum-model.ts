@@ -161,6 +161,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _diffractionPeaksShown: DiffractionPeak[] = [];
 
+  // When asked to zoom to a range, if we don't have an xAxis at that time we may have to store
+  // the setting to be applied later. We consider negative values as "not set"
+  private _keVStartToApply = -1;
+  private _keVEndToApply = -1;
+
   constructor(
     public xrfDBService: XRFDatabaseService //,
     // public clipboard: Clipboard
@@ -992,6 +997,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._xAxis.updateAxis(viewport, this._drawTransform);
     this._yAxis.updateAxis(viewport, this._drawTransform);
 
+    // If we've got a stored zoom setting to apply, do it now
+    if (this._keVStartToApply >= 0 && this._keVEndToApply >= 0) {
+      this.applyRequestedZoom(this._keVStartToApply, this._keVEndToApply, this._xAxis);
+
+      // Don't apply again though!
+      this._keVStartToApply = -1;
+      this._keVEndToApply = -1;
+    }
+
     // Clear the draw data so it gets regenerated on next draw call
     this._drawModel.drawnData = null;
   }
@@ -1009,19 +1023,26 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   zoomToPeak(keVStart: number, keVEnd: number) {
+
+    // We can't do this without an axis. Shouldn't happen but on the 5x5 dataset, Scotts machine, for some reason this is null
+    if (!this._xAxis) {
+      console.log("zoomToPeak will be applied when xAxis regenerates");
+      this._keVStartToApply = keVStart;
+      this._keVEndToApply = keVEnd;
+      return;
+    }
+
+    this.applyRequestedZoom(keVStart, keVEnd, this._xAxis);
+  }
+
+  private applyRequestedZoom(keVStart: number, keVEnd: number, xAxis: ChartAxis) {
     const origScaleY = this._drawTransform.scale.y;
     const origPanY = this._drawTransform.pan.y;
 
     this._drawTransform.reset();
 
-    // We can't do this without an axis. Shouldn't happen but on the 5x5 dataset, Scotts machine, for some reason this is null
-    if (!this._xAxis) {
-      console.log("zoomToPeak skipped due to null xAxis");
-      return;
-    }
-
-    let x1 = this._xAxis.valueToCanvas(keVStart);
-    const x2 = this._xAxis.valueToCanvas(keVEnd);
+    let x1 = xAxis.valueToCanvas(keVStart);
+    const x2 = xAxis.valueToCanvas(keVEnd);
 
     let w = x2 - x1;
 

@@ -84,6 +84,7 @@ export class ImageDisplayOptions {
 export class ImagePickerParams {
   constructor(
     public scanIds: string[],
+    public warningMsg: string,
     public options: ImageDisplayOptions
   ) {}
 }

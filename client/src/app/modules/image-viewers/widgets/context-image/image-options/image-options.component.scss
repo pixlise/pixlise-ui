@@ -83,6 +83,11 @@
         flex-direction: column;
         gap: 8px;
         @extend .setting-row;
+
+        .warning {
+          color: $clr-orange;
+          font-weight: bold;
+        }
     }
 
     .image-choice {
