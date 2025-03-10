@@ -1379,8 +1379,18 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       }
     }
 
+    // NOTE: This dialog breaks if there are no scans configured, we could notify the user
+    //       or we can try to build a list of scan ids from what we're displaying already
+    let warnMsg = "";
+    let scanIds: string[] = Array.from(this.configuredScanIds);
+    if (scanIds.length <= 0) {
+      scanIds = this.mdl.scanIds;
+      warnMsg = "No scans are configured for this workspace. Please configure one or more!";
+    }
+
     return new ImagePickerParams(
-      this.configuredScanIds,
+      scanIds,
+      warnMsg,
       new ImageDisplayOptions(
         this.mdl.imageName,
         beamLocVersionsDisplayed,

@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [scanIds]="data.scanIds"
         [currentImage]="options.currentImage"
         (selectedImage)="onSelectedImageChanged($event)"></image-picker>
+      <div *ngIf="data.warningMsg" class="warning">{{data.warningMsg}}</div>
     </div>
 
     <div class="ctrl-column" *ngIf="loadingBeamVersions || pickableBeamVersionScanIds.length > 0">

@@ -1,4 +1,16 @@
-## 4.61.0 (Latest)
+## 4.62.0 (Latest)
+
+### New Features
+- Dataset browsing now remembers the instrument filter you set until you reload the page
+
+### Bug Fixes
+- Fixed PIXL EM importer default image setting - was using an invalid path and failing
+- Image upload alignment was having issues when setting the offset x/y values
+- Clicking on a diffraction list item in the sidebar wasn't zooming the spectrum onto that diffraction peak
+- Dates displayed related to workspaces now show month in MMM text format to disambiguate date format
+- When no scans are configured, image picking on the context image showed weird behaviour. This is now fixed and a warning is displayed to remind user to configure scans.
+
+## 4.61.0 (2025-03-05)
 
 ### New Features
 - Expression Cache Controls
