@@ -13,7 +13,9 @@ import { PointDrawer } from "src/app/utils/drawing";
 import { ROIItemSummary } from "../../../../generated-protos/roi";
 import { DataExpression } from "../../../../generated-protos/expressions";
 
-export type WidgetExportOptionType = "checkbox" | "multiswitch" | "dropdown" | "regions" | "expressions" | "images";
+export const EXPORT_PREVIEW_ID_PREFIX = "export-preview-";
+
+export type WidgetExportOptionType = "checkbox" | "multiswitch" | "dropdown" | "regions" | "expressions" | "images" | "number";
 
 export type UpdateCountsFn = (selection: WidgetExportRequest, selected: boolean) => Record<string, number>;
 
@@ -25,6 +27,7 @@ export type DropdownOption = {
 export type WidgetExportOption = {
   id: string;
   name: string;
+  unitIcon?: string;
   type: WidgetExportOptionType;
   description: string;
   selected: boolean;
@@ -42,6 +45,8 @@ export type WidgetExportOption = {
   // For nested accordion options - main option applies to all subOptions
   subOptions?: WidgetExportOption[];
 
+  value?: number | string;
+
   // For regions & expressions
   scanId?: string;
   quantId?: string;
@@ -57,16 +62,39 @@ export type WidgetExportOption = {
   updateCounts?: UpdateCountsFn;
 };
 
+export type DataControl = {
+  id: string;
+  name: string;
+
+  iconColour: string; // Base colour for the icon
+  icon?: string; // If provided, replaces the iconColour with the icon
+
+  visible: boolean;
+  disabled: boolean;
+  opacity: number;
+};
+
 export type WidgetExportDialogData = {
   title: string;
   defaultZipName: string;
+
   options: WidgetExportOption[];
-  dataProducts: WidgetExportOption[];
+
+  // Simple download case
+  dataProducts?: WidgetExportOption[];
+
+  // Complex/interactive download case
+  dataControls?: DataControl[];
+  chartOptions?: WidgetExportOption[];
+  keyOptions?: WidgetExportOption[];
 
   hideProgressLabels?: boolean;
 
   // Preview Options
   showPreview: boolean;
+
+  // For widget previews, we need to dynamically load the preview component
+  widgetId?: string;
   preview?: ElementRef;
 };
 

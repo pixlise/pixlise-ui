@@ -9,6 +9,7 @@ import { drawScatterPoints } from "../../base/cached-nary-drawer";
 export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
   public lightMode: boolean = false;
+  public transparentBackground: boolean = false;
 
   constructor(private _mdl: TernaryChartModel) {
     super();
@@ -25,6 +26,10 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
     // Draw color background
     ctx.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
     ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+    if (this.transparentBackground) {
+      ctx.clearRect(0, 0, viewport.width, viewport.height);
+    }
 
     // Draw the triangle
     ctx.strokeStyle = this.lightMode ? Colours.GRAY_90.asString() : Colours.GRAY_60.asString();

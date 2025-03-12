@@ -74,6 +74,28 @@ POSSIBILITY OF SUCH DAMAGE.
       (onChange)="onSelectOption($event)">
     </multi-switch-button>
   </div>
+  <div *ngIf="option.type === 'number'" class="option-type number-option">
+    <span
+      #tooltip="matTooltip"
+      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
+      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
+      [matTooltipShowDelay]="500"
+      class="option-label"
+      >{{ option.name }}</span
+    >
+    <div class="input-container">
+      <div *ngIf="option?.unitIcon" class="icon-container">
+        <img
+          [src]="option.unitIcon"
+          (drag)="dragNumber($event, option)"
+          (dragstart)="onDragStart($event, option)"
+          (dragleave)="onDragEnd($event, option)"
+          (dragover)="onDragOver($event)"
+          (dragend)="onDragEnd($event, option)" />
+      </div>
+      <input type="number" [(ngModel)]="option.value" [disabled]="!!option.disabled" />
+    </div>
+  </div>
   <div *ngIf="option.type === 'dropdown' && option.dropdownOptions" class="option-type dropdown-option">
     <span
       #tooltip="matTooltip"

@@ -17,12 +17,12 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { catchError, Subscription, switchMap, tap, throwError } from "rxjs";
+import { catchError, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
-import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 
 const getWidgetOptions = (): WidgetConfiguration[] => {
@@ -86,6 +86,16 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   topRightInsetButton?: WidgetToolbarButtonConfiguration;
   bottomLeftInsetButton?: WidgetToolbarButtonConfiguration;
   bottomRightInsetButton?: WidgetToolbarButtonConfiguration;
+
+  private _exportOptions: WidgetExportOption[] = [];
+  private _exportChartOptions: WidgetExportOption[] = [];
+  @Input() exportMode: boolean = false;
+  private _liveOptionChanges$ = new Observable<{
+    options: WidgetExportOption[];
+    dataProducts: WidgetExportOption[];
+    chartOptions: WidgetExportOption[];
+    keyOptions: WidgetExportOption[];
+  }>();
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -218,6 +228,23 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     this.loadWidget();
   }
 
+  @Input() set liveOptionChanges$(liveOptionChanges$: Observable<any>) {
+    this._liveOptionChanges$ = liveOptionChanges$;
+    this._subs.add(
+      this._liveOptionChanges$.subscribe(changes => {
+        if (changes.options) {
+          this._exportOptions = changes.options;
+        }
+
+        if (changes.chartOptions) {
+          this._exportChartOptions = changes.chartOptions;
+        }
+
+        this._updateWidgetExportOptions();
+      })
+    );
+  }
+
   @Input() set widgetTypes(widgetTypes: WidgetType[]) {
     if (widgetTypes.length > 0) {
       this.allWidgetOptions = getWidgetOptions().filter(widgetOption => widgetTypes.includes(widgetOption.id as WidgetType));
@@ -258,6 +285,25 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       if (this._currentWidgetRef?.instance?.update) {
         this._currentWidgetRef?.instance?.update();
       }
+    }
+  }
+
+  @Input() set exportOptions(exportOptions: WidgetExportOption[]) {
+    this._exportOptions = exportOptions;
+    console.log("Export options", exportOptions);
+    this._updateWidgetExportOptions();
+  }
+
+  @Input() set exportChartOptions(exportChartOptions: WidgetExportOption[]) {
+    this._exportChartOptions = exportChartOptions;
+    this._updateWidgetExportOptions();
+  }
+
+  private _updateWidgetExportOptions() {
+    console.log("Updating options", this._exportOptions, this._exportChartOptions);
+    if (this._currentWidgetRef?.instance?.updateExportOptions) {
+      console.log("Updating export options", this._exportOptions, this._exportChartOptions);
+      this._currentWidgetRef.instance.updateExportOptions(this._exportOptions, this._exportChartOptions);
     }
   }
 
@@ -302,6 +348,21 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
         )
         .subscribe()
     );
+
+    // this._subs.add(
+    //   dialogRef.componentInstance.liveOptionChanges.subscribe(changes => {
+    //     console.log("Live option changes", changes);
+    //     if (changes.options) {
+    //       this._exportOptions = changes.options;
+    //     }
+
+    //     if (changes.chartOptions) {
+    //       this._exportChartOptions = changes.chartOptions;
+    //     }
+
+    //     this._updateWidgetExportOptions();
+    //   })
+    // );
 
     dialogRef.afterClosed().subscribe(() => {
       this._exportDialogOpen = false;
@@ -373,8 +434,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       if (this._currentWidgetRef.instance.onSaveWidgetData) {
         this._subs.add(
           this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
-            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId) {
-              // Don't save if the widget id is not set or if it's a preview widget
+            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId || this.exportMode) {
+              // Don't save if the widget id is not set, if it's a preview widget, or if it's in export mode
               return;
             }
 

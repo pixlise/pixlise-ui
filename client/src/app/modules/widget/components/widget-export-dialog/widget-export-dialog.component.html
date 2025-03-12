@@ -29,78 +29,144 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="export-dialog">
-  <h1>{{ title }}</h1>
-  <div class="fields">
-    <div class="zip-options">
-      <h5 class="zip-label">Zip File Name</h5>
-      <input type="text" [(ngModel)]="zipFileName" [placeholder]="data.defaultZipName.replace('.zip', '') + '.zip'" />
-    </div>
-    <div *ngIf="options && options.length > 0" class="export-options options">
-      <span class="options-label-container">
-        <h5 class="options-label">Options</h5>
-      </span>
-      <div class="options-container">
-        <widget-export-button
-          *ngFor="let option of options; trackBy: trackByFn"
-          [option]="option"
-          (toggleOption)="toggleOption($event)"
-          (selectOption)="selectOption($event)"
-          (selectDropdownOption)="selectDropdownOption($event)"
-          (selectROIsOption)="selectROIsOption($event)"
-          (selectExpressionsOption)="selectExpressionsOption($event)"
-          (selectImagesOption)="selectImagesOption($event)">
-        </widget-export-button>
+<div class="export-dialog {{ data.showPreview ? 'interactive' : '' }}">
+  <h1>
+    {{ title }}
+    <action-button *ngIf="data.showPreview" class="close-btn" action="close" (onClick)="onCancel()" color="#F8F8F8"></action-button>
+  </h1>
+  <div class="data-container">
+    <div *ngIf="data.showPreview && previewWidgetConfiguration" class="preview-container">
+      <div class="key-switcher">
+        <multi-switch-button [options]="['Chart', 'Key']" [value]="chartView ? 'Chart' : 'Key'" (onChange)="onSwitchView($event)"></multi-switch-button>
       </div>
-    </div>
-    <div *ngIf="dataProducts && dataProducts.length > 0" class="export-options data-products">
-      <span class="options-label-container">
-        <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
-        <action-button [action]="allDataProductsSelected ? 'checkOn' : 'checkOff'" (onClick)="toggleAllDataProducts()"></action-button>
-      </span>
-      <div class="options-container">
-        <widget-export-button
-          *ngFor="let option of dataProducts; trackBy: trackByFn"
-          [option]="option"
-          (toggleOption)="toggleOption($event)"
-          (selectOption)="selectOption($event)"
-          (selectDropdownOption)="selectDropdownOption($event)"
-          (selectROIsOption)="selectROIsOption($event)"
-          (selectExpressionsOption)="selectExpressionsOption($event)"
-          (selectImagesOption)="selectImagesOption($event, true)">
-        </widget-export-button>
-      </div>
-    </div>
-    <div *ngIf="data.preview" class="export-options preview">
-      <span class="options-label-container">
-        <h5 class="options-label">Preview</h5>
-        <action-button [action]="showPreview ? 'checkOn' : 'checkOff'" (onClick)="showPreview = !showPreview"></action-button>
-      </span>
-    </div>
-    <div class="gap-separated-horizontal-elements button-container">
-      <div *ngIf="loading && !errorMessage" class="loading-container">
-        <wait-spinner></wait-spinner>
-        <div class="prompt">
-          <h5 *ngIf="!hideProgressLabels" class="loading-message">Exporting Data</h5>
+      <widget
+        *ngIf="chartView"
+        [widgetLayoutConfig]="previewWidgetConfiguration"
+        [initWidget]="previewWidgetConfiguration.type"
+        [exportMode]="true"
+        [liveOptionChanges$]="liveOptionChanges$"
+        [exportOptions]="options"
+        [exportChartOptions]="chartOptions"></widget>
+      <div class="key-view" *ngIf="!chartView">
+        <div class="key">
+          <h5 class="key-label">Key</h5>
+          <div class="key-items"></div>
         </div>
       </div>
-      <div *ngIf="errorMessage" class="loading-container" #tooltip="matTooltip" [matTooltip]="hideProgressLabels ? 'Error exporting: ' + errorMessage : errorMessage">
-        <img src="assets/icons/error-triangle-yellow.svg" />
-        <div class="prompt">
-          <h5 *ngIf="!hideProgressLabels" class="error">Error exporting</h5>
+      <div class="bottom-bar"></div>
+    </div>
+    <div class="fields">
+      <div class="zip-options">
+        <h5 class="zip-label">Zip File Name</h5>
+        <input type="text" [(ngModel)]="zipFileName" [placeholder]="data.defaultZipName.replace('.zip', '') + '.zip'" />
+      </div>
+      <div *ngIf="chartView && options && options.length > 0" class="export-options options">
+        <span class="options-label-container">
+          <h5 class="options-label">Options</h5>
+        </span>
+        <div class="options-container">
+          <widget-export-button
+            *ngFor="let option of options; trackBy: trackByFn"
+            [option]="option"
+            (toggleOption)="toggleOption($event)"
+            (selectOption)="selectOption($event)"
+            (selectDropdownOption)="selectDropdownOption($event)"
+            (selectROIsOption)="selectROIsOption($event)"
+            (selectExpressionsOption)="selectExpressionsOption($event)"
+            (selectImagesOption)="selectImagesOption($event)">
+          </widget-export-button>
         </div>
       </div>
-      <push-button *ngIf="dialogRef" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-      <push-button *ngIf="!dialogRef" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
-      <push-button
-        buttonStyle="yellow"
-        [disabled]="selectedDataProductsCount === 0"
-        #tooltip="matTooltip"
-        matTooltip="Nothing to export"
-        [matTooltipDisabled]="selectedDataProductsCount > 0"
-        (onClick)="onConfirm()"
-        >Export</push-button
-      >
+      <div *ngIf="chartView && chartOptions && chartOptions.length > 0" class="export-options options">
+        <span class="options-label-container">
+          <h5 class="options-label">Chart</h5>
+        </span>
+        <div class="options-container">
+          <widget-export-button
+            *ngFor="let option of chartOptions; trackBy: trackByFn"
+            [option]="option"
+            (toggleOption)="toggleOption($event)"
+            (selectOption)="selectOption($event)"
+            (selectDropdownOption)="selectDropdownOption($event)"
+            (selectROIsOption)="selectROIsOption($event)"
+            (selectExpressionsOption)="selectExpressionsOption($event)"
+            (selectImagesOption)="selectImagesOption($event)">
+          </widget-export-button>
+        </div>
+      </div>
+      <div *ngIf="chartView && dataProducts && dataProducts.length > 0" class="export-options data-products">
+        <span class="options-label-container">
+          <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
+          <action-button [action]="allDataProductsSelected ? 'checkOn' : 'checkOff'" (onClick)="toggleAllDataProducts()"></action-button>
+        </span>
+        <div class="options-container">
+          <widget-export-button
+            *ngFor="let option of dataProducts; trackBy: trackByFn"
+            [option]="option"
+            (toggleOption)="toggleOption($event)"
+            (selectOption)="selectOption($event)"
+            (selectDropdownOption)="selectDropdownOption($event)"
+            (selectROIsOption)="selectROIsOption($event)"
+            (selectExpressionsOption)="selectExpressionsOption($event)"
+            (selectImagesOption)="selectImagesOption($event, true)">
+          </widget-export-button>
+        </div>
+      </div>
+      <div *ngIf="!chartView && keyOptions && keyOptions.length > 0" class="export-options options">
+        <span class="options-label-container">
+          <h5 class="options-label">Key</h5>
+        </span>
+        <div class="options-container">
+          <widget-export-button
+            *ngFor="let option of keyOptions; trackBy: trackByFn"
+            [option]="option"
+            (toggleOption)="toggleOption($event)"
+            (selectOption)="selectOption($event)"
+            (selectDropdownOption)="selectDropdownOption($event)"
+            (selectROIsOption)="selectROIsOption($event)"
+            (selectExpressionsOption)="selectExpressionsOption($event)"
+            (selectImagesOption)="selectImagesOption($event)">
+          </widget-export-button>
+        </div>
+      </div>
+      <div *ngIf="data.preview" class="export-options preview">
+        <span class="options-label-container">
+          <h5 class="options-label">Preview</h5>
+          <action-button [action]="showPreview ? 'checkOn' : 'checkOff'" (onClick)="showPreview = !showPreview"></action-button>
+        </span>
+      </div>
+      <div class="gap-separated-horizontal-elements button-container">
+        <div *ngIf="loading && !errorMessage" class="loading-container">
+          <wait-spinner></wait-spinner>
+          <div class="prompt">
+            <h5 *ngIf="!hideProgressLabels" class="loading-message">Exporting Data</h5>
+          </div>
+        </div>
+        <div
+          *ngIf="errorMessage"
+          class="loading-container"
+          #tooltip="matTooltip"
+          [matTooltip]="hideProgressLabels ? 'Error exporting: ' + errorMessage : errorMessage">
+          <img src="assets/icons/error-triangle-yellow.svg" />
+          <div class="prompt">
+            <h5 *ngIf="!hideProgressLabels" class="error">Error exporting</h5>
+          </div>
+        </div>
+        <push-button *ngIf="dialogRef" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+        <push-button *ngIf="!dialogRef" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
+        <push-button
+          *ngIf="!data.showPreview"
+          buttonStyle="yellow"
+          [disabled]="selectedDataProductsCount === 0"
+          #tooltip="matTooltip"
+          matTooltip="Nothing to export"
+          [matTooltipDisabled]="selectedDataProductsCount > 0"
+          (onClick)="onConfirm()"
+          >Export</push-button
+        >
+        <push-button *ngIf="data.showPreview" buttonStyle="outline" (onClick)="onConfirm()">Download .zip</push-button>
+        <push-button *ngIf="data.showPreview" buttonStyle="yellow" (onClick)="onDownloadPNG()">Copy .png</push-button>
+      </div>
     </div>
   </div>
 </div>

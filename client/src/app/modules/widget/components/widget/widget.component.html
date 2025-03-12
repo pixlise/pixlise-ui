@@ -10,7 +10,7 @@
 </ng-template>
 
 <div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }} {{ isWidgetTargeted ? 'targeted' : '' }}" [attr.aria-label]="_activeWidget">
-  <header>
+  <header *ngIf="!exportMode">
     <mat-select
       *ngIf="!disableSwitch"
       [(ngModel)]="activeWidget"
@@ -42,20 +42,23 @@
       </widget-settings-menu>
     </div>
   </header>
-  <div class="visualization {{ bottomToolbarButtons.length > 0 ? '' : 'hide-overflow' }}">
+  <div class="visualization {{ bottomToolbarButtons.length > 0 ? '' : 'hide-overflow' }} {{ exportMode ? 'export-mode' : '' }}">
     <div *ngIf="isWidgetDataLoading" class="loading-overlay">
       <wait-spinner #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
     </div>
 
     <widget-configuration-button
+      *ngIf="!exportMode"
       class="inset-button top-left"
       [ngStyle]="topLeftInsetButton?.margin ? { margin: topLeftInsetButton?.margin } : {}"
       [buttonConfiguration]="topLeftInsetButton"></widget-configuration-button>
     <widget-configuration-button
+      *ngIf="!exportMode"
       class="inset-button top-center"
       [ngStyle]="topCenterInsetButton?.margin ? { margin: topCenterInsetButton?.margin } : {}"
       [buttonConfiguration]="topCenterInsetButton"></widget-configuration-button>
     <widget-configuration-button
+      *ngIf="!exportMode"
       class="inset-button top-right"
       [ngStyle]="topRightInsetButton?.margin ? { margin: topRightInsetButton?.margin } : {}"
       [buttonConfiguration]="topRightInsetButton"></widget-configuration-button>
@@ -63,15 +66,17 @@
     <ng-template #currentWidget></ng-template>
 
     <widget-configuration-button
+      *ngIf="!exportMode"
       class="inset-button bottom-left"
       [ngStyle]="bottomLeftInsetButton?.margin ? { margin: bottomLeftInsetButton?.margin } : {}"
       [buttonConfiguration]="bottomLeftInsetButton"></widget-configuration-button>
     <widget-configuration-button
+      *ngIf="!exportMode"
       class="inset-button bottom-right"
       [ngStyle]="bottomRightInsetButton?.margin ? { margin: bottomRightInsetButton?.margin } : {}"
       [buttonConfiguration]="bottomRightInsetButton"></widget-configuration-button>
   </div>
-  <div class="bottom-toolbar {{ showBottomToolbar ? 'visible' : 'hidden' }}" #bottomToolbar>
+  <div class="bottom-toolbar {{ showBottomToolbar ? 'visible' : 'hidden' }}" #bottomToolbar *ngIf="!exportMode">
     <widget-configuration-button
       *ngFor="let button of bottomToolbarButtons"
       [buttonConfiguration]="button"

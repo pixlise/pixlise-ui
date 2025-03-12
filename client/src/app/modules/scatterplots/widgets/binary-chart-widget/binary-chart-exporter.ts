@@ -8,8 +8,8 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 export class BinaryChartExporter extends NaryChartExporter {
-  constructor(snackService: SnackbarService, drawer: CanvasDrawer, transform: PanZoom) {
-    super(snackService, drawer, transform);
+  constructor(snackService: SnackbarService, drawer: CanvasDrawer, transform: PanZoom, widgetId: string) {
+    super(snackService, drawer, transform, widgetId);
   }
 
   override exportPlotData(mdl: BinaryChartModel): Observable<string> {

@@ -18,7 +18,8 @@ export class NaryChartExporter {
   constructor(
     private _snackService: SnackbarService,
     private drawer: CanvasDrawer,
-    private transform: PanZoom
+    private transform: PanZoom,
+    private widgetId: string
   ) {}
 
   exportPlotData(mdl: NaryModelType): Observable<string> {
@@ -40,48 +41,146 @@ export class NaryChartExporter {
     return {
       title: `Export ${widgetTypeName}`,
       defaultZipName: `${joinedScanIds} - ${widgetTypeName}`,
+      // options: [
+      //   {
+      //     id: "darkMode",
+      //     name: "Dark Mode",
+      //     type: "checkbox",
+      //     description: "Export the plots in dark mode",
+      //     selected: true,
+      //   },
+      //   {
+      //     id: "key",
+      //     name: "Visible Key",
+      //     type: "checkbox",
+      //     description: "Include the key for the visible regions",
+      //     selected: mdl?.keyItems && mdl.keyItems.length > 0,
+      //     disabled: mdl?.keyItems && mdl.keyItems.length === 0,
+      //     disabledText: "No visible regions to show",
+      //   },
+      // ],
+      // dataProducts: [
+      //   {
+      //     id: "plotImage",
+      //     name: "Plot Image",
+      //     type: "checkbox",
+      //     description: "Export the plot image as a PNG",
+      //     selected: true,
+      //   },
+      //   {
+      //     id: "largePlotImage",
+      //     name: "Large Plot Image",
+      //     type: "checkbox",
+      //     description: "Export a large version of the plot image as a PNG",
+      //     selected: true,
+      //   },
+      //   {
+      //     id: "csvData",
+      //     name: "Plot Data .csv",
+      //     type: "checkbox",
+      //     description: "Export the plot data as a CSV",
+      //     selected: true,
+      //   },
+      // ],
       options: [
         {
-          id: "darkMode",
-          name: "Dark Mode",
-          type: "checkbox",
-          description: "Export the plots in dark mode",
+          id: "aspectRatio",
+          name: "Aspect Ratio",
+          type: "dropdown",
+          description: "Select the aspect ratio of the exported image",
+          dropdownOptions: [
+            { id: "square", name: "Square" },
+            { id: "4:3", name: "4:3" },
+            { id: "16:9", name: "16:9" },
+          ],
+          selectedOption: "square",
           selected: true,
         },
         {
-          id: "key",
-          name: "Visible Key",
-          type: "checkbox",
-          description: "Include the key for the visible regions",
-          selected: mdl?.keyItems && mdl.keyItems.length > 0,
-          disabled: mdl?.keyItems && mdl.keyItems.length === 0,
-          disabledText: "No visible regions to show",
+          id: "background",
+          name: "Background",
+          type: "dropdown",
+          description: "Select the background color of the exported image",
+          dropdownOptions: [
+            { id: "transparent", name: "Transparent" },
+            { id: "white", name: "White" },
+            { id: "black", name: "Black" },
+          ],
+          selectedOption: "black",
+          selected: true,
+        },
+        {
+          id: "resolution",
+          name: "Resolution",
+          type: "dropdown",
+          description: "Select the resolution of the exported image",
+          dropdownOptions: [
+            { id: "max", name: "Max" },
+            { id: "med", name: "Medium" },
+            { id: "low", name: "Low" },
+          ],
+          selectedOption: "max",
+          selected: true,
         },
       ],
-      dataProducts: [
+      dataControls: [
+        //  ROIs
+      ],
+      chartOptions: [
         {
-          id: "plotImage",
-          name: "Plot Image",
-          type: "checkbox",
-          description: "Export the plot image as a PNG",
+          id: "labels",
+          name: "Labels",
+          type: "number",
+          unitIcon: "assets/button-icons/font-size.svg",
+          description: "Select the font size of the labels",
+          value: 12,
           selected: true,
         },
         {
-          id: "largePlotImage",
-          name: "Large Plot Image",
-          type: "checkbox",
-          description: "Export a large version of the plot image as a PNG",
+          id: "borderWidth",
+          name: "Borders",
+          type: "number",
+          unitIcon: "assets/button-icons/border-width.svg",
+          description: "Select the width of the borders",
+          value: 2,
           selected: true,
         },
         {
-          id: "csvData",
-          name: "Plot Data .csv",
-          type: "checkbox",
-          description: "Export the plot data as a CSV",
+          id: "referenceLines",
+          name: "Reference Lines",
+          type: "number",
+          unitIcon: "assets/button-icons/border-width.svg",
+          description: "Select the width of the reference lines",
+          value: 1,
           selected: true,
         },
       ],
-      showPreview: false,
+      keyOptions: [
+        {
+          id: "keyText",
+          name: "Key text",
+          type: "number",
+          unitIcon: "assets/button-icons/font-size.svg",
+          description: "Select the font size of the key text",
+          value: 12,
+          selected: true,
+        },
+        {
+          id: "keyBackground",
+          name: "Key Background",
+          type: "dropdown",
+          description: "Select the background color of the key",
+          dropdownOptions: [
+            { id: "transparent", name: "Transparent" },
+            { id: "white", name: "White" },
+            { id: "black", name: "Black" },
+          ],
+          selectedOption: "transparent",
+          selected: true,
+        },
+      ],
+      showPreview: true,
+      widgetId: this.widgetId,
     };
   }
 

@@ -185,8 +185,11 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       }
 
       const avg = concentrationCol.values.length > 0 ? concentrationSum / concentrationCol.values.length : 0;
+      // const concentrationMin = concentrationCol.values.length > 0 ? Math.min(...concentrationCol.values.map(v => v.value)) : 0;
+      // const concentrationMax = concentrationCol.values.length > 0 ? Math.max(...concentrationCol.values.map(v => v.value)) : 0;
 
       // Calculate std deviation or std error, depending on setting
+      // let minMax = new MinMax(concentrationMin, concentrationMax);
       let minMax = new MinMax(avg, avg);
 
       const concentrationPrecision = 0.01;
@@ -206,10 +209,12 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       let stdErr = 0;
 
       if (this.showStdDeviation) {
+        // minMax = new MinMax(concentrationMin - stdDev, concentrationMax + stdDev);
         minMax = new MinMax(avg - stdDev, avg + stdDev);
       } else {
         // std error calculated from std dev
         stdErr = stdDev / Math.sqrt(concentrationCol.values.length);
+        // minMax = new MinMax(concentrationMin - stdErr, concentrationMax + stdErr);
         minMax = new MinMax(avg - stdErr, avg + stdErr);
       }
 
@@ -316,8 +321,8 @@ export class HistogramBars {
     public shortLabel: string,
     public longLabel: string,
     public valueRange: MinMax //public roiName: string,
-  ) //public roiID: string,
-  {}
+    //public roiID: string,
+  ) {}
 }
 
 // Stores groups of bars - all bars (different colours for each region), for each expression

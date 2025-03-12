@@ -32,6 +32,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import {
+  EXPORT_PREVIEW_ID_PREFIX,
   UpdateCountsFn,
   WidgetExportData,
   WidgetExportDialogData,
@@ -44,6 +45,8 @@ import { ROIItemSummary } from "../../../../generated-protos/roi";
 import { DataExpression } from "../../../../generated-protos/expressions";
 import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 import { makeValidFileName } from "src/app/utils/utils";
+import { WidgetLayoutConfiguration } from "../../../../generated-protos/screen-configuration";
+import { AnalysisLayoutService } from "../../../analysis/analysis.module";
 
 @Component({
   selector: "widget-export-dialog",
@@ -55,17 +58,40 @@ export class WidgetExportDialogComponent implements OnInit {
   zipFileName: string = "";
 
   @Output() requestExportData: EventEmitter<WidgetExportRequest> = new EventEmitter<WidgetExportRequest>();
+
+  @Output() liveOptionChanges: EventEmitter<{
+    options: WidgetExportOption[];
+    dataProducts: WidgetExportOption[];
+    chartOptions: WidgetExportOption[];
+    keyOptions: WidgetExportOption[];
+  }> = new EventEmitter<{
+    options: WidgetExportOption[];
+    dataProducts: WidgetExportOption[];
+    chartOptions: WidgetExportOption[];
+    keyOptions: WidgetExportOption[];
+  }>();
+
+  public liveOptionChanges$ = this.liveOptionChanges.asObservable();
+
   loading: boolean = false;
   errorMessage: string = "";
 
   // Initial state to restore from
   initialOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.options);
-  initialDataProducts: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+  initialDataProducts: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.dataProducts || []);
+  initialChartOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.chartOptions || []);
+  initialKeyOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.keyOptions || []);
 
   options: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.options);
-  dataProducts: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+  dataProducts: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.dataProducts || []);
+  chartOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.chartOptions || []);
+  keyOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.keyOptions || []);
 
   private _selectedDataProductsCount: number = 0;
+
+  chartView: boolean = true;
+  previewWidgetConfiguration: WidgetLayoutConfiguration | null = null;
+  previewWidgetId: string | null = null;
 
   showPreview: boolean = false;
   hideProgressLabels: boolean = false;
@@ -75,7 +101,8 @@ export class WidgetExportDialogComponent implements OnInit {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: WidgetExportDialogData,
     public dialogRef: MatDialogRef<WidgetExportDialogComponent> | null,
-    private _snackBarService: SnackbarService
+    private _snackBarService: SnackbarService,
+    private analysisLayoutService: AnalysisLayoutService
   ) {
     if (data.title) {
       this.title = data.title;
@@ -105,6 +132,19 @@ export class WidgetExportDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.mapAllCounts();
+
+    if (this.data.widgetId && !this.previewWidgetConfiguration) {
+      this.previewWidgetId = this.data.widgetId;
+      this.analysisLayoutService.activeScreenConfiguration$.value.layouts.forEach(layout => {
+        layout.widgets.forEach(widget => {
+          if (widget.id === this.previewWidgetId) {
+            let clonedWidget = JSON.parse(JSON.stringify(widget)) as WidgetLayoutConfiguration;
+            clonedWidget.id = EXPORT_PREVIEW_ID_PREFIX + clonedWidget.id;
+            this.previewWidgetConfiguration = clonedWidget;
+          }
+        });
+      });
+    }
   }
 
   trackByFn(index: number, item: WidgetExportOption): string {
@@ -114,6 +154,15 @@ export class WidgetExportDialogComponent implements OnInit {
   updateDataProductsCount(): void {
     this._selectedDataProductsCount = Math.ceil(this.dataProducts.filter(option => option.selected).reduce((a, b) => a + (b?.count ?? 1), 0));
     this.updateAllDataProductsSelected();
+
+    if (this.showPreview) {
+      this.liveOptionChanges.emit({
+        options: this.options,
+        dataProducts: this.dataProducts,
+        chartOptions: this.chartOptions,
+        keyOptions: this.keyOptions,
+      });
+    }
   }
 
   get selectedDataProductsCount(): number {
@@ -323,6 +372,8 @@ export class WidgetExportDialogComponent implements OnInit {
     }
   }
 
+  onDownloadPNG(): void {}
+
   onDownload(data: WidgetExportData): void {
     this.errorMessage = "";
     let zipFileName = (this.zipFileName || this.data.defaultZipName).replace(".zip", "") + ".zip";
@@ -362,5 +413,9 @@ export class WidgetExportDialogComponent implements OnInit {
   onExportError(err: any): void {
     this.loading = false;
     this.errorMessage = err;
+  }
+
+  onSwitchView(evt: any): void {
+    this.chartView = evt === "Chart";
   }
 }

@@ -86,6 +86,7 @@ export interface CanvasDrawer {
   // Optional parameters just for export
   showSwapButton?: boolean;
   lightMode?: boolean;
+  transparentBackground?: boolean;
 }
 
 export enum CanvasMouseEventId {
@@ -243,6 +244,10 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
         );
       }
     }
+  }
+
+  get transparentBackground(): boolean {
+    return this.drawer?.transparentBackground || false;
   }
 
   get drawNotifier() {
@@ -533,7 +538,8 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
     return drawer.draw(screenContext, drawParams).pipe(
       tap(() => {
         screenContext.restore();
-    }));
+      })
+    );
   }
 
   protected screenToCanvasSpace(pt: Point): Point {

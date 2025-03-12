@@ -31,7 +31,12 @@ import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportOption,
+  WidgetExportRequest,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
@@ -92,7 +97,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this.drawer = new TernaryChartDrawer(this.mdl);
     this.toolhost = new TernaryChartToolHost(this.mdl, this._selectionService);
-    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform);
+    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -168,6 +173,17 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     return this.mdl.raw?.cornerB || null;
   }
 
+  updateExportOptions(exportOptions: WidgetExportOption[], exportChartOptions: WidgetExportOption[]) {
+    let backgroundColorOption = exportOptions.find(opt => opt.id === "background");
+    let backgroundColor = backgroundColorOption ? backgroundColorOption.selectedOption : null;
+    if (backgroundColor) {
+      this.drawer.lightMode = ["white", "transparent"].includes(backgroundColor);
+      this.drawer.transparentBackground = backgroundColor === "transparent";
+    }
+
+    this.reDraw();
+  }
+
   private update() {
     this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 3) {
@@ -175,7 +191,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       this.isWidgetDataLoading = false;
       return;
     }
-
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
@@ -229,6 +244,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
+    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
+
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryPMC);

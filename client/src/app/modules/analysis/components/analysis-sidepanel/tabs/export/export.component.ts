@@ -48,7 +48,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
       hideProgressLabels: true,
     };
 
-    super(data, null, _snackService);
+    super(data, null, _snackService, _analysisLayoutService);
   }
 
   override ngOnInit(): void {
@@ -66,7 +66,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     }
 
     this.initialOptions = this.copyWidgetExportOptionsDefaultState(this.options);
-    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data?.dataProducts || []);
 
     this.mapAllCounts();
     this.showPreview = !!this.data.showPreview;

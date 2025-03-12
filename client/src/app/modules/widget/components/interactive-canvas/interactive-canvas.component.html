@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="canvas-container">
   <canvas
+    class="{{ transparentBackground ? 'transparent' : '' }}"
     #InteractiveCanvas
     tabindex="1"
     (mousedown)="onMouseDownCanvas($event)"

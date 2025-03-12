@@ -64,6 +64,10 @@ export class WidgetExportButtonComponent {
   selectedRegions: ROIItemSummary[] = [];
   selectedExpressions: DataExpression[] = [];
 
+  private _preDragValue: number = 0;
+  private _scaleFactor: number = 10;
+  private _dragStartXOffset: number = 0;
+
   constructor(private _dialog: MatDialog) {}
 
   ngOnInit() {
@@ -227,5 +231,31 @@ export class WidgetExportButtonComponent {
 
   trackByFn(index: number, item: WidgetExportOption): string {
     return item.id;
+  }
+
+  dragNumber(event: any, option: WidgetExportOption) {
+    const deltaX = event.offsetX - this._dragStartXOffset;
+    if (option.value !== undefined && typeof option.value === "number" && this._dragStartXOffset) {
+      option.value = Math.round(this._preDragValue + deltaX / this._scaleFactor);
+    }
+  }
+
+  onDragStart(event: any, option: WidgetExportOption) {
+    this._dragStartXOffset = event.offsetX;
+    this._preDragValue = option.value as number;
+  }
+
+  onDragOver(event: any) {
+    event.preventDefault();
+  }
+
+  onDragEnd(event: any, option: WidgetExportOption) {
+    const deltaX = event.offsetX - this._dragStartXOffset;
+    if (option.value !== undefined && typeof option.value === "number" && this._dragStartXOffset) {
+      option.value = Math.round(this._preDragValue + deltaX / this._scaleFactor);
+    }
+
+    this._dragStartXOffset = 0;
+    this._preDragValue = 0;
   }
 }

@@ -101,3 +101,38 @@
     }
   }
 }
+
+.number-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+
+  .input-container {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    background: #444c50;
+    border: 1px solid #545f64;
+    border-radius: 4px;
+    padding: 4px;
+
+    .icon-container {
+      display: flex;
+      align-items: center;
+      position: relative;
+      cursor: ew-resize;
+
+      img {
+        z-index: 1;
+        max-width: 16px;
+      }
+    }
+
+    input {
+      border: none;
+    }
+  }
+}

@@ -85,7 +85,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this.drawer = new BinaryChartDrawer(this.mdl);
     this.toolhost = new BinaryChartToolHost(this.mdl, this._selectionService);
-    this.exporter = new BinaryChartExporter(this._snackService, this.drawer, this.transform);
+    this.exporter = new BinaryChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
 
     this._widgetControlConfiguration = {
       topToolbar: [
