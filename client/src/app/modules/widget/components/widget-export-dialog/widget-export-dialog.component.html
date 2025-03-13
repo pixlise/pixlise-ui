@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
       <widget
         *ngIf="chartView"
+        [ngStyle]="{ height: previewWidgetHeight + 'px', width: previewWidgetWidth + 'px' }"
         [widgetLayoutConfig]="previewWidgetConfiguration"
         [initWidget]="previewWidgetConfiguration.type"
         [exportMode]="true"

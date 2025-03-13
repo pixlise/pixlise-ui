@@ -92,6 +92,8 @@ export class WidgetExportDialogComponent implements OnInit {
   chartView: boolean = true;
   previewWidgetConfiguration: WidgetLayoutConfiguration | null = null;
   previewWidgetId: string | null = null;
+  previewWidgetWidth: number = 500;
+  previewWidgetHeight: number = 500;
 
   showPreview: boolean = false;
   hideProgressLabels: boolean = false;
@@ -156,6 +158,21 @@ export class WidgetExportDialogComponent implements OnInit {
     this.updateAllDataProductsSelected();
 
     if (this.showPreview) {
+      // Update the preview widget size based on the selected aspect ratio
+      const aspectRatio = this.options.find(option => option.id === "aspectRatio");
+      if (aspectRatio) {
+        if (aspectRatio.selectedOption === "square") {
+          this.previewWidgetWidth = 500;
+          this.previewWidgetHeight = 500;
+        } else if (aspectRatio.selectedOption === "4:3") {
+          this.previewWidgetHeight = 500;
+          this.previewWidgetWidth = 666.67;
+        } else if (aspectRatio.selectedOption === "16:9") {
+          this.previewWidgetWidth = 700;
+          this.previewWidgetHeight = 393.75;
+        }
+      }
+
       this.liveOptionChanges.emit({
         options: this.options,
         dataProducts: this.dataProducts,

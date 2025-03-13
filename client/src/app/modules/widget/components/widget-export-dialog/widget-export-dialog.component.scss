@@ -169,7 +169,7 @@
 
     .fields {
       gap: 0 !important;
-      height: 500px;
+      min-height: 500px;
 
       .button-container {
         border-top: 1px solid #334155;
@@ -207,10 +207,10 @@
         justify-content: center;
         align-items: center;
         flex-direction: column;
+        min-height: 575px;
 
         widget {
-          flex: 1;
-          width: 500px;
+          margin: auto;
         }
       }
 

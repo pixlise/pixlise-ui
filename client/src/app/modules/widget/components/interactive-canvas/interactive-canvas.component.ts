@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { Observable, Subject, Subscription, fromEvent, of } from "rxjs";
+import { Observable, ReplaySubject, Subject, Subscription, fromEvent, of } from "rxjs";
 import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
 import { addVectors, getMatrixAs2x3Array, Point, Rect, subtractVectors } from "src/app/models/Geometry";
@@ -153,6 +153,7 @@ export class CanvasKeyEvent {
 export interface CanvasDrawNotifier {
   needsDraw$: Subject<void>;
   needsCanvasResize$?: Subject<void>;
+  resolution$?: ReplaySubject<number>;
 }
 
 export class CanvasInteractionResult {
@@ -211,9 +212,9 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
   protected _subs = new Subscription();
   protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
 
-  constructor(private _layoutService: AnalysisLayoutService) {}
+  private _resolutionMultiplier = 1;
 
-  //ngOnInit() {}
+  constructor(private _layoutService: AnalysisLayoutService) {}
 
   ngOnDestroy() {
     this._subs.unsubscribe();
@@ -239,6 +240,15 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
       if (this.drawNotifier.needsCanvasResize$) {
         this._subs.add(
           this.drawNotifier.needsCanvasResize$.subscribe(() => {
+            this.callFitCanvasToContainer();
+          })
+        );
+      }
+
+      if (this.drawNotifier.resolution$) {
+        this._subs.add(
+          this.drawNotifier.resolution$.subscribe(multiplier => {
+            this._resolutionMultiplier = multiplier;
             this.callFitCanvasToContainer();
           })
         );
@@ -313,13 +323,16 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
     const dpi = window.devicePixelRatio;
 
     const canvasElem = canvas.nativeElement;
-    if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
+    if (
+      canvasElem.width == canvasElem.parentNode.clientWidth * dpi * this._resolutionMultiplier &&
+      canvasElem.height == canvasElem.parentNode.clientHeight * dpi * this._resolutionMultiplier
+    ) {
       //console.error('fitCanvasToContainer failed: size already matched');
       return null;
     }
 
-    const width = canvasElem.parentNode.clientWidth;
-    const height = canvasElem.parentNode.clientHeight;
+    const width = canvasElem.parentNode.clientWidth * this._resolutionMultiplier;
+    const height = canvasElem.parentNode.clientHeight * this._resolutionMultiplier;
 
     const displayBackup = canvasElem.style.display;
     canvasElem.style.display = "none";

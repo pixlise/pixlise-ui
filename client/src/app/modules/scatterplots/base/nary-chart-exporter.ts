@@ -116,10 +116,10 @@ export class NaryChartExporter {
           description: "Select the resolution of the exported image",
           dropdownOptions: [
             { id: "max", name: "Max" },
-            { id: "med", name: "Medium" },
+            { id: "med", name: "Standard" },
             { id: "low", name: "Low" },
           ],
-          selectedOption: "max",
+          selectedOption: "med",
           selected: true,
         },
       ],

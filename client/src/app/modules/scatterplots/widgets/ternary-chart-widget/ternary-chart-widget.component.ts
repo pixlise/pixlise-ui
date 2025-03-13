@@ -181,6 +181,30 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       this.drawer.transparentBackground = backgroundColor === "transparent";
     }
 
+    let aspectRatioOption = exportOptions.find(opt => opt.id === "aspectRatio");
+
+    // If the aspect ratio option is set, we need to trigger a canvas resize on next frame render
+    if (aspectRatioOption) {
+      setTimeout(() => {
+        this.mdl.needsCanvasResize$.next();
+        this.reDraw();
+      }, 0);
+    }
+
+    let resolutionOption = exportOptions.find(opt => opt.id === "resolution");
+    if (resolutionOption) {
+      const resolutionMapping = {
+        max: 2,
+        med: 1,
+        low: 0.5,
+      };
+
+      let newResolution = resolutionOption.selectedOption;
+      if (newResolution && resolutionMapping[newResolution as keyof typeof resolutionMapping]) {
+        this.mdl.resolution$.next(resolutionMapping[newResolution as keyof typeof resolutionMapping]);
+      }
+    }
+
     this.reDraw();
   }
 
