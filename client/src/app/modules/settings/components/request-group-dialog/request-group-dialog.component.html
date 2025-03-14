@@ -63,7 +63,10 @@ POSSIBILITY OF SUCH DAMAGE.
     </div> -->
   </div>
   <div class="group-table">
-    <table mat-table [dataSource]="availableGroups" matSort>
+    <div *ngIf="loadingGroups" class="wait">
+      <wait-spinner></wait-spinner>
+    </div>
+    <table *ngIf="!loadingGroups" mat-table [dataSource]="availableGroups" matSort>
       <ng-container matColumnDef="select">
         <th mat-header-cell *matHeaderCellDef>
           <mat-checkbox

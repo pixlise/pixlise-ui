@@ -29,6 +29,8 @@ import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analy
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIService } from "../../../roi/services/roi.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
 @Component({
   selector: "histogram-widget",
@@ -176,7 +178,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           return;
         }
 
-        if (result && result.selectedExpressions?.length > 0) {
+        if (result /*&& result.selectedExpressions?.length > 0*/) {
           this.mdl.expressionIds = [];
 
           for (const expr of result.selectedExpressions) {
@@ -198,6 +200,13 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
         // Expression picker has closed, so we can stop highlighting this widget
         this._analysisLayoutService.highlightedWidgetId$.next("");
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        // User may have switched quants or something, update our view
+        this.update();
       })
     );
 
@@ -271,17 +280,29 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
     }
 
-    this._widgetData
-      .getData(query)
-      .pipe(first())
-      .subscribe({
-        next: data => {
-          this.setData(data).pipe(first()).subscribe();
-        },
-        error: err => {
-          this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
-        },
-      });
+    try {
+      this._widgetData
+        .getData(query)
+        .pipe(first())
+        .subscribe({
+          next: data => {
+            this.setData(data).pipe(first()).subscribe();
+          },
+          error: err => {
+            this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+          },
+        });
+    } catch (err) {
+      if (err instanceof WidgetError) {
+        const werr = err as WidgetError;
+        werr.message = "Histogram: " + werr.message;
+        this._snackService.openError(werr);
+      } else {
+        this.setData(new RegionDataResults([], httpErrorToString(err, "Histogram")))
+          .pipe(first())
+          .subscribe();
+      }
+    }
   }
 
   private setData(data: RegionDataResults): Observable<void> {

@@ -144,6 +144,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [notificationCount]="selectedInstrumentCount"
         badgeText="instruments selected"></icon-button>
       <div class="dim">{{ searchResultSummary }}</div>
+      <push-button *ngIf="publicOnlyUser" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
