@@ -72,6 +72,9 @@ import {
 import { filterScans, sortScans } from "src/app/utils/search";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { DatasetsService } from "../../../services/datasets.service";
+import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { UserGroupRelationship } from "src/app/generated-protos/user-group";
+import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 
 class SummaryItem {
   constructor(
@@ -171,6 +174,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   public sortWorkspacesBy: string = "Last Updated";
   public sortWorkspacesAsc: boolean = false;
 
+  public publicOnlyUser: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -182,6 +187,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     private _snackService: SnackbarService,
     private _taggingService: TagService,
+    private _groupsService: GroupsService,
     private _tilesService: DatasetsService
   ) {}
 
@@ -206,6 +212,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         error: err => {
           this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
         },
+      })
+    );
+
+    this._subs.add(
+      this._groupsService.groupsChanged$.subscribe(() => {
+        // Check how many groups the user has joined, so we can show the group management button if needed
+        const groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
+        this.publicOnlyUser = groupsWithAccess.length <= 1;
       })
     );
 
@@ -1298,5 +1312,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   get description(): string {
     return this.selectedScan?.description || "(empty)";
+  }
+
+  onManageGroups() {
+    const dialogConfig = new MatDialogConfig();
+    this.dialog.open(RequestGroupDialogComponent, dialogConfig);
   }
 }
