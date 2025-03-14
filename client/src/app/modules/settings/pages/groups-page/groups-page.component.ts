@@ -112,9 +112,11 @@ export class GroupsPageComponent {
   }
 
   get groupsWithAdminAccess() {
-    return this._groupsService.groups.filter(
-      group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN || this._userOptionsService.hasFeatureAccess("admin")
-    );
+    return this._groupsService.groups
+      .filter(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN || this._userOptionsService.hasFeatureAccess("admin"))
+      .sort((a: UserGroupInfo, b: UserGroupInfo) => {
+        return a.name.localeCompare(b.name);
+      });
   }
 
   get groupsWithMemberAccess() {
