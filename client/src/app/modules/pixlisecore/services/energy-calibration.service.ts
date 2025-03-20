@@ -103,23 +103,27 @@ export class EnergyCalibrationService {
         const eVStartMetaIdx = metaResp.metaLabels.indexOf("OFFSET");
         const eVperChannelMetaIdx = metaResp.metaLabels.indexOf("XPERCHAN");
 
-        if (eVStartMetaIdx > -1 && eVperChannelMetaIdx > -1) {
+        if (eVStartMetaIdx > -1 || eVperChannelMetaIdx > -1) {
           for (const spectrum of spectrumResp.bulkSpectra) {
             let eVstart = 0;
             let eVperChannel = 1;
 
-            const eVstartMeta = spectrum.meta[eVStartMetaIdx];
-            if (eVstartMeta.fvalue !== undefined) {
-              eVstart = eVstartMeta.fvalue;
-            } else if (eVstartMeta.ivalue !== undefined) {
-              eVstart = eVstartMeta.ivalue;
+            if (eVStartMetaIdx > -1) {
+              const eVstartMeta = spectrum.meta[eVStartMetaIdx];
+              if (eVstartMeta.fvalue !== undefined) {
+                eVstart = eVstartMeta.fvalue;
+              } else if (eVstartMeta.ivalue !== undefined) {
+                eVstart = eVstartMeta.ivalue;
+              }
             }
 
-            const eVperChannelMeta = spectrum.meta[eVperChannelMetaIdx];
-            if (eVperChannelMeta.fvalue !== undefined) {
-              eVperChannel = eVperChannelMeta.fvalue;
-            } else if (eVperChannelMeta.ivalue !== undefined) {
-              eVperChannel = eVperChannelMeta.ivalue;
+            if (eVperChannelMetaIdx > -1) {
+              const eVperChannelMeta = spectrum.meta[eVperChannelMetaIdx];
+              if (eVperChannelMeta.fvalue !== undefined) {
+                eVperChannel = eVperChannelMeta.fvalue;
+              } else if (eVperChannelMeta.ivalue !== undefined) {
+                eVperChannel = eVperChannelMeta.ivalue;
+              }
             }
 
             calibration.push(new SpectrumEnergyCalibration(eVstart, eVperChannel, spectrum.detector));
