@@ -28,9 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { SelectionModel } from "@angular/cdk/collections";
-import { Component, OnInit, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, OnInit, ViewChild } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
-import { MatSort, Sort } from "@angular/material/sort";
+import { MatSort } from "@angular/material/sort";
 import { MatTableDataSource } from "@angular/material/table";
 import { GroupsService } from "../../services/groups.service";
 import { UserGroupJoinSummaryInfo } from "src/app/generated-protos/user-group";
@@ -40,7 +40,7 @@ import { UserGroupJoinSummaryInfo } from "src/app/generated-protos/user-group";
   templateUrl: "./request-group-dialog.component.html",
   styleUrls: ["./request-group-dialog.component.scss"],
 })
-export class RequestGroupDialogComponent implements OnInit {
+export class RequestGroupDialogComponent implements OnInit, AfterViewInit {
   _groupSearchString: string = "";
 
   @ViewChild(MatSort) sort: MatSort = new MatSort();
@@ -59,11 +59,15 @@ export class RequestGroupDialogComponent implements OnInit {
   groupAdminTooltips: Record<string, string> = {};
   groupRequestAsMember: Record<string, boolean> = {};
 
+  loadingGroups: boolean = false;
+
   constructor(
     public _groupsService: GroupsService,
     public dialogRef: MatDialogRef<RequestGroupDialogComponent>
   ) {
+    this.loadingGroups = true;
     this._groupsService.joinableGroupsChanged$.subscribe(() => {
+      this.loadingGroups = false;
       this.availableGroups.data = this._groupsService.joinableGroups;
 
       this._groupsService.joinableGroups.forEach(group => {

@@ -1,4 +1,14 @@
-## 4.62.0 (Latest)
+## 4.63.0 (Latest)
+
+### New Features
+- Dataset tiles page now shows Join Groups button up to for users who are only in one group
+- Group Admin page now sorts groups on left pane
+- PIXL EM imports now detect the word cal-target, cal_target or caltarget (case insensitively) and supply the "-t" flag to beam geometry tool to ensure cal target EM scans are generated correctly
+
+### Bug Fixes
+- Fixed histogram error displayed when it had no expressions specified (happens while PIXLISE workspace is loading).
+
+## 4.62.0 (2025-03-10)
 
 ### New Features
 - Dataset browsing now remembers the instrument filter you set until you reload the page

@@ -183,6 +183,11 @@ export class WidgetDataService {
   // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
   // should equal "what.length". There are also error values that can be returned.
   getData(what: DataSourceParams[], allowAnyResponse: boolean = false): Observable<RegionDataResults> {
+    if (what.length <= 0) {
+      //throw new Error("No expressions to quantify");
+      return of(new RegionDataResults([], "No expressions to calculate"));
+    }
+
     // Query each one separately and combine results at the end
     const exprResult$: Observable<DataQueryResult>[] = [];
     for (const query of what) {
