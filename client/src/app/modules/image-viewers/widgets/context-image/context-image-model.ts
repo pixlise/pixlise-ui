@@ -633,6 +633,9 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
   // Drawn line over the top of it all
   drawnLinePoints: Point[] = [];
 
+  // Show the confidence of the MIST ROI as opacity in the map layer
+  showROIConfidence: boolean = true;
+
   regenerate(canvasParams: CanvasParams, from: ContextImageModel): Observable<void> {
     // Throw away any cached drawn image we have
     this.drawnData = null;
@@ -878,7 +881,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
       let pmc = locToPMCLookup.get(locIdx);
       let locOpacity = 1;
-      if (roi.roi.isMIST && pmc !== undefined) {
+      if (this.showROIConfidence && roi.roi.isMIST && pmc !== undefined) {
         let mistOpacity = roi.roi?.mistROIItem?.pmcConfidenceMap[pmc];
         if (mistOpacity !== undefined) {
           locOpacity = mistOpacity;

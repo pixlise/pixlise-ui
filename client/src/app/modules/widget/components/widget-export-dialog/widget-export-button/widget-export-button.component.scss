@@ -67,8 +67,11 @@
 
     mat-select {
       display: flex;
-      width: 50% !important;
-      max-width: 50%;
+      // width: 50% !important;
+      // max-width: 50%;
+
+      width: 174px !important;
+      max-width: 174px !important;
 
       margin-left: auto;
     }
@@ -135,4 +138,17 @@
       border: none;
     }
   }
+}
+
+.color-picker-container {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #545f64;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.option-icon {
+  margin-right: 8px;
 }

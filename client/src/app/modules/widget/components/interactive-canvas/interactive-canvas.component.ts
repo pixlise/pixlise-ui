@@ -87,6 +87,7 @@ export interface CanvasDrawer {
   showSwapButton?: boolean;
   lightMode?: boolean;
   transparentBackground?: boolean;
+  borderWidth?: number;
 }
 
 export enum CanvasMouseEventId {
@@ -154,6 +155,7 @@ export interface CanvasDrawNotifier {
   needsDraw$: Subject<void>;
   needsCanvasResize$?: Subject<void>;
   resolution$?: ReplaySubject<number>;
+  borderWidth$?: ReplaySubject<number>;
 }
 
 export class CanvasInteractionResult {
@@ -253,6 +255,17 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
           })
         );
       }
+
+      if (this.drawNotifier.borderWidth$) {
+        this._subs.add(
+          this.drawNotifier.borderWidth$.subscribe(borderWidth => {
+            this.drawer!.borderWidth = borderWidth;
+
+            this.callFitCanvasToContainer();
+            this.triggerRedraw();
+          })
+        );
+      }
     }
   }
 
@@ -320,19 +333,16 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ AfterViewInit, On
       return null;
     }
 
-    const dpi = window.devicePixelRatio;
+    const dpi = window.devicePixelRatio * this._resolutionMultiplier;
 
     const canvasElem = canvas.nativeElement;
-    if (
-      canvasElem.width == canvasElem.parentNode.clientWidth * dpi * this._resolutionMultiplier &&
-      canvasElem.height == canvasElem.parentNode.clientHeight * dpi * this._resolutionMultiplier
-    ) {
+    if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
       //console.error('fitCanvasToContainer failed: size already matched');
       return null;
     }
 
-    const width = canvasElem.parentNode.clientWidth * this._resolutionMultiplier;
-    const height = canvasElem.parentNode.clientHeight * this._resolutionMultiplier;
+    const width = canvasElem.parentNode.clientWidth;
+    const height = canvasElem.parentNode.clientHeight;
 
     const displayBackup = canvasElem.style.display;
     canvasElem.style.display = "none";

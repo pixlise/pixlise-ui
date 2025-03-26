@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, OnInit, Output, SimpleChanges } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Inject, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -43,19 +43,25 @@ import {
 import { MatSelectChange } from "@angular/material/select";
 import { ROIItemSummary } from "../../../../generated-protos/roi";
 import { DataExpression } from "../../../../generated-protos/expressions";
-import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
+import { SnackbarService, WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 import { makeValidFileName } from "src/app/utils/utils";
 import { WidgetLayoutConfiguration } from "../../../../generated-protos/screen-configuration";
 import { AnalysisLayoutService } from "../../../analysis/analysis.module";
+import { WidgetComponent } from "../widget/widget.component";
+import html2canvas from "html2canvas";
 
 @Component({
   selector: "widget-export-dialog",
   templateUrl: "./widget-export-dialog.component.html",
   styleUrls: ["./widget-export-dialog.component.scss"],
 })
-export class WidgetExportDialogComponent implements OnInit {
+export class WidgetExportDialogComponent implements OnInit, OnChanges {
   title: string = "Export Data";
   zipFileName: string = "";
+
+  @ViewChild("previewWidgetContainer") previewWidgetContainer?: ElementRef;
+  @ViewChild("previewWidget") previewWidget?: ElementRef;
+  @ViewChild("widgetKeyDisplay") widgetKeyDisplay?: ElementRef;
 
   @Output() requestExportData: EventEmitter<WidgetExportRequest> = new EventEmitter<WidgetExportRequest>();
 
@@ -64,11 +70,13 @@ export class WidgetExportDialogComponent implements OnInit {
     dataProducts: WidgetExportOption[];
     chartOptions: WidgetExportOption[];
     keyOptions: WidgetExportOption[];
+    exportMode?: boolean;
   }> = new EventEmitter<{
     options: WidgetExportOption[];
     dataProducts: WidgetExportOption[];
     chartOptions: WidgetExportOption[];
     keyOptions: WidgetExportOption[];
+    exportMode?: boolean;
   }>();
 
   public liveOptionChanges$ = this.liveOptionChanges.asObservable();
@@ -87,6 +95,9 @@ export class WidgetExportDialogComponent implements OnInit {
   chartOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.chartOptions || []);
   keyOptions: WidgetExportOption[] = this.copyWidgetExportOptionsDefaultState(this.data?.keyOptions || []);
 
+  keyItems: WidgetKeyItem[] = [];
+  widgetKeyBackgroundColor: string = "";
+  widgetKeyFontSize: number = 14;
   private _selectedDataProductsCount: number = 0;
 
   chartView: boolean = true;
@@ -140,7 +151,7 @@ export class WidgetExportDialogComponent implements OnInit {
       this.analysisLayoutService.activeScreenConfiguration$.value.layouts.forEach(layout => {
         layout.widgets.forEach(widget => {
           if (widget.id === this.previewWidgetId) {
-            let clonedWidget = JSON.parse(JSON.stringify(widget)) as WidgetLayoutConfiguration;
+            const clonedWidget = JSON.parse(JSON.stringify(widget)) as WidgetLayoutConfiguration;
             clonedWidget.id = EXPORT_PREVIEW_ID_PREFIX + clonedWidget.id;
             this.previewWidgetConfiguration = clonedWidget;
           }
@@ -173,11 +184,18 @@ export class WidgetExportDialogComponent implements OnInit {
         }
       }
 
+      const widgetKeyBackgroundColor = this.keyOptions.find(option => option.id === "widgetKeyBackgroundColor")?.selectedOption;
+      this.widgetKeyBackgroundColor = widgetKeyBackgroundColor ?? "";
+
+      const widgetKeyFontSize = this.keyOptions.find(option => option.id === "widgetKeyFontSize")?.value;
+      this.widgetKeyFontSize = Number(widgetKeyFontSize) ?? 14;
+
       this.liveOptionChanges.emit({
         options: this.options,
         dataProducts: this.dataProducts,
         chartOptions: this.chartOptions,
         keyOptions: this.keyOptions,
+        exportMode: true,
       });
     }
   }
@@ -195,11 +213,13 @@ export class WidgetExportDialogComponent implements OnInit {
 
   onClear(): void {
     this.errorMessage = "";
-    let initialOptions = this.copyWidgetExportOptionsDefaultState(this.initialOptions);
-    let initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.initialDataProducts);
+    const initialOptions = this.copyWidgetExportOptionsDefaultState(this.initialOptions);
+    const initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.initialDataProducts);
 
     // We don't want to clear the updateCounts associated with options and dataProducts, so copy everything else
     this.options = this.options.map((option, index) => ({ ...initialOptions[index], updateCounts: option.updateCounts }));
+    this.chartOptions = this.chartOptions.map((option, index) => ({ ...this.initialChartOptions[index], updateCounts: option.updateCounts }));
+    this.keyOptions = this.keyOptions.map((option, index) => ({ ...this.initialKeyOptions[index], updateCounts: option.updateCounts }));
     this.dataProducts = this.dataProducts.map((option, index) => ({ ...initialDataProducts[index], updateCounts: option.updateCounts }));
 
     this.mapAllCounts();
@@ -213,6 +233,18 @@ export class WidgetExportDialogComponent implements OnInit {
     });
 
     this.dataProducts.forEach(option => {
+      if (option.updateCounts) {
+        this.mapNewDataProductCounts(option.updateCounts, option.selected);
+      }
+    });
+
+    this.chartOptions.forEach(option => {
+      if (option.updateCounts) {
+        this.mapNewDataProductCounts(option.updateCounts, option.selected);
+      }
+    });
+
+    this.keyOptions.forEach(option => {
       if (option.updateCounts) {
         this.mapNewDataProductCounts(option.updateCounts, option.selected);
       }
@@ -236,11 +268,11 @@ export class WidgetExportDialogComponent implements OnInit {
       return;
     }
 
-    let selection = this.formWidgetExportRequest();
-    let countMap = updateCounts(selection, selected);
+    const selection = this.formWidgetExportRequest();
+    const countMap = updateCounts(selection, selected);
 
     Object.entries(countMap).forEach(([key, newCount]) => {
-      let product = this.dataProducts.find(product => product.id === key);
+      const product = this.dataProducts.find(product => product.id === key);
       if (product) {
         product.count = newCount;
       }
@@ -284,6 +316,17 @@ export class WidgetExportDialogComponent implements OnInit {
     this.errorMessage = "";
 
     option.selected = !option.selected;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
+  selectColor({ option, event }: { option: WidgetExportOption; event: string }): void {
+    this.errorMessage = "";
+
+    option.colorPickerValue = event;
     if (option.updateCounts) {
       this.mapNewDataProductCounts(option.updateCounts, option.selected);
     }
@@ -350,13 +393,24 @@ export class WidgetExportDialogComponent implements OnInit {
     this.updateDataProductsCount();
   }
 
+  updateValue({ option, event }: { option: WidgetExportOption; event: number | string }): void {
+    this.errorMessage = "";
+
+    option.value = event;
+    if (option.updateCounts) {
+      this.mapNewDataProductCounts(option.updateCounts, option.selected);
+    }
+
+    this.updateDataProductsCount();
+  }
+
   formWidgetExportRequest(): WidgetExportRequest {
-    let options: Record<string, WidgetExportOption> = {};
+    const options: Record<string, WidgetExportOption> = {};
     this.options.forEach(option => {
       options[option.id] = option;
     });
 
-    let dataProducts: Record<string, WidgetExportOption> = {};
+    const dataProducts: Record<string, WidgetExportOption> = {};
     this.dataProducts.forEach(option => {
       dataProducts[option.id] = option;
     });
@@ -368,34 +422,99 @@ export class WidgetExportDialogComponent implements OnInit {
     this.loading = true;
     this.errorMessage = "";
 
-    let exportRequest = this.formWidgetExportRequest();
+    const exportRequest = this.formWidgetExportRequest();
     this.requestExportData.emit(exportRequest);
   }
 
   private addFilesToZip(zip: JSZip, folderName: string, files: WidgetExportFile[] | undefined, extension: string, base64: boolean = false): void {
     if (files && files.length > 0) {
-      let baseFolder = zip.folder(folderName);
+      const baseFolder = zip.folder(folderName);
       if (baseFolder) {
         files.forEach(item => {
           if (item?.fileName && item?.data) {
-            let itemFolder: JSZip = item?.subFolder ? baseFolder.folder(item.subFolder) ?? baseFolder : baseFolder;
+            const itemFolder: JSZip = item?.subFolder ? baseFolder.folder(item.subFolder) ?? baseFolder : baseFolder;
 
             // Fix any weirdness in the file name, for example if it contained an ROI with a / or other odd character in it
             const fileName = makeValidFileName(item.fileName.replace(extension, "") + extension);
-            item?.fileName && item?.data && itemFolder.file(fileName, item.data, { base64 });
+            if (item?.fileName && item?.data) {
+              itemFolder.file(fileName, item.data, { base64 });
+            }
           }
         });
       }
     }
   }
 
-  onDownloadPNG(): void {}
+  private async getKeyCanvas(): Promise<HTMLCanvasElement | null> {
+    if (!this.widgetKeyDisplay) {
+      return null;
+    }
 
-  onDownload(data: WidgetExportData): void {
+    return html2canvas(this.widgetKeyDisplay.nativeElement as HTMLElement, {
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      scale: 2,
+    });
+  }
+
+  private getPreviewCanvas(): HTMLCanvasElement | null {
+    const canvas = this.previewWidgetContainer?.nativeElement?.querySelector("canvas");
+    return canvas as HTMLCanvasElement;
+  }
+
+  private async handlePNGAction(action: "copy" | "download"): Promise<void> {
+    let canvas: HTMLCanvasElement | null = null;
+
+    if (this.chartView) {
+      canvas = this.getPreviewCanvas();
+    } else {
+      canvas = await this.getKeyCanvas();
+    }
+
+    if (!canvas) {
+      return;
+    }
+
+    canvas.toBlob(blob => {
+      if (!blob) {
+        return;
+      }
+
+      if (action === "copy") {
+        navigator.clipboard
+          .write([
+            new ClipboardItem({
+              "image/png": blob,
+            }),
+          ])
+          .then(() => {
+            this._snackBarService.openSuccess("Copied image to clipboard");
+          })
+          .catch(error => {
+            console.error(error);
+            this._snackBarService.openError("Failed to copy image to clipboard");
+          });
+      } else {
+        const fileName = this.chartView ? "Plot Image.png" : "Widget Key.png";
+        saveAs(blob, fileName);
+      }
+    });
+  }
+
+  onCopyPNG(): void {
+    this.handlePNGAction("copy");
+  }
+
+  onDownloadPNG(): void {
+    this.handlePNGAction("download");
+  }
+
+  async onDownload(data: WidgetExportData): Promise<void> {
     this.errorMessage = "";
-    let zipFileName = (this.zipFileName || this.data.defaultZipName).replace(".zip", "") + ".zip";
+    const zipFileName = (this.zipFileName || this.data.defaultZipName).replace(".zip", "") + ".zip";
 
-    let zip = new JSZip();
+    const zip = new JSZip();
 
     this.addFilesToZip(zip, "Data Files", data.csvs, ".csv");
     this.addFilesToZip(zip, "Data Files", data.txts, ".txt");
@@ -405,12 +524,30 @@ export class WidgetExportDialogComponent implements OnInit {
     this.addFilesToZip(zip, "Images", data.images, ".png", true);
     this.addFilesToZip(zip, "Images", data.tiffImages, ".tif", true);
 
+    if (data.interactiveCanvas) {
+      const canvas = this.previewWidgetContainer?.nativeElement?.querySelector("canvas");
+      if (canvas) {
+        await new Promise<void>(resolve => {
+          (canvas as HTMLCanvasElement).toBlob(blob => {
+            if (blob) {
+              this.addFilesToZip(zip, "Images", [{ fileName: "Plot Image.png", data: blob }], ".png", true);
+            }
+            resolve();
+          });
+        });
+      }
+    }
+
     zip
       .generateAsync({ type: "blob" })
       .then(content => {
         saveAs(content, zipFileName);
         // this.onClear();
         this.loading = false;
+
+        if (this.dialogRef) {
+          this.dialogRef.close();
+        }
       })
       .catch(err => {
         this.loading = false;
@@ -421,10 +558,6 @@ export class WidgetExportDialogComponent implements OnInit {
 
         this._snackBarService.openError(this.errorMessage, err);
       });
-
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
   }
 
   onExportError(err: any): void {
@@ -433,6 +566,15 @@ export class WidgetExportDialogComponent implements OnInit {
   }
 
   onSwitchView(evt: any): void {
+    // Get the key items from the preview widget
+    if (this.previewWidget) {
+      const widget = this.previewWidget as unknown as WidgetComponent;
+      this.keyItems = widget.widgetKeyItems;
+    }
+
     this.chartView = evt === "Chart";
+    setTimeout(() => {
+      this.mapAllCounts();
+    }, 500);
   }
 }

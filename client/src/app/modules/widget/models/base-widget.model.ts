@@ -30,6 +30,8 @@ export class BaseWidgetModel {
   _isWidgetDataError: boolean = false;
   _widgetDataErrorMessage: string = "";
 
+  _exportMode: boolean = false;
+
   onWidgetDataChange(widgetData: WidgetData): void {}
 
   injectExpression(expression: LiveExpression): void {}

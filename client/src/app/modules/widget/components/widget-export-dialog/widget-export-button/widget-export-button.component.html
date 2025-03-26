@@ -36,6 +36,15 @@ POSSIBILITY OF SUCH DAMAGE.
     [disabled]="!option.selected"
     [action]="accordionOpen ? 'closeAccordion' : 'openAccordion'">
   </action-button>
+  <img *ngIf="option.optionIcon" class="option-icon" [src]="option.optionIcon" alt="Export option" />
+  <div
+    *ngIf="option.colorPicker"
+    class="color-picker-container"
+    [ngStyle]="{ backgroundColor: selectedColor }"
+    [(colorPicker)]="selectedColor"
+    [cpEyeDropper]="true"
+    cpPosition="auto"
+    (colorPickerSelect)="onSelectColor($event)"></div>
   <div *ngIf="option.type === 'checkbox'" class="option-type checkbox-option">
     <span
       #tooltip="matTooltip"
@@ -91,10 +100,20 @@ POSSIBILITY OF SUCH DAMAGE.
           (dragstart)="onDragStart($event, option)"
           (dragleave)="onDragEnd($event, option)"
           (dragover)="onDragOver($event)"
-          (dragend)="onDragEnd($event, option)" />
+          (dragend)="onDragEnd($event, option)"
+          alt="Units" />
       </div>
-      <input type="number" [(ngModel)]="option.value" [disabled]="!!option.disabled" />
+      <input
+        type="number"
+        [(ngModel)]="optionValue"
+        [min]="minValue"
+        [max]="maxValue"
+        [placeholder]="option.placeholder || option.description"
+        [step]="option.stepValue || 1"
+        [disabled]="!!option.disabled"
+        [ngStyle]="{ minWidth: toggleable ? '125px' : '156px', width: toggleable ? '125px' : '156px' }" />
     </div>
+    <action-button *ngIf="toggleable" [action]="option.value ? 'openEye' : 'closedEye'" (onClick)="onToggleEmptyValue()"></action-button>
   </div>
   <div *ngIf="option.type === 'dropdown' && option.dropdownOptions" class="option-type dropdown-option">
     <span

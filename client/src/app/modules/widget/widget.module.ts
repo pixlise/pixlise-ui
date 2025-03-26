@@ -1,5 +1,6 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { ColorPickerModule } from "ngx-color-picker";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { WidgetComponent } from "../widget/components/widget/widget.component";
 import { BaseWidgetModel } from "../widget/models/base-widget.model";
@@ -22,7 +23,7 @@ import { WidgetExportButtonComponent } from "./components/widget-export-dialog/w
     WidgetExportDialogComponent,
     WidgetExportButtonComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, ScrollingModule, ROIModule],
+  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, ScrollingModule, ColorPickerModule, ROIModule],
   exports: [
     WidgetComponent,
     BaseWidgetModel,
@@ -30,6 +31,7 @@ import { WidgetExportButtonComponent } from "./components/widget-export-dialog/w
     InteractiveCanvasComponent,
     WidgetExportDialogComponent,
     WidgetExportButtonComponent,
+    WidgetKeyDisplayComponent,
   ],
   providers: [],
 })

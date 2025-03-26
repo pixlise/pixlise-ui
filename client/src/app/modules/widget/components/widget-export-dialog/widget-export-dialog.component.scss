@@ -225,6 +225,22 @@
         margin-left: -32px;
       }
     }
+
+    .key-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 800px;
+      height: 500px;
+      overflow: auto;
+
+      .key {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+      }
+    }
   }
 }
 
@@ -236,4 +252,10 @@
   multi-switch-button {
     width: 100%;
   }
+}
+
+.download-menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

@@ -85,6 +85,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
+  axisLabelFontSize = 14;
+
   constructor(
     public dialog: MatDialog,
     private _selectionService: SelectionService,
@@ -174,14 +176,22 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   updateExportOptions(exportOptions: WidgetExportOption[], exportChartOptions: WidgetExportOption[]) {
-    let backgroundColorOption = exportOptions.find(opt => opt.id === "background");
-    let backgroundColor = backgroundColorOption ? backgroundColorOption.selectedOption : null;
+    const backgroundColorOption = exportOptions.find(opt => opt.id === "background");
+    const backgroundColor = backgroundColorOption ? backgroundColorOption.selectedOption : null;
     if (backgroundColor) {
-      this.drawer.lightMode = ["white", "transparent"].includes(backgroundColor);
+      this.drawer.lightMode = ["white"].includes(backgroundColor);
       this.drawer.transparentBackground = backgroundColor === "transparent";
     }
 
-    let aspectRatioOption = exportOptions.find(opt => opt.id === "aspectRatio");
+    const borderWidthOption = exportChartOptions.find(opt => opt.id === "borderWidth");
+    if (borderWidthOption) {
+      this.drawer.borderWidth = isNaN(Number(borderWidthOption.value)) ? 1 : Number(borderWidthOption.value);
+      this.mdl.borderWidth$.next(this.drawer.borderWidth);
+      this.mdl.borderColor = borderWidthOption.colorPickerValue || "";
+      this.reDraw();
+    }
+
+    const aspectRatioOption = exportOptions.find(opt => opt.id === "aspectRatio");
 
     // If the aspect ratio option is set, we need to trigger a canvas resize on next frame render
     if (aspectRatioOption) {
@@ -191,17 +201,51 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       }, 0);
     }
 
-    let resolutionOption = exportOptions.find(opt => opt.id === "resolution");
+    const resolutionOption = exportOptions.find(opt => opt.id === "resolution");
     if (resolutionOption) {
       const resolutionMapping = {
-        max: 2,
-        med: 1,
-        low: 0.5,
+        high: 3,
+        med: 1.5,
+        low: 1,
       };
 
-      let newResolution = resolutionOption.selectedOption;
+      const newResolution = resolutionOption.selectedOption;
       if (newResolution && resolutionMapping[newResolution as keyof typeof resolutionMapping]) {
         this.mdl.resolution$.next(resolutionMapping[newResolution as keyof typeof resolutionMapping]);
+      }
+    }
+
+    const labelsOption = exportChartOptions.find(opt => opt.id === "labels");
+    if (labelsOption) {
+      this.axisLabelFontSize = isNaN(Number(labelsOption.value)) ? 14 : Number(labelsOption.value);
+      this.mdl.axisLabelFontSize = this.axisLabelFontSize;
+    }
+
+    const fontOption = exportChartOptions.find(opt => opt.id === "font");
+    if (fontOption) {
+      this.mdl.axisLabelFontFamily = fontOption.selectedOption || "Arial";
+      this.mdl.axisLabelFontColor = fontOption.colorPickerValue || "";
+    }
+
+    if (resolutionOption && aspectRatioOption) {
+      if (aspectRatioOption.selectedOption === "square") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "500px x 500px" },
+          { id: "med", name: "750px x 750px" },
+          { id: "high", name: "1500px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "4:3") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "666px x 500px" },
+          { id: "med", name: "1000px x 750px" },
+          { id: "high", name: "2000px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "16:9") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "700px x 393px" },
+          { id: "med", name: "750px x 422px" },
+          { id: "high", name: "1500px x 844px" },
+        ];
       }
     }
 
@@ -268,6 +312,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
+    if (this.mdl) {
+      this.mdl.exportMode = this._exportMode;
+    }
+
     this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
 
     this._subs.add(

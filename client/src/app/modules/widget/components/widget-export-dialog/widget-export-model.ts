@@ -31,6 +31,7 @@ export type WidgetExportOption = {
   type: WidgetExportOptionType;
   description: string;
   selected: boolean;
+  optionIcon?: string;
 
   disabled?: boolean;
   disabledText?: string;
@@ -46,6 +47,11 @@ export type WidgetExportOption = {
   subOptions?: WidgetExportOption[];
 
   value?: number | string;
+  minValue?: number;
+  maxValue?: number;
+  stepValue?: number;
+  unit?: string;
+  placeholder?: string;
 
   // For regions & expressions
   scanId?: string;
@@ -56,6 +62,11 @@ export type WidgetExportOption = {
 
   selectedRegions?: ROIItemSummary[];
   selectedExpressions?: DataExpression[];
+
+  colorPicker?: boolean;
+  colorPickerValue?: string;
+
+  toggleable?: boolean;
 
   // For counts that aren't 1
   count?: number;
@@ -118,6 +129,8 @@ export type WidgetExportData = {
   msas?: WidgetExportFile[];
   luas?: WidgetExportFile[];
   mds?: WidgetExportFile[];
+  interactiveCanvas?: boolean;
+  interactiveKey?: boolean;
 };
 
 const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: WidgetKeyItem[], viewport: CanvasParams, lightMode: boolean): void => {

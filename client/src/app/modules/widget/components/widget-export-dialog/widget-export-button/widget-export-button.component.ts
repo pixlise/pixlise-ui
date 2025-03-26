@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, Output, EventEmitter, SimpleChanges } from "@angular/core";
+import { Component, Input, Output, EventEmitter, SimpleChanges, OnChanges, OnInit } from "@angular/core";
 import { WidgetExportOption } from "../widget-export-model";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "../../../../roi/components/roi-picker/roi-picker.component";
@@ -50,7 +50,7 @@ import { ScanImagePurpose } from "../../../../../generated-protos/image";
   templateUrl: "./widget-export-button.component.html",
   styleUrls: ["./widget-export-button.component.scss"],
 })
-export class WidgetExportButtonComponent {
+export class WidgetExportButtonComponent implements OnInit, OnChanges {
   @Input() option: WidgetExportOption | null = null;
   @Output() toggleOption = new EventEmitter<any>();
   @Output() selectOption = new EventEmitter<any>();
@@ -58,6 +58,9 @@ export class WidgetExportButtonComponent {
   @Output() selectROIsOption = new EventEmitter<any>();
   @Output() selectExpressionsOption = new EventEmitter<any>();
   @Output() selectImagesOption = new EventEmitter<any>();
+  @Output() updateValue = new EventEmitter<any>();
+  @Output() selectColor = new EventEmitter<any>();
+  @Input() toggleable?: boolean = false;
 
   accordionOpen: boolean = false;
 
@@ -67,6 +70,8 @@ export class WidgetExportButtonComponent {
   private _preDragValue: number = 0;
   private _scaleFactor: number = 10;
   private _dragStartXOffset: number = 0;
+
+  savedToggleValue: number = 0;
 
   constructor(private _dialog: MatDialog) {}
 
@@ -97,6 +102,19 @@ export class WidgetExportButtonComponent {
       if (this.option.selectedExpressions) {
         this.selectedExpressions = this.option.selectedExpressions;
       }
+    }
+  }
+
+  onToggleEmptyValue() {
+    if (this.option) {
+      // Store current value, then toggle between current value and 0
+      if (this.option.value) {
+        this.savedToggleValue = this.option.value as number;
+      }
+
+      this.option.value = this.option.value === this.savedToggleValue ? 0 : this.savedToggleValue;
+
+      this.updateValue.emit({ option: this.option, event: this.option.value });
     }
   }
 
@@ -257,5 +275,43 @@ export class WidgetExportButtonComponent {
 
     this._dragStartXOffset = 0;
     this._preDragValue = 0;
+  }
+
+  get minValue(): number | null {
+    return isNaN(Number(this.option?.minValue)) ? null : Number(this.option?.minValue);
+  }
+
+  get maxValue(): number | null {
+    return isNaN(Number(this.option?.maxValue)) ? null : Number(this.option?.maxValue);
+  }
+
+  get optionValue(): number {
+    return isNaN(Number(this.option?.value)) ? 0 : Number(this.option?.value);
+  }
+
+  set optionValue(value: number) {
+    if (this.option) {
+      this.option.value = value;
+
+      this.updateValue.emit({ option: this.option, event: this.option.value });
+    }
+  }
+
+  get selectedColor(): string {
+    return this.option?.colorPickerValue || "#00000000";
+  }
+
+  set selectedColor(value: string) {
+    if (this.option) {
+      this.option.colorPickerValue = value;
+      this.selectColor.emit({ option: this.option, event: this.option?.colorPickerValue });
+    }
+  }
+
+  onSelectColor(event: any) {
+    if (this.option) {
+      this.option.colorPickerValue = event;
+      this.selectColor.emit({ option: this.option, event });
+    }
   }
 }

@@ -848,6 +848,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
   }
 
+  onToggleROIConfidence() {
+    this.mdl.drawModel.showROIConfidence = !this.mdl.drawModel.showROIConfidence;
+    this.reloadModel();
+    this.reDraw("onToggleROIConfidence");
+  }
+
   onToggleShowPoints(trigger: Element | undefined) {
     if (this._visibilityDialog) {
       return; // already showing it! TODO: Should we flash it or something?

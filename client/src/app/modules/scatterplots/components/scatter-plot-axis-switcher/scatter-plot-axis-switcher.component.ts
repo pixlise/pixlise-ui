@@ -15,8 +15,10 @@ export class ScatterPlotAxisInfo {
 @Component({
   selector: "scatter-plot-axis-switcher",
   templateUrl: "./scatter-plot-axis-switcher.component.html",
-  styleUrls: ["./scatter-plot-axis-switcher.component.scss"]
+  styleUrls: ["./scatter-plot-axis-switcher.component.scss"],
 })
 export class ScatterPlotAxisSwitcherComponent {
   @Input() info: ScatterPlotAxisInfo | null = null;
+  @Input() readonly: boolean = false;
+  @Input() fontSize: number = 14;
 }

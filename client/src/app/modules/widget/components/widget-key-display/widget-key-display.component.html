@@ -29,7 +29,10 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div *ngIf="keyShowing" class="dlg-border-no-backdrop key-display {{ maxKey ? 'max-key' : '' }}">
+<div
+  *ngIf="exportMode || keyShowing"
+  class="dlg-border-no-backdrop key-display {{ maxKey ? 'max-key' : '' }} {{ lightMode ? 'light-mode' : '' }}"
+  [ngStyle]="backgroundColor ? { backgroundColor: backgroundColor, boxShadow: backgroundColor === 'transparent' ? 'none' : '0 0 0 1px ' + backgroundColor } : null">
   <div class="title unit-padding key-header">
     <div class="txt-dlg-heading label">KEY</div>
     <span class="max-key-toggle">
@@ -42,9 +45,9 @@ POSSIBILITY OF SUCH DAMAGE.
         {{ maxKey ? "Collapse" : "Expand" }}
       </push-button>
     </span>
-    <img class="clickable" src="assets/button-icons/close-cross.svg" (click)="onToggleShowKey()" />
+    <img *ngIf="!exportMode" class="clickable" src="assets/button-icons/close-cross.svg" alt="Toggle key" (click)="onToggleShowKey()" />
   </div>
-  <div class="key-items">
+  <div class="key-items {{ exportMode ? 'export-mode' : '' }}">
     <div class="key-item-group" *ngFor="let group of groupedItems">
       <div
         *ngIf="group.title"
@@ -52,7 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
         #tooltip="matTooltip"
         [matTooltip]="group.title"
         [matTooltipDisabled]="group.title.length <= maxTitleCharacters">
-        <action-button (onClick)="onToggleGroupVisibility(group, $event)" [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
+        <action-button *ngIf="!exportMode" (onClick)="onToggleGroupVisibility(group, $event)" [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
         <span
           (click)="onToggleGroupVisibility(group, $event)"
           class="key-group-title {{ group.isVisible ? '' : 'region-hidden' }}"
@@ -60,14 +63,14 @@ POSSIBILITY OF SUCH DAMAGE.
           >{{ group.title }}</span
         >
         <action-button
-          *ngIf="!maxKey"
+          *ngIf="!maxKey && !exportMode"
           (onClick)="group.isOpen = !group.isOpen"
           [action]="group.isOpen || maxKey ? 'closeAccordion' : 'openAccordion'"></action-button>
       </div>
-      <div *ngIf="!group.title || group.isOpen || maxKey" class="item-container">
+      <div *ngIf="!group.title || group.isOpen || maxKey || exportMode" class="item-container">
         <div *ngFor="let item of group.items" class="key-item">
           <action-button
-            *ngIf="item.isToggleable"
+            *ngIf="item.isToggleable && !exportMode"
             (onClick)="onToggleItemVisibility(item, group, $event)"
             [action]="item.isVisible ? 'checkOn' : 'checkOff'"></action-button>
           <div *ngIf="item.dashPattern !== null" class="dash-pattern">
@@ -79,18 +82,18 @@ POSSIBILITY OF SUCH DAMAGE.
             *ngIf="item.dashPattern === null"
             #tooltip="matTooltip"
             [matTooltip]="getLabel(item)"
-            [matTooltipDisabled]="getLabel(item).length <= maxTitleCharacters"
-            class="main-label {{ item.isVisible ? '' : 'region-hidden' }} {{ isItemOnTop(item) ? 'top-layer' : '' }}"
-            [ngClass]="{ 'main-label-clickable': item.id.length > 0 && item.canBeReordered }"
-            [style]="{ color: item.colour }"
+            [matTooltipDisabled]="exportMode || getLabel(item).length <= maxTitleCharacters"
+            class="main-label {{ item.isVisible ? '' : 'region-hidden' }} {{ !exportMode && isItemOnTop(item) ? 'top-layer' : '' }}"
+            [ngClass]="{ 'main-label-clickable': !exportMode && item.id.length > 0 && item.canBeReordered }"
+            [style]="{ color: item.colour, 'font-size': fontSize + 'px', padding: fontPadding + 'px 8px' }"
             (click)="onClickLabel(item, $event)"
             [title]="item.id.length > 0 ? 'Bring to front' : ''">
             <roi-shape [scale]="1.5" [color]="item.colour" [shape]="item.shape"></roi-shape>
             <span
               class="key-label"
               [ngStyle]="{
-                'max-width': maxTitleCharacters + 'ch',
-                'text-shadow': isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
+                'max-width': exportMode ? 'fit-content' : maxTitleCharacters + 'ch',
+                'text-shadow': !exportMode && isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
               }"
               >{{ item.label }}</span
             >
@@ -99,8 +102,8 @@ POSSIBILITY OF SUCH DAMAGE.
             <span
               class="key-label"
               [ngStyle]="{
-                'max-width': maxTitleCharacters + 'ch',
-                'text-shadow': isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
+                'max-width': exportMode ? 'fit-content' : maxTitleCharacters + 'ch',
+                'text-shadow': !exportMode && isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
               }"
               >{{ item.label }}</span
             >
@@ -112,7 +115,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <ng-content></ng-content>
 </div>
 
-<push-button class="trigger-btn" *ngIf="!keyShowing && items.length > 0" (onClick)="onToggleShowKey()">
+<push-button class="trigger-btn" *ngIf="!exportMode && !keyShowing && items.length > 0" (onClick)="onToggleShowKey()">
   <div class="trigger-contents">
     <div class="key-icons">
       <roi-shape class="key-item-icon" [scale]="1.5" [color]="item.colour" shape="circle" borderColor="#1e2021" *ngFor="let item of previewItems"></roi-shape>
