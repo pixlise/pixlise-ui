@@ -49,6 +49,12 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   xAxis: ChartAxis | null = null;
   yAxis: ChartAxis | null = null;
 
+  fontSize: number = BinaryChartModel.FONT_SIZE_SMALL;
+  fontFamily: string = "Roboto";
+  axisLineColour: string = Colours.GRAY_70.asString();
+  axisTextColour: string = Colours.GRAY_30.asString();
+  axisLineWidth: number = 1;
+
   // Coordinates we draw the points at
   pointGroupCoords: PointWithRayLabel[][] = [];
   totalPointCount: number = 0;
@@ -200,7 +206,7 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   }
 
   makeChartAxisDrawer(): ChartAxisDrawer {
-    return new ChartAxisDrawer(BinaryChartModel.FONT_SIZE_SMALL + "px Roboto", Colours.GRAY_70.asString(), Colours.GRAY_30.asString(), 4, 4, false);
+    return new ChartAxisDrawer(this.fontSize + "px " + this.fontFamily, this.axisLineColour, this.axisTextColour, 4, 4, false, this.axisLineWidth);
   }
 }
 
