@@ -108,14 +108,11 @@ export class EnvConfigurationInitService {
                 // That's what our http interceptor used to do. But with auth0's implementation
                 // we have to specify which requests to attach to, so:
                 allowedList: [
-                  APIPaths.getWithHost("ws-connect"),
-                  APIPaths.getWithHost("scan"),
-                  APIPaths.getWithHost("images"),
-                  APIPaths.getWithHost("images/*"),
-                  // config.apiUrl+"/ws-connect",
-                  // config.apiUrl+"/scan",
-                  // config.apiUrl+"/images",
-                  // config.apiUrl+"/images/*"
+                  APIPaths.getWithHost(APIPaths.api_websocket),
+                  APIPaths.getWithHost(APIPaths.api_scan),
+                  APIPaths.getWithHost(APIPaths.api_images),
+                  APIPaths.getWithHost(APIPaths.api_images + "/*"),
+                  APIPaths.getWithHost(APIPaths.api_memoise),
                 ],
               },
               //skipRedirectCallback: true,

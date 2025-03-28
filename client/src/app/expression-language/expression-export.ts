@@ -14,6 +14,7 @@ import { PredefinedROIID } from "../models/RegionOfInterest";
 import { EnergyCalibrationService } from "../modules/pixlisecore/services/energy-calibration.service";
 import { SpectrumEnergyCalibration } from "../models/BasicTypes";
 import { SpectrumDataService } from "../modules/pixlisecore/services/spectrum-data.service";
+import { DetectorConfigReq, DetectorConfigResp } from "../generated-protos/detector-config-msgs";
 
 export class ExpressionExporter {
   exportExpressionCode(
@@ -21,9 +22,11 @@ export class ExpressionExporter {
     expression: DataExpression,
     scanId: string,
     quantId: string,
+    instrument: string,
+    instrumentConfig: string,
     cachedDataService: APICachedDataService,
     spectrumDataService: SpectrumDataService,
-    energyCalibrationService: EnergyCalibrationService
+    energyCalibrationService: EnergyCalibrationService,
   ): Observable<WidgetExportData> {
     const result: WidgetExportData = { luas: [], mds: [], csvs: [] };
     const querier = new DataQuerier(userId);
@@ -39,10 +42,13 @@ export class ExpressionExporter {
       req$.push(DataModuleHelpers.getBuiltInModuleSource(lib));
     }
 
+    req$.push(cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: instrumentConfig })));
+
     return combineLatest(req$).pipe(
       switchMap((resps: any[]) => {
         const sources: LoadedSources = resps[0];
         const calibration: SpectrumEnergyCalibration[] = resps[1];
+        const config: DetectorConfigResp = resps[2];
 
         // We need a data source because we'll be executing the expression to record results
         // which are then saved in separate CSV files. This allows us to export exactly what
@@ -52,7 +58,7 @@ export class ExpressionExporter {
 
         return dataSource.prepare(cachedDataService, spectrumDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), calibration).pipe(
           switchMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
+            const intDataSource = new InterpreterDataSource(expression.id, dataSource, dataSource, dataSource, dataSource, dataSource);
 
             // Built-in modules
             for (let c = 2; c < resps.length; c++) {
@@ -103,7 +109,7 @@ export class ExpressionExporter {
             result.luas!.push({
               fileName: "Main.lua",
               subFolder: "expression",
-              data: this.makeExportableMainFile(expression.name),
+              data: this.makeExportableMainFile(expression.name, scanId, quantId, instrument, config.config?.elevAngle || 0, userId),
             });
 
             // The readme file
@@ -297,7 +303,7 @@ the expression did not generated valid output)
     return result;
   }
 
-  private makeExportableMainFile(exprName: string): string {
+  private makeExportableMainFile(exprName: string, scanId: string, quantId: string, instrument: string, elevAngle: number, userId: string): string {
     let builtInRequireLines = "";
 
     for (const builtInMod of DataModuleHelpers.getExportModuleNames()) {
@@ -309,8 +315,15 @@ the expression did not generated valid output)
 -- Allow loading local modules
 package.path = package.path..";../?.lua"
 
+scanId = "${scanId}"
+quantId = "${quantId}"
+maxSpectrumChannel = 4096
+instrument = "${instrument}"
+elevAngle = ${elevAngle}
+userId = "${userId}"
+
 -- PIXLISE runtime emulation:
-require("PixliseRuntime")
+-- (already imported as a built-in module below) require("PixliseRuntime")
 
 -- Built-in module imports:
 ${builtInRequireLines}

@@ -112,9 +112,11 @@ function atomicMass(symbol)
 end
 
 function writeCache(k, v)
+    print("Pretending writeCache "..k.." for "..#v.." values was successful")
     return true
 end
 
 function readCache(k, w)
+    print("Reporting readCache "..k.." failed")
     return nil
 end

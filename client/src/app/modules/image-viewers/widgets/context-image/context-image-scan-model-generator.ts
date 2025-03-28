@@ -241,7 +241,7 @@ export class ContextImageScanModelGenerator {
       throw new Error("No location information found");
     }
 
-    console.log(
+    console.debug(
       `  Location position relative to context image: (x,y)=${this._locationPointBBox.x},${this._locationPointBBox.y}, (w,h)=${this._locationPointBBox.w},${this._locationPointBBox.h}`
     );
 
@@ -252,7 +252,7 @@ export class ContextImageScanModelGenerator {
 
     this._locationPointZMax = locPointZMinMax.max || 0;
 
-    console.log(`  Location data physical size X=${this._locationPointXSize}, Y=${this._locationPointYSize}, Z=${this._locationPointZSize}`);
+    console.debug(`  Location data physical size X=${this._locationPointXSize}, Y=${this._locationPointYSize}, Z=${this._locationPointZSize}`);
     return scanPoints;
   }
   /*
@@ -368,7 +368,7 @@ export class ContextImageScanModelGenerator {
       this._locationDisplayPointRadius = 1;
     }
 
-    console.log("  Generated locationDisplayPointRadius: " + this._locationDisplayPointRadius);
+    console.debug("  Generated locationDisplayPointRadius: " + this._locationDisplayPointRadius);
 
     // The above was done in image space (context image pixels, i/j coordinates). We now do the same in physical XYZ coordinates
     this._minXYDistance_mm = this._locationPointXSize + this._locationPointYSize + this._locationPointZSize;
@@ -410,9 +410,9 @@ export class ContextImageScanModelGenerator {
     // and in m it's way < 1
     const beamInMeters = (scanInstrument === ScanInstrument.PIXL_FM || scanInstrument === ScanInstrument.PIXL_EM) && locPointZMaxValue < 1.0;
     if (beamInMeters) {
-      console.log("  Beam location is in meters");
+      console.debug("  Beam location is in meters");
     } else {
-      console.log("  Beam location is in mm");
+      console.debug("  Beam location is in mm");
     }
     return beamInMeters;
   }
@@ -438,7 +438,7 @@ export class ContextImageScanModelGenerator {
     let experimentAngleRad = 0;
 
     if (footprintHullPoints.length <= 0) {
-      console.log("  Experiment angle not checked, as no location data exists");
+      console.debug("  Experiment angle not checked, as no location data exists");
       return experimentAngleRad;
     }
 
@@ -604,7 +604,7 @@ export class ContextImageScanModelGenerator {
         cluster.angleRadiansToContextImage
       );
 
-      console.log(
+      console.debug(
         `  Point cluster ${c + 1} contains ${cluster.locIdxs.length} PMCs, ${cluster.footprintPoints.length} footprint points, ${radToDeg(
           cluster.angleRadiansToContextImage
         ).toFixed(3)} degrees rotated`
@@ -636,7 +636,7 @@ export class ContextImageScanModelGenerator {
 
   private static calcFootprintNormals(footprintHullPoints: HullPoint[]): void {
     if (footprintHullPoints.length <= 0) {
-      console.log("  Footprint hull normals not calculated, no points exist");
+      console.debug("  Footprint hull normals not calculated, no points exist");
       return;
     }
 

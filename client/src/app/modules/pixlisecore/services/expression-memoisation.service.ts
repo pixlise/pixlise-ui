@@ -87,9 +87,9 @@ export class ExpressionMemoisationService {
     });
   }
 
-  memoise(key: string, data: Uint8Array): Observable<void> {
+  memoise(key: string, data: Uint8Array, scanId: string, quantId: string, expressionId: string): Observable<void> {
     // Save it
-    return this._memoisationService.memoise(key, data).pipe(
+    return this._memoisationService.memoise(key, data, scanId, quantId, expressionId).pipe(
       map((memoItem: MemoisedItem) => {
         // Check if it's a key we've got marked as in progress
         const waiters = this._waitingRequests.get(key);

@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { AuthService, User } from "@auth0/auth0-angular";
 import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { AnalysisLayoutService, DataExporterService } from "src/app/modules/analysis/analysis.module";
 import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
@@ -481,6 +481,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     let scanName = this.allScans.find(scan => scan.id === scanId)?.title || scanId;
     let quantId = scanGroupOption.subOptions!.find(subOption => subOption.id === scanId + "_quant")!.selectedOption!;
     let quantName = this.scanQuants[scanId].find(quant => quant.id === quantId)?.params?.userParams?.name || quantId;
+    let instrument = scanInstrumentToJSON(scanInstrumentFromJSON(this.allScans.find(scan => scan.id === scanId)?.instrument || ScanInstrument.UNKNOWN_INSTRUMENT));
+    let instrumentConfig = this.allScans.find(scan => scan.id === scanId)?.instrumentConfig || "Unknown";
 
     let roiIds = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_rois")?.selectedRegions?.map(roi => roi.id) || [];
     let expressionIds = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_expressions")?.selectedExpressions?.map(exp => exp.id) || [];
@@ -520,7 +522,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     }
 
     if (request.dataProducts["roiExpressionCode"]?.selected) {
-      exportRequests.push(this._exporterService.exportExpressionCode(userId, scanId, quantId, expressionIds));
+      exportRequests.push(this._exporterService.exportExpressionCode(userId, scanId, quantId, expressionIds, instrument, instrumentConfig));
     }
 
     if (exportRequests.length === 0) {
