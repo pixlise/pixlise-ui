@@ -45,7 +45,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
 
   constructor(private _apiComms: APICommService) {
     super();
-    console.log(`APIDataService [${this._id}] created`);
+    console.debug(`APIDataService [${this._id}] created`);
 
     this.connect();
   }
@@ -168,7 +168,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       if (!req.req.spectrumReq) {
         reqSend = req;
         this._queuedRequests.delete(reqSend.req.msgId);
-        console.log(`sendNextQueuedMsg: Selected non-spectrum ${reqSend.req.msgId}`);
+        console.debug(`sendNextQueuedMsg: Selected non-spectrum ${reqSend.req.msgId}`);
         break;
       }
     }
@@ -176,7 +176,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
     if (!reqSend) {
       reqSend = this._queuedRequests.values().next().value;
       if (reqSend) {
-        console.log(`sendNextQueuedMsg: Selected spectrum ${reqSend.req.msgId}`);
+        console.debug(`sendNextQueuedMsg: Selected spectrum ${reqSend.req.msgId}`);
         this._queuedRequests.delete(reqSend.req.msgId);
       }
     }
@@ -201,7 +201,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
         console.error(`APIDataService [${this._id}] Failed to dispatch message: ` + JSON.stringify(WSMessage.toJSON(wsmsg), null, 4));
       }
     } else {
-      console.log("<--Recd for msgId:" + wsmsg.msgId);
+      console.debug("<--Recd for msgId:" + wsmsg.msgId);
     }
 
     // Send another message if we have one queued up

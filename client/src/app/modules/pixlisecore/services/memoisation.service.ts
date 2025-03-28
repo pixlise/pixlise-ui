@@ -1,15 +1,13 @@
 import { Injectable } from "@angular/core";
 
-import { APIDataService } from "./apidata.service";
 import { Observable, catchError, firstValueFrom, from, map, of } from "rxjs";
-import { MemoiseWriteReq, MemoiseWriteResp } from "src/app/generated-protos/memoisation-msgs";
-import { MemoiseGetReq } from "src/app/generated-protos/memoisation-msgs";
-import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { SentryHelper } from "src/app/utils/utils";
+import { httpErrorToString, SentryHelper } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
+import { APIPaths } from "src/app/utils/api-helpers";
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 
 @Injectable({
   providedIn: "root",
@@ -19,7 +17,8 @@ export class MemoisationService {
   private _local = new Map<string, MemoisedItem>();
 
   constructor(
-    private _dataService: APIDataService,
+    private _httpClient: HttpClient,
+    //private _dataService: APIDataService,
     private _localStorageService: LocalStorageService
   ) {}
 
@@ -47,10 +46,10 @@ export class MemoisationService {
     return from(this._localStorageService.clearUnsavedMemoData());
   }
 
-  memoise(key: string, data: Uint8Array): Observable<MemoisedItem> {
+  memoise(key: string, data: Uint8Array, scanId: string, quantId: string, expressionId: string): Observable<MemoisedItem> {
     if ((environment?.skipMemoizeKeys || []).indexOf(key) > -1) {
       console.warn("Skipping memoisation of: " + key);
-      return of(MemoisedItem.create({ key: key, data: data }));
+      return of(MemoisedItem.create({ key: key, data: data, scanId: scanId, quantId: quantId, exprId: expressionId }));
     }
 
     // Only memoise if it's changed
@@ -60,28 +59,28 @@ export class MemoisationService {
       if (idx < 0) {
         // Stop here, we've already got this memoised
         console.warn("Already memoised: " + key);
-        return of(MemoisedItem.create({ key: key, data: data }));
+        return of(MemoisedItem.create({ key: key, data: data, scanId: scanId, quantId: quantId, exprId: expressionId }));
       } else {
         SentryHelper.logMsg(false, `Memoised data ${key} changed at idx ${idx}`);
       }
     }
 
-    console.debug(`Memoising: ${key}...`);
+    console.debug(`Memoising: ${key}, size: ${data.length} bytes, scanId: ${scanId}, quantId: ${quantId}, exprId: ${expressionId}...`);
 
     // Save it in memory (we'll update the time stamp soon)
     const ts = Date.now() / 1000;
 
-    const localMemoData = MemoisedItem.create({ key, data, memoTimeUnixSec: ts });
+    const localMemoData = MemoisedItem.create({ key, data, memoTimeUnixSec: ts, scanId: scanId, quantId: quantId, exprId: expressionId });
     this._local.set(key, localMemoData);
     this._localStorageService.storeMemoData(localMemoData);
 
-    const updateLocalCache = (key: string, data: Uint8Array, timestampUnixSec: number) => {
+    const updateLocalCache = (key: string, data: Uint8Array, timestampUnixSec: number, scanId: string, quantId: string, expressionId: string) => {
       // Fix up the time stamp
       let memoData = this._local.get(key);
       if (memoData) {
         memoData.memoTimeUnixSec = timestampUnixSec;
       } else {
-        memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: timestampUnixSec });
+        memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: timestampUnixSec, scanId: scanId, quantId: quantId, exprId: expressionId });
       }
       this._local.set(key, memoData);
 
@@ -92,13 +91,35 @@ export class MemoisationService {
     };
 
     // Write it to API
-    return this._dataService.sendMemoiseWriteRequest(MemoiseWriteReq.create({ key, data })).pipe(
-      map((resp: MemoiseWriteResp) => {
-        return updateLocalCache(key, data, resp.memoTimeUnixSec);
+    const req = MemoisedItem.create({ key: key, data: data, scanId: scanId, quantId: quantId, exprId: expressionId });
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_memoise);
+
+    const writer = MemoisedItem.encode(req);
+    const bytes = writer.finish();
+    const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/octet-stream",
+      }),
+      responseType: "arraybuffer" as "json",
+      params: new HttpParams().set("key", key),
+    };
+
+    return this._httpClient.put<ArrayBuffer>(apiUrl, sendbuf, httpOptions).pipe(
+      map((respData: ArrayBuffer) => {
+        const respStr = new TextDecoder().decode(respData);
+        const resp = JSON.parse(respStr);
+        const memoTimeUnixSec = resp["timestamp"];
+        if (memoTimeUnixSec === undefined) {
+          throw new Error("Failed to decode Memoisation response timestamp");
+        }
+
+        return updateLocalCache(key, data, memoTimeUnixSec, scanId, quantId, expressionId);
       }),
       catchError(err => {
         SentryHelper.logMsg(false, `Failed to memoise ${key} containing ${data.length} bytes`);
-        return of(updateLocalCache(key, data, ts));
+        return of(updateLocalCache(key, data, ts, scanId, quantId, expressionId));
       })
     );
   }
@@ -118,6 +139,7 @@ export class MemoisationService {
         .then(async memoData => {
           if (memoData) {
             this._local.set(key, memoData);
+            console.debug(`Found memoised: ${key}, size: ${memoData.data.length}...`);
             return memoData;
           } else {
             // Get from API
@@ -125,10 +147,12 @@ export class MemoisationService {
           }
         })
         .catch(async err => {
+          console.error(httpErrorToString(err, `Error checking memoised: ${key}`));
+
           // This should've worked...
           //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
           // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
-          if (err.message && err.message.indexOf(" not found") < 0) {
+          if (err.message && err.message.indexOf(" Not Found") < 0) {
             SentryHelper.logException(err, "Error in local storage getMemoData");
           }
 
@@ -139,19 +163,34 @@ export class MemoisationService {
   }
 
   private getFromAPI(key: string): Observable<MemoisedItem> {
-    return this._dataService.sendMemoiseGetRequest(MemoiseGetReq.create({ key })).pipe(
-      map((resp: MemoiseGetResp) => {
-        if (!resp.item) {
+    console.debug(`Checking API for memoised: ${key}...`);
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_memoise);
+
+    const httpOptions = {
+      /*headers: new HttpHeaders({
+        "Content-Type": "application/octet-stream",
+      }),*/
+      params: new HttpParams().set("key", key),
+      responseType: "arraybuffer" as "json",
+    };
+
+    return this._httpClient.get<ArrayBuffer>(apiUrl, httpOptions).pipe(
+      map((respData: ArrayBuffer) => {
+        const arr = new Uint8Array(respData);
+        const item = MemoisedItem.decode(arr);
+
+        if (!item) {
           const err = new Error("MemoiseGetResp returned empty message for key: " + key);
           console.error(err);
           throw err;
         }
 
         // Store it locally
-        this._local.set(key, resp.item);
-        this._localStorageService.storeMemoData(resp.item);
+        this._local.set(key, item);
+        this._localStorageService.storeMemoData(item);
 
-        return resp.item;
+        console.debug(`API returned memoised: ${key}, size: ${item.data.length}...`);
+        return item;
       }) /*,
       catchError(err => {
         console.log("Not memoised: " + key);

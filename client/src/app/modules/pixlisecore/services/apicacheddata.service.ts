@@ -95,7 +95,7 @@ export class APICachedDataService {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
         // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
-        console.log(`NotificationResp contained: ${notificationResp.notification.length} items`);
+        console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
       },
     });
 
@@ -647,7 +647,7 @@ export class APICachedDataService {
 
   cacheVariogramPoints(cacheKey: string, varioPoints: VariogramPoint[][]) {
     this._variogramPointsMap.set(cacheKey, varioPoints);
-    let memoizedData = this.convertVariogramPointsToMemoized(varioPoints);
-    this._memoisationService.memoise(cacheKey, memoizedData).subscribe();
+    const memoizedData = this.convertVariogramPointsToMemoized(varioPoints);
+    this._memoisationService.memoise(cacheKey, memoizedData, "", "", "").subscribe();
   }
 }
