@@ -528,6 +528,23 @@ POSSIBILITY OF SUCH DAMAGE.
               <span class="meta-value">{{ item.value }}</span>
             </div>
           </div>
+          <div class="meta-heading">Scan Update Times</div>
+          <div class="meta-area align-start fx-column">
+            <div *ngFor="let item of selectedScanUpdates" class="summary-item">
+              <span class="meta-name">{{ item.label }}</span>
+              <span class="meta-value">{{ item.value }}</span>
+            </div>
+            <ng-container *ngIf="limitedUpdateTimes; else elseShowAllUpdates">
+              <div class="show-more clickable" (click)="onShowMoreUpdates()">Show all update times...</div>
+            </ng-container>
+        
+            <ng-template #elseShowAllUpdates>
+              <div *ngFor="let item of selectedScanUpdatesExtended" class="summary-item">
+                <span class="meta-name">{{ item.label }}</span>
+                <span class="meta-value">{{ item.value }}</span>
+              </div>
+            </ng-template>
+          </div>
         </div>
       </div>
     </div>

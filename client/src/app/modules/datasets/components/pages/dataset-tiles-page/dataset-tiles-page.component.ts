@@ -123,8 +123,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   selectedScanSummaryItems: SummaryItem[] = [];
   selectedScanTrackingItems: SummaryItem[] = [];
   selectedScanAccess: SummaryItem[] = [];
+  selectedScanUpdates: SummaryItem[] = [];
+  selectedScanUpdatesExtended: SummaryItem[] = [];
   selectedMissingData: string = "";
   selectedScanContextImage: string = "";
+
+  limitedUpdateTimes: boolean = false;
 
   errorString: string = "";
   loading = false;
@@ -1163,7 +1167,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"])),
     ];
 
-    for (const sdt of this.selectedScan.dataTypes) {
+    for (const sdt of this.selectedScan.dataTypes.sort()) {
       if (sdt.dataType == ScanDataType.SD_IMAGE) {
         this.selectedScanSummaryItems.push(new SummaryItem("MCC Images:", sdt.count.toString()));
       } else if (sdt.dataType == ScanDataType.SD_XRF) {
@@ -1172,25 +1176,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.selectedScanSummaryItems.push(new SummaryItem("RGBU Images:", sdt.count.toString()));
       }
     }
-
-    let createTime = "Unknown";
-    if (this.selectedScan.timestampUnixSec) {
-      const dtFormat = new Intl.DateTimeFormat("en-GB", {
-        //'dateStyle': 'medium',
-        //'timeStyle': 'medium',
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        //timeZone: 'UTC'
-      });
-
-      createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
-    }
-
-    this.selectedScanSummaryItems.push(new SummaryItem("Updated Time:", createTime));
 
     this.selectedScanTrackingItems = [];
     if (this.selectedScan.instrument == ScanInstrument.PIXL_FM) {
@@ -1222,12 +1207,49 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedScanTrackingItems.push(new SummaryItem("PIXLISE ID:", this.selectedScan.id));
 
     this.selectedScanAccess = [];
-    this.selectedScanAccess.push(new SummaryItem("User can edit", event.owner?.canEdit ? "yes" : "no"));
-    this.selectedScanAccess.push(new SummaryItem("Is Scan Shared", event.owner?.sharedWithOthers ? "yes" : "no"));
+    this.selectedScanAccess.push(new SummaryItem("Edit access", event.owner?.canEdit ? "Yes" : "No"));
+    this.selectedScanAccess.push(new SummaryItem("Is Scan Shared", event.owner?.sharedWithOthers ? "Yes" : "No"));
     /*this.selectedScanAccess.push(new SummaryItem("Editing Groups", `${event.owner?.editorGroupCount || 0}`));
     this.selectedScanAccess.push(new SummaryItem("Editing Users", `${event.owner?.editorUserCount || 0}`));
     this.selectedScanAccess.push(new SummaryItem("Viewing Groups", `${event.owner?.viewerGroupCount || 0}`));
     this.selectedScanAccess.push(new SummaryItem("Viewing Users", `${event.owner?.viewerUserCount || 0}`));*/
+
+    this.selectedScanUpdates = [];
+    this.selectedScanUpdatesExtended = [];
+    const dtFormat = new Intl.DateTimeFormat("en-GB", {
+      //'dateStyle': 'medium',
+      //'timeStyle': 'medium',
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      //timeZone: 'UTC'
+    });
+
+    let createTime = "Unknown";
+    if (this.selectedScan.timestampUnixSec) {
+      createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
+    }
+
+    this.selectedScanUpdates.push(new SummaryItem("Latest Updated Time:", createTime));
+
+    if (this.selectedScan.previousImportTimesUnixSec && this.selectedScan.previousImportTimesUnixSec.length > 0) {
+      for (let c = 0; c < this.selectedScan.previousImportTimesUnixSec.length; c++) {
+        const updTime = this.selectedScan.previousImportTimesUnixSec[c];
+        const item = new SummaryItem(c == 0 ? "Previous Updates:" : "", dtFormat.format(new Date(updTime * 1000)));
+
+        if (c < 5) {
+          this.selectedScanUpdates.push(item);
+        } else {
+          this.limitedUpdateTimes = true; // hide by default
+          this.selectedScanUpdatesExtended.push(item);
+        }
+      }
+    }
+
+    this.limitedUpdateTimes = this.selectedScanUpdates.length > 5;
 
     // TODO:
     const missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
@@ -1317,5 +1339,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   onManageGroups() {
     const dialogConfig = new MatDialogConfig();
     this.dialog.open(RequestGroupDialogComponent, dialogConfig);
+  }
+
+  onShowMoreUpdates() {
+    this.limitedUpdateTimes = false;
   }
 }
