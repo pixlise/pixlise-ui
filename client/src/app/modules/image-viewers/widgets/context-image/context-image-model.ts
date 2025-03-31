@@ -1,6 +1,6 @@
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ClosestPoint, ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
-import { forkJoin, map, Observable, of, Subject, switchMap, tap } from "rxjs";
+import { forkJoin, map, Observable, of, ReplaySubject, Subject, switchMap, tap } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { ContextImageItemTransform } from "../../models/image-transform";
@@ -20,6 +20,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
 import { ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { ROIItem } from "src/app/generated-protos/roi";
+import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -62,6 +63,11 @@ class ContextImageRawRegion {
 
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
+  exportMode: boolean = false;
+  resolution$: ReplaySubject<number> = new ReplaySubject<number>(1);
+  needsCanvasResize$: Subject<void> = new Subject<void>();
+
+  keyItems: WidgetKeyItem[] = [];
 
   // For debugging
   private _id: string = randomString(6);
@@ -241,6 +247,10 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   getRegion(roiId: string): ContextImageRawRegion | undefined {
     return this._rois.get(roiId);
+  }
+
+  getRegions(): ContextImageRawRegion[] {
+    return Array.from(this._rois.values());
   }
 
   setMapLayer(layer: ContextImageMapLayer) {
@@ -511,6 +521,27 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
           this.drawModel.drawnData = null;
           //this.needsDraw$.next();
+
+          this.keyItems = [];
+          this._rois.forEach((roi, roiId) => {
+            const scanMdl = this._raw?.scanModels.get(roi.roi.scanId);
+            if (!scanMdl) {
+              return;
+            }
+
+            const keyItem = new WidgetKeyItem(
+              roiId,
+              roi.roi.name,
+              roi.roi.displaySettings?.colour || Colours.WHITE,
+              null,
+              roi.roi.displaySettings?.shape,
+              scanMdl.scanTitle,
+              true,
+              false,
+              true
+            );
+            this.keyItems.push(keyItem);
+          });
         })
       );
     } /*else {
@@ -823,7 +854,6 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       }
 
       forkJoin(toWait$).subscribe((value: ContextImageRegionLayer[]) => {
-        //console.warn("Return forkJoin");
         observer.next();
         observer.complete();
       });
