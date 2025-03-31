@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 
-import { Observable, catchError, firstValueFrom, from, map, of } from "rxjs";
+import { Observable, catchError, firstValueFrom, from, map, of, switchMap } from "rxjs";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -130,21 +130,42 @@ export class MemoisationService {
     // If we have it locally, stop here
     const local = this._local.get(key);
     if (local !== undefined) {
-      return of(local);
+      const ageTooOldSec = this.memoItemAgePastMax(local);
+      if (ageTooOldSec < 0) {
+        console.debug(`Found memoised (in memory): ${key}, size: ${local.data.length}...`);
+        return of(local);
+      } else {
+        console.info(`Found local memoised item that is ${ageTooOldSec} sec too old, retrieving from API...`);
+
+        // Delete this cache entry from local storage and get from API
+        return this.delete(key).pipe(
+          switchMap(() => {
+            return this.getFromAPI(key);
+          })
+        );
+      }
     }
 
+    // Not in memory, so check index DB first, then API
     return from(
       this._localStorageService
         .getMemoData(key)
         .then(async memoData => {
           if (memoData) {
-            this._local.set(key, memoData);
-            console.debug(`Found memoised: ${key}, size: ${memoData.data.length}...`);
-            return memoData;
-          } else {
-            // Get from API
-            return firstValueFrom(this.getFromAPI(key));
+            const ageTooOldSec = this.memoItemAgePastMax(memoData);
+            if (ageTooOldSec > 0) {
+              console.info(`Found memoised item in indexDB that is ${ageTooOldSec} sec too old, retrieving from API...`);
+              return this._localStorageService.deleteMemoKey(key).then(() => {
+                return firstValueFrom(this.getFromAPI(key));
+              });
+            } else {
+              console.debug(`Found memoised: ${key}, size: ${memoData.data.length}...`);
+              this._local.set(key, memoData); // Ensure it's in memory
+              return memoData;
+            }
           }
+          // Get from API
+          return firstValueFrom(this.getFromAPI(key));
         })
         .catch(async err => {
           console.error(httpErrorToString(err, `Error checking memoised: ${key}`));
@@ -160,6 +181,18 @@ export class MemoisationService {
           return firstValueFrom(this.getFromAPI(key));
         })
     );
+  }
+
+  private memoItemAgePastMax(item: MemoisedItem): number {
+    const nowUnixSec = Math.round(Date.now() / 1000);
+    const maxAgeUnixSec = nowUnixSec - environment.localMemoiseCacheTimeOutSec;
+
+    // Get whichever is "newer"
+    // LastReadTime was introduced later, so it's optional
+    const itemUnixSec = Math.max(item.memoTimeUnixSec, item?.lastReadTimeUnixSec || 0);
+
+    const ageTooOldSec = maxAgeUnixSec - itemUnixSec;
+    return ageTooOldSec;
   }
 
   private getFromAPI(key: string): Observable<MemoisedItem> {
