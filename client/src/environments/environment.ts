@@ -47,6 +47,7 @@ export const environment = {
   luaTimeoutMs: 900000, // Max time we allow a Lua call to take to run
   wsTimeout: 180000, // Time it takes for a socket to time out on web socket
   maxOutstandingAPIRequests: 10, // How many requests we send through to API before starting to locally queue them in memory
+  localMemoiseCacheTimeOutSec: 86400, // How long something in local cache is considered viable before we turn to API to re-request
   authTarget: "/datasets",
   authorizationParams: {
     audience: "pixlise-backend",

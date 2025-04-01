@@ -380,6 +380,10 @@ export class WidgetDataService {
       map((item: MemoisedItem) => {
         // We got something! return this straight away...
         console.info("Query restored from memoised result: " + cacheKey);
+
+        // Also delete from in flux cache here! It gets added before we know if it's in memory yet
+        this._inFluxSingleQueryResultCache.delete(cacheKey);
+
         return this.fromMemoised(item.data);
       }),
       catchError(err => {
