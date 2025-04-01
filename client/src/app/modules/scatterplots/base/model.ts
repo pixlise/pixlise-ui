@@ -1,4 +1,4 @@
-import { Observable, of, Subject } from "rxjs";
+import { Observable, of, ReplaySubject, Subject } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { MinMax } from "src/app/models/BasicTypes";
@@ -110,6 +110,18 @@ export function makeDrawablePointGroups(
 
 export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extends DrawModelWithPointGroup> implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
+  needsCanvasResize$: Subject<void> = new Subject<void>();
+  resolution$: ReplaySubject<number> = new ReplaySubject<number>(1);
+  borderWidth$: ReplaySubject<number> = new ReplaySubject<number>(1);
+
+  borderColor: string = "";
+
+  axisLabelFontSize: number = 14;
+  axisLabelFontFamily: string = "Arial";
+  axisLabelFontWeight: string = "";
+  axisLabelFontColor: string = "";
+
+  exportMode: boolean = false;
 
   transform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null), new PanRestrictorToCanvas());
 

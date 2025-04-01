@@ -107,6 +107,10 @@
 
   roi-shape {
     margin-right: 4px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -145,6 +149,12 @@
   }
 }
 
+.light-mode {
+  .label {
+    color: black;
+  }
+}
+
 .key-display {
   max-width: 100%;
 
@@ -174,6 +184,10 @@
 
   max-height: 200px;
   overflow-y: auto;
+
+  &.export-mode {
+    max-height: 100%;
+  }
 
   // Hide scrollbar
   &::-webkit-scrollbar {
@@ -236,6 +250,8 @@
         white-space: pre;
 
         position: relative;
+        display: flex;
+        align-items: center;
       }
     }
   }

@@ -1,15 +1,20 @@
-## 4.64.0 (Latest)
+## 4.64.0 (LATEST)
 
 ### New Features
+- Adds interactive exporter for Binary Plots, Ternary Plots, and Context Images
+  - Standard controls for font size, color, border widths, dimensions, etc.
+- Adds key to Context Image
+- Adds show MIST ROI Reproducibility to Context Image
 - Dataset tiles page now allows viewing the list of all update times for the selected dataset
 - Local expression cache is only used for a limited now, then retrieved from server
 - Spectrum calibration set to default values for PIXL EM imports
 
 ### Bug Fixes
+- Fixed issue with export dialog not showing correct data
 - Cache saving/loading of expressions is now done via HTTP so we shouldn't be limited by max message size of web socket. More meta data is also saved to assist searching/clearing it
   - NOTE: This release will effectively "clear" the locally cached expression data and start retrieving it from the server again until local caching builds up again.
 
-## 4.63.0 (2025-03-20)
+## 4.63.0 (2025-03-19)
 
 ### New Features
 - Dataset tiles page now shows Join Groups button up to for users who are only in one group
