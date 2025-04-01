@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, ViewChild } from "@angular/core";
-import { Observable, Subject, Subscription, of } from "rxjs";
+import { Observable, ReplaySubject, Subject, Subscription, of } from "rxjs";
 import { tap } from "rxjs/operators";
 
 import { addVectors, Point, Rect } from "src/app/models/Geometry";
@@ -86,6 +86,8 @@ export interface CanvasDrawer {
   // Optional parameters just for export
   showSwapButton?: boolean;
   lightMode?: boolean;
+  transparentBackground?: boolean;
+  borderWidth?: number;
 }
 
 export enum CanvasMouseEventId {
@@ -152,6 +154,8 @@ export class CanvasKeyEvent {
 export interface CanvasDrawNotifier {
   needsDraw$: Subject<void>;
   needsCanvasResize$?: Subject<void>;
+  resolution$?: ReplaySubject<number>;
+  borderWidth$?: ReplaySubject<number>;
 }
 
 export class CanvasInteractionResult {
@@ -210,6 +214,8 @@ export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
   protected _subs = new Subscription();
   protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
 
+  private _resolutionMultiplier = 1;
+
   constructor(private _layoutService: AnalysisLayoutService) {}
 
   ngOnDestroy() {
@@ -240,7 +246,31 @@ export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
           })
         );
       }
+
+      if (this.drawNotifier.resolution$) {
+        this._subs.add(
+          this.drawNotifier.resolution$.subscribe(multiplier => {
+            this._resolutionMultiplier = multiplier;
+            this.callFitCanvasToContainer();
+          })
+        );
+      }
+
+      if (this.drawNotifier.borderWidth$) {
+        this._subs.add(
+          this.drawNotifier.borderWidth$.subscribe(borderWidth => {
+            this.drawer!.borderWidth = borderWidth;
+
+            this.callFitCanvasToContainer();
+            this.triggerRedraw();
+          })
+        );
+      }
     }
+  }
+
+  get transparentBackground(): boolean {
+    return this.drawer?.transparentBackground || false;
   }
 
   get drawNotifier() {
@@ -303,7 +333,7 @@ export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
       return null;
     }
 
-    const dpi = window.devicePixelRatio;
+    const dpi = window.devicePixelRatio * this._resolutionMultiplier;
 
     const canvasElem = canvas.nativeElement;
     if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
@@ -531,7 +561,8 @@ export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
     return drawer.draw(screenContext, drawParams).pipe(
       tap(() => {
         screenContext.restore();
-    }));
+      })
+    );
   }
 
   protected screenToCanvasSpace(pt: Point): Point {

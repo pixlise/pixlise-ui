@@ -36,4 +36,31 @@ canvas {
   outline: none;
   height: 100%;
   width: 100%;
+
+  &.transparent {
+    // background-color: white;
+    --backgroundColor: rgb(var(--clr-gray-100));
+    --squareColor: rgb(var(--clr-gray-90));
+    --squareSize: 1em;
+
+    background-color: var(--backgroundColor);
+    background-image: linear-gradient(45deg, var(--squareColor) 25%, transparent 25%), linear-gradient(135deg, var(--squareColor) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--squareColor) 75%), linear-gradient(135deg, transparent 75%, var(--squareColor) 75%);
+    background-size: calc(2 * var(--squareSize)) calc(2 * var(--squareSize));
+    background-position:
+      0 0,
+      var(--squareSize) 0,
+      var(--squareSize) calc(-1 * var(--squareSize)),
+      0 calc(-1 * var(--squareSize));
+
+    //   background-color: white;
+    // background-image: linear-gradient(45deg, #f2f2f2 25%, transparent 25%), linear-gradient(-45deg, #f2f2f2 25%, transparent 25%),
+    //   linear-gradient(45deg, transparent 75%, #f2f2f2 75%), linear-gradient(-45deg, transparent 75%, #f2f2f2 75%);
+    // background-size: 20px 20px;
+    // background-position:
+    //   0 0,
+    //   0 10px,
+    //   10px -10px,
+    //   -10px 0px;
+  }
 }

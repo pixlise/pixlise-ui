@@ -1,4 +1,16 @@
-## 4.63.0 (Latest)
+## 4.64.0 (LATEST)
+
+### New Features
+- Adds interactive exporter for Binary Plots, Ternary Plots, and Context Images
+  - Standard controls for font size, color, border widths, dimensions, etc.
+- Adds key to Context Image
+- Adds show MIST ROI Reproducibility to Context Image
+
+### Bug Fixes
+- Fixed issue with export dialog not showing correct data
+
+
+## 4.63.0 (2025-03-19)
 
 ### New Features
 - Dataset tiles page now shows Join Groups button up to for users who are only in one group

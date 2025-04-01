@@ -17,13 +17,14 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { catchError, Subscription, switchMap, tap, throwError } from "rxjs";
+import { catchError, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
-import { WidgetExportData, WidgetExportDialogData } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 
 const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
@@ -87,9 +88,20 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   bottomLeftInsetButton?: WidgetToolbarButtonConfiguration;
   bottomRightInsetButton?: WidgetToolbarButtonConfiguration;
 
+  private _exportOptions: WidgetExportOption[] = [];
+  private _exportChartOptions: WidgetExportOption[] = [];
+  private _exportMode: boolean = false;
+  private _liveOptionChanges$ = new Observable<{
+    options: WidgetExportOption[];
+    dataProducts: WidgetExportOption[];
+    chartOptions: WidgetExportOption[];
+    keyOptions: WidgetExportOption[];
+  }>();
+
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _dialog: MatDialog,
+    private _snackbarService: SnackbarService,
     private _changeDetector: ChangeDetectorRef
   ) {}
 
@@ -124,6 +136,17 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   ngAfterContentInit() {
     if (!this._currentWidgetRef) {
       setTimeout(() => this.loadWidget(), 0);
+    }
+  }
+
+  get exportMode() {
+    return this._exportMode;
+  }
+
+  @Input() set exportMode(exportMode: boolean) {
+    this._exportMode = exportMode;
+    if (this._currentWidgetRef?.instance?._exportMode !== undefined) {
+      this._currentWidgetRef.instance._exportMode = exportMode;
     }
   }
 
@@ -218,6 +241,23 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     this.loadWidget();
   }
 
+  @Input() set liveOptionChanges$(liveOptionChanges$: Observable<any>) {
+    this._liveOptionChanges$ = liveOptionChanges$;
+    this._subs.add(
+      this._liveOptionChanges$.subscribe(changes => {
+        if (changes.options) {
+          this._exportOptions = changes.options;
+        }
+
+        if (changes.chartOptions) {
+          this._exportChartOptions = changes.chartOptions;
+        }
+
+        this._updateWidgetExportOptions();
+      })
+    );
+  }
+
   @Input() set widgetTypes(widgetTypes: WidgetType[]) {
     if (widgetTypes.length > 0) {
       this.allWidgetOptions = getWidgetOptions().filter(widgetOption => widgetTypes.includes(widgetOption.id as WidgetType));
@@ -261,6 +301,22 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     }
   }
 
+  @Input() set exportOptions(exportOptions: WidgetExportOption[]) {
+    this._exportOptions = exportOptions;
+    this._updateWidgetExportOptions();
+  }
+
+  @Input() set exportChartOptions(exportChartOptions: WidgetExportOption[]) {
+    this._exportChartOptions = exportChartOptions;
+    this._updateWidgetExportOptions();
+  }
+
+  private _updateWidgetExportOptions() {
+    if (this._currentWidgetRef?.instance?.updateExportOptions) {
+      this._currentWidgetRef.instance.updateExportOptions(this._exportOptions, this._exportChartOptions);
+    }
+  }
+
   updateButtons() {
     this.updateShowBottomToolbar();
     this.updateShowTopToolbar();
@@ -285,7 +341,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       return;
     }
 
-    let dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
+    const dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
     dialogConfig.data = this._currentWidgetRef?.instance?.getExportOptions();
     const dialogRef = this._dialog.open(WidgetExportDialogComponent, dialogConfig);
     this._subs.add(
@@ -308,6 +364,22 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     });
   }
 
+  get widgetKeyItems() {
+    if (!this._currentWidgetRef?.instance) {
+      return [];
+    }
+
+    if (this._currentWidgetRef.instance.keyItems) {
+      return this._currentWidgetRef.instance.keyItems;
+    }
+
+    if (this._currentWidgetRef.instance.mdl?.keyItems) {
+      return this._currentWidgetRef.instance.mdl.keyItems;
+    }
+
+    return [];
+  }
+
   loadWidget() {
     if (this._currentWidgetRef) {
       this._currentWidgetRef.destroy();
@@ -327,6 +399,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
       this._currentWidgetRef.instance._ref = this._currentWidgetRef;
       this._currentWidgetRef.instance._isWidgetHighlighted = this.isWidgetHighlighted;
+      this._currentWidgetRef.instance._exportMode = this.exportMode;
 
       if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
         this._subs.add(
@@ -373,8 +446,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       if (this._currentWidgetRef.instance.onSaveWidgetData) {
         this._subs.add(
           this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
-            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId) {
-              // Don't save if the widget id is not set or if it's a preview widget
+            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId || this.exportMode) {
+              // Don't save if the widget id is not set, if it's a preview widget, or if it's in export mode
               return;
             }
 

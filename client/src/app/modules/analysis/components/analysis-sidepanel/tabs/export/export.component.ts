@@ -14,6 +14,7 @@ import {
   WidgetExportDialogData,
   WidgetExportOption,
   WidgetExportRequest,
+  WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
@@ -48,7 +49,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
       hideProgressLabels: true,
     };
 
-    super(data, null, _snackService);
+    super(data, null, _snackService, _analysisLayoutService);
   }
 
   override ngOnInit(): void {
@@ -66,7 +67,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     }
 
     this.initialOptions = this.copyWidgetExportOptionsDefaultState(this.options);
-    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data?.dataProducts || []);
 
     this.mapAllCounts();
     this.showPreview = !!this.data.showPreview;
@@ -453,11 +454,14 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
                 let dataKey = key as keyof WidgetExportData;
 
                 if (!data[dataKey]) {
-                  data[dataKey] = [];
+                  data[dataKey] = [] as any;
                 }
 
                 if (response[dataKey]) {
-                  data[dataKey]!.push(...response[dataKey]!);
+                  if (typeof response[dataKey] === "boolean" || typeof data[dataKey] === "boolean") {
+                    return;
+                  }
+                  (data[dataKey] as any[]).push(...(response[dataKey] as any[]));
                 }
               });
             });
@@ -535,14 +539,21 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
         results.forEach(result => {
           WIDGET_EXPORT_DATA_KEYS.forEach(key => {
             let dataKey = key as keyof WidgetExportData;
+            if (typeof result[dataKey] === "boolean") {
+              return;
+            }
 
             if (!data[dataKey]) {
-              data[dataKey] = [];
+              data[dataKey] = [] as any;
             }
 
             if (result[dataKey]) {
-              result[dataKey]!.forEach(file => {
-                data[dataKey]!.push({
+              (result[dataKey] as any[]).forEach(file => {
+                if (typeof data[dataKey] === "boolean") {
+                  return;
+                }
+
+                (data[dataKey] as any)!.push({
                   ...file,
                   subFolder: file?.subFolder ? `${scanName}/${file.subFolder}` : scanName,
                 });
