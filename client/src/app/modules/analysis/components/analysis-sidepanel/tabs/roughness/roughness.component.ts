@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { catchError, map, Subscription, switchMap } from "rxjs";
+import { catchError, from, map, Subscription, switchMap } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
@@ -214,6 +214,10 @@ export class RoughnessComponent implements OnInit, OnDestroy {
     );
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   trackByPeakId(index: number, item: RoughnessItem): string {
     return `${item.pmc}-${item.id}-${item.globalDifference}`;
   }
@@ -320,7 +324,9 @@ export class RoughnessComponent implements OnInit, OnDestroy {
                 calibrations
               )
               .pipe(
-                switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
+                switchMap(() => {
+                  return from(dataSource.getDetectedDiffraction());
+                }),
                 map(() => dataSource)
               );
           }),
@@ -334,10 +340,6 @@ export class RoughnessComponent implements OnInit, OnDestroy {
           this.updateDisplayList();
         })
     );
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {

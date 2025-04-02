@@ -138,7 +138,7 @@
   margin-left: -16px;
   width: calc(100% + 32px);
   height: 300px;
-  overflow: scroll;
+  overflow: auto;
 
   th {
     background: #1b1d1e !important;
@@ -153,7 +153,17 @@
   }
 
   .no-data-cell {
+    padding-top: 32px;
     text-align: center;
+    color: $clr-gray-20;
+  }
+
+  .wait {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+
+    padding-top: 32px;
   }
 }
 

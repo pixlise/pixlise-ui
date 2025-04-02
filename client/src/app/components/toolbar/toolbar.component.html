@@ -126,7 +126,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="tab-label">New Tab</span>
       </a>
     </div>
-    <div *ngIf="hasActiveWorkspace" class="tab new-tab-btn">
+    <div *ngIf="hasActiveWorkspace && !readOnlyMode" class="tab new-tab-btn">
       <a (click)="onNewTab()">
         <span class="tab-label">+</span>
       </a>
@@ -135,6 +135,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
   <div class="authenticated-buttons">
     <span class="buttons">
+      <div *ngIf="readOnlyMode" class="read-only-container">
+        <span class="read-only">Read Only</span>
+      </div>
+      <wait-spinner
+        *ngIf="outstandingInfo" 
+        #tooltip="matTooltip"
+        [matTooltip]="outstandingInfo"></wait-spinner>
       <push-button
         title="PIXLISE Version Information"
         *ngIf="uiVersionLastCommitDate > 0"
@@ -144,7 +151,6 @@ POSSIBILITY OF SUCH DAMAGE.
         [buttonStyle]="hasViewedLatestVersion ? 'changelog-viewed' : 'changelog-new'"
         #changeLogBtn>
         <img *ngIf="!hasViewedLatestVersion" class="changelog-icon {{ hasViewedLatestVersion ? 'viewed' : '' }}" src="assets/button-icons/change-log-lightning.svg" />
-        <!-- <span>Updated {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }}</span> -->
         <span>{{ uiVersion }}</span>
       </push-button>
       <icon-button
@@ -152,6 +158,7 @@ POSSIBILITY OF SUCH DAMAGE.
         (click)="onNotificationsMenu()"
         [state]="notificationsMenuOpen ? 1 : 0"
         type="notification"
+        badgeText="active notifications"
         [notificationCount]="notificationsCount"></icon-button>
       <icon-button
         title="Hot-Keys (Keyboard Shortcuts)"

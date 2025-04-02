@@ -61,6 +61,14 @@
         }
     }
 
+    .scrollable {
+        overflow-y: auto;
+
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 1e-9px;
+    }
+
     .elem-item {
         display: flex;
         flex-direction: row;

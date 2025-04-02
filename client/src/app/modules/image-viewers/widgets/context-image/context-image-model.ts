@@ -1,6 +1,6 @@
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ClosestPoint, ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
-import { forkJoin, map, Observable, of, Subject, switchMap, tap } from "rxjs";
+import { forkJoin, map, Observable, of, ReplaySubject, Subject, switchMap, tap } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { ContextImageItemTransform } from "../../models/image-transform";
@@ -20,6 +20,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
 import { ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { ROIItem } from "src/app/generated-protos/roi";
+import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -62,6 +63,11 @@ class ContextImageRawRegion {
 
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
+  exportMode: boolean = false;
+  resolution$: ReplaySubject<number> = new ReplaySubject<number>(1);
+  needsCanvasResize$: Subject<void> = new Subject<void>();
+
+  keyItems: WidgetKeyItem[] = [];
 
   // For debugging
   private _id: string = randomString(6);
@@ -241,6 +247,10 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   getRegion(roiId: string): ContextImageRawRegion | undefined {
     return this._rois.get(roiId);
+  }
+
+  getRegions(): ContextImageRawRegion[] {
+    return Array.from(this._rois.values());
   }
 
   setMapLayer(layer: ContextImageMapLayer) {
@@ -510,7 +520,28 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
           this._recalcNeeded = false;
 
           this.drawModel.drawnData = null;
-          this.needsDraw$.next();
+          //this.needsDraw$.next();
+
+          this.keyItems = [];
+          this._rois.forEach((roi, roiId) => {
+            const scanMdl = this._raw?.scanModels.get(roi.roi.scanId);
+            if (!scanMdl) {
+              return;
+            }
+
+            const keyItem = new WidgetKeyItem(
+              roiId,
+              roi.roi.name,
+              roi.roi.displaySettings?.colour || Colours.WHITE,
+              null,
+              roi.roi.displaySettings?.shape,
+              scanMdl.scanTitle,
+              true,
+              false,
+              true
+            );
+            this.keyItems.push(keyItem);
+          });
         })
       );
     } /*else {
@@ -530,7 +561,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     if (this._raw) {
       for (const [scanId, scanMdl] of this._raw.scanModels) {
         const result = scanMdl.getClosestLocationIdxToPoint(worldPt, maxDistance);
-        if (closestDist < 0 || result[1] < closestDist) {
+        if (closestDist < 0 || (result[0] > 0 && result[1] < closestDist)) {
           closestDist = result[1];
           closestScanIdx = result[0];
           closestScanId = scanId;
@@ -632,6 +663,9 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
   // Drawn line over the top of it all
   drawnLinePoints: Point[] = [];
+
+  // Show the confidence of the MIST ROI as opacity in the map layer
+  showROIConfidence: boolean = true;
 
   regenerate(canvasParams: CanvasParams, from: ContextImageModel): Observable<void> {
     // Throw away any cached drawn image we have
@@ -739,6 +773,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         }
 
         const scanDrawMdl = new ContextImageScanDrawModel(
+          scanMdl.scanTitle,
           scanMdl.scanPoints,
           scanMdl.scanPointPolygons,
           footprint,
@@ -820,7 +855,6 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       }
 
       forkJoin(toWait$).subscribe((value: ContextImageRegionLayer[]) => {
-        //console.warn("Return forkJoin");
         observer.next();
         observer.complete();
       });
@@ -878,7 +912,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
       let pmc = locToPMCLookup.get(locIdx);
       let locOpacity = 1;
-      if (roi.roi.isMIST && pmc !== undefined) {
+      if (this.showROIConfidence && roi.roi.isMIST && pmc !== undefined) {
         let mistOpacity = roi.roi?.mistROIItem?.pmcConfidenceMap[pmc];
         if (mistOpacity !== undefined) {
           locOpacity = mistOpacity;

@@ -394,14 +394,23 @@ export class ChartAxisDrawer {
     protected _axisTextColour: string = Colours.GRAY_60.asString(),
     protected _axisValueGap: number = 4,
     protected _axisTickOverhang: number = 4,
-    protected _drawGridLine: boolean = true
-  ) {}
+    protected _drawGridLine: boolean = true,
+    protected _axisLineWidth: number = 1
+  ) {
+    if (!this._axisLineColour) {
+      this._axisLineColour = Colours.GRAY_70.asString();
+    }
+
+    if (!this._axisTextColour) {
+      this._axisTextColour = Colours.GRAY_60.asString();
+    }
+  }
 
   private setupForDraw(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): void {
     screenContext.strokeStyle = this._axisLineColour;
     screenContext.fillStyle = this._axisTextColour;
     screenContext.font = this._axisFont;
-    screenContext.lineWidth = 1;
+    screenContext.lineWidth = this._axisLineWidth;
   }
 
   drawAxes(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, xAxis: ChartAxis, xAxisTitle: string, yAxis: ChartAxis, yAxisTitle: string): void {
@@ -444,7 +453,9 @@ export class ChartAxisDrawer {
     screenContext.beginPath();
     screenContext.moveTo(x, 0);
     screenContext.lineTo(x, viewport.height - xAxisLeftMargin + this._axisTickOverhang);
-    screenContext.stroke();
+    if (this._axisLineWidth > 0) {
+      screenContext.stroke();
+    }
 
     // Draw axis label
     screenContext.textAlign = "center";
@@ -482,7 +493,9 @@ export class ChartAxisDrawer {
     screenContext.beginPath();
     screenContext.moveTo(yAxisLeftMargin, y);
     screenContext.lineTo(viewport.width, y);
-    screenContext.stroke();
+    if (this._axisLineWidth > 0) {
+      screenContext.stroke();
+    }
 
     // Draw axis label
     if (title.length > 0) {

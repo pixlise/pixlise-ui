@@ -33,7 +33,7 @@ import { Point } from "src/app/models/Geometry";
 import { HistogramModel, HistogramDrawBar } from "./histogram-model";
 import { ChartAxisDrawer } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
 import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
 
 export class HistogramDrawer extends CachedCanvasChartDrawer {
@@ -121,19 +121,26 @@ export class HistogramDrawer extends CachedCanvasChartDrawer {
           bold: false,
         });
 
-        if (this._mdl.showStdDeviation) {
+        if (this._mdl.whiskerDisplayMode === HistogramModel.WhiskersStdDev) {
           messages.push({
             text: `standard deviation: ${hoverBar.bar.stdDev ? hoverBar.bar.stdDev.toLocaleString() : "N/A"}`,
             colour: Colours.TEXT_GRAY,
             bold: false,
           });
-        } else {
+        } else if (this._mdl.whiskerDisplayMode === HistogramModel.WhiskersStdErr) {
           messages.push({
             text: `standard error: ${hoverBar.bar.stdErr ? hoverBar.bar.stdErr.toLocaleString() : "N/A"}`,
             colour: Colours.TEXT_GRAY,
             bold: false,
           });
         }
+
+        messages.push({
+          text: `min: ${hoverBar.bar.valueRange.min !== null && hoverBar.bar.valueRange.min !== undefined ? hoverBar.bar.valueRange.min.toLocaleString() : "N/A"}
+max: ${hoverBar.bar.valueRange.max !== null && hoverBar.bar.valueRange.max !== undefined ? hoverBar.bar.valueRange.max.toLocaleString() : "N/A"}`,
+          colour: Colours.TEXT_GRAY,
+          bold: false,
+        });
       }
 
       drawToolTip(
@@ -178,7 +185,7 @@ export class HistogramDrawer extends CachedCanvasChartDrawer {
     screenContext.lineTo(bar.rect.x + bar.rect.w, meanCanvasY);
     screenContext.stroke();
 
-    if (this._mdl.showWhiskers) {
+    if (this._mdl.whiskerDisplayMode !== HistogramModel.WhiskersNone) {
       // Draw the whiskers
       screenContext.strokeStyle = Colours.CONTEXT_PURPLE.asString();
       screenContext.lineWidth = 1;

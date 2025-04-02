@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription, combineLatest, concatMap, map } from "rxjs";
+import { Observable, Subscription, combineLatest, concatMap, first, map, switchMap, tap } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import {
@@ -24,6 +24,7 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
+import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 
 @Component({
   selector: "app-quantification-table",
@@ -34,11 +35,8 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
   // We store our ids with a scanId lookup first, and for each scan, a lookup by quantId
   dataSourceIds = new Map<string, Map<string, string[]>>();
 
-  private _scanId: string = "";
   private _usePureElement: boolean = false;
   private _orderByAbundance: boolean = false;
-
-  private _availableQuants: QuantificationSummary[] = [];
 
   private _subs = new Subscription();
   private _quantsAvailableSubs = new Subscription();
@@ -128,10 +126,6 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
               } else {
                 console.warn("Quant Table did not restore state because no quant ID was found");
               }
-
-              if (this.scanId.length <= 0) {
-                this.scanId = roi.scanId;
-              }
             }
 
             this.updateTable();
@@ -164,39 +158,15 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     }
   }
 
-  get scanId(): string {
-    return this._scanId;
-  }
-
-  set scanId(id: string) {
-    if (this._scanId == id) {
-      return; // ignore, already set, don't request stuff
-    }
-
-    this._scanId = id;
-
-    // Subscribe for quants now that we know what our scan id is
-    this._quantsAvailableSubs.unsubscribe();
-
-    this._quantsAvailableSubs.add(
-      this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
-        const quants = availableScanQuants[this.scanId];
-        if (quants) {
-          this._availableQuants = quants;
-        }
-      })
-    );
-  }
-
   private setInitialConfig() {
     // TODO: needed? this.dataSourceIds.clear();
-    this.scanId = this._analysisLayoutService.defaultScanId;
-    if (this.scanId.length > 0) {
-      const quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
+    const scanId = this._analysisLayoutService.defaultScanId;
+    if (scanId.length > 0) {
+      const quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
       if (quantId.length > 0) {
         this.dataSourceIds.set(
-          this.scanId,
-          new Map<string, string[]>([[quantId, [PredefinedROIID.getAllPointsForScan(this.scanId), PredefinedROIID.getSelectedPointsForScan(this.scanId)]]])
+          scanId,
+          new Map<string, string[]>([[quantId, [PredefinedROIID.getAllPointsForScan(scanId), PredefinedROIID.getSelectedPointsForScan(scanId)]]])
         );
       }
 
@@ -239,66 +209,68 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
       }
     }
 
-    combineLatest(tables$).subscribe({
-      next: (results: TableData[]) => {
-        this.regionDataTables = [];
+    combineLatest(tables$)
+      .pipe(first())
+      .subscribe({
+        next: (results: TableData[]) => {
+          this.regionDataTables = [];
 
-        for (const table of results) {
-          this.regionDataTables.push(table);
-        }
+          for (const table of results) {
+            this.regionDataTables.push(table);
+          }
 
-        // Ensure each table has the same element list
-        let emptyValues = [];
-        const uniqueLabels = new Set<string>();
-        for (const table of this.regionDataTables) {
-          for (const r of table.rows) {
-            uniqueLabels.add(r.label);
-            if (r.values.length > emptyValues.length) {
-              emptyValues = [];
-              for (let c = 0; c < r.values.length; c++) {
-                emptyValues.push(0);
+          // Ensure each table has the same element list
+          let emptyValues = [];
+          const uniqueLabels = new Set<string>();
+          for (const table of this.regionDataTables) {
+            for (const r of table.rows) {
+              uniqueLabels.add(r.label);
+              if (r.values.length > emptyValues.length) {
+                emptyValues = [];
+                for (let c = 0; c < r.values.length; c++) {
+                  emptyValues.push(0);
+                }
               }
             }
           }
-        }
 
-        const allLabels = [];
-        for (const label of Array.from(uniqueLabels).sort()) {
-          allLabels.push(label);
-        }
-
-        for (const table of this.regionDataTables) {
-          const rowLookup = new Map<string, TableRow>();
-          for (const row of table.rows) {
-            rowLookup.set(row.label, row);
+          const allLabels = [];
+          for (const label of Array.from(uniqueLabels).sort()) {
+            allLabels.push(label);
           }
 
-          const rows: TableRow[] = [];
-          for (const label of allLabels) {
-            const existingRow = rowLookup.get(label);
-            if (existingRow) {
-              rows.push(existingRow);
-            } else {
-              rows.push(new TableRow(label, emptyValues, []));
+          for (const table of this.regionDataTables) {
+            const rowLookup = new Map<string, TableRow>();
+            for (const row of table.rows) {
+              rowLookup.set(row.label, row);
             }
+
+            const rows: TableRow[] = [];
+            for (const label of allLabels) {
+              const existingRow = rowLookup.get(label);
+              if (existingRow) {
+                rows.push(existingRow);
+              } else {
+                rows.push(new TableRow(label, emptyValues, []));
+              }
+            }
+
+            table.rows = rows;
           }
 
-          table.rows = rows;
-        }
-
-        this.isWidgetDataLoading = false;
-      },
-      error: err => {
-        this.isWidgetDataLoading = false;
-        this._snackService.openError(err);
-      },
-    });
+          this.isWidgetDataLoading = false;
+        },
+        error: err => {
+          this.isWidgetDataLoading = false;
+          this._snackService.openError(err);
+        },
+      });
   }
 
   private makeTable(scanId: string, roiId: string, quantId: string): Observable<TableData> {
     // Get the quant for this table
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId })).pipe(
-      concatMap((resp: QuantGetResp) => {
+      switchMap((resp: QuantGetResp) => {
         if (!resp.summary) {
           throw new Error("Failed to get quant summary for: " + quantId);
         }
@@ -547,91 +519,145 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   onReferences() {}
 
+  private getAvailableQuants(): Observable<Map<string, QuantificationSummary[]>> {
+    return this._analysisLayoutService.activeScreenConfiguration$.pipe(
+      switchMap((cfg: ScreenConfiguration) => {
+        const scanIds = Object.keys(cfg.scanConfigurations);
+
+        const requests$ = [];
+        for (const scanId of scanIds) {
+          requests$.push(this._analysisLayoutService.fetchQuantsForScanAsync(scanId));
+        }
+
+        return combineLatest(requests$).pipe(
+          tap((scanQuants: QuantificationSummary[][]) => {
+            if (scanQuants.length != scanIds.length) {
+              throw new Error(`Failed to load quants for configured scans, loaded ${scanQuants.length}, expected ${scanIds.length}`);
+            }
+          }),
+          map((quants: QuantificationSummary[][]) => {
+            const quantsByScanId = new Map<string, QuantificationSummary[]>();
+            for (let c = 0; c < quants.length; c++) {
+              quantsByScanId.set(scanIds[c], quants[c]);
+            }
+
+            return quantsByScanId;
+          })
+        );
+      })
+    );
+  }
+
   onQuants(event: any): void {
-    const dialogConfig = new MatDialogConfig();
-    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+    this.getAvailableQuants().subscribe((quantsByScanId: Map<string, QuantificationSummary[]>) => {
+      const dialogConfig = new MatDialogConfig();
+      //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 
-    const userQuants: PickerDialogItem[] = [];
-    userQuants.push(new PickerDialogItem("", "My Quantifications", "", true));
+      const items = this.makeQuantPickerItems(Array.from(quantsByScanId.keys()), quantsByScanId);
 
-    const sharedQuants: PickerDialogItem[] = [];
-    sharedQuants.push(new PickerDialogItem("", "Shared Quantifications", "", true));
+      const selectedROIIds = new Set<string>();
+      const roisByScanId = new Map<string, string[]>();
+      const quantIds = new Set<string>();
+      for (const [scanId, item] of this.dataSourceIds.entries()) {
+        for (const [quantId, roiIds] of item.entries()) {
+          quantIds.add(quantId);
 
-    for (const quant of this._availableQuants) {
-      // Only interested in completed, combined quantifications, we can't view the others...
-      //if (/*quant.status == "complete" &&*/ quant.params?.userParams?.quantMode == "Combined") {
-      if (quant.params && quant.params.userParams) {
-        const item = new PickerDialogItem(quant.id, quant.params.userParams.name, "", true);
-        if (quant.owner?.sharedWithOthers) {
-          sharedQuants.push(item);
-        } else {
-          userQuants.push(item);
-        }
-      }
-    }
-
-    const items: PickerDialogItem[] = [];
-    if (userQuants.length > 1) {
-      items.push(...userQuants);
-    }
-    if (sharedQuants.length > 1) {
-      items.push(...sharedQuants);
-    }
-
-    const selectedROIIds = new Set<string>();
-    const quantIds = new Set<string>();
-    for (const item of this.dataSourceIds.values()) {
-      for (const [quantId, roiIds] of item.entries()) {
-        quantIds.add(quantId);
-
-        for (const roi of roiIds) {
-          selectedROIIds.add(roi);
-        }
-      }
-    }
-
-    dialogConfig.data = new PickerDialogData(true, true, true, true, items, Array.from(quantIds), "", new ElementRef(event.currentTarget));
-
-    const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
-
-    // NOTE: We don't update as clicks happen, we wait for an apply button press!
-    //
-    //        dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
-    //            (ids: string[])=>
-    dialogRef.afterClosed().subscribe((ids: string[]) => {
-      if (ids && ids.length > 0) {
-        // Regenerate our dataSourceIds to include the quant ids specified
-        this.dataSourceIds.clear();
-
-        // TODO: get scan ids from the dialog for each quant picked!
-        for (const quantId of ids) {
-          let innerMap = this.dataSourceIds.get(this.scanId);
-          if (!innerMap) {
-            innerMap = new Map<string, string[]>();
-            this.dataSourceIds.set(this.scanId, innerMap);
+          for (const roi of roiIds) {
+            selectedROIIds.add(roi);
           }
 
-          if (quantId.length > 0) {
-            innerMap.set(quantId, Array.from(selectedROIIds));
-          }
+          roisByScanId.set(scanId, roiIds);
         }
-
-        this.updateTable();
-        this.saveState();
-      } else {
-        this.setInitialConfig();
       }
+
+      dialogConfig.data = new PickerDialogData(true, true, true, true, items, Array.from(quantIds), "", new ElementRef(event.currentTarget));
+
+      const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
+
+      // NOTE: We don't update as clicks happen, we wait for an apply button press!
+      dialogRef.afterClosed().subscribe((selectedQuantIds: string[]) => {
+        if (selectedQuantIds && selectedQuantIds.length > 0) {
+          // Regenerate our dataSourceIds to include the quant ids specified
+          const quantIdsByScan = new Map<string, string[]>();
+          for (const [scanId, quants] of quantsByScanId.entries()) {
+            const quantsToAdd: string[] = [];
+            for (const q of quants) {
+              if (selectedQuantIds.indexOf(q.id) > -1) {
+                quantsToAdd.push(q.id);
+              }
+            }
+
+            if (quantsToAdd.length > 0) {
+              quantIdsByScan.set(scanId, quantsToAdd);
+            }
+          }
+          this.dataSourceIds = this.regenerateDataSources(quantIdsByScan, roisByScanId);
+
+          this.updateTable();
+          this.saveState();
+        }
+        // else user cancelled
+      });
     });
+  }
+
+  private makeQuantPickerItems(scanIds: string[], allQuants: Map<string, QuantificationSummary[]>): PickerDialogItem[] {
+    const items: PickerDialogItem[] = [];
+
+    // First check if there are multiple scan ids that we're dealing with
+    //const scanIds = Object.keys(allQuants);
+
+    for (const scanId of scanIds) {
+      const userQuants: PickerDialogItem[] = [];
+      userQuants.push(new PickerDialogItem("", `${scanId} - My Quantifications`, "", true));
+
+      const sharedQuants: PickerDialogItem[] = [];
+      sharedQuants.push(new PickerDialogItem("", `${scanId} - Shared Quantifications`, "", true));
+
+      const quants = allQuants.get(scanId);
+      if (quants) {
+        for (const quant of quants) {
+          // Only interested in completed, combined quantifications, we can't view the others...
+          //if (/*quant.status == "complete" &&*/ quant.params?.userParams?.quantMode == "Combined") {
+          if (quant.params && quant.params.userParams) {
+            const item = new PickerDialogItem(quant.id, quant.params.userParams.name, "", true);
+            if (quant.owner?.sharedWithOthers) {
+              sharedQuants.push(item);
+            } else {
+              userQuants.push(item);
+            }
+          }
+        }
+      }
+
+      if (userQuants.length > 1) {
+        items.push(...userQuants);
+      }
+      if (sharedQuants.length > 1) {
+        items.push(...sharedQuants);
+      }
+    }
+
+    return items;
   }
 
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 
+    // Read configured regions and quants
     const selectedROIIds = new Set<string>();
-    const quantIds = new Set<string>();
-    for (const item of this.dataSourceIds.values()) {
+    const quantsByScanId = new Map<string, string[]>();
+
+    let roiDialogDefaultScanId = "";
+    for (const [scanId, item] of this.dataSourceIds.entries()) {
+      if (!roiDialogDefaultScanId) {
+        roiDialogDefaultScanId = scanId; // Use the first scan id
+      }
+
       for (const [quantId, roiIds] of item.entries()) {
-        quantIds.add(quantId);
+        const quantList = quantsByScanId.get(scanId) || [];
+        quantList.push(quantId);
+        quantsByScanId.set(scanId, quantList);
 
         for (const roi of roiIds) {
           selectedROIIds.add(roi);
@@ -643,7 +669,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     dialogConfig.data = {
       requestFullROIs: true,
       selectedIds: Array.from(selectedROIIds),
-      scanId: this.scanId,
+      scanId: roiDialogDefaultScanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -661,30 +687,41 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           roisPerScan.set(roi.scanId, existing);
         }
 
-        // Now fill in the data source ids using the above
-        for (const [scanId, roiIds] of roisPerScan) {
-          let innerMap = this.dataSourceIds.get(scanId);
-          if (!innerMap) {
-            innerMap = new Map<string, string[]>();
-            this.dataSourceIds.set(scanId, innerMap);
-          }
-
-          // Set this list of ROIs for all quants of this scan
-          for (const quantId of innerMap.keys()) {
-            if (quantId.length > 0) {
-              innerMap.set(quantId, roiIds);
-            }
-          }
-
-          if (scanId && this.scanId !== scanId) {
-            this.scanId = scanId;
-          }
-        }
+        this.dataSourceIds = this.regenerateDataSources(quantsByScanId, roisPerScan);
 
         this.updateTable();
         this.saveState();
       }
     });
+  }
+
+  private regenerateDataSources(quantIdsByScan: Map<string, string[]>, roiIdsByScan: Map<string, string[]>) {
+    // Get a unique list of scans
+    const result = new Map<string, Map<string, string[]>>();
+    // for (const scanId of [...quantIdsByScan.keys(), ...roiIdsByScan.keys()]) {
+    //   result.set(scanId, new Map<string, string[]>());
+    // }
+
+    // Add quant ids where needed
+    for (const [scanId, quantIds] of quantIdsByScan.entries()) {
+      const quants = new Map<string, string[]>();
+      for (const quantId of quantIds) {
+        quants.set(quantId, []);
+      }
+      result.set(scanId, quants);
+    }
+
+    for (const [scanId, roiIds] of roiIdsByScan.entries()) {
+      const item = result.get(scanId);
+      if (item) {
+        // Set the rois for each quant
+        for (const quant of item.keys()) {
+          item.set(quant, Array.from(roiIds));
+        }
+      }
+    }
+
+    return result;
   }
 
   get usePureElement(): boolean {

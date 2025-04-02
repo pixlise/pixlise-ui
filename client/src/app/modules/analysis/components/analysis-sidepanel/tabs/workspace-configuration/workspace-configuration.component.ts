@@ -30,9 +30,9 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
+import { combineLatest, map, Subscription, switchMap } from "rxjs";
 import { FullScreenLayout, ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
-import { getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
+import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
 import { ObjectType, OwnershipSummary, UserGroupList } from "../../../../../../generated-protos/ownership-access";
 import { APIDataService, SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
 import { NavigationTab } from "../../../../services/analysis-layout.service";
@@ -51,6 +51,7 @@ import { ExpressionGetReq, ExpressionGetResp } from "../../../../../../generated
 import { QuantGetReq, QuantGetResp } from "../../../../../../generated-protos/quantification-retrieval-msgs";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { ExpressionGroupGetResp } from "../../../../../../generated-protos/expression-group-msgs";
+import { WorkspaceService } from "../../../../services/workspaces.service";
 
 @Component({
   selector: "workspace-configuration",
@@ -76,6 +77,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   public screenConfig: ScreenConfiguration | null = null;
   public snapshots: ScreenConfiguration[] = [];
+  public reviewerSnapshots: { snapshot: ScreenConfiguration; link: string }[] = [];
 
   public openTabs: NavigationTab[] = [];
   public newTabName: string = "";
@@ -83,7 +85,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
 
   queryParam: Record<string, string> = {};
 
-  public activeConfigurationTab: "workspace" | "snapshots" = "workspace";
+  public activeConfigurationTab: "workspace" | "snapshots" | "review" = "workspace";
 
   public builtInTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
@@ -94,6 +96,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   constructor(
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
+    private _workspaceService: WorkspaceService,
     private _snackbarService: SnackbarService,
     private _route: ActivatedRoute,
     private _apiDataService: APIDataService,
@@ -123,7 +126,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
                   let scan = scans.find(s => s.id === scanId);
                   if (scan) {
                     let sol = scan?.meta?.["Sol"] || "N/A";
-                    this.placeholderName = `SOL-${sol}: ${scan?.title || "N/A"}`;
+                    this.placeholderName = `Sol ${sol}: ${scan?.title || "N/A"}`;
                   }
                 }
               })
@@ -137,11 +140,19 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       this._analysisLayoutService.activeScreenConfiguration$
         .pipe(
           switchMap(screenConfig => {
-            return this._analysisLayoutService.fetchWorkspaceSnapshots(screenConfig.id);
+            return this._workspaceService.fetchWorkspaceSnapshots(screenConfig.id);
           })
         )
         .subscribe(snapshots => {
-          this.snapshots = snapshots;
+          this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
+          this.reviewerSnapshots = snapshots
+            .filter(snapshot => !!snapshot.reviewerId)
+            .map(snapshot => {
+              return {
+                snapshot: snapshot,
+                link: this.generateLinkFromId(snapshot.id),
+              };
+            });
         })
     );
 
@@ -343,14 +354,26 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     }
   }
 
+  generateLinkFromId(id: string): string {
+    return `${window.location.protocol}//${window.location.host}/magiclink?ml=${encodeUrlSafeBase64(id)}`;
+  }
+
   onDeleteSnapshot(snapshot: ScreenConfiguration): void {
     if (!snapshot?.id) {
       return;
     }
 
     this._analysisLayoutService.deleteScreenConfiguration(snapshot.id, () => {
-      this._analysisLayoutService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
-        this.snapshots = snapshots;
+      this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id).subscribe(snapshots => {
+        this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
+        this.reviewerSnapshots = snapshots
+          .filter(snapshot => !!snapshot.reviewerId)
+          .map(snapshot => {
+            return {
+              snapshot: snapshot,
+              link: this.generateLinkFromId(snapshot.id),
+            };
+          });
       });
     });
   }
@@ -399,14 +422,25 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         })
       )
       .pipe(editResp => {
-        return this._analysisLayoutService.fetchWorkspaceSnapshots(this.screenConfig!.id);
+        return this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id);
       })
       .subscribe(snapshots => {
-        this.snapshots = snapshots;
+        this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
+        this.reviewerSnapshots = snapshots
+          .filter(snapshot => !!snapshot.reviewerId)
+          .map(snapshot => {
+            return {
+              snapshot: snapshot,
+              link: this.generateLinkFromId(snapshot.id),
+            };
+          });
+
+        // Copy to clipboard
+        this.onCopy(this.generateLinkFromId(id));
       });
   }
 
-  onShareSnapshot(existingSnapshot: ScreenConfiguration | null = null): void {
+  onShareSnapshot(existingSnapshot: ScreenConfiguration | null = null, isReviewerSnapshot: boolean = false): void {
     let objectId = existingSnapshot?.id || this.screenConfig?.id;
     let ownershipSummary = existingSnapshot?.owner || this.screenConfig?.owner;
 
@@ -524,11 +558,15 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           ownershipSummary: ownershipSummary || null,
           ownershipItem: workspaceOwnershipResp.ownership,
           typeName: "Workspace Snapshot",
-          title: existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
+          title: isReviewerSnapshot ? "Create reviewer snapshot" : existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
           subItems: [workspaceSubItem, ...subItems],
           excludeSubIds: [objectId || ""],
           preventSelfAssignment: true,
           restrictSubItemSharingToViewer: true,
+          isReviewerSnapshot: isReviewerSnapshot,
+          description: isReviewerSnapshot
+            ? "Create a snapshot with a permanent link for reviewers. Anyone with the link will be able to access tabs, datasets, ROIs, and expressions currently used in the workspace. Future changes won’t be shared."
+            : "",
         };
 
         const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
@@ -546,6 +584,15 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
             newScreenConfig.snapshotParentId = this.screenConfig!.id;
             newScreenConfig.name = this.workspaceName || this.placeholderName || "";
             newScreenConfig.id = "";
+            if (isReviewerSnapshot) {
+              newScreenConfig.reviewerId = sharingChangeResponse.reviewerId || "";
+              if (sharingChangeResponse.reviewerAccessTime) {
+                // Actual expiration time for auth purposes is calculated in the API,
+                // but this is a "close enough" approximation for displaying in the UI without making another API call
+                let currentTimeMS = new Date().getTime();
+                newScreenConfig.reviewerExpirationDateUnixSec = sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000;
+              }
+            }
             this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
               if (!newScreenConfig.id) {
                 return;
@@ -556,6 +603,16 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           }
         });
       });
+    });
+  }
+
+  idToBase64(id: string): string {
+    return btoa(id);
+  }
+
+  onCopy(link: string): void {
+    navigator.clipboard.writeText(link).then(() => {
+      this._snackbarService.openSuccess("Link copied to clipboard!");
     });
   }
 

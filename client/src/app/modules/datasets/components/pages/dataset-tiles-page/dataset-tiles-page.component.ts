@@ -29,14 +29,15 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ActivatedRoute, Route, Router } from "@angular/router";
-import { combineLatest, last, Observable, Subscription } from "rxjs";
+import { ActivatedRoute, Router } from "@angular/router";
+import { combineLatest, Observable, Subscription } from "rxjs";
 
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
-import { ScanDataType, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
+import { ScanDataType, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
@@ -68,6 +69,12 @@ import {
   DuplicateWorkspaceDialogData,
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
+import { filterScans, sortScans } from "src/app/utils/search";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { DatasetsService } from "../../../services/datasets.service";
+import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { UserGroupRelationship } from "src/app/generated-protos/user-group";
+import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 
 class SummaryItem {
   constructor(
@@ -89,6 +96,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   @ViewChild("newWorkspaceButton") newWorkspaceButton: ElementRef | undefined;
   @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton: ElementRef | undefined;
   @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
+  @ViewChild("manageCacheBtn") manageCacheBtn!: ElementRef;
 
   _searchString: string = "";
 
@@ -114,17 +122,25 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   selectedScanSummaryItems: SummaryItem[] = [];
   selectedScanTrackingItems: SummaryItem[] = [];
+  selectedScanAccess: SummaryItem[] = [];
+  selectedScanUpdates: SummaryItem[] = [];
+  selectedScanUpdatesExtended: SummaryItem[] = [];
   selectedMissingData: string = "";
   selectedScanContextImage: string = "";
+
+  limitedUpdateTimes: boolean = false;
 
   errorString: string = "";
   loading = false;
 
+  scanItemType: ObjectType = ObjectType.OT_SCAN;
+
+  searchResultSummary = "";
+  possibleInstruments: string[] = [];
+
   noSelectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
   noSelectedWorkspaceMsg = HelpMessage.NO_SELECTED_WORKSPACE;
 
-  private _allGroups: string[] = [];
-  private _selectedGroups: string[] = [];
   private _userCanEdit: boolean = false;
 
   private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
@@ -162,6 +178,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   public sortWorkspacesBy: string = "Last Updated";
   public sortWorkspacesAsc: boolean = false;
 
+  public publicOnlyUser: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -172,7 +190,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     private _authService: AuthService,
     public dialog: MatDialog,
     private _snackService: SnackbarService,
-    private _taggingService: TagService
+    private _taggingService: TagService,
+    private _groupsService: GroupsService,
+    private _tilesService: DatasetsService
   ) {}
 
   ngOnInit() {
@@ -189,20 +209,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
               // User has no permissions at all, admins would've set them this way!
               // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
             } else {
-              // If the user is set to have no permissions, we show that error and don't bother requesting
-              //if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
-              // Show a special error in this case - user has been set to have no permissions
-              // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
-              /*} else*/ {
-                // Don't have no-permission set, so see if the user is allowed to access any groups
-                // this._allGroups = Permissions.getGroupsPermissionAllows(claims);
-                this._selectedGroups = Array.from(this._allGroups);
-                // if(this._allGroups.length <= 0)
-                // {
-                //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
-                // }
-              }
-
               this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
             }
           }
@@ -210,6 +216,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         error: err => {
           this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
         },
+      })
+    );
+
+    this._subs.add(
+      this._groupsService.groupsChanged$.subscribe(() => {
+        // Check how many groups the user has joined, so we can show the group management button if needed
+        const groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
+        this.publicOnlyUser = groupsWithAccess.length <= 1;
       })
     );
 
@@ -228,6 +242,16 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = scans;
+
+        // Get unique instrument list
+        const instruments = new Set<ScanInstrument>();
+        for (const scan of scans) {
+          instruments.add(scan.instrument);
+        }
+        this.possibleInstruments = Array.from(instruments)
+          .sort()
+          .map(x => scanInstrumentToJSON(x));
+
         this.onSearchAddScanList(this._newWorkspaceScanSearchText);
         this.idToScan = {};
         scans.forEach(scan => {
@@ -238,7 +262,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this.clearSelection();
     this.onSearch();
-    this.onSearchWorkspsaces();
+    this.onSearchWorkspaces();
   }
 
   ngOnDestroy() {
@@ -387,7 +411,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspace.name = this.selectedWorkspaceName;
 
     this._analysisLayoutService.writeScreenConfiguration(this.selectedWorkspace, undefined, false, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
   }
 
@@ -408,7 +432,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     workspace.tags = this.selectedWorkspaceTags;
 
     this._analysisLayoutService.writeScreenConfiguration(workspace, undefined, false, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
   }
 
@@ -428,7 +452,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.deleteScreenConfiguration(this.selectedWorkspace.id, () => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
     });
     this.clearSelection();
   }
@@ -507,7 +531,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    this.newWorkspaceAddScanList = this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase()));
+    this.newWorkspaceAddScanList = sortScans(this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase())));
   }
 
   onAddScanSearchClick(evt: any) {
@@ -550,7 +574,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       });
 
       this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
-        this.onSearchWorkspsaces();
+        this.onSearchWorkspaces();
         this.navigateToWorkspace(screenConfig.id);
       });
 
@@ -564,7 +588,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, null, screenConfig => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       this.navigateToWorkspace(screenConfig.id);
     });
   }
@@ -590,15 +614,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   get filterCount(): number {
     return this._filter.itemCount();
-  }
-
-  get groupCount(): number {
-    if (this._selectedGroups.length == this._allGroups.length) {
-      // Nothing special about all groups being turned on!
-      return 0;
-    }
-
-    return this._selectedGroups.length;
   }
 
   protected setDatasetListingNotAllowedError(err: string): void {
@@ -705,54 +720,22 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  getDatasetSearchFields(scan: ScanItem): string[] {
-    return [
-      scan?.title || "",
-      scan?.description || "",
-      scan?.instrumentConfig || "",
-      scan?.meta?.["Sol"] ?? "",
-      scan?.meta?.["Target"] ?? "",
-      scan?.meta?.["Site"] ?? "",
-      scan?.meta?.["DriveId"] ?? "",
-      scan?.meta?.["RTT"] ?? "",
-      scan?.meta?.["SCLK"] ?? "",
-    ];
-  }
-
   filterScans() {
-    if (this._searchString.length === 0 && this.filterTags.length === 0) {
-      this.filteredScans = this.scans;
-      return;
+    const instr: ScanInstrument[] = [];
+    for (const selInstr of this._tilesService.selectedInstruments) {
+      instr.push(scanInstrumentFromJSON(selInstr));
     }
 
-    // Filter by title, description
-    this.filteredScans = this.scans
-      .filter(scan => {
-        if (this.filterTags.length > 0 && !this.filterTags.some(tag => scan.tags?.includes(tag))) {
-          return false;
-        }
+    this.filteredScans = filterScans(this._searchString, instr, this.filterTags, this.scans);
+    this.filteredScans = sortScans(this.filteredScans);
+  }
 
-        let searchFields = this.getDatasetSearchFields(scan);
-        return searchFields.some(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-      })
-      .sort((scanA, scanB) => {
-        let scanASearchFields = this.getDatasetSearchFields(scanA);
-        let scanBSearchFields = this.getDatasetSearchFields(scanB);
-
-        // Sort by matching order and then by date modified
-        let aMatch = scanASearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-        let bMatch = scanBSearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-
-        if (aMatch == bMatch) {
-          return scanB.completeTimeStampUnixSec - scanA.completeTimeStampUnixSec;
-        } else {
-          return aMatch - bMatch;
-        }
-      });
+  get selectedInstrumentCount(): number {
+    return this._tilesService.selectedInstruments.length;
   }
 
   getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
-    let id = workspace.snapshotParentId || workspace.id;
+    const id = workspace.snapshotParentId || workspace.id;
     return this.snapshots.get(id)?.map(snapshot => snapshot.name) || [];
   }
 
@@ -878,7 +861,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       if (response.shouldOpen) {
         this.onOpenWorkspace(response.workspace);
       }
@@ -926,7 +909,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       if (response.shouldOpen) {
         this.onOpenWorkspace(response.workspace);
       }
@@ -940,7 +923,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSearchWorkspsaces(): void {
+  onSearchWorkspaces(): void {
     this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create()).subscribe({
       next: (resp: ScreenConfigurationListResp) => {
         let workspaces = resp.screenConfigurations;
@@ -1014,7 +997,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onSearch(): void {
     if (this.workspacesMode) {
-      this.onSearchWorkspsaces();
+      this.onSearchWorkspaces();
       return;
     }
 
@@ -1022,12 +1005,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.errorString = "Fetching Scans...";
 
     let searchString = this._filter.toSearchString();
-
-    // Combine groups if we need to
-    if (this._allGroups.length != this._selectedGroups.length) {
-      const groupStr = this._selectedGroups.join("|");
-      searchString = DatasetFilter.appendTerm(searchString, "group_id=" + groupStr);
-    }
 
     // Finally, add the title text search string
     if (this._searchString.length > 0) {
@@ -1043,10 +1020,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.errorString = "";
 
         this.scans = resp.scans;
-        this.sortScans(this.scans);
         this.filterScans();
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
+        } else {
+          this.searchResultSummary = this.filteredScans.length + " items";
         }
 
         const scanIds = this.scans.map(item => item.id);
@@ -1074,66 +1052,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getSortValue(a: any, b: any): number {
-    if (a < b) {
-      return 1;
-    } else if (a > b) {
-      return -1;
-    }
-    return 0;
-  }
-
-  private sortScans(scans: ScanItem[]) {
-    // First, sort datasets by SOL alphabetically, because we have some starting with letters to denote
-    // that they are test datasets. Then we sort numerically within the lettered sections
-    scans.sort((a: ScanItem, b: ScanItem) => {
-      // If there is a sol on both...
-      const aSol = a.meta["Sol"] || "",
-        bSol = b.meta["Sol"] || "";
-
-      if (aSol === bSol && aSol.length > 0) {
-        // Don't let empty strings all fall into here!
-        // They're equal, sort by name
-        return this.getSortValue(a.title, b.title);
-      }
-
-      // If they don't match and one is empty, put empty at the end always
-      if (aSol != bSol) {
-        if (aSol.length <= 0) {
-          // a is empty, goes last
-          return 1;
-        } else if (bSol.length <= 0) {
-          // b is empty, goes last
-          return -1;
-        }
-      }
-
-      // SOLs are strings, and can start with letters. We want the letter part alphabetically sorted, and any numbers
-      // after it sorted numerically
-      const aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
-      const bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
-
-      const aSolNum = Number.parseInt(aSol.substring(aLetter.length));
-      const bSolNum = Number.parseInt(bSol.substring(bLetter.length));
-
-      // If neither or both have the same letter, sort by number
-      if (aLetter == bLetter) {
-        return this.getSortValue(aSolNum, bSolNum);
-      }
-
-      // The one with no letter goes first
-      if (aLetter.length <= 0 && bLetter.length > 0) {
-        return -1;
-      }
-
-      if (aLetter.length > 0 && bLetter.length <= 0) {
-        return 1;
-      }
-
-      return this.getSortValue(aLetter, bLetter);
-    });
-  }
-
   onFilters(event: MouseEvent): void {
     const dialogConfig = new MatDialogConfig();
 
@@ -1150,23 +1068,23 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onGroups(event: MouseEvent): void {
+  onFilterMenu(event: MouseEvent) {
     const dialogConfig = new MatDialogConfig();
     dialogConfig.backdropClass = "empty-overlay-backdrop";
 
     const items: PickerDialogItem[] = [];
-    items.push(new PickerDialogItem("", "Groups", "", true));
+    items.push(new PickerDialogItem("", "Instrument Filter", "", true));
 
-    for (const perm of this._allGroups) {
-      items.push(new PickerDialogItem(perm, perm, "", true));
+    for (const instr of this.possibleInstruments) {
+      items.push(new PickerDialogItem(instr, instr, "", true));
     }
 
-    dialogConfig.data = new PickerDialogData(true, false, false, false, items, this._selectedGroups, "", new ElementRef(event.currentTarget));
+    dialogConfig.data = new PickerDialogData(true, true, false, false, items, this._tilesService.selectedInstruments, "", new ElementRef(event.currentTarget));
 
     const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
     dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
       if (ids) {
-        this._selectedGroups = ids;
+        this._tilesService.selectedInstruments = ids;
         this.onSearch();
       }
     });
@@ -1178,7 +1096,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspaceDescription = workspace.description || "";
     this.selectedWorkspaceTags = workspace.tags || [];
 
-    let lastModifiedTimeStr = new Date(workspace.modifiedUnixSec * 1000).toLocaleString();
+    const lastModifiedTimeStr = new Date(workspace.modifiedUnixSec * 1000).toLocaleString();
 
     this.selectedWorkspaceSummaryItems = [
       new SummaryItem("Creator:", workspace.owner?.creatorUser?.name || ""),
@@ -1249,7 +1167,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"])),
     ];
 
-    for (const sdt of this.selectedScan.dataTypes) {
+    for (const sdt of this.selectedScan.dataTypes.sort()) {
       if (sdt.dataType == ScanDataType.SD_IMAGE) {
         this.selectedScanSummaryItems.push(new SummaryItem("MCC Images:", sdt.count.toString()));
       } else if (sdt.dataType == ScanDataType.SD_XRF) {
@@ -1258,25 +1176,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.selectedScanSummaryItems.push(new SummaryItem("RGBU Images:", sdt.count.toString()));
       }
     }
-
-    let createTime = "Unknown";
-    if (this.selectedScan.timestampUnixSec) {
-      const dtFormat = new Intl.DateTimeFormat("en-GB", {
-        //'dateStyle': 'medium',
-        //'timeStyle': 'medium',
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        //timeZone: 'UTC'
-      });
-
-      createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
-    }
-
-    this.selectedScanSummaryItems.push(new SummaryItem("Updated Time:", createTime));
 
     this.selectedScanTrackingItems = [];
     if (this.selectedScan.instrument == ScanInstrument.PIXL_FM) {
@@ -1306,6 +1205,51 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this.selectedScanTrackingItems.push(new SummaryItem("PIXLISE ID:", this.selectedScan.id));
+
+    this.selectedScanAccess = [];
+    this.selectedScanAccess.push(new SummaryItem("Edit access", event.owner?.canEdit ? "Yes" : "No"));
+    this.selectedScanAccess.push(new SummaryItem("Is Scan Shared", event.owner?.sharedWithOthers ? "Yes" : "No"));
+    /*this.selectedScanAccess.push(new SummaryItem("Editing Groups", `${event.owner?.editorGroupCount || 0}`));
+    this.selectedScanAccess.push(new SummaryItem("Editing Users", `${event.owner?.editorUserCount || 0}`));
+    this.selectedScanAccess.push(new SummaryItem("Viewing Groups", `${event.owner?.viewerGroupCount || 0}`));
+    this.selectedScanAccess.push(new SummaryItem("Viewing Users", `${event.owner?.viewerUserCount || 0}`));*/
+
+    this.selectedScanUpdates = [];
+    this.selectedScanUpdatesExtended = [];
+    const dtFormat = new Intl.DateTimeFormat("en-GB", {
+      //'dateStyle': 'medium',
+      //'timeStyle': 'medium',
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      //timeZone: 'UTC'
+    });
+
+    let createTime = "Unknown";
+    if (this.selectedScan.timestampUnixSec) {
+      createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
+    }
+
+    this.selectedScanUpdates.push(new SummaryItem("Latest Updated Time:", createTime));
+
+    if (this.selectedScan.previousImportTimesUnixSec && this.selectedScan.previousImportTimesUnixSec.length > 0) {
+      for (let c = 0; c < this.selectedScan.previousImportTimesUnixSec.length; c++) {
+        const updTime = this.selectedScan.previousImportTimesUnixSec[c];
+        const item = new SummaryItem(c == 0 ? "Previous Updates:" : "", dtFormat.format(new Date(updTime * 1000)));
+
+        if (c < 5) {
+          this.selectedScanUpdates.push(item);
+        } else {
+          this.limitedUpdateTimes = true; // hide by default
+          this.selectedScanUpdatesExtended.push(item);
+        }
+      }
+    }
+
+    this.limitedUpdateTimes = this.selectedScanUpdates.length > 5;
 
     // TODO:
     const missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
@@ -1352,6 +1296,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   private clearSelection(): void {
+    this.errorString = "";
+    this.loading = false;
     this.selectedScan = null;
     this.selectedScanTitle = "";
     this.selectedScanDescription = "";
@@ -1380,7 +1326,22 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private closeManageCacheMenu(): void {
+    if (this.manageCacheBtn && this.manageCacheBtn instanceof WidgetSettingsMenuComponent) {
+      (this.manageCacheBtn as WidgetSettingsMenuComponent).close();
+    }
+  }
+
   get description(): string {
     return this.selectedScan?.description || "(empty)";
+  }
+
+  onManageGroups() {
+    const dialogConfig = new MatDialogConfig();
+    this.dialog.open(RequestGroupDialogComponent, dialogConfig);
+  }
+
+  onShowMoreUpdates() {
+    this.limitedUpdateTimes = false;
   }
 }

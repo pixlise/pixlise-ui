@@ -27,14 +27,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, ViewChildren, ElementRef, QueryList, inject } from "@angular/core";
+import { Component, OnInit, ViewChildren, ElementRef, QueryList, inject, OnDestroy } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 
 import { Navigation } from "../../navigation";
 
 import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Subscription } from "rxjs";
 
 @Component({
@@ -42,7 +43,7 @@ import { Subscription } from "rxjs";
   templateUrl: "./nav-top-menu.component.html",
   styleUrls: ["./nav-top-menu.component.scss", "./nav-menu/nav-menu.component.scss"],
 })
-export class NavTopMenuComponent implements OnInit {
+export class NavTopMenuComponent implements OnInit, OnDestroy {
   @ViewChildren("childMenu") childMenuElements: QueryList<ElementRef> = new QueryList<ElementRef>();
 
   private _subs: Subscription = new Subscription();
@@ -80,6 +81,10 @@ export class NavTopMenuComponent implements OnInit {
   }
 
   onLogout(): void {
+    // Clear reviewer tokens from sesion storage
+    sessionStorage.removeItem("reviewer_access_token");
+    sessionStorage.removeItem("reviewer_id_token");
+
     const returnTo = location.protocol + "//" + location.host;
     this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { CachedImageItem, CachedRGBUImageItem, CachedSpectraItem, db } from "../models/local-storage-db";
-import { liveQuery } from "dexie";
+import { liveQuery, PromiseExtended } from "dexie";
 import { SnackbarDataItem } from "./snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -66,6 +66,10 @@ export class LocalStorageService {
     await db.memoData.delete(key);
   }
 
+  async deleteMemoKeysByRegex(pattern: string) {
+    await db.memoData.filter(item => !!item.key.match(pattern)).delete();
+  }
+
   async clearUnsavedMemoData() {
     await db.memoData.filter(item => item.key.startsWith(DataExpressionId.UnsavedExpressionPrefix)).delete();
   }
@@ -77,7 +81,7 @@ export class LocalStorageService {
   async getMemoData(key: string): Promise<MemoisedItem | undefined> {
     return await db.memoData.get(key);
   }
-/*
+  /*
   async clearMemoData() {
     await db.memoData.clear();
   }*/
@@ -89,6 +93,10 @@ export class LocalStorageService {
 
   async getImage(url: string): Promise<CachedImageItem | undefined> {
     return await db.images.get(url);
+  }
+
+  deleteImage(key: string): Promise<void> {
+    return db.images.delete(key);
   }
 
   async clearImages() {
@@ -103,7 +111,7 @@ export class LocalStorageService {
   async getRGBUImage(url: string): Promise<CachedRGBUImageItem | undefined> {
     return await db.rgbuImages.get(url);
   }
-/*
+  /*
   async clearRGBUImages() {
     await db.rgbuImages.clear();
   }*/
@@ -150,7 +158,7 @@ export class LocalStorageService {
   async getSpectraForKey(scanId: string): Promise<CachedSpectraItem | undefined> {
     return await db.spectra.get(scanId);
   }
-/*
+  /*
   async clearSpectra() {
     await db.spectra.clear();
   }*/

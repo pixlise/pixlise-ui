@@ -39,6 +39,7 @@ import {
 } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { COLOURS, ColourOption } from "src/app/modules/roi/models/roi-colors";
+import { ReplaceScanDialogComponent, ReplaceScanDialogData } from "./replace-scan-dialog/replace-scan-dialog.component";
 
 @Component({
   selector: "scan-configuration-item",
@@ -132,5 +133,17 @@ export class ScanConfigurationItemComponent implements OnDestroy {
       text += `${detectorCalibration}\n`;
     });
     return text;
+  }
+
+  onReplaceScan() {
+    const dialogConfig = new MatDialogConfig<ReplaceScanDialogData>();
+
+    dialogConfig.data = {
+      scanId: this.scan.id,
+    };
+
+    const dialogRef = this.dialog.open(ReplaceScanDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe(result => {});
   }
 }

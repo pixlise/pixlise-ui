@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnDestroy, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
+import { AfterViewInit, Component, ComponentFactoryResolver, EventEmitter, Inject, OnDestroy, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
 import { Subscription, timer } from "rxjs";
 import { BrowseOnChartComponent } from "./tabs/browse-on-chart.component";
 import { ElementSetsComponent } from "./tabs/element-sets.component";
@@ -40,7 +40,8 @@ import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { JobStatus_JobType, JobStatus_Status } from "src/app/generated-protos/job";
 import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Permissions } from "src/app/utils/permissions";
 
 export class SpectrumPeakIdentificationData {
@@ -57,7 +58,7 @@ export class PeakIdentificationData {}
   templateUrl: "./spectrum-peak-identification.component.html",
   styleUrls: ["./spectrum-peak-identification.component.scss"],
 })
-export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
+export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild("peakTab", { read: ViewContainerRef }) tabAreaContainer!: any;
 
   private _subs = new Subscription();

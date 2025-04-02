@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
-import { map, catchError, shareReplay } from "rxjs/operators";
+import { map, catchError, shareReplay, switchMap } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -62,6 +62,7 @@ import { SpectrumDataService } from "./spectrum-data.service";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
 import { ExpressionMemoisationService } from "./expression-memoisation.service";
+import { AuthService, User } from "@auth0/auth0-angular";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -173,7 +174,8 @@ export class WidgetDataService {
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _memoisationService: MemoisationService,
-    private _exprMemoisationService: ExpressionMemoisationService
+    private _exprMemoisationService: ExpressionMemoisationService,
+    private _authService: AuthService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -181,6 +183,11 @@ export class WidgetDataService {
   // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
   // should equal "what.length". There are also error values that can be returned.
   getData(what: DataSourceParams[], allowAnyResponse: boolean = false): Observable<RegionDataResults> {
+    if (what.length <= 0) {
+      //throw new Error("No expressions to quantify");
+      return of(new RegionDataResults([], "No expressions to calculate"));
+    }
+
     // Query each one separately and combine results at the end
     const exprResult$: Observable<DataQueryResult>[] = [];
     for (const query of what) {
@@ -220,6 +227,7 @@ export class WidgetDataService {
       roiId: query.roiId,
       units: query.units,
     };
+
     // We need to get time stamps for each item to make this cache key unique to only this specific version of
     // the quant, scan, ROI, etc
 
@@ -372,6 +380,10 @@ export class WidgetDataService {
       map((item: MemoisedItem) => {
         // We got something! return this straight away...
         console.info("Query restored from memoised result: " + cacheKey);
+
+        // Also delete from in flux cache here! It gets added before we know if it's in memory yet
+        this._inFluxSingleQueryResultCache.delete(cacheKey);
+
         return this.fromMemoised(item.data);
       }),
       catchError(err => {
@@ -381,7 +393,7 @@ export class WidgetDataService {
         //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
         // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
         const msg = `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`;
-        if (err && err.message.indexOf(" not found") < 0) {
+        if (err && err.message.indexOf(" Not Found") < 0) {
           SentryHelper.logMsg(true, msg);
         } else {
           // Just log it locally
@@ -399,7 +411,7 @@ export class WidgetDataService {
     // Firstly, we need the expression being run - note it could be a "predefined" one, so we have some
     // special handling here that ends up just returning an expression!
     return this.getExpression(query.exprId).pipe(
-      concatMap((expr: DataExpression) => {
+      switchMap((expr: DataExpression) => {
         allowAnyResponse = allowAnyResponse || BuiltInTags.hasAllowAnyExpressionResponseTag(expr.tags);
         return this.runExpression(
           expr,
@@ -418,7 +430,7 @@ export class WidgetDataService {
 
                 // Filter to just the PMCs that are contained in the region.
                 if (roiSettings.region && roiSettings.region.scanEntryIndexesEncoded.length > 0) {
-                  result.resultValues = this.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
+                  result.resultValues = WidgetDataService.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
                 }
 
                 // Remove from cache, we only want to cache while it's running, subsequent ones should
@@ -427,8 +439,16 @@ export class WidgetDataService {
 
                 // Also, add to memoisation cache
                 if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
+                  // WARN If we're saving selected points ROI, this will help us detect future issues
+                  if (PredefinedROIID.isSelectedPointsROI(query.roiId)) {
+                    SentryHelper.logMsg(
+                      false,
+                      `WARNING: Caching Widget query result for selected points! Scan: ${query.scanId}, Expression: ${query.exprId}, Quant: ${query.quantId}, ROI: ${query.roiId}`
+                    );
+                  }
+
                   const encodedResult = this.toMemoised(result);
-                  this._memoisationService.memoise(cacheKey, encodedResult).subscribe();
+                  this._memoisationService.memoise(cacheKey, encodedResult, query.scanId, query.quantId, expr.id).subscribe();
                 }
 
                 return result;
@@ -468,7 +488,7 @@ export class WidgetDataService {
     );
   }
 
-  private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
+  public static filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
     const resultValues: PMCDataValue[] = [];
 
     // Filter for PMCs requested
@@ -645,25 +665,31 @@ export class WidgetDataService {
     const expr$ = loadCodeForExpression(expression, this._cachedDataService);
 
     // Load both of these
-    return combineLatest([calibration$, expr$]).pipe(
-      concatMap((loadResult: [SpectrumEnergyCalibration[], LoadedSources]) => {
+    return combineLatest([calibration$, expr$, this._authService.user$]).pipe(
+      concatMap((loadResult: [SpectrumEnergyCalibration[], LoadedSources, User | null | undefined]) => {
         const calibration = loadResult[0];
         const sources = loadResult[1];
+        const user = loadResult[2];
         // We now have the ready-to-go source code, run the query
         // At this point we should have the expression source and 0 or more modules
         if (!sources.expressionSrc) {
           throw new Error("loadCodeForExpression did not return expression source code for: " + expression.id);
         }
 
+        const userId = user?.sub || "";
+        if (!userId) {
+          throw new Error("No user id loaded for expression runner");
+        }
+
         const modSources = WidgetDataService.makeRunnableModules(sources.modules);
 
         // Pass in the source and module sources separately
-        const querier = new DataQuerier();
+        const querier = new DataQuerier(userId);
         const dataSource = new ExpressionDataSource();
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
+            const intDataSource = new InterpreterDataSource(expression.id, dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)

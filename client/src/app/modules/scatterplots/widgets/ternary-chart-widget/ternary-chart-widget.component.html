@@ -20,6 +20,27 @@
 <interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
 
-<scatter-plot-axis-switcher class="top-switcher" [info]="topAxisSwitcher" (click)="onCornerClick('C')"> </scatter-plot-axis-switcher>
-<scatter-plot-axis-switcher class="bottom-left-switcher" [info]="bottomLeftAxisSwitcher" (click)="onCornerClick('A')"> </scatter-plot-axis-switcher>
-<scatter-plot-axis-switcher class="bottom-right-switcher" [info]="bottomRightAxisSwitcher" (click)="onCornerClick('B')"> </scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher
+  *ngIf="!_exportMode"
+  [readonly]="_exportMode"
+  [fontSize]="axisLabelFontSize"
+  class="top-switcher"
+  [info]="topAxisSwitcher"
+  (click)="onCornerClick('C')">
+</scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher
+  *ngIf="!_exportMode"
+  [readonly]="_exportMode"
+  [fontSize]="axisLabelFontSize"
+  class="bottom-left-switcher"
+  [info]="bottomLeftAxisSwitcher"
+  (click)="onCornerClick('A')">
+</scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher
+  *ngIf="!_exportMode"
+  [readonly]="_exportMode"
+  [fontSize]="axisLabelFontSize"
+  class="bottom-right-switcher"
+  [info]="bottomRightAxisSwitcher"
+  (click)="onCornerClick('B')">
+</scatter-plot-axis-switcher>

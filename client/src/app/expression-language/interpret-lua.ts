@@ -64,7 +64,10 @@ export class LuaDataQuerier {
   private _dataSource: InterpreterDataSource | null = null;
   private _customInjectFunctionData: Map<string, any> | null = null;
 
-  constructor(private _debug: boolean) {
+  constructor(
+    private _debug: boolean,
+    private _userId: string
+  ) {
     this._logId = "[" + this._id + "] ";
   }
 
@@ -187,6 +190,7 @@ export class LuaDataQuerier {
       ["maxSpectrumChannel", this._dataSource!.getMaxSpectrumChannel()],
       ["instrument", this._dataSource!.getInstrument()],
       ["elevAngle", this._dataSource!.getElevAngle()],
+      ["userId", this._userId],
     ]);
   }
 
@@ -876,7 +880,7 @@ export class LuaDataQuerier {
 
     // It's looking like map data table, but ensure its 2 sub-tables are of the same length
     if (table[0].length <= 0 || table[0].length != table[1].length) {
-      throw new Error("Expression returned incomplete map data: number of PMCs did not match number of values");
+      throw new Error(`Expression returned incomplete map data: number of PMCs (${table[0].length}) did not match number of values (${table[1].length})`);
     }
 
     const result = new PMCDataValues();

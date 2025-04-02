@@ -31,7 +31,10 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 //import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
+import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { ActivatedRoute, Router } from "@angular/router";
 
 // The purpose of this page is to process the auth0 code/state that comes in. This is why we have an auth service
 // injected here - if the application is brought to this page and it has the code/state the auth service will see
@@ -54,7 +57,7 @@ export class AuthenticateComponent implements OnInit, OnDestroy {
   errorString: string = "";
 
   constructor(
-    //private _router: Router,
+    private _router: Router,
     private authService: AuthService
   ) {}
 
@@ -62,6 +65,14 @@ export class AuthenticateComponent implements OnInit, OnDestroy {
     this._subs.add(
       this.authService.error$.subscribe((errStr: Error) => {
         this.errorString += `${errStr}\n`;
+      })
+    );
+
+    this._subs.add(
+      this.authService.isLoading$.subscribe((loading: boolean) => {
+        if (!loading) {
+          this._router.navigate(["/datasets"]);
+        }
       })
     );
   }
@@ -72,6 +83,5 @@ export class AuthenticateComponent implements OnInit, OnDestroy {
 
   onHome() {
     this.authService.logout();
-    //this._router.navigateByUrl("/public/about-us");
   }
 }

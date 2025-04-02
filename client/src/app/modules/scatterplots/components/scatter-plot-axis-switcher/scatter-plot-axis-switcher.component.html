@@ -1,9 +1,10 @@
 <div
   class="axis-switcher"
-  [ngClass]="{ 'axis-switcher-vertical': info && info.vertical }"
+  [ngClass]="{ 'axis-switcher-vertical': info && info.vertical, 'axis-switcher-readonly': readonly }"
   #tooltip="matTooltip"
   matTooltipClass="multiline-tooltip"
+  [matTooltipDisabled]="readonly"
   [matTooltip]="info?.errorMsgLong || ''">
-  <img *ngIf="info && (info.errorMsgShort || info.modulesOutOfDate)" src="assets/icons/error-triangle.svg" alt="Error" />
-  <span class="label">{{ info ? info.label : "(not assigned)" }}</span>
+  <img *ngIf="!readonly && info && (info.errorMsgShort || info.modulesOutOfDate)" src="assets/icons/error-triangle.svg" alt="Error" />
+  <span class="label" [style.fontSize]="fontSize + 'px'">{{ info ? info.label : "(not assigned)" }}</span>
 </div>

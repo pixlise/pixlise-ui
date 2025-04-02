@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="scrollable-container" fxFill>
   <div *ngIf="loading" class="loading-icon">
-    <mat-spinner [diameter]="32" color="accent"></mat-spinner>
+    <wait-spinner></wait-spinner>
   </div>
   <div *ngIf="noQuants" class="no-quants">No available quantifications found for this dataset</div>
   <div *ngIf="!loading">

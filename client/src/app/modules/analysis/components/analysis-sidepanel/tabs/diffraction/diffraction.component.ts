@@ -27,9 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of } from "rxjs";
+import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of, from } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
@@ -81,7 +81,7 @@ export type DiffractionExpressionResponse = {
   templateUrl: "./diffraction.component.html",
   styleUrls: ["./diffraction.component.scss"],
 })
-export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner {
+export class DiffractionTabComponent implements OnInit, OnDestroy, HistogramSelectionOwner {
   public static readonly tableRowLimit = 100;
 
   @ViewChild("newPeakDialogBtn") newPeakDialogBtn!: ElementRef;
@@ -249,6 +249,10 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._analysisLayoutService.delayNotifyCanvasResize(500);
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   trackByPeakId(index: number, item: DiffractionPeak): string {
     return `${item.pmc}-${item.id}-${item.keV}-${item.channel}`;
   }
@@ -323,6 +327,13 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     return this._selectedScanId;
   }
 
+  set selectedScanId(value: string) {
+    this._selectedScanId = value;
+    this.selectedScan = this.allScans.find(scan => scan.id === value) || ScanItem.create();
+
+    this.fetchDiffractionData(this._selectedScanId);
+  }
+
   onToggleDetectedPeakStatus(peak: DiffractionPeak) {
     let status = peak.status === DiffractionPeak.statusNotAnomaly ? DiffractionPeak.diffractionPeak : DiffractionPeak.statusNotAnomaly;
     this._diffractionService.addPeakStatus(this._selectedScanId, peak.id, status);
@@ -351,13 +362,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     }
   }
 
-  set selectedScanId(value: string) {
-    this._selectedScanId = value;
-    this.selectedScan = this.allScans.find(scan => scan.id === value) || ScanItem.create();
-
-    this.fetchDiffractionData(this._selectedScanId);
-  }
-
   private fetchDiffractionData(scanId: string) {
     this.loading = true;
     const fetchManualPeaks$ = this._diffractionService.fetchManualPeaksForScanAsync(scanId);
@@ -369,7 +373,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
       currentCalibrations: getCurrentCalibration$,
     })
       .pipe(
-        mergeMap(({ currentCalibrations }) => {
+        switchMap(({ currentCalibrations }) => {
           this._currentCalibrations = currentCalibrations;
           const dataSource = new ExpressionDataSource();
           return dataSource
@@ -382,8 +386,12 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
               currentCalibrations
             )
             .pipe(
-              switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
-              map(() => dataSource)
+              switchMap(() => {
+                return from(dataSource.getDetectedDiffraction());
+              }),
+              map(() => {
+                return dataSource;
+              })
             );
         })
       )
@@ -400,10 +408,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
           this.loading = false;
         },
       });
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onResetBarSelection() {

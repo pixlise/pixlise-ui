@@ -86,76 +86,6 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     };
   }
 
-  private setInitialConfig() {
-    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
-    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
-    this._analysisLayoutService.makeExpressionList(this.scanId, 8).subscribe((exprs: DefaultExpressions) => {
-      this.mdl.expressionIds = exprs.exprIds;
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
-  }
-
-  override injectExpression(liveExpression: LiveExpression) {
-    this.scanId = liveExpression.scanId;
-    this.quantId = liveExpression.quantId;
-
-    this._analysisLayoutService.makeExpressionList(this.scanId, 8, this.quantId).subscribe((exprs: DefaultExpressions) => {
-      if (exprs.exprIds.length > 0) {
-        this.mdl.expressionIds = [liveExpression.expressionId, ...exprs.exprIds.slice(0, 7)];
-      }
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
-  }
-
-  private update() {
-    this.isWidgetDataLoading = true;
-    const query: DataSourceParams[] = [];
-
-    // NOTE: processQueryResult depends on the order of the following for loops...
-    for (const [scanId, ids] of this.mdl.dataSourceIds) {
-      for (const roiId of ids.roiIds) {
-        for (const exprId of this.mdl.expressionIds) {
-          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
-
-          // If we just added a request for an element expression, also add one for the corresponding error column value
-          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
-          if (elem.length) {
-            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
-
-            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
-          }
-        }
-      }
-    }
-
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data);
-
-        this.isWidgetDataLoading = false;
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err));
-
-        this.isWidgetDataLoading = false;
-      },
-    });
-  }
-
-  private setData(data: RegionDataResults) {
-    const errs = this.mdl.setData(data);
-    if (errs.length > 0) {
-      for (const err of errs) {
-        this._snackService.openError(err.message, err.description);
-      }
-    }
-  }
-
   ngOnInit() {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
@@ -241,6 +171,76 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private setInitialConfig() {
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
+    this._analysisLayoutService.makeExpressionList(this.scanId, 8).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  override injectExpression(liveExpression: LiveExpression) {
+    this.scanId = liveExpression.scanId;
+    this.quantId = liveExpression.quantId;
+
+    this._analysisLayoutService.makeExpressionList(this.scanId, 8, this.quantId).subscribe((exprs: DefaultExpressions) => {
+      if (exprs.exprIds.length > 0) {
+        this.mdl.expressionIds = [liveExpression.expressionId, ...exprs.exprIds.slice(0, 7)];
+      }
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  private update() {
+    this.isWidgetDataLoading = true;
+    const query: DataSourceParams[] = [];
+
+    // NOTE: processQueryResult depends on the order of the following for loops...
+    for (const [scanId, ids] of this.mdl.dataSourceIds) {
+      for (const roiId of ids.roiIds) {
+        for (const exprId of this.mdl.expressionIds) {
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+
+          // If we just added a request for an element expression, also add one for the corresponding error column value
+          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+          if (elem.length) {
+            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          }
+        }
+      }
+    }
+
+    this._widgetData.getData(query).subscribe({
+      next: data => {
+        this.setData(data);
+
+        this.isWidgetDataLoading = false;
+      },
+      error: err => {
+        this.setData(new RegionDataResults([], err));
+
+        this.isWidgetDataLoading = false;
+      },
+    });
+  }
+
+  private setData(data: RegionDataResults) {
+    const errs = this.mdl.setData(data);
+    if (errs.length > 0) {
+      for (const err of errs) {
+        this._snackService.openError(err.message, err.description);
+      }
+    }
   }
 
   reDraw() {

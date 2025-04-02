@@ -34,10 +34,13 @@ import { PublicSiteModule } from "./modules/public-site/public-site.module";
 import { AuthenticateComponent } from "./modules/pixlisecore/components/pages/authenticate/authenticate.component";
 import { AuthGuard } from "@auth0/auth0-angular";
 import { environment } from "src/environments/environment";
+import { MagicLinkComponent } from "./modules/pixlisecore/components/pages/magiclink/magiclink.component";
+import { CustomAuthGuard } from "./services/custom-auth-guard.service";
 
 const APP_ROUTES: Routes = [
   // Public pages
   { path: "authenticate", component: AuthenticateComponent },
+  { path: "magiclink", component: MagicLinkComponent },
   {
     path: "",
     loadChildren: () => import("./modules/public-site/public-site.module").then(m => m.PublicSiteModule),
@@ -49,7 +52,7 @@ const APP_ROUTES: Routes = [
   // Authenticated pages
   {
     path: "",
-    canActivate: [AuthGuard],
+    canActivate: [CustomAuthGuard],
     children: [
       {
         path: "datasets",
@@ -63,7 +66,7 @@ const APP_ROUTES: Routes = [
   },
   {
     path: "",
-    canActivate: [AuthGuard],
+    canActivate: [CustomAuthGuard],
     children: [
       {
         path: "settings",

@@ -197,6 +197,7 @@ const housekeepingSrcData = {
 
 function makeDataSource(pmcResults: { [key: string]: PMCDataValues }, elems: string[], pmcs: number[], diffractionSrcData: PMCDataValues[]) {
   return new InterpreterDataSource(
+    "exprId",
     new MockSource(pmcResults, elems, pmcs, "scan123", "quant123", "PIXL_FM"),
     new MockPseudoSource(pseudoSrcData),
     new MockHousekeepingSource(housekeepingSrcData),

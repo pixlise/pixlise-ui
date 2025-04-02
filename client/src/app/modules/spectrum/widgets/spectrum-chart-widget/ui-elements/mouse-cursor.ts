@@ -39,6 +39,7 @@ import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE, CANVAS_FONT_SIZE_TITLE, TooltipText, drawToolTip } from "src/app/utils/drawing";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseUIElement } from "./base-ui-element";
+import { Observable, of } from "rxjs";
 
 const COMPARE_DISTANCE_PIXELS = 4;
 const HOVER_POINT_RADIUS = 8;
@@ -79,14 +80,15 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // Don't show in left margin or if no mouse detected yet
     if (this._lastMousePos === null || !this._ctx.xAxis || this._lastMousePos.x < this._ctx.xAxis.startPx) {
-      return;
+      return of(void 0);
     }
 
     this.drawCursor(screenContext, drawParams.drawViewport);
     this.drawHoverValue(screenContext, drawParams.drawViewport);
+    return of(void 0);
   }
 
   private drawCursor(screenContext: CanvasRenderingContext2D, viewport: CanvasParams): void {

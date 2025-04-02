@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, S
 import { Subscription } from "rxjs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { replaceAsDateIfTestSOL } from "src/app/utils/utils";
+import { getScanTitle } from "src/app/utils/utils";
 
 @Component({
   selector: "data-set-summary",
@@ -58,23 +58,17 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
     this.generateTitle();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   generateTitle(summary: ScanItem | null = this.summary) {
     if (!summary) {
       return;
     }
 
     // Prepend SOL if it's there
-    this._title = "";
-    const sol = summary.meta["Sol"] || "";
-    if (sol) {
-      const testSOLAsDate = replaceAsDateIfTestSOL(sol);
-      if (testSOLAsDate.length != sol.length) {
-        this._title = testSOLAsDate + ": ";
-      } else {
-        this._title += "SOL-" + sol + ": ";
-      }
-    }
-    this._title += summary.title;
+    this._title = getScanTitle(summary);
 
     const missing = ""; // TODO: DataSetSummary.listMissingData(summary);
     if (missing.length > 0) {
@@ -91,18 +85,16 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
       /*const dotpos = loadImg.lastIndexOf(".");
       loadImg = loadImg.substring(0, dotpos - 1) + "-width240" + loadImg.substring(dotpos);*/
       loadImg += "?minwidth=240";
-      this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
-        this._thumbnail = img.src;
-      });
+      this._subs.add(
+        this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
+          this._thumbnail = img.src;
+        })
+      );
     }
 
     if (changes["summary"]) {
       this.generateTitle(changes["summary"].currentValue);
     }
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   get tileImage(): string {

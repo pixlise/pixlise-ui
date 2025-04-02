@@ -28,21 +28,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
-import { Subscription } from "rxjs";
+import { catchError, Observable, of, Subscription, switchMap, tap, throwError } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-// import { ContextImageService } from "src/app/services/context-image.service";
-// import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption, TXTExportItem } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-// import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-// import { DataSetService } from "src/app/services/data-set.service";
-// import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { SelectionHistoryItem, SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
 import { invalidPMC } from "src/app/utils/utils";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-// import { DataExpression } from "src/app/models/Expression";
+import { DataExporterService } from "../../../analysis/analysis.module";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportFile, WidgetExportRequest } from "../../../widget/components/widget-export-dialog/widget-export-model";
+import { WidgetExportDialogComponent } from "../../../widget/components/widget-export-dialog/widget-export-dialog.component";
+import { WidgetError } from "../../../pixlisecore/services/widget-data.service";
 
 export interface DataCell {
   pmc: number;
@@ -95,6 +93,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   public showAllPMCs: boolean = true;
   constructor(
     private _selectionService: SelectionService,
+    private _exporterService: DataExporterService,
     private _dialog: MatDialog
   ) {}
 
@@ -379,38 +378,82 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   onExport() {
+    let dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
+    dialogConfig.data = this.getExportOptions();
+    const dialogRef = this._dialog.open(WidgetExportDialogComponent, dialogConfig);
+    this._subs.add(
+      dialogRef.componentInstance.requestExportData
+        .pipe(
+          switchMap(response => this.onExportRequest(response)),
+          tap(exportData => dialogRef.componentInstance.onDownload(exportData as WidgetExportData)),
+          catchError(err => {
+            if (dialogRef?.componentInstance?.onExportError) {
+              dialogRef.componentInstance.onExportError(err);
+            }
+            return throwError(() => new WidgetError("Failed to export", err));
+          })
+        )
+        .subscribe()
+    );
+
+    dialogRef.afterClosed().subscribe(() => {
+      // this._exportDialogOpen = false;
+    });
+  }
+
+  exportPlotData(): string {
+    const data = this._values.map(point => {
+      const roundedValue = typeof point.value === "number" ? Math.round(point.value * 10000) / 10000 : point.value;
+      return `${point.pmc},${roundedValue}`;
+    });
+
+    return `PMC,Value\n${data.join("\n")}`;
+  }
+
+  getExpressionName(): string {
+    let name = this.expression?.name || "Unsaved";
+    name = name.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    return name;
+  }
+
+  getExportOptions(): WidgetExportDialogData {
+    let name = this.getExpressionName();
+
+    return {
+      title: `Export ${name} Expression Data`,
+      defaultZipName: `${name} Expression Data Export`,
+      options: [],
+      dataProducts: [
+        {
+          id: "expressionOutput",
+          name: `${name} Output .csv`,
+          type: "checkbox",
+          description: "Export the data produced by the evaluated expression",
+          selected: true,
+        },
+      ],
+      showPreview: false,
+    };
+  }
+
+  onExportRequest(request: WidgetExportRequest): Observable<WidgetExportData> {
     if (!this._evaluatedExpression || !this.expression) {
-      return;
+      return of({ csvs: [] });
     }
 
-    // let validExpressionValues = this._values.length > 0;
-    // let exportOptions = [
-    //   new PlotExporterDialogOption("Expression Values .csv", validExpressionValues, false, { type: "checkbox", disabled: !validExpressionValues }),
-    //   new PlotExporterDialogOption("Expression Output .txt", true),
-    // ];
+    return new Observable<WidgetExportData>(observer => {
+      let csvs: WidgetExportFile[] = [];
+      if (request.dataProducts) {
+        if (request.dataProducts["expressionOutput"]?.selected) {
+          csvs.push({
+            fileName: `${this.getExpressionName()} Output.csv`,
+            data: this.exportPlotData(),
+          });
+        }
+      }
 
-    // const dialogConfig = new MatDialogConfig();
-    // dialogConfig.data = new PlotExporterDialogData(`${this.expression.name}`, `Export ${this.expression.name} Data`, exportOptions);
-
-    // const dialogRef = this._dialog.open(PlotExporterDialogComponent, dialogConfig);
-    // dialogRef.componentInstance.onConfirmOptions.subscribe((options: PlotExporterDialogOption[]) => {
-    //   let optionLabels = options.map(option => option.label);
-    //   let csvs: CSVExportItem[] = [];
-    //   let txts: TXTExportItem[] = [];
-
-    //   if (optionLabels.indexOf("Expression Values .csv") > -1 && validExpressionValues) {
-    //     let data = this.evaluatedExpression.resultValues.values.map(point => {
-    //       let roundedValue = typeof point.value === "number" ? Math.round(point.value * 10000) / 10000 : point.value;
-    //       return `"${point.pmc}",${point.isUndefined ? "Undefined" : roundedValue}`;
-    //     });
-    //     let csvData = `PMC,Value\n${data.join("\n")}`;
-    //     csvs.push(new CSVExportItem(`${this.expression.name} Values`, csvData));
-    //   }
-    //   if (optionLabels.indexOf("Expression Output .txt") > -1) {
-    //     txts.push(new CSVExportItem(`${this.expression.name} Output`, this.evaluatedExpression.stdout));
-    //   }
-
-    //   dialogRef.componentInstance.onDownload([], csvs, txts);
-    // });
+      observer.next({ csvs });
+      observer.complete();
+    });
   }
 }

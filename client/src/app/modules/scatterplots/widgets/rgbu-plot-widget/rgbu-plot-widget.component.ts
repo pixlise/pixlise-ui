@@ -157,45 +157,6 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     };
   }
 
-  private setInitialConfig() {
-    // If we don't have anything showing yet, just show the first one...
-    if (!this._analysisLayoutService.defaultScanId && (!this.scanIds || this.scanIds.length === 0)) {
-      return;
-    }
-
-    const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
-      let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
-
-      // Use the MSA image as the default if it exists, else use the first RGBU image
-      let msaImage = rgbuImages.find(img => img.imagePath.includes("MSA_"));
-      if (msaImage) {
-        this.loadData(msaImage.imagePath, []);
-      } else if (rgbuImages.length > 0) {
-        this.loadData(rgbuImages[0].imagePath, []);
-      }
-    });
-  }
-
-  private saveState(): void {
-    this.onSaveWidgetData.emit(
-      RGBUPlotWidgetState.create({
-        drawMonochrome: this.mdl.drawMonochrome,
-        imageName: this.mdl.imageName,
-        minerals: this.mdl.mineralsShown,
-        selectedMinXValue: this.mdl.selectedMinXValue ?? undefined,
-        selectedMaxXValue: this.mdl.selectedMaxXValue ?? undefined,
-        selectedMinYValue: this.mdl.selectedMinYValue ?? undefined,
-        selectedMaxYValue: this.mdl.selectedMaxYValue ?? undefined,
-        xChannelA: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.numeratorChannelIdx),
-        xChannelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
-        yChannelA: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.numeratorChannelIdx),
-        yChannelB: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.denominatorChannelIdx),
-        roiIds: this.mdl.visibleRegionIds,
-      })
-    );
-  }
-
   ngOnInit() {
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
@@ -236,6 +197,45 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private setInitialConfig() {
+    // If we don't have anything showing yet, just show the first one...
+    if (!this._analysisLayoutService.defaultScanId && (!this.scanIds || this.scanIds.length === 0)) {
+      return;
+    }
+
+    const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
+      let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+
+      // Use the MSA image as the default if it exists, else use the first RGBU image
+      let msaImage = rgbuImages.find(img => img.imagePath.includes("MSA_"));
+      if (msaImage) {
+        this.loadData(msaImage.imagePath, []);
+      } else if (rgbuImages.length > 0) {
+        this.loadData(rgbuImages[0].imagePath, []);
+      }
+    });
+  }
+
+  private saveState(): void {
+    this.onSaveWidgetData.emit(
+      RGBUPlotWidgetState.create({
+        drawMonochrome: this.mdl.drawMonochrome,
+        imageName: this.mdl.imageName,
+        minerals: this.mdl.mineralsShown,
+        selectedMinXValue: this.mdl.selectedMinXValue ?? undefined,
+        selectedMaxXValue: this.mdl.selectedMaxXValue ?? undefined,
+        selectedMinYValue: this.mdl.selectedMinYValue ?? undefined,
+        selectedMaxYValue: this.mdl.selectedMaxYValue ?? undefined,
+        xChannelA: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.numeratorChannelIdx),
+        xChannelB: RGBUPlotModel.idxToChannel(this.mdl.xAxisUnit.denominatorChannelIdx),
+        yChannelA: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.numeratorChannelIdx),
+        yChannelB: RGBUPlotModel.idxToChannel(this.mdl.yAxisUnit.denominatorChannelIdx),
+        roiIds: this.mdl.visibleRegionIds,
+      })
+    );
   }
 
   onSoloView() {

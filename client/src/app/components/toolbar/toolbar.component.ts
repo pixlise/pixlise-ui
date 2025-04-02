@@ -35,7 +35,7 @@ import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
-import { PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CommonModule } from "@angular/common";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
@@ -44,7 +44,6 @@ import { NotificationsService } from "src/app/modules/settings/services/notifica
 import { AnalysisLayoutService, NavigationTab } from "src/app/modules/analysis/services/analysis-layout.service";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
-import { SentryHelper } from "../../utils/utils";
 import { MarkdownModule } from "ngx-markdown";
 import { TabLinks } from "../../models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
@@ -120,12 +119,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
   ];
 
-  allTabs: NavigationTab[] = [
-    // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
-    // { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL, params: { tab: "0" } },
-    // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
-    // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
-  ];
+  allTabs: NavigationTab[] = [];
   openTabs: NavigationTab[] = [];
 
   editingAnnotationIndex: number = -1;
@@ -149,6 +143,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   editingTabIndex: number | null = null;
   newTabName: string = "";
 
+  outstandingInfo: string = "";
+
   constructor(
     private router: Router,
     private _route: ActivatedRoute,
@@ -159,7 +155,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private titleService: Title, // public dialog: MatDialog,
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _dataService: APIDataService
   ) {}
 
   ngOnInit() {
@@ -229,12 +226,18 @@ export class ToolbarComponent implements OnInit, OnDestroy {
               let scan = scans.find(s => s.id === scanId);
               if (scan) {
                 let sol = scan?.meta?.["Sol"] || "N/A";
-                this._dataSetLoadedName = `SOL-${sol}: ${scan?.title || "N/A"}`;
+                this._dataSetLoadedName = `Sol ${sol}: ${scan?.title || "N/A"}`;
                 this.updateToolbar();
               }
             })
           );
         }
+      })
+    );
+
+    this._subs.add(
+      this._dataService.outstandingRequests$.subscribe((outstandingInfo: string) => {
+        this.outstandingInfo = outstandingInfo;
       })
     );
   }
@@ -288,6 +291,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       userOverlayPos,
       true
     );
+  }
+
+  get readOnlyMode(): boolean {
+    return this._analysisLayoutService.readOnlyMode;
   }
 
   onLogoClick(): void {

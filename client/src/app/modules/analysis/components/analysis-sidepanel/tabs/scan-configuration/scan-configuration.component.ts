@@ -35,6 +35,8 @@ import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos
 import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
+import { filterScans, sortScans } from "src/app/utils/search";
+import { getScanTitle, SentryHelper } from "src/app/utils/utils";
 
 @Component({
   selector: "scan-configuration",
@@ -91,23 +93,33 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   loadScreenConfiguration(screenConfig: ScreenConfiguration) {
     this.scanConfigurations = Object.values(JSON.parse(JSON.stringify(screenConfig.scanConfigurations)));
     this.selectedScanIds = new Set<string>();
 
-    let quantReqs = this.scanConfigurations.map(config => {
+    const quantReqs = this.scanConfigurations.map(config => {
       return this._analysisLayoutService.fetchQuantsForScanAsync(config.id);
     });
 
     combineLatest(quantReqs).subscribe(scans => {
       let updatedScan = false;
       scans.forEach((quants, i) => {
-        let scanConfig = this.scanConfigurations[i];
+        const scanConfig = this.scanConfigurations[i];
+
+        if (!scanConfig) {
+          SentryHelper.logMsg(true, `scanConfigurations item ${i} is undefined/null for screen config: ${screenConfig.id}`);
+          return;
+        }
+
         this.scanQuants[scanConfig.id] = quants;
 
         // If the scan has quants, but no selected quant id, set the default quant
         if (!scanConfig.quantId && quants && quants.length > 0) {
-          let defaultQuant = this._analysisLayoutService.getDefaultQuant(quants);
+          const defaultQuant = this._analysisLayoutService.getDefaultQuant(quants);
 
           if (defaultQuant) {
             scanConfig.quantId = defaultQuant.id;
@@ -126,6 +138,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Sorts the scan configurations list
   private sortScans() {
     // Only sort if we have scans and idToScan
     if (this.scanConfigurations && this.scanConfigurations.length > 0 && this.idToScan && Object.keys(this.idToScan).length > 0) {
@@ -153,10 +166,6 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
-  }
-
   onScanSearchMenu() {
     const searchBox = document.getElementsByClassName("scan-search");
     if (searchBox.length > 0) {
@@ -178,7 +187,8 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    this.addScanList = this.allScans.filter(scan => scan.title.toLowerCase().includes(text.toLowerCase()));
+    const filtered = filterScans(text, [], [], this.allScans);
+    this.addScanList = sortScans(filtered);
   }
 
   onAddScan(scanId: string) {
@@ -246,5 +256,10 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     });
 
     this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+  }
+
+  getScanTitle(scan: ScanItem): string {
+    // Provide the util function
+    return getScanTitle(scan);
   }
 }

@@ -1,5 +1,5 @@
 import { ElementRef } from "@angular/core";
-import { Observable } from "rxjs";
+import { map, Observable, switchMap, tap, throwError } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
@@ -13,7 +13,9 @@ import { PointDrawer } from "src/app/utils/drawing";
 import { ROIItemSummary } from "../../../../generated-protos/roi";
 import { DataExpression } from "../../../../generated-protos/expressions";
 
-export type WidgetExportOptionType = "checkbox" | "multiswitch" | "dropdown" | "regions" | "expressions" | "images";
+export const EXPORT_PREVIEW_ID_PREFIX = "export-preview-";
+
+export type WidgetExportOptionType = "checkbox" | "multiswitch" | "dropdown" | "regions" | "expressions" | "images" | "number";
 
 export type UpdateCountsFn = (selection: WidgetExportRequest, selected: boolean) => Record<string, number>;
 
@@ -25,9 +27,11 @@ export type DropdownOption = {
 export type WidgetExportOption = {
   id: string;
   name: string;
+  unitIcon?: string;
   type: WidgetExportOptionType;
   description: string;
   selected: boolean;
+  optionIcon?: string;
 
   disabled?: boolean;
   disabledText?: string;
@@ -42,6 +46,13 @@ export type WidgetExportOption = {
   // For nested accordion options - main option applies to all subOptions
   subOptions?: WidgetExportOption[];
 
+  value?: number | string;
+  minValue?: number;
+  maxValue?: number;
+  stepValue?: number;
+  unit?: string;
+  placeholder?: string;
+
   // For regions & expressions
   scanId?: string;
   quantId?: string;
@@ -52,21 +63,49 @@ export type WidgetExportOption = {
   selectedRegions?: ROIItemSummary[];
   selectedExpressions?: DataExpression[];
 
+  colorPicker?: boolean;
+  colorPickerValue?: string;
+
+  toggleable?: boolean;
+
   // For counts that aren't 1
   count?: number;
   updateCounts?: UpdateCountsFn;
 };
 
+export type DataControl = {
+  id: string;
+  name: string;
+
+  iconColour: string; // Base colour for the icon
+  icon?: string; // If provided, replaces the iconColour with the icon
+
+  visible: boolean;
+  disabled: boolean;
+  opacity: number;
+};
+
 export type WidgetExportDialogData = {
   title: string;
   defaultZipName: string;
+
   options: WidgetExportOption[];
-  dataProducts: WidgetExportOption[];
+
+  // Simple download case
+  dataProducts?: WidgetExportOption[];
+
+  // Complex/interactive download case
+  dataControls?: DataControl[];
+  chartOptions?: WidgetExportOption[];
+  keyOptions?: WidgetExportOption[];
 
   hideProgressLabels?: boolean;
 
   // Preview Options
   showPreview: boolean;
+
+  // For widget previews, we need to dynamically load the preview component
+  widgetId?: string;
   preview?: ElementRef;
 };
 
@@ -90,6 +129,8 @@ export type WidgetExportData = {
   msas?: WidgetExportFile[];
   luas?: WidgetExportFile[];
   mds?: WidgetExportFile[];
+  interactiveCanvas?: boolean;
+  interactiveKey?: boolean;
 };
 
 const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: WidgetKeyItem[], viewport: CanvasParams, lightMode: boolean): void => {
@@ -143,65 +184,48 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
   });
 };
 
-export const generatePlotImage = (
-  drawer: CanvasDrawer,
-  transform: CanvasWorldTransform,
-  keyItems: WidgetKeyItem[],
-  width: number,
-  height: number,
-  showKey: boolean,
-  lightMode: boolean = true,
-  exportItemIds = []
-): HTMLCanvasElement => {
-  let canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-
-  let context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Could not get 2D context for canvas");
-  }
-
-  let viewport = new CanvasParams(width, height, 1);
-
-  let existingMode = drawer.lightMode;
-
-  drawer.showSwapButton = false;
-  drawer.lightMode = lightMode;
-
-  InteractiveCanvasComponent.drawFrame(context, viewport, transform, drawer, exportItemIds);
-
-  if (showKey) {
-    drawStaticLegend(context, keyItems, viewport, lightMode);
-  }
-
-  // Reset the drawer
-  drawer.showSwapButton = true;
-  drawer.lightMode = existingMode;
-
-  return canvas;
-};
-
-export const exportPlotImage = (
+export function exportPlotImage(
   drawer: CanvasDrawer,
   transform: CanvasWorldTransform,
   keyItems: WidgetKeyItem[],
   includeKey: boolean,
   darkMode: boolean,
-  width: number = 1200,
-  height: number = 800
-): Observable<string> => {
-  return new Observable<string>(observer => {
-    let plot = generatePlotImage(drawer, transform, keyItems, width, height, includeKey, !darkMode);
-    if (plot) {
-      let dataURL = plot?.toDataURL("image/png")?.split(",");
-      if (dataURL && dataURL.length > 1) {
-        observer.next(dataURL[1]);
-      } else {
-        observer.error("Error generating RGBU plot export data");
+  width: number,
+  height: number,
+  dpi: number
+): Observable<string> {
+  const canvas = document.createElement("canvas");
+  canvas.width = width * dpi;
+  canvas.height = height * dpi;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Could not get 2D context for canvas");
+  }
+
+  const viewport = new CanvasParams(width, height, dpi);
+
+  const existingMode = drawer.lightMode;
+
+  drawer.showSwapButton = false;
+  drawer.lightMode = !darkMode;
+
+  return InteractiveCanvasComponent.drawFrame(context, viewport, transform, drawer, []).pipe(
+    map(() => {
+      if (includeKey) {
+        drawStaticLegend(context, keyItems, viewport, !darkMode);
       }
-    } else {
-      observer.error("Error exporting RGBU plot data");
-    }
-  });
-};
+
+      // Reset the drawer
+      drawer.showSwapButton = true;
+      drawer.lightMode = existingMode;
+
+      const dataURL = canvas.toDataURL("image/png")?.split(",");
+      if (!dataURL || dataURL.length < 2) {
+        throwError(() => "Error creating plot export data URL");
+      }
+
+      return dataURL[1];
+    })
+  );
+}

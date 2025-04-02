@@ -42,6 +42,7 @@ import { CANVAS_FONT_SIZE_TITLE, drawTextWithBackground } from "src/app/utils/dr
 import { nearestRoundValue } from "src/app/utils/utils";
 import { IContextImageModel } from "../context-image-model-interface";
 import { IToolHost } from "../tools/base-context-image-tool";
+import { Observable, of } from "rxjs";
 
 class scalePosition {
   constructor(
@@ -106,14 +107,14 @@ export class PhysicalScale extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     if (!this._ctx.imageName) {
       // No physical scale to draw if we don't have an image to calculate scale with
-      return;
+    } else {
+      // Draw the physical image scale (mm)
+      this.drawPhysicalScale(screenContext, drawParams.drawViewport, drawParams.worldTransform);
     }
-
-    // Draw the physical image scale (mm)
-    this.drawPhysicalScale(screenContext, drawParams.drawViewport, drawParams.worldTransform);
+    return of(void 0);
   }
 
   protected getPosition(viewport: CanvasParams, transform: CanvasWorldTransform): scalePosition {
@@ -126,6 +127,7 @@ export class PhysicalScale extends BaseUIElement {
     for (const scanMdl of this._ctx.drawModel.scanDrawModels.values()) {
       if (mmConversion > 0 && mmConversion != scanMdl.contextPixelsTommConversion) {
         uniformConversion = false;
+        break;
       }
       mmConversion = scanMdl.contextPixelsTommConversion;
     }
@@ -189,12 +191,12 @@ export class PhysicalScale extends BaseUIElement {
     screenContext.textAlign = "end";
     screenContext.font = SCALE_FONT_SIZE + "px Roboto";
 
-    const warning = pos.uniformConversion ? "" : " (1st scan)";
+    const warning = pos.uniformConversion ? "" : "approx ";
 
     //this.drawStrokedText(screenContext, this.printableValue(pos.roundedmm)+' mm', pos.rect.maxX()-scaleTextPadX, yTop+SCALE_FONT_SIZE);
     drawTextWithBackground(
       screenContext,
-      this.printableValue(pos.roundedmm) + " mm" + warning,
+      warning + this.printableValue(pos.roundedmm) + " mm",
       pos.rect.maxX() - scaleTextPadding,
       yTop - scaleTextPadding,
       SCALE_FONT_SIZE,

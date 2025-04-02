@@ -1,12 +1,11 @@
-import { Component, ElementRef, OnDestroy, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, map } from "rxjs";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { TableData, TableHeaderItem, TableRow } from "src/app/modules/pixlisecore/components/atoms/table/table.component";
 import { ZStackItemForDisplay } from "./zstack/zstack-item/zstack-item.component";
-import { Colours, RGBA } from "src/app/utils/colours";
+import { Colours } from "src/app/utils/colours";
 import { QuantCombineItem, QuantCombineSummary } from "src/app/generated-protos/quantification-multi";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -26,7 +25,7 @@ import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atom
   templateUrl: "./multi-quant.component.html",
   styleUrls: ["./multi-quant.component.scss"],
 })
-export class MultiQuantComponent implements OnDestroy {
+export class MultiQuantComponent implements OnInit, OnDestroy {
   @ViewChild("createMQModal") createMQModal!: ElementRef;
 
   configuredScans: ScanItem[] = [];
@@ -48,12 +47,13 @@ export class MultiQuantComponent implements OnDestroy {
   constructor(
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _roiService: ROIService,
     private _snackService: SnackbarService,
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
     private _multiQuantService: MultiQuantService
-  ) {
+  ) {}
+
+  ngOnInit() {
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this._allScans = scans;
@@ -93,6 +93,15 @@ export class MultiQuantComponent implements OnDestroy {
     this.subscribeZStackTable();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+
+    // Closing the side-bar panel hides the special PMC colouring on context image
+    this.resetContextImageColouring();
+
+    this.closeCreateMQModal();
+  }
+
   private subscribeZStackTable(): void {
     this._subs.add(
       this._multiQuantService.multiQuantZStackSummaryTable$.subscribe({
@@ -112,15 +121,6 @@ export class MultiQuantComponent implements OnDestroy {
         },
       })
     );
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
-
-    // Closing the side-bar panel hides the special PMC colouring on context image
-    this.resetContextImageColouring();
-
-    this.closeCreateMQModal();
   }
 
   get selectedScanId() {
@@ -224,12 +224,12 @@ export class MultiQuantComponent implements OnDestroy {
         next: (resp: QuantCombineResp) => {
           this.waitingForCreate = false;
           this.message = "Multi-quant created with id: " + resp.jobId;
+          this.createName = "";
+          this.createDescription = "";
         },
         error: err => {
           this.waitingForCreate = false;
           this.message = httpErrorToString(err, "Multi-quant creation failed");
-        },
-        complete: () => {
           this.createName = "";
           this.createDescription = "";
         },

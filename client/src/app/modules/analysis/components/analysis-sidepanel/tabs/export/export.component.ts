@@ -1,7 +1,8 @@
-import { Component } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { AuthService, User } from "@auth0/auth0-angular";
 import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { AnalysisLayoutService, DataExporterService } from "src/app/modules/analysis/analysis.module";
 import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
@@ -13,6 +14,7 @@ import {
   WidgetExportDialogData,
   WidgetExportOption,
   WidgetExportRequest,
+  WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
@@ -20,7 +22,7 @@ import {
   templateUrl: "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.html",
   styleUrls: ["./export.component.scss", "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.scss"],
 })
-export class ExportTabComponent extends WidgetExportDialogComponent {
+export class ExportTabComponent extends WidgetExportDialogComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
   selectedScanIds: Set<string> = new Set();
 
@@ -35,7 +37,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
   constructor(
     private _snackService: SnackbarService,
     private _exporterService: DataExporterService,
-    private _analysisLayoutService: AnalysisLayoutService
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _authService: AuthService
   ) {
     let data: WidgetExportDialogData = {
       title: "",
@@ -46,7 +49,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
       hideProgressLabels: true,
     };
 
-    super(data, null, _snackService);
+    super(data, null, _snackService, _analysisLayoutService);
   }
 
   override ngOnInit(): void {
@@ -64,7 +67,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     }
 
     this.initialOptions = this.copyWidgetExportOptionsDefaultState(this.options);
-    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data?.dataProducts || []);
 
     this.mapAllCounts();
     this.showPreview = !!this.data.showPreview;
@@ -132,6 +135,10 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
         this.onDownload(data);
       })
     );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   loadScanOptions(): void {
@@ -409,7 +416,14 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
 
   onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
     return new Observable<WidgetExportData>(observer => {
-      if (request.dataProducts) {
+      if (!request.dataProducts) {
+        // TODO: should we do something here?
+        return;
+      }
+
+      this._authService.user$.subscribe((user: User | null | undefined) => {
+        const userId = user?.sub || "";
+
         let requests = this.options
           .filter(option => {
             if (!option.selected || !option.id.startsWith("scan-")) {
@@ -420,7 +434,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
             let quantId = option.subOptions?.find(subOption => subOption.id === scanId + "_quant")?.selectedOption;
             return scanId && quantId;
           })
-          .map(option => this.getExportProductsForScan(option, request));
+          .map(option => this.getExportProductsForScan(userId, option, request));
 
         if (request.dataProducts["images"]?.selected && request.dataProducts["images"]?.selectedImagePaths) {
           let includeRawTIFFs = request.options["includeTIFF"]?.selected || false;
@@ -440,11 +454,14 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
                 let dataKey = key as keyof WidgetExportData;
 
                 if (!data[dataKey]) {
-                  data[dataKey] = [];
+                  data[dataKey] = [] as any;
                 }
 
                 if (response[dataKey]) {
-                  data[dataKey]!.push(...response[dataKey]!);
+                  if (typeof response[dataKey] === "boolean" || typeof data[dataKey] === "boolean") {
+                    return;
+                  }
+                  (data[dataKey] as any[]).push(...(response[dataKey] as any[]));
                 }
               });
             });
@@ -459,15 +476,17 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
             observer.complete();
           },
         });
-      }
+      });
     });
   }
 
-  getExportProductsForScan(scanGroupOption: WidgetExportOption, request: WidgetExportRequest): Observable<WidgetExportData> {
+  private getExportProductsForScan(userId: string, scanGroupOption: WidgetExportOption, request: WidgetExportRequest): Observable<WidgetExportData> {
     let scanId = scanGroupOption.id.replace("scan-", "");
     let scanName = this.allScans.find(scan => scan.id === scanId)?.title || scanId;
     let quantId = scanGroupOption.subOptions!.find(subOption => subOption.id === scanId + "_quant")!.selectedOption!;
     let quantName = this.scanQuants[scanId].find(quant => quant.id === quantId)?.params?.userParams?.name || quantId;
+    let instrument = scanInstrumentToJSON(scanInstrumentFromJSON(this.allScans.find(scan => scan.id === scanId)?.instrument || ScanInstrument.UNKNOWN_INSTRUMENT));
+    let instrumentConfig = this.allScans.find(scan => scan.id === scanId)?.instrumentConfig || "Unknown";
 
     let roiIds = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_rois")?.selectedRegions?.map(roi => roi.id) || [];
     let expressionIds = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_expressions")?.selectedExpressions?.map(exp => exp.id) || [];
@@ -507,7 +526,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
     }
 
     if (request.dataProducts["roiExpressionCode"]?.selected) {
-      exportRequests.push(this._exporterService.exportExpressionCode(scanId, quantId, expressionIds));
+      exportRequests.push(this._exporterService.exportExpressionCode(userId, scanId, quantId, expressionIds, instrument, instrumentConfig));
     }
 
     if (exportRequests.length === 0) {
@@ -520,14 +539,21 @@ export class ExportTabComponent extends WidgetExportDialogComponent {
         results.forEach(result => {
           WIDGET_EXPORT_DATA_KEYS.forEach(key => {
             let dataKey = key as keyof WidgetExportData;
+            if (typeof result[dataKey] === "boolean") {
+              return;
+            }
 
             if (!data[dataKey]) {
-              data[dataKey] = [];
+              data[dataKey] = [] as any;
             }
 
             if (result[dataKey]) {
-              result[dataKey]!.forEach(file => {
-                data[dataKey]!.push({
+              (result[dataKey] as any[]).forEach(file => {
+                if (typeof data[dataKey] === "boolean") {
+                  return;
+                }
+
+                (data[dataKey] as any)!.push({
                   ...file,
                   subFolder: file?.subFolder ? `${scanName}/${file.subFolder}` : scanName,
                 });

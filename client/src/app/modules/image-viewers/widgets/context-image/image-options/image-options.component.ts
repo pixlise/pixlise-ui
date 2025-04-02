@@ -84,6 +84,7 @@ export class ImageDisplayOptions {
 export class ImagePickerParams {
   constructor(
     public scanIds: string[],
+    public warningMsg: string,
     public options: ImageDisplayOptions
   ) {}
 }
@@ -213,9 +214,14 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
         for (const scanId of Object.keys(beamVersions.beamVersionPerScan)) {
           const versions = beamVersions.beamVersionPerScan[scanId];
           this.pickableBeamVersionScanIds.push(scanId);
-          this.pickableBeamVersions.set(scanId, versions.versions);
+
+          // Order the versions that are selectable from latest to oldest
+          const vers = Array.from(versions.versions);
+          vers.sort();
+          vers.reverse();
+          this.pickableBeamVersions.set(scanId, vers);
           if (!this.selectedBeamVersions[scanId]) {
-            this.selectedBeamVersions[scanId] = versions.versions[0];
+            this.selectedBeamVersions[scanId] = vers[0];
           }
         }
 

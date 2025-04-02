@@ -29,7 +29,8 @@
 
 import { Component, OnInit, Input } from "@angular/core";
 import { Router, NavigationExtras } from "@angular/router";
-import { AuthService } from "@auth0/auth0-angular";
+// import { AuthService } from "@auth0/auth0-angular";
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { environment } from "src/environments/environment";
 
 // import { AuthenticationService } from "src/app/services/authentication.service";
@@ -109,7 +110,7 @@ export class NumberButtonComponent implements OnInit {
           appState: {
             target: environment.authTarget,
             redirectUri: redir,
-          }
+          },
         });
       } else if (this.params.link.startsWith(SignupPrefix)) {
         const redir = this.params.link.substring(SignupPrefix.length);
@@ -119,7 +120,7 @@ export class NumberButtonComponent implements OnInit {
           },
           appState: {
             redirectUri: redir,
-          }
+          },
         });
       } else {
         // Simple link opening, we can handle it. If it's a whole URL we open it

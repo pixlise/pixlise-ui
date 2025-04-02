@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UserInfo } from "src/app/generated-protos/user";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -21,7 +21,7 @@ import { Subscription } from "rxjs";
   standalone: true,
   imports: [CommonModule, PIXLISECoreModule, SettingsModule],
 })
-export class SettingsSidebarComponent {
+export class SettingsSidebarComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   notifications: NotificationSetting[] = [];
@@ -46,12 +46,12 @@ export class SettingsSidebarComponent {
     this.notifications = NotificationSubscriptions.allNotifications.map(notification => new NotificationSetting(notification));
 
     // Do a deep copy of user info
-    let { id, name, email, iconURL } = this._userOptionsService.userDetails.info!;
-    this.user = { id, name, email, iconURL };
+    let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info!;
+    this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
 
     this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      let { id, name, email, iconURL } = this._userOptionsService.userDetails.info!;
-      this.user = { id, name, email, iconURL };
+      let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info!;
+      this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
 
       this._userOptionsService.notificationSubscriptions.topics.forEach((topic: NotificationTopic) => {
         let existing = this.notifications.find(existingNotification => existingNotification.id === topic.name);

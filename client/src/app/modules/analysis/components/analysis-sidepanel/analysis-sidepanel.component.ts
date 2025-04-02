@@ -1,4 +1,4 @@
-import { Component, ComponentRef, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ComponentRef, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { SidebarTabItem, SidebarViewShortcut } from "../../models/sidebar.model";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -9,7 +9,7 @@ import { Subscription } from "rxjs";
   templateUrl: "./analysis-sidepanel.component.html",
   styleUrls: ["./analysis-sidepanel.component.scss"],
 })
-export class AnalysisSidepanelComponent {
+export class AnalysisSidepanelComponent implements OnInit, OnDestroy {
   @ViewChild("openTab", { read: ViewContainerRef }) openTab?: ViewContainerRef;
 
   private _subs: Subscription = new Subscription();
@@ -45,6 +45,9 @@ export class AnalysisSidepanelComponent {
 
   ngOnDestroy() {
     this.clearTab();
+
+    this.openTab?.clear();
+    this.openTab = undefined;
   }
 
   private clearTab(): void {
@@ -54,9 +57,10 @@ export class AnalysisSidepanelComponent {
       }
 
       this._openTabRef.destroy();
-      this.openTab?.clear();
       this._openTabRef = null;
     }
+
+    this.openTab?.clear();
   }
 
   set activeTab(tab: SidebarTabItem | null) {

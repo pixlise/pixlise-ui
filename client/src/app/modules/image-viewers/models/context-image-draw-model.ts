@@ -7,6 +7,7 @@ import { RGBA } from "src/app/utils/colours";
 
 export class ContextImageScanDrawModel {
   constructor(
+    public title: string,
     public scanPoints: ScanPoint[],
     public scanPointPolygons: Point[][],
     public footprint: Footprint,

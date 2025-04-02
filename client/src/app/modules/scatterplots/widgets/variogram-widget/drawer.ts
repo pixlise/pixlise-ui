@@ -35,6 +35,7 @@ import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, PointDrawer } from "src/app/u
 import { VariogramModel } from "./model";
 import { CanvasDrawer, CanvasDrawParameters, CanvasParams } from "../../../widget/components/interactive-canvas/interactive-canvas.component";
 import { ChartAxis, ChartAxisDrawer } from "../../../widget/components/interactive-canvas/chart-axis";
+import { Observable, of } from "rxjs";
 
 export class VariogramDrawer implements CanvasDrawer {
   protected _mdl: VariogramModel;
@@ -48,11 +49,11 @@ export class VariogramDrawer implements CanvasDrawer {
   // {
   // }
 
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // TODO: clean this up, bit ugly
     if (!this._mdl.drawData || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(drawParams.drawViewport)) {
       if (!this._mdl.recalcDisplayData(drawParams.drawViewport)) {
-        return;
+        return of(void 0);
       }
 
       this._lastCalcCanvasParams = drawParams.drawViewport;
@@ -79,6 +80,7 @@ export class VariogramDrawer implements CanvasDrawer {
     }
 
     screenContext.restore();
+    return of(void 0);
   }
 
   private drawTitle(screenContext: CanvasRenderingContext2D, title: string): void {

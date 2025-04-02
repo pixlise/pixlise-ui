@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { catchError, map, Observable, Subject, Subscription, takeUntil } from "rxjs";
+import { catchError, first, map, Observable, Subject, Subscription, takeUntil, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
@@ -31,10 +31,16 @@ import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportOption,
+  WidgetExportRequest,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { TernaryChartExporter } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-chart-exporter";
 import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -80,6 +86,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
+  axisLabelFontSize = 14;
+
   constructor(
     public dialog: MatDialog,
     private _selectionService: SelectionService,
@@ -92,7 +100,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this.drawer = new TernaryChartDrawer(this.mdl);
     this.toolhost = new TernaryChartToolHost(this.mdl, this._selectionService);
-    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform);
+    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -168,6 +176,83 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     return this.mdl.raw?.cornerB || null;
   }
 
+  updateExportOptions(exportOptions: WidgetExportOption[], exportChartOptions: WidgetExportOption[]) {
+    const backgroundColorOption = exportOptions.find(opt => opt.id === "background");
+    const backgroundColor = backgroundColorOption ? backgroundColorOption.selectedOption : null;
+    if (backgroundColor) {
+      this.drawer.lightMode = ["white"].includes(backgroundColor);
+      this.drawer.transparentBackground = backgroundColor === "transparent";
+    }
+
+    const borderWidthOption = exportChartOptions.find(opt => opt.id === "borderWidth");
+    if (borderWidthOption) {
+      this.drawer.borderWidth = isNaN(Number(borderWidthOption.value)) ? 1 : Number(borderWidthOption.value);
+      this.mdl.borderWidth$.next(this.drawer.borderWidth);
+      this.mdl.borderColor = borderWidthOption.colorPickerValue || "";
+      this.reDraw();
+    }
+
+    const aspectRatioOption = exportOptions.find(opt => opt.id === "aspectRatio");
+
+    // If the aspect ratio option is set, we need to trigger a canvas resize on next frame render
+    if (aspectRatioOption) {
+      setTimeout(() => {
+        this.mdl.needsCanvasResize$.next();
+        this.reDraw();
+      }, 0);
+    }
+
+    const resolutionOption = exportOptions.find(opt => opt.id === "resolution");
+    if (resolutionOption) {
+      const resolutionMapping = {
+        high: 3,
+        med: 1.5,
+        low: 1,
+      };
+
+      const newResolution = resolutionOption.selectedOption;
+      if (newResolution && resolutionMapping[newResolution as keyof typeof resolutionMapping]) {
+        this.mdl.resolution$.next(resolutionMapping[newResolution as keyof typeof resolutionMapping]);
+      }
+    }
+
+    const labelsOption = exportChartOptions.find(opt => opt.id === "labels");
+    if (labelsOption) {
+      this.axisLabelFontSize = isNaN(Number(labelsOption.value)) ? 14 : Number(labelsOption.value);
+      this.mdl.axisLabelFontSize = this.axisLabelFontSize;
+    }
+
+    const fontOption = exportChartOptions.find(opt => opt.id === "font");
+    if (fontOption) {
+      this.mdl.axisLabelFontFamily = fontOption.selectedOption || "Arial";
+      this.mdl.axisLabelFontColor = fontOption.colorPickerValue || "";
+    }
+
+    if (resolutionOption && aspectRatioOption) {
+      if (aspectRatioOption.selectedOption === "square") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "500px x 500px" },
+          { id: "med", name: "750px x 750px" },
+          { id: "high", name: "1500px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "4:3") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "666px x 500px" },
+          { id: "med", name: "1000px x 750px" },
+          { id: "high", name: "2000px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "16:9") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "700px x 393px" },
+          { id: "med", name: "750px x 422px" },
+          { id: "high", name: "1500px x 844px" },
+        ];
+      }
+    }
+
+    this.reDraw();
+  }
+
   private update() {
     this.isWidgetDataLoading = true;
     if (this.mdl.expressionIds.length !== 3) {
@@ -175,7 +260,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       this.isWidgetDataLoading = false;
       return;
     }
-
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
@@ -211,15 +295,21 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     });
   }
 
-  private setData(data: RegionDataResults): Observable<void> {
+  private setData(data: RegionDataResults): Observable<ScanItem[]> {
     return this._analysisLayoutService.availableScans$.pipe(
-      map(scans => {
+      tap(scans => {
         const errs = this.mdl.setData(data, scans);
         if (errs.length > 0) {
           for (const err of errs) {
             this._snackService.openError(err.message, err.description);
           }
         }
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
       }),
       catchError(err => {
         this._snackService.openError("Failed to set data", `${err}`);
@@ -229,6 +319,12 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
+    if (this.mdl) {
+      this.mdl.exportMode = this._exportMode;
+    }
+
+    this.exporter = new TernaryChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
+
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryPMC);

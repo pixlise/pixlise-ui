@@ -1,0 +1,131 @@
+<div class="replace-scan-dialog">
+  <div class="title">
+    <h1>Replace Scan</h1>
+  </div>
+  <div class="scan-replace">
+    <div *ngIf="loading" class="loading">
+      <wait-spinner></wait-spinner>
+    </div>
+    <div class="dataset" *ngIf="datasetProduct">
+      <div class="dataset-header">
+        <div class="product-current">
+          <action-button
+            (onClick)="datasetProduct.accordionOpen = !datasetProduct.accordionOpen"
+            [action]="datasetProduct.accordionOpen ? 'closeAccordion' : 'openAccordion'"></action-button>
+          <span class="product-type">
+            <img src="assets/icons/datasets.svg" alt="Dataset" />
+          </span>
+          <h5
+            #tooltip="matTooltip"
+            [matTooltip]="datasetProduct.scanItem?.title || 'N/A'"
+            [matTooltipShowDelay]="500"
+            [matTooltipDisabled]="!datasetProduct.scanItem?.title || (datasetProduct?.scanName?.length || datasetProduct.scanItem?.title?.length || 0) < 28"
+            [ngStyle]="{ 'max-width': '170px' }">
+            {{ datasetProduct?.scanName || datasetProduct?.scanItem?.title || "N/A" }}
+          </h5>
+        </div>
+        <div class="product-replace">
+          <searchable-list
+            [items]="allScanSearchableItems"
+            defaultValue="no-replace"
+            [disabledValues]="[datasetProduct.scanItem.id]"
+            [value]="idReplacements[datasetProduct.scanItem.id]"
+            (onSelect)="replaceScan(datasetProduct.scanItem.id, $event.id)"></searchable-list>
+        </div>
+      </div>
+      <div *ngIf="datasetProduct.accordionOpen" class="dataset-products">
+        <div *ngIf="datasetProduct.quants.length === 0 && datasetProduct.rois.length === 0" class="no-products">
+          <h5>No Quants or ROIs to replace</h5>
+        </div>
+        <div *ngFor="let quant of datasetProduct.quants" class="product">
+          <div class="product-current">
+            <span class="product-type">
+              <img src="assets/icons/quant.svg" />
+            </span>
+            <h5
+              #tooltip="matTooltip"
+              [matTooltip]="quant.params?.userParams?.['name'] || 'N/A'"
+              [matTooltipShowDelay]="500"
+              [matTooltipDisabled]="!!quant.params?.userParams?.['name'] || (quant.params?.userParams?.['name']?.length || 0) < 30"
+              [ngStyle]="{ 'max-width': '170px' }">
+              {{ quant.params?.userParams?.["name"] || "N/A" }}
+            </h5>
+          </div>
+          <div class="product-replace">
+            <searchable-list
+              [items]="
+                (idReplacements[datasetProduct.scanItem.id]
+                  ? searchableQuantsForScans[idReplacements[datasetProduct.scanItem.id]]
+                  : searchableQuantsForScans[datasetProduct.scanItem.id]) || []
+              "
+              defaultValue="no-replace"
+              [disabledValues]="[quant.id]"
+              [value]="idReplacements[quant.id]"
+              (onSelect)="idReplacements[quant.id] = $event.id">
+            </searchable-list>
+          </div>
+        </div>
+        <div *ngFor="let image of datasetProduct.images" class="product">
+          <div class="product-current">
+            <span class="product-type">
+              <img src="assets/icons/image-gray.svg" />
+            </span>
+            <h5
+              #tooltip="matTooltip"
+              [matTooltip]="image.imagePath || 'N/A'"
+              [matTooltipShowDelay]="500"
+              [matTooltipDisabled]="!image.imagePath || (image.imagePath?.length || 0) < 30"
+              [ngStyle]="{ 'max-width': '170px' }">
+              {{ getImageName(image) || "N/A" }}
+            </h5>
+          </div>
+          <div class="product-replace">
+            <searchable-list
+              [items]="
+                (idReplacements[datasetProduct.scanItem.id]
+                  ? searchableImagesForScan[idReplacements[datasetProduct.scanItem.id]]
+                  : searchableImagesForScan[datasetProduct.scanItem.id]) || []
+              "
+              defaultValue="no-replace"
+              [disabledValues]="[image.imagePath]"
+              [value]="idReplacements[image.imagePath]"
+              (onSelect)="idReplacements[image.imagePath] = $event.id">
+            </searchable-list>
+          </div>
+        </div>
+        <div *ngFor="let roi of datasetProduct.rois" class="product">
+          <div class="product-current">
+            <span class="product-type">
+              <img src="assets/icons/roi.svg" />
+            </span>
+            <h5
+              #tooltip="matTooltip"
+              [matTooltip]="roi.name || 'N/A'"
+              [matTooltipShowDelay]="500"
+              [matTooltipDisabled]="!roi.name || (roi.name?.length || 0) < 30"
+              [ngStyle]="{ 'max-width': '170px' }">
+              {{ roi?.name }}
+            </h5>
+          </div>
+          <div class="product-replace">
+            <searchable-list
+              [items]="
+                (idReplacements[datasetProduct.scanItem.id]
+                  ? searchableRoisForScans[idReplacements[datasetProduct.scanItem.id]]
+                  : searchableRoisForScans[datasetProduct.scanItem.id]) || []
+              "
+              defaultValue="no-replace"
+              [disabledValues]="[roi.id]"
+              [value]="idReplacements[roi.id]"
+              (onSelect)="idReplacements[roi.id] = $event.id">
+            </searchable-list>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-btns">
+    <push-button class="cancel-btn" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button class="cancel-btn" buttonStyle="yellow" (onClick)="onConfirm()">Replace</push-button>
+  </div>
+</div>

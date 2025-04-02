@@ -127,6 +127,11 @@ input {
       align-items: center;
       gap: 8px;
     }
+
+    .dim {
+      color: $clr-gray-40;
+      font-size: 12px;
+    }
   }
 
   .summary-container {
@@ -222,8 +227,8 @@ input {
       .meta-heading {
         color: $clr-gray-30;
         text-transform: uppercase;
-        font-weight: 400;
-        font-size: 12px;
+        font-weight: bold;
+        font-size: 14px;
         padding: $sz-unit;
       }
 
@@ -266,6 +271,12 @@ input {
   }
 }
 
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .tab-switcher {
   display: flex;
   gap: 16px;
@@ -302,9 +313,13 @@ input {
       display: flex;
       flex-direction: column;
 
-      .meta-area {
-        flex: 1;
+      &.description {
+        .meta-area {
+          flex: 1;
+        }
+      }
 
+      .meta-area {
         .text-field {
           flex: 1;
           margin: 8px 0;
@@ -575,6 +590,12 @@ input {
       }
     }
   }
+
+  .show-more {
+    font-size: 12px;
+    color: $clr-gray-30;
+    padding-left: 80px;
+  }
 }
 
 .cell {
@@ -721,5 +742,16 @@ input {
     background-color: rgb(68, 76, 80);
     color: rgb(190, 192, 194);
     border: 1px solid rgb(84, 95, 100);
+  }
+}
+
+.manage-cache {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+
+  .manage-cache-btn {
+    display: flex;
+    width: fit-content;
   }
 }

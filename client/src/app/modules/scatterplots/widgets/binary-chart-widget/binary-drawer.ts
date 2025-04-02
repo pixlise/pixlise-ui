@@ -1,16 +1,17 @@
 import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
-import { HOVER_POINT_RADIUS, OUTLINE_LINE_WIDTH, OutlineDrawer, PLOT_POINTS_SIZE, PointDrawer } from "src/app/utils/drawing";
+import { HOVER_POINT_RADIUS, OutlineDrawer, PointDrawer } from "src/app/utils/drawing";
 
 import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { CachedCanvasChartDrawer } from "src/app/modules/widget/components/interactive-canvas/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
 import { drawScatterPoints } from "../../base/cached-nary-drawer";
 
 export class BinaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
   public lightMode: boolean = false;
+  public transparentBackground: boolean = false;
+  public borderWidth: number = 1;
 
   constructor(private _mdl: BinaryChartModel) {
     super();
@@ -20,10 +21,44 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
     return this._mdl;
   }
 
+  drawAxisLabels(screenContext: CanvasRenderingContext2D): void {
+    const drawData = this._mdl.drawModel;
+    screenContext.font = `${this._mdl.axisLabelFontSize}px ${this._mdl.axisLabelFontFamily}`;
+    screenContext.textAlign = "center";
+    screenContext.textBaseline = "top";
+    screenContext.fillStyle = this.lightMode ? Colours.BLACK.asString() : Colours.WHITE.asString();
+    if (this._mdl.axisLabelFontColor) {
+      screenContext.fillStyle = this._mdl.axisLabelFontColor;
+    }
+
+    const xAxisStartX = (drawData.xAxis?.startPx || 0) + (drawData.xAxis?.pxLength || 0) / 2;
+    const xAxisStartY = (drawData.yAxis?.startPx || 0) + (drawData.yAxis?.pxLength || 0) - this._mdl.axisLabelFontSize / 2;
+    screenContext.fillText(this._mdl.raw?.xAxisInfo?.label || "", xAxisStartX || 0, xAxisStartY);
+
+    const yAxisStartX = this._mdl.axisLabelFontSize / 2 + 4;
+    const yAxisStartY = (drawData.yAxis?.pxLength || 0) / 2 + (drawData.xAxis?.startPx || 0) / 2;
+
+    screenContext.save();
+    screenContext.translate(yAxisStartX, yAxisStartY);
+    screenContext.rotate(-Math.PI / 2);
+    screenContext.textAlign = "center";
+    screenContext.textBaseline = "middle";
+    screenContext.fillText(this._mdl.raw?.yAxisInfo?.label || "", 0, 0);
+    screenContext.restore();
+  }
+
   drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Draw background
     screenContext.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
     screenContext.fillRect(0, 0, drawParams.drawViewport.width, drawParams.drawViewport.height);
+    if (this.transparentBackground) {
+      screenContext.clearRect(0, 0, drawParams.drawViewport.width, drawParams.drawViewport.height);
+    }
+
+    if (this._mdl.exportMode) {
+      // We need to draw labels
+      this.drawAxisLabels(screenContext);
+    }
   }
 
   drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {

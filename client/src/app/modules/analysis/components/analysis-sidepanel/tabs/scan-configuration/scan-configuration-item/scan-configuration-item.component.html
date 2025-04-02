@@ -53,6 +53,10 @@ POSSIBILITY OF SUCH DAMAGE.
       <img *ngIf="config.calibrations && config.calibrations.length > 0" class="menu-icon" src="assets/button-icons/yellow-tick.svg" />
       <span class="menu-text">Calibration</span>
     </div>
+    <div class="menu-item" (click)="onReplaceScan()">
+      <img class="menu-icon" src="assets/icons/datasets.svg" />
+      <span class="menu-text">Replace Scan</span>
+    </div>
     <div class="menu-item" (click)="onRemoveConfiguration()">
       <img class="menu-icon" src="assets/button-icons/delete.svg" />
       <span class="menu-text">Remove</span>
@@ -62,7 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="scan-configuration">
   <div class="top-line">
-    <div class="scan-name">SOL-{{ scan?.meta?.["Sol"] || "N/A" }}: {{ scan?.title || "N/A" }}</div>
+    <div class="scan-name">Sol {{ scan?.meta?.["Sol"] || "N/A" }}: {{ scan?.title || "N/A" }}</div>
     <widget-settings-menu [settingsDialog]="scanColorPicker" #scanColorPickerButton>
       <div class="color-shape-picker" #tooltip="matTooltip" matTooltip="Choose default color for All Scan Points" [matTooltipShowDelay]="500">
         <roi-shape [scale]="2" [color]="config.colour || 'white'" shape="circle"></roi-shape>

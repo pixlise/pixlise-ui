@@ -151,8 +151,8 @@
     }
 
     .selected-group-card-container {
-      height: calc(100vh - 177px);
-      overflow: scroll;
+      height: calc(100vh - 180px);
+      overflow: auto;
       overflow-x: hidden;
 
       .empty-requests {

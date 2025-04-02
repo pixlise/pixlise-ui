@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, map, of, timer } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, forkJoin, map, of, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
@@ -8,8 +8,8 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScreenConfigurationGetReq, ScreenConfigurationListReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
-import { FullScreenLayout, ScanCalibrationConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
+import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
@@ -22,10 +22,18 @@ import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
-import { getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
+import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
 import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
 import { TabLinks } from "../../../models/TabLinks";
 import { PredefinedROIID } from "../../../models/RegionOfInterest";
+import { ScanImage } from "../../../generated-protos/image";
+import { EnvConfigurationInitService } from "../../../services/env-configuration-init.service";
+import { ReviewerMagicLinkLoginReq } from "../../../generated-protos/user-management-msgs";
+import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
+import { HttpClient } from "@angular/common/http";
+import { UserOptionsService } from "../../settings/settings.module";
+import { MemoiseDeleteByRegexReq } from "../../../generated-protos/memoisation-msgs";
+import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
 
 export class DefaultExpressions {
   constructor(
@@ -88,19 +96,33 @@ export class AnalysisLayoutService implements OnDestroy {
 
   lastLoadedScreenConfigurationId: string = "";
 
+  // Track if the user can edit (any) screen configuration
+  readOnlyMode = true;
+  magicLinkStatus$ = new BehaviorSubject<string>("");
+
   constructor(
+    private http: HttpClient,
     private _route: ActivatedRoute,
     private _router: Router,
     private _dataService: APIDataService,
+    private _apiEndpointsService: APIEndpointsService,
     private _cachedDataService: APICachedDataService,
     private _snackService: SnackbarService,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _userOptionsService: UserOptionsService,
+    private _memoService: MemoisationService
   ) {
     this.fetchAvailableScans();
     this.fetchLastLoadedScreenConfigurationId();
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
     }
+
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this.readOnlyMode = !this._userOptionsService.hasFeatureAccess("editViewState");
+      })
+    );
 
     // Subscribe to query params - has to be done from the constructor here since OnInit doesn't fire on Injectables
     this._subs.add(
@@ -173,13 +195,13 @@ export class AnalysisLayoutService implements OnDestroy {
     );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   get isMapsPage(): boolean {
     let strippedURL = this._router.url.split("?")[0];
     return strippedURL.endsWith("/datasets/maps");
-  }
-
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
   }
 
   getCurrentTabId(): number {
@@ -252,19 +274,10 @@ export class AnalysisLayoutService implements OnDestroy {
         return tab;
       });
 
-      let tabs = [
-        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        ...analysisTabs,
-        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-      ];
+      let tabs = [...analysisTabs];
       this.activeScreenConfigurationTabs$.next(tabs);
     } else {
-      this.activeScreenConfigurationTabs$.next([
-        // { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: TabLinks.browse },
-        // { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: TabLinks.codeEditor },
-        // { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: TabLinks.maps },
-      ]);
+      this.activeScreenConfigurationTabs$.next([]);
     }
   }
 
@@ -286,27 +299,18 @@ export class AnalysisLayoutService implements OnDestroy {
     return screenConfiguration;
   }
 
+  getScanName(scan: ScanItem): string {
+    return scan?.meta && scan?.title ? `Sol ${scan.meta["Sol"]}: ${scan.title}` : scan?.title;
+  }
+
+  getImageName(image: ScanImage) {
+    return image.imagePath.split("/").pop() || "";
+  }
+
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
     });
-  }
-
-  fetchWorkspaceSnapshots(workspaceId: string): Observable<ScreenConfiguration[]> {
-    return this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create({ snapshotParentId: workspaceId })).pipe(
-      map(res => {
-        let snapshots = res.screenConfigurations;
-        snapshots.sort((a, b) => {
-          return (a.owner?.createdUnixSec || 0) - (b.owner?.createdUnixSec || 0);
-        });
-
-        return snapshots;
-      }),
-      catchError(err => {
-        this._snackService.openError(err);
-        return of([]);
-      })
-    );
   }
 
   deleteQuant(quantId: string) {
@@ -357,6 +361,16 @@ export class AnalysisLayoutService implements OnDestroy {
     localStorage?.removeItem("lastLoadedScreenConfigurationId");
     this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
     this.activeScreenConfigurationId$.next("");
+  }
+
+  clearActiveScreenConfiguration() {
+    this.clearScreenConfigurationCache();
+    // Remove from query params
+    let queryParams = { ...this._route.snapshot.queryParams };
+    delete queryParams["id"];
+    delete queryParams["scan_id"];
+
+    this._router.navigate([TabLinks.analysis], { queryParams });
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true, showSnackOnError: boolean = true) {
@@ -430,6 +444,20 @@ export class AnalysisLayoutService implements OnDestroy {
       return;
     }
 
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      // If user is attempting to update screen config in read only mode, just update locally
+      if (screenConfiguration.id) {
+        if (setActive) {
+          this.activeScreenConfiguration$.next(screenConfiguration);
+          this.activeScreenConfigurationId$.next(screenConfiguration.id);
+        }
+        callback(screenConfiguration);
+        this.screenConfigurations$.next(this.screenConfigurations$.value.set(screenConfiguration.id, screenConfiguration));
+      }
+      return;
+    }
+
     this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe({
       next: res => {
         if (res.screenConfiguration) {
@@ -454,8 +482,13 @@ export class AnalysisLayoutService implements OnDestroy {
     });
   }
 
-  deleteScreenConfiguration(id: string, callback: () => void = () => {}) {
-    this._dataService.sendScreenConfigurationDeleteRequest({ id }).subscribe(res => {
+  deleteScreenConfiguration(id: string, callback: () => void = () => {}, preserveDanglingWidgetReferences: boolean = false) {
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      return;
+    }
+
+    this._dataService.sendScreenConfigurationDeleteRequest({ id, preserveDanglingWidgetReferences }).subscribe(res => {
       if (res.id) {
         this.screenConfigurations$.value.delete(id);
         this.screenConfigurations$.next(this.screenConfigurations$.value);
@@ -472,6 +505,11 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   updateActiveLayoutWidgetType(widgetId: string, layoutIndex: number, widgetType: string) {
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      return;
+    }
+
     const screenConfiguration = this.activeScreenConfiguration$.value;
     if (screenConfiguration.id && screenConfiguration.layouts.length > layoutIndex) {
       const widget = screenConfiguration.layouts[layoutIndex].widgets.find(widget => widget.id === widgetId);
@@ -483,6 +521,11 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   writeWidgetData(widgetData: WidgetData) {
+    if (this.readOnlyMode) {
+      console.warn("User does not have permission to edit screen configurations");
+      return;
+    }
+
     this._dataService.sendWidgetDataWriteRequest(WidgetDataWriteReq.create({ widgetData })).subscribe(res => {
       if (res.widgetData) {
         this.widgetData$.next(this.widgetData$.value.set(res.widgetData.id, res.widgetData));
@@ -560,8 +603,12 @@ export class AnalysisLayoutService implements OnDestroy {
     return isFirefox(navigator?.userAgent || "");
   }
 
+  get defaultScanIdFromRoute(): string {
+    return this._route?.snapshot?.queryParams[EditorConfig.scanIdParam] || "";
+  }
+
   get defaultScanId(): string {
-    let scanId = this._route?.snapshot?.queryParams[EditorConfig.scanIdParam];
+    let scanId = this.defaultScanIdFromRoute;
 
     let scanConfigs = this.activeScreenConfiguration$.value?.scanConfigurations;
     if (!scanId && scanConfigs && Object.keys(scanConfigs).length > 0) {
@@ -630,7 +677,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   removeIdFromScreenConfiguration(screenConfiguration: ScreenConfiguration, id: string): ScreenConfiguration {
-    let newScreenConfiguration = { ...screenConfiguration };
+    let newScreenConfiguration = ScreenConfiguration.create(screenConfiguration);
     Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
       if (scanId === id) {
         delete newScreenConfiguration.scanConfigurations[scanId];
@@ -724,7 +771,7 @@ export class AnalysisLayoutService implements OnDestroy {
   };
 
   replaceIdInScreenConfiguration(screenConfiguration: ScreenConfiguration, oldId: string, newId: string): ScreenConfiguration {
-    let newScreenConfiguration = { ...screenConfiguration };
+    let newScreenConfiguration = ScreenConfiguration.create(screenConfiguration);
     Object.entries(newScreenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
       if (scanId === oldId) {
         delete newScreenConfiguration.scanConfigurations[scanId];
@@ -745,12 +792,12 @@ export class AnalysisLayoutService implements OnDestroy {
     });
 
     newScreenConfiguration.layouts = screenConfiguration.layouts.map(layout => {
-      layout.widgets.forEach(widget => {
+      layout.widgets.forEach((widget, i) => {
         if (widget?.data && widget?.type) {
           let widgetKey = WIDGETS[widget.type as WidgetType].dataKey;
           let widgetData = (widget.data as any)[widgetKey];
           if (!widgetData) {
-            console.error(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
+            console.warn(`Could not find widget data for widget: ${widget.type} in tab: ${layout.tabName}`);
             return;
           }
 
@@ -806,6 +853,18 @@ export class AnalysisLayoutService implements OnDestroy {
 
               return spectrumLines;
             });
+          }
+
+          if (widgetData?.contextImage) {
+            console.log("Has context image context image id", widgetData.contextImage, widgetData.contextImage === oldId, oldId, newId);
+            if (widgetData.contextImage === oldId) {
+              console.log("Replacing context image id", oldId, newId);
+              widgetData.contextImage = newId;
+            }
+          }
+
+          if (widgetData) {
+            layout.widgets[i].data![widgetKey] = widgetData;
           }
         }
       });
@@ -935,8 +994,6 @@ export class AnalysisLayoutService implements OnDestroy {
             return;
           }
 
-          console.log(widgetData, widget.type, widgetKey, widgetData?.expressionIDs);
-
           if (widgetData?.expressionIDs) {
             widgetData.expressionIDs.forEach((expressionId: string) => {
               expressionIds.push(expressionId);
@@ -1017,5 +1074,82 @@ export class AnalysisLayoutService implements OnDestroy {
     }
 
     return quantificationIDs;
+  }
+
+  loginWithMagicLink(magicLink: string) {
+    let decodedWorkspaceId = decodeUrlSafeBase64(magicLink);
+    let appConfig = EnvConfigurationInitService.appConfig;
+    this._apiEndpointsService
+      .magicLinkLogin(
+        ReviewerMagicLinkLoginReq.create({
+          magicLink: decodedWorkspaceId,
+          clientId: appConfig.auth0_client,
+          domain: appConfig.auth0_domain,
+          audience: appConfig.auth0_audience,
+          redirectURI: `${window.location.origin}/authenticate`,
+        })
+      )
+      .subscribe({
+        next: res => {
+          const loginUrl = `https://${appConfig.auth0_domain}/oauth/token`;
+
+          this.http
+            .post(loginUrl, {
+              grant_type: "password",
+              username: res.email,
+              password: res.nonSecretPassword,
+              client_id: appConfig.auth0_client,
+              audience: appConfig.auth0_audience,
+              scope: "openid profile email",
+            })
+            .subscribe({
+              next: (loginResponse: any) => {
+                sessionStorage.setItem("reviewer_access_token", loginResponse.access_token);
+                sessionStorage.setItem("reviewer_id_token", loginResponse.id_token);
+                this.readOnlyMode = true;
+                this.magicLinkStatus$.next("success");
+
+                this._router.navigate([TabLinks.analysis], { queryParams: { id: decodedWorkspaceId } });
+              },
+              error: err => {
+                console.error("Login failed: ", err);
+                this._snackService.openError("Error logging in with magic link", err?.error || err);
+                this.magicLinkStatus$.next("failed");
+              },
+            });
+        },
+        error: err => {
+          console.error("Error logging in with magic link: ", err);
+          this._snackService.openError("Error logging in with magic link", err?.error || err);
+          this.magicLinkStatus$.next("failed");
+        },
+      });
+  }
+
+  clearExpressionFromCache(expressionId: string): Observable<number> {
+    let pattern = `,\"exprId\":\"${expressionId}\".*`;
+
+    return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
+      map(res => res[1]?.numDeleted)
+    );
+  }
+
+  clearExpressionCacheForScan(expressionId: string, scanId: string): Observable<number> {
+    let pattern = `{\"scanId\":\"${scanId}\",\"exprId\":\"${expressionId}\".*`;
+
+    return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
+      map(res => res[1]?.numDeleted || 0)
+    );
+  }
+
+  clearExpressionCacheForWorkspace(expressionId: string) {
+    let scanIds = this.activeScreenConfiguration$.value?.scanConfigurations ? Object.keys(this.activeScreenConfiguration$.value.scanConfigurations) : [];
+    forkJoin(scanIds.map(scanId => this.clearExpressionCacheForScan(expressionId, scanId))).subscribe(res => {
+      console.log(`Cleared ${res.reduce((acc, curr) => acc + curr, 0)} items from remote expression cache for expression: ${expressionId}`);
+      this._snackService.openSuccess(
+        `Cleared ${res.reduce((acc, curr) => acc + curr || 0, 0)} items from remote expression cache`,
+        `Expression: ${expressionId}, Scans: ${scanIds.join(", ")}`
+      );
+    });
   }
 }

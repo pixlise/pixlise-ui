@@ -57,6 +57,11 @@
   .visualization {
     background-color: black;
     border-radius: 0 0 8px 8px;
+
+    &.export-mode {
+      border-radius: 8px;
+    }
+
     width: 100%;
     flex: 1;
     position: relative;

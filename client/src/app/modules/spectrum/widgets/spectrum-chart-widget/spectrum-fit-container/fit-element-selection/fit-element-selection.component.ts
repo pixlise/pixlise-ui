@@ -43,6 +43,8 @@ import { SpectrumChartModel } from "../../spectrum-model";
 export class FitElementSelectionComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
+  showPeriodicTable: boolean = true; // tab selector
+
   selectedElements = new Set<number>();
   selectedAltElements = new Set<number>();
   darkerSelectableElements = new Set<number>();
@@ -81,12 +83,20 @@ export class FitElementSelectionComponent implements OnInit, OnDestroy {
     );
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   private get mdl(): SpectrumChartModel {
     return this._spectrumService.mdl;
   }
 
-  ngOnDestroy() {
-    this._subs.unsubscribe();
+  onTabPeriodicTable() {
+    this.showPeriodicTable = true;
+  }
+
+  onTabElementSets() {
+    this.showPeriodicTable = false;
   }
 
   private rebuildPeriodicTable(): void {
@@ -201,5 +211,22 @@ export class FitElementSelectionComponent implements OnInit, OnDestroy {
 
   onClear() {
     this._spectrumService.mdl.xrfLinesPicked = [];
+  }
+
+  onUseElementSet(event: object) {
+    // Apply the elements supplied by the element set picker
+    if (!this._spectrumService.mdl) {
+      return;
+    }
+
+    const lines = event["lines"] as XRFLineGroup[];
+    const selectedZs = new Set<number>();
+
+    for (const line of lines) {
+      selectedZs.add(line.atomicNumber);
+    }
+
+    this._spectrumService.mdl.setFitSelectedElementZs(Array.from(selectedZs));
+    this._spectrumService.mdl.recalcFitLines();
   }
 }

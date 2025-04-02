@@ -43,6 +43,7 @@ import { ExpressionMemoisationService } from "../modules/pixlisecore/services/ex
 
 export class InterpreterDataSource {
   constructor(
+    private _scanId: string,
     public quantDataSource: QuantifiedDataQuerierSource,
     public pseudoDataSource: PseudoIntensityDataQuerierSource,
     public housekeepingDataSource: HousekeepingDataQuerierSource,
@@ -376,7 +377,9 @@ export class InterpreterDataSource {
     }
 
     if (!this._exprMemoService) {
-      throw new Error("getMemoised() failed, service not available");
+      //throw new Error("getMemoised() failed, service not available");
+      console.error("getMemoised() failed, service not available");
+      return await lastValueFrom(of(null));
     }
 
     const key = "exprcachev1_" + argList[0];
@@ -401,7 +404,9 @@ export class InterpreterDataSource {
     }
 
     if (!this._exprMemoService) {
-      throw new Error("memoise() failed, service not available");
+      //throw new Error("getMemoised() failed, service not available");
+      console.error("memoise() failed, service not available");
+      return await lastValueFrom(of(false));
     }
 
     const key = "exprcachev1_" + argList[0];
@@ -416,7 +421,7 @@ export class InterpreterDataSource {
     const str = JSON.stringify(table);
     const arr = new TextEncoder().encode(str);
 
-    return await lastValueFrom(this._exprMemoService.memoise(key, arr).pipe(map(() => true)));
+    return await lastValueFrom(this._exprMemoService.memoise(key, arr, this.getScanId(), this.getQuantId(), this._scanId).pipe(map(() => true)));
   }
 
   // Properties we can query

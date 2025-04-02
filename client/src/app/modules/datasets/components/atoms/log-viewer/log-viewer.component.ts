@@ -36,7 +36,7 @@ import { LogLine } from "src/app/generated-protos/log";
 // TODO import { LayoutService } from "src/app/services/layout.service";
 import { httpErrorToString } from "src/app/utils/utils";
 
-const logAutoRetrieveLimit = 10; // 10 requests
+const logAutoRetrieveLimit = 80; // Send this many refresh requests to the log to see progress. This is also stopped by seeing the "end" message
 
 @Component({
   selector: "log-viewer",
@@ -53,6 +53,7 @@ export class LogViewerComponent implements AfterViewInit {
 
   private _logAutoRetrieveCount: number = 0;
   private _loading: boolean = false;
+  private _endSeen: boolean = false;
 
   constructor(private _dataService: APIDataService) {}
 
@@ -71,6 +72,17 @@ export class LogViewerComponent implements AfterViewInit {
         this._loading = false;
         if (resp.entries.length > this.logData.length) {
           this.logData = resp.entries;
+
+          if (!this._endSeen) {
+            // See if we found the "end" marker
+            for (let c = this.logData.length - 1; c > this.logData.length - 6; c--) {
+              if (this.logData[c].message.indexOf("END RequestId: ") > -1) {
+                this._endSeen = true;
+                console.log("Log view: end seen");
+              }
+            }
+          }
+
           this.scrollLogToBottom();
         }
 
@@ -102,10 +114,12 @@ export class LogViewerComponent implements AfterViewInit {
   private scheduleRefresh() {
     this._logAutoRetrieveCount++;
 
-    if (this._logAutoRetrieveCount < logAutoRetrieveLimit) {
+    if (this._logAutoRetrieveCount < logAutoRetrieveLimit && !this._endSeen) {
+      console.log(`Log view: Scheduling refresh, ${this._logAutoRetrieveCount} remaining...`);
+
       setTimeout(() => {
         this.onRefreshLog();
-      }, 2000);
+      }, 3000);
     }
   }
 

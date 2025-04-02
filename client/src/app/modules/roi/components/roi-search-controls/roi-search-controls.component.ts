@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
 import { ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROIService } from "../../services/roi.service";
 import { Subscription } from "rxjs";
@@ -15,7 +15,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
   templateUrl: "./roi-search-controls.component.html",
   styleUrls: ["./roi-search-controls.component.scss"],
 })
-export class ROISearchControlsComponent {
+export class ROISearchControlsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   private _summaries: ROIItemSummary[] = [];

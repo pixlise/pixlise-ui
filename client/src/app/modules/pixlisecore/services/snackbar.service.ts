@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { SnackBarPopupComponent } from "../components/atoms/snackbar-popup/snackbar-popup.component";
 import { LocalStorageService } from "./local-storage.service";
@@ -21,7 +21,7 @@ export type SnackbarDataItem = {
 @Injectable({
   providedIn: "root",
 })
-export class SnackbarService {
+export class SnackbarService implements OnDestroy {
   subscriptions: Subscription = new Subscription();
   history: SnackbarDataItem[] = [];
 
@@ -66,8 +66,11 @@ export class SnackbarService {
       newDetails = (message as WSError).errorText;
     } else if (message instanceof HttpErrorResponse) {
       const httpError = message as HttpErrorResponse;
-      messageText = `Request failed: ${httpError.name} - ${httpError.message}`;
-      newDetails = (message as HttpErrorResponse).message;
+      messageText = httpError.error;
+      if (messageText.length <= 0) {
+        messageText = httpError.message;
+      }
+      newDetails = `Request failed: ${httpError.name} - ${httpError.message}`;
     } else if (typeof message === "object" && message?.errorText) {
       messageText = message.errorText;
     } else if (typeof message === "object" && message?.message) {

@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { catchError, from, mergeMap, Subscription, tap, toArray } from "rxjs";
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
@@ -82,7 +82,7 @@ export interface ImagePickerDialogResponse {
   templateUrl: "./image-picker-dialog.component.html",
   styleUrls: ["./image-picker-dialog.component.scss"],
 })
-export class ImagePickerDialogComponent implements OnInit {
+export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   public imageChoices: ImageChoice[] = [];
   public filteredImageChoices: ImageChoice[] = [];
 
@@ -158,6 +158,10 @@ export class ImagePickerDialogComponent implements OnInit {
     if (this.data.scanIds) {
       this.fetchImagesForScans(this.data.scanIds);
     }
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   fetchImagesForScans(scanIds: string[]): void {
@@ -260,10 +264,6 @@ export class ImagePickerDialogComponent implements OnInit {
     }
   }
 
-  ngOnDestroy() {
-    this._subs.unsubscribe();
-  }
-
   get waitingForImagesTooltip(): string {
     return "Waiting For:\n" + this.waitingForImages.map(img => img.name).join("\n");
   }
@@ -360,9 +360,11 @@ export class ImagePickerDialogComponent implements OnInit {
 
   loadSelectedImageDetails(): void {
     this.selectedImageDetails = "Loading...";
-    this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: this.selectedImagePath })).subscribe((resp: any) => {
-      this.selectedImageDetails = makeImageTooltip(resp.image);
-    });
+    if (this.selectedImagePath.length > 0) {
+      this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: this.selectedImagePath })).subscribe((resp: any) => {
+        this.selectedImageDetails = makeImageTooltip(resp.image);
+      });
+    }
   }
 
   onSelectImage(image: ImageChoice): void {
@@ -382,6 +384,11 @@ export class ImagePickerDialogComponent implements OnInit {
         }
       }
       // else: Single select - don't allow unselecting the only selected image
+      else {
+        this.selectedImagePath = "";
+        this.selectedChoice = null;
+        this.selectedImageDetails = "";
+      }
     } else if (this.selectedImagePath !== image.path) {
       this.selectedImagePath = image.path;
       this.selectedChoice = image;

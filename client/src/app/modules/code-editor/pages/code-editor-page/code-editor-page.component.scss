@@ -66,8 +66,19 @@ $display-height: calc(100vh - 43px - 40px);
 
       width: 100%;
 
-      .add-expressions-btn {
+      .new-btn {
         margin-left: auto;
+        margin-right: 8px;
+
+        .new-btn-container {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+      }
+
+      .add-expressions-btn {
+        // margin-left: auto;
         margin-right: 8px;
 
         .icon {
@@ -441,5 +452,92 @@ $display-height: calc(100vh - 43px - 40px);
   .button-container {
     display: flex;
     justify-content: flex-end;
+  }
+}
+
+.empty-editor {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  gap: 8px;
+
+  .new-btn-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 8px;
+    border-radius: 4px;
+    border: 1px solid #444c50;
+    background: #293137;
+    padding: 8px;
+
+    height: 100px;
+    width: 200px;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+      // background: #2a3036;
+      border: 1px solid #545f64;
+      background: #222829;
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+    }
+
+    .icon {
+      width: 16px;
+    }
+  }
+
+  .empty-expression-label {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .create-btns {
+    display: flex;
+    justify-content: center;
+
+    .create-btn {
+      margin: 4px;
+      flex: 1;
+
+      .inner-btn-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .icon {
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+.new-editor-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+
+  push-button {
+    width: 100%;
+    flex: 1;
+  }
+
+  .inner-btn-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
   }
 }

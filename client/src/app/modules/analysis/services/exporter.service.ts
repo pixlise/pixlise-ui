@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { catchError, combineLatest, forkJoin, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
+import { catchError, combineLatest, forkJoin, from, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
 import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
 import { APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
@@ -450,7 +450,7 @@ msa += `#XPOSITION   : 0.000
 
                 const roiBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} bulk sum`, spectra, scanMeta);
                 if (roiBulkMSA) {
-                  msas.push({ fileName: `${scanId}-bulk-sum-${roiResp.regionOfInterest.name}.msa`, data: roiBulkMSA });
+                  msas.push({ fileName: `${scanId}-BulkSum-${roiResp.regionOfInterest.name}.msa`, data: roiBulkMSA });
                 }
               }
 
@@ -459,7 +459,7 @@ msa += `#XPOSITION   : 0.000
 
                 const roiMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} max value`, spectra, scanMeta);
                 if (roiMaxMSA) {
-                  msas.push({ fileName: `${scanId}-max-value-${roiResp.regionOfInterest.name}.msa`, data: roiMaxMSA });
+                  msas.push({ fileName: `${scanId}-MaxValue-${roiResp.regionOfInterest.name}.msa`, data: roiMaxMSA });
                 }
               }
             }
@@ -468,13 +468,13 @@ msa += `#XPOSITION   : 0.000
           // All Points bulk sum
           const allPointsBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points bulk sum`, spectrumResp.bulkSpectra, scanMeta);
           if (allPointsBulkMSA) {
-            msas.push({ fileName: `${scanId}-bulk-sum-AllPoints.msa`, data: allPointsBulkMSA });
+            msas.push({ fileName: `${scanId}-BulkSum-AllPoints.msa`, data: allPointsBulkMSA });
           }
 
           // All Points max value
           const allPointsMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points max value`, spectrumResp.maxSpectra, scanMeta);
           if (allPointsMaxMSA) {
-            msas.push({ fileName: `${scanId}-max-value-AllPoints.msa`, data: allPointsMaxMSA });
+            msas.push({ fileName: `${scanId}-MaxValue-AllPoints.msa`, data: allPointsMaxMSA });
           }
         } else {
           console.error("Missing data for spectra metadata export");
@@ -690,7 +690,9 @@ msa += `#XPOSITION   : 0.000
         return dataSource
           .prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), currentCalibrations)
           .pipe(
-            switchMap(() => dataSource.getDiffractionPeakEffectData(-1, -1)),
+            switchMap(() => {
+              return from(dataSource.getDetectedDiffraction());
+            }),
             map(() => ({ manualPeaks, currentCalibrations, dataSource }))
           );
       })
@@ -1003,7 +1005,14 @@ msa += `#XPOSITION   : 0.000
     );
   }
 
-  exportExpressionCode(scanId: string, quantId: string, expressionIds: string[]): Observable<WidgetExportData> {
+  exportExpressionCode(
+    userId: string,
+    scanId: string,
+    quantId: string,
+    expressionIds: string[],
+    instrument: string,
+    instrumentConfig: string
+  ): Observable<WidgetExportData> {
     // For now, we only export the first expression...
     if (expressionIds.length < 1) {
       return throwError(() => new Error("At least one expression must be selected when exporting expression code"));
@@ -1017,12 +1026,15 @@ msa += `#XPOSITION   : 0.000
 
         const expExp = new ExpressionExporter();
         return expExp.exportExpressionCode(
+          userId,
           resp.expression as DataExpression,
           scanId,
           quantId,
+          instrument,
+          instrumentConfig,
           this._cachedDataService,
           this._spectrumDataService,
-          this._energyCalibrationService
+          this._energyCalibrationService,
         );
       })
     );

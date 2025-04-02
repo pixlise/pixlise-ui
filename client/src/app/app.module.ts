@@ -24,6 +24,7 @@ import { FormsModule } from "@angular/forms";
 import { ToolbarComponent } from "./components/toolbar/toolbar.component";
 import { SettingsSidebarComponent } from "./components/settings-sidebar/settings-sidebar.component";
 import { MarkdownModule } from "ngx-markdown";
+import { CustomAuthHttpInterceptor } from "./services/custom-http-interceptor.service";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -190,7 +191,9 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
       useClass: HttpInterceptorService,
       multi: true,
     },*/
-    { provide: HTTP_INTERCEPTORS, useClass: AuthHttpInterceptor, multi: true },
+
+    // The below is the Auth0 interceptor, but we have to wrap it in our own to allow "magic link" login to work
+    { provide: HTTP_INTERCEPTORS, useClass: CustomAuthHttpInterceptor, multi: true },
     // AuthHttpInterceptor,
     // provideHttpClient(withInterceptors([authHttpInterceptorFn])),
     {

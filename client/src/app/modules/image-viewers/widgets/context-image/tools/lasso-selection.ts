@@ -37,6 +37,7 @@ import {
   CanvasDrawParameters,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../context-image-model-interface";
+import { Observable, of } from "rxjs";
 
 export class LassoSelection extends BaseContextImageTool {
   private lassoPoints: Point[] = [];
@@ -74,7 +75,7 @@ export class LassoSelection extends BaseContextImageTool {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     const clr = this.getModeColour();
     screenContext.strokeStyle = clr;
     screenContext.lineWidth = this.getDrawLineWidth();
@@ -92,6 +93,8 @@ export class LassoSelection extends BaseContextImageTool {
 
       screenContext.stroke();
     }
+
+    return of(void 0);
   }
 
   private addLassoPoint(ptWorld: Point): void {

@@ -55,7 +55,7 @@ export class PredefinedROIID {
   }
 
   public static isPredefined(id: string): boolean {
-    return id.startsWith(PredefinedROIID.AllPoints + PredefinedROIID.JoinChar) || id.startsWith(PredefinedROIID.SelectedPoints + PredefinedROIID.JoinChar); // || id.startsWith(PredefinedROIID.RemainingPoints);
+    return PredefinedROIID.isAllPointsROI(id) || PredefinedROIID.isSelectedPointsROI(id); // || id.startsWith(PredefinedROIID.RemainingPoints);
   }
 
   public static getScanIdIfPredefined(id: string): string {

@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output } from "@angular/core";
 import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export interface WidgetKeyDisplayData {
@@ -95,8 +95,13 @@ export class WidgetKeyGroup {
   templateUrl: "./widget-key-display.component.html",
   styleUrls: ["./widget-key-display.component.scss"],
 })
-export class WidgetKeyDisplayComponent implements OnInit {
+export class WidgetKeyDisplayComponent implements OnInit, OnChanges {
   @Input() items: WidgetKeyItem[] = [];
+  @Input() exportMode: boolean = false;
+  private _backgroundColor: string = "";
+  lightMode: boolean = false;
+  @Input() fontSize: number = 14;
+
   public groupedItems: WidgetKeyGroup[] = [];
   previewItems: WidgetKeyItem[] = [];
 
@@ -108,6 +113,25 @@ export class WidgetKeyDisplayComponent implements OnInit {
   @Output() onUpdateItems = new EventEmitter<WidgetKeyItem[]>();
 
   constructor() {}
+
+  get fontPadding(): number {
+    return this.fontSize < 12 ? 0 : Math.ceil(this.fontSize / 4);
+  }
+
+  get backgroundColor(): string {
+    return this._backgroundColor;
+  }
+
+  @Input() set backgroundColor(value: string) {
+    const presets = {
+      light: "rgba(255, 255, 255, 0.5)",
+      dark: "rgba(0, 0, 0, 0.5)",
+    };
+
+    this.lightMode = value === "light";
+
+    this._backgroundColor = presets[value as keyof typeof presets] ?? value;
+  }
 
   ngOnInit(): void {
     this.showExpandButton = this.shouldShowExpandButton();
@@ -122,8 +146,12 @@ export class WidgetKeyDisplayComponent implements OnInit {
   }
 
   shouldShowExpandButton(): boolean {
+    if (this.exportMode) {
+      return false;
+    }
+
     // Items + Group Titles
-    let overflowsHeight = this.items.length + this.groupedItems.length > 5;
+    const overflowsHeight = this.items.length + this.groupedItems.length > 5;
     return overflowsHeight || this.checkIfAnyLabelsTruncated();
   }
 
@@ -132,7 +160,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
       return;
     }
 
-    let currentPosition = item.layerOrder;
+    const currentPosition = item.layerOrder;
     let topItem = this.items.find(i => i.layerOrder === 0);
     if (!topItem) {
       this.groupItems(this.items);
@@ -142,14 +170,15 @@ export class WidgetKeyDisplayComponent implements OnInit {
         return;
       }
     }
+
     item.layerOrder = 0;
-    topItem!.layerOrder = currentPosition;
+    topItem.layerOrder = currentPosition;
 
     this.onUpdateItems.emit(this.items);
   }
 
   getItemsFromGroups(): WidgetKeyItem[] {
-    let newItems = this.groupedItems.reduce((acc, group) => {
+    const newItems = this.groupedItems.reduce((acc, group) => {
       return acc.concat(group.items);
     }, [] as WidgetKeyItem[]);
 
@@ -158,7 +187,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
 
   onToggleItemVisibility(item: WidgetKeyItem, group: WidgetKeyGroup | null, event: MouseEvent): void {
     if (event.altKey) {
-      let isOnlyItemVisible = this.items.every(existingItem => existingItem.isVisible === false || existingItem.id === item.id);
+      const isOnlyItemVisible = this.items.every(existingItem => existingItem.isVisible === false || existingItem.id === item.id);
       if (isOnlyItemVisible) {
         this.makeAllVisible();
       } else {
@@ -171,14 +200,14 @@ export class WidgetKeyDisplayComponent implements OnInit {
         item.isVisible = !item.isVisible;
       }
 
-      let newItems = this.getItemsFromGroups();
+      const newItems = this.getItemsFromGroups();
       this.onUpdateItems.emit(newItems);
     }
   }
 
   onToggleGroupVisibility(group: WidgetKeyGroup, event: MouseEvent): void {
     if (event.altKey) {
-      let isOnlyGroupVisible = this.groupedItems.every(existingGroup => existingGroup.isVisible === false || existingGroup.title === group.title);
+      const isOnlyGroupVisible = this.groupedItems.every(existingGroup => existingGroup.isVisible === false || existingGroup.title === group.title);
       if (isOnlyGroupVisible) {
         this.makeAllVisible();
       } else {
@@ -188,7 +217,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
       group.isVisible = !group.isVisible;
     }
 
-    let newItems = this.getItemsFromGroups();
+    const newItems = this.getItemsFromGroups();
     this.onUpdateItems.emit(newItems);
   }
 
@@ -199,7 +228,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
 
     item.isVisible = true;
 
-    let newItems = this.items.map(existingItem => {
+    const newItems = this.items.map(existingItem => {
       existingItem.isVisible = existingItem.id === item.id;
       return existingItem;
     });
@@ -212,7 +241,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
       existingGroup.isVisible = existingGroup.title === group.title;
     });
 
-    let newItems = this.items.map(existingItem => {
+    const newItems = this.items.map(existingItem => {
       existingItem.isVisible = group.items.some(item => item.id === existingItem.id);
       return existingItem;
     });
@@ -225,7 +254,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
       group.isVisible = true;
     });
 
-    let newItems = this.items.map(existingItem => {
+    const newItems = this.items.map(existingItem => {
       existingItem.isVisible = true;
       return existingItem;
     });
@@ -242,11 +271,11 @@ export class WidgetKeyDisplayComponent implements OnInit {
   }
 
   groupItems(items: WidgetKeyItem[]): WidgetKeyGroup[] {
-    let isOrdered = items.every(item => item.layerOrder > -1);
+    const isOrdered = items.every(item => item.layerOrder > -1);
 
-    let groups = new Map<string, WidgetKeyItem[]>();
+    const groups = new Map<string, WidgetKeyItem[]>();
     items.forEach((item, i) => {
-      let groupLabel = item.group || "";
+      const groupLabel = item.group || "";
       if (!groups.has(groupLabel)) {
         groups.set(groupLabel, []);
       }
@@ -256,11 +285,11 @@ export class WidgetKeyDisplayComponent implements OnInit {
       }
     });
 
-    let groupArray: WidgetKeyGroup[] = [];
+    const groupArray: WidgetKeyGroup[] = [];
     groups.forEach((items, key) => {
-      let currentOpenStatus = this.groupedItems.find(group => group.title === key)?.isOpen ?? groups.size < 2;
-      let newGroup = new WidgetKeyGroup(key, items, currentOpenStatus);
-      let isAllSameColour = items.every(item => item.colour && item.colour === items[0].colour);
+      const currentOpenStatus = this.groupedItems.find(group => group.title === key)?.isOpen ?? groups.size < 2;
+      const newGroup = new WidgetKeyGroup(key, items, currentOpenStatus);
+      const isAllSameColour = items.every(item => item.colour && item.colour === items[0].colour);
       if (isAllSameColour) {
         newGroup.colour = items[0].colour;
       }
@@ -277,7 +306,7 @@ export class WidgetKeyDisplayComponent implements OnInit {
 
   onClickLabel(item: WidgetKeyItem, event: MouseEvent): void {
     if (event.altKey) {
-      let isOnlyItemVisible = this.items.every(existingItem => existingItem.isVisible === false || existingItem.id === item.id);
+      const isOnlyItemVisible = this.items.every(existingItem => existingItem.isVisible === false || existingItem.id === item.id);
       if (isOnlyItemVisible) {
         this.makeAllVisible();
       } else {
@@ -291,12 +320,16 @@ export class WidgetKeyDisplayComponent implements OnInit {
   }
 
   checkIfAnyLabelsTruncated(): boolean {
-    let groupTitleIsTruncated = this.groupedItems.some(group => group.title.length > this.maxTitleCharacters);
+    if (this.exportMode) {
+      return false;
+    }
+
+    const groupTitleIsTruncated = this.groupedItems.some(group => group.title.length > this.maxTitleCharacters);
     if (groupTitleIsTruncated) {
       return true;
     }
 
-    let itemIsTruncated = this.items.some(item => this.getLabel(item).length > this.maxTitleCharacters);
+    const itemIsTruncated = this.items.some(item => this.getLabel(item).length > this.maxTitleCharacters);
     return itemIsTruncated;
   }
 
@@ -305,10 +338,9 @@ export class WidgetKeyDisplayComponent implements OnInit {
   }
 
   getTruncatedLabel(item: WidgetKeyItem): string {
-    let maxLength = this.maxTitleCharacters;
     let label = this.getLabel(item);
-    if (label.length > maxLength) {
-      label = label.slice(0, maxLength) + "...";
+    if (!this.exportMode && label.length > this.maxTitleCharacters) {
+      label = label.slice(0, this.maxTitleCharacters) + "...";
     }
 
     return label;

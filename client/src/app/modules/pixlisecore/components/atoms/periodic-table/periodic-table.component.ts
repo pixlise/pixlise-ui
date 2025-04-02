@@ -69,6 +69,10 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges {
     this.rebuild();
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     // Inputs may have changed, but if we just call rebuild things get slow
     // so we really only care about the things that change element tile states
@@ -106,10 +110,6 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges {
 
     this.makeGrayedLookup(minZ, maxZ);
     this.buildTable();
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   onTileClicked(event: ElementTileClickEvent): void {

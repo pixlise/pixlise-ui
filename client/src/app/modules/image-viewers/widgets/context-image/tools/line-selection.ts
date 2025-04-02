@@ -37,6 +37,7 @@ import {
   CanvasDrawParameters,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../context-image-model-interface";
+import { Observable, of } from "rxjs";
 
 export class LineSelection extends BaseContextImageTool {
   private startPoint: Point | null = null;
@@ -112,7 +113,7 @@ export class LineSelection extends BaseContextImageTool {
     return ptRadius;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     const clr = this.getModeColour();
     screenContext.fillStyle = clr;
     screenContext.strokeStyle = clr;
@@ -140,6 +141,7 @@ export class LineSelection extends BaseContextImageTool {
 
       screenContext.stroke();
     }
+    return of(void 0);
   }
 
   // Return true if something was changed

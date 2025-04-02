@@ -137,12 +137,21 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectedTagIDs]="filterTags"
         [showCurrentTagsSection]="false"
         (onTagSelectionChanged)="onFilterTagChange($event)"></tag-picker>
+      <icon-button
+        title="Instrument Filter"
+        (click)="onFilterMenu($event)"
+        type="filter"
+        [notificationCount]="selectedInstrumentCount"
+        badgeText="instruments selected"></icon-button>
+      <div class="dim">{{ searchResultSummary }}</div>
+      <push-button *ngIf="publicOnlyUser" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
       <push-button
         #newWorkspaceButton
         [notificationCount]="newWorkspaceScans.length"
+        badgeText="scans selected"
         [customDialog]="newWorkspaceDialog"
         buttonStyle="gray"
         title="Create a new workspace"
@@ -375,7 +384,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div *ngFor="let item of selectedWorkspaceSnapshots; let i = index" class="snapshot">
               <div class="info">
                 <span class="snapshot-name">{{ item.name || (item.snapshotParentId ? "Snapshot " + (selectedWorkspaceSnapshots.length - i) : "Original") }}</span>
-                <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "short" }}</span>
+                <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</span>
               </div>
               <div class="action-btns">
                 <push-button *ngIf="item.snapshotParentId" (onClick)="onDuplicateClick(item, $event)" buttonStyle="gray">Duplicate</push-button>
@@ -504,6 +513,37 @@ POSSIBILITY OF SUCH DAMAGE.
               <span class="meta-name">{{ item.label }}</span>
               <span class="meta-value">{{ item.value }}</span>
             </div>
+          </div>
+          <div class="row">
+            <div class="meta-heading">Access</div>
+            <share-ownership-item-button
+              *ngIf="selectedScan.id"
+              [id]="selectedScan.id"
+              [ownershipSummary]="selectedScan.owner || null"
+              [type]="scanItemType"></share-ownership-item-button>
+          </div>
+          <div class="meta-area align-start fx-column">
+            <div *ngFor="let item of selectedScanAccess" class="summary-item">
+              <span class="meta-name">{{ item.label }}</span>
+              <span class="meta-value">{{ item.value }}</span>
+            </div>
+          </div>
+          <div class="meta-heading">Scan Update Times</div>
+          <div class="meta-area align-start fx-column">
+            <div *ngFor="let item of selectedScanUpdates" class="summary-item">
+              <span class="meta-name">{{ item.label }}</span>
+              <span class="meta-value">{{ item.value }}</span>
+            </div>
+            <ng-container *ngIf="limitedUpdateTimes; else elseShowAllUpdates">
+              <div class="show-more clickable" (click)="onShowMoreUpdates()">Show all update times...</div>
+            </ng-container>
+        
+            <ng-template #elseShowAllUpdates>
+              <div *ngFor="let item of selectedScanUpdatesExtended" class="summary-item">
+                <span class="meta-name">{{ item.label }}</span>
+                <span class="meta-value">{{ item.value }}</span>
+              </div>
+            </ng-template>
           </div>
         </div>
       </div>

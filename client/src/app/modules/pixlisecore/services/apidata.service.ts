@@ -12,22 +12,28 @@ import { environment } from "src/environments/environment";
 
 const TIMEOUT_CHECK_INTERVAL_MS = 3000;
 const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
+const MAX_OUTSTANDING_REQ = environment.maxOutstandingAPIRequests;
 
 @Injectable({
   providedIn: "root",
 })
 export class APIDataService extends WSMessageHandler implements OnDestroy {
   private _subs = new Subscription();
-  private _isConnected = false;
 
   private _id = randomString(6);
+
+  outstandingRequests$: Subject<string> = new Subject<string>();
+  private _lastOutstandingRequestInfo = "";
+
+  // These are requests we haven't sent yet, because we have too many outstanding requests to the server anyway
+  private _queuedRequests: Map<number, WSOustandingReq> = new Map<number, WSOustandingReq>();
 
   // Generating message IDs:
   // These are what we send up, API generates reply with same ID in it to specify what it's replying to. This can be
   // any number, and we can re-send a request and expect a reply to it (even after a reconnection - id sequence
   // doesnt have to restart). If it overflows MAX_INT, it loops around, that's ok! We just make sure our counter
   // also restarts at MAX_INT
-  private _lastMsgId = 1;
+  private _lastMsgId = 0;
 
   protected nextMsgId() {
     this._lastMsgId++;
@@ -39,7 +45,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
 
   constructor(private _apiComms: APICommService) {
     super();
-    console.log(`APIDataService [${this._id}] created`);
+    console.debug(`APIDataService [${this._id}] created`);
 
     this.connect();
   }
@@ -78,7 +84,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   }
 
   private onConnected() {
-    // Find all outstanding requests
+    // Resend any outstanding requests...
     const reqs = [];
     for (const outstanding of this._outstandingRequests.values()) {
       reqs.push(outstanding.req);
@@ -86,7 +92,6 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
     }
 
     console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${reqs.length} items`);
-    this._isConnected = true;
 
     // Send everything in the queue
     // TODO: Should this be in random order? That way on repeated disconnection we eventually whittle down
@@ -94,6 +99,25 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
     for (const msg of reqs) {
       this._apiComms.send(msg);
     }
+
+    // If there were less than the outstanding limit, send that many queued messages
+    if (reqs.length < MAX_OUTSTANDING_REQ) {
+      let toSend = MAX_OUTSTANDING_REQ - reqs.length; // The max we can send
+
+      // Work out how many we actually have to send
+      if (this._queuedRequests.size < toSend) {
+        toSend = this._queuedRequests.size;
+      }
+
+      if (toSend > 0) {
+        console.log(`APIDataService [${this._id}] sending ${toSend} more messages to fill outstanding requests`);
+        for (let c = 0; c < toSend; c++) {
+          this.sendNextQueuedMsg();
+        }
+      }
+    }
+
+    this.updateOutstandingInfo();
 
     // Start a timeout checking mechanism
     this._subs.add(
@@ -104,17 +128,69 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   }
 
   protected sendRequest(wsmsg: WSMessage, subj: Subject<any>): void {
+    // Generate next message ID
     wsmsg.msgId = this.nextMsgId();
-    this._outstandingRequests.set(wsmsg.msgId, new WSOustandingReq(wsmsg, subj));
 
-    // If we're not yet connected, queue this up
+    // Queue the message...
+    this._queuedRequests.set(wsmsg.msgId, new WSOustandingReq(wsmsg, subj));
+
+    // Print out a complaint if we're not yet connected
     if (!this._apiComms.isConnected) {
+      // SO we have some logs of what's queued up...
       const jsonMsg = WSMessage.toJSON(wsmsg);
       console.log(`APIDataService [${this._id}] sendRequest while not yet connected. Queued up: ${JSON.stringify(jsonMsg)}`);
       return;
     }
 
-    this._apiComms.send(wsmsg);
+    // Call the standard send next message, it will select what's highest priority to send
+    this.sendNextQueuedMsg();
+    this.updateOutstandingInfo();
+  }
+
+  private sendNextQueuedMsg() {
+    if (!this._apiComms.isConnected) {
+      return;
+    }
+
+    if (this._queuedRequests.size <= 0) {
+      return;
+    }
+
+    if (this._outstandingRequests.size >= MAX_OUTSTANDING_REQ) {
+      console.warn(`sendNextQueuedMsg: ${this._outstandingRequests.size} msgs already, not sending more...`);
+      return;
+    }
+
+    // If we have any non-spectrum requests, send those first
+    let reqSend: WSOustandingReq | undefined = undefined;
+
+    for (const req of this._queuedRequests.values()) {
+      if (!req.req.spectrumReq) {
+        reqSend = req;
+        this._queuedRequests.delete(reqSend.req.msgId);
+        console.debug(`sendNextQueuedMsg: Selected non-spectrum ${reqSend.req.msgId}`);
+        break;
+      }
+    }
+
+    if (!reqSend) {
+      reqSend = this._queuedRequests.values().next().value;
+      if (reqSend) {
+        console.debug(`sendNextQueuedMsg: Selected spectrum ${reqSend.req.msgId}`);
+        this._queuedRequests.delete(reqSend.req.msgId);
+      }
+    }
+
+    if (!reqSend) {
+      console.warn(`sendNextQueuedMsg: Nothing to send!`);
+      return;
+    }
+
+    // We're connected, see if there's anything to queue up
+    this._outstandingRequests.set(reqSend?.req.msgId, reqSend);
+    this._apiComms.send(reqSend.req);
+
+    // TODO: ensure updateOutstandingInfo(); is called! Not calling it here because we might be called in a loop!
   }
 
   private dispatchMessage(wsmsg: WSMessage) {
@@ -125,8 +201,12 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
         console.error(`APIDataService [${this._id}] Failed to dispatch message: ` + JSON.stringify(WSMessage.toJSON(wsmsg), null, 4));
       }
     } else {
-      console.log("<--Recd for msgId:" + wsmsg.msgId);
+      console.debug("<--Recd for msgId:" + wsmsg.msgId);
     }
+
+    // Send another message if we have one queued up
+    this.sendNextQueuedMsg();
+    this.updateOutstandingInfo();
   }
 
   private checkTimeouts() {
@@ -142,6 +222,45 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
         // This has timed out, error out or retry or something
         req.sub.error(new WSError(ResponseStatus.WS_TIMEOUT, "Request timed out for: " + getMessageName(req.req), "Try reloading the PIXLISE tab"));
       }
+    }
+  }
+
+  private updateOutstandingInfo() {
+    const msgs: string[] = [];
+
+    if (this._queuedRequests.size > 0) {
+      msgs.push(`${this._queuedRequests.size} queued`);
+    }
+
+    if (this._outstandingRequests.size > 0) {
+      let msgCount = 0;
+      let spectrumCount = 0;
+
+      for (const req of this._outstandingRequests.values()) {
+        if (req.req.spectrumReq) {
+          spectrumCount++;
+        } else {
+          msgCount++;
+        }
+      }
+
+      if (msgCount > 0) {
+        msgs.push(`${msgCount} requests`);
+      }
+      if (spectrumCount > 0) {
+        msgs.push(`${spectrumCount} spectrum requests`);
+      }
+    }
+
+    let msg = "";
+    if (msgs.length > 0) {
+      msg = "Waiting for: " + msgs.join(", ");
+    }
+
+    // Only update if this message is any different
+    if (msg != this._lastOutstandingRequestInfo) {
+      this.outstandingRequests$.next(msg);
+      this._lastOutstandingRequestInfo = msg;
     }
   }
 }

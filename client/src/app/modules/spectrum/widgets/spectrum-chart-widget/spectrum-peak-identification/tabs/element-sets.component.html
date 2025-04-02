@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <element-set-row
             *ngIf="quantElementSet"
             [item]="quantElementSet"
-            [showShareButton]="false"
+            [enableSharing]="false"
             [showDeleteButton]="false"
             (onUse)="onUseElementSet($event)"
             ></element-set-row>
@@ -42,21 +42,17 @@ POSSIBILITY OF SUCH DAMAGE.
         <element-set-row
             *ngFor="let elemSet of userElementSetSummaries"
             [item]="elemSet"
-            [showShareButton]="true"
             [showDeleteButton]="true"
             (onUse)="onUseElementSet($event)"
             (onDelete)="onDeleteElementSet($event)"
-            (onShare)="onShareElementSet($event)"
             ></element-set-row>
         <div *ngIf="sharedElementSetSummaries.length > 0" class="list-subheading">Shared Element Sets</div>
         <element-set-row
             *ngFor="let elemSet of sharedElementSetSummaries"
             [item]="elemSet"
-            [showShareButton]="false"
             [showDeleteButton]="false"
             (onUse)="onUseElementSet($event)"
             (onDelete)="onDeleteElementSet($event)"
-            (onShare)="onShareElementSet($event)"
             ></element-set-row>
     </div>
     <div class="footer"></div>

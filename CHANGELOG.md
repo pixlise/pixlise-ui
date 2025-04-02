@@ -1,4 +1,168 @@
-## 4.49.0 (Latest)
+## 4.64.0 (LATEST)
+
+### New Features
+- Adds interactive exporter for Binary Plots, Ternary Plots, and Context Images
+  - Standard controls for font size, color, border widths, dimensions, etc.
+- Adds key to Context Image
+- Adds show MIST ROI Reproducibility to Context Image
+- Dataset tiles page now allows viewing the list of all update times for the selected dataset
+- Local expression cache is only used for a limited now, then retrieved from server
+- Spectrum calibration set to default values for PIXL EM imports
+
+### Bug Fixes
+- Fixed issue with export dialog not showing correct data
+- Cache saving/loading of expressions is now done via HTTP so we shouldn't be limited by max message size of web socket. More meta data is also saved to assist searching/clearing it
+  - NOTE: This release will effectively "clear" the locally cached expression data and start retrieving it from the server again until local caching builds up again.
+
+## 4.63.0 (2025-03-19)
+
+### New Features
+- Dataset tiles page now shows Join Groups button up to for users who are only in one group
+- Group Admin page now sorts groups on left pane
+- PIXL EM imports now detect the word cal-target, cal_target or caltarget (case insensitively) and supply the "-t" flag to beam geometry tool to ensure cal target EM scans are generated correctly
+
+### Bug Fixes
+- Fixed histogram error displayed when it had no expressions specified (happens while PIXLISE workspace is loading).
+
+## 4.62.0 (2025-03-10)
+
+### New Features
+- Dataset browsing now remembers the instrument filter you set until you reload the page
+
+### Bug Fixes
+- Fixed PIXL EM importer default image setting - was using an invalid path and failing
+- Image upload alignment was having issues when setting the offset x/y values
+- Clicking on a diffraction list item in the sidebar wasn't zooming the spectrum onto that diffraction peak
+- Dates displayed related to workspaces now show month in MMM text format to disambiguate date format
+- When no scans are configured, image picking on the context image showed weird behaviour. This is now fixed and a warning is displayed to remind user to configure scans.
+
+## 4.61.0 (2025-03-05)
+
+### New Features
+- Expression Cache Controls
+  - Minor feature that allows you to clear your local and remote cache for any given expression in your workspace from expression layer 3-dots menu
+  - Can also delete all cached versions of an exression from the "Metadata" dialog in the code editor
+- Code Editor Expression Exporting
+  - Added a new export button to the code editor console, which allows you to export the current output as a CSV
+- Histogram selection display now updates as selection changes
+- Separate zoom and whiskers display modes added for histogram
+- Hovering over PMCs from multiple scans on the same image now works, scan name is displayed at bottom-right with PMC number
+- PIXL EM importer now sets a default image and a unique RTT aka Dataset ID each time it runs to prevent overwriting the same one if RTT is not changed
+
+## 4.60.0 (2025-02-03)
+
+### New Features
+- Optimised request sending to have an outgoing queue, and we only send a configurable amount of requests at a time. This also allows us to prioritise messages, eg spectrum requests can be last, we want other widgets to get working sooner on load.
+- When selecting dataset tiles, the right side summary now shows some info about ownership of the dataset, along with a sharing button
+- While PIXLISE is waiting on responses to requests from the server it now shows a loading animation in the top toolbar. Mouse hovering over it explains what it's waiting for. This should help clarify what PIXLISE is doing when loading larger datasets.
+- Adds new entry point for browsing and creating expressions and modules in the code editor
+  - Replaces empty expression with new create buttons
+  - Adds "New" menu button in the top left Explorer panel
+
+### Bug Fixes
+- Fixed issues with setting uploaded image match transforms to non-integer values, sometimes mongo DB was failing to convert a float64 to float32 precision and bombed out
+- Small fixes to dataset customisation page, with better error handling
+- Image picker now works correctly when there are no images (previously it was showing errors)
+- Import dialog now tails the log for longer, and tries to detect end of log messages to stop refreshing
+- Fixed issue where last used expression loses modules when user switches tab and then switches back to the code editor
+- Popup (bottom-left) "snack" style error messages weren't showing the HTTP error text correctly
+- Fixes issue where dataset replacement for earlier downlinked context images wasn't working correctly
+
+## 4.59.0 (2025-01-14)
+
+### New Features
+- Added instrument filter on dataset tiles page. If nothing selected, all datasets shown, but can filter down to just what's selected.
+
+### Bug Fixes
+- Various small bug fixes that were detected by our error logging system. Seemingly people have had times when they hovered over a PMC with missing data and maybe they saw an error dialog even though it's a valid situation. Hopefully these are resolved now.
+
+## 4.58.0 (2025-01-10)
+
+### Bug Fixes
+- Order beam location versions from latest to oldest on dropdown
+
+## 4.57.0 (2025-01-10)
+
+### New Features
+- Reviewer Workspaces: A new workspace type that allows for reviewing datasets. Reviewer workspaces are read-only and have an associated magic link that can be shared and accessed by anyone even without a PIXLISE account. 
+  - Reviewer workspaces can be created from the "Workspace" tab in the sidebar under "Review".
+  - Only one reviewer workspace can be created per workspace and it can be set to last indefinitely or expire after a set period.
+  - NOTE: Datasets included in a reviewer workspace must be shared with the Public group to be accessible by reviewers.
+- Confusion around image versions and what beam location versions exist for them has now been resolved:
+  - No matter what image you have selected, the latest version of that image will be displayed.
+  - Context image's image options dialog now shows a warning if the displayed image is a newer version than the selected one to make it clear (see tooltip).
+  - Beam locations are now stored independently of the image version, so you should be able to load beam location version 1, 2 or 3 if it's available for a given image as opposed to previously hunting through all versions of an image.
+  - Importer has been updated to save beam locations in the new way too.
+- Lua expressions now have access to a new userId field, to assist with caching purposes
+
+## 4.56.0 (2024-12-09)
+
+### Bug Fixes
+- Fixed exporter issue where zip file contained empty folders or was missing files. Was due to invalid file names being generated for files in the zip file because they contained things like ROI names (which may have a /, % or > character in them!). Zip file generation now converts file names to be something valid, by replacing the bad characters with a _. The names may not be as expected by the person exporting, but at least their computer won't scoff at the names, and allow viewing exported files!
+- PIXLISE data backups for very large files were failing and causing the API to restart. These are now streamed instead of read into memory in one go.
+- Fixed issue with importing datasets where in some cases it would try to import multiple sets of files that were uploaded incorrectly and failing to complete.
+- Importer now correctly reports free disk space when it starts reading in uploaded files (was reporting 0 bytes).
+- EM importer wasn't able to read EM data correctly in cases where it differed significantly from FM SDF Peek output. It seems a different version of SDF Peek is used, so importer had to be updated to be more flexible when some rows are written in different formats, RTTs and SCLKs written in different ways, etc. Also ensured EM datasets are imported with the correct detector config applied.
+- EM importer failing (returning an error) was causing API to crash due to trying to set owner of the invalid imported scan. 
+
+## 4.55.0 (2024-11-22)
+
+### New Features
+- Small scan picker on side-bar dataset configuration panel behaves the same as dataset tiles page when filtering/sorting scans
+- Added element set functionality in the Display Fit dialog
+- Quantification table now works across multiple scans properly. When we added this functionality to the rest of PIXLISE the quant table wasn't fully implemented. You can now select quants from multiple scans, and separately ROIs from multiple scans. When they overlap, a table will get generated.
+
+### Bug Fixes
+- Made element list on Display Fit scroll properly if too many selected to fit
+- Small picker dialog (eg when picking quants on quant table) is now scrollable to support case of multiple scans more flexibly
+
+## 4.54.0 (2024-11-20)
+
+### New Features
+- Dataset Customisation page now shows spinners while it's doing things because until now it provided little feedback. The layout was changed to be a little more useful, and redundant features like dataset name/description/tag editing were removed (they have been available on the dataset tiles page for several months now). Brightness and Opacity are now displayed as a % and more accurately controllable.
+
+### Bug Fixes
+- Fixed context image pan/zoom, in some conditions it caused a division by zero and was written to view state, where it then failed to reload
+- Fixed issue when multiple scans are loaded and context images displayed for more than one of those scans - was showing error "Image beam locations not found", but a tab reload worked.
+- Dataset Customisation: fixed bug where deleting an uploaded image, and uploading a new one with the same name doesn't clear cache, old image is displayed.
+- Dataset Customisation: Fixed issue with brighness slider on image upload, which now allows dimming as well as brightening.
+- Removed redundant caching of images downloaded (browser and our own DB were both caching it). This should bring a slight memory usage improvement
+
+## 4.53.0 (2024-11-15)
+
+### Features
+- Added ability to upload PIXL EM datasets. Requires zipping up the SDF-Peek output directory (or a subset of files). Click the "Upload" button on the dataset tiles page and you can select the dataset type "pixl-em", enter the RTT of the dataset you're wanting to import (SDF-Peek output may contain data from multiple RTTs, so you have to specify which one you're importing). The upload screen has more instructions too.
+- Dataset import pipeline is now optimised, existing datasets are quicker to import because they are not spanned across multiple zip files. We now have a tool we can run to optimise this in future if it gets fragmented.
+
+### Bug Fixes
+- Fixed display of test Sol numbers for datasets - year was off by one
+
+## 4.52.0 (2024-11-15)
+
+### Bug Fixes
+- Fixed issue when attempting to just change the color order of an existing RGB Mix expression in the expression picker
+
+## 4.51.0 (2024-10-30)
+
+### Features
+- Replace dataset from active workspace in dataset config tab under three dots menu
+  - This dialog is the same as the Workspace Templating "replace scan" feature, but acts as a shortcut to replace and reload the active workspace
+
+### Bug Fixes
+- Fixed issue causing diffraction and roughness data on the side-bar failing to load
+
+## 4.50.0 (2024-10-29)
+
+### Features
+- Subtle custom color selection for ROI design improvements
+
+### Bug Fixes
+- Exporting context image was still creating some black images at times, should not happen again
+- Exporting "large" versions of plots didn't correctly change the DPI to ensure we have high resolution axis/keys/etc. The width/height of small vs large images exported have been adjusted.
+- Removed "dark mode" from RGBU export for now because it ended up exporting only a few black spots
+- Fixed a spelling mistake
+
+## 4.49.0 (2024-10-10)
 
 ### Features
 - **Workspace Templating** Allows workspaces to be duplicated and different scans, ROIs, quantifications, and images to be substituted in.

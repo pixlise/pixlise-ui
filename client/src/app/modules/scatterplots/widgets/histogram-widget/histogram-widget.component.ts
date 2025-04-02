@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { catchError, map, Observable, Subscription } from "rxjs";
+import { catchError, first, map, Observable, Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
@@ -28,7 +28,9 @@ import {
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIService } from "../../../roi/services/roi.service";
-import { RegionSettings } from "../../../roi/models/roi-region";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
 @Component({
   selector: "histogram-widget",
@@ -36,6 +38,7 @@ import { RegionSettings } from "../../../roi/models/roi-region";
   styleUrls: ["./histogram-widget.component.scss"],
 })
 export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+  private _lastBeamSelection: BeamSelection | undefined = undefined;
   mdl = new HistogramModel();
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
@@ -98,6 +101,122 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     };
   }
 
+  ngOnInit() {
+    this._subs.add(
+      this.widgetData$.subscribe((data: any) => {
+        const histogramData: HistogramState = data as HistogramState;
+
+        if (histogramData) {
+          if (histogramData.expressionIDs) {
+            this.mdl.expressionIds = histogramData.expressionIDs;
+          }
+
+          this.mdl.logScale = histogramData.logScale;
+
+          // If we have an old style record, try to reinterpret it in the new scheme
+          if (!histogramData.zoomMode) {
+            this.mdl.zoomMode = HistogramModel.ZoomModeAll;
+          } else {
+            this.mdl.zoomMode = histogramData.zoomMode;
+          }
+
+          if (!histogramData.whiskerDisplayMode) {
+            if (histogramData.showWhiskers) {
+              this.mdl.whiskerDisplayMode = histogramData.showStdDeviation ? HistogramModel.WhiskersStdDev : HistogramModel.WhiskersStdErr;
+            } else {
+              this.mdl.whiskerDisplayMode = HistogramModel.WhiskersNone;
+            }
+          } else {
+            this.mdl.whiskerDisplayMode = histogramData.whiskerDisplayMode;
+          }
+
+          if (histogramData.visibleROIs) {
+            this.mdl.dataSourceIds.clear();
+            histogramData.visibleROIs.forEach(roi => {
+              if (this.mdl.dataSourceIds.has(roi.scanId)) {
+                const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
+                dataSource!.roiIds.push(roi.id);
+                this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
+              } else {
+                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
+                this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
+              }
+
+              if (this.scanId !== roi.scanId) {
+                this.scanId = roi.scanId;
+              }
+            });
+
+            this.update();
+          }
+        } else {
+          this.setInitialConfig();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe(selection => {
+        // Ensure no selected points regions are in the list...
+        for (const [scanId, ids] of this.mdl.dataSourceIds) {
+          let dataSource = this.mdl.dataSourceIds.get(scanId);
+          dataSource!.roiIds = dataSource!.roiIds.filter(id => !PredefinedROIID.isSelectedPointsROI(id));
+        }
+
+        // Remember the selection because we'll need it
+        this._lastBeamSelection = selection.beamSelection;
+
+        // Ensure we have the region settings for the selected points
+        this._roiService.getSelectedPointsRegionSettings(this.scanId).subscribe();
+        this.update();
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result /*&& result.selectedExpressions?.length > 0*/) {
+          this.mdl.expressionIds = [];
+
+          for (const expr of result.selectedExpressions) {
+            this.mdl.expressionIds.push(expr.id);
+          }
+
+          let roiIds = [PredefinedROIID.getAllPointsForScan(this.scanId)];
+
+          // If we already have a data source for this scan, keep the ROI ids
+          const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+          if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+            roiIds = existingSource.roiIds;
+          }
+          this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+        }
+
+        this.update();
+        this.saveState();
+
+        // Expression picker has closed, so we can stop highlighting this widget
+        this._analysisLayoutService.highlightedWidgetId$.next("");
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        // User may have switched quants or something, update our view
+        this.update();
+      })
+    );
+
+    this.reDraw();
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   private setInitialConfig() {
     this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
@@ -139,7 +258,13 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     for (const exprId of this.mdl.expressionIds) {
       for (const [scanId, ids] of this.mdl.dataSourceIds) {
         for (const roiId of ids.roiIds) {
-          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          let roiIdRequested = roiId;
+          // NOTE: If we're requesting the selected points ROI, we actually want ALL points!
+          if (PredefinedROIID.isSelectedPointsROI(roiId)) {
+            roiIdRequested = PredefinedROIID.getAllPointsForScan(scanId);
+          }
+
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiIdRequested, DataUnit.UNIT_DEFAULT));
 
           // Get the error column if this was a predefined expression
           const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
@@ -149,157 +274,57 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
             // Try query it
             const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiIdRequested, DataUnit.UNIT_DEFAULT));
           }
         }
       }
     }
 
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
+    try {
+      this._widgetData
+        .getData(query)
+        .pipe(first())
+        .subscribe({
+          next: data => {
+            this.setData(data).pipe(first()).subscribe();
+          },
+          error: err => {
+            this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();
+          },
         });
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err)).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-    });
+    } catch (err) {
+      if (err instanceof WidgetError) {
+        const werr = err as WidgetError;
+        werr.message = "Histogram: " + werr.message;
+        this._snackService.openError(werr);
+      } else {
+        this.setData(new RegionDataResults([], httpErrorToString(err, "Histogram")))
+          .pipe(first())
+          .subscribe();
+      }
+    }
   }
 
   private setData(data: RegionDataResults): Observable<void> {
     return this._analysisLayoutService.availableScans$.pipe(
       map(scans => {
-        const errs = this.mdl.setData(data, scans);
+        const errs = this.mdl.setData(data, scans, this._lastBeamSelection);
         if (errs.length > 0) {
           for (const err of errs) {
             this._snackService.openError(err.message, err.description);
           }
         }
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.isWidgetDataLoading = false;
       }),
       catchError(err => {
         this._snackService.openError("Failed to set data", `${err}`);
         return [];
       })
     );
-  }
-
-  ngOnInit() {
-    this._subs.add(
-      this.widgetData$.subscribe((data: any) => {
-        const histogramData: HistogramState = data as HistogramState;
-
-        if (histogramData) {
-          if (histogramData.expressionIDs) {
-            this.mdl.expressionIds = histogramData.expressionIDs;
-          }
-
-          this.mdl.logScale = histogramData.logScale;
-          this.mdl.showStdDeviation = !histogramData.showStdDeviation;
-          this.mdl.showWhiskers = histogramData.showWhiskers;
-
-          if (histogramData.visibleROIs) {
-            this.mdl.dataSourceIds.clear();
-            histogramData.visibleROIs.forEach(roi => {
-              if (this.mdl.dataSourceIds.has(roi.scanId)) {
-                const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
-                dataSource!.roiIds.push(roi.id);
-                this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
-              } else {
-                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
-                this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
-              }
-
-              if (this.scanId !== roi.scanId) {
-                this.scanId = roi.scanId;
-              }
-            });
-
-            this.update();
-          }
-        } else {
-          this.setInitialConfig();
-        }
-      })
-    );
-
-    this._subs.add(
-      this._selectionService.selection$.subscribe(selection => {
-        for (const [scanId, ids] of this.mdl.dataSourceIds) {
-          let dataSource = this.mdl.dataSourceIds.get(scanId);
-          dataSource!.roiIds = dataSource!.roiIds.filter(id => !PredefinedROIID.isSelectedPointsROI(id));
-        }
-
-        let scanIds = selection?.beamSelection?.getScanIds() || [];
-        if (selection && scanIds.length > 0) {
-          scanIds.forEach(scanId => {
-            let pointsSelected = selection.beamSelection.getSelectedScanEntryPMCs(scanId);
-            if (pointsSelected.size === 0) {
-              return;
-            }
-
-            let selectionPoints = PredefinedROIID.getSelectedPointsForScan(scanId);
-            let dataSource = this.mdl.dataSourceIds.get(scanId);
-            if (dataSource) {
-              dataSource.roiIds = Array.from(new Set([...dataSource.roiIds, selectionPoints]));
-            } else {
-              this.mdl.dataSourceIds.set(scanId, new ScanDataIds(this._analysisLayoutService.getQuantIdForScan(scanId), [selectionPoints]));
-            }
-          });
-        }
-
-        // Ensure we have the region settings for the selected points
-        this._roiService.getSelectedPointsRegionSettings(this.scanId).subscribe();
-        this.update();
-      })
-    );
-
-    this._subs.add(
-      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
-          return;
-        }
-
-        if (result && result.selectedExpressions?.length > 0) {
-          this.mdl.expressionIds = [];
-
-          for (const expr of result.selectedExpressions) {
-            this.mdl.expressionIds.push(expr.id);
-          }
-
-          let roiIds = [PredefinedROIID.getAllPointsForScan(this.scanId)];
-
-          // If we already have a data source for this scan, keep the ROI ids
-          const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-          if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-            roiIds = existingSource.roiIds;
-          }
-          this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-        }
-
-        this.update();
-        this.saveState();
-
-        // Expression picker has closed, so we can stop highlighting this widget
-        this._analysisLayoutService.highlightedWidgetId$.next("");
-      })
-    );
-
-    this.reDraw();
-  }
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
   }
 
   reDraw() {
@@ -393,27 +418,36 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         expressionIDs: this.mdl.expressionIds,
         visibleROIs: visibleROIs,
         logScale: this.mdl.logScale,
-        showStdDeviation: this.mdl.showStdDeviation,
+        whiskerDisplayMode: this.mdl.whiskerDisplayMode,
+        zoomMode: this.mdl.zoomMode,
       })
     );
   }
 
-  get showWhiskers(): boolean {
-    return this.mdl.showWhiskers;
+  get whiskerDisplayModes(): string[] {
+    return [HistogramModel.WhiskersNone, HistogramModel.WhiskersStdDev, HistogramModel.WhiskersStdErr];
   }
 
-  onToggleShowWhiskers() {
-    this.mdl.showWhiskers = !this.mdl.showWhiskers;
+  get whiskerDisplayMode(): string {
+    return this.mdl.whiskerDisplayMode;
+  }
+
+  onChangeWhiskerDisplayMode(mode: string): void {
+    this.mdl.whiskerDisplayMode = mode;
     this.update();
     this.saveState();
   }
 
-  get showStdDeviation(): boolean {
-    return this.mdl.showStdDeviation;
+  get zoomModes(): string[] {
+    return [HistogramModel.ZoomModeAll, HistogramModel.ZoomModeWhisker];
   }
 
-  toggleShowStdDeviation() {
-    this.mdl.showStdDeviation = !this.mdl.showStdDeviation;
+  get zoomMode(): string {
+    return this.mdl.zoomMode;
+  }
+
+  onChangeZoomMode(mode: string): void {
+    this.mdl.zoomMode = mode;
     this.update();
     this.saveState();
   }

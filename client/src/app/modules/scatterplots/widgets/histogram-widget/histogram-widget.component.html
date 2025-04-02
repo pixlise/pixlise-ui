@@ -1,24 +1,27 @@
 <ng-template #settingsMenu>
     <div class="settings">
-        <two-state-push-button
-            [active]="showWhiskers"
-            (onToggle)="onToggleShowWhiskers()"
-            title="Toggle box plot whiskers"
-        >Whiskers
-        </two-state-push-button>
-        <two-state-button
-            leftLabel="Std Dev"
-            rightLabel="Std Err"
-            toolTip="Allows swtching between display of standard deviation or standard error for bars"
-            [active]="!showStdDeviation"
-            (onToggle)="toggleShowStdDeviation()">
-        </two-state-button>
-        <two-state-push-button
-            [active]="logScale"
-            (onToggle)="onToggleLogScale()"
-            title="Toggles logarithmic y-scale"
-        >Log Scale
-        </two-state-push-button>
+        <div class="row">
+            <div class="label">Log Scale</div>
+            <switch-button
+                [active]="logScale"
+                (onToggle)="onToggleLogScale()"
+                title="Toggles logarithmic y-scale"
+            />
+        </div>
+        <div class="label">Whisker Display Mode</div>
+        <multi-state-button
+          [stateNames]="whiskerDisplayModes"
+          [items]="whiskerDisplayModes"
+          [activeState]="whiskerDisplayMode"
+          (onChange)="onChangeWhiskerDisplayMode($event)">
+        </multi-state-button>
+        <div class="label">Zoom Columns To</div>
+        <multi-state-button
+          [stateNames]="zoomModes"
+          [items]="zoomModes"
+          [activeState]="zoomMode"
+          (onChange)="onChangeZoomMode($event)">
+        </multi-state-button>
     </div>
 </ng-template>
 
