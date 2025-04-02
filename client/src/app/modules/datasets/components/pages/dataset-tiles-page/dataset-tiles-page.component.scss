@@ -590,6 +590,12 @@ input {
       }
     }
   }
+
+  .show-more {
+    font-size: 12px;
+    color: $clr-gray-30;
+    padding-left: 80px;
+  }
 }
 
 .cell {

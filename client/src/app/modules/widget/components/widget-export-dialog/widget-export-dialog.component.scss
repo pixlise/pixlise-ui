@@ -141,3 +141,121 @@
     }
   }
 }
+
+.export-dialog {
+  &.interactive {
+    width: 1200px !important;
+    background-color: #222829;
+    h1 {
+      background-color: #1a1b1c;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      text-transform: none;
+      border-bottom: 1px solid #334155;
+
+      margin-left: -16px;
+      width: calc(100% + 16px);
+      padding-left: 16px;
+      padding-bottom: 4px;
+      margin-top: -16px;
+      padding-top: 4px;
+
+      .close-btn {
+        margin-left: auto;
+        margin-right: 8px;
+      }
+    }
+
+    .fields {
+      gap: 0 !important;
+      min-height: 500px;
+
+      .button-container {
+        border-top: 1px solid #334155;
+        background: #1b1d1e;
+
+        margin-left: -16px;
+        width: 100%;
+        margin-bottom: -16px;
+        padding: 8px 16px;
+        margin-top: auto;
+      }
+
+      .options-container {
+        gap: 0 !important;
+        margin-top: 0 !important;
+
+        margin-left: -16px;
+        width: calc(100% + 32px);
+
+        widget-export-button {
+          padding: 4px 16px;
+          border-bottom: 1px solid var(--Neutral-Gray-70, #444c50);
+          background: var(--Neutral-Gray-80, #293137);
+        }
+      }
+    }
+
+    .data-container {
+      display: flex;
+
+      .preview-container {
+        gap: 8px;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        min-height: 575px;
+
+        widget {
+          margin: auto;
+        }
+      }
+
+      .bottom-bar {
+        width: 100%;
+        margin-top: auto;
+        height: 42px;
+        border-top: 1px solid #334155;
+        background: #1b1d1e;
+
+        margin-bottom: -16px;
+        margin-left: -32px;
+      }
+    }
+
+    .key-view {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      width: 800px;
+      height: 500px;
+      overflow: auto;
+
+      .key {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+      }
+    }
+  }
+}
+
+.key-switcher {
+  display: flex;
+  width: 400px;
+  justify-content: center;
+
+  multi-switch-button {
+    width: 100%;
+  }
+}
+
+.download-menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

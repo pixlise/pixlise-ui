@@ -46,6 +46,12 @@ export class APIPaths {
   }
 
   public static readonly api_componentVersions = "version-binary";
+  public static readonly api_scan = "scan";
+  public static readonly api_images = "images";
+  public static readonly api_imagedownload = "images/download/";
+  public static readonly api_magiclink = "magiclink";
+  public static readonly api_memoise = "memoise";
+  public static readonly api_websocket = "ws-connect";
 
   // path should be one of the above, or the above with more stuff added to it, making sure / are included!
   public static getWithHost(path: string): string {

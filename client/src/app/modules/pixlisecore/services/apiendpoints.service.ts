@@ -212,7 +212,7 @@ export class APIEndpointsService {
   }
 
   public static getImageURL(imagePath: string): string {
-    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_imagedownload + imagePath);
     return apiUrl;
   }
 
@@ -224,7 +224,7 @@ export class APIEndpointsService {
       params: new HttpParams().set("scan", scanId).set("filename", zipName),
     };
 
-    const apiUrl = APIPaths.getWithHost("scan");
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_scan);
     return this.http.put<void>(apiUrl, imageData, httpOptions);
   }
 
@@ -239,7 +239,7 @@ export class APIEndpointsService {
       }),
     };
 
-    const apiUrl = APIPaths.getWithHost("images");
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_images);
     return this.http.put<void>(apiUrl, sendbuf, httpOptions);
   }
 
@@ -267,7 +267,7 @@ export class APIEndpointsService {
   }
 
   magicLinkLogin(magiclinkReq: ReviewerMagicLinkLoginReq): Observable<ReviewerMagicLinkLoginResp> {
-    const apiUrl = APIPaths.getWithHost("magiclink");
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_magiclink);
     return this.http.post<ReviewerMagicLinkLoginResp>(apiUrl, magiclinkReq);
   }
 }

@@ -1005,7 +1005,14 @@ msa += `#XPOSITION   : 0.000
     );
   }
 
-  exportExpressionCode(userId: string, scanId: string, quantId: string, expressionIds: string[]): Observable<WidgetExportData> {
+  exportExpressionCode(
+    userId: string,
+    scanId: string,
+    quantId: string,
+    expressionIds: string[],
+    instrument: string,
+    instrumentConfig: string
+  ): Observable<WidgetExportData> {
     // For now, we only export the first expression...
     if (expressionIds.length < 1) {
       return throwError(() => new Error("At least one expression must be selected when exporting expression code"));
@@ -1023,9 +1030,11 @@ msa += `#XPOSITION   : 0.000
           resp.expression as DataExpression,
           scanId,
           quantId,
+          instrument,
+          instrumentConfig,
           this._cachedDataService,
           this._spectrumDataService,
-          this._energyCalibrationService
+          this._energyCalibrationService,
         );
       })
     );

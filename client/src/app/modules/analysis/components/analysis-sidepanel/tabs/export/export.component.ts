@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { AuthService, User } from "@auth0/auth0-angular";
 import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { AnalysisLayoutService, DataExporterService } from "src/app/modules/analysis/analysis.module";
 import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
@@ -14,6 +14,7 @@ import {
   WidgetExportDialogData,
   WidgetExportOption,
   WidgetExportRequest,
+  WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
@@ -48,7 +49,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
       hideProgressLabels: true,
     };
 
-    super(data, null, _snackService);
+    super(data, null, _snackService, _analysisLayoutService);
   }
 
   override ngOnInit(): void {
@@ -66,7 +67,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     }
 
     this.initialOptions = this.copyWidgetExportOptionsDefaultState(this.options);
-    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data.dataProducts);
+    this.initialDataProducts = this.copyWidgetExportOptionsDefaultState(this.data?.dataProducts || []);
 
     this.mapAllCounts();
     this.showPreview = !!this.data.showPreview;
@@ -453,11 +454,14 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
                 let dataKey = key as keyof WidgetExportData;
 
                 if (!data[dataKey]) {
-                  data[dataKey] = [];
+                  data[dataKey] = [] as any;
                 }
 
                 if (response[dataKey]) {
-                  data[dataKey]!.push(...response[dataKey]!);
+                  if (typeof response[dataKey] === "boolean" || typeof data[dataKey] === "boolean") {
+                    return;
+                  }
+                  (data[dataKey] as any[]).push(...(response[dataKey] as any[]));
                 }
               });
             });
@@ -481,6 +485,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     let scanName = this.allScans.find(scan => scan.id === scanId)?.title || scanId;
     let quantId = scanGroupOption.subOptions!.find(subOption => subOption.id === scanId + "_quant")!.selectedOption!;
     let quantName = this.scanQuants[scanId].find(quant => quant.id === quantId)?.params?.userParams?.name || quantId;
+    let instrument = scanInstrumentToJSON(scanInstrumentFromJSON(this.allScans.find(scan => scan.id === scanId)?.instrument || ScanInstrument.UNKNOWN_INSTRUMENT));
+    let instrumentConfig = this.allScans.find(scan => scan.id === scanId)?.instrumentConfig || "Unknown";
 
     let roiIds = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_rois")?.selectedRegions?.map(roi => roi.id) || [];
     let expressionIds = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_expressions")?.selectedExpressions?.map(exp => exp.id) || [];
@@ -520,7 +526,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     }
 
     if (request.dataProducts["roiExpressionCode"]?.selected) {
-      exportRequests.push(this._exporterService.exportExpressionCode(userId, scanId, quantId, expressionIds));
+      exportRequests.push(this._exporterService.exportExpressionCode(userId, scanId, quantId, expressionIds, instrument, instrumentConfig));
     }
 
     if (exportRequests.length === 0) {
@@ -533,14 +539,21 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
         results.forEach(result => {
           WIDGET_EXPORT_DATA_KEYS.forEach(key => {
             let dataKey = key as keyof WidgetExportData;
+            if (typeof result[dataKey] === "boolean") {
+              return;
+            }
 
             if (!data[dataKey]) {
-              data[dataKey] = [];
+              data[dataKey] = [] as any;
             }
 
             if (result[dataKey]) {
-              result[dataKey]!.forEach(file => {
-                data[dataKey]!.push({
+              (result[dataKey] as any[]).forEach(file => {
+                if (typeof data[dataKey] === "boolean") {
+                  return;
+                }
+
+                (data[dataKey] as any)!.push({
                   ...file,
                   subFolder: file?.subFolder ? `${scanName}/${file.subFolder}` : scanName,
                 });

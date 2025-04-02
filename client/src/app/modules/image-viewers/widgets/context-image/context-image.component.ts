@@ -12,7 +12,7 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
 import { Point, Rect } from "src/app/models/Geometry";
-import { ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageDataService, SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import {
@@ -32,7 +32,12 @@ import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-si
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { ContextImageExporter } from "src/app/modules/image-viewers/widgets/context-image/context-image-exporter";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportOption,
+  WidgetExportRequest,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import {
   LayerOpacityChange,
   LayerVisibilityChange,
@@ -114,7 +119,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     const toolSettings = new ToolHostCreateSettings(showLineDrawTool, showNavTools, showPMCTool, showSelectionTools, showPhysicalScale, showMapColourScale);
     this.toolhost = new ContextImageToolHost(toolSettings, this.mdl, this._selectionService);
     this.drawer = new ContextImageDrawer(this.mdl, this.toolhost);
-    this.exporter = new ContextImageExporter(this._endpointsService, this._snackService, this.drawer, this.transform);
+    this.exporter = new ContextImageExporter(this._endpointsService, this._snackService, this.drawer, this.transform, this._widgetId);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -147,7 +152,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           title: "Visibility",
           tooltip: "Toggle visibility of scan data",
           value: false,
-          onClick: (value, trigger) => this.onToggleShowPoints(trigger),
+          onClick: (value, trigger) => this.onToggleLayerVisibilityDialog(trigger),
         },
         {
           id: "zoom-in",
@@ -190,6 +195,26 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           return new SelectionChangerImageInfo(this.mdl.scanIds, this.mdl.imageName, this._contextDataService);
         },
       },
+      topRightInsetButton: {
+        id: "key",
+        value: this.mdl.keyItems,
+        type: "widget-key",
+        onClick: () => this.onToggleKey(),
+        onUpdateKeyItems: (keyItems: WidgetKeyItem[]) => {
+          this.mdl.keyItems = keyItems;
+
+          // Include/exclude ROIs based on key-items visibility
+          this.mdl.keyItems.forEach(keyItem => {
+            if (keyItem.isVisible && !this.mdl.roiIds.find(roi => roi.id === keyItem.id)) {
+              this.mdl.roiIds.push(ROILayerVisibility.create({ id: keyItem.id, opacity: 1, visible: true, scanId: this.scanId }));
+            } else if (!keyItem.isVisible) {
+              this.mdl.roiIds = this.mdl.roiIds.filter(roi => roi.id !== keyItem.id);
+            }
+          });
+
+          this.reloadModel();
+        },
+      },
       bottomToolbar: [],
     };
 
@@ -210,6 +235,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._showBottomToolbar = value;
     if (value) {
       this.loadBottomToolbar();
+    }
+  }
+
+  onToggleKey() {
+    if (this.widgetControlConfiguration.topRightInsetButton) {
+      this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
     }
   }
 
@@ -283,6 +314,15 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   ngOnInit() {
+    if (this.mdl) {
+      this.mdl.exportMode = this._exportMode;
+      if (this.mdl.exportMode) {
+        this.linkToDataset = false;
+      }
+    }
+
+    this.exporter = new ContextImageExporter(this._endpointsService, this._snackService, this.drawer, this.transform, this._widgetId);
+
     this.onToolSelected(ContextImageToolId.PAN);
 
     this._subs.add(
@@ -351,7 +391,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             this.mdl.colourRatioMax = contextData.colourRatioMax;
           }
 
-          this.linkToDataset = !contextData?.unlinkFromDataset;
+          this.linkToDataset = !contextData?.unlinkFromDataset && !this.mdl.exportMode;
 
           this.mdl.imageBrightness = contextData.brightness;
           this.mdl.removeTopSpecularArtifacts = contextData.removeTopSpecularArtifacts;
@@ -372,7 +412,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._subs.add(
       this._contextDataService.syncedTransform$.subscribe(transforms => {
-        if (!this.linkToDataset) {
+        if (!this.linkToDataset || this._exportMode) {
           return;
         }
 
@@ -607,6 +647,64 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
   }
 
+  updateExportOptions(exportOptions: WidgetExportOption[], exportChartOptions: WidgetExportOption[]) {
+    const backgroundColorOption = exportOptions.find(opt => opt.id === "background");
+    const backgroundColor = backgroundColorOption ? backgroundColorOption.selectedOption : null;
+    if (backgroundColor) {
+      this.drawer.lightMode = ["white"].includes(backgroundColor);
+      this.drawer.transparentBackground = backgroundColor === "transparent";
+    }
+
+    const aspectRatioOption = exportOptions.find(opt => opt.id === "aspectRatio");
+
+    // If the aspect ratio option is set, we need to trigger a canvas resize on next frame render
+    if (aspectRatioOption) {
+      setTimeout(() => {
+        this.mdl.needsDraw$.next();
+        this.mdl.needsCanvasResize$.next();
+        this.reDraw("updateExportOptions");
+      }, 0);
+    }
+
+    const resolutionOption = exportOptions.find(opt => opt.id === "resolution");
+    if (resolutionOption) {
+      const resolutionMapping = {
+        high: 3,
+        med: 1.5,
+        low: 1,
+      };
+
+      const newResolution = resolutionOption.selectedOption;
+      if (newResolution && resolutionMapping[newResolution as keyof typeof resolutionMapping]) {
+        this.mdl.resolution$.next(resolutionMapping[newResolution as keyof typeof resolutionMapping]);
+      }
+    }
+
+    if (resolutionOption && aspectRatioOption) {
+      if (aspectRatioOption.selectedOption === "square") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "500px x 500px" },
+          { id: "med", name: "750px x 750px" },
+          { id: "high", name: "1500px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "4:3") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "666px x 500px" },
+          { id: "med", name: "1000px x 750px" },
+          { id: "high", name: "2000px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "16:9") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "700px x 393px" },
+          { id: "med", name: "750px x 422px" },
+          { id: "high", name: "1500px x 844px" },
+        ];
+      }
+    }
+
+    this.reDraw("updateExportOptions");
+  }
+
   private updateSelection() {
     const sel = this._selectionService.getCurrentSelection();
     this.mdl.setSelection(sel.beamSelection, sel.pixelSelection, this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
@@ -770,10 +868,16 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.isWidgetDataLoading = false;
 
           this.reDraw("reloadModel");
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
         },
         error: err => {
           this.isWidgetDataLoading = false;
           this.reDraw("reloadModel error");
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
 
           if (err instanceof WidgetError) {
             this._snackService.openError("Context image failed to display an expression", err);
@@ -848,7 +952,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
   }
 
-  onToggleShowPoints(trigger: Element | undefined) {
+  onToggleROIConfidence() {
+    this.mdl.drawModel.showROIConfidence = !this.mdl.drawModel.showROIConfidence;
+    this.reloadModel();
+    this.reDraw("onToggleROIConfidence");
+  }
+
+  onToggleLayerVisibilityDialog(trigger: Element | undefined) {
     if (this._visibilityDialog) {
       return; // already showing it! TODO: Should we flash it or something?
     }

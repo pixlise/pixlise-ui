@@ -380,6 +380,10 @@ export class WidgetDataService {
       map((item: MemoisedItem) => {
         // We got something! return this straight away...
         console.info("Query restored from memoised result: " + cacheKey);
+
+        // Also delete from in flux cache here! It gets added before we know if it's in memory yet
+        this._inFluxSingleQueryResultCache.delete(cacheKey);
+
         return this.fromMemoised(item.data);
       }),
       catchError(err => {
@@ -389,7 +393,7 @@ export class WidgetDataService {
         //if (!(err instanceof WSError) || (err as WSError).status != ResponseStatus.WS_NOT_FOUND) {
         // But instanceof says it's not a WSError and the cast also fails, so we just check it textually
         const msg = `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`;
-        if (err && err.message.indexOf(" not found") < 0) {
+        if (err && err.message.indexOf(" Not Found") < 0) {
           SentryHelper.logMsg(true, msg);
         } else {
           // Just log it locally
@@ -444,7 +448,7 @@ export class WidgetDataService {
                   }
 
                   const encodedResult = this.toMemoised(result);
-                  this._memoisationService.memoise(cacheKey, encodedResult).subscribe();
+                  this._memoisationService.memoise(cacheKey, encodedResult, query.scanId, query.quantId, expr.id).subscribe();
                 }
 
                 return result;
@@ -685,7 +689,7 @@ export class WidgetDataService {
 
         return dataSource.prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
-            const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
+            const intDataSource = new InterpreterDataSource(expression.id, dataSource, dataSource, dataSource, dataSource, dataSource, this._exprMemoisationService);
 
             return querier
               .runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs, injectedFunctions)

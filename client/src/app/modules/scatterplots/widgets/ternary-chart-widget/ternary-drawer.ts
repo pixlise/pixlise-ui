@@ -9,6 +9,8 @@ import { drawScatterPoints } from "../../base/cached-nary-drawer";
 export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
   public lightMode: boolean = false;
+  public transparentBackground: boolean = false;
+  public borderWidth: number = 1;
 
   constructor(private _mdl: TernaryChartModel) {
     super();
@@ -16,6 +18,33 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
 
   protected get mdl(): BaseChartModel {
     return this._mdl;
+  }
+
+  drawAxisLabels(ctx: CanvasRenderingContext2D) {
+    const drawData = this._mdl.drawModel;
+
+    ctx.fillStyle = this.lightMode ? Colours.BLACK.asString() : Colours.WHITE.asString();
+    if (this._mdl.axisLabelFontColor) {
+      ctx.fillStyle = this._mdl.axisLabelFontColor;
+    }
+
+    ctx.font = `${this._mdl.axisLabelFontSize}px ${this._mdl.axisLabelFontFamily}`;
+    if (this._mdl.axisLabelFontWeight) {
+      ctx.font = `${this._mdl.axisLabelFontWeight} ${ctx.font}`;
+    }
+
+    // Draw labels for the corners above top, below left, and right
+    ctx.textAlign = "center";
+    const labelA = this._mdl.raw?.cornerA?.label || "A";
+    const labelAWidth = ctx.measureText(labelA).width;
+    ctx.fillText(labelA, drawData.triangleA.x + labelAWidth / 2, drawData.triangleA.y + this._mdl.axisLabelFontSize + 8);
+
+    const labelB = this._mdl.raw?.cornerB?.label || "B";
+    const labelBWidth = ctx.measureText(labelB).width;
+    ctx.fillText(labelB, drawData.triangleB.x - labelBWidth / 2, drawData.triangleB.y + this._mdl.axisLabelFontSize + 8);
+
+    const labelC = this._mdl.raw?.cornerC?.label || "C";
+    ctx.fillText(labelC, drawData.triangleC.x, drawData.triangleC.y - 8);
   }
 
   drawPreData(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
@@ -26,9 +55,27 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
     ctx.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
     ctx.fillRect(0, 0, viewport.width, viewport.height);
 
+    if (this.transparentBackground) {
+      ctx.clearRect(0, 0, viewport.width, viewport.height);
+    }
+
+    if (this._mdl.exportMode) {
+      // We need to draw labels
+      this.drawAxisLabels(ctx);
+    }
+
+    if (this.borderWidth === 0) {
+      // No border
+      return;
+    }
+
     // Draw the triangle
     ctx.strokeStyle = this.lightMode ? Colours.GRAY_90.asString() : Colours.GRAY_60.asString();
-    ctx.lineWidth = 1;
+    if (this._mdl.borderColor) {
+      ctx.strokeStyle = this._mdl.borderColor;
+    }
+
+    ctx.lineWidth = this.borderWidth;
     ctx.beginPath();
     ctx.moveTo(drawData.triangleA.x, drawData.triangleA.y);
     ctx.lineTo(drawData.triangleB.x, drawData.triangleB.y);
@@ -42,7 +89,13 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
 
     // Thicker lines, then thinner lines
     for (let i = 0; i < 2; i++) {
-      ctx.lineWidth = i == 0 ? 2 : 1;
+      if (this.borderWidth > 0) {
+        const thicknessOffset = Math.ceil(this.borderWidth / 3);
+        ctx.lineWidth = i == 0 ? thicknessOffset + this.borderWidth : this.borderWidth;
+      } else {
+        // No border
+        ctx.lineWidth = 0;
+      }
 
       const end = 1;
       const start = i == 0 ? 0.2 : 0.1;

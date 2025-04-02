@@ -31,6 +31,8 @@ export type CachedSpectraItem = {
 };
 
 export class LocalStorageDB extends Dexie {
+  private static readonly targetVersion = 8;
+
   eventHistory!: Table<SnackbarDataItem, number>;
   memoData!: Table<MemoisedItem, string>;
   images!: Table<CachedImageItem, string>;
@@ -40,7 +42,9 @@ export class LocalStorageDB extends Dexie {
 
   constructor() {
     super("pixlise");
-    this.version(7).stores({
+    console.info(`DB version ${LocalStorageDB.targetVersion} initialising`);
+
+    this.version(LocalStorageDB.targetVersion).stores({
       eventHistory: "++id",
       notifications: "id",
       memoData: "key",
@@ -59,6 +63,42 @@ export class LocalStorageDB extends Dexie {
         },
       });
     });
+  }
+
+  public override open() {
+    if (this.isOpen()) {
+      console.info(`DB already open`);
+      return super.open();
+    }
+
+    return Dexie.Promise.resolve()
+      .then(() => Dexie.exists(this.name))
+      .then(exists => {
+        if (!exists) {
+          // no need to check database version since it doesn't exist
+          console.warn(`DB doesn't exist, will create a blank one`);
+          return db.close();
+        }
+
+        // Open separate instance of dexie to get current database version
+        return new Dexie(this.name).open().then(async db => {
+          if (db.verno >= LocalStorageDB.targetVersion) {
+            // database up to date (or newer)
+            console.info(`DB version is already up to date`);
+            return db.close();
+          }
+
+          console.warn(`Database schema out of date, resetting all data. (currentVersion: ${db.verno}, expectedVersion: ${LocalStorageDB.targetVersion})`);
+          await db.delete();
+
+          // ensure the delete was successful
+          const exists = await Dexie.exists(this.name);
+          if (exists) {
+            throw new Error("Failed to remove outdated database.");
+          }
+        });
+      })
+      .then(() => super.open());
   }
 
   async resetDatabase() {

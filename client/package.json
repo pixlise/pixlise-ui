@@ -38,6 +38,7 @@
     "geotiff": "^2.0.7",
     "git-describe": "^4.1.1",
     "google-protobuf": "^3.21.2",
+    "html2canvas": "^1.4.1",
     "jsep": "^1.2.0",
     "jszip": "^3.10.1",
     "marked": "^4.3.0",

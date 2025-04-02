@@ -219,7 +219,7 @@ export class APICommService implements OnDestroy {
     }
 
     // For verbose debugging purposes...
-    console.log("-->Send: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
+    console.debug("-->Send: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
     this.connection$.next(wsmsg);
   }
 

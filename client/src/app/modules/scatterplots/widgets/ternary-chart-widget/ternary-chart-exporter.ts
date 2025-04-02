@@ -8,25 +8,25 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 export class TernaryChartExporter extends NaryChartExporter {
-  constructor(snackService: SnackbarService, drawer: CanvasDrawer, transform: PanZoom) {
-    super(snackService, drawer, transform);
+  constructor(snackService: SnackbarService, drawer: CanvasDrawer, transform: PanZoom, widgetId: string) {
+    super(snackService, drawer, transform, widgetId);
   }
 
   override exportPlotData(mdl: TernaryChartModel): Observable<string> {
-    let rawData = mdl?.raw;
+    const rawData = mdl?.raw;
     if (!rawData) {
       return of("");
     }
 
-    let cornerALabel = rawData.cornerA?.label || "";
-    let cornerBLabel = rawData.cornerB?.label || "";
-    let cornerCLabel = rawData.cornerC?.label || "";
+    const cornerALabel = rawData.cornerA?.label || "";
+    const cornerBLabel = rawData.cornerB?.label || "";
+    const cornerCLabel = rawData.cornerC?.label || "";
 
     // NOTE: Selection is not included in the CSV export
     let data = `"Scan ID","ROI","PMC","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"\n`;
     rawData.pointGroups.forEach(pointGroup => {
       let roiName = pointGroup.roiId;
-      let matchingLabel = mdl.keyItems.find(keyItem => keyItem.id === pointGroup.roiId)?.label;
+      const matchingLabel = mdl.keyItems.find(keyItem => keyItem.id === pointGroup.roiId)?.label;
       if (matchingLabel) {
         roiName = matchingLabel;
       } else if (PredefinedROIID.isAllPointsROI(pointGroup.roiId)) {
@@ -35,10 +35,10 @@ export class TernaryChartExporter extends NaryChartExporter {
         roiName = "Selected Points";
       }
 
-      let scanId = pointGroup.scanId;
+      const scanId = pointGroup.scanId;
       pointGroup.valuesPerScanEntry.forEach(valuesPerScanEntry => {
-        let pmc = valuesPerScanEntry.scanEntryId;
-        let [cornerAValue, cornerBValue, cornerCValue] = valuesPerScanEntry.values;
+        const pmc = valuesPerScanEntry.scanEntryId;
+        const [cornerAValue, cornerBValue, cornerCValue] = valuesPerScanEntry.values;
         data += `${scanId},"${roiName}",${pmc},${cornerAValue ?? ""},${cornerBValue ?? ""},${cornerCValue ?? ""}\n`;
       });
     });
