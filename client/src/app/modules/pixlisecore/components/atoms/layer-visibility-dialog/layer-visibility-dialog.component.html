@@ -39,16 +39,22 @@
               {{ layer.name }}
             </h2>
             <div class="right-group">
-              <slider
-                class="opacity-slider"
-                *ngIf="layer.showOpacity"
-                [value]="layer.opacity"
-                [minValue]="0"
-                [maxValue]="1"
-                [pxLength]="140"
-                (onChange)="onChangeLayerOpacity(layer, $event)"
-                [onlyShowTrackOnHover]="true">
-              </slider>
+              <ng-container *ngIf="layer.showOpacity">
+                <slider
+                  [value]="layer.opacity"
+                  [minValue]="0"
+                  [maxValue]="1"
+                  [pxLength]="110"
+                  (onChange)="onChangeLayerOpacity(layer, $event)"
+                  [onlyShowTrackOnHover]="true">
+                </slider>
+                <div class="clickable opacity-display" (dblclick)="onEnterOpacity(layer)">{{layer.opacity*100|number:'1.0-0'}}%</div>
+                <action-button
+                  action="edit"
+                  tooltipTitle="Edit Opacity"
+                  color="rgb(var(--clr-gray-30))"
+                  (onClick)="onEnterOpacity(layer)"></action-button>
+              </ng-container>
               <action-button
                 *ngIf="layer.canDelete"
                 action="verticalEllipsis"

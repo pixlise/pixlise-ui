@@ -1,3 +1,10 @@
+## 4.65.0 (2025-04-02)
+
+### New Features
+- Added text box entry for specifying opacity of context image layer visibility
+
+### Bug Fixes
+
 ## 4.64.0 (LATEST)
 
 ### New Features

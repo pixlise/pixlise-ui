@@ -8,6 +8,7 @@ import { ColourRamp, Colours } from "../../../../../utils/colours";
 import { ExpressionGroup, ExpressionGroupItem } from "../../../../../generated-protos/expression-group";
 import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
 import { SliderValue } from "../slider/slider.component";
+import { SnackbarService } from "../../../pixlisecore.module";
 
 export class LayerVisiblilityData {
   sections: LayerVisibilitySection[] = [];
@@ -77,7 +78,8 @@ export class LayerVisibilityDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: LayerVisiblilityData,
     public dialogRef: MatDialogRef<LayerVisibilityDialogComponent, void>,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _expressionsService: ExpressionsService
+    private _expressionsService: ExpressionsService,
+    private _snackBar: SnackbarService
   ) {
     this.sections = data.sections;
   }
@@ -173,6 +175,20 @@ export class LayerVisibilityDialogComponent implements OnInit {
     if (opacity.finish) {
       this.opacityChange.emit({ layer, opacity: opacity.value });
     }
+  }
+
+  onEnterOpacity(layer: LayerVisibilityOption) {
+    const opStr = prompt("Enter opacity as percentage between 0 and 100");
+    if (opStr) {
+      let op = Number.parseInt(opStr, 10);
+      if (op !== undefined && op >= 0 && op <= 100) {
+        op *= 0.01; // Convert to percentage
+        layer.opacity = op;
+        this.opacityChange.emit({ layer, opacity: op });
+      } else {
+        this._snackBar.openError("Invalid opacity entered. Enter a number between 0 and 100!");
+      }
+    } // Else it was null, probably clicked "cancel"
   }
 
   toggleSection(section: LayerVisibilitySection) {
