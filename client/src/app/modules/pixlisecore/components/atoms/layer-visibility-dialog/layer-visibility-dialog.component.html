@@ -40,20 +40,32 @@
             </h2>
             <div class="right-group">
               <ng-container *ngIf="layer.showOpacity">
-                <slider
-                  [value]="layer.opacity"
-                  [minValue]="0"
-                  [maxValue]="1"
-                  [pxLength]="110"
-                  (onChange)="onChangeLayerOpacity(layer, $event)"
-                  [onlyShowTrackOnHover]="true">
-                </slider>
-                <div class="clickable opacity-display" (dblclick)="onEnterOpacity(layer)">{{layer.opacity*100|number:'1.0-0'}}%</div>
-                <action-button
-                  action="edit"
-                  tooltipTitle="Edit Opacity"
-                  color="rgb(var(--clr-gray-30))"
-                  (onClick)="onEnterOpacity(layer)"></action-button>
+                <ng-container *ngIf="showOpacityInputFor === layer">
+                  <input class="layer-opacity-input" [(ngModel)]="layerOpacityInput" type="text" autocomplete="off" placeholder="Opacity 0-100" />
+                  <action-button
+                    action="check"
+                    [disabled]="layerOpacityInput.length <= 0"
+                    tooltipTitle="Set Opacity"
+                    color="rgb(var(--clr-green))"
+                    (onClick)="onEnterOpacity(layer, layerOpacityInput)"></action-button>
+                  <action-button action="close" tooltipTitle="Cancel" (onClick)="onCancelOpacityEdit()"></action-button>
+                </ng-container>
+                <ng-container *ngIf="showOpacityInputFor !== layer">
+                  <slider
+                    [value]="layer.opacity"
+                    [minValue]="0"
+                    [maxValue]="1"
+                    [pxLength]="110"
+                    (onChange)="onChangeLayerOpacity(layer, $event)"
+                    [onlyShowTrackOnHover]="true">
+                  </slider>
+                  <div class="clickable opacity-display" (dblclick)="onEditOpacity(layer)">{{layer.opacity*100|number:'1.0-0'}}%</div>
+                  <action-button
+                    action="edit"
+                    tooltipTitle="Edit Opacity"
+                    color="rgb(var(--clr-gray-30))"
+                    (onClick)="onEditOpacity(layer)"></action-button>
+                </ng-container>
               </ng-container>
               <action-button
                 *ngIf="layer.canDelete"
