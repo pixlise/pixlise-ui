@@ -194,6 +194,11 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
     this.needsDraw$.next();
   }
 
+  recalculate() {
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
+  }
+
   handleHoverPointChanged(hoverScanId: string, hoverScanEntryPMC: number): void {
     // Hover point changed, if we have a model, set it and redraw, otherwise ignore
     if (hoverScanEntryPMC == invalidPMC) {
@@ -257,7 +262,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
     const errs: WidgetError[] = [];
     const t0 = performance.now();
 
-    let previousKeyItems = this.keyItems.slice();
+    const previousKeyItems = this.keyItems.slice();
 
     this.keyItems = [];
     this.expressionsMissingPMCs = "";
@@ -303,7 +308,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
         //   this.keyItems.push(new WidgetKeyItem(selectionId, "Selected Points", Colours.CONTEXT_BLUE, null, PointDrawer.ShapeCircle, scanName));
         // }
 
-        let existingKeyItem = previousKeyItems.find(key => key.id == roiId);
+        const existingKeyItem = previousKeyItems.find(key => key.id == roiId);
         if (existingKeyItem && !existingKeyItem.isVisible) {
           // This ROI is hidden, so we won't be drawing it, but we need to keep it in the key
           if (!this.keyItems.find(key => key.id == roiId)) {
@@ -360,14 +365,14 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
 
           // Add to key too. We only specify an ID if it can be brought to front - all points & selection
           // are fixed in their draw order, so don't supply for those
-          let roiIdForKey = region.region.id;
+          const roiIdForKey = region.region.id;
           let keyName = region.region.name;
           if (PredefinedROIID.isAllPointsROI(roiIdForKey)) {
             keyName = "All Points";
           }
 
           if (!roiIdForKey || !this.keyItems.find(key => key.id == roiIdForKey)) {
-            let scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
+            const scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
             this.keyItems.push(new WidgetKeyItem(roiIdForKey, keyName, region.displaySettings.colour, null, region.displaySettings.shape, scanName));
           }
         }
@@ -441,16 +446,16 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
   */
 
     // If previousKeyItems were sorted, sort the new ones following the layerOrder
-    let sortedPointGroups = pointGroups.sort((a, b) => {
-      let keyItemA = previousKeyItems.find(key => key.id == a.roiId);
-      let keyItemB = previousKeyItems.find(key => key.id == b.roiId);
+    const sortedPointGroups = pointGroups.sort((a, b) => {
+      const keyItemA = previousKeyItems.find(key => key.id == a.roiId);
+      const keyItemB = previousKeyItems.find(key => key.id == b.roiId);
 
-      if (keyItemA === undefined) {
+      if (keyItemA === undefined && keyItemB === undefined) {
+        return 0;
+      } else if (keyItemA === undefined) {
         return 1;
       } else if (keyItemB === undefined) {
         return -1;
-      } else if (keyItemA === undefined && keyItemB === undefined) {
-        return 0;
       } else {
         return keyItemB.layerOrder - keyItemA.layerOrder;
       }
@@ -458,7 +463,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
 
     // Update layer order for the key items
     this.keyItems = this.keyItems.map((keyItem, idx) => {
-      let existingKeyItem = previousKeyItems.find(key => key.id == keyItem.id);
+      const existingKeyItem = previousKeyItems.find(key => key.id == keyItem.id);
       if (existingKeyItem) {
         keyItem.layerOrder = existingKeyItem.layerOrder;
       } else {

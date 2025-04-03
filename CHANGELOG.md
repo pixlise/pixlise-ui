@@ -1,4 +1,10 @@
-## 4.64.0 (LATEST)
+## 4.65.0 (LATEST)
+
+### Bug Fixes
+- Saves MIST ROI Reproducibility setting for context image
+- If white background is selected in export options and a custom color isn't set for the AllPoints ROIs, the binary and ternary charts will now switch All Points to a dark color
+
+## 4.64.0 (2025-04-01)
 
 ### New Features
 - Adds interactive exporter for Binary Plots, Ternary Plots, and Context Images
