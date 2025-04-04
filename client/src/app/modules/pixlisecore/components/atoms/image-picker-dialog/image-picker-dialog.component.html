@@ -45,9 +45,10 @@ POSSIBILITY OF SUCH DAMAGE.
       <div
         class="image-option"
         class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
-        *ngFor="let image of filteredImageChoices"
+        *ngFor="let image of filteredImageChoices; let i = index;"
         (click)="onSelectImage(image)">
         <div
+        [id]="'img_'+i"
           class="image-type-tag"
           class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
         >{{image.imgType}}</div>

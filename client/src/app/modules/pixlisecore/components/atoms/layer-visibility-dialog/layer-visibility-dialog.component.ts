@@ -1,5 +1,5 @@
 import { CdkDrag, CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
-import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Inject, OnInit, Output, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { DataExpressionId } from "../../../../../expression-language/expression-id";
 import { ExpressionsService } from "../../../../expressions/services/expressions.service";
@@ -8,6 +8,8 @@ import { ColourRamp, Colours } from "../../../../../utils/colours";
 import { ExpressionGroup, ExpressionGroupItem } from "../../../../../generated-protos/expression-group";
 import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
 import { SliderValue } from "../slider/slider.component";
+import { SnackbarService } from "../../../pixlisecore.module";
+import { ActionButtonComponent } from "../buttons/action-button/action-button.component";
 
 export class LayerVisiblilityData {
   sections: LayerVisibilitySection[] = [];
@@ -73,11 +75,15 @@ export class LayerVisibilityDialogComponent implements OnInit {
 
   private expressionGroups: Record<string, ExpressionGroup> = {};
 
+  layerOpacityInput: string = "";
+  showOpacityInputFor: LayerVisibilityOption | null = null;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: LayerVisiblilityData,
     public dialogRef: MatDialogRef<LayerVisibilityDialogComponent, void>,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _expressionsService: ExpressionsService
+    private _expressionsService: ExpressionsService,
+    private _snackBar: SnackbarService
   ) {
     this.sections = data.sections;
   }
@@ -173,6 +179,32 @@ export class LayerVisibilityDialogComponent implements OnInit {
     if (opacity.finish) {
       this.opacityChange.emit({ layer, opacity: opacity.value });
     }
+  }
+
+  onEnterOpacity(layer: LayerVisibilityOption, opStr: string) {
+    if (opStr) {
+      let op = Number.parseInt(opStr, 10);
+      if (op !== undefined && op >= 0 && op <= 100) {
+        op *= 0.01; // Convert to percentage
+        layer.opacity = op;
+        this.opacityChange.emit({ layer, opacity: op });
+      } else {
+        this._snackBar.openError("Invalid opacity entered. Enter a number between 0 and 100!");
+      }
+    }
+
+    this.layerOpacityInput = "";
+    this.showOpacityInputFor = null;
+  }
+
+  onEditOpacity(layer: LayerVisibilityOption) {
+    this.layerOpacityInput = `${Math.floor(layer.opacity * 100)}`;
+    this.showOpacityInputFor = layer;
+  }
+
+  onCancelOpacityEdit() {
+    this.layerOpacityInput = "";
+    this.showOpacityInputFor = null;
   }
 
   toggleSection(section: LayerVisibilitySection) {
