@@ -142,13 +142,13 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
 
   //   Get width of every key item text and set the legend width to the maximum
   keyItems.forEach(keyItem => {
-    let textWidth = screenContext?.measureText(keyItem?.label || "")?.width || 0;
+    const textWidth = screenContext?.measureText(keyItem?.label || "")?.width || 0;
     legendWidth = Math.max(legendWidth, textWidth + 65);
   });
 
-  let legendHeight = 35 + keyItems.length * 20;
-  let legendX = viewport.width - legendWidth - 10;
-  let legendY = 10;
+  const legendHeight = 35 + keyItems.length * 20;
+  const legendX = viewport.width - legendWidth - 10;
+  const legendY = 10;
 
   screenContext.save();
 
@@ -162,7 +162,7 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
   screenContext.textAlign = "left";
   screenContext.textBaseline = "middle";
 
-  let legendTextX = legendX + 15;
+  const legendTextX = legendX + 15;
   let legendTextY = legendY + 15;
 
   screenContext.fillText("Key", legendTextX - 5, legendTextY);
@@ -174,7 +174,13 @@ const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: Wid
   legendTextY += 5;
 
   keyItems.forEach(keyItem => {
-    let drawer = new PointDrawer(screenContext, 5, keyItem.label === "Dataset" && lightMode ? Colours.GRAY_80 : RGBA.fromString(keyItem.colour), null, keyItem.shape);
+    const drawer = new PointDrawer(
+      screenContext,
+      5,
+      keyItem.label === "Dataset" && lightMode ? Colours.GRAY_80 : RGBA.fromString(keyItem.colour),
+      null,
+      keyItem.shape
+    );
     drawer.drawPoints([new Point(legendTextX, legendTextY)], 1);
 
     screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();

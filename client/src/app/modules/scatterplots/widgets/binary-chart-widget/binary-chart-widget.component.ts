@@ -32,7 +32,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
-import { Colours, RGBA } from "../../../../utils/colours";
+import { RGBA } from "../../../../utils/colours";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
@@ -561,6 +561,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     if (backgroundColor) {
       this.drawer.lightMode = ["white"].includes(backgroundColor);
       this.drawer.transparentBackground = backgroundColor === "transparent";
+      this.mdl.recalculate();
     }
 
     const borderWidthOption = exportChartOptions.find(opt => opt.id === "borderWidth");
