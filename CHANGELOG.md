@@ -2,10 +2,14 @@
 
 ### New Features
 - Added text box entry for specifying opacity of context image layer visibility
+- Server-side clears cached expression output if it hasn't been accessed for over 30 days
 
 ### Bug Fixes
 - Saves MIST ROI Reproducibility setting for context image
 - If white background is selected in export options and a custom color isn't set for the AllPoints ROIs, the binary and ternary charts will now switch All Points to a dark color
+- Fixing image beam location exports for non-FM datasets, particularly fixes PIXL-EM cal target imports
+- Exporting scans which have spectrum fields missing such as XPERCHAN/OFFSET no longer fails
+- Exporter side-bar tab no longer requires quant to be selected to enable ticking checkboxes for items that don't rely on quant selection
 
 ## 4.64.0 (2025-04-01)
 
