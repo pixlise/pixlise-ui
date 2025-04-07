@@ -615,7 +615,7 @@ msa += `#XPOSITION   : 0.000
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
           const imagePaths = images.images
-            .filter((img: ScanImage) => {
+            /*.filter((img: ScanImage) => {
               const hasMatchInfo = img.matchInfo && img.matchInfo.beamImageFileName.length > 0;
               if (img.matchInfo && /* <-- this is to shut the linter up * / hasMatchInfo) {
                 matchedImages.set(img.imagePath, img.matchInfo);
@@ -623,7 +623,7 @@ msa += `#XPOSITION   : 0.000
 
               const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
               return (img.originScanId === scanId && (fields?.producer || "") === "J") || hasMatchInfo;
-            })
+            })*/
             .map(image => image.imagePath);
 
           const imageBeamVersions$ = imagePaths.map(imagePath =>
