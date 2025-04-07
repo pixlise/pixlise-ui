@@ -147,57 +147,66 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
       let scanSummary = this.allScans.find(scan => scan.id === scanConfig.id);
       let quantSummary = this.scanQuants[scanConfig.id]?.find(quant => quant.id === this.selectedQuants[scanConfig.id]);
 
-      if (!scanSummary || !quantSummary) {
+      if (!scanSummary) {
         return;
       }
 
-      options.push({
+      const opt: WidgetExportOption = {
         id: `scan-${scanConfig.id}`,
         name: scanSummary.title,
         type: "checkbox",
         description: `Include scan in export`,
         selected: true,
-        subOptions: [
-          {
-            id: `${scanConfig.id}_quant`,
-            name: `Quantification:`,
-            type: "dropdown",
-            description: `Include quantification in export`,
-            selected: true,
-            dropdownOptions: this.scanQuants[scanConfig.id].map(quant => ({ id: quant.id, name: quant.params?.userParams?.name || quant.id })),
-            selectedOption: quantSummary.id,
-          },
-          {
-            id: `${scanConfig.id}_rois`,
-            name: `Regions:`,
-            type: "regions",
-            description: `Include regions of interest in export (defaults to All Points)`,
-            selected: true,
-            scanId: scanConfig.id,
-            updateCounts: (selection, selected) => {
-              this.mapAllDataProductCounts();
-              return {};
-            },
-          },
-          {
-            id: `${scanConfig.id}_expressions`,
-            name: `Expressions:`,
-            type: "expressions",
-            description: "Include expressions in export",
-            selected: true,
-            scanId: scanConfig.id,
-            quantId: quantSummary.id,
-            updateCounts: (selection, selected) => {
-              this.mapAllDataProductCounts();
-              return {};
-            },
-          },
-        ],
+        subOptions: [],
+        updateCounts: (selection, selected) => {
+          this.mapAllDataProductCounts();
+          return {};
+        },
+      };
+
+      if (quantSummary) {
+        const subOpt: WidgetExportOption = {
+          id: `${scanConfig.id}_quant`,
+          name: `Quantification:`,
+          type: "dropdown",
+          description: `Include quantification in export`,
+          selected: true,
+          dropdownOptions: this.scanQuants[scanConfig.id].map(quant => ({ id: quant.id, name: quant.params?.userParams?.name || quant.id })),
+          selectedOption: quantSummary.id,
+        };
+        opt.subOptions!.push(subOpt);
+      }
+
+      opt.subOptions!.push({
+        id: `${scanConfig.id}_rois`,
+        name: `Regions:`,
+        type: "regions",
+        description: `Include regions of interest in export (defaults to All Points)`,
+        selected: true,
+        scanId: scanConfig.id,
         updateCounts: (selection, selected) => {
           this.mapAllDataProductCounts();
           return {};
         },
       });
+
+      if (quantSummary) {
+        opt.subOptions!.push({
+          id: `${scanConfig.id}_expressions`,
+          name: `Expressions:`,
+          type: "expressions",
+          description: "Include expressions in export",
+          selected: true,
+          scanId: scanConfig.id,
+          quantId: quantSummary.id,
+          updateCounts: (selection, selected) => {
+            this.mapAllDataProductCounts();
+            return {};
+          },
+        });
+      }
+
+      options.push(opt);
     });
 
     this.options = options;
@@ -431,8 +440,8 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
             }
 
             let scanId = option.id.replace("scan-", "");
-            let quantId = option.subOptions?.find(subOption => subOption.id === scanId + "_quant")?.selectedOption;
-            return scanId && quantId;
+            //let quantId = option.subOptions?.find(subOption => subOption.id === scanId + "_quant")?.selectedOption;
+            return !!scanId; // && quantId;
           })
           .map(option => this.getExportProductsForScan(userId, option, request));
 
@@ -483,7 +492,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
   private getExportProductsForScan(userId: string, scanGroupOption: WidgetExportOption, request: WidgetExportRequest): Observable<WidgetExportData> {
     let scanId = scanGroupOption.id.replace("scan-", "");
     let scanName = this.allScans.find(scan => scan.id === scanId)?.title || scanId;
-    let quantId = scanGroupOption.subOptions!.find(subOption => subOption.id === scanId + "_quant")!.selectedOption!;
+    let quantId = scanGroupOption.subOptions?.find(subOption => subOption.id === scanId + "_quant")?.selectedOption || "";
     let quantName = this.scanQuants[scanId].find(quant => quant.id === quantId)?.params?.userParams?.name || quantId;
     let instrument = scanInstrumentToJSON(scanInstrumentFromJSON(this.allScans.find(scan => scan.id === scanId)?.instrument || ScanInstrument.UNKNOWN_INSTRUMENT));
     let instrumentConfig = this.allScans.find(scan => scan.id === scanId)?.instrumentConfig || "Unknown";
