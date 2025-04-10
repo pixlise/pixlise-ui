@@ -1127,7 +1127,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   clearExpressionFromCache(expressionId: string): Observable<number> {
-    let pattern = `,\"exprId\":\"${expressionId}\".*`;
+    let pattern = `,"exprId":"${expressionId}".*`;
 
     return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
       map(res => res[1]?.numDeleted)
@@ -1135,7 +1135,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   clearExpressionCacheForScan(expressionId: string, scanId: string): Observable<number> {
-    let pattern = `{\"scanId\":\"${scanId}\",\"exprId\":\"${expressionId}\".*`;
+    let pattern = `{"scanId":"${scanId}","exprId":"${expressionId}".*`;
 
     return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
       map(res => res[1]?.numDeleted || 0)
