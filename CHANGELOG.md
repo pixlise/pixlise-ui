@@ -3,6 +3,7 @@
 ### New Features
 - Added text box entry for specifying opacity of context image layer visibility
 - Server-side clears cached expression output if it hasn't been accessed for over 30 days
+- Brought back expression editor contextual help, and updated it to show help for newer functions like readCache/writeCache/exists, constants scanId/quantId/userId and available values for things like housekeeping/data/element functions.
 
 ### Bug Fixes
 - Saves MIST ROI Reproducibility setting for context image
