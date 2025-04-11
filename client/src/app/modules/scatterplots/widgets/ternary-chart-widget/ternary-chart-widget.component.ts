@@ -156,12 +156,15 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private setInitialConfig() {
     this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
     this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
-    this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
-      this.mdl.expressionIds = exprs.exprIds;
 
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
+    if (this.scanId.length > 0 && this.quantId.length > 0) {
+      this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
+        this.mdl.expressionIds = exprs.exprIds;
+
+        this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+        this.update();
+      });
+    }
   }
 
   get topAxisSwitcher(): ScatterPlotAxisInfo | null {

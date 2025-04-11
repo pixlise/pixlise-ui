@@ -216,7 +216,9 @@
           [installedModules]="topModules"
           [expression]="topExpression"
           [showInstalledModules]="!isTopModule"
-          [isLua]="topExpression?.sourceLanguage === 'LUA'"></expression-text-editor>
+          [isLua]="topExpression?.sourceLanguage === 'LUA'"
+          [scanId]="scanId"
+          [quantId]="quantId"></expression-text-editor>
       </section>
       <section class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}" aria-label="CodeEditorBottomEdit">
         <div *ngIf="isSplitScreen && bottomExpression" class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
@@ -267,7 +269,9 @@
           [expression]="bottomExpression"
           [showInstalledModules]="false"
           [isSplitScreen]="isSplitScreen"
-          [isLua]="true">
+          [isLua]="true"
+          [scanId]="scanId"
+          [quantId]="quantId">
         </expression-text-editor>
       </section>
     </section>
