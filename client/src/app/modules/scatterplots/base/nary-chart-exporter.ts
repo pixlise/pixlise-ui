@@ -1,11 +1,10 @@
-import { combineLatest, forkJoin, Observable, of } from "rxjs";
+import { forkJoin, Observable, of } from "rxjs";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { BinaryChartModel } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-model";
 import { TernaryChartModel } from "src/app/modules/scatterplots/widgets/ternary-chart-widget/ternary-model";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import {
-  exportPlotImage,
   WidgetExportData,
   WidgetExportDialogData,
   WidgetExportFile,

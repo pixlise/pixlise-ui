@@ -20,3 +20,15 @@
         gap: $sz-unit;
     }
 }
+
+.err-display {
+    position: absolute;
+    top: $sz-double;
+    left: 50%;
+    transform: translate(-50%, 0);
+    background-color: $clr-gray-90;
+    border-radius: $sz-unit;
+    color: $clr-gray-30;
+    padding: $sz-unit;
+    margin: $sz-unit;
+}

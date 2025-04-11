@@ -355,6 +355,31 @@ $display-height: calc(100vh - 43px - 40px);
     .widget-container {
       width: 100%;
       height: 100%;
+
+      .loading-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        background-color: black;
+        border-radius: 8px;
+        border: 1px solid #444c50;
+        .skeleton-header {
+          height: 40px;
+          width: 100%;
+          background-color: rgb(var(--clr-gray-80));
+        }
+
+        .skeleton-body {
+          height: 100%;
+          width: 100%;
+          background-color: black;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
     }
 
     .output-container {

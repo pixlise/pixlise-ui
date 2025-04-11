@@ -49,6 +49,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   scanId: string = "";
   quantId: string = "";
 
+  modelErrors: WidgetError[] = [];
+
   private _subs = new Subscription();
 
   constructor(
@@ -280,6 +282,12 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
     }
 
+    if (query.length <= 0) {
+      // We're probably partially initialised, don't do anything crazy here...
+      this.setData(new RegionDataResults([], "Select bars to display")).pipe(first()).subscribe();
+      return;
+    }
+
     try {
       this._widgetData
         .getData(query)
@@ -306,14 +314,10 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private setData(data: RegionDataResults): Observable<void> {
+    this.modelErrors = [];
     return this._analysisLayoutService.availableScans$.pipe(
       map(scans => {
-        const errs = this.mdl.setData(data, scans, this._lastBeamSelection);
-        if (errs.length > 0) {
-          for (const err of errs) {
-            this._snackService.openError(err.message, err.description);
-          }
-        }
+        this.modelErrors = this.mdl.setData(data, scans, this._lastBeamSelection);
         if (this.widgetControlConfiguration.topRightInsetButton) {
           this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
         }

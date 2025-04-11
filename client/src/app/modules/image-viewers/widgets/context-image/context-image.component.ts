@@ -403,6 +403,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.imageName = contextData.contextImage;
           this.mdl.imageSmoothing = contextData.contextImageSmoothing.length > 0;
 
+          this.mdl.drawModel.showROIConfidence = contextData.showMISTROIReproducibility;
+
           this.reloadModel();
         } else {
           this.setInitialConfig();
@@ -956,6 +958,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.mdl.drawModel.showROIConfidence = !this.mdl.drawModel.showROIConfidence;
     this.reloadModel();
     this.reDraw("onToggleROIConfidence");
+    this.saveState();
   }
 
   onToggleLayerVisibilityDialog(trigger: Element | undefined) {
@@ -1475,6 +1478,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
         hideImage: !this.mdl.drawImage,
         unlinkFromDataset: !this.linkToDataset,
+        showMISTROIReproducibility: this.mdl.drawModel.showROIConfidence,
       })
     );
   }
