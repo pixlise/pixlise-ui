@@ -312,11 +312,18 @@
     </div>
     <section class="widget-container">
       <widget
+        *ngIf="canMountWidgets && areIdsLoaded()"
         [liveExpression]="liveExpressionConfig"
         [widgetTypes]="previewWidgetTypes"
         [initWidget]="initPreviewWidgetType"
         [widgetLayoutConfig]="previewLayoutConfig">
       </widget>
+      <div *ngIf="!canMountWidgets || !areIdsLoaded()" class="loading-message">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-body">
+          <wait-spinner></wait-spinner>
+        </div>
+      </div>
     </section>
     <section class="output-container" aria-label="CodeEditorOutput">
       <expression-console
