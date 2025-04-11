@@ -57,9 +57,7 @@ export class MonacoEditorService {
 
   private static _activeParamLists: Map<string, string[]> = new Map<string, string[]>();
 
-  constructor(private _cachedDataService: APICachedDataService) {
-    console.debug("Created MonacoEditorService");
-  }
+  constructor(private _cachedDataService: APICachedDataService) {}
 
   load() {
     // load the assets

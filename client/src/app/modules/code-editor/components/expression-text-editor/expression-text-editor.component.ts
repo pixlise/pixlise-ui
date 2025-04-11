@@ -127,7 +127,7 @@ export class MarkPosition {
   selector: "expression-text-editor",
   templateUrl: "./expression-text-editor.component.html",
   styleUrls: ["./expression-text-editor.component.scss"],
-  //providers: [MonacoEditorService],
+  //providers: [MonacoEditorService], <-- This used to provide its own MonacoEditorService but we now rely on the one created in AppComponent
 })
 export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   private _subs = new Subscription();
