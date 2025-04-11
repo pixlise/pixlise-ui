@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChange, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChange, ViewChild } from "@angular/core";
 import { Subscription } from "rxjs";
 // import { DataExpression } from "src/app/models/Expression";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -127,9 +127,9 @@ export class MarkPosition {
   selector: "expression-text-editor",
   templateUrl: "./expression-text-editor.component.html",
   styleUrls: ["./expression-text-editor.component.scss"],
-  providers: [MonacoEditorService],
+  //providers: [MonacoEditorService],
 })
-export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChanges {
+export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   private _subs = new Subscription();
   private _expr: DataExpression = DataExpression.create();
 
@@ -141,6 +141,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChang
   public moduleContainerWidths: Record<string, number> = {};
 
   private _isLua: boolean = false;
+  private _monacoLoadSubscribed: boolean = false;
 
   @Input() expression: DataExpression = DataExpression.create();
   @Input() allowEdit: boolean = true;
@@ -158,6 +159,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChang
   @Input() linkedModuleID: string = "";
 
   @Input() isSplitScreen: boolean = false;
+
+  @Input() scanId: string = "";
+  @Input() quantId: string = "";
 
   @Output() onChange = new EventEmitter<DataExpression>();
   @Output() onTextChange = new EventEmitter<string>();
@@ -180,7 +184,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChang
     private _apiCachedDataService: APICachedDataService,
     // private _authService: AuthenticationService,
     private _userOptionsService: UserOptionsService,
-    private elementRef: ElementRef // private _monacoService: MonacoEditorService,
+    private elementRef: ElementRef
   ) {}
 
   ngOnInit() {
@@ -277,6 +281,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChang
     if (!this._editor) {
       return;
     }
+
+    this._monacoService.setScanAndQuant(this.scanId, this.quantId);
 
     // Create the model the editor will use
     let mdl /*: ITextModel*/ = this.monaco.editor.createModel(this._expr.sourceCode, this.isLua ? MONACO_LUA_LANGUAGE_NAME : this._expr.sourceLanguage);
@@ -389,9 +395,14 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChang
   }
 
   private refreshMonaco(): void {
-    this._monacoService.loadingFinished.subscribe(() => {
-      this.createMonacoModel();
-    });
+    if (!this._monacoLoadSubscribed) {
+      this._subs.add(
+        this._monacoService.loadingFinished$.subscribe(() => {
+          this.createMonacoModel();
+        })
+      );
+      this._monacoLoadSubscribed = true;
+    }
   }
 
   get diffText(): string {

@@ -32,21 +32,17 @@
 import { Injectable } from "@angular/core";
 import { Subject, ReplaySubject } from "rxjs";
 
-// import { PIXLANGHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/pixlang-help";
-// import { LUAHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/lua-help";
-// import { SourceHelp, NameAndParamResult, HelpSignature } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
-// import { SourceContextParser } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-
-// import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
-// import { DataModuleService, DataModule } from "src/app/services/data-module.service";
 
 import { language, conf } from "monaco-editor/esm/vs/basic-languages/lua/lua.js";
 import { PIXLANGHelp } from "../components/expression-text-editor/code-help/pixlang-help";
 import { LUAHelp } from "../components/expression-text-editor/code-help/lua-help";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
 import { HelpSignature, NameAndParamResult, SourceContextParser, SourceHelp } from "../components/expression-text-editor/code-help/help";
-// import { LuaTranspiler } from "../expression-language/lua-transpiler";
+import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
+import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { ScanMetaDataType } from "src/app/generated-protos/scan";
+import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 
 export const MONACO_LUA_LANGUAGE_NAME = "lua";
 
@@ -54,15 +50,16 @@ export const MONACO_LUA_LANGUAGE_NAME = "lua";
   providedIn: "root",
 })
 export class MonacoEditorService {
-  public loadingFinished: Subject<void> = new ReplaySubject<void>();
+  public loadingFinished$: Subject<void> = new ReplaySubject<void>();
 
   private _helpPIXLANG = new PIXLANGHelp();
   private _helpLUA = new LUAHelp();
 
-  private _quantLoaded: string = "";
-  private _scanLoaded: string = "";
+  private static _activeParamLists: Map<string, string[]> = new Map<string, string[]>();
 
-  constructor() {} // private _moduleService: DataModuleService, // private _widgetRegionDataService: WidgetRegionDataService,
+  constructor(private _cachedDataService: APICachedDataService) {
+    console.debug("Created MonacoEditorService");
+  }
 
   load() {
     // load the assets
@@ -99,13 +96,38 @@ export class MonacoEditorService {
     this._helpLUA.buildHelpForSource(originID, sourceCode);
   }
 
+  setScanAndQuant(scanId: string, quantId: string) {
+    if (scanId) {
+      this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })).subscribe((resp: ScanMetaLabelsAndTypesResp) => {
+        const hk: string[] = [];
+        for (let c = 0; c < resp.metaLabels.length; c++) {
+          const label = resp.metaLabels[c];
+          if (resp.metaTypes[c] == ScanMetaDataType.MT_FLOAT || resp.metaTypes[c] == ScanMetaDataType.MT_INT) {
+            hk.push(label);
+          }
+        }
+
+        MonacoEditorService._activeParamLists.set("housekeeping", hk);
+      });
+    }
+
+    if (quantId) {
+      this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })).subscribe((resp: QuantGetResp) => {
+        MonacoEditorService._activeParamLists.set("quantColumns", resp.data?.labels || []);
+        MonacoEditorService._activeParamLists.set("quantElements", resp.summary?.elements || []);
+        //resp.summary?.params?.userParams?.quantMode == 
+        MonacoEditorService._activeParamLists.set("detectors", ["A", "B", "Combined"]);
+      });
+    }
+  }
+
   private get monaco(): any {
-    let monaco = (<any>window).monaco;
+    const monaco = (<any>window).monaco;
     return monaco;
   }
 
   private finishLoading() {
-    let monaco = this.monaco;
+    const monaco = this.monaco;
 
     // Setup syntax highlighting for PIXLANG
     this.createMonacoPIXLANGLanguage(monaco);
@@ -116,7 +138,6 @@ export class MonacoEditorService {
     // https://microsoft.github.io/monaco-editor/typedoc/index.html
     this.installIntellisenseHelpers(monaco);
 
-    // TODO: Get the built in modules and generate help for them right away
     // this._moduleService.getBuiltInModules(false).subscribe((modules: DataModule[]) => {
     //   for (let mod of modules) {
     //     let ver = mod.versions.get("0.0.0");
@@ -128,7 +149,7 @@ export class MonacoEditorService {
     //   // Tell the world we're ready
     //   this.loadingFinished.next();
     // });
-    this.loadingFinished.next();
+    this.loadingFinished$.next();
   }
 
   private styleMonacoLUALanguage(monaco: any) {
@@ -138,7 +159,7 @@ export class MonacoEditorService {
       aliases: ["Lua", "lua", "LUA"],
     });
 
-    let luaLang = language;
+    const luaLang = language;
     luaLang["builtins"] = LuaTranspiler.builtinFunctions;
     // TODO: luaLang["builtins"] = luaLang["builtins"].concat(DataModuleService.getBuiltInModuleNames());
     luaLang["escapes"] = /\\(?:[abfnrtv\\"'?]|[0-7]{1,3}|x[a-fA-F0-9]{2}|u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8})/;
@@ -205,7 +226,7 @@ export class MonacoEditorService {
     monaco.languages.register({ id: EXPR_LANGUAGE_PIXLANG });
 
     // Register a tokens provider for the language
-    let keywords = this._helpPIXLANG.getAllFunctions();
+    const keywords = this._helpPIXLANG.getAllFunctions();
     monaco.languages.setMonarchTokensProvider(EXPR_LANGUAGE_PIXLANG, {
       keywords,
       tokenizer: {
@@ -239,12 +260,12 @@ export class MonacoEditorService {
 
   private installIntellisenseHelpers(monaco: any) {
     // Setup help lookup
-    let lang = [EXPR_LANGUAGE_PIXLANG, MONACO_LUA_LANGUAGE_NAME];
-    let helpSource = [this._helpPIXLANG, this._helpLUA];
+    const lang = [EXPR_LANGUAGE_PIXLANG, MONACO_LUA_LANGUAGE_NAME];
+    const helpSource = [this._helpPIXLANG, this._helpLUA];
 
     for (let c = 0; c < lang.length; c++) {
-      let language = lang[c];
-      let src = helpSource[c];
+      const language = lang[c];
+      const src = helpSource[c];
 
       //registerCompletionItemProvider(languageSelector: LanguageSelector, provider: CompletionItemProvider): IDisposable
       monaco.languages.registerCompletionItemProvider(language, {
@@ -287,8 +308,8 @@ export class MonacoEditorService {
     token: any /*: CancellationToken*/ //: ProviderResult<CompletionList>
   ) {
     // Find a range we'll insert in
-    let word = model.getWordUntilPosition(position);
-    let range = {
+    const word = model.getWordUntilPosition(position);
+    const range = {
       startLineNumber: position.lineNumber,
       endLineNumber: position.lineNumber,
       startColumn: word.startColumn,
@@ -298,7 +319,7 @@ export class MonacoEditorService {
     // See: https://microsoft.github.io/monaco-editor/typedoc/interfaces/languages.CompletionItem.html
 
     // First, check if we're within a function and need to provide parameter completion:
-    let searchTextLines = model.getValueInRange(
+    const searchTextLines = model.getValueInRange(
       /*new IRange*/ {
         startLineNumber: Math.max(position.lineNumber - 5, 0),
         endLineNumber: position.lineNumber,
@@ -308,34 +329,28 @@ export class MonacoEditorService {
     );
 
     // Find the function name going backwards
-    let p = new SourceContextParser(helpSource.commentStartToken);
-    let itemsNearCursor = p.rfindFunctionNameAndParams(searchTextLines);
+    const p = new SourceContextParser(helpSource.commentStartToken);
+    const itemsNearCursor = p.rfindFunctionNameAndParams(searchTextLines);
 
     if (!itemsNearCursor.empty) {
       // Try split it into module name and function if possible
       let modName = "";
       let funcName = itemsNearCursor.funcName;
 
-      let parts = itemsNearCursor.funcName.split(".");
+      const parts = itemsNearCursor.funcName.split(".");
       if (parts.length == 2) {
         modName = parts[0];
         funcName = parts[1];
       }
 
-      //   let sig = helpSource.getSignatureHelp(
-      //     modName,
-      //     funcName,
-      //     itemsNearCursor.params,
-      //     this._quantLoaded,
-      //     this._widgetRegionDataService.dataset
-      //   );
-      //   if (sig) {
-      //     return this.showFunctionParamCompletion(itemsNearCursor, sig, range);
-      //   }
+      const sig = helpSource.getSignatureHelp(modName, funcName, itemsNearCursor.params, MonacoEditorService._activeParamLists);
+      if (sig) {
+        return this.showFunctionParamCompletion(itemsNearCursor, sig, range);
+      }
     }
 
     // If we just typed a module name, we have to list the functions within it
-    let moduleName = p.rfindModuleName(searchTextLines);
+    const moduleName = p.rfindModuleName(searchTextLines);
     if (moduleName.length > 0) {
       return this.showModuleItemCompletion(moduleName, helpSource, range);
     }
@@ -344,11 +359,11 @@ export class MonacoEditorService {
   }
 
   private showFunctionParamCompletion(itemsNearCursor: NameAndParamResult, sig: HelpSignature, range: any) {
-    let monaco = this.monaco;
-    let result /*: CompletionItem[]*/ = [];
+    const monaco = this.monaco;
+    const result /*: CompletionItem[]*/ = [];
 
-    for (let possibleValue of sig.paramPossibleValues) {
-      let quotedValue = '"' + possibleValue + '"';
+    for (const possibleValue of sig.paramPossibleValues) {
+      const quotedValue = '"' + possibleValue + '"';
       let possibleValueToInsert = possibleValue + '"';
       if (itemsNearCursor.partialParam != '"') {
         possibleValueToInsert = '"' + possibleValueToInsert;
@@ -368,14 +383,14 @@ export class MonacoEditorService {
   }
 
   private showModuleItemCompletion(moduleName: string, helpSource: SourceHelp, range: any) {
-    let monaco = this.monaco;
-    let result /*: CompletionItem[]*/ = [];
+    const monaco = this.monaco;
+    const result /*: CompletionItem[]*/ = [];
 
-    let mods = helpSource.getCompletionModules(moduleName);
+    const mods = helpSource.getCompletionModules(moduleName);
     if (mods.length == 1) {
       // List items for this module!
-      let funcs = helpSource.getCompletionFunctions(mods[0].name);
-      for (let modItem of funcs) {
+      const funcs = helpSource.getCompletionFunctions(mods[0].name);
+      for (const modItem of funcs) {
         result.push({
           label: modItem.name,
           kind: monaco.languages.CompletionItemKind.Function,
@@ -388,8 +403,8 @@ export class MonacoEditorService {
         });
       }
 
-      let consts = helpSource.getCompletionConstants(mods[0].name);
-      for (let [constName, constDesc] of consts.entries()) {
+      const consts = helpSource.getCompletionConstants(mods[0].name);
+      for (const [constName, constDesc] of consts.entries()) {
         result.push({
           label: constName,
           kind: monaco.languages.CompletionItemKind.Constant,
@@ -407,12 +422,12 @@ export class MonacoEditorService {
   }
 
   private showGlobalCompletion(helpSource: SourceHelp, range: any) {
-    let monaco = this.monaco;
-    let result /*: CompletionItem[]*/ = [];
+    const monaco = this.monaco;
+    const result /*: CompletionItem[]*/ = [];
 
     // Show global functions
-    let funcs = helpSource.getCompletionFunctions("");
-    for (let item of funcs) {
+    const funcs = helpSource.getCompletionFunctions("");
+    for (const item of funcs) {
       result.push({
         label: item.name,
         kind: monaco.languages.CompletionItemKind.Function,
@@ -425,9 +440,23 @@ export class MonacoEditorService {
       });
     }
 
+    const consts = helpSource.getCompletionConstants("");
+    for (const item of consts) {
+      result.push({
+        label: item[0],
+        kind: monaco.languages.CompletionItemKind.Constant,
+        insertText: item[0],
+        detail: item[1],
+        //documentation: item.doc,
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        range: range,
+        //commitCharacters: ["("],
+      });
+    }
+
     // Show all modules
-    let mods = helpSource.getCompletionModules("");
-    for (let item of mods) {
+    const mods = helpSource.getCompletionModules("");
+    for (const item of mods) {
       result.push({
         label: item.name,
         // Another option would've been .Class
@@ -443,8 +472,8 @@ export class MonacoEditorService {
     }
 
     // Show language keywords
-    let kw = helpSource.getKeywords();
-    for (let word of kw) {
+    const kw = helpSource.getKeywords();
+    for (const word of kw) {
       result.push({
         label: word,
         kind: monaco.languages.CompletionItemKind.Keyword,
@@ -472,7 +501,7 @@ export class MonacoEditorService {
     context: any /*: SignatureHelpContext*/ //: ProviderResult<SignatureHelpResult>
   ) {
     // Find the function we're being asked to provide help for. Search backwards from the current position
-    let searchTextLines = model.getValueInRange(
+    const searchTextLines = model.getValueInRange(
       /*new IRange*/ {
         startLineNumber: Math.max(position.lineNumber - 5, 0),
         endLineNumber: position.lineNumber,
@@ -482,59 +511,53 @@ export class MonacoEditorService {
     );
 
     // Find the function name going backwards
-    let p = new SourceContextParser(helpSource.commentStartToken);
-    let items = p.rfindFunctionNameAndParams(searchTextLines);
+    const p = new SourceContextParser(helpSource.commentStartToken);
+    const items = p.rfindFunctionNameAndParams(searchTextLines);
 
     if (!items.empty) {
       // Provide signature help if we can find the function
       let modName = "";
       let funcName = items.funcName;
 
-      let parts = items.funcName.split(".");
+      const parts = items.funcName.split(".");
       if (parts.length == 2) {
         modName = parts[0];
         funcName = parts[1];
       }
 
-      //   let sig = helpSource.getSignatureHelp(
-      //     modName,
-      //     funcName,
-      //     items.params,
-      //     this._widgetRegionDataService.quantificationLoaded,
-      //     this._widgetRegionDataService.dataset
-      //   );
-      //   if (!sig) {
-      //     return null;
-      //   }
+      const sig = helpSource.getSignatureHelp(modName, funcName, items.params, MonacoEditorService._activeParamLists);
+      if (!sig) {
+        return null;
+      }
 
-      //   let sigParams = [];
-      //   let funcDocPrefix = "";
-      //   for (let p of sig.params) {
-      //     let sigParam: Record<string, string> = { label: p.name };
-      //     if (p.doc) {
-      //       sigParam["documentation"] = p.name + ": " + p.doc;
-      //       if (sigParams.length == sig.activeParamIdx) {
-      //         // We have docs for the active one, so put a prefix in for func doc to provide some separation
-      //         funcDocPrefix = "\n";
-      //       }
-      //     }
-      //     sigParams.push(sigParam);
-      //   }
+      const sigParams = [];
+      let funcDocPrefix = "";
+      for (const p of sig.params) {
+        const sigParam: Record<string, string> = { label: p.name };
+        if (p.doc) {
+          sigParam["documentation"] = p.name + ": " + p.doc;
+          if (sigParams.length == sig.activeParamIdx) {
+            // We have docs for the active one, so put a prefix in for func doc to provide some separation
+            funcDocPrefix = "\n";
+          }
+        }
+        sigParams.push(sigParam);
+      }
 
-      //   let signatureHelp = {
-      //     signatures: [
-      //       {
-      //         label: sig.signature,
-      //         documentation: funcDocPrefix + (modName.length > 0 ? modName + "." : "") + sig.funcName + "():\n" + sig.funcDoc, //sig.paramDoc,//sig.funcDoc,
-      //         parameters: sigParams,
-      //       },
-      //     ],
-      //     activeParameter: sig.activeParamIdx,
-      //     activeSignature: 0, // We're only showing one signature, because we look it up, and we don't support overloading...
-      //   };
+      const signatureHelp = {
+        signatures: [
+          {
+            label: sig.signature,
+            documentation: funcDocPrefix + (modName.length > 0 ? modName + "." : "") + sig.funcName + "():\n" + sig.funcDoc, //sig.paramDoc,//sig.funcDoc,
+            parameters: sigParams,
+          },
+        ],
+        activeParameter: sig.activeParamIdx,
+        activeSignature: 0, // We're only showing one signature, because we look it up, and we don't support overloading...
+      };
 
-      //   // NOTE: we have to provide the dispose function. MS code also includes this, see https://github.com/microsoft/pxt/blob/master/webapp/src/monaco.tsx#L209
-      //   return { value: signatureHelp, dispose: () => {} };
+      // NOTE: we have to provide the dispose function. MS code also includes this, see https://github.com/microsoft/pxt/blob/master/webapp/src/monaco.tsx#L209
+      return { value: signatureHelp, dispose: () => {} };
     }
 
     return null;
