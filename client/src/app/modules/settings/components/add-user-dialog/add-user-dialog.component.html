@@ -58,7 +58,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">User Name</th>
-          <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+          <td
+            mat-cell
+            *matCellDef="let row" 
+            #tooltip="matTooltip"
+            [matTooltip]="'Auth0 User Id: ' + row.id"
+            [matTooltipShowDelay]="500">{{ row.name }}</td>
         </ng-container>
 
         <ng-container matColumnDef="email">
