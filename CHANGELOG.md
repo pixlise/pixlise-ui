@@ -1,4 +1,11 @@
-## 4.65.0 (LATEST)
+## 4.66.0 (LATEST)
+
+### New Features
+- Show user ID on Add User dialog and group management page to allow lookup/identification in Auth0
+
+### Bug Fixes
+
+## 4.65.0 (2025-04-11)
 
 ### New Features
 - Added text box entry for specifying opacity of context image layer visibility
