@@ -429,7 +429,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
           }
 
           // Only proceed with widget initialization if we have valid IDs
-          if (this.areIdsLoaded()) {
+          if (this.idsLoaded) {
             this._initializeWidgets();
           }
         }
@@ -438,7 +438,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   }
 
   private _initializeWidgets() {
-    console.log("canMountWidgets", this.canMountWidgets, this.areIdsLoaded(), this.scanId, this.quantId);
+    console.log("canMountWidgets", this.canMountWidgets, this.idsLoaded, this.scanId, this.quantId);
     this.canMountWidgets = true;
   }
 
@@ -664,12 +664,17 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     return changedText;
   }
 
-  areIdsLoaded(): boolean {
-    return !!this.scanId && !!this.quantId && this.scanId.length > 0 && this.quantId.length > 0;
+  get isTopExpressionLoaded(): boolean {
+    return !!this.topExpression && this.topExpression.id.length > 0;
+  }
+
+  get idsLoaded(): boolean {
+    // Check if scanId, quantId, and top expression are loaded
+    return !!this.scanId && !!this.quantId && this.scanId.length > 0 && this.quantId.length > 0 && this.isTopExpressionLoaded;
   }
 
   private _runExpression(expression: DataExpression, isSaved: boolean = false) {
-    if (!this.areIdsLoaded()) {
+    if (!this.idsLoaded) {
       console.warn("Cannot run expression: scan or quant ID not loaded yet");
       return;
     }
@@ -821,7 +826,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   }
 
   runHighlightedExpression() {
-    if (!this.areIdsLoaded()) {
+    if (!this.idsLoaded) {
       this._snackbarService.openError("Cannot run expression", "Scan ID and Quant ID must be loaded first");
       return;
     }
