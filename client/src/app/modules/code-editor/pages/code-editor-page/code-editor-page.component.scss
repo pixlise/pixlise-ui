@@ -355,6 +355,7 @@ $display-height: calc(100vh - 43px - 40px);
     .widget-container {
       width: 100%;
       height: 100%;
+      background-color: #222928;
 
       .loading-message {
         display: flex;
@@ -386,6 +387,7 @@ $display-height: calc(100vh - 43px - 40px);
       min-height: 200px;
       max-height: 40vh;
       height: 100%;
+      background-color: #222928;
     }
 
     &.preview-solo {

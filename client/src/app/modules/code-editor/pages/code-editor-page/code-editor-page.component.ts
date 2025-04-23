@@ -115,6 +115,18 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   public queryParams: Record<string, string> = {};
 
   public expressionTimeoutMs: number = environment.luaTimeoutMs;
+  public expressionTimeoutMsOptions: { label: string; value: number }[] = [
+    { label: "5 seconds", value: 5000 },
+    { label: "10 seconds", value: 10000 },
+    { label: "30 seconds", value: 30000 },
+    { label: "45 seconds", value: 45000 },
+    { label: "1 minute", value: 60000 },
+    { label: "2 minutes", value: 120000 },
+    { label: "5 minutes", value: 300000 },
+    { label: "10 minutes", value: 600000 },
+    { label: "20 minutes", value: 1200000 },
+    { label: "30 minutes", value: 1800000 },
+  ];
 
   liveExpressionConfig: LiveExpression = {
     expressionId: "",
@@ -142,6 +154,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this._syncExpressionTimeoutMsOptions();
+
     this._expressionsService.fetchExpressions();
     this._expressionsService.fetchModules();
 
@@ -435,6 +449,27 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  private _syncExpressionTimeoutMsOptions() {
+    // Make sure current timeout is in the options
+    if (!this.expressionTimeoutMsOptions.some(option => option.value === this.expressionTimeoutMs)) {
+      const seconds = this.expressionTimeoutMs / 1000;
+      const minutes = seconds / 60;
+      const hours = minutes / 60;
+
+      let label = "";
+      if (seconds < 60) {
+        label = `${seconds} seconds`;
+      } else if (minutes < 60) {
+        label = `${minutes} minutes`;
+      } else {
+        label = `${hours} hours`;
+      }
+      this.expressionTimeoutMsOptions.push({ label, value: this.expressionTimeoutMs });
+    }
+    // Sort options by value
+    this.expressionTimeoutMsOptions.sort((a, b) => a.value - b.value);
   }
 
   private _initializeWidgets() {
