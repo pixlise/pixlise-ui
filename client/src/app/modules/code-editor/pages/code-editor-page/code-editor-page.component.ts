@@ -70,6 +70,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   private _subscriptions = new Subscription();
   private _keyPresses: Set<string> = new Set<string>();
+  private _updatingLinkedModule: boolean = false;
 
   private _id = "code-editor"; // Needed for widget-type subscriptions
   initPreviewWidgetType = "binary-plot";
@@ -305,12 +306,12 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
               topModuleVersion = this.getVersionString(modules[topModuleId].versions[0].version);
             }
 
-            let queryParams = { ...this.queryParams, [EditorConfig.topModuleId]: topModuleId, [EditorConfig.topModuleVersion]: topModuleVersion };
+            const queryParams = { ...this.queryParams, [EditorConfig.topModuleId]: topModuleId, [EditorConfig.topModuleVersion]: topModuleVersion };
             this._router.navigate([], { queryParams });
           }
 
           if (topModuleId) {
-            let module = modules[topModuleId];
+            const module = modules[topModuleId];
             if (!module) {
               return;
             }
@@ -330,8 +331,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
             }
           }
         } else {
-          let bottomModuleId = this.queryParams[EditorConfig.bottomExpressionId];
-          let bottomModuleVersion = this.queryParams[EditorConfig.bottomModuleVersion];
+          const bottomModuleId = this.queryParams[EditorConfig.bottomExpressionId];
+          const bottomModuleVersion = this.queryParams[EditorConfig.bottomModuleVersion];
 
           if (
             bottomModuleId === this.bottomExpression?.id &&
@@ -398,8 +399,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
         if (result) {
           if (result.selectedExpressions?.length > 0) {
             this.clearExpressionQueryParams();
-            let topExpressionId = result.selectedExpressions[0].id;
-            let queryParams: Record<string, string> = { ...this.queryParams, [EditorConfig.topExpressionId]: topExpressionId };
+            const topExpressionId = result.selectedExpressions[0].id;
+            const queryParams: Record<string, string> = { ...this.queryParams, [EditorConfig.topExpressionId]: topExpressionId };
 
             if (result.selectedExpressions.length > 1) {
               queryParams[EditorConfig.bottomExpressionId] = result.selectedExpressions[1].id;
@@ -473,7 +474,6 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   }
 
   private _initializeWidgets() {
-    console.log("canMountWidgets", this.canMountWidgets, this.idsLoaded, this.scanId, this.quantId);
     this.canMountWidgets = true;
   }
 
@@ -988,7 +988,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       widgetId: this._id,
     };
     dialogConfig.data.selectedIds = [];
-    let topExpressionId = this.queryParams[EditorConfig.topExpressionId];
+    const topExpressionId = this.queryParams[EditorConfig.topExpressionId];
     if (topExpressionId && !this.isTopExpressionIdNew) {
       dialogConfig.data.selectedIds.push(topExpressionId);
     }
@@ -1012,7 +1012,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     this.clearTopExpressionCache();
 
     this.clearExpressionQueryParams();
-    let queryParams: Record<string, string> = { ...this.queryParams, [EditorConfig.topExpressionId]: ExpressionsService.NewExpressionId };
+    const queryParams: Record<string, string> = { ...this.queryParams, [EditorConfig.topExpressionId]: ExpressionsService.NewExpressionId };
     this._router.navigate([], { queryParams });
   }
 
@@ -1250,16 +1250,22 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   }
 
   updateLinkedModule() {
+    if (this._updatingLinkedModule) {
+      return;
+    }
+
+    this._updatingLinkedModule = true;
+
     if (this.linkedModuleID) {
-      let linkedModule = this.modules.find(module => module.id === this.linkedModuleID);
+      const linkedModule = this.modules.find(module => module.id === this.linkedModuleID);
       if (!linkedModule) {
         this._snackbarService.openError(`Failed to find linked module: ${this.linkedModuleID}`);
         return;
       }
 
-      let latestVersion = this.getLatestModuleVersion(linkedModule);
+      const latestVersion = this.getLatestModuleVersion(linkedModule);
       if (linkedModule && latestVersion) {
-        let topLinkedModule = this.topModules.find(module => module.module.id === linkedModule?.id);
+        const topLinkedModule = this.topModules.find(module => module.module.id === linkedModule.id);
         if (topLinkedModule && this.getVersionString(topLinkedModule.reference.version) !== this.getVersionString(latestVersion.version)) {
           topLinkedModule.module = linkedModule;
           topLinkedModule.reference = ModuleReference.create({ moduleId: linkedModule.id, version: latestVersion.version });
@@ -1271,18 +1277,27 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     if (this.topExpression) {
       // Refresh the top modules so they include the latest module versions
       if (this.modules.length > 0 && this.topExpression.moduleReferences.length > 0) {
-        let modulesMap: Record<string, DataModule> = {};
+        const modulesMap: Record<string, DataModule> = {};
         this.modules.forEach(module => {
           modulesMap[module.id] = module;
         });
         this.updateTopModules(modulesMap);
         this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
+        this._updatingLinkedModule = false;
       } else {
-        this._expressionsService.fetchModulesAsync().subscribe(modules => {
-          this.updateTopModules(modules);
-          if (this.topExpression) {
-            this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
-          }
+        this._expressionsService.fetchModulesAsync().subscribe({
+          next: modules => {
+            this.updateTopModules(modules);
+            if (this.topExpression) {
+              this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
+            }
+          },
+          error: err => {
+            this._snackbarService.openError("Failed to fetch modules", err);
+          },
+          complete: () => {
+            this._updatingLinkedModule = false;
+          },
         });
       }
     }
@@ -1305,7 +1320,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     this.loadedModule = newModule;
     this.loadedModuleVersion = moduleVersion;
     if (this.loadedModuleVersion) {
-      let newExpression = this.moduleToExpression(newModule, this.loadedModuleVersion);
+      const newExpression = this.moduleToExpression(newModule, this.loadedModuleVersion);
       if (isTop) {
         // If we already have the data loaded, don't reload it as this causes cursor jumping
         if (this.topExpression?.id === newExpression.id && this.topExpression?.sourceCode === newExpression.sourceCode) {
@@ -1328,7 +1343,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       }
       this.loadedModuleVersions = this.getVisibleModuleVersions(newModule);
 
-      let queryParams = {
+      const queryParams = {
         ...this.queryParams,
         [isTop ? EditorConfig.topModuleId : EditorConfig.bottomExpressionId]: newModule.id,
         [isTop ? EditorConfig.topModuleVersion : EditorConfig.bottomModuleVersion]: this.getVersionString(this.loadedModuleVersion.version),
@@ -1336,10 +1351,10 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
       this._router.navigate([], { queryParams });
     } else {
-      let attemptedVersion = this.getVersionString(moduleVersion?.version) || "";
+      const attemptedVersion = this.getVersionString(moduleVersion?.version) || "";
       this._snackbarService.openError(`Failed to load version ${attemptedVersion} of module: ${newModule.name}`);
 
-      let queryParams = {
+      const queryParams = {
         ...this.queryParams,
         [isTop ? EditorConfig.topModuleId : EditorConfig.bottomExpressionId]: newModule.id,
       };
@@ -1349,7 +1364,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   }
 
   loadLatestModuleVersion(newModule: DataModule, isTop: boolean = true) {
-    let latestVersion = this.getLatestModuleVersion(newModule) || null;
+    const latestVersion = this.getLatestModuleVersion(newModule) || null;
     this.loadModuleVersion(newModule, latestVersion, isTop);
   }
 
@@ -1367,7 +1382,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       } else {
         this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
         this._expressionsService.writeExpression(this.topExpression);
-        let queryParams = { ...this.queryParams };
+        const queryParams = { ...this.queryParams };
         if (!queryParams[EditorConfig.topExpressionId]) {
           queryParams[EditorConfig.topExpressionId] = this.topExpression.id || ExpressionsService.NewExpressionId;
           this._router.navigate([], { queryParams });
@@ -1399,10 +1414,10 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
     const dialogConfig = new MatDialogConfig<ModuleReleaseDialogData>();
 
-    let { id, name } = this.loadedModule;
-    let version = this.loadedModuleVersion.version;
+    const { id, name } = this.loadedModule;
+    const version = this.loadedModuleVersion.version;
 
-    let activeExpression = this.isTopEditorActive ? this.topExpression : this.bottomExpression;
+    const activeExpression = this.isTopEditorActive ? this.topExpression : this.bottomExpression;
 
     if (!id || !name || !version || !activeExpression) {
       console.error("Failed to release module", name, version, id);
@@ -1420,7 +1435,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       activeExpression
     );
 
-    let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
+    const dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((response: ModuleReleaseDialogResponse) => {
       if (!response?.module) {
         return;
@@ -1452,8 +1467,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   @HostListener("window:keydown", ["$event"])
   onKeydown(event: KeyboardEvent): void {
-    let cmdOrCtrl = this._analysisLayoutService.isWindows ? "Control" : "Meta";
-    let bOrAltB = this._analysisLayoutService.isFirefox ? "∫" : "b";
+    const cmdOrCtrl = this._analysisLayoutService.isWindows ? "Control" : "Meta";
+    const bOrAltB = this._analysisLayoutService.isFirefox ? "∫" : "b";
 
     if (this._keyPresses.has(cmdOrCtrl) || event.key === cmdOrCtrl) {
       this._keyPresses.add(event.key);
