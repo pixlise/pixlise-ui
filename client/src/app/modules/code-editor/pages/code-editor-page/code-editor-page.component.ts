@@ -1511,4 +1511,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   onKeyup(event: KeyboardEvent): void {
     this._keyPresses.delete(event.key);
   }
+
+  trackByModuleId(index: number, module: DataModule): string {
+    return module.id;
+  }
 }

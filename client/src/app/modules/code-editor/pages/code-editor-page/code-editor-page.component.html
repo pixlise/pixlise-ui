@@ -117,7 +117,7 @@
           </div>
           <div class="group-layers" *ngIf="isModulesSectionOpen">
             <expression-layer
-              *ngFor="let module of modules"
+              *ngFor="let module of modules; trackBy: trackByModuleId"
               [isSelectable]="true"
               [selected]="topModuleIds.includes(module.id)"
               (onSelect)="onSelectModule(module)"
