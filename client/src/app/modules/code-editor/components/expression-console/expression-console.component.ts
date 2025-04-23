@@ -64,6 +64,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   @Input() columnCount: number = 0;
   @Input() stdout: string = "";
   @Input() stderr: string = "";
+  @Input() loading: boolean = false;
 
   @Output() onToggleSolo = new EventEmitter();
   private _isSolo: boolean = false;

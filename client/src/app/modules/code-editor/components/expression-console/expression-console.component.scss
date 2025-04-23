@@ -240,3 +240,40 @@
     }
   }
 }
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+
+  h5 {
+    color: rgb(var(--clr-gray-30));
+    margin-top: 8px;
+    width: 120px;
+  }
+}
+
+.dots {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: bottom;
+  width: 0ch;
+  animation: dots 1s steps(3) infinite;
+}
+@keyframes dots {
+  0% {
+    width: 0ch;
+  }
+  33% {
+    width: 1ch;
+  }
+  66% {
+    width: 2ch;
+  }
+  100% {
+    width: 3ch;
+  }
+}

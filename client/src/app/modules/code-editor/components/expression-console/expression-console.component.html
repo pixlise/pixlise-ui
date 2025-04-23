@@ -86,10 +86,14 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
 
-    <div *ngIf="!isValidData && isOutputView" class="invalid-input">
+    <div *ngIf="!isValidData && isOutputView && !loading" class="invalid-input">
       <img src="assets/icons/error-triangle-dark.svg" alt="No Valid Input" />
       <h5>No Valid Input</h5>
       <h6>Run an expression or highlight<br />a selection of code to run</h6>
+    </div>
+    <div *ngIf="loading" class="loading-spinner">
+      <wait-spinner></wait-spinner>
+      <h5>Running Expression<span class="dots">...</span></h5>
     </div>
 
     <div *ngIf="!isOutputView && !stderr" class="log-text">{{ stdout ? printableStdout : "No log output" }}</div>

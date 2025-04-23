@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { combineLatest, Subscription } from "rxjs";
@@ -63,6 +63,7 @@ import { environment } from "src/environments/environment";
   selector: "code-editor",
   templateUrl: "./code-editor-page.component.html",
   styleUrls: ["./code-editor-page.component.scss"],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CodeEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild("preview", { read: ViewContainerRef }) previewContainer: any;
@@ -135,7 +136,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     quantId: "",
   };
   lastRunResult: DataQueryResult | null = null;
-
+  runningExpression: boolean = false;
   public stdout: string = "";
   public stderr: string = "";
 
@@ -722,6 +723,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     // Clear unsaved expression responses if we're intentionally re-running
     // this._widgetDataService.clearUnsavedExpressionResponses().subscribe(() => {
     this.lastRunResult = null;
+    this.runningExpression = true;
     this._widgetDataService
       .runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true, this.expressionTimeoutMs)
       .subscribe({
@@ -741,6 +743,9 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
           this.lastRunResult = null;
           this.stdout = "";
           this.stderr = `${err}`;
+        },
+        complete: () => {
+          this.runningExpression = false;
         },
       });
     // });
