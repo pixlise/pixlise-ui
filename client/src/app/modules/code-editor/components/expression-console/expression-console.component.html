@@ -32,8 +32,8 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #selectionSettingsMenu>
   <div class="gap-separated-vertical-elements selection-settings-menu">
     <div class="pmcs-container">
-      <label>Show PMCs:</label>
-      <two-state-button leftLabel="Non-null" rightLabel="All PMCs" [active]="showAllPMCs" (onToggle)="onToggleValidOnly($event)"> </two-state-button>
+      <label for="show-pmcs">Show PMCs:</label>
+      <two-state-button id="show-pmcs" leftLabel="Non-null" rightLabel="All PMCs" [active]="showAllPMCs" (onToggle)="onToggleValidOnly($event)"> </two-state-button>
     </div>
   </div>
 </ng-template>
@@ -59,7 +59,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <icon-button class="settings-btn" title="Settings" icon="assets/button-icons/settings.svg"> </icon-button>
     </widget-settings-menu>
   </div>
-  <div class="result-container" [style.height]="!isValidTableData ? '100%' : 'auto'">
+  <div class="result-container" [style.height]="!isValidTableData ? '100%' : '100%'">
     <table *ngIf="isValidTableData && isOutputView">
       <tr *ngFor="let row of data; let i = index">
         <td
@@ -76,32 +76,23 @@ POSSIBILITY OF SUCH DAMAGE.
     </table>
 
     <div *ngIf="!isValidTableData && isValidData && isOutputView" class="result-text">
-      {{ printableResultValue }}
-      <div class="copy-btn" (click)="onCopyOutput()">
+      <div class="result-value-text">{{ printableResultValue }}</div>
+    </div>
+
+    <div *ngIf="(!isValidTableData && isValidData && isOutputView) || (!isOutputView && (stdout || stderr))" class="copy-btn-container">
+      <div class="copy-btn" (click)="onCopy()" (keydown)="onCopy()" (keyup)="onCopy()" (keypress)="onCopy()" tabindex="0">
         <mat-icon>{{ copyIcon }}</mat-icon
         >Copy
       </div>
     </div>
 
     <div *ngIf="!isValidData && isOutputView" class="invalid-input">
-      <img src="assets/icons/error-triangle-dark.svg" />
+      <img src="assets/icons/error-triangle-dark.svg" alt="No Valid Input" />
       <h5>No Valid Input</h5>
       <h6>Run an expression or highlight<br />a selection of code to run</h6>
     </div>
 
-    <div *ngIf="!isOutputView && !stderr" class="log-text">
-      {{ stdout ? printableStdout : "No log output" }}
-      <div *ngIf="printableStdout" class="copy-btn" (click)="onCopyStdout()">
-        <mat-icon>{{ copyIcon }}</mat-icon
-        >Copy
-      </div>
-    </div>
-    <div *ngIf="!isOutputView && stderr" class="error-text">
-      {{ stderr ? printableStderr : "No log output" }}
-      <div *ngIf="printableStderr" class="copy-btn" (click)="onCopyStderr()">
-        <mat-icon>{{ copyIcon }}</mat-icon
-        >Copy
-      </div>
-    </div>
+    <div *ngIf="!isOutputView && !stderr" class="log-text">{{ stdout ? printableStdout : "No log output" }}</div>
+    <div *ngIf="!isOutputView && stderr" class="error-text">{{ stderr ? printableStderr : "No log output" }}</div>
   </div>
 </div>

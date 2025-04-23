@@ -69,7 +69,8 @@
   }
 
   .result-container {
-    overflow: scroll;
+    position: relative;
+    overflow: auto;
 
     &::-webkit-scrollbar {
       display: none;
@@ -172,6 +173,15 @@
 .result-text,
 .log-text,
 .error-text {
+  overflow: auto;
+  height: calc(100% - 25px);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
   position: relative;
   min-height: 16px;
 
@@ -200,5 +210,32 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
+
+    label {
+      color: rgb(var(--clr-gray-30));
+    }
+  }
+}
+
+.copy-btn-container {
+  position: absolute;
+  z-index: 10;
+
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(var(--clr-gray-30), 0.8);
+    cursor: pointer;
+
+    &:hover {
+      color: rgba(var(--clr-gray-30), 1);
+    }
   }
 }
