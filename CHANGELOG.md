@@ -1,6 +1,17 @@
 ## 4.65.0 (LATEST)
 
 ### New Features
+- Shows spinner in expression console on code editor page when expression is running
+  - Adds skeleton state for code editor widget so this doesn't show before the expression is loaded
+
+### Bug Fixes
+- Fixes performance issues on code editor page when switching expressions (max call stack exceeded)
+- Updates code editor time out options to match config options
+- Styling enhancements to expression console (fixes copy button position, overflow states, etc.)
+
+## 4.65.0 (2025-04-10)
+
+### New Features
 - Added text box entry for specifying opacity of context image layer visibility
 - Server-side clears cached expression output if it hasn't been accessed for over 30 days
 - Brought back expression editor contextual help, and updated it to show help for newer functions like readCache/writeCache/exists, constants scanId/quantId/userId and available values for things like housekeeping/data/element functions.
