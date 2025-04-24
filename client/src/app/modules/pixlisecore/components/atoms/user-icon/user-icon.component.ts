@@ -47,7 +47,11 @@ export class UserIconComponent implements OnInit, OnDestroy {
   }
 
   generateAbbreviation(name: string) {
-    const firstLast = name.split(" ");
+    if (!name) {
+      return "N/A";
+    }
+
+    const firstLast = name.trim().toUpperCase().split(" ");
     if (firstLast.length === 1) {
       return firstLast[0]?.[0] || "N/A";
     } else if (firstLast.length >= 2) {
