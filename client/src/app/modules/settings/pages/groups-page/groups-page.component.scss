@@ -348,7 +348,7 @@
 
 .user-card {
   display: flex;
-  padding: 8px;
+  padding: 0 8px;
   gap: 8px;
   border-bottom: 1px solid $clr-gray-60;
   background: var(--gray-90, #222829);
@@ -372,6 +372,7 @@
     justify-content: center;
     cursor: pointer;
     flex: 1;
+    padding: 8px 0;
 
     .info {
       max-width: 200px;
