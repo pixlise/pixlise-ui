@@ -262,4 +262,8 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     // Provide the util function
     return getScanTitle(scan);
   }
+
+  trackByScanId(index: number, scan: ScanItem): string {
+    return scan.id;
+  }
 }
