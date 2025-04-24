@@ -27,6 +27,7 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
   notifications: NotificationSetting[] = [];
   user!: UserInfo;
   groupsWithAccess: UserGroupInfo[] = [];
+  highestGroupAccess: UserGroupRelationship = UserGroupRelationship.UGR_UNKNOWN;
 
   public eventIcons = {
     warning: "warning",
@@ -46,15 +47,19 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     this.notifications = NotificationSubscriptions.allNotifications.map(notification => new NotificationSetting(notification));
 
     // Do a deep copy of user info
-    let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info!;
-    this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
+    if (this._userOptionsService.userDetails.info) {
+      const { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info;
+      this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
+    }
 
     this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      let { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info!;
-      this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
+      if (this._userOptionsService.userDetails.info) {
+        const { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword } = this._userOptionsService.userDetails.info;
+        this.user = { id, name, email, iconURL, reviewerWorkspaceId, expirationDateUnixSec, nonSecretPassword };
+      }
 
       this._userOptionsService.notificationSubscriptions.topics.forEach((topic: NotificationTopic) => {
-        let existing = this.notifications.find(existingNotification => existingNotification.id === topic.name);
+        const existing = this.notifications.find(existingNotification => existingNotification.id === topic.name);
 
         if (existing) {
           existing.method = topic.config.method;
@@ -65,6 +70,7 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._groupsService.groupsChanged$.subscribe(() => {
         this.groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
+        this.highestGroupAccess = this.groupsWithAccess.reduce((max, group) => Math.max(max, group.relationshipToUser), UserGroupRelationship.UGR_UNKNOWN);
       })
     );
   }
@@ -115,6 +121,10 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     return this._userOptionsService.isSidebarOpen;
   }
 
+  get canManageAnyGroups(): boolean {
+    return this.highestGroupAccess >= UserGroupRelationship.UGR_ADMIN;
+  }
+
   get hintAssistanceActive(): boolean {
     return true; //this._userOptionsService.hints.enabled;
   }
@@ -131,20 +141,20 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     return this.user.name;
   }
 
-  get userNameChanged(): boolean {
-    if (this._userOptionsService?.userDetails?.info && this.user) {
-      return this.user.name !== this._userOptionsService.userDetails.info.name;
-    }
-
-    return false;
-  }
-
   set userName(name: string) {
     if (!this.user) {
       return;
     }
 
     this.user.name = name;
+  }
+
+  get userNameChanged(): boolean {
+    if (this._userOptionsService?.userDetails?.info && this.user) {
+      return this.user.name !== this._userOptionsService.userDetails.info.name;
+    }
+
+    return false;
   }
 
   onResetUserName(): void {
@@ -178,20 +188,20 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     return this.user.email;
   }
 
-  get userEmailChanged(): boolean {
-    if (this._userOptionsService?.userDetails?.info && this.user) {
-      return this.user.email !== this._userOptionsService.userDetails.info.email;
-    }
-
-    return false;
-  }
-
   set userEmail(email: string) {
     if (!this.user) {
       return;
     }
 
     this.user.email = email;
+  }
+
+  get userEmailChanged(): boolean {
+    if (this._userOptionsService?.userDetails?.info && this.user) {
+      return this.user.email !== this._userOptionsService.userDetails.info.email;
+    }
+
+    return false;
   }
 
   onResetUserEmail(): void {
@@ -211,7 +221,7 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
   }
 
   onToggleNotification(notification: NotificationSetting, methodName: "ui" | "email"): void {
-    let existing = this.notifications.find(existingNotification => existingNotification.id === notification.id);
+    const existing = this.notifications.find(existingNotification => existingNotification.id === notification.id);
     if (existing) {
       existing.method[methodName] = !existing.method[methodName];
     }
@@ -253,6 +263,10 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
   }
 
   onLeaveGroup(group: UserGroupInfo): void {
-    this._groupsService.removeFromGroup(group.id, this._userOptionsService.userDetails.info!.id);
+    if (!this._userOptionsService.userDetails.info) {
+      return;
+    }
+
+    this._groupsService.removeFromGroup(group.id, this._userOptionsService.userDetails.info.id);
   }
 }
