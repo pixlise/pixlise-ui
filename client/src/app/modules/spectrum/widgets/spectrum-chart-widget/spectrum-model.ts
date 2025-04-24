@@ -166,11 +166,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _keVStartToApply = -1;
   private _keVEndToApply = -1;
 
-  constructor(
-    public xrfDBService: XRFDatabaseService //,
-    // public clipboard: Clipboard
-  ) // public dialog: MatDialog,
-  {
+  // public clipboard: Clipboard
+  // public dialog: MatDialog
+  constructor(public xrfDBService: XRFDatabaseService) {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
       this._recalcNeeded = true;
@@ -1023,7 +1021,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   zoomToPeak(keVStart: number, keVEnd: number) {
-
     // We can't do this without an axis. Shouldn't happen but on the 5x5 dataset, Scotts machine, for some reason this is null
     if (!this._xAxis) {
       console.log("zoomToPeak will be applied when xAxis regenerates");
