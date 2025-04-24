@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { UserInfo } from "../../../../../generated-protos/user";
 import { UsersService } from "../../../../settings/services/users.service";
 import { UserOptionsService } from "../../../../settings/settings.module";
@@ -8,7 +8,7 @@ import { Subscription } from "rxjs";
   templateUrl: "./user-icon.component.html",
   styleUrls: ["./user-icon.component.scss"],
 })
-export class UserIconComponent implements OnInit {
+export class UserIconComponent implements OnInit, OnDestroy {
   defaultIconURL: string = "assets/button-icons/user.svg";
   iconURL: string = "";
   iconAbbreviation: string = "";
@@ -35,6 +35,10 @@ export class UserIconComponent implements OnInit {
         this.updateUser();
       })
     );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   @Input() set userId(userId: string) {
@@ -80,11 +84,13 @@ export class UserIconComponent implements OnInit {
         }
       } else {
         if (userId) {
-          this._usersService.fetchUserInfo(userId).subscribe(userInfo => {
-            if (userInfo) {
-              this.updateUser();
-            }
-          });
+          this._subs.add(
+            this._usersService.fetchUserInfo(userId).subscribe(userInfo => {
+              if (userInfo) {
+                this.updateUser();
+              }
+            })
+          );
         }
         this.userInfo = null;
         this.iconURL = "";

@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService } from "../../pixlisecore/pixlisecore.module";
-import { BehaviorSubject, Observable, of, ReplaySubject, switchMap } from "rxjs";
+import { BehaviorSubject, filter, map, Observable, of, ReplaySubject, switchMap } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
 import { UserListReq } from "src/app/generated-protos/user-management-msgs";
@@ -17,6 +17,7 @@ export class UsersService {
 
   cachedUsers: Record<string, UserInfo> = {};
   searchedUsers$ = new BehaviorSubject<UserInfo[]>([]);
+  searchingAllUsers$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(private _dataService: APIDataService) {}
 
@@ -35,18 +36,29 @@ export class UsersService {
   fetchUserInfo(userId: string): Observable<UserInfo> {
     if (this.cachedUsers[userId]) {
       return of(this.cachedUsers[userId]);
-    } else {
+    } else if (!this.searchingAllUsers$.value) {
+      this.searchingAllUsers$.next(true);
       return this._dataService.sendUserSearchRequest(UserSearchReq.create({ searchString: "" })).pipe(
         switchMap(res => {
           res.users.forEach(user => {
             this.cachedUsers[user.id] = user;
           });
 
+          this.searchingAllUsers$.next(false);
+
           if (this.cachedUsers[userId]) {
             return of(this.cachedUsers[userId]);
           } else {
             return of(UserInfo.create({}));
           }
+        })
+      );
+    } else {
+      // Wait for search to complete, then return the user info from cachedUsers
+      return this.searchingAllUsers$.pipe(
+        filter(searching => !searching),
+        switchMap(() => {
+          return of(this.cachedUsers[userId]);
         })
       );
     }

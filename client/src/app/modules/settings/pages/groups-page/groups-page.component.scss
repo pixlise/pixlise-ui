@@ -148,6 +148,12 @@
 
     .add-user-container {
       margin: 8px;
+      display: flex;
+      gap: 8px;
+
+      .add-btn {
+        flex: 1;
+      }
     }
 
     .selected-group-card-container {
@@ -168,8 +174,7 @@
     .selected-group-search-container {
       display: flex;
       align-items: center;
-      padding: 8px 16px;
-      // border-bottom: 1px solid var(--gray-70, #444c50);
+      padding: 0 8px;
 
       input {
         flex: 1;
@@ -256,6 +261,9 @@
       display: flex;
 
       .icon {
+        display: flex;
+        align-items: center;
+
         max-width: 170px;
         margin-right: 8px;
 
@@ -325,6 +333,7 @@
 .user-card {
   display: flex;
   padding: 8px;
+  gap: 8px;
   border-bottom: 1px solid $clr-gray-60;
   background: var(--gray-90, #222829);
 
@@ -334,14 +343,10 @@
 
   .icon {
     max-width: 36px;
-    margin-right: 8px;
     cursor: pointer;
 
-    img {
-      width: 100%;
-
-      border-radius: 8px;
-    }
+    display: flex;
+    align-items: center;
   }
 
   .details {
@@ -349,6 +354,7 @@
     flex-direction: column;
     justify-content: center;
     cursor: pointer;
+    flex: 1;
 
     .info {
       max-width: 200px;
