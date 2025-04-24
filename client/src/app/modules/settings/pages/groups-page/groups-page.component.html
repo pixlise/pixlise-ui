@@ -98,8 +98,9 @@
     <div class="content-container request">
       <push-button (onClick)="onOpenGroupRequestDialog()" buttonStyle="yellow">Request Group Access</push-button>
     </div>
-    <div class="new-group">
-      <action-button color="#BCBCBC" action="add" tooltipTitle="Create new group" (onClick)="onOpenCreateNewGroupDialog()"></action-button>
+    <div class="new-group" (click)="onOpenCreateNewGroupDialog()" tabindex="0" (keydown)="onOpenCreateNewGroupDialog()">
+      <img src="assets/button-icons/plus-white.svg" alt="Add Group Icon" />
+      <span class="label">Create New Group</span>
     </div>
   </div>
   <div class="group-container">
@@ -254,7 +255,7 @@
     <div class="user-details">
       <div class="selected-user-details" *ngIf="selectedUser">
         <div class="icon">
-          <user-icon [userId]="selectedUser.id" size="26px"></user-icon>
+          <user-icon [userId]="selectedUser.id" size="120px"></user-icon>
         </div>
         <div class="details">
           <span class="info name">

@@ -46,6 +46,14 @@ export class UserIconComponent implements OnInit, OnDestroy {
     this.updateUser();
   }
 
+  get fontSize() {
+    if (this.size.endsWith("px")) {
+      return (Math.floor(Number(this.size.replace("px", "")) * 0.5) - 2).toString() + "px";
+    } else {
+      return "14px";
+    }
+  }
+
   generateAbbreviation(name: string) {
     if (!name) {
       return "N/A";

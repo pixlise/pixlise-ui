@@ -40,6 +40,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--gray-70, #444c50);
+  font-family: "Inter", sans-serif;
 
   .user-info {
     display: flex;
@@ -66,6 +67,8 @@
       background-color: var(--gray-100, #1b1d1e);
       h2 {
         padding-left: 16px;
+        font-family: "Inter", sans-serif;
+        text-transform: none;
       }
 
       img {
@@ -116,6 +119,7 @@
 
       input {
         margin: 16px;
+        font-family: "Inter", sans-serif;
       }
     }
   }
@@ -123,6 +127,7 @@
 
 .group-container {
   display: flex;
+  font-family: "Inter", sans-serif;
   // padding: 16px;
 
   .group-name-container {
@@ -145,6 +150,7 @@
     min-width: 300px;
     background: var(--gray-90, #222829);
     border-right: 1px solid var(--gray-70, #444c50);
+    font-family: "Inter", sans-serif;
 
     .add-user-container {
       margin: 8px;
@@ -157,7 +163,7 @@
     }
 
     .selected-group-card-container {
-      height: calc(100vh - 180px);
+      height: calc(100vh - 164px);
       overflow: auto;
       overflow-x: hidden;
 
@@ -167,6 +173,7 @@
         span {
           font-style: italic;
           color: rgb(var(--clr-gray-70));
+          font-family: "Inter", sans-serif;
         }
       }
     }
@@ -182,6 +189,7 @@
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
         border-right: none;
+        font-family: "Inter", sans-serif;
       }
 
       .search-icon {
@@ -219,6 +227,7 @@
         font-size: 16px;
         font-weight: 700;
         text-transform: none;
+        font-family: "Inter", sans-serif;
 
         &.active {
           color: white;
@@ -235,6 +244,7 @@
 .selected-user {
   width: 100%;
   background: var(--gray-90, #222829);
+  font-family: "Inter", sans-serif;
 
   .user-header {
     display: flex;
@@ -251,11 +261,13 @@
       font-size: 16px;
       font-weight: 700;
       text-transform: none;
+      font-family: "Inter", sans-serif;
     }
   }
 
   .user-details {
     margin-left: 8px;
+    font-family: "Inter", sans-serif;
 
     .selected-user-details {
       display: flex;
@@ -290,11 +302,16 @@
       }
 
       .details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
         .info {
           h3 {
             text-transform: none;
             font-weight: normal;
             font-size: 14px;
+            font-family: "Inter", sans-serif;
           }
         }
       }
@@ -317,6 +334,7 @@
     padding-left: 16px;
     color: $clr-gray-50;
     font-size: 14px;
+    font-family: "Inter", sans-serif;
   }
 }
 
@@ -336,6 +354,7 @@
   gap: 8px;
   border-bottom: 1px solid $clr-gray-60;
   background: var(--gray-90, #222829);
+  font-family: "Inter", sans-serif;
 
   &:hover {
     background: var(--gray-80, #293137);
@@ -442,18 +461,37 @@
 .new-group {
   margin-top: auto;
   padding: 4px;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  gap: 8px;
 
   background: #2a3137;
   border-top: 1px solid var(--gray-70, #444c50);
 
+  .label {
+    font-size: 12px;
+    font-family: "Inter", sans-serif;
+    font-weight: 500;
+  }
+
+  img {
+    filter: brightness(0) invert(1);
+  }
+
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: lighten(#2a3137, 5%);
   }
 }
 
 h5.group-title {
   position: relative;
   display: flex;
+  font-family: "Inter", sans-serif;
 }
 
 h5 span.request-count {
@@ -461,7 +499,7 @@ h5 span.request-count {
   padding: 4px;
   border-radius: 50%;
   color: black;
-
+  font-family: "Inter", sans-serif;
   width: 8px;
   height: 8px;
   display: flex;

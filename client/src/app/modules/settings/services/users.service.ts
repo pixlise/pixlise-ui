@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService } from "../../pixlisecore/pixlisecore.module";
-import { BehaviorSubject, filter, map, Observable, of, ReplaySubject, switchMap } from "rxjs";
+import { BehaviorSubject, catchError, filter, map, Observable, of, ReplaySubject, switchMap } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
 import { UserListReq } from "src/app/generated-protos/user-management-msgs";
@@ -51,6 +51,11 @@ export class UsersService {
           } else {
             return of(UserInfo.create({}));
           }
+        }),
+        catchError(err => {
+          console.error(err);
+          this.searchingAllUsers$.next(false);
+          return of(UserInfo.create({}));
         })
       );
     } else {
