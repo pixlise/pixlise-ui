@@ -160,11 +160,11 @@ export class GroupsPageComponent {
     const dialogConfig = new MatDialogConfig();
     const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string }) => {
+    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string; joinable: boolean }) => {
       if (!data?.groupName) {
         return;
       }
-      this.onCreateGroup(data.groupName, data.groupDescription || "");
+      this.onCreateGroup(data.groupName, data.groupDescription || "", data.joinable);
     });
   }
 
@@ -179,10 +179,10 @@ export class GroupsPageComponent {
       }
 
       if (group) {
-        console.log("Editing group", group.id, data.groupName, data.groupDescription);
         this._groupsService.editGroupMetadata(group.id, data.groupName, data.groupDescription, data.joinable);
+        this._snackBar.openSuccess(`Group "${data.groupName}" updated`);
       } else {
-        this.onCreateGroup(data.groupName, data.groupDescription);
+        this.onCreateGroup(data.groupName, data.groupDescription, data.joinable);
       }
     });
   }
@@ -346,8 +346,9 @@ export class GroupsPageComponent {
     }
   }
 
-  onCreateGroup(groupName: string, groupDescription: string) {
-    this._groupsService.createGroup(groupName, groupDescription, true);
+  onCreateGroup(groupName: string, groupDescription: string, joinable: boolean) {
+    this._groupsService.createGroup(groupName, groupDescription, joinable);
+    this._snackBar.openSuccess(`Group "${groupName}" created`);
   }
 
   onDeleteGroup(group: UserGroupInfo) {

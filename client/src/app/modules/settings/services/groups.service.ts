@@ -70,7 +70,7 @@ export class GroupsService {
     this._dataService.sendUserGroupEditDetailsRequest(UserGroupEditDetailsReq.create({ groupId, name, description, joinable })).subscribe({
       next: res => {
         if (!res.group) {
-          this._snackBar.openError(`Group (${groupId}) not found`);
+          this._snackBar.openError(`Group (${name || groupId}) not found`);
           return;
         }
 
@@ -101,7 +101,15 @@ export class GroupsService {
   deleteGroup(groupId: string) {
     this._dataService.sendUserGroupDeleteRequest(UserGroupDeleteReq.create({ groupId })).subscribe({
       next: res => {
-        this.fetchGroups();
+        const groupName = this.groups.find(group => group.id === groupId)?.name || groupId;
+        this.groups = this.groups.filter(group => group.id !== groupId);
+        this.detailedGroups = this.detailedGroups.filter(group => group.info?.id !== groupId);
+        this.groupsChanged$.next();
+
+        this.joinableGroups = this.joinableGroups.filter(group => group.id !== groupId);
+        this.joinableGroupsChanged$.next();
+
+        this._snackBar.openSuccess(`Group "${groupName}" deleted`);
       },
       error: err => {
         console.error(err);
