@@ -47,25 +47,28 @@
 
   .header {
     display: flex;
-    align-items: center;
+    flex-direction: column;
 
     h1 {
       font-size: 20px;
+      text-transform: none;
     }
 
     .user-info {
       display: flex;
       align-items: center;
-      margin-left: auto;
+      padding: 8px 0;
+      gap: 8px;
 
       h2 {
         margin-right: 4px;
         text-transform: none;
         font-size: 16px;
+        color: white;
       }
 
-      img {
-        width: 24px;
+      user-icon {
+        outline: 1px solid white;
         border-radius: 4px;
       }
     }

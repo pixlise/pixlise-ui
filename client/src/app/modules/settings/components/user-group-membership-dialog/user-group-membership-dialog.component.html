@@ -33,8 +33,8 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="header">
     <h1>User Membership</h1>
     <div class="user-info">
+      <user-icon [userId]="data.user.id" [size]="'24px'"></user-icon>
       <h2>{{ data.user.name }}</h2>
-      <img src="{{ data.user.iconURL }}" />
     </div>
   </div>
   <div class="info">
@@ -44,13 +44,13 @@ POSSIBILITY OF SUCH DAMAGE.
     <mat-radio-group [(ngModel)]="selectedRole">
       <mat-radio-button class="role-option" value="admin"
         >Administrator (can approve new members)
-        <img src="assets/icons/admin-badge.svg" />
+        <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
       </mat-radio-button>
       <mat-radio-button class="role-option" value="editor"
         >Member (editor)
-        <img src="assets/icons/member-badge.svg" />
+        <img src="assets/icons/member-badge.svg" alt="Member Badge" />
       </mat-radio-button>
-      <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" /></mat-radio-button>
+      <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" /></mat-radio-button>
     </mat-radio-group>
   </div>
   <div class="gap-separated-horizontal-elements button-container">
