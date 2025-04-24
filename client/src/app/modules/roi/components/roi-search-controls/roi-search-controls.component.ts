@@ -103,7 +103,7 @@ export class ROISearchControlsComponent implements OnInit, OnDestroy {
   }
 
   restoreSelectedROITypes() {
-    let selectedROITypes = localStorage.getItem("selectedROITypes");
+    const selectedROITypes = localStorage.getItem("selectedROITypes");
     if (selectedROITypes) {
       this.selectedROITypes = JSON.parse(selectedROITypes);
     }
@@ -120,7 +120,7 @@ export class ROISearchControlsComponent implements OnInit, OnDestroy {
 
   @Input() set manualFilters(filters: Partial<ROISearchFilter> | null) {
     if (filters !== null) {
-      let { searchString, scanId, tagIDs, authors, types } = filters;
+      const { searchString, scanId, tagIDs, authors, types } = filters;
       this.roiSearchString = searchString ?? this.roiSearchString;
       this.visibleScanId = scanId ?? this.visibleScanId;
       this.filteredTagIDs = tagIDs ?? this.filteredTagIDs;
@@ -162,8 +162,8 @@ export class ROISearchControlsComponent implements OnInit, OnDestroy {
   }
 
   extractAuthors() {
-    let authorIDs = new Set<string>();
-    let authors: UserInfo[] = [];
+    const authorIDs = new Set<string>();
+    const authors: UserInfo[] = [];
     this.summaries.forEach(roi => {
       if (roi.owner?.creatorUser?.id === "builtin") {
         return;
@@ -250,7 +250,7 @@ export class ROISearchControlsComponent implements OnInit, OnDestroy {
   }
 
   get authorsTooltip(): string {
-    let authorNames = this._authors.filter(author => this._filteredAuthors.includes(author.id)).map(author => author.name);
+    const authorNames = this._authors.filter(author => this._filteredAuthors.includes(author.id)).map(author => author.name);
     return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
   }
 

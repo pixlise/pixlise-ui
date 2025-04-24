@@ -211,15 +211,28 @@ export class ROIService implements OnDestroy {
       // Check if all points ROI exists for this scan and if not, fetch it
       const allPointsROIID = PredefinedROIID.getAllPointsForScan(scanId);
       if (this.roiItems$.value[allPointsROIID]) {
-        return of(this.roiItems$.value[allPointsROIID]);
+        const allPointsROI = this.roiItems$.value[allPointsROIID];
+        if (allPointsROI) {
+          // Make sure the display settings are up to date
+          const scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+          const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+          if (!allPointsROI.displaySettings || allPointsROI.displaySettings.colour !== scanRGBA.asString()) {
+            const existingDisplaySettings = allPointsROI.displaySettings || { id: allPointsROI.id, colour: scanRGBA.asString(), shape: DEFAULT_ROI_SHAPE };
+            allPointsROI.displaySettings = { id: existingDisplaySettings.id, colour: scanRGBA.asString(), shape: existingDisplaySettings.shape };
+            this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
+            this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+          }
+        }
+
+        return of(allPointsROI);
       } else {
         return this.getAllPointsROI(scanId).pipe(
           map(allPointsROI => {
             if (allPointsROI) {
               this.roiItems$.value[allPointsROI.id] = allPointsROI;
               this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
-              let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
-              let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+              const scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+              const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
               this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
               this.roiItems$.next(this.roiItems$.value);
               this.displaySettingsMap$.next(this.displaySettingsMap$.value);
