@@ -30,10 +30,16 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dlg-border-with-backdrop permissions-dlg data-collection">
-  <h1>New Group</h1>
+  <header>
+    <h1>{{ isExistingGroup ? "Edit Group" : "New Group" }}</h1>
+    <div class="joinable-container">
+      <span class="input-label">Joinable</span>
+      <action-button (onClick)="joinable = !joinable" [action]="joinable ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+  </header>
   <div class="fields">
     <span class="input-label">Group Name</span>
-    <input type="text" [(ngModel)]="groupName" placeholder="New Group Name ..." />
+    <input type="text" [(ngModel)]="groupName" placeholder="Group Name ..." />
 
     <span class="input-label">Group Description</span>
     <textarea type="text" rows="3" [(ngModel)]="groupDescription" placeholder="Group Description ..."></textarea>

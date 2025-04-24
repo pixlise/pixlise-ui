@@ -215,6 +215,8 @@
       display: flex;
       align-items: center;
       // margin-bottom: 8px;
+      padding: 0 8px;
+      gap: 4px;
 
       height: 48px;
 
@@ -222,7 +224,6 @@
 
       h1 {
         width: 100%;
-        padding: 8px 16px;
         color: $clr-gray-50;
         font-size: 16px;
         font-weight: 700;
@@ -232,10 +233,6 @@
         &.active {
           color: white;
         }
-      }
-
-      action-button {
-        margin-right: 8px;
       }
     }
   }

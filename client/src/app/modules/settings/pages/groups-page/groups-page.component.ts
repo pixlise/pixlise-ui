@@ -59,7 +59,7 @@ export class GroupsPageComponent {
 
   updateSelectedGroupUserRoles() {
     if (this._selectedGroupId) {
-      let detailedGroup = this._groupsService.detailedGroups.find(group => group.info?.id === this._selectedGroupId);
+      const detailedGroup = this._groupsService.detailedGroups.find(group => group.info?.id === this._selectedGroupId);
       if (detailedGroup) {
         this._selectedGroupUserRoles = {};
         this._selectedGroupSubGroupRoles = {};
@@ -165,6 +165,25 @@ export class GroupsPageComponent {
         return;
       }
       this.onCreateGroup(data.groupName, data.groupDescription || "");
+    });
+  }
+
+  onEditGroup(group: UserGroupInfo | null) {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = { group };
+    const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string; joinable: boolean }) => {
+      if (!data?.groupName) {
+        return;
+      }
+
+      if (group) {
+        console.log("Editing group", group.id, data.groupName, data.groupDescription);
+        this._groupsService.editGroupMetadata(group.id, data.groupName, data.groupDescription, data.joinable);
+      } else {
+        this.onCreateGroup(data.groupName, data.groupDescription);
+      }
     });
   }
 

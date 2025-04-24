@@ -6,7 +6,7 @@ import {
   UserGroupDeleteMemberReq,
   UserGroupDeleteViewerReq,
 } from "src/app/generated-protos/user-group-membership-msgs";
-import { UserGroupCreateReq, UserGroupCreateResp, UserGroupDeleteReq } from "src/app/generated-protos/user-group-management-msgs";
+import { UserGroupCreateReq, UserGroupCreateResp, UserGroupDeleteReq, UserGroupEditDetailsReq } from "src/app/generated-protos/user-group-management-msgs";
 import { UserGroupAddAdminReq, UserGroupDeleteAdminReq } from "src/app/generated-protos/user-group-admins-msgs";
 import { UserGroupListJoinableReq, UserGroupListReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupJoinSummaryInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
@@ -61,6 +61,38 @@ export class GroupsService {
         }
       },
       error: err => {
+        this._snackBar.openError(err);
+      },
+    });
+  }
+
+  editGroupMetadata(groupId: string, name: string, description: string, joinable: boolean) {
+    this._dataService.sendUserGroupEditDetailsRequest(UserGroupEditDetailsReq.create({ groupId, name, description, joinable })).subscribe({
+      next: res => {
+        if (!res.group) {
+          this._snackBar.openError(`Group (${groupId}) not found`);
+          return;
+        }
+
+        const detailedGroupIndex = this.detailedGroups.findIndex(group => group.info?.id === groupId);
+        if (detailedGroupIndex >= 0) {
+          this.detailedGroups[detailedGroupIndex] = res.group;
+        }
+
+        const groupIndex = this.groups.findIndex(group => group.id === groupId);
+        if (groupIndex >= 0) {
+          this.groups[groupIndex] = {
+            ...this.groups[groupIndex],
+            name,
+            description,
+            joinable,
+          };
+        }
+
+        this.groupsChanged$.next();
+      },
+      error: err => {
+        console.error(err);
         this._snackBar.openError(err);
       },
     });
