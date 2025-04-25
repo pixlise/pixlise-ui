@@ -13,7 +13,7 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, Subscription, combineLatest, map, of, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, EMPTY, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
@@ -73,41 +73,35 @@ export class ROIService implements OnDestroy {
     this.listROIs();
 
     this._subs.add(
-      combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$]).subscribe({
-        next: ([screenConfig, scans]) => {
-          this._allScans = scans;
+      combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$])
+        .pipe(
+          mergeMap(([screenConfig, scans]) => {
+            this._allScans = scans;
 
-          this._allScans.forEach(scan => {
-            const allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
-            if (this._regionMap.get(allPointsROI) !== undefined) {
-              this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
-                const settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
-                const scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
-                const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
-                settings.displaySettings.colour = scanRGBA;
+            const regionUpdates$ = this._allScans.map(scan => {
+              const allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
+              const existingRegion$ = this._regionMap.get(allPointsROI);
 
-                this._regionMap.set(allPointsROI, of(settings));
-              });
-            }
-          });
-        },
-      })
-    );
+              if (!existingRegion$) {
+                return EMPTY;
+              }
 
-    // SUBS CLEANUP - Does this need to be duplicated from the above??
-    this._subs.add(
-      this._analysisLayoutService.availableScans$.subscribe(scans => {
-        this._allScans = scans;
+              return existingRegion$.pipe(
+                map(regionSettings => {
+                  const settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
+                  const scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
+                  const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+                  settings.displaySettings.colour = scanRGBA;
 
-        this._allScans.forEach(scan => {
-          const allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
-          if (this._regionMap.get(allPointsROI) !== undefined) {
-            this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
-              this._regionMap.set(allPointsROI, of(createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title)));
+                  this._regionMap.set(allPointsROI, of(settings));
+                })
+              );
             });
-          }
-        });
-      })
+
+            return combineLatest(regionUpdates$);
+          })
+        )
+        .subscribe()
     );
   }
 
