@@ -30,7 +30,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
-import { Subscription } from "rxjs";
+import { combineLatest, Subscription } from "rxjs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -68,7 +68,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild("preview", { read: ViewContainerRef }) previewContainer: any;
   @ViewChild("newModuleDialogBtn") newModuleDialog!: ElementRef;
 
-  private _subs = new Subscription();
+  private _subscriptions = new Subscription();
   private _keyPresses: Set<string> = new Set<string>();
 
   private _id = "code-editor"; // Needed for widget-type subscriptions
@@ -129,6 +129,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   public isPreviewWidgetSolo: boolean = false;
   public isExpressionConsoleSolo: boolean = false;
 
+  public canMountWidgets: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -140,24 +142,32 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    let scanId = this._route.snapshot.queryParams[EditorConfig.scanIdParam];
-    if (scanId) {
-      this.scanId = scanId;
-    } else {
-      this.scanId = this._analysisLayoutService.defaultScanId;
-    }
-
-    let quantId = this._route.snapshot.queryParams[EditorConfig.quantIdParam];
-    if (quantId) {
-      this.quantId = quantId;
-    } else {
-      this.quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
-    }
-
     this._expressionsService.fetchExpressions();
     this._expressionsService.fetchModules();
 
-    this._subs.add(
+    this._subscriptions.add(
+      this._route.queryParams.subscribe(params => {
+        // Initialize scan ID from route params or default
+        if (params["scanId"]) {
+          this.scanId = params["scanId"];
+        } else {
+          const defaultScanId = this._analysisLayoutService.defaultScanId;
+          if (defaultScanId) {
+            this.scanId = defaultScanId;
+          }
+        }
+
+        // Initialize quant ID from route params or derive from scan ID
+        if (params["quantId"]) {
+          this.quantId = params["quantId"];
+        }
+
+        // Only proceed with screen configuration if we have valid IDs
+        this._loadScreenConfiguration();
+      })
+    );
+
+    this._subscriptions.add(
       this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
         this.isPreviewWidgetSolo = soloViewWidgetId === EditorConfig.previewWidgetId;
         if (this.isPreviewWidgetSolo) {
@@ -168,19 +178,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       })
     );
 
-    this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
-        if (screenConfig) {
-          this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
-          if (!this.scanId && Object.keys(screenConfig.scanConfigurations).length > 0) {
-            this.scanId = Object.keys(screenConfig.scanConfigurations)[0];
-          }
-          this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId);
-        }
-      })
-    );
-
-    this._subs.add(
+    this._subscriptions.add(
       this._route.queryParams.subscribe(params => {
         this.queryParams = { ...params };
 
@@ -237,7 +235,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       })
     );
 
-    this._subs.add(
+    this._subscriptions.add(
       this._expressionsService.expressions$.subscribe(expressions => {
         let topExpressionId = this.queryParams[EditorConfig.topExpressionId];
         if (this.isTopModule || (topExpressionId && topExpressionId !== ExpressionsService.NewExpressionId && this.topExpression)) {
@@ -265,7 +263,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       })
     );
 
-    this._subs.add(
+    this._subscriptions.add(
       this._expressionsService.modules$.subscribe(modules => {
         this.modules = Object.values(modules);
         this.modules.sort((a, b) => {
@@ -377,7 +375,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       })
     );
 
-    this._subs.add(
+    this._subscriptions.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
         if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._id) {
           return;
@@ -417,8 +415,35 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private _loadScreenConfiguration() {
+    this._subscriptions.add(
+      combineLatest([this._expressionsService.fetchExpressionsAsync(), this._analysisLayoutService.activeScreenConfiguration$]).subscribe(([expressions, config]) => {
+        if (config && config.scanConfigurations) {
+          const scanIds = Object.keys(config.scanConfigurations);
+          if (scanIds.length > 0) {
+            // Always use the first scan ID from the active configuration
+            this.scanId = scanIds[0];
+
+            // Always get the quant ID for this scan ID
+            this.quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
+          }
+
+          // Only proceed with widget initialization if we have valid IDs
+          if (this.areIdsLoaded()) {
+            this._initializeWidgets();
+          }
+        }
+      })
+    );
+  }
+
+  private _initializeWidgets() {
+    console.log("canMountWidgets", this.canMountWidgets, this.areIdsLoaded(), this.scanId, this.quantId);
+    this.canMountWidgets = true;
+  }
+
   ngOnDestroy(): void {
-    this._subs.unsubscribe();
+    this._subscriptions.unsubscribe();
   }
 
   getVisibleModuleVersions(module: DataModule): string[] {
@@ -639,7 +664,16 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     return changedText;
   }
 
+  areIdsLoaded(): boolean {
+    return !!this.scanId && !!this.quantId && this.scanId.length > 0 && this.quantId.length > 0;
+  }
+
   private _runExpression(expression: DataExpression, isSaved: boolean = false) {
+    if (!this.areIdsLoaded()) {
+      console.warn("Cannot run expression: scan or quant ID not loaded yet");
+      return;
+    }
+
     let expressionCopy = DataExpression.create(expression);
 
     expressionCopy.id = DataExpressionId.UnsavedExpressionPrefix + expressionCopy.id;
@@ -787,6 +821,11 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   }
 
   runHighlightedExpression() {
+    if (!this.areIdsLoaded()) {
+      this._snackbarService.openError("Cannot run expression", "Scan ID and Quant ID must be loaded first");
+      return;
+    }
+
     if (this.highlightedSelection) {
       let expression = this.highlightedTop ? DataExpression.create({ ...this.topExpression }) : DataExpression.create({ ...this.bottomExpression });
       expression.sourceCode = this.highlightedSelection.text;

@@ -100,6 +100,8 @@ export class DataExporterService {
       if (metaIdx >= 0 && spectrum.meta[metaIdx] !== undefined) {
         const value = spectrum.meta[metaIdx].fvalue ?? spectrum.meta[metaIdx].ivalue ?? "";
         meta[label] = value;
+      } else {
+        meta[label] = "?";
       }
     });
 
@@ -119,7 +121,7 @@ export class DataExporterService {
     // This outputs the same format as the GDS spectra CSVs we import! At this point we don't have access to the same CSV any more, but we need to make sure
     // the formats match for less confusion. There should be 4 tables exported:
     // 1. Spectrum parameters table:
-    let table1 = "SCLK_A,SCLK_B,PMC,real_time_A,real_time_B,live_time_A,live_time_B,XPERCHAN_A,XPERCHAN_B,OFFSET_A,OFFSET_B\n";
+    let table1 = ""; // Eventually should look like: SCLK_A,SCLK_B,PMC,real_time_A,real_time_B,live_time_A,live_time_B,XPERCHAN_A,XPERCHAN_B,OFFSET_A,OFFSET_B\n";
     // 2. Beam locations:
     let table2 = "PMC,x,y,z\n";
     // 3. A-detector spectra:
@@ -135,8 +137,39 @@ export class DataExporterService {
     table3 += "\n";
     table4 += "\n";
 
-    const metaLabels = ["SCLK", "REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
+    const metaLabels = ["SCLK"];
+    const metaLabelColumnTitles = ["SCLK"];
+
+    const expLabels = ["REALTIME", "LIVETIME", "XPERCHAN", "OFFSET"];
+    const outputLabels = ["real_time", "live_time", "XPERCHAN", "OFFSET"];
+    let c = 0;
+    for (const label of expLabels) {
+      const i = scanMeta.metaLabels.indexOf(label);
+      if (i >= 0) {
+        metaLabels.push(label);
+        metaLabelColumnTitles.push(outputLabels[c]);
+      }
+      c++;
+    }
+
     const DetectorOrder = ["A", "B"];
+
+    for (const heading of metaLabelColumnTitles) {
+      for (const det of DetectorOrder) {
+        if (table1.length > 0) {
+          table1 += ",";
+        }
+        table1 += `${heading}_${det}`;
+      }
+
+      // Throw PMC in
+      if (heading == "SCLK") {
+        table1 += ",PMC";
+      }
+    }
+
+    table1 += "\n";
+
     const SpectrumTypeOrder = [dwells ? SpectrumType.SPECTRUM_DWELL : SpectrumType.SPECTRUM_NORMAL]; // Could have an array of both...
 
     for (let c = 0; c < scanEntries.entries.length; c++) {
@@ -300,7 +333,7 @@ export class DataExporterService {
     for (const label of metaLabels) {
       const idx = scanMeta.metaLabels.indexOf(label);
       if (idx < 0) {
-        throw new Error(`Failed to find meta label index for: ${label}`);
+        console.warn(`Failed to find meta label index for: ${label}. Skipping export of this field.`);
       }
 
       metaIdxs.push(idx);
@@ -320,22 +353,24 @@ export class DataExporterService {
         const metaLabel = metaLabels[i];
         const metaIdx = metaIdxs[i];
 
-        const variant = spectrum.meta[metaIdx];
-        if (variant !== undefined) {
-          let value = variant.fvalue ?? variant.ivalue ?? 0;
+        if (metaIdx >= 0) {
+          const variant = spectrum.meta[metaIdx];
+          if (variant !== undefined) {
+            let value = variant.fvalue ?? variant.ivalue ?? 0;
 
-          // If number, round to 7 decimal places
-          if (!isNaN(Number(value))) {
-            value = Math.round(Number(value) * 1e7) / 1e7;
+            // If number, round to 7 decimal places
+            if (!isNaN(Number(value))) {
+              value = Math.round(Number(value) * 1e7) / 1e7;
+            }
+
+            let vals = meta.get(metaLabel);
+            if (vals === undefined) {
+              vals = [];
+            }
+
+            vals.push(value);
+            meta.set(metaLabel, vals);
           }
-
-          let vals = meta.get(metaLabel);
-          if (vals === undefined) {
-            vals = [];
-          }
-
-          vals.push(value);
-          meta.set(metaLabel, vals);
         }
       }
     }
@@ -580,15 +615,15 @@ msa += `#XPOSITION   : 0.000
         if (images.images) {
           // Filter out all matched images because these don't have beam locations
           const imagePaths = images.images
-            .filter((img: ScanImage) => {
+            /*.filter((img: ScanImage) => {
               const hasMatchInfo = img.matchInfo && img.matchInfo.beamImageFileName.length > 0;
-              if (img.matchInfo && /* <-- this is to shut the linter up */ hasMatchInfo) {
+              if (img.matchInfo && /* <-- this is to shut the linter up * / hasMatchInfo) {
                 matchedImages.set(img.imagePath, img.matchInfo);
               }
 
               const fields = SDSFields.makeFromFileName(getPathBase(img.imagePath));
               return (img.originScanId === scanId && (fields?.producer || "") === "J") || hasMatchInfo;
-            })
+            })*/
             .map(image => image.imagePath);
 
           const imageBeamVersions$ = imagePaths.map(imagePath =>

@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { catchError, from, mergeMap, Subscription, tap, toArray } from "rxjs";
+import { catchError, from, interval, mergeMap, Observable, Subscription, tap, timer, toArray } from "rxjs";
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -191,7 +191,6 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     });
     from(images)
       .pipe(
-        //
         mergeMap(img => {
           // NOTE: We are passing this image choice by reference, not value, so any changes to it will be reflected in multiple
           // locations
@@ -205,6 +204,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
             if (!this.filteredImageChoices.find(imgChoice => imgChoice.path === img.imagePath)) {
               this.filteredImageChoices.push(imageChoice);
               this.sortFilteredImages();
+              this.scrollToSelectedImage();
             }
           }
 
@@ -218,9 +218,34 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
           console.error("Error processing image", err);
           return err;
         }),
-        toArray()
+        toArray(),
+        tap(() => {
+          this.scheduleScrollToSelectedImage();
+        })
       )
       .subscribe();
+  }
+
+  private scheduleScrollToSelectedImage() {
+    if (this.selectedImagePath) {
+      timer(200).subscribe(() => {
+        this.scrollToSelectedImage();
+      });
+    }
+  }
+
+  private scrollToSelectedImage() {
+    // Find the index of this one
+    for (let c = 0; c < this.filteredImageChoices.length; c++) {
+      const img = this.filteredImageChoices[c];
+
+      if (img.path === this.selectedImagePath) {
+        const id = "#img_" + c; // id of the scroll to element
+        const element = document.querySelector(id);
+        element?.scrollIntoView();
+        return;
+      }
+    }
   }
 
   private makeImageChoice(image: ScanImage): ImageChoice {

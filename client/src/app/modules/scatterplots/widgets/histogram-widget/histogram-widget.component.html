@@ -27,3 +27,6 @@
 
 <interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
+<div *ngIf="modelErrors.length > 0" class="err-display">
+  <div *ngFor="let err of modelErrors">{{err.message}}</div> 
+</div>

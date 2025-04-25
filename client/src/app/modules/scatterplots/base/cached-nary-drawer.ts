@@ -13,7 +13,8 @@ export function drawScatterPoints(
   const alpha = PointDrawer.getOpacity(mdl.totalPointCount);
   for (let c = 0; c < mdl.pointGroupCoords.length; c++) {
     const isAllPoints = PredefinedROIID.isAllPointsROI(pointGroups[c].roiId);
-    const colourGroup = isAllPoints && lightMode && !pointGroups[c].colour ? Colours.GRAY_80 : pointGroups[c].colour;
+    const isDefaultAllPointsColour = isAllPoints && (!pointGroups[c]?.colour || pointGroups[c].colour.equals(Colours.WHITE));
+    const colourGroup = isAllPoints && lightMode && isDefaultAllPointsColour ? Colours.GRAY_80 : pointGroups[c].colour;
     const visibility = isAllPoints && lightMode ? 0.4 : alpha;
     const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, pointGroups[c].shape);
     drawer.drawPointsWithRayLabel(mdl.pointGroupCoords[c], visibility, false, 15, mdl.isNonSelectedPoint[c]);

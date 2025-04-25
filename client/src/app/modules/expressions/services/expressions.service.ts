@@ -165,6 +165,15 @@ export class ExpressionsService {
     });
   }
 
+  fetchExpressionsAsync(): Observable<Record<string, DataExpression>> {
+    return this._cacheService.getExpressionList(ExpressionListReq.create({})).pipe(
+      map(res => {
+        this.expressions$.next(res.expressions);
+        return res.expressions;
+      })
+    );
+  }
+
   fetchExpression(id: string) {
     if (id === ExpressionsService.NewExpressionId) {
       return;

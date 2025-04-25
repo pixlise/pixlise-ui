@@ -32,7 +32,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
-import { Colours, RGBA } from "../../../../utils/colours";
+import { RGBA } from "../../../../utils/colours";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
@@ -144,12 +144,15 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   private setInitialConfig() {
     this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
-    this._analysisLayoutService.makeExpressionList(this.scanId, 2).subscribe((exprs: DefaultExpressions) => {
-      this.mdl.expressionIds = exprs.exprIds;
 
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
-      this.update();
-    });
+    if (this.scanId.length > 0 && this.quantId.length > 0) {
+      this._analysisLayoutService.makeExpressionList(this.scanId, 2).subscribe((exprs: DefaultExpressions) => {
+        this.mdl.expressionIds = exprs.exprIds;
+
+        this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+        this.update();
+      });
+    }
   }
 
   get xAxisSwitcher(): ScatterPlotAxisInfo | null {
@@ -561,6 +564,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     if (backgroundColor) {
       this.drawer.lightMode = ["white"].includes(backgroundColor);
       this.drawer.transparentBackground = backgroundColor === "transparent";
+      this.mdl.recalculate();
     }
 
     const borderWidthOption = exportChartOptions.find(opt => opt.id === "borderWidth");
