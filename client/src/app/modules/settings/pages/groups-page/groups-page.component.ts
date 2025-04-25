@@ -1,30 +1,39 @@
-import { Component } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { GroupsService } from "../../services/groups.service";
 import { UserGroupInfo, UserGroupJoinRequestDB, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { UserOptionsService } from "../../services/user-options.service";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AddUserDialogComponent } from "../../components/add-user-dialog/add-user-dialog.component";
 import { FormControl } from "@angular/forms";
-import { Observable, map, startWith } from "rxjs";
+import { Observable, Subscription, map, startWith } from "rxjs";
 import { NewGroupDialogComponent } from "../../components/new-group-dialog/new-group-dialog.component";
-import { UserDetails, UserInfo } from "src/app/generated-protos/user";
+import { Auth0UserRole, UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { RequestGroupDialogComponent } from "../../components/request-group-dialog/request-group-dialog.component";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserGroupMembershipDialogComponent } from "../../components/user-group-membership-dialog/user-group-membership-dialog.component";
 import { AddSubGroupDialogComponent } from "../../components/add-subgroup-dialog/add-subgroup-dialog.component";
+import { UsersService } from "../../services/users.service";
+import { ActionButtonComponent } from "../../../pixlisecore/components/atoms/buttons/action-button/action-button.component";
 
 @Component({
   selector: "app-groups-page",
   templateUrl: "./groups-page.component.html",
   styleUrls: ["./groups-page.component.scss"],
 })
-export class GroupsPageComponent {
+export class GroupsPageComponent implements OnDestroy, OnInit {
+  private _subs: Subscription = new Subscription();
+
+  @ViewChild("addUserRoleDialogBtn") addUserRoleDialogBtn!: ElementRef;
   private _selectedGroupId: string | null = null;
   private _selectedGroupUserRoles: Record<string, "viewer" | "editor" | "admin"> = {};
   private _selectedGroupSubGroupRoles: Record<string, "viewer" | "editor"> = {};
   canAccessSelectedGroup: boolean = false;
 
   private _selectedUser: UserInfo | null = null;
+  selectedUserRoles: Auth0UserRole[] = [];
+  selectedUserRoleIds: string[] = [];
+  selectedUserNewRoleId: string | null = null;
+  allUserRoles: Auth0UserRole[] = [];
 
   requestGroupControl = new FormControl<string | UserGroupInfo>("");
   filteredGroups: Observable<UserGroupInfo[]> = new Observable<UserGroupInfo[]>();
@@ -38,8 +47,11 @@ export class GroupsPageComponent {
     private _snackBar: SnackbarService,
     private _groupsService: GroupsService,
     private _userOptionsService: UserOptionsService,
+    private _usersService: UsersService,
     private dialog: MatDialog
-  ) {
+  ) {}
+
+  ngOnInit() {
     this.filteredGroups = this.requestGroupControl.valueChanges.pipe(
       startWith(""),
       map(value => {
@@ -48,18 +60,26 @@ export class GroupsPageComponent {
       })
     );
 
-    this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      this._userDetails = this._userOptionsService.userDetails;
-    });
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this._userDetails = this._userOptionsService.userDetails;
+      })
+    );
 
-    this._groupsService.groupsChanged$.subscribe(() => {
-      this.updateSelectedGroupUserRoles();
-    });
+    this._subs.add(
+      this._groupsService.groupsChanged$.subscribe(() => {
+        this.updateSelectedGroupUserRoles();
+      })
+    );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   updateSelectedGroupUserRoles() {
     if (this._selectedGroupId) {
-      let detailedGroup = this._groupsService.detailedGroups.find(group => group.info?.id === this._selectedGroupId);
+      const detailedGroup = this._groupsService.detailedGroups.find(group => group.info?.id === this._selectedGroupId);
       if (detailedGroup) {
         this._selectedGroupUserRoles = {};
         this._selectedGroupSubGroupRoles = {};
@@ -135,8 +155,12 @@ export class GroupsPageComponent {
     return this._userDetails?.info?.name || "";
   }
 
+  get isAdmin() {
+    return this._userOptionsService.hasFeatureAccess("admin");
+  }
+
   get isSelectedGroupAdmin() {
-    return this.selectedGroup?.adminUsers.map(admin => admin.id)?.includes(this.userId) || this._userOptionsService.hasFeatureAccess("admin");
+    return this.selectedGroup?.adminUsers.map(admin => admin.id)?.includes(this.userId) || this.isAdmin;
   }
 
   get selectedGroupToJoin(): string | UserGroupInfo | null {
@@ -160,11 +184,30 @@ export class GroupsPageComponent {
     const dialogConfig = new MatDialogConfig();
     const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string }) => {
+    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string; joinable: boolean }) => {
       if (!data?.groupName) {
         return;
       }
-      this.onCreateGroup(data.groupName, data.groupDescription || "");
+      this.onCreateGroup(data.groupName, data.groupDescription || "", data.joinable);
+    });
+  }
+
+  onEditGroup(group: UserGroupInfo | null) {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = { group };
+    const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string; joinable: boolean }) => {
+      if (!data?.groupName) {
+        return;
+      }
+
+      if (group) {
+        this._groupsService.editGroupMetadata(group.id, data.groupName, data.groupDescription, data.joinable);
+        this._snackBar.openSuccess(`Group "${data.groupName}" updated`);
+      } else {
+        this.onCreateGroup(data.groupName, data.groupDescription, data.joinable);
+      }
     });
   }
 
@@ -293,7 +336,43 @@ export class GroupsPageComponent {
   }
 
   onSelectUser(user: UserInfo) {
+    if (this.selectedUser?.id === user.id) {
+      return;
+    }
+
     this._selectedUser = user;
+    this.selectedUserRoles = [];
+    this.selectedUserRoleIds = [];
+    this.selectedUserNewRoleId = null;
+    if (this.isAdmin) {
+      this._subs.add(
+        this._usersService.fetchUserRoles(user.id).subscribe({
+          next: roles => {
+            this.selectedUserRoles = roles;
+            this.selectedUserRoleIds = roles.map(role => role.id);
+          },
+          error: err => {
+            this.selectedUserRoles = [];
+            this.selectedUserRoleIds = [];
+            this._snackBar.openError("Error fetching user roles");
+            console.error(err, user);
+          },
+        })
+      );
+
+      this._subs.add(
+        this._usersService.fetchAllUserRoles().subscribe({
+          next: roles => {
+            this.allUserRoles = roles;
+          },
+          error: err => {
+            this._snackBar.openError("Error fetching user roles");
+            console.error(err);
+          },
+        })
+      );
+    }
+
     if (this.selectedGroup?.adminUsers.map(admin => admin.id)?.includes(user.id)) {
       this._selectedUserRole = "admin";
     } else if (this.selectedGroup?.members?.users.map(member => member.id)?.includes(user.id)) {
@@ -327,8 +406,9 @@ export class GroupsPageComponent {
     }
   }
 
-  onCreateGroup(groupName: string, groupDescription: string) {
-    this._groupsService.createGroup(groupName, groupDescription, true);
+  onCreateGroup(groupName: string, groupDescription: string, joinable: boolean) {
+    this._groupsService.createGroup(groupName, groupDescription, joinable);
+    this._snackBar.openSuccess(`Group "${groupName}" created`);
   }
 
   onDeleteGroup(group: UserGroupInfo) {
@@ -428,6 +508,53 @@ export class GroupsPageComponent {
         this.onRemoveSubGroupFromGroup(subGroupId);
         this.addSubGroupToGroup(groupId, subGroupId, groupSelection.role as "viewer" | "editor");
       });
+    });
+  }
+
+  onCloseAddUserRoleDialog() {
+    if (this.addUserRoleDialogBtn && this.addUserRoleDialogBtn instanceof ActionButtonComponent) {
+      (this.addUserRoleDialogBtn as ActionButtonComponent).closeDialog();
+    }
+  }
+
+  onAddUserRole() {
+    if (!this.selectedUser || !this.selectedUserNewRoleId) {
+      return;
+    }
+
+    this._usersService.addRoleToUser(this.selectedUser.id, this.selectedUserNewRoleId).subscribe({
+      next: () => {
+        const newRole = this.allUserRoles.find(role => role.id === this.selectedUserNewRoleId);
+        const roleName = newRole?.name || this.selectedUserNewRoleId;
+
+        if (newRole) {
+          this.selectedUserRoles.push(Auth0UserRole.create(newRole));
+        }
+
+        this._snackBar.openSuccess(`Role "${roleName}" added successfully to ${this.selectedUser?.name || "user"}`);
+        this.onCloseAddUserRoleDialog();
+      },
+      error: err => {
+        this._snackBar.openError("Error adding role");
+        console.error(err);
+        this.onCloseAddUserRoleDialog();
+      },
+    });
+  }
+
+  onDeleteUserRole(role: Auth0UserRole) {
+    if (!this.selectedUser) {
+      return;
+    }
+    this._usersService.removeRoleFromUser(this.selectedUser.id, role.id).subscribe({
+      next: () => {
+        this.selectedUserRoles = this.selectedUserRoles.filter(selectedRole => selectedRole.id !== role.id);
+        this._snackBar.openSuccess(`Role "${role.name}" removed successfully from ${this.selectedUser?.name || "user"}`);
+      },
+      error: err => {
+        this._snackBar.openError(`Error removing role (${role?.name || role?.id || "unknown"}) from ${this.selectedUser?.name || this.selectedUser?.id}`);
+        console.error(err);
+      },
     });
   }
 }

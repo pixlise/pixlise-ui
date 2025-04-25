@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="search-container">
       <input class="scan-search" placeholder="Search scans" [(ngModel)]="scanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
     </div>
-    <button mat-menu-item *ngFor="let scan of addScanList" (click)="onAddScan(scan.id)" [disabled]="selectedScanIds.has(scan.id)">
+    <button mat-menu-item *ngFor="let scan of addScanList; trackBy: trackByScanId" (click)="onAddScan(scan.id)" [disabled]="selectedScanIds.has(scan.id)">
       {{ getScanTitle(scan) }}
     </button>
   </mat-menu>

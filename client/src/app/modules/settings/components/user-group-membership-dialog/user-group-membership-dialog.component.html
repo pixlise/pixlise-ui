@@ -33,24 +33,24 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="header">
     <h1>User Membership</h1>
     <div class="user-info">
+      <user-icon [userId]="data.user.id" [size]="'24px'"></user-icon>
       <h2>{{ data.user.name }}</h2>
-      <img src="{{ data.user.iconURL }}" />
     </div>
   </div>
   <div class="info">
-    <h5 class="description">Assign this user's permissions, this can be changed from their profile page at any time in the future.</h5>
+    <h5 class="description">Assign this user's access level for this group.</h5>
   </div>
   <div class="role-options">
     <mat-radio-group [(ngModel)]="selectedRole">
       <mat-radio-button class="role-option" value="admin"
         >Administrator (can approve new members)
-        <img src="assets/icons/admin-badge.svg" />
+        <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
       </mat-radio-button>
       <mat-radio-button class="role-option" value="editor"
         >Member (editor)
-        <img src="assets/icons/member-badge.svg" />
+        <img src="assets/icons/member-badge.svg" alt="Member Badge" />
       </mat-radio-button>
-      <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" /></mat-radio-button>
+      <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" /></mat-radio-button>
     </mat-radio-group>
   </div>
   <div class="gap-separated-horizontal-elements button-container">

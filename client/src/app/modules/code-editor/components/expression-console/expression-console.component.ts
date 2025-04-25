@@ -64,6 +64,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   @Input() columnCount: number = 0;
   @Input() stdout: string = "";
   @Input() stderr: string = "";
+  @Input() loading: boolean = false;
 
   @Output() onToggleSolo = new EventEmitter();
   private _isSolo: boolean = false;
@@ -377,8 +378,18 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
     this._copyText(this.stderr?.trim());
   }
 
+  onCopy() {
+    if (this.isOutputView) {
+      this.onCopyOutput();
+    } else if (this.printableStdout) {
+      this.onCopyStdout();
+    } else if (this.printableStderr) {
+      this.onCopyStderr();
+    }
+  }
+
   onExport() {
-    let dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
+    const dialogConfig = new MatDialogConfig<WidgetExportDialogData>();
     dialogConfig.data = this.getExportOptions();
     const dialogRef = this._dialog.open(WidgetExportDialogComponent, dialogConfig);
     this._subs.add(

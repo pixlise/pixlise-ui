@@ -13,7 +13,7 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, EMPTY, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
@@ -73,41 +73,35 @@ export class ROIService implements OnDestroy {
     this.listROIs();
 
     this._subs.add(
-      combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$]).subscribe({
-        next: ([screenConfig, scans]) => {
-          this._allScans = scans;
+      combineLatest([this._analysisLayoutService.activeScreenConfiguration$, this._analysisLayoutService.availableScans$])
+        .pipe(
+          mergeMap(([screenConfig, scans]) => {
+            this._allScans = scans;
 
-          this._allScans.forEach(scan => {
-            let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
-            if (this._regionMap.get(allPointsROI) !== undefined) {
-              this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
-                let settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
-                let scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
-                let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
-                settings.displaySettings.colour = scanRGBA;
+            const regionUpdates$ = this._allScans.map(scan => {
+              const allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
+              const existingRegion$ = this._regionMap.get(allPointsROI);
 
-                this._regionMap.set(allPointsROI, of(settings));
-              });
-            }
-          });
-        },
-      })
-    );
+              if (!existingRegion$) {
+                return EMPTY;
+              }
 
-    // SUBS CLEANUP - Does this need to be duplicated from the above??
-    this._subs.add(
-      this._analysisLayoutService.availableScans$.subscribe(scans => {
-        this._allScans = scans;
+              return existingRegion$.pipe(
+                map(regionSettings => {
+                  const settings = createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title);
+                  const scanColour = screenConfig?.scanConfigurations?.[scan.id]?.colour;
+                  const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+                  settings.displaySettings.colour = scanRGBA;
 
-        this._allScans.forEach(scan => {
-          let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
-          if (this._regionMap.get(allPointsROI) !== undefined) {
-            this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
-              this._regionMap.set(allPointsROI, of(createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title)));
+                  this._regionMap.set(allPointsROI, of(settings));
+                })
+              );
             });
-          }
-        });
-      })
+
+            return combineLatest(regionUpdates$);
+          })
+        )
+        .subscribe()
     );
   }
 
@@ -211,15 +205,28 @@ export class ROIService implements OnDestroy {
       // Check if all points ROI exists for this scan and if not, fetch it
       const allPointsROIID = PredefinedROIID.getAllPointsForScan(scanId);
       if (this.roiItems$.value[allPointsROIID]) {
-        return of(this.roiItems$.value[allPointsROIID]);
+        const allPointsROI = this.roiItems$.value[allPointsROIID];
+        if (allPointsROI) {
+          // Make sure the display settings are up to date
+          const scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+          const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+          if (!allPointsROI.displaySettings || allPointsROI.displaySettings.colour !== scanRGBA.asString()) {
+            const existingDisplaySettings = allPointsROI.displaySettings || { id: allPointsROI.id, colour: scanRGBA.asString(), shape: DEFAULT_ROI_SHAPE };
+            allPointsROI.displaySettings = { id: existingDisplaySettings.id, colour: scanRGBA.asString(), shape: existingDisplaySettings.shape };
+            this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
+            this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+          }
+        }
+
+        return of(allPointsROI);
       } else {
         return this.getAllPointsROI(scanId).pipe(
           map(allPointsROI => {
             if (allPointsROI) {
               this.roiItems$.value[allPointsROI.id] = allPointsROI;
               this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
-              let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
-              let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+              const scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+              const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
               this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
               this.roiItems$.next(this.roiItems$.value);
               this.displaySettingsMap$.next(this.displaySettingsMap$.value);
@@ -263,7 +270,7 @@ export class ROIService implements OnDestroy {
   }
 
   getSelectedPointsRegionSettings(scanId: string): Observable<RegionSettings> {
-    let currentSelection = this._selectionService.getCurrentSelection();
+    const currentSelection = this._selectionService.getCurrentSelection();
     if (currentSelection) {
       const selectedPointsROI = createDefaultSelectedPointsItem(scanId);
       selectedPointsROI.scanEntryIndexesEncoded = Array.from(currentSelection.beamSelection.getSelectedScanEntryPMCs(scanId));
@@ -280,7 +287,7 @@ export class ROIService implements OnDestroy {
       }
       this.roiItems$.next(this.roiItems$.value);
 
-      let selectionRegion = new RegionSettings(
+      const selectionRegion = new RegionSettings(
         selectedPointsROI,
         this.displaySettingsMap$.value[selectedPointsROI.id],
         new Set<number>(selectedPointsROI.pixelIndexesEncoded)
@@ -297,7 +304,7 @@ export class ROIService implements OnDestroy {
   }
 
   getScanIdsFromROIs(roiIds: string[]): Observable<string[]> {
-    let roiRequests = roiIds.map(roiId => {
+    const roiRequests = roiIds.map(roiId => {
       if (PredefinedROIID.isPredefined(roiId)) {
         return of(PredefinedROIID.getScanIdIfPredefined(roiId));
       }
@@ -314,6 +321,14 @@ export class ROIService implements OnDestroy {
   getRegionSettings(roiId: string): Observable<RegionSettings> {
     // Now we check if we can service locally from our  map
     let result = this._regionMap.get(roiId);
+    if (PredefinedROIID.isAllPointsROI(roiId)) {
+      const scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+      const scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      const scanRGBA = scanConfiguration ? RGBA.fromString(scanConfiguration.colour) : Colours.GRAY_10;
+      const allPointsRegion = createDefaultAllPointsRegionSettings(scanId, DEFAULT_ROI_SHAPE, this._allScans.find(scan => scan.id === scanId)?.title);
+      allPointsRegion.displaySettings.colour = scanRGBA;
+      return of(allPointsRegion);
+    }
     if (result === undefined) {
       // Check if this is a predefined ROI for a scan Id, in which case we can add the default ROIs
       // here
@@ -385,9 +400,9 @@ export class ROIService implements OnDestroy {
   updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
     // if is all points, update the scan colour
     if (PredefinedROIID.isAllPointsROI(roiId)) {
-      let scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+      const scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
 
-      let scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      const scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
       if (!scanConfiguration) {
         this._snackBarService.openError(`Scan configuration not found for scan ID: ${scanId}`);
         return;
@@ -419,38 +434,45 @@ export class ROIService implements OnDestroy {
   private createDefaultScanRegionsIfNeeded(scanId: string) {
     // Add defaults for predefined ROIs
     const allPointsROI = PredefinedROIID.getAllPointsForScan(scanId);
-    let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
-    let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+    const scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+    const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
 
     if (this._regionMap.get(allPointsROI) === undefined) {
       // Must be new, add them
       const scanDisp = this.nextDisplaySettings(scanId);
-      let scanName = this._allScans.find(scan => scan.id === scanId)?.title;
-      let regionSettings = createDefaultAllPointsRegionSettings(scanId, scanDisp.shape, scanName);
+      const scanName = this._allScans.find(scan => scan.id === scanId)?.title;
+      const regionSettings = createDefaultAllPointsRegionSettings(scanId, scanDisp.shape, scanName);
       regionSettings.displaySettings.colour = scanRGBA;
 
       this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(regionSettings));
     }
 
     // Make sure the colour is up to date
-    this._analysisLayoutService.activeScreenConfiguration$.subscribe({
-      next: screenConfig => {
-        if (screenConfig?.scanConfigurations?.[scanId]?.colour !== scanRGBA.asString()) {
-          let scanColour = screenConfig?.scanConfigurations?.[scanId]?.colour;
-          let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$
+        .pipe(
+          map(screenConfig => {
+            if (screenConfig?.scanConfigurations?.[scanId]?.colour !== scanRGBA.asString()) {
+              const scanColour = screenConfig?.scanConfigurations?.[scanId]?.colour;
+              const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
 
-          let regionSettings = this._regionMap.get(allPointsROI);
-          if (regionSettings) {
-            regionSettings.subscribe({
-              next: settings => {
-                settings.displaySettings.colour = scanRGBA;
-                this._regionMap.set(allPointsROI, of(settings));
-              },
-            });
-          }
-        }
-      },
-    });
+              const regionSettings$ = this._regionMap.get(allPointsROI);
+              if (regionSettings$) {
+                return regionSettings$.pipe(
+                  map(settings => {
+                    settings.displaySettings.colour = scanRGBA;
+                    this._regionMap.set(allPointsROI, of(settings));
+                    return settings;
+                  })
+                );
+              }
+            }
+            return EMPTY;
+          }),
+          switchMap(settings$ => settings$ || EMPTY)
+        )
+        .subscribe()
+    );
 
     const selectedPointsROI = PredefinedROIID.getSelectedPointsForScan(scanId);
     if (this._regionMap.get(selectedPointsROI) === undefined) {
@@ -489,14 +511,14 @@ export class ROIService implements OnDestroy {
     if (checkCacheFirst && this.roiItems$.value[id]) {
       return;
     } else if (PredefinedROIID.isAllPointsROI(id)) {
-      let scanId = PredefinedROIID.getScanIdIfPredefined(id);
+      const scanId = PredefinedROIID.getScanIdIfPredefined(id);
       this.getAllPointsROI(scanId).subscribe({
         next: allPointsROI => {
           if (allPointsROI) {
             this.roiItems$.value[allPointsROI.id] = allPointsROI;
             this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
-            let scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
-            let scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+            const scanColour = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId]?.colour;
+            const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
             this.displaySettingsMap$.value[allPointsROI.id] = { colour: scanRGBA, shape: DEFAULT_ROI_SHAPE };
             this.roiItems$.next(this.roiItems$.value);
             this.displaySettingsMap$.next(this.displaySettingsMap$.value);
@@ -507,7 +529,7 @@ export class ROIService implements OnDestroy {
         },
       });
     } else if (PredefinedROIID.isSelectedPointsROI(id)) {
-      let selectedPointsROI = this.getSelectedPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
+      const selectedPointsROI = this.getSelectedPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
       if (selectedPointsROI) {
         this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
         this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
@@ -540,7 +562,7 @@ export class ROIService implements OnDestroy {
     } else if (PredefinedROIID.isAllPointsROI(id)) {
       return this.getAllPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
     } else if (PredefinedROIID.isSelectedPointsROI(id)) {
-      let selectedPointsROI = this.getSelectedPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
+      const selectedPointsROI = this.getSelectedPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
       if (selectedPointsROI) {
         return of(selectedPointsROI);
       }
@@ -621,8 +643,8 @@ export class ROIService implements OnDestroy {
       return;
     }
 
-    let roiToWrite = ROIItem.create(newROI);
-    let isMIST = roiToWrite.mistROIItem ? true : false;
+    const roiToWrite = ROIItem.create(newROI);
+    const isMIST = roiToWrite.mistROIItem ? true : false;
 
     // Have to remove owner field to write
     roiToWrite.owner = undefined;
@@ -696,8 +718,8 @@ export class ROIService implements OnDestroy {
     editors: UserGroupList | undefined = undefined,
     viewers: UserGroupList | undefined = undefined
   ) {
-    let writableROIs = regionsOfInterest.map(roi => {
-      let newROI = ROIItem.create(roi);
+    const writableROIs = regionsOfInterest.map(roi => {
+      const newROI = ROIItem.create(roi);
       newROI.owner = undefined;
       if (newROI.scanEntryIndexesEncoded && newROI.scanEntryIndexesEncoded.length > 0) {
         newROI.scanEntryIndexesEncoded = encodeIndexList(newROI.scanEntryIndexesEncoded);
@@ -730,14 +752,14 @@ export class ROIService implements OnDestroy {
 
             res.regionsOfInterest.forEach((roi, i) => {
               if (isMIST) {
-                let matchingROI = writableROIs[i];
+                const matchingROI = writableROIs[i];
 
                 // Extra verification check to make sure order didnt change
                 if (matchingROI && matchingROI.mistROIItem?.classificationTrail === roi.description) {
                   roi.mistROIItem = matchingROI.mistROIItem;
                 } else {
                   // Order changed, so lets try to find it by classification trail (this shouldn't happen)
-                  let trailMatchedROI = writableROIs.find(writableROI => writableROI.mistROIItem?.classificationTrail === roi.description);
+                  const trailMatchedROI = writableROIs.find(writableROI => writableROI.mistROIItem?.classificationTrail === roi.description);
                   if (trailMatchedROI) {
                     roi.mistROIItem = trailMatchedROI.mistROIItem;
                   }
@@ -747,7 +769,7 @@ export class ROIService implements OnDestroy {
               this.roiItems$.value[roi.id] = roi;
 
               if (isMIST) {
-                let scanId = roi.scanId;
+                const scanId = roi.scanId;
                 if (!scanId) {
                   this._snackBarService.openWarning(`ROI (${roi.name}) does not have a scanId! Skipping...`);
                   return;
@@ -812,7 +834,7 @@ export class ROIService implements OnDestroy {
     this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestDeleteReq.create({ id, isMIST })).subscribe({
       next: res => {
         // Keep scan id so we can remove from mistROIsByScanId
-        let scanId = this.roiSummaries$.value[id]?.scanId || this.roiItems$.value[id]?.scanId || "";
+        const scanId = this.roiSummaries$.value[id]?.scanId || this.roiItems$.value[id]?.scanId || "";
 
         // Remove cached full version
         if (this.roiItems$.value[id]) {
@@ -850,7 +872,7 @@ export class ROIService implements OnDestroy {
           Object.entries(res.regionsOfInterest).forEach(([id, roiSummary]) => {
             this.roiSummaries$.value[id] = roiSummary;
             if (isMIST) {
-              let scanId = roiSummary.scanId;
+              const scanId = roiSummary.scanId;
               if (!scanId) {
                 this._snackBarService.openWarning(`ROI (${roiSummary.name}) does not have a scanId! Skipping...`);
                 return;

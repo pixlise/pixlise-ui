@@ -33,9 +33,11 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="color-container">
       <div
         class="color-option {{ config.colour === option.colour ? 'selected' : '' }}"
-        *ngFor="let option of colorOptions"
+        *ngFor="let option of colorOptions; let i = index"
         [ngStyle]="{ 'background-color': config.colour === option.colour ? semiTransparentSelectedColour : '' }"
-        (click)="onSelectColor(option)">
+        (click)="onSelectColor(option)"
+        (keypress)="onSelectColor(option)"
+        tabindex="0">
         <roi-shape [scale]="4" [color]="option.colour" [borderColor]="config.colour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
         <div *ngIf="config.colour === option.colour" class="active-color"></div>
       </div>
@@ -48,17 +50,29 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #scanOptionsMenu>
   <div class="scan-options-menu">
-    <div class="menu-item" (click)="onCalibration(config.id)">
-      <img *ngIf="!config.calibrations || config.calibrations.length === 0" class="menu-icon" src="assets/button-icons/disabled-gray.svg" />
-      <img *ngIf="config.calibrations && config.calibrations.length > 0" class="menu-icon" src="assets/button-icons/yellow-tick.svg" />
+    <div
+      class="menu-item"
+      (click)="onCalibration(config.id)"
+      (keydown)="onCalibration(config.id)"
+      (keyup)="onCalibration(config.id)"
+      (keypress)="onCalibration(config.id)"
+      tabindex="0">
+      <img *ngIf="!config.calibrations || config.calibrations.length === 0" class="menu-icon" src="assets/button-icons/disabled-gray.svg" alt="Calibration" />
+      <img *ngIf="config.calibrations && config.calibrations.length > 0" class="menu-icon" src="assets/button-icons/yellow-tick.svg" alt="Calibration" />
       <span class="menu-text">Calibration</span>
     </div>
-    <div class="menu-item" (click)="onReplaceScan()">
-      <img class="menu-icon" src="assets/icons/datasets.svg" />
+    <div class="menu-item" (click)="onReplaceScan()" (keydown)="onReplaceScan()" (keyup)="onReplaceScan()" (keypress)="onReplaceScan()" tabindex="0">
+      <img class="menu-icon" src="assets/icons/datasets.svg" alt="Replace Scan" />
       <span class="menu-text">Replace Scan</span>
     </div>
-    <div class="menu-item" (click)="onRemoveConfiguration()">
-      <img class="menu-icon" src="assets/button-icons/delete.svg" />
+    <div
+      class="menu-item"
+      (click)="onRemoveConfiguration()"
+      (keydown)="onRemoveConfiguration()"
+      (keyup)="onRemoveConfiguration()"
+      (keypress)="onRemoveConfiguration()"
+      tabindex="0">
+      <img class="menu-icon" src="assets/button-icons/delete.svg" alt="Remove" />
       <span class="menu-text">Remove</span>
     </div>
   </div>
@@ -70,7 +84,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <widget-settings-menu [settingsDialog]="scanColorPicker" #scanColorPickerButton>
       <div class="color-shape-picker" #tooltip="matTooltip" matTooltip="Choose default color for All Scan Points" [matTooltipShowDelay]="500">
         <roi-shape [scale]="2" [color]="config.colour || 'white'" shape="circle"></roi-shape>
-        <img src="assets/button-icons/arrow-down.svg" />
+        <img src="assets/button-icons/arrow-down.svg" alt="Color" />
       </div>
     </widget-settings-menu>
     <widget-settings-menu [settingsDialog]="scanOptionsMenu" #scanOptionsMenuButton>

@@ -65,6 +65,7 @@ import { TableComponent } from "./components/atoms/table/table.component";
 import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
 import { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 import { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
+import { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 import { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 import { MatMenuModule } from "@angular/material/menu";
@@ -87,6 +88,7 @@ export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-d
 export { TableComponent } from "./components/atoms/table/table.component";
 export { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 export { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
+export { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 export { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 
@@ -146,6 +148,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     TextFileViewingDialogComponent,
     LayoutPreviewBox,
     UserIconComponent,
+    GroupIconComponent,
     SearchableListComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule, MatMenuModule],
@@ -199,6 +202,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     TextFileViewingDialogComponent,
     LayoutPreviewBox,
     UserIconComponent,
+    GroupIconComponent,
     SearchableListComponent,
   ],
   providers: [

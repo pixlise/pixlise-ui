@@ -101,7 +101,9 @@ export class UserOptionsService {
         // If we don't have an icon for the user in mongo, get one from auth0
         if (!this._userDetails.info?.iconURL) {
           this._authService.user$.subscribe(user => {
-            this._userDetails.info!.iconURL = user?.picture || "";
+            if (this._userDetails.info) {
+              this._userDetails.info.iconURL = user?.picture || "";
+            }
           });
         }
         this._userOptionsChanged$.next();
@@ -123,16 +125,16 @@ export class UserOptionsService {
       this.fetchCurrentDataCollectionVersion();
     }
 
-    let dataCollectionVersion = accept ? this._currentDataCollectionVersion : `${this._currentDataCollectionVersion}-false`;
+    const dataCollectionVersion = accept ? this._currentDataCollectionVersion : `${this._currentDataCollectionVersion}-false`;
     this.updateDataCollectionVersion(dataCollectionVersion);
   }
 
   private updateDataCollectionVersion(dataCollectionVersion: string): void {
-    this.updateUserDetails(this._userDetails.info!.name, this._userDetails.info!.email, this._userDetails.info!.iconURL, dataCollectionVersion);
+    this.updateUserDetails(this._userDetails.info?.name || "", this._userDetails.info?.email || "", this._userDetails.info?.iconURL || "", dataCollectionVersion);
   }
 
   updateUserDetails(name: string, email: string, iconURL: string, dataCollectionVersion: string): void {
-    let userDetailsWriteReq = UserDetailsWriteReq.create({});
+    const userDetailsWriteReq = UserDetailsWriteReq.create({});
     userDetailsWriteReq.name = name;
     userDetailsWriteReq.email = email;
     userDetailsWriteReq.iconURL = iconURL;
@@ -162,15 +164,15 @@ export class UserOptionsService {
   fetchNotifications(): void {
     this._dataService.sendUserNotificationSettingsRequest(UserNotificationSettingsReq.create({})).subscribe({
       next: (resp: UserNotificationSettingsResp) => {
-        let topics: NotificationTopic[] = [];
+        const topics: NotificationTopic[] = [];
 
         Object.entries(resp.notifications?.topicSettings || {}).forEach(([topicName, notificationEnum]) => {
           // NOTIF_NONE = 0;
           // NOTIF_EMAIL = 1;
           // NOTIF_UI = 2;
           // NOTIF_BOTH = 3;
-          let uiVisible = Number(notificationEnum) === 2 || Number(notificationEnum) === 3;
-          let emailVisible = Number(notificationEnum) === 1 || Number(notificationEnum) === 3;
+          const uiVisible = Number(notificationEnum) === 2 || Number(notificationEnum) === 3;
+          const emailVisible = Number(notificationEnum) === 1 || Number(notificationEnum) === 3;
 
           topics.push(new NotificationTopic(topicName, new NotificationConfig(new NotificationMethod(uiVisible, emailVisible))));
         });
@@ -185,18 +187,20 @@ export class UserOptionsService {
   }
 
   updateNotifications(notificationSettings: NotificationSetting[]): void {
-    let notificationSettingsUpdateRequest: UserNotificationSettingsWriteReq = {
+    const notificationSettingsUpdateRequest: UserNotificationSettingsWriteReq = {
       notifications: {
         topicSettings: {},
       },
     };
 
     notificationSettings.forEach((notificationSetting: NotificationSetting) => {
-      let uiEnum = notificationSetting.method.ui ? 2 : 0;
-      let emailEnum = notificationSetting.method.email ? 1 : 0;
+      const uiEnum = notificationSetting.method.ui ? 2 : 0;
+      const emailEnum = notificationSetting.method.email ? 1 : 0;
 
-      let enumValue = uiEnum + emailEnum;
-      notificationSettingsUpdateRequest!.notifications!.topicSettings[notificationSetting.id] = enumValue;
+      const enumValue = uiEnum + emailEnum;
+      if (notificationSettingsUpdateRequest.notifications) {
+        notificationSettingsUpdateRequest.notifications.topicSettings[notificationSetting.id] = enumValue;
+      }
     });
 
     this._dataService.sendUserNotificationSettingsWriteRequest(notificationSettingsUpdateRequest).subscribe({

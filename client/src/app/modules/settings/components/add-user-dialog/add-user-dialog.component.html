@@ -31,13 +31,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="dlg-border-with-backdrop permissions-dlg add-user-dialog">
   <h1>Add User</h1>
-  <h5>Grant user(s) access, this can be changed from their profile page at any time in the future.</h5>
+  <h5>Add a user to the group. Their access level can be changed by clicking on their name in the table.</h5>
   <div class="fields">
     <div class="search-controls">
       <div class="search">
         <input type="text" [(ngModel)]="userSearchString" placeholder="Search Users ..." />
         <div class="search-icon">
-          <img src="assets/button-icons/search.svg" />
+          <img src="assets/button-icons/search.svg" alt="Search Icon" />
         </div>
       </div>
     </div>
@@ -79,13 +79,13 @@ POSSIBILITY OF SUCH DAMAGE.
       <mat-radio-group [(ngModel)]="selectedRole">
         <mat-radio-button class="role-option" value="admin"
           >Administrator (can approve new members)
-          <img src="assets/icons/admin-badge.svg" />
+          <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
         </mat-radio-button>
         <mat-radio-button class="role-option" value="editor"
           >Member (editor)
-          <img src="assets/icons/member-badge.svg" />
+          <img src="assets/icons/member-badge.svg" alt="Member Badge" />
         </mat-radio-button>
-        <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" /></mat-radio-button>
+        <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" /></mat-radio-button>
       </mat-radio-group>
     </div>
   </div>

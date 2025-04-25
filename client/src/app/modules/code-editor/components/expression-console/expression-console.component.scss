@@ -69,7 +69,8 @@
   }
 
   .result-container {
-    overflow: scroll;
+    position: relative;
+    overflow: auto;
 
     &::-webkit-scrollbar {
       display: none;
@@ -104,6 +105,7 @@
         td {
           height: 14px;
           min-height: 14px;
+          width: 50px;
 
           text-align: center;
           padding: 6px 4px;
@@ -172,6 +174,15 @@
 .result-text,
 .log-text,
 .error-text {
+  overflow: auto;
+  height: calc(100% - 25px);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
   position: relative;
   min-height: 16px;
 
@@ -200,5 +211,69 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
+
+    label {
+      color: rgb(var(--clr-gray-30));
+    }
+  }
+}
+
+.copy-btn-container {
+  position: absolute;
+  z-index: 10;
+
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(var(--clr-gray-30), 0.8);
+    cursor: pointer;
+
+    &:hover {
+      color: rgba(var(--clr-gray-30), 1);
+    }
+  }
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+
+  h5 {
+    color: rgb(var(--clr-gray-30));
+    margin-top: 8px;
+    width: 120px;
+  }
+}
+
+.dots {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: bottom;
+  width: 0ch;
+  animation: dots 1s steps(3) infinite;
+}
+@keyframes dots {
+  0% {
+    width: 0ch;
+  }
+  33% {
+    width: 1ch;
+  }
+  66% {
+    width: 2ch;
+  }
+  100% {
+    width: 3ch;
   }
 }

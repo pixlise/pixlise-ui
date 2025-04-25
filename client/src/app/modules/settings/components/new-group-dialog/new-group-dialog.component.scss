@@ -41,6 +41,25 @@
   max-width: 400px;
 }
 
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h1 {
+    text-transform: none;
+    font-family: "Inter", sans-serif;
+  }
+
+  .joinable-container {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+
+    gap: 4px;
+  }
+}
+
 .button-container {
   margin-top: $sz-double;
 
@@ -56,17 +75,19 @@
     height: 24px;
     width: 100%;
     margin-bottom: 8px;
+    font-family: "Inter", sans-serif;
   }
 
   textarea {
     width: 100%;
+    font-family: "Inter", sans-serif;
   }
 
   .input-label {
     color: #bec0c2;
     font-size: 12px;
     margin-bottom: 4px;
-    font-family: "Roboto";
+    font-family: "Inter", sans-serif;
     font-weight: 400;
   }
 }

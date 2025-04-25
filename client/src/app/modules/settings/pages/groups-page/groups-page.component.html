@@ -1,3 +1,18 @@
+<ng-template #addUserRoleDialog>
+  <div class="add-user-role-dialog">
+    <h2>Add Role</h2>
+    <div class="role-list">
+      <mat-select [(ngModel)]="selectedUserNewRoleId" class="role-select" placeholder="Select Role ...">
+        <mat-option *ngFor="let role of allUserRoles" [value]="role.id" [disabled]="selectedUserRoleIds.includes(role.id)">{{ role.name }} </mat-option>
+      </mat-select>
+    </div>
+    <div class="button-container">
+      <push-button class="close-btn" buttonStyle="outline" (onClick)="onCloseAddUserRoleDialog()">Close</push-button>
+      <push-button class="save-btn" buttonStyle="yellow" (onClick)="onAddUserRole()">Add Role</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <div class="settings-container">
   <div class="user-groups">
     <div class="user-info">
@@ -8,14 +23,11 @@
     <div class="groups admin-groups">
       <div class="header">
         <h2>Admin</h2>
-        <img src="assets/icons/admin-badge.svg" />
+        <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
       </div>
       <div class="content-container">
-        <div
-          (click)="onSelectGroup(group)"
-          *ngFor="let group of groupsWithAdminAccess"
-          class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title">
+        <div *ngFor="let group of groupsWithAdminAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
+          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
             {{ group.name }}
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
           </h5>
@@ -24,7 +36,7 @@
             *ngIf="canDeleteGroup"
             action="close"
             [disabled]="!group"
-            confirmText="Are you sure you want to delete this group?"
+            confirmText="Are you sure you want to delete {{ group.name }}?"
             tooltipTitle="Delete"
             (onClick)="onDeleteGroup(group)"></action-button>
         </div>
@@ -36,14 +48,11 @@
     <div class="groups member-groups">
       <div class="header">
         <h2>Member</h2>
-        <img src="assets/icons/member-badge.svg" />
+        <img src="assets/icons/member-badge.svg" alt="Member Badge" />
       </div>
       <div class="content-container">
-        <div
-          (click)="onSelectGroup(group)"
-          *ngFor="let group of groupsWithMemberAccess"
-          class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title">
+        <div *ngFor="let group of groupsWithMemberAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
+          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
             {{ group.name }}
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
           </h5>
@@ -52,7 +61,7 @@
             *ngIf="canDeleteGroup"
             action="close"
             [disabled]="!group"
-            confirmText="Are you sure you want to delete this group?"
+            confirmText="Are you sure you want to delete {{ group.name }}?"
             tooltipTitle="Delete"
             (onClick)="onDeleteGroup(group)"></action-button>
         </div>
@@ -64,14 +73,11 @@
     <div class="groups viewer-groups">
       <div class="header">
         <h2>Viewer</h2>
-        <img src="assets/icons/viewer-badge.svg" />
+        <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" />
       </div>
       <div class="content-container">
-        <div
-          (click)="onSelectGroup(group)"
-          *ngFor="let group of groupsWithViewerAccess"
-          class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title">
+        <div *ngFor="let group of groupsWithViewerAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
+          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
             {{ group.name }}
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
           </h5>
@@ -80,7 +86,7 @@
             *ngIf="canDeleteGroup"
             action="close"
             [disabled]="!group"
-            confirmText="Are you sure you want to delete this group?"
+            confirmText="Are you sure you want to delete {{ group.name }}?"
             tooltipTitle="Delete"
             (onClick)="onDeleteGroup(group)"></action-button>
         </div>
@@ -92,29 +98,30 @@
     <div class="content-container request">
       <push-button (onClick)="onOpenGroupRequestDialog()" buttonStyle="yellow">Request Group Access</push-button>
     </div>
-    <div class="new-group">
-      <action-button color="#BCBCBC" action="add" tooltipTitle="Create new group" (onClick)="onOpenCreateNewGroupDialog()"></action-button>
+    <div class="new-group" (click)="onOpenCreateNewGroupDialog()" tabindex="0" (keydown)="onOpenCreateNewGroupDialog()">
+      <img src="assets/button-icons/plus-white.svg" alt="Add Group Icon" />
+      <span class="label">Create New Group</span>
     </div>
   </div>
   <div class="group-container">
     <div class="selected-group">
       <div class="group-header">
-        <h1 class="{{ selectedGroup?.info?.name ? 'active' : '' }}">{{ selectedGroup?.info?.name || "Select a Group ..." }}</h1>
         <action-button
-          *ngIf="selectedGroup"
-          action="add"
-          [disabled]="!selectedGroup"
-          tooltipTitle="Add User"
-          (onClick)="onAddSubGroupToGroup(selectedGroup.info!.id)"></action-button>
+          *ngIf="selectedGroup?.info && isSelectedGroupAdmin"
+          action="edit"
+          tooltipTitle="Edit Group"
+          (onClick)="onEditGroup(selectedGroup?.info || null)"></action-button>
+        <h1 class="{{ selectedGroup?.info?.name ? 'active' : '' }}">{{ selectedGroup?.info?.name || "Select a Group ..." }}</h1>
       </div>
       <div class="selected-group-search-container">
         <input type="text" class="user-search" placeholder="Search Members ..." [(ngModel)]="userSearchString" />
         <div class="search-icon">
-          <img src="assets/button-icons/search.svg" />
+          <img src="assets/button-icons/search.svg" alt="Search Icon" />
         </div>
       </div>
       <div *ngIf="selectedGroup" class="add-user-container">
-        <push-button (onClick)="onAddUserToGroup(selectedGroup.info!.id)" buttonStyle="yellow">Add A New Team Member</push-button>
+        <push-button class="add-btn" (onClick)="onAddSubGroupToGroup(selectedGroup.info!.id)" buttonStyle="yellow">Add Sub-Group</push-button>
+        <push-button class="add-btn" (onClick)="onAddUserToGroup(selectedGroup.info!.id)" buttonStyle="yellow">Add Member</push-button>
       </div>
       <div class="selected-group-card-container">
         <div *ngIf="isSelectedGroupAdmin" class="requested-access">
@@ -127,11 +134,18 @@
           <div *ngFor="let request of selectedGroupAccessRequests" class="access-request">
             <div class="request-card-container">
               <div class="user-card">
-                <div class="icon" (click)="request.details ? onSelectUser(request.details) : null">
-                  <img *ngIf="request.details?.iconURL" src="{{ request.details?.iconURL }}" />
-                  <img *ngIf="!request.details?.iconURL" src="assets/icons/default-user-icon.svg" />
+                <div
+                  class="icon"
+                  (click)="request.details ? onSelectUser(request.details) : null"
+                  tabindex="0"
+                  (keydown)="request.details ? onSelectUser(request.details) : null">
+                  <user-icon [userId]="request.details?.id || ''" size="26px"></user-icon>
                 </div>
-                <div class="details" (click)="request.details ? onSelectUser(request.details) : null">
+                <div
+                  class="details"
+                  (click)="request.details ? onSelectUser(request.details) : null"
+                  tabindex="0"
+                  (keydown)="request.details ? onSelectUser(request.details) : null">
                   <span class="info name">
                     <h3>{{ request.details?.name || request.details?.id }}</h3>
                   </span>
@@ -155,12 +169,11 @@
           <h2>Team Members</h2>
         </div>
         <div class="user-card-container">
-          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card">
-            <div class="icon" (click)="onSelectUser(user)">
-              <img *ngIf="user.iconURL" src="{{ user.iconURL }}" />
-              <img *ngIf="!user.iconURL" src="assets/icons/default-user-icon.svg" />
+          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card {{ selectedUser?.id === user.id ? 'selected' : '' }}">
+            <div class="icon" (click)="onSelectUser(user)" tabindex="0" (keydown)="onSelectUser(user)">
+              <user-icon [userId]="user.id" size="26px"></user-icon>
             </div>
-            <div class="details" (click)="onSelectUser(user)">
+            <div class="details" (click)="onSelectUser(user)" tabindex="0" (keydown)="onSelectUser(user)">
               <span class="info name">
                 <h3>{{ user.name || user.id }}</h3>
               </span>
@@ -179,7 +192,8 @@
                     : selectedGroupUserRoles[user.id] === 'viewer'
                     ? 'assets/icons/viewer-badge.svg'
                     : ''
-                }}" />
+                }}"
+                alt="User Type Badge" />
               <action-button
                 action="close"
                 confirmText="Are you sure you want to remove user ({{ user.name }}) from group ({{ selectedGroup?.info?.name }})?"
@@ -197,10 +211,10 @@
         </div>
         <div class="user-card-container">
           <div *ngFor="let group of selectedGroupSubGroups; let i = index" class="user-card">
-            <div class="icon" (click)="onSelectGroup(group)">
-              <img src="assets/icons/default-user-icon.svg" />
+            <div class="icon" (click)="onSelectGroup(group)" tabindex="0" (keydown)="onSelectGroup(group)">
+              <group-icon [groupId]="group.id" size="26px"></group-icon>
             </div>
-            <div class="details" (click)="onSelectGroup(group)">
+            <div class="details" (click)="onSelectGroup(group)" tabindex="0" (keydown)="onSelectGroup(group)">
               <span class="info name">
                 <h3>{{ group.name || group.id }}</h3>
               </span>
@@ -217,7 +231,8 @@
                     : selectedGroupSubGroupRoles[group.id] === 'viewer'
                     ? 'assets/icons/viewer-badge.svg'
                     : ''
-                }}" />
+                }}"
+                alt="User Type Badge" />
               <action-button
                 action="close"
                 confirmText="Are you sure you want to remove sub-group ({{ group.name }}) from group ({{ selectedGroup?.info?.name }})?"
@@ -245,8 +260,7 @@
     <div class="user-details">
       <div class="selected-user-details" *ngIf="selectedUser">
         <div class="icon">
-          <img *ngIf="selectedUser?.iconURL" src="{{ selectedUser?.iconURL }}" />
-          <img *ngIf="!selectedUser?.iconURL" src="assets/icons/default-user-icon.svg" />
+          <user-icon [userId]="selectedUser.id" size="120px"></user-icon>
         </div>
         <div class="details">
           <span class="info name">
@@ -257,9 +271,31 @@
             <span class="label">Email</span>
             <h3>{{ selectedUser?.email }}</h3>
           </span>
-          <span class="info role">
-            <push-button (onClick)="onChangeGroupMembership(selectedUser, selectedUserRole)" buttonStyle="yellow">Change Group Membership</push-button>
+          <span class="info access-level">
+            <push-button (onClick)="onChangeGroupMembership(selectedUser, selectedUserRole)" buttonStyle="yellow">Change Access Level</push-button>
           </span>
+          <div class="info roles" *ngIf="isAdmin && selectedUser && selectedUserRoles && selectedUserRoles.length">
+            <div class="label-container">
+              <span class="label">Roles</span>
+              <action-button action="add" tooltipTitle="Add Role" [customDialog]="addUserRoleDialog" #addUserRoleDialogBtn></action-button>
+            </div>
+            <div class="role-list">
+              <div class="role" *ngFor="let role of selectedUserRoles">
+                <div class="role-info">
+                  <span class="role-name">{{ role.name }}</span>
+                  <span class="role-description">{{ role.description }}</span>
+                </div>
+                <action-button
+                  action="close"
+                  confirmText="Are you sure you want to remove role ({{ role.name }}) from user ({{ selectedUser.name }})?"
+                  (onClick)="onDeleteUserRole(role)"
+                  tooltipTitle="Remove Role"></action-button>
+              </div>
+              <div class="role-list-empty" *ngIf="selectedUserRoles.length === 0">
+                <span class="requests-empty">User has no assigned roles ...</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

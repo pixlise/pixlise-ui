@@ -273,12 +273,19 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           this.mdl.dataSourceIds.forEach((config, scanId) => {
             if (screenConfiguration?.scanConfigurations?.[scanId]?.colour) {
               if (this._roiService.displaySettingsMap$.value[scanId]) {
-                this._roiService.displaySettingsMap$.value[scanId].colour = RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour);
+                const newColour = RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour);
+                if (this._roiService.displaySettingsMap$.value[scanId].colour !== newColour) {
+                  updated = true;
+                }
+
+                this._roiService.displaySettingsMap$.value[scanId].colour = newColour;
               } else {
                 this._roiService.displaySettingsMap$.value[scanId] = {
                   colour: RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour),
                   shape: "circle",
                 };
+
+                updated = true;
               }
 
               this._roiService.displaySettingsMap$.next(this._roiService.displaySettingsMap$.value);

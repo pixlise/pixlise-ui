@@ -1,17 +1,19 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { UserInfo } from "../../../../../generated-protos/user";
 import { UsersService } from "../../../../settings/services/users.service";
 import { UserOptionsService } from "../../../../settings/settings.module";
-
+import { Subscription } from "rxjs";
 @Component({
   selector: "user-icon",
   templateUrl: "./user-icon.component.html",
   styleUrls: ["./user-icon.component.scss"],
 })
-export class UserIconComponent {
+export class UserIconComponent implements OnInit, OnDestroy {
   defaultIconURL: string = "assets/button-icons/user.svg";
   iconURL: string = "";
   iconAbbreviation: string = "";
+
+  private _subs: Subscription = new Subscription();
 
   @Input() size: string = "76px";
 
@@ -25,10 +27,18 @@ export class UserIconComponent {
   constructor(
     private _userOptionsService: UserOptionsService,
     private _usersService: UsersService
-  ) {
-    this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      this.updateUser();
-    });
+  ) {}
+
+  ngOnInit() {
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this.updateUser();
+      })
+    );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   @Input() set userId(userId: string) {
@@ -36,8 +46,20 @@ export class UserIconComponent {
     this.updateUser();
   }
 
+  get fontSize() {
+    if (this.size.endsWith("px")) {
+      return (Math.floor(Number(this.size.replace("px", "")) * 0.5) - 2).toString() + "px";
+    } else {
+      return "14px";
+    }
+  }
+
   generateAbbreviation(name: string) {
-    let firstLast = name.split(" ");
+    if (!name) {
+      return "N/A";
+    }
+
+    const firstLast = name.trim().toUpperCase().split(" ");
     if (firstLast.length === 1) {
       return firstLast[0]?.[0] || "N/A";
     } else if (firstLast.length >= 2) {
@@ -50,12 +72,12 @@ export class UserIconComponent {
   }
 
   updateUser() {
-    let cachedUsers = this._usersService?.cachedUsers;
-    let userId = this._userId || "";
+    const cachedUsers = this._usersService?.cachedUsers;
+    const userId = this._userId || "";
 
     if (!userId && this.defaultToCurrentUser) {
       this.userInfo = this._userOptionsService?.userDetails?.info || null;
-      let iconURL = this.userInfo?.iconURL;
+      const iconURL = this.userInfo?.iconURL;
       if (iconURL) {
         this.iconURL = iconURL;
       } else {
@@ -65,7 +87,7 @@ export class UserIconComponent {
     } else {
       if (cachedUsers && userId && cachedUsers[userId]) {
         this.userInfo = cachedUsers[userId];
-        let iconURL = this.userInfo?.iconURL;
+        const iconURL = this.userInfo?.iconURL;
         if (iconURL) {
           this.iconURL = iconURL;
         } else {
@@ -74,11 +96,13 @@ export class UserIconComponent {
         }
       } else {
         if (userId) {
-          this._usersService.fetchUserInfo(userId).subscribe(userInfo => {
-            if (userInfo) {
-              this.updateUser();
-            }
-          });
+          this._subs.add(
+            this._usersService.fetchUserInfo(userId).subscribe(userInfo => {
+              if (userInfo) {
+                this.updateUser();
+              }
+            })
+          );
         }
         this.userInfo = null;
         this.iconURL = "";
@@ -88,6 +112,4 @@ export class UserIconComponent {
 
     this.isReviewer = (this.userInfo && !this.userInfo.iconURL && this.userInfo.email.startsWith("reviewer-")) || false;
   }
-
-  ngOnInit() {}
 }
