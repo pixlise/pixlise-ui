@@ -51,8 +51,8 @@ import { EnergyCalibrationService } from "./energy-calibration.service";
 import { MemoisationService } from "./memoisation.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { MemDataQueryResult, MemPMCDataValue, MemPMCDataValues, MemRegionSettings } from "src/app/generated-protos/memoisation";
-import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
-import { RGBA } from "src/app/utils/colours";
+import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -63,7 +63,7 @@ import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
 import { ExpressionMemoisationService } from "./expression-memoisation.service";
 import { AuthService, User } from "@auth0/auth0-angular";
-
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 export type DataModuleVersionWithRef = {
   id: string;
   name: string;
@@ -175,7 +175,8 @@ export class WidgetDataService {
     private _energyCalibrationService: EnergyCalibrationService,
     private _memoisationService: MemoisationService,
     private _exprMemoisationService: ExpressionMemoisationService,
-    private _authService: AuthService
+    private _authService: AuthService,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -598,6 +599,14 @@ export class WidgetDataService {
         }
 
         result.region.displaySettings = { colour: RGBA.fromString(memResult.region.displaySettings.colour), shape: shape };
+
+        // If this is an all points ROI, use the scan colour from the active screen configuration instead of the memResult
+        if (PredefinedROIID.isAllPointsROI(memResult.region.region.id)) {
+          const scanId = PredefinedROIID.getScanIdIfPredefined(memResult.region.region.id);
+          const scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+          const scanRGBA = scanConfiguration ? RGBA.fromString(scanConfiguration.colour) : Colours.GRAY_10;
+          result.region.displaySettings.colour = scanRGBA;
+        }
       }
     }
 

@@ -327,6 +327,14 @@ export class ROIService implements OnDestroy {
   getRegionSettings(roiId: string): Observable<RegionSettings> {
     // Now we check if we can service locally from our  map
     let result = this._regionMap.get(roiId);
+    if (PredefinedROIID.isAllPointsROI(roiId)) {
+      const scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+      const scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      const scanRGBA = scanConfiguration ? RGBA.fromString(scanConfiguration.colour) : Colours.GRAY_10;
+      const allPointsRegion = createDefaultAllPointsRegionSettings(scanId, DEFAULT_ROI_SHAPE, this._allScans.find(scan => scan.id === scanId)?.title);
+      allPointsRegion.displaySettings.colour = scanRGBA;
+      result = of(allPointsRegion);
+    }
     if (result === undefined) {
       // Check if this is a predefined ROI for a scan Id, in which case we can add the default ROIs
       // here

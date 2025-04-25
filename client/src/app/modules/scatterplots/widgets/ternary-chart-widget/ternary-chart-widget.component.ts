@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { catchError, first, map, Observable, Subject, Subscription, takeUntil, tap } from "rxjs";
+import { catchError, first, map, Observable, Subject, Subscription, switchMap, takeUntil, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
@@ -277,26 +277,19 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       }
     }
 
-    this._widgetData.getData(query).subscribe({
-      next: data => {
-        this.setData(data).subscribe(() => {
+    this._widgetData
+      .getData(query)
+      .pipe(
+        switchMap(data => this.setData(data)),
+        catchError(err => this.setData(new RegionDataResults([], err))),
+        tap(() => {
           if (this.widgetControlConfiguration.topRightInsetButton) {
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
-
           this.isWidgetDataLoading = false;
-        });
-      },
-      error: err => {
-        this.setData(new RegionDataResults([], err)).subscribe(() => {
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
-
-          this.isWidgetDataLoading = false;
-        });
-      },
-    });
+        })
+      )
+      .subscribe();
   }
 
   private setData(data: RegionDataResults): Observable<ScanItem[]> {
@@ -317,6 +310,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       }),
       catchError(err => {
         this._snackService.openError("Failed to set data", `${err}`);
+        this.isWidgetDataLoading = false;
         return [];
       })
     );
