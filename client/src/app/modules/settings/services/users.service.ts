@@ -4,9 +4,9 @@ import { APIDataService } from "../../pixlisecore/pixlisecore.module";
 import { BehaviorSubject, catchError, filter, map, Observable, of, ReplaySubject, switchMap } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
-import { UserListReq } from "src/app/generated-protos/user-management-msgs";
-import { Auth0UserDetails, UserInfo } from "src/app/generated-protos/user";
-import { UserDetailsReq, UserSearchReq } from "src/app/generated-protos/user-msgs";
+import { UserAddRoleReq, UserDeleteRoleReq, UserListReq, UserRoleListReq, UserRolesListReq } from "src/app/generated-protos/user-management-msgs";
+import { Auth0UserDetails, Auth0UserRole, UserInfo } from "src/app/generated-protos/user";
+import { UserSearchReq } from "src/app/generated-protos/user-msgs";
 
 @Injectable({
   providedIn: "root",
@@ -18,6 +18,8 @@ export class UsersService {
   cachedUsers: Record<string, UserInfo> = {};
   searchedUsers$ = new BehaviorSubject<UserInfo[]>([]);
   searchingAllUsers$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+
+  allUserRoles$ = new BehaviorSubject<Auth0UserRole[]>([]);
 
   constructor(private _dataService: APIDataService) {}
 
@@ -67,6 +69,31 @@ export class UsersService {
         })
       );
     }
+  }
+
+  fetchAllUserRoles(): Observable<Auth0UserRole[]> {
+    if (this.allUserRoles$.value.length > 0) {
+      return of(this.allUserRoles$.value);
+    }
+
+    return this._dataService.sendUserRoleListRequest(UserRoleListReq.create({})).pipe(
+      map(res => {
+        this.allUserRoles$.next(res.roles);
+        return res.roles;
+      })
+    );
+  }
+
+  fetchUserRoles(userId: string): Observable<Auth0UserRole[]> {
+    return this._dataService.sendUserRolesListRequest(UserRolesListReq.create({ userId })).pipe(map(res => res.roles));
+  }
+
+  addRoleToUser(userId: string, roleId: string) {
+    return this._dataService.sendUserAddRoleRequest(UserAddRoleReq.create({ userId, roleId }));
+  }
+
+  removeRoleFromUser(userId: string, roleId: string) {
+    return this._dataService.sendUserDeleteRoleRequest(UserDeleteRoleReq.create({ userId, roleId }));
   }
 
   searchUsers(searchString: string) {

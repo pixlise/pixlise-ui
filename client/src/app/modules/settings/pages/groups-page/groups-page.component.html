@@ -1,3 +1,18 @@
+<ng-template #addUserRoleDialog>
+  <div class="add-user-role-dialog">
+    <h2>Add Role</h2>
+    <div class="role-list">
+      <mat-select [(ngModel)]="selectedUserNewRoleId" class="role-select" placeholder="Select Role ...">
+        <mat-option *ngFor="let role of allUserRoles" [value]="role.id" [disabled]="selectedUserRoleIds.includes(role.id)">{{ role.name }} </mat-option>
+      </mat-select>
+    </div>
+    <div class="button-container">
+      <push-button class="close-btn" buttonStyle="outline" (onClick)="onCloseAddUserRoleDialog()">Close</push-button>
+      <push-button class="save-btn" buttonStyle="yellow" (onClick)="onAddUserRole()">Add Role</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <div class="settings-container">
   <div class="user-groups">
     <div class="user-info">
@@ -154,7 +169,7 @@
           <h2>Team Members</h2>
         </div>
         <div class="user-card-container">
-          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card">
+          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card {{ selectedUser?.id === user.id ? 'selected' : '' }}">
             <div class="icon" (click)="onSelectUser(user)" tabindex="0" (keydown)="onSelectUser(user)">
               <user-icon [userId]="user.id" size="26px"></user-icon>
             </div>
@@ -256,9 +271,31 @@
             <span class="label">Email</span>
             <h3>{{ selectedUser?.email }}</h3>
           </span>
-          <span class="info role">
-            <push-button (onClick)="onChangeGroupMembership(selectedUser, selectedUserRole)" buttonStyle="yellow">Change Group Membership</push-button>
+          <span class="info access-level">
+            <push-button (onClick)="onChangeGroupMembership(selectedUser, selectedUserRole)" buttonStyle="yellow">Change Access Level</push-button>
           </span>
+          <div class="info roles" *ngIf="isAdmin && selectedUser && selectedUserRoles && selectedUserRoles.length">
+            <div class="label-container">
+              <span class="label">Roles</span>
+              <action-button action="add" tooltipTitle="Add Role" [customDialog]="addUserRoleDialog" #addUserRoleDialogBtn></action-button>
+            </div>
+            <div class="role-list">
+              <div class="role" *ngFor="let role of selectedUserRoles">
+                <div class="role-info">
+                  <span class="role-name">{{ role.name }}</span>
+                  <span class="role-description">{{ role.description }}</span>
+                </div>
+                <action-button
+                  action="close"
+                  confirmText="Are you sure you want to remove role ({{ role.name }}) from user ({{ selectedUser.name }})?"
+                  (onClick)="onDeleteUserRole(role)"
+                  tooltipTitle="Remove Role"></action-button>
+              </div>
+              <div class="role-list-empty" *ngIf="selectedUserRoles.length === 0">
+                <span class="requests-empty">User has no assigned roles ...</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
