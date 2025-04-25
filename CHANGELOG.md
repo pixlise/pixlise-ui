@@ -3,11 +3,17 @@
 ### New Features
 - Shows spinner in expression console on code editor page when expression is running
   - Adds skeleton state for code editor widget so this doesn't show before the expression is loaded
+- Group management page overhaul
+  - Admins can now directly add/remove Auth0 roles from users from within Pixlise
+  - Adds group metadata edit dialog
+  - Buttons, wording, and dialogs have been adjusted to better explain what's happening depending on user account permissions
 
 ### Bug Fixes
 - Fixes performance issues on code editor page when switching expressions (max call stack exceeded)
 - Updates code editor time out options to match config options
 - Styling enhancements to expression console (fixes copy button position, overflow states, etc.)
+- Standardizes user icons across the groups page, reduces redundant requests
+- Fixes issue where for some users, the All Points ROI wasn't changing color when changed from the datasets sidebar
 
 ## 4.65.0 (2025-04-10)
 
