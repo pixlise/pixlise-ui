@@ -400,9 +400,9 @@ export class ROIService implements OnDestroy {
   updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
     // if is all points, update the scan colour
     if (PredefinedROIID.isAllPointsROI(roiId)) {
-      let scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+      const scanId = PredefinedROIID.getScanIdIfPredefined(roiId);
 
-      let scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
+      const scanConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations?.[scanId];
       if (!scanConfiguration) {
         this._snackBarService.openError(`Scan configuration not found for scan ID: ${scanId}`);
         return;
@@ -448,24 +448,31 @@ export class ROIService implements OnDestroy {
     }
 
     // Make sure the colour is up to date
-    this._analysisLayoutService.activeScreenConfiguration$.subscribe({
-      next: screenConfig => {
-        if (screenConfig?.scanConfigurations?.[scanId]?.colour !== scanRGBA.asString()) {
-          const scanColour = screenConfig?.scanConfigurations?.[scanId]?.colour;
-          const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$
+        .pipe(
+          map(screenConfig => {
+            if (screenConfig?.scanConfigurations?.[scanId]?.colour !== scanRGBA.asString()) {
+              const scanColour = screenConfig?.scanConfigurations?.[scanId]?.colour;
+              const scanRGBA = scanColour ? RGBA.fromString(scanColour) : Colours.GRAY_10;
 
-          const regionSettings = this._regionMap.get(allPointsROI);
-          if (regionSettings) {
-            regionSettings.subscribe({
-              next: settings => {
-                settings.displaySettings.colour = scanRGBA;
-                this._regionMap.set(allPointsROI, of(settings));
-              },
-            });
-          }
-        }
-      },
-    });
+              const regionSettings$ = this._regionMap.get(allPointsROI);
+              if (regionSettings$) {
+                return regionSettings$.pipe(
+                  map(settings => {
+                    settings.displaySettings.colour = scanRGBA;
+                    this._regionMap.set(allPointsROI, of(settings));
+                    return settings;
+                  })
+                );
+              }
+            }
+            return EMPTY;
+          }),
+          switchMap(settings$ => settings$ || EMPTY)
+        )
+        .subscribe()
+    );
 
     const selectedPointsROI = PredefinedROIID.getSelectedPointsForScan(scanId);
     if (this._regionMap.get(selectedPointsROI) === undefined) {
