@@ -1,4 +1,4 @@
-## 4.65.0 (LATEST)
+## 4.66.0 (04-25-2025)
 
 ### New Features
 - Shows spinner in expression console on code editor page when expression is running
@@ -14,6 +14,7 @@
 - Styling enhancements to expression console (fixes copy button position, overflow states, etc.)
 - Standardizes user icons across the groups page, reduces redundant requests
 - Fixes issue where for some users, the All Points ROI wasn't changing color when changed from the datasets sidebar
+- Misc performance improvements for loading ROIs
 
 ## 4.65.0 (2025-04-10)
 
