@@ -1,3 +1,11 @@
+## 4.67.0 (LATEST)
+
+### New Features
+- Shows locked icon on groups page for non-joinable groups
+
+### Bug Fixes
+- Fixed issue on spectrum chart where selection was still showing up after being cleared 
+
 ## 4.66.0 (04-25-2025)
 
 ### New Features
