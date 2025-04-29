@@ -27,10 +27,13 @@
       </div>
       <div class="content-container">
         <div *ngFor="let group of groupsWithAdminAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            {{ group.name }}
+          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+            </span>
+            <span class="group-name">{{ group.name }}</span>
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
-          </h5>
+          </div>
           <action-button
             color="#BCBCBC"
             *ngIf="canDeleteGroup"
@@ -52,10 +55,13 @@
       </div>
       <div class="content-container">
         <div *ngFor="let group of groupsWithMemberAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            {{ group.name }}
+          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+            </span>
+            <span class="group-name">{{ group.name }}</span>
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
-          </h5>
+          </div>
           <action-button
             color="#BCBCBC"
             *ngIf="canDeleteGroup"
@@ -77,10 +83,13 @@
       </div>
       <div class="content-container">
         <div *ngFor="let group of groupsWithViewerAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            {{ group.name }}
+          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+            </span>
+            <span class="group-name">{{ group.name }}</span>
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
-          </h5>
+          </div>
           <action-button
             color="#BCBCBC"
             *ngIf="canDeleteGroup"
@@ -126,7 +135,7 @@
       <div class="selected-group-card-container">
         <div *ngIf="isSelectedGroupAdmin" class="requested-access">
           <div class="user-header-section">
-            <h2>New Requests</h2>
+            <h2>New Requests ({{ selectedGroupAccessRequestsCount }})</h2>
           </div>
           <div class="empty-requests" *ngIf="selectedGroupAccessRequestsCount === 0">
             <span class="requests-empty">No New Requests ...</span>
@@ -166,7 +175,7 @@
         </div>
 
         <div class="user-header-section">
-          <h2>Team Members</h2>
+          <h2>Team Members ({{ selectedGroupUsers.length }})</h2>
         </div>
         <div class="user-card-container">
           <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card {{ selectedUser?.id === user.id ? 'selected' : '' }}">
@@ -207,7 +216,7 @@
           <span class="requests-empty">No Team Members ...</span>
         </div>
         <div class="user-header-section">
-          <h2>Associated Sub-Groups</h2>
+          <h2>Associated Sub-Groups ({{ selectedGroupSubGroups.length }})</h2>
         </div>
         <div class="user-card-container">
           <div *ngFor="let group of selectedGroupSubGroups; let i = index" class="user-card">

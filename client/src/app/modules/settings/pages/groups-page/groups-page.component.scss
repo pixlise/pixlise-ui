@@ -35,7 +35,7 @@
 
 .user-groups {
   background: var(--gray-90, #222829);
-  min-width: 300px;
+  min-width: 350px;
   height: calc(100vh - 45px);
   display: flex;
   flex-direction: column;
@@ -50,7 +50,7 @@
     .name {
       margin-left: 8px;
 
-      max-width: 200px;
+      max-width: 250px;
       text-overflow: ellipsis;
       text-transform: none;
       overflow: hidden;
@@ -148,7 +148,7 @@
   }
 
   .selected-group {
-    min-width: 300px;
+    min-width: 350px;
     background: var(--gray-90, #222829);
     border-right: 1px solid var(--gray-70, #444c50);
     font-family: "Inter", sans-serif;
@@ -225,6 +225,10 @@
 
       h1 {
         width: 100%;
+        max-width: 300px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: pre;
         color: $clr-gray-50;
         font-size: 16px;
         font-weight: 700;
@@ -380,7 +384,7 @@
     min-height: 48px;
 
     .info {
-      max-width: 200px;
+      max-width: 250px;
       .label {
         font-weight: bold;
         font-size: 12px;
@@ -492,7 +496,7 @@
   }
 }
 
-h5.group-title {
+.group-title {
   position: relative;
   display: flex;
   font-family: "Inter", sans-serif;
@@ -502,6 +506,19 @@ h5.group-title {
   height: 100%;
   padding: 12px 8px;
   padding-left: 16px;
+
+  gap: 4px;
+
+  .locked-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .group-name {
+    display: flex;
+    align-items: center;
+  }
 }
 
 h5 span.request-count {
