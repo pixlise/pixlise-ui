@@ -2,6 +2,7 @@
 
 ### New Features
 - Shows locked icon on groups page for non-joinable groups
+- Adds dynamic tick marks to spectrum chart y axis for log scaling 
 
 ### Bug Fixes
 - Fixed issue on spectrum chart where selection was still showing up after being cleared 
