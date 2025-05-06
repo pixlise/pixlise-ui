@@ -81,13 +81,21 @@ header {
   textarea {
     width: 100%;
     font-family: "Inter", sans-serif;
+    margin-bottom: 8px;
   }
 
   .input-label {
     color: #bec0c2;
     font-size: 12px;
-    margin-bottom: 4px;
+    margin-top: 4px;
     font-family: "Inter", sans-serif;
     font-weight: 400;
+  }
+
+  .auto-roles-container {
+    mat-select {
+      width: calc(100% - 10px) !important;
+      margin: 0;
+    }
   }
 }

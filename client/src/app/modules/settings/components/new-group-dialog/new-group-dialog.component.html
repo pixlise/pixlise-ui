@@ -43,6 +43,22 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <span class="input-label">Group Description</span>
     <textarea type="text" rows="3" [(ngModel)]="groupDescription" placeholder="Group Description ..."></textarea>
+
+    <span
+      class="input-label"
+      #tooltip="matTooltip"
+      [matTooltip]="'Default roles are assigned to users when they join the group. Only Pixlise admins can set default roles.'"
+      >Default Roles</span
+    >
+    <div
+      class="auto-roles-container"
+      #tooltip="matTooltip"
+      [matTooltip]="'Default roles are assigned to users when they join the group. Only Pixlise admins can set default roles.'"
+      [matTooltipDisabled]="isAdmin">
+      <mat-select [disabled]="!isAdmin" multiple [(ngModel)]="defaultRoles" class="role-select" placeholder="No default roles ...">
+        <mat-option *ngFor="let role of allAuth0Roles" [value]="role.id">{{ role.name }}</mat-option>
+      </mat-select>
+    </div>
   </div>
   <div class="gap-separated-horizontal-elements button-container">
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
