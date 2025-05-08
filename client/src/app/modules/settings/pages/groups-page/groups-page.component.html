@@ -2,13 +2,30 @@
   <div class="add-user-role-dialog">
     <h2>Add Role</h2>
     <div class="role-list">
-      <mat-select [(ngModel)]="selectedUserNewRoleId" class="role-select" placeholder="Select Role ...">
-        <mat-option *ngFor="let role of allUserRoles" [value]="role.id" [disabled]="selectedUserRoleIds.includes(role.id)">{{ role.name }} </mat-option>
-      </mat-select>
+      <div class="role-table-container">
+        <table class="role-table">
+          <thead>
+            <tr>
+              <th>Role Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let role of allUserRoles"
+              [class.disabled]="selectedUserRoleIds.includes(role.id)"
+              [class.selected]="selectedUserNewRoleId === role.id"
+              (click)="!selectedUserRoleIds.includes(role.id) && (selectedUserNewRoleId = role.id)">
+              <td>{{ role.name }}</td>
+              <td>{{ role.description }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="button-container">
       <push-button class="close-btn" buttonStyle="outline" (onClick)="onCloseAddUserRoleDialog()">Close</push-button>
-      <push-button class="save-btn" buttonStyle="yellow" (onClick)="onAddUserRole()">Add Role</push-button>
+      <push-button class="save-btn" buttonStyle="yellow" [disabled]="!selectedUserNewRoleId" (onClick)="onAddUserRole()">Add Role</push-button>
     </div>
   </div>
 </ng-template>
