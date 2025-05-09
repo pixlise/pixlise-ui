@@ -2,7 +2,8 @@
 
 ### New Features
 - Shows locked icon on groups page for non-joinable groups
-- Adds dynamic tick marks to spectrum chart y axis for log scaling 
+- Adds dynamic tick marks to spectrum chart y axis for log scaling
+- Show user ID on Add User dialog and group management page to allow lookup/identification in Auth0
 
 ### Bug Fixes
 - Fixed issue on spectrum chart where selection was still showing up after being cleared 

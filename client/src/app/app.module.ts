@@ -14,7 +14,7 @@ import * as Sentry from "@sentry/angular-ivy";
 import { VERSION } from "src/environments/version";
 import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angular/material/dialog";
 import { MaterialModule } from "./modules/material.module";
-import { AuthModule, AuthClientConfig, AuthHttpInterceptor } from "@auth0/auth0-angular";
+import { AuthModule, AuthClientConfig } from "@auth0/auth0-angular";
 import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { NotFoundModule } from "./modules/not-found/not-found.module";
 import { CodeEditorModule } from "./modules/code-editor/code-editor.module";

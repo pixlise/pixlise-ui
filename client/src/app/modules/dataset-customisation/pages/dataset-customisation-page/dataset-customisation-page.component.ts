@@ -18,7 +18,7 @@ import {
   ImageUploadHttpRequest,
 } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanGetReq, ScanTriggerAutoQuantReq } from "src/app/generated-protos/scan-msgs";
+import { ScanGetReq, ScanTriggerJobReq } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
 import { DatasetCustomisationDrawer } from "./dataset-customisation-drawer";
@@ -113,6 +113,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   private _deletedImages = new Set<string>();
 
   private _images: ScanImage[] = [];
+
+  jobs = ["AutoQuant"];
 
   constructor(
     private _dataService: APIDataService,
@@ -751,9 +753,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onRunAutoQuant() {
-    this._dataService.sendScanTriggerAutoQuantRequest(ScanTriggerAutoQuantReq.create({ scanId: this._scanId })).subscribe(() => {
-      alert("Auto-quantification started");
+  onRunJob(name: string) {
+    this._dataService.sendScanTriggerJobRequest(ScanTriggerJobReq.create({ scanId: this._scanId, jobId: name })).subscribe(() => {
+      alert("Job: " + name + " started...");
     });
   }
 
