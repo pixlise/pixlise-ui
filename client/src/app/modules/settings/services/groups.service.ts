@@ -56,6 +56,7 @@ export class GroupsService {
             relationshipToUser: UserGroupRelationship.UGR_ADMIN,
             lastUserJoinedUnixSec: res.group.info?.lastUserJoinedUnixSec || 0,
             joinable: res.group.info?.joinable || false,
+            defaultRoles: [],
           });
           this.groupsChanged$.next();
         }
