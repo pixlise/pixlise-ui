@@ -369,7 +369,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
         if (queryResult && queryResult.values) {
           if (!region) {
             region = queryResult.region;
-          } else if (region != queryResult.region) {
+          } else if (region?.region.id !== queryResult.region?.region.id) {
             const err = `Differing regions returned for table: ${region.region.name} vs: ${queryResult.region?.region.name}`;
             this._snackService.openError(err);
             return new TableData("", "", "", "", [], [], new TableRow(err, [], []));

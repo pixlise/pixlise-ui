@@ -31,28 +31,57 @@ import { Component, Inject, Input, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { UserGroupInfo } from "../../../../generated-protos/user-group";
+import { Auth0UserRole } from "../../../../generated-protos/user";
+import { Subscription } from "rxjs";
+import { UsersService } from "../../services/users.service";
+import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
+import { UserOptionsService } from "../../services/user-options.service";
 
 @Component({
   selector: "app-new-group-dialog",
   templateUrl: "./new-group-dialog.component.html",
   styleUrls: ["./new-group-dialog.component.scss"],
 })
-export class NewGroupDialogComponent {
+export class NewGroupDialogComponent implements OnInit {
+  private _subs: Subscription = new Subscription();
+
   groupName: string = "";
   groupDescription: string = "";
   isExistingGroup: boolean = false;
   joinable: boolean = true;
+  defaultRoles: string[] = [];
+
+  allAuth0Roles: Auth0UserRole[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<NewGroupDialogComponent>,
+    private _usersService: UsersService,
+    private _snackBar: SnackbarService,
+    private _userOptionsService: UserOptionsService,
     @Inject(MAT_DIALOG_DATA) public data: { group?: UserGroupInfo }
   ) {
     if (this.data?.group) {
       this.groupName = this.data.group.name;
       this.groupDescription = this.data.group.description;
       this.joinable = this.data.group.joinable;
+      this.defaultRoles = this.data.group.defaultRoles;
       this.isExistingGroup = true;
     }
+  }
+
+  ngOnInit(): void {
+    this._subs.add(
+      this._usersService.fetchAllUserRoles().subscribe({
+        next: roles => {
+          this.allAuth0Roles = roles;
+          this.allAuth0Roles = this.allAuth0Roles.filter(role => role.name !== "Admin" && !role.name.startsWith("v3-") && role.name !== "Unassigned New User");
+        },
+        error: err => {
+          this._snackBar.openError("Error fetching user roles");
+          console.error(err);
+        },
+      })
+    );
   }
 
   onCancel(): void {
@@ -64,7 +93,12 @@ export class NewGroupDialogComponent {
       groupName: this.groupName,
       groupDescription: this.groupDescription,
       joinable: this.joinable,
+      defaultRoles: this.defaultRoles,
     });
+  }
+
+  get isAdmin(): boolean {
+    return this._userOptionsService.hasFeatureAccess("admin");
   }
 
   get appDomain(): string {

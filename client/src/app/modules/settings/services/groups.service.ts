@@ -10,7 +10,7 @@ import { UserGroupCreateReq, UserGroupCreateResp, UserGroupDeleteReq, UserGroupE
 import { UserGroupAddAdminReq, UserGroupDeleteAdminReq } from "src/app/generated-protos/user-group-admins-msgs";
 import { UserGroupListJoinableReq, UserGroupListReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupJoinSummaryInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
-import { map, Observable, of, ReplaySubject, BehaviorSubject, filter, switchMap } from "rxjs";
+import { map, Observable, ReplaySubject, BehaviorSubject, filter, switchMap } from "rxjs";
 import { UserGroupReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroupIgnoreJoinReq, UserGroupJoinListReq, UserGroupJoinReq } from "src/app/generated-protos/user-group-joining-msgs";
 import { UserOptionsService } from "./user-options.service";
@@ -43,8 +43,8 @@ export class GroupsService {
     }
   }
 
-  createGroup(name: string, description: string, joinable: boolean) {
-    this._dataService.sendUserGroupCreateRequest(UserGroupCreateReq.create({ name, description, joinable })).subscribe({
+  createGroup(name: string, description: string, joinable: boolean, defaultRoles: string[] = []) {
+    this._dataService.sendUserGroupCreateRequest(UserGroupCreateReq.create({ name, description, joinable, defaultRoles })).subscribe({
       next: (res: UserGroupCreateResp) => {
         if (res.group) {
           this.detailedGroups.push(res.group);
@@ -56,7 +56,7 @@ export class GroupsService {
             relationshipToUser: UserGroupRelationship.UGR_ADMIN,
             lastUserJoinedUnixSec: res.group.info?.lastUserJoinedUnixSec || 0,
             joinable: res.group.info?.joinable || false,
-            defaultRoles: [],
+            defaultRoles: res.group.info?.defaultRoles || [],
           });
           this.groupsChanged$.next();
         }
@@ -67,8 +67,8 @@ export class GroupsService {
     });
   }
 
-  editGroupMetadata(groupId: string, name: string, description: string, joinable: boolean) {
-    this._dataService.sendUserGroupEditDetailsRequest(UserGroupEditDetailsReq.create({ groupId, name, description, joinable })).subscribe({
+  editGroupMetadata(groupId: string, name: string, description: string, joinable: boolean, defaultRoles: string[] = []) {
+    this._dataService.sendUserGroupEditDetailsRequest(UserGroupEditDetailsReq.create({ groupId, name, description, joinable, defaultRoles })).subscribe({
       next: res => {
         if (!res.group) {
           this._snackBar.openError(`Group (${name || groupId}) not found`);
@@ -87,6 +87,7 @@ export class GroupsService {
             name,
             description,
             joinable,
+            defaultRoles,
           };
         }
 

@@ -197,13 +197,13 @@ export class GroupsPageComponent implements OnDestroy, OnInit {
     dialogConfig.data = { group };
     const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string; joinable: boolean }) => {
+    dialogRef.afterClosed().subscribe((data: { groupName: string; groupDescription: string; joinable: boolean; defaultRoles: string[] }) => {
       if (!data?.groupName) {
         return;
       }
 
       if (group) {
-        this._groupsService.editGroupMetadata(group.id, data.groupName, data.groupDescription, data.joinable);
+        this._groupsService.editGroupMetadata(group.id, data.groupName, data.groupDescription, data.joinable, data.defaultRoles);
         this._snackBar.openSuccess(`Group "${data.groupName}" updated`);
       } else {
         this.onCreateGroup(data.groupName, data.groupDescription, data.joinable);

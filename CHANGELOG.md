@@ -2,8 +2,11 @@
 
 ### New Features
 - Shows locked icon on groups page for non-joinable groups
-- Adds dynamic tick marks to spectrum chart y axis for log scaling
 - Show user ID on Add User dialog and group management page to allow lookup/identification in Auth0
+- Adds dynamic tick marks to spectrum chart y axis for log scaling 
+- Updates "Add Role" dialog to include role descriptions
+- Adds default roles option to group management page
+  - Admins can now set default roles that users will get when they are added to a group as a member
 
 ### Bug Fixes
 - Fixed issue on spectrum chart where selection was still showing up after being cleared 

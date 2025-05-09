@@ -610,30 +610,76 @@ h5 span.request-count {
 }
 
 .add-user-role-dialog {
-  width: 225px;
+  width: 600px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 16px;
+  background: var(--gray-90, #222829);
 
   h2 {
     text-transform: none;
     font-family: "Inter", sans-serif;
+    color: white;
   }
 
   .role-list {
     display: flex;
     justify-content: center;
-
-    mat-select {
-      width: 200px !important;
-    }
   }
 
   .button-container {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+  }
+
+  .role-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 16px 0;
+    border: 1px solid var(--gray-70, #444c50);
+    border-radius: 4px;
+  }
+
+  .role-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-70, #444c50);
+      color: white;
+    }
+
+    th {
+      background-color: var(--gray-100, #1b1d1e);
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr {
+      cursor: pointer;
+      transition: background-color 0.1s;
+
+      &:hover:not(.disabled):not(.selected) {
+        background-color: var(--gray-80, #293137);
+      }
+
+      &.selected {
+        background-color: var(--gray-70, #444c50);
+      }
+
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: var(--gray-100, #1b1d1e);
+      }
+    }
   }
 }
 
