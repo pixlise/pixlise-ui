@@ -46,7 +46,8 @@ POSSIBILITY OF SUCH DAMAGE.
               [id]="scanItem.id"
               [ownershipSummary]="scanItem.owner || null"
               [type]="scanItemType"></share-ownership-item-button>
-            <push-button (onClick)="onRunAutoQuant()" buttonStyle="outline">Run Auto-Quantification</push-button>
+
+            <push-button *ngFor="let name of jobs" (onClick)="onRunJob(name)" buttonStyle="outline">Run Job: {{name}}</push-button>
           </div>
         </div>
         <div *ngIf="scanId" class="meta-entry column">
