@@ -117,7 +117,7 @@
           </div>
           <div class="group-layers" *ngIf="isModulesSectionOpen">
             <expression-layer
-              *ngFor="let module of modules"
+              *ngFor="let module of modules; trackBy: trackByModuleId"
               [isSelectable]="true"
               [selected]="topModuleIds.includes(module.id)"
               (onSelect)="onSelectModule(module)"
@@ -299,29 +299,30 @@
       <div class="timeout">
         <span class="label">Max Timeout:</span>
         <mat-select [(ngModel)]="expressionTimeoutMs">
-          <mat-option [value]="5000">5 seconds</mat-option>
-          <mat-option [value]="10000">10 seconds</mat-option>
-          <mat-option [value]="30000">30 seconds</mat-option>
-          <mat-option [value]="45000">45 seconds</mat-option>
-          <mat-option [value]="60000">1 minute</mat-option>
-          <mat-option [value]="120000">2 minutes</mat-option>
-          <mat-option [value]="300000">5 minutes</mat-option>
-          <mat-option [value]="600000">10 minutes</mat-option>
+          <mat-option *ngFor="let option of expressionTimeoutMsOptions" [value]="option.value">{{ option.label }}</mat-option>
         </mat-select>
       </div>
     </div>
     <section class="widget-container">
       <widget
-        *ngIf="canMountWidgets && areIdsLoaded()"
+        *ngIf="canMountWidgets && idsLoaded"
         [liveExpression]="liveExpressionConfig"
         [widgetTypes]="previewWidgetTypes"
         [initWidget]="initPreviewWidgetType"
         [widgetLayoutConfig]="previewLayoutConfig">
       </widget>
-      <div *ngIf="!canMountWidgets || !areIdsLoaded()" class="loading-message">
+      <div *ngIf="!canMountWidgets || !idsLoaded" class="loading-message">
         <div class="skeleton-header"></div>
         <div class="skeleton-body">
-          <wait-spinner></wait-spinner>
+          <wait-spinner *ngIf="isTopExpressionLoaded"></wait-spinner>
+          <div *ngIf="!isTopExpressionLoaded" class="invalid-input">
+            <img src="assets/icons/error-triangle-dark.svg" alt="no valid input for expression preview" />
+            <h5>No Valid Input</h5>
+            <h6>
+              Select or create an expression <br />
+              to get started
+            </h6>
+          </div>
         </div>
       </div>
     </section>
@@ -330,6 +331,7 @@
         [scanId]="scanId"
         [expression]="topExpression"
         [evaluatedExpression]="lastRunResult"
+        [loading]="runningExpression"
         [stdout]="stdout"
         [stderr]="stderr"
         (onToggleSolo)="onToggleExpressionConsoleSolo()"

@@ -1,0 +1,18 @@
+.group-icon {
+  display: flex;
+
+  img {
+    border-radius: 4px;
+  }
+}
+
+.icon-abbreviation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: rgb(var(--clr-gray-60));
+}

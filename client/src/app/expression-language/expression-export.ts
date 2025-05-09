@@ -26,7 +26,7 @@ export class ExpressionExporter {
     instrumentConfig: string,
     cachedDataService: APICachedDataService,
     spectrumDataService: SpectrumDataService,
-    energyCalibrationService: EnergyCalibrationService,
+    energyCalibrationService: EnergyCalibrationService
   ): Observable<WidgetExportData> {
     const result: WidgetExportData = { luas: [], mds: [], csvs: [] };
     const querier = new DataQuerier(userId);

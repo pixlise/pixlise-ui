@@ -129,7 +129,7 @@ export class ScanConfigurationItemComponent implements OnDestroy {
   getCalibrationDisplayText(calibrations: ScanCalibrationConfiguration[]): string {
     let text = "";
     calibrations.forEach(calibration => {
-      let detectorCalibration = `${calibration.detector}: (${calibration.eVstart.toFixed(3)}, ${calibration.eVperChannel.toFixed(3)})`;
+      const detectorCalibration = `${calibration.detector}: (${calibration.eVstart.toFixed(3)}, ${calibration.eVperChannel.toFixed(3)})`;
       text += `${detectorCalibration}\n`;
     });
     return text;

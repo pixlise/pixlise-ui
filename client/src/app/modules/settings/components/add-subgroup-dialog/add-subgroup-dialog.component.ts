@@ -29,8 +29,6 @@
 
 import { Component, Inject, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { UsersService } from "../../services/users.service";
-import { UserInfo } from "src/app/generated-protos/user";
 import { MatSort } from "@angular/material/sort";
 import { SelectionModel } from "@angular/cdk/collections";
 import { MatTableDataSource } from "@angular/material/table";

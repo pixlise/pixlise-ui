@@ -37,14 +37,10 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="info">
     <h1>
       Group Access
-      <img class="logo" src="assets/icons/pixlise-square-logo.svg" />
+      <img class="logo" src="assets/icons/pixlise-square-logo.svg" alt="Pixlise Logo" />
     </h1>
-    <h5 class="welcome">
-      Welcome to PIXLISE! You have access to all public datasets produced by the <a class="team-link">NASA PIXL Instrument Team</a>.
-    </h5>
-    <h5 class="description">
-      In order to access datasets from other groups and institutions, please send a request to the appropriate admin from this panel.
-    </h5>
+    <h5 class="welcome">Welcome to PIXLISE! You have access to all public datasets produced by the <a class="team-link">NASA PIXL Instrument Team</a>.</h5>
+    <h5 class="description">In order to access datasets from other groups and institutions, please send a request to the appropriate admin from this panel.</h5>
   </div>
   <div class="search-filter-controls">
     <div class="search-controls">
@@ -52,7 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="search">
         <input type="text" [(ngModel)]="groupSearchString" placeholder="Enter Name ..." />
         <div class="search-icon">
-          <img src="assets/button-icons/search.svg" />
+          <img src="assets/button-icons/search.svg" alt="Search Icon" />
         </div>
       </div>
     </div>
@@ -106,9 +102,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <td mat-cell *matCellDef="let row">
           <span class="admin-container" *ngIf="row.administrators.length > 0">
             <span class="admin" #tooltip="matTooltip" [matTooltip]="row.administrators[0].email">{{ row.administrators[0].name }}</span>
-            <span class="admin-others" *ngIf="row.administrators.length > 1" #tooltip="matTooltip" [matTooltip]="groupAdminTooltips[row.id]"
-              >, ...</span
-            >
+            <span class="admin-others" *ngIf="row.administrators.length > 1" #tooltip="matTooltip" [matTooltip]="groupAdminTooltips[row.id]">, ...</span>
           </span>
         </td>
       </ng-container>

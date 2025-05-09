@@ -229,6 +229,10 @@
       }
 
       .group-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
         switch-button,
         action-button {
           margin-left: auto;
@@ -236,7 +240,7 @@
         }
 
         .group-icon {
-          margin-left: 4px;
+          margin-bottom: 1px;
         }
       }
 

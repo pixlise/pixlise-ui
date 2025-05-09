@@ -44,28 +44,34 @@
 .group-membership-container {
   background: var(--gray-90, #222829);
   border-radius: 8px;
+  width: 350px;
 
   .header {
     display: flex;
-    align-items: center;
+    flex-direction: column;
 
     h1 {
       font-size: 20px;
+      text-transform: none;
+      font-family: "Inter", sans-serif;
     }
 
     .user-info {
       display: flex;
       align-items: center;
-      margin-left: auto;
+      padding: 8px 0;
+      gap: 8px;
 
       h2 {
         margin-right: 4px;
         text-transform: none;
         font-size: 16px;
+        color: white;
+        font-family: "Inter", sans-serif;
       }
 
-      img {
-        width: 24px;
+      user-icon {
+        outline: 1px solid white;
         border-radius: 4px;
       }
     }
@@ -75,6 +81,7 @@
     .description {
       color: var(--gray-30, #bec0c2);
       max-width: 400px;
+      font-family: "Inter", sans-serif;
     }
   }
 
@@ -83,6 +90,10 @@
       display: flex;
       flex-direction: column;
       align-items: flex-start;
+    }
+
+    .role-option {
+      font-family: "Inter", sans-serif;
     }
   }
 }

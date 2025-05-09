@@ -27,22 +27,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { MatDialogRef } from "@angular/material/dialog";
+import { Component, Inject, Input, OnInit } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { UserGroupInfo } from "../../../../generated-protos/user-group";
 
 @Component({
   selector: "app-new-group-dialog",
   templateUrl: "./new-group-dialog.component.html",
   styleUrls: ["./new-group-dialog.component.scss"],
 })
-export class NewGroupDialogComponent implements OnInit {
+export class NewGroupDialogComponent {
   groupName: string = "";
   groupDescription: string = "";
+  isExistingGroup: boolean = false;
+  joinable: boolean = true;
 
-  constructor(public dialogRef: MatDialogRef<NewGroupDialogComponent>) {}
-
-  ngOnInit(): void {}
+  constructor(
+    public dialogRef: MatDialogRef<NewGroupDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { group?: UserGroupInfo }
+  ) {
+    if (this.data?.group) {
+      this.groupName = this.data.group.name;
+      this.groupDescription = this.data.group.description;
+      this.joinable = this.data.group.joinable;
+      this.isExistingGroup = true;
+    }
+  }
 
   onCancel(): void {
     this.dialogRef.close();
@@ -52,6 +63,7 @@ export class NewGroupDialogComponent implements OnInit {
     this.dialogRef.close({
       groupName: this.groupName,
       groupDescription: this.groupDescription,
+      joinable: this.joinable,
     });
   }
 

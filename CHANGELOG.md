@@ -1,11 +1,32 @@
-## 4.66.0 (LATEST)
+## 4.67.0 (LATEST)
 
 ### New Features
+- Shows locked icon on groups page for non-joinable groups
+- Adds dynamic tick marks to spectrum chart y axis for log scaling
 - Show user ID on Add User dialog and group management page to allow lookup/identification in Auth0
 
 ### Bug Fixes
+- Fixed issue on spectrum chart where selection was still showing up after being cleared 
 
-## 4.65.0 (2025-04-11)
+## 4.66.0 (04-25-2025)
+
+### New Features
+- Shows spinner in expression console on code editor page when expression is running
+  - Adds skeleton state for code editor widget so this doesn't show before the expression is loaded
+- Group management page overhaul
+  - Admins can now directly add/remove Auth0 roles from users from within Pixlise
+  - Adds group metadata edit dialog
+  - Buttons, wording, and dialogs have been adjusted to better explain what's happening depending on user account permissions
+
+### Bug Fixes
+- Fixes performance issues on code editor page when switching expressions (max call stack exceeded)
+- Updates code editor time out options to match config options
+- Styling enhancements to expression console (fixes copy button position, overflow states, etc.)
+- Standardizes user icons across the groups page, reduces redundant requests
+- Fixes issue where for some users, the All Points ROI wasn't changing color when changed from the datasets sidebar (browser caching issue)
+- Misc performance improvements (reduces redundant requests for ROIs, etc.)
+
+## 4.65.0 (2025-04-10)
 
 ### New Features
 - Added text box entry for specifying opacity of context image layer visibility

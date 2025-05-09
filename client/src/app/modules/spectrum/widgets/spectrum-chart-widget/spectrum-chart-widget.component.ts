@@ -32,6 +32,7 @@ import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/
 import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { SpectrumExpressionDataSourceImpl } from "../../models/SpectrumRespDataSource";
+import { RGBA } from "../../../../utils/colours";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -329,6 +330,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
         const hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
+        this.selection = selection;
 
         // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
         // updateLines will grab the actual selection data and update the display
@@ -340,9 +342,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           const existingLines = this.mdl.getLineList();
           existingLines.delete(selectionROI);
           this.mdl.setLineList(existingLines);
+          this.mdl.clearDisplayData();
         }
 
-        this.selection = selection;
         this.updateLines();
       })
     );
@@ -364,11 +366,51 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this._subs.add(
       this.toolhost.toolStateChanged$.subscribe(() => {
-        let activeToolId = this.getToolId(this.activeTool);
+        const activeToolId = this.getToolId(this.activeTool);
         if (this.toolhost.activeTool.id !== activeToolId) {
-          let toolName = this.getToolName(this.toolhost.activeTool.id);
+          const toolName = this.getToolName(this.toolhost.activeTool.id);
           this.onToolSelected(toolName);
           this.reDraw();
+        }
+      })
+    );
+
+    // Listen to screen configuration changes
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        let updated = false;
+
+        const scanIds = new Set<string>();
+        for (const line of this.mdl.spectrumLines) {
+          scanIds.add(line.scanId);
+        }
+
+        if (screenConfiguration) {
+          scanIds.forEach(scanId => {
+            if (screenConfiguration?.scanConfigurations?.[scanId]?.colour) {
+              if (this._roiService.displaySettingsMap$.value[scanId]) {
+                const newColour = RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour);
+                if (this._roiService.displaySettingsMap$.value[scanId].colour !== newColour) {
+                  updated = true;
+                }
+
+                this._roiService.displaySettingsMap$.value[scanId].colour = newColour;
+              } else {
+                this._roiService.displaySettingsMap$.value[scanId] = {
+                  colour: RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour),
+                  shape: "circle",
+                };
+
+                updated = true;
+              }
+
+              this._roiService.displaySettingsMap$.next(this._roiService.displaySettingsMap$.value);
+            }
+          });
+        }
+
+        if (updated) {
+          this.updateLines();
         }
       })
     );
@@ -516,7 +558,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   getChangeableToolOptions() {
-    let toolOptions: Record<string, SpectrumToolId> = {
+    const toolOptions: Record<string, SpectrumToolId> = {
       pan: SpectrumToolId.PAN,
       zoom: SpectrumToolId.ZOOM,
       "spectrum-range": SpectrumToolId.RANGE_SELECT,
@@ -525,19 +567,19 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   getToolId(tool: string): SpectrumToolId {
-    let toolOptions = this.getChangeableToolOptions();
+    const toolOptions = this.getChangeableToolOptions();
     return toolOptions[tool] ?? SpectrumToolId.PAN;
   }
 
   getToolName(tool: SpectrumToolId): string {
-    let toolOptions = this.getChangeableToolOptions();
+    const toolOptions = this.getChangeableToolOptions();
     return Object.keys(toolOptions).find(key => toolOptions[key] === tool) ?? "pan";
   }
 
   onToolSelected(tool: string) {
     this.activeTool = tool;
 
-    let toolOptions = this.getChangeableToolOptions();
+    const toolOptions = this.getChangeableToolOptions();
     if (this._widgetControlConfiguration.topToolbar) {
       this._widgetControlConfiguration.topToolbar.forEach(button => {
         if (Object.keys(toolOptions).includes(button.id)) {
@@ -825,7 +867,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._subs.add(
         this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
           if (roi.region.id === PredefinedROIID.getSelectedPointsForScan(roi.region.scanId)) {
-            // Inject the selection data into the ROI
             roi.region.scanEntryIndexesEncoded = Array.from(this.selection?.beamSelection.getSelectedScanEntryPMCs(roi.region.scanId) || []) || [];
           }
 
@@ -851,9 +892,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               })
             ),
           ]).subscribe({
-            next: loadedItems => {
-              const spectrumResp = loadedItems[0] as SpectrumResp;
-              const scanListResp = loadedItems[1] as ScanListResp;
+            next: ([spectrumResp, scanListResp]) => {
               let scanName = roi.region.scanId;
               if (scanListResp.scans.length > 0) {
                 scanName = scanListResp.scans[0].title;
