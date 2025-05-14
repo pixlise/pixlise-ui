@@ -154,18 +154,22 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="image-edit-toolbar">
         <div class="txt-widget-title">Alignment</div>
         <ng-container>
-          <div class="meta-edit">
+          <div
+            class="meta-edit"
+            #tooltip="matTooltip"
+            [matTooltip]="canTransformImage ? '' : 'Alignment info not available for this image. Please select a beam matched image.'"
+            [matTooltipShowDelay]="500">
             <div>Offset:</div>
-            <input [(ngModel)]="xOffset" type="text" placeholder="X" />
+            <input [disabled]="!canTransformImage" [(ngModel)]="xOffset" type="number" step="0.01" placeholder="X" />
             <div>,</div>
-            <input [(ngModel)]="yOffset" type="text" placeholder="Y" />
+            <input [disabled]="!canTransformImage" [(ngModel)]="yOffset" type="number" step="0.01" placeholder="Y" />
             <div>Scale:</div>
-            <input [(ngModel)]="xScale" type="text" placeholder="X" />
+            <input [disabled]="!canTransformImage" [(ngModel)]="xScale" type="number" step="0.01" placeholder="X" />
             <div>,</div>
-            <input [(ngModel)]="yScale" type="text" placeholder="Y" />
-            <push-button (onClick)="onPreviewMeta()" buttonStyle="outline">Preview</push-button>
-            <push-button (onClick)="onResetMeta()" buttonStyle="outline">Reset</push-button>
-            <push-button (onClick)="onApplyMeta()" buttonStyle="yellow">Save Alignment</push-button>
+            <input [disabled]="!canTransformImage" [(ngModel)]="yScale" type="number" step="0.01" placeholder="Y" />
+            <push-button (onClick)="onPreviewMeta()" buttonStyle="outline" [disabled]="!canTransformImage">Preview</push-button>
+            <push-button (onClick)="onResetMeta()" buttonStyle="outline" [disabled]="!canTransformImage">Reset</push-button>
+            <push-button (onClick)="onApplyMeta()" buttonStyle="yellow" [disabled]="!canTransformImage">Save Alignment</push-button>
           </div>
           <div class="display-settings">
             <div class="display-setting-label">Opacity ({{ overlayOpacity * 100 | number: "1.0-0" }}%)</div>

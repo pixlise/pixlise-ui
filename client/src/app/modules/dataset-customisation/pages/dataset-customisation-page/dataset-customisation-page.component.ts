@@ -72,6 +72,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   private _scanId: string = "";
 
+  selectedImage: ScanImage | null = null;
+
   xOffset: string = "";
   yOffset: string = "";
   xScale: string = "";
@@ -505,11 +507,16 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  get canTransformImage(): boolean {
+    return !!this.selectedImage && !!this.selectedImage.matchInfo;
+  }
+
   onSelectImage(imgType: string, img: ScanImage): void {
     // Show this image
     this.mdl.overlayImagePath = img.imagePath;
+    this.selectedImage = img;
 
-    // If this image has alignent info, get it
+    // If this image has alignment info, get it
     if (img.matchInfo) {
       this.setTransformInputs(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
 
@@ -818,6 +825,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   private clearModel() {
     this.mdl.imageName = "";
     this.mdl.setData(new ContextImageModelLoadedData(null, null, new Map<string, ContextImageScanModel>(), null));
+    this.xOffset = "";
+    this.yOffset = "";
+    this.xScale = "";
+    this.yScale = "";
     this.reDraw();
   }
 

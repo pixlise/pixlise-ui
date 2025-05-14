@@ -596,8 +596,8 @@ export class SDSFields {
     public compression: string,
     public producer: string,
     public versionStr: string // .
-    // EXT
-  ) {}
+  ) // EXT
+  {}
 
   static makeFromFileName(name: string): SDSFields | null {
     if (name.length !== 58) {
@@ -1189,7 +1189,11 @@ export function isValidNumber(n: number, allowZero: boolean): boolean {
 }
 
 // Attempting to help with locale issues - if user enters 0.2 vs 0,2 we want to always be reading 0.2
-export function makeValidFloatString(num: string): string {
+export function makeValidFloatString(num: string | number): string {
+  if (typeof num === "number") {
+    return num.toString();
+  }
+
   // Check if there's a , in which case we assume we need to switch that to a .
   if (num.indexOf(",") > -1) {
     return num.replaceAll(".", "").replaceAll(",", ".");
