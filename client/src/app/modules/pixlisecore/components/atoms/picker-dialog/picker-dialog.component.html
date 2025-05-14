@@ -29,44 +29,29 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="picker-dialog-container">
-    <div class="scrollable">
-        <div *ngFor="let item of data.items" class="picker-item" [title]='isEnabled(item) ? "" : disabledTooltip'>
-            <div *ngIf="!item.id" class="txt-dlg-heading">{{item.label}}</div>
-            <ng-container *ngIf="item.id">
-                <two-state-icon-button
-                    [activeIcon]="activeIcon"
-                    [inactiveIcon]="inactiveIcon"
-                    [disabledIcon]="disabledIcon"
-                    [active]="isSelected(item.id)"
-                    [disabled]="!isEnabled(item)"
-                    (onToggle)="onToggleItem(item)">
-                </two-state-icon-button>
-                <span 
-                    class="item-label"
-                    [ngClass]="{'disabled': !isEnabled(item)}"
-                    #tooltip="matTooltip"
-                    [matTooltip]="item.tooltip"
-                    [matTooltipDisabled]="!item.tooltip"
-                >{{item.label}}
-                    <img *ngIf="item.tooltip" class="warning-tooltip" src="assets/icons/error-triangle.svg">
-                </span>
-                <img *ngIf="item.icon" [ngClass]="{'colour-disabled': !isEnabled(item)}" [src]='item.icon'>
-            </ng-container>
-        </div>
+<div class="picker-dialog-container" [style.opacity]="isVisible ? '1' : '0'">
+  <div class="scrollable">
+    <div *ngFor="let item of data.items" class="picker-item" [title]="isEnabled(item) ? '' : disabledTooltip">
+      <div *ngIf="!item.id" class="txt-dlg-heading">{{ item.label }}</div>
+      <ng-container *ngIf="item.id">
+        <two-state-icon-button
+          [activeIcon]="activeIcon"
+          [inactiveIcon]="inactiveIcon"
+          [disabledIcon]="disabledIcon"
+          [active]="isSelected(item.id)"
+          [disabled]="!isEnabled(item)"
+          (onToggle)="onToggleItem(item)">
+        </two-state-icon-button>
+        <span class="item-label" [ngClass]="{ disabled: !isEnabled(item) }" #tooltip="matTooltip" [matTooltip]="item.tooltip" [matTooltipDisabled]="!item.tooltip"
+          >{{ item.label }}
+          <img *ngIf="item.tooltip" class="warning-tooltip" src="assets/icons/error-triangle.svg" alt="Warning" />
+        </span>
+        <img *ngIf="item.icon" [ngClass]="{ 'colour-disabled': !isEnabled(item) }" [src]="item.icon" alt="Icon" />
+      </ng-container>
     </div>
+  </div>
 
-    <push-button
-        *ngIf="showClearButton"
-        buttonStyle="outline"
-        [disabled]="clearButtonDisabled"
-        (onClick)="onClear()">Clear</push-button>
-    <push-button
-        *ngIf="showSelectAllButton"
-        buttonStyle="outline"
-        (onClick)="onSelectAll()">Select All</push-button>
-    <push-button
-        *ngIf="showApplyButton"
-        buttonStyle="yellow"
-        (onClick)="onApply()">Apply</push-button>
+  <push-button *ngIf="showClearButton" buttonStyle="outline" [disabled]="clearButtonDisabled" (onClick)="onClear()">Clear</push-button>
+  <push-button *ngIf="showSelectAllButton" buttonStyle="outline" (onClick)="onSelectAll()">Select All</push-button>
+  <push-button *ngIf="showApplyButton" buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>
 </div>

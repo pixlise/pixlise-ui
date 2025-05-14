@@ -395,19 +395,31 @@ export function Uint8ToString(u8a: Uint8Array) {
   return c.join("");
 }
 
-export function positionDialogNearParent(openerRect: any, ourWindowRect: any): object {
+export function positionDialogNearParent(openerRect: any, ourWindowRect: any, dontCoverOpener: boolean = false): object {
   const gapSizeHalf = 4; // Should be the same as $sz-half from CSS
 
-  const windowPos = new Rect(openerRect.right + gapSizeHalf, openerRect.top - ourWindowRect.height / 2, ourWindowRect.width, ourWindowRect.height);
+  let windowPos;
+  if (dontCoverOpener) {
+    // Try to position below first
+    windowPos = new Rect(openerRect.left, openerRect.bottom + gapSizeHalf, ourWindowRect.width, ourWindowRect.height);
+
+    // If it would go off bottom of screen, position above instead
+    if (windowPos.maxY() > window.innerHeight) {
+      windowPos = new Rect(openerRect.left, openerRect.top - ourWindowRect.height - gapSizeHalf, ourWindowRect.width, ourWindowRect.height);
+    }
+  } else {
+    windowPos = new Rect(openerRect.right + gapSizeHalf, openerRect.top - ourWindowRect.height / 2, ourWindowRect.width, ourWindowRect.height);
+  }
 
   // Adjust so it's always on screen still...
   if (windowPos.x < gapSizeHalf) {
     windowPos.x = gapSizeHalf;
   }
 
-  if (windowPos.maxX() > window.innerWidth) {
-    windowPos.x -= windowPos.maxX() - window.innerWidth + gapSizeHalf;
-  }
+  // Ensure right edge is at least gapSizeHalf from window edge
+  const minX = gapSizeHalf;
+  const maxX = window.innerWidth - ourWindowRect.width - gapSizeHalf;
+  windowPos.x = Math.min(Math.max(windowPos.x, minX), maxX);
 
   if (windowPos.y < gapSizeHalf) {
     windowPos.y = gapSizeHalf;

@@ -30,7 +30,6 @@
 @import "variables.scss";
 @import "atoms.scss";
 
-
 .customisation-container {
   display: flex;
   flex-direction: row;
@@ -155,6 +154,7 @@
         .image-name {
           overflow: hidden;
           text-overflow: ellipsis;
+          white-space: pre;
         }
       }
 
@@ -203,6 +203,11 @@
           align-items: center;
 
           gap: $sz-unit;
+
+          .display-setting-label {
+            font-size: 14px;
+            color: $clr-gray-30;
+          }
         }
       }
 

@@ -42,7 +42,7 @@ import { ObjectType } from "../../../../generated-protos/ownership-access";
 import { rgbBytesToImage } from "src/app/utils/drawing";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
-
+import { ElementRef, ViewChild } from "@angular/core";
 @Component({
   selector: "app-dataset-customisation-page",
   templateUrl: "./dataset-customisation-page.component.html",
@@ -50,6 +50,8 @@ import { CursorId } from "src/app/modules/widget/components/interactive-canvas/c
 })
 export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
+
+  @ViewChild("displayOptionsButton") displayOptionsButton!: ElementRef;
 
   mdl: DatasetCustomisationModel;
   drawer: CanvasDrawer;
@@ -159,7 +161,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         error: err => {
           console.error(`Failed to get default image: ${err}`);
           this.setWait(this.waitGetDefaultImage, false);
-        }
+        },
       })
     );
 
@@ -731,19 +733,19 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       shown.push("Footprint");
     }
 
-    dialogConfig.data = new PickerDialogData(true, false, false, false, items, shown, "", undefined);
+    dialogConfig.data = new PickerDialogData(true, false, false, false, items, shown, "", this.displayOptionsButton);
 
     const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
     dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
       if (ids) {
         // If they are NOT selected, put them in...
-        if (ids.indexOf("Footprint") == -1) {
-          this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
+        if (ids.indexOf("Footprint") === -1) {
+          this.mdl.hideFootprintsForScans = new Set<string>([this.scanId]);
         } else {
           this.mdl.hideFootprintsForScans.clear();
         }
-        if (ids.indexOf("Scan Points") == -1) {
-          this.mdl.hidePointsForScans = new Set<string>(this.scanId);
+        if (ids.indexOf("Scan Points") === -1) {
+          this.mdl.hidePointsForScans = new Set<string>([this.scanId]);
         } else {
           this.mdl.hidePointsForScans.clear();
         }

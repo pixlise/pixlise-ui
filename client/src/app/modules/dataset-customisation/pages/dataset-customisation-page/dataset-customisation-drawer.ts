@@ -52,7 +52,7 @@ export class DatasetCustomisationDrawer extends ContextImageDrawer {
     //drawParams.worldTransform.applyTransform(screenContext);
     // If the overlay image and the image we loaded the context image model for are the same, don't
     // draw the context image!
-    if (mdl.overlayImagePath == mdl.imageName) {
+    if (mdl.overlayImagePath === mdl.imageName) {
       mdl.drawImage = false;
     }
 

@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Inject, OnInit, Output, ViewContainerRef } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Inject, OnInit, Output, ViewContainerRef, AfterViewInit, HostListener } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { Colours } from "src/app/utils/colours";
 import { positionDialogNearParent } from "src/app/utils/utils";
@@ -118,8 +118,9 @@ export class PickerDialogData {
   templateUrl: "./picker-dialog.component.html",
   styleUrls: ["./picker-dialog.component.scss"],
 })
-export class PickerDialogComponent implements OnInit {
+export class PickerDialogComponent implements OnInit, AfterViewInit {
   private _selectedIds: string[] = [];
+  isVisible = false;
 
   @Output() onSelectedIdsChanged = new EventEmitter();
 
@@ -134,6 +135,7 @@ export class PickerDialogComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.isVisible = false;
     if (this.data.multiSelect) {
       this.activeIcon = "assets/button-icons/check-on.svg";
       this.inactiveIcon = "assets/button-icons/check-off.svg";
@@ -143,28 +145,37 @@ export class PickerDialogComponent implements OnInit {
     // This is a bit slow but not likely to have a huge number of items/only happens once anyway
     this._selectedIds = [];
     for (const id of this.data.initialSelectedIds) {
-      let found = false;
-      for (const item of this.data.items) {
-        if (item.id == id) {
-          this._selectedIds.push(id);
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
+      const foundItem = this.data.items.find(item => item.id === id);
+      if (foundItem) {
+        this._selectedIds.push(id);
+      } else {
         console.warn("PickerDialog given selection of: " + id + " which does not exist in item list. Ignored.");
       }
     }
   }
 
   ngAfterViewInit() {
+    this.updateDialogPosition();
+    setTimeout(() => {
+      this.updateDialogPosition();
+      this.isVisible = true;
+    }, 100);
+  }
+
+  // On resize, update the position
+  @HostListener("window:resize", ["$event"])
+  onResize() {
+    this.updateDialogPosition();
+  }
+
+  updateDialogPosition() {
     // Move to be near the element that opened us
     if (this.data.triggerElementRef) {
       if (this.data.triggerElementRef.nativeElement) {
         const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
         const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
 
-        const pos = positionDialogNearParent(openerRect, ourWindowRect);
+        const pos = positionDialogNearParent(openerRect, ourWindowRect, true);
         this.dialogRef.updatePosition(pos);
       }
     }
