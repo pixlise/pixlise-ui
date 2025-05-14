@@ -35,7 +35,7 @@
 
 .user-groups {
   background: var(--gray-90, #222829);
-  min-width: 300px;
+  min-width: 350px;
   height: calc(100vh - 45px);
   display: flex;
   flex-direction: column;
@@ -50,7 +50,7 @@
     .name {
       margin-left: 8px;
 
-      max-width: 200px;
+      max-width: 250px;
       text-overflow: ellipsis;
       text-transform: none;
       overflow: hidden;
@@ -148,7 +148,7 @@
   }
 
   .selected-group {
-    min-width: 300px;
+    min-width: 350px;
     background: var(--gray-90, #222829);
     border-right: 1px solid var(--gray-70, #444c50);
     font-family: "Inter", sans-serif;
@@ -225,6 +225,10 @@
 
       h1 {
         width: 100%;
+        max-width: 300px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: pre;
         color: $clr-gray-50;
         font-size: 16px;
         font-weight: 700;
@@ -380,7 +384,7 @@
     min-height: 48px;
 
     .info {
-      max-width: 200px;
+      max-width: 250px;
       .label {
         font-weight: bold;
         font-size: 12px;
@@ -492,7 +496,7 @@
   }
 }
 
-h5.group-title {
+.group-title {
   position: relative;
   display: flex;
   font-family: "Inter", sans-serif;
@@ -502,6 +506,19 @@ h5.group-title {
   height: 100%;
   padding: 12px 8px;
   padding-left: 16px;
+
+  gap: 4px;
+
+  .locked-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .group-name {
+    display: flex;
+    align-items: center;
+  }
 }
 
 h5 span.request-count {
@@ -593,30 +610,76 @@ h5 span.request-count {
 }
 
 .add-user-role-dialog {
-  width: 225px;
+  width: 600px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 16px;
+  background: var(--gray-90, #222829);
 
   h2 {
     text-transform: none;
     font-family: "Inter", sans-serif;
+    color: white;
   }
 
   .role-list {
     display: flex;
     justify-content: center;
-
-    mat-select {
-      width: 200px !important;
-    }
   }
 
   .button-container {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+  }
+
+  .role-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 16px 0;
+    border: 1px solid var(--gray-70, #444c50);
+    border-radius: 4px;
+  }
+
+  .role-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-70, #444c50);
+      color: white;
+    }
+
+    th {
+      background-color: var(--gray-100, #1b1d1e);
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr {
+      cursor: pointer;
+      transition: background-color 0.1s;
+
+      &:hover:not(.disabled):not(.selected) {
+        background-color: var(--gray-80, #293137);
+      }
+
+      &.selected {
+        background-color: var(--gray-70, #444c50);
+      }
+
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: var(--gray-100, #1b1d1e);
+      }
+    }
   }
 }
 

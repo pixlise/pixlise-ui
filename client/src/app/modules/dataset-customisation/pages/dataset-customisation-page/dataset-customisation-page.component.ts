@@ -18,7 +18,7 @@ import {
   ImageUploadHttpRequest,
 } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanGetReq, ScanTriggerAutoQuantReq } from "src/app/generated-protos/scan-msgs";
+import { ScanGetReq, ScanTriggerJobReq } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
 import { DatasetCustomisationDrawer } from "./dataset-customisation-drawer";
@@ -42,7 +42,7 @@ import { ObjectType } from "../../../../generated-protos/ownership-access";
 import { rgbBytesToImage } from "src/app/utils/drawing";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
-
+import { ElementRef, ViewChild } from "@angular/core";
 @Component({
   selector: "app-dataset-customisation-page",
   templateUrl: "./dataset-customisation-page.component.html",
@@ -50,6 +50,8 @@ import { CursorId } from "src/app/modules/widget/components/interactive-canvas/c
 })
 export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
+
+  @ViewChild("displayOptionsButton") displayOptionsButton!: ElementRef;
 
   mdl: DatasetCustomisationModel;
   drawer: CanvasDrawer;
@@ -69,6 +71,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   downlinkedImages: ScanImage[] = [];
 
   private _scanId: string = "";
+
+  selectedImage: ScanImage | null = null;
 
   xOffset: string = "";
   yOffset: string = "";
@@ -114,6 +118,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   private _images: ScanImage[] = [];
 
+  jobs = ["AutoQuant"];
+
   constructor(
     private _dataService: APIDataService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -157,7 +163,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         error: err => {
           console.error(`Failed to get default image: ${err}`);
           this.setWait(this.waitGetDefaultImage, false);
-        }
+        },
       })
     );
 
@@ -501,11 +507,16 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  get canTransformImage(): boolean {
+    return !!this.selectedImage && !!this.selectedImage.matchInfo;
+  }
+
   onSelectImage(imgType: string, img: ScanImage): void {
     // Show this image
     this.mdl.overlayImagePath = img.imagePath;
+    this.selectedImage = img;
 
-    // If this image has alignent info, get it
+    // If this image has alignment info, get it
     if (img.matchInfo) {
       this.setTransformInputs(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
 
@@ -729,19 +740,19 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       shown.push("Footprint");
     }
 
-    dialogConfig.data = new PickerDialogData(true, false, false, false, items, shown, "", undefined);
+    dialogConfig.data = new PickerDialogData(true, false, false, false, items, shown, "", this.displayOptionsButton);
 
     const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
     dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
       if (ids) {
         // If they are NOT selected, put them in...
-        if (ids.indexOf("Footprint") == -1) {
-          this.mdl.hideFootprintsForScans = new Set<string>(this.scanId);
+        if (ids.indexOf("Footprint") === -1) {
+          this.mdl.hideFootprintsForScans = new Set<string>([this.scanId]);
         } else {
           this.mdl.hideFootprintsForScans.clear();
         }
-        if (ids.indexOf("Scan Points") == -1) {
-          this.mdl.hidePointsForScans = new Set<string>(this.scanId);
+        if (ids.indexOf("Scan Points") === -1) {
+          this.mdl.hidePointsForScans = new Set<string>([this.scanId]);
         } else {
           this.mdl.hidePointsForScans.clear();
         }
@@ -751,9 +762,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onRunAutoQuant() {
-    this._dataService.sendScanTriggerAutoQuantRequest(ScanTriggerAutoQuantReq.create({ scanId: this._scanId })).subscribe(() => {
-      alert("Auto-quantification started");
+  onRunJob(name: string) {
+    this._dataService.sendScanTriggerJobRequest(ScanTriggerJobReq.create({ scanId: this._scanId, jobId: name })).subscribe(() => {
+      alert("Job: " + name + " started...");
     });
   }
 
@@ -814,6 +825,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   private clearModel() {
     this.mdl.imageName = "";
     this.mdl.setData(new ContextImageModelLoadedData(null, null, new Map<string, ContextImageScanModel>(), null));
+    this.xOffset = "";
+    this.yOffset = "";
+    this.xScale = "";
+    this.yScale = "";
     this.reDraw();
   }
 

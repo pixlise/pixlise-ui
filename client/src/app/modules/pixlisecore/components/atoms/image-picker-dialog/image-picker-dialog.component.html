@@ -45,30 +45,32 @@ POSSIBILITY OF SUCH DAMAGE.
       <div
         class="image-option"
         class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
-        *ngFor="let image of filteredImageChoices; let i = index;"
-        (click)="onSelectImage(image)">
-        <div
-        [id]="'img_'+i"
-          class="image-type-tag"
-          class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
-        >{{image.imgType}}</div>
+        *ngFor="let image of filteredImageChoices; let i = index"
+        (click)="onSelectImage(image)"
+        (keydown)="onSelectImage(image)"
+        (keyup)="onSelectImage(image)"
+        (keypress)="onSelectImage(image)"
+        tabindex="0">
+        <div [id]="'img_' + i" class="image-type-tag" class="{{ image.path === selectedImagePath ? 'selected' : '' }}">{{ image.imgType }}</div>
         <div class="preview-image">
           <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
           <img
             *ngIf="image.url !== 'loading'"
             class="{{ image.url === 'error' ? 'error' : '' }}"
-            [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url" />
+            [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url"
+            [alt]="image.name" />
         </div>
         <div class="image-option-content">
           <h5 class="name" #tooltip="matTooltip" [matTooltip]="image.name" [matTooltipShowDelay]="200"><b>Image: </b>{{ image.name }}</h5>
           <h5>
             <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b>{{ image.scanIds.join(", ") }}
           </h5>
-          <h5 *ngIf="image.imgType === 'MCC' && image.imagePMC >= 0">
-            <b>Image PMC: </b>{{ image.imagePMC }}
-          </h5>
+          <h5 *ngIf="image.imgType === 'MCC' && image.imagePMC >= 0"><b>Image PMC: </b>{{ image.imagePMC }}</h5>
           <h5 class="mars-viewer" *ngIf="image.marsViewerURL">
-            <b>Mars Viewer: </b><a [href]="image.marsViewerURL" target="_blank" rel="noopener noreferrer"><img src="assets/button-icons/open-external.svg" /></a>
+            <b>Mars Viewer: </b
+            ><a [href]="image.marsViewerURL" target="_blank" rel="noopener noreferrer"
+              ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
+            /></a>
           </h5>
         </div>
         <div class="selection">
@@ -82,16 +84,21 @@ POSSIBILITY OF SUCH DAMAGE.
         <img
           *ngIf="selectedChoice?.url !== 'loading'"
           class="{{ selectedChoice?.url === 'error' ? 'error' : '' }}"
-          [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url" />
+          [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url"
+          [alt]="selectedChoice?.name" />
       </div>
       <div class="image-option-content" *ngIf="selectedChoice">
-        <h5 class="name"><b>{{ selectedChoice?.name }}</b></h5>
+        <h5 class="name">
+          <b>{{ selectedChoice?.name }}</b>
+        </h5>
         <!-- <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
           <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
         </h5> -->
         <h5 class="mars-viewer" *ngIf="selectedChoice.marsViewerURL">
           <b>Mars Viewer: </b
-          ><a [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"><img src="assets/button-icons/open-external.svg" /></a>
+          ><a [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"
+            ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
+          /></a>
         </h5>
       </div>
       <div class="details-container">

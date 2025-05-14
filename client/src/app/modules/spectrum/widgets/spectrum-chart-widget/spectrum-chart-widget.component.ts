@@ -330,6 +330,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
         const hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
+        this.selection = selection;
 
         // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
         // updateLines will grab the actual selection data and update the display
@@ -341,9 +342,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           const existingLines = this.mdl.getLineList();
           existingLines.delete(selectionROI);
           this.mdl.setLineList(existingLines);
+          this.mdl.clearDisplayData();
         }
 
-        this.selection = selection;
         this.updateLines();
       })
     );
@@ -866,7 +867,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._subs.add(
         this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
           if (roi.region.id === PredefinedROIID.getSelectedPointsForScan(roi.region.scanId)) {
-            // Inject the selection data into the ROI
             roi.region.scanEntryIndexesEncoded = Array.from(this.selection?.beamSelection.getSelectedScanEntryPMCs(roi.region.scanId) || []) || [];
           }
 

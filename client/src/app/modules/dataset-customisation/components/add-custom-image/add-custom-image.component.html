@@ -30,37 +30,44 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dlg">
-    <div class="card-toolbar card-toolbar-shadow">
-        <div class="txt-widget-title">{{title}}</div>
-    </div>
+  <div class="card-toolbar card-toolbar-shadow">
+    <div class="txt-widget-title">{{ title }}</div>
+  </div>
 
-    <div *ngIf="params.allowMatched" class="meta-fields">
-        <div class="row">
-            <span>Matched image</span>
-            <image-picker
-                [scanIds]="[params.scanIdForMatching]"
-                [includeHideOption]="false"
-                [onlyInstrumentImages]="true"
-                (selectedImage)="onChangeAlignToImage($event)"></image-picker>
-        </div>
+  <div *ngIf="params.allowMatched" class="meta-fields">
+    <div class="row">
+      <span>Matched MCC image</span>
+      <image-picker
+        [scanIds]="[params.scanIdForMatching]"
+        [includeHideOption]="false"
+        [onlyInstrumentImages]="true"
+        [noAssociatedScreenConfiguration]="true"
+        [preventDatasetChange]="true"
+        [mccOnly]="true"
+        (selectedImage)="onChangeAlignToImage($event)"></image-picker>
     </div>
+  </div>
 
-    <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
-        <ngx-dropzone-label>
-            <div>
-                <h2>Drop image to upload</h2>
-            </div>
-        </ngx-dropzone-label>
-        <ngx-dropzone-preview
-            *ngFor="let f of droppedFiles"
-            [removable]="true"
-            (removed)="onRemoveDroppedFile(f)">
-            <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
-        </ngx-dropzone-preview>
-    </div>
+  <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+    <ngx-dropzone-label>
+      <div class="dropzone-label-container">
+        <h2>Drop image to upload</h2>
+        <p class="dropzone-info-label">
+          *.tif images must follow the iSDS naming convention and have 4 channels (RGBU).<br />
+          Use .png or .jpg for other reference images.
+        </p>
+      </div>
+    </ngx-dropzone-label>
+    <ngx-dropzone-preview *ngFor="let f of droppedFiles" [removable]="true" (removed)="onRemoveDroppedFile(f)">
+      <ngx-dropzone-label
+        ><div class="filename">{{ f.name }}</div>
+        <div class="filetype">({{ f.type }})</div></ngx-dropzone-label
+      >
+    </ngx-dropzone-preview>
+  </div>
 
-    <div class="button-container">
-        <push-button buttonStyle='outline' (onClick)="onCancel()">Cancel</push-button>
-        <push-button buttonStyle="yellow" (onClick)="onOK()">Add</push-button>
-    </div>
+  <div class="button-container">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onOK()">Add</push-button>
+  </div>
 </div>

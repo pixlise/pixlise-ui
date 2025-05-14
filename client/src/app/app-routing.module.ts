@@ -32,7 +32,6 @@ import { RouterModule, Routes } from "@angular/router";
 
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
 import { AuthenticateComponent } from "./modules/pixlisecore/components/pages/authenticate/authenticate.component";
-import { AuthGuard } from "@auth0/auth0-angular";
 import { environment } from "src/environments/environment";
 import { MagicLinkComponent } from "./modules/pixlisecore/components/pages/magiclink/magiclink.component";
 import { CustomAuthGuard } from "./services/custom-auth-guard.service";

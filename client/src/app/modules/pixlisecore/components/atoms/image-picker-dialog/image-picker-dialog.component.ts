@@ -66,7 +66,10 @@ export class ImagePickerDialogData {
     public selectedImageDetails: string = "",
     public defaultScanId?: string,
     public multipleSelection?: boolean,
-    public selectedPaths?: string[] // Only used if multipleSelection is true
+    public selectedPaths?: string[], // Only used if multipleSelection is true
+    public noAssociatedScreenConfiguration?: boolean,
+    public preventDatasetChange?: boolean,
+    public mccOnly?: boolean
   ) {}
 }
 
@@ -142,7 +145,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = scans;
-        if (this._analysisLayoutService.activeScreenConfiguration$.value) {
+        if (this._analysisLayoutService.activeScreenConfiguration$.value && !this.data.noAssociatedScreenConfiguration) {
           this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
           if (this.configuredScans && (!this.data.scanIds || this.data.scanIds.length === 0)) {
             if (!this.filterScanId) {
@@ -150,7 +153,12 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
             }
           }
         } else {
-          this.configuredScans = scans;
+          if (this.data.preventDatasetChange) {
+            // Only show the current scan
+            this.configuredScans = scans.filter(scan => scan.id === this.filterScanId);
+          } else {
+            this.configuredScans = scans;
+          }
         }
       })
     );
@@ -185,7 +193,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   }
 
   private processImages(images: ScanImage[]): void {
-    let loadedImageChoiceIds: Set<string> = new Set<string>();
+    const loadedImageChoiceIds: Set<string> = new Set<string>();
     this.imageChoices.forEach(imgChoice => {
       loadedImageChoiceIds.add(imgChoice.path);
     });
@@ -201,7 +209,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
           }
 
           if (img.associatedScanIds.includes(this.filterScanId)) {
-            if (!this.filteredImageChoices.find(imgChoice => imgChoice.path === img.imagePath)) {
+            if (!this.filteredImageChoices.find(imgChoice => imgChoice.path === img.imagePath) && (!this.data.mccOnly || imageChoice.imgType === "MCC")) {
               this.filteredImageChoices.push(imageChoice);
               this.sortFilteredImages();
               this.scrollToSelectedImage();
@@ -300,6 +308,10 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   set filterScanId(scanId: string) {
     this._filterScanId = scanId;
     this.filteredImageChoices = this.imageChoices.filter(img => img.scanIds.includes(scanId));
+    if (this.data.mccOnly) {
+      this.filteredImageChoices = this.filteredImageChoices.filter(img => img.imgType === "MCC");
+    }
+
     this.sortFilteredImages();
 
     if (this.filteredImageChoices.length === 0) {

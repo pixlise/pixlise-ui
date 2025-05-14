@@ -306,10 +306,14 @@ export class LogarithmicChartAxis extends ChartAxis {
       valueEnd = this.maxValue * 2;
     }
 
-    let roundedValueStart = Math.floor(valueStart);
-    let roundedValueEnd = Math.ceil(valueEnd);
+    const scale = this.getScale();
+    const minPixelsBetweenTicks = 100; // constant for desired density, adjust as needed
+    const rawTickCount = Math.abs(endPx - startPx) / (minPixelsBetweenTicks / scale);
+    const clampedTickCount = Math.max(5, Math.min(10, rawTickCount));
+    const spacing = niceNum((valueEnd - valueStart) / clampedTickCount);
 
-    const spacing = 1;
+    let roundedValueStart = Math.ceil(valueStart / spacing) * spacing;
+    let roundedValueEnd = Math.ceil(valueEnd / spacing) * spacing;
 
     if (roundedValueEnd < roundedValueStart) {
       const tmp = roundedValueEnd;
@@ -322,7 +326,19 @@ export class LogarithmicChartAxis extends ChartAxis {
     for (let p = roundedValueStart; p <= roundedValueEnd; p += spacing) {
       if (p >= valueStart) {
         // don't draw below the axis
-        const v = Math.pow(10, p);
+        let v = Math.pow(10, p);
+
+        // Calculate rounding factor based on order of magnitude
+        const magnitude = Math.floor(p);
+        if (p < 0) {
+          const scale = Math.pow(10, -magnitude + 1);
+          v = Math.floor(v * scale) / scale;
+        } else if (p > 0) {
+          const scale = Math.pow(10, magnitude - 1);
+          v = Math.floor(v / scale) * scale;
+        } else {
+          v = Math.floor(v);
+        }
         const px = this.valueToCanvas(v);
 
         this._ticks.push(new ChartAxisTick(v.toLocaleString(), px));

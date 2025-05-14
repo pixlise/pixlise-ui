@@ -2,13 +2,30 @@
   <div class="add-user-role-dialog">
     <h2>Add Role</h2>
     <div class="role-list">
-      <mat-select [(ngModel)]="selectedUserNewRoleId" class="role-select" placeholder="Select Role ...">
-        <mat-option *ngFor="let role of allUserRoles" [value]="role.id" [disabled]="selectedUserRoleIds.includes(role.id)">{{ role.name }} </mat-option>
-      </mat-select>
+      <div class="role-table-container">
+        <table class="role-table">
+          <thead>
+            <tr>
+              <th>Role Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let role of allUserRoles"
+              [class.disabled]="selectedUserRoleIds.includes(role.id)"
+              [class.selected]="selectedUserNewRoleId === role.id"
+              (click)="!selectedUserRoleIds.includes(role.id) && (selectedUserNewRoleId = role.id)">
+              <td>{{ role.name }}</td>
+              <td>{{ role.description }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="button-container">
       <push-button class="close-btn" buttonStyle="outline" (onClick)="onCloseAddUserRoleDialog()">Close</push-button>
-      <push-button class="save-btn" buttonStyle="yellow" (onClick)="onAddUserRole()">Add Role</push-button>
+      <push-button class="save-btn" buttonStyle="yellow" [disabled]="!selectedUserNewRoleId" (onClick)="onAddUserRole()">Add Role</push-button>
     </div>
   </div>
 </ng-template>
@@ -27,10 +44,13 @@
       </div>
       <div class="content-container">
         <div *ngFor="let group of groupsWithAdminAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            {{ group.name }}
+          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+            </span>
+            <span class="group-name">{{ group.name }}</span>
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
-          </h5>
+          </div>
           <action-button
             color="#BCBCBC"
             *ngIf="canDeleteGroup"
@@ -52,10 +72,13 @@
       </div>
       <div class="content-container">
         <div *ngFor="let group of groupsWithMemberAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            {{ group.name }}
+          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+            </span>
+            <span class="group-name">{{ group.name }}</span>
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
-          </h5>
+          </div>
           <action-button
             color="#BCBCBC"
             *ngIf="canDeleteGroup"
@@ -77,10 +100,13 @@
       </div>
       <div class="content-container">
         <div *ngFor="let group of groupsWithViewerAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <h5 class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            {{ group.name }}
+          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+            </span>
+            <span class="group-name">{{ group.name }}</span>
             <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
-          </h5>
+          </div>
           <action-button
             color="#BCBCBC"
             *ngIf="canDeleteGroup"
@@ -126,7 +152,7 @@
       <div class="selected-group-card-container">
         <div *ngIf="isSelectedGroupAdmin" class="requested-access">
           <div class="user-header-section">
-            <h2>New Requests</h2>
+            <h2>New Requests ({{ selectedGroupAccessRequestsCount }})</h2>
           </div>
           <div class="empty-requests" *ngIf="selectedGroupAccessRequestsCount === 0">
             <span class="requests-empty">No New Requests ...</span>
@@ -147,7 +173,10 @@
                   tabindex="0"
                   (keydown)="request.details ? onSelectUser(request.details) : null">
                   <span class="info name">
-                    <h3>{{ request.details?.name || request.details?.id }}</h3>
+                    <h3
+                      #tooltip="matTooltip"
+                      [matTooltip]="'Auth0 User Id: ' + (request.details?.id || 'Not available')"
+                      [matTooltipShowDelay]="500">{{ request.details?.name || request.details?.id }}</h3>
                   </span>
                   <span class="info email">
                     <h3>{{ request.details?.email }}</h3>
@@ -166,7 +195,7 @@
         </div>
 
         <div class="user-header-section">
-          <h2>Team Members</h2>
+          <h2>Team Members ({{ selectedGroupUsers.length }})</h2>
         </div>
         <div class="user-card-container">
           <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card {{ selectedUser?.id === user.id ? 'selected' : '' }}">
@@ -175,7 +204,10 @@
             </div>
             <div class="details" (click)="onSelectUser(user)" tabindex="0" (keydown)="onSelectUser(user)">
               <span class="info name">
-                <h3>{{ user.name || user.id }}</h3>
+                <h3
+                  #tooltip="matTooltip"
+                  [matTooltip]="'Auth0 User Id: ' + (user?.id || 'Not available')"
+                  [matTooltipShowDelay]="500">{{ user.name || user.id }}</h3>
               </span>
               <span class="info email">
                 <h3>{{ user.email }}</h3>
@@ -207,7 +239,7 @@
           <span class="requests-empty">No Team Members ...</span>
         </div>
         <div class="user-header-section">
-          <h2>Associated Sub-Groups</h2>
+          <h2>Associated Sub-Groups ({{ selectedGroupSubGroups.length }})</h2>
         </div>
         <div class="user-card-container">
           <div *ngFor="let group of selectedGroupSubGroups; let i = index" class="user-card">
@@ -216,7 +248,10 @@
             </div>
             <div class="details" (click)="onSelectGroup(group)" tabindex="0" (keydown)="onSelectGroup(group)">
               <span class="info name">
-                <h3>{{ group.name || group.id }}</h3>
+                <h3
+                  #tooltip="matTooltip"
+                  [matTooltip]="'Group Id: ' + group.id"
+                  [matTooltipShowDelay]="500">{{ group.name || group.id }}</h3>
               </span>
               <span class="info email">
                 <h3>{{ group.description }}</h3>
@@ -265,7 +300,10 @@
         <div class="details">
           <span class="info name">
             <span class="label">Name</span>
-            <h3>{{ selectedUser?.name || selectedUser?.id }}</h3>
+            <h3
+              #tooltip="matTooltip"
+              [matTooltip]="'Auth0 User Id: ' + (selectedUser?.id || 'Not available')"
+              [matTooltipShowDelay]="500">{{ selectedUser?.name || selectedUser?.id }}</h3>
           </span>
           <span class="info email">
             <span class="label">Email</span>

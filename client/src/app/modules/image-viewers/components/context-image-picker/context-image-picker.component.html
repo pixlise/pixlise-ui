@@ -29,10 +29,17 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="dropdown-line clickable" title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
+<div
+  class="dropdown-line clickable"
+  title="{{ contextImageItemShowingTooltip }}"
+  (click)="onImagePicker()"
+  (keydown)="onImagePicker()"
+  (keyup)="onImagePicker()"
+  (keypress)="onImagePicker()"
+  tabindex="0">
   <wait-spinner *ngIf="loading"></wait-spinner>
-  <div *ngIf="errorText.length > 0" class="error">ERROR: {{errorText}}</div>
-  <img *ngIf="showWarning" class="warn" src="assets/icons/error-triangle.svg">
+  <div *ngIf="errorText.length > 0" class="error">ERROR: {{ errorText }}</div>
+  <img *ngIf="showWarning" class="warn" src="assets/icons/error-triangle.svg" alt="Error" />
   <div *ngIf="errorText.length <= 0" class="txt">{{ currentFileName }}</div>
   <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false" aria-hidden="true">
     <path class="downarrow" d="M7 10l5 5 5-5z"></path>
