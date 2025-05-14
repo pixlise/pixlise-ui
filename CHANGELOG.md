@@ -1,4 +1,4 @@
-## 4.67.0 (LATEST)
+## 4.67.0 (05-14-2025)
 
 ### New Features
 - Shows locked icon on groups page for non-joinable groups
@@ -7,9 +7,12 @@
 - Updates "Add Role" dialog to include role descriptions
 - Adds default roles option to group management page
   - Admins can now set default roles that users will get when they are added to a group as a member
+- Adds descriptive label for image upload on dataset customisation page and filters alignable image options to MCC images
 
 ### Bug Fixes
 - Fixed issue on spectrum chart where selection was still showing up after being cleared 
+- Adds better error handling to image uploading in dataset customisation page
+- Disables image alignment controls for non-aligned images
 
 ## 4.66.0 (04-25-2025)
 
