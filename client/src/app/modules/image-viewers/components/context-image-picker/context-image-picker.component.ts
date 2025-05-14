@@ -50,8 +50,8 @@ export class ContextImageItem {
     public hasBeamData: boolean,
     public beamIJIndex: number, // -1=default context image beam ij's, 0+ indexes into beam.context_locations[]
     public imageDrawTransform: ContextImageItemTransform | null // public rgbuSourceImage: RGBUImage, // eg if image was a floating point TIF
-  ) // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
-  {}
+    // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
+  ) {}
 }
 
 // TODO: Should probably generalise this and make it into a reusable drop-list since the reason for writing
@@ -168,6 +168,9 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   @Input() currentImage: string = "";
   @Input() includeHideOption: boolean = true;
   @Input() onlyInstrumentImages: boolean = false;
+  @Input() noAssociatedScreenConfiguration: boolean = false;
+  @Input() preventDatasetChange: boolean = false;
+  @Input() mccOnly: boolean = false;
 
   @Output() selectedImage = new EventEmitter<ImageSelection>();
 
@@ -289,6 +292,9 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       selectedImagePath: this.contextImagePath,
       liveUpdate: false,
       selectedImageDetails: "", // this.contextImageItemShowingTooltip,
+      noAssociatedScreenConfiguration: this.noAssociatedScreenConfiguration,
+      preventDatasetChange: this.preventDatasetChange,
+      mccOnly: this.mccOnly,
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
