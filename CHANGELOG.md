@@ -13,6 +13,7 @@
 - Fixed issue on spectrum chart where selection was still showing up after being cleared 
 - Adds better error handling to image uploading in dataset customisation page
 - Disables image alignment controls for non-aligned images
+- Fixes quantification table bug where data for All Points ROI was not being displayed correctly
 
 ## 4.66.0 (04-25-2025)
 
