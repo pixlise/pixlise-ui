@@ -728,6 +728,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this.filteredScans = filterScans(this._searchString, instr, this.filterTags, this.scans);
     this.filteredScans = sortScans(this.filteredScans);
+
+    this.searchResultSummary = this.filteredScans.length + " items";
   }
 
   get selectedInstrumentCount(): number {
@@ -1004,12 +1006,13 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.scans = [];
     this.errorString = "Fetching Scans...";
 
+    /* Search string went unused?
     let searchString = this._filter.toSearchString();
 
     // Finally, add the title text search string
     if (this._searchString.length > 0) {
       searchString = DatasetFilter.appendTerm(searchString, "title=" + this._searchString);
-    }
+    }*/
 
     // TODO: we don't actually use the filtering stuff, search string needs to change for API
     // because we have multiple fields we can specify now...
@@ -1023,8 +1026,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.filterScans();
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
-        } else {
-          this.searchResultSummary = this.filteredScans.length + " items";
         }
 
         const scanIds = this.scans.map(item => item.id);
