@@ -1,3 +1,10 @@
+## 4.68.0 (Latest)
+
+### New Features
+- Added readMap() function available in Lua expression language. This allows reading a map that was uploaded from the PIXLISE python client library using the saveMapData() python function. This allows code to be written external to PIXLISE that can access any datasets required to form a map of data, which can now be displayed in PIXLISE. The name of the maps must match (between the one saved in python and the one referenced in the PIXLISE expression language call to readMap) and if displaying on a binary plot you will likely want 2 maps - one for each axis.
+  - NOTE: PMCs in this case can just be a number counting up from 0 to however many points are in the map.
+  - NOTE2: If using multiple maps together (like in the case of binary map X and Y axis) ensure that the maps are the same size otherwise an error will be shown.
+
 ## 4.67.0 (05-14-2025)
 
 ### New Features
