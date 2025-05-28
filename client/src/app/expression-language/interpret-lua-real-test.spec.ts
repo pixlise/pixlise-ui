@@ -160,10 +160,7 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
       quantBin,
       modules,
       "readMap",
-      [
-        "spectrum",
-        "diffraction",
-      ],
+      [],
       done
     );
   });
@@ -638,7 +635,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
       return Promise.reject("no map named: " + key);
     }
 
-    return pmcValues;
+    return Promise.resolve(PMCDataValues.makeWithValues(pmcValues));
   });
 
   return ds as InterpreterDataSource;
