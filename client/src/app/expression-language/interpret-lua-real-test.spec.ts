@@ -151,6 +151,22 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
       done
     );
   });
+
+  it("should run readMap", done => {
+    testExpression(
+      scanId,
+      datasetBin,
+      diffractionInfoRead,
+      quantBin,
+      modules,
+      "readMap",
+      [
+        "spectrum",
+        "diffraction",
+      ],
+      done
+    );
+  });
 });
 
 function testExpression(
@@ -328,7 +344,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
     [
       "readElement",
       "readElementSum",
-      "readMap",
+      "readQuantMap",
       "readSpectrum",
       "readSpectrumDifferences",
       "readDiffractionData",
@@ -344,6 +360,8 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
 
       "getMemoised",
       "memoise",
+      "readMap",
+
       ...mockFuncs,
     ],
     []
@@ -380,7 +398,7 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
     return Promise.reject("readElementSum not implemented");
   });
 
-  ds.readMap.and.callFake((args: any[]) => {
+  ds.readQuantMap.and.callFake((args: any[]) => {
     const dataLabel = args[0] as string;
     const detectorId = args[1] as string;
 
@@ -605,6 +623,22 @@ function makeDataSource(scanId: string, datasetBin: Experiment, allDiffractionPe
 
   ds.memoise.and.callFake((args: any[]) => {
     return Promise.reject("memoise not implemented");
+  });
+
+  ds.readMap.and.callFake((args: any[]) => {
+    const key = args[0] as string;
+    const pmcValues: PMCDataValue[] = [];
+
+    if (key == "one") {
+      pmcValues.push(new PMCDataValue(3, 5.11));
+      pmcValues.push(new PMCDataValue(5, 31.14));
+      pmcValues.push(new PMCDataValue(6, 0.12));
+      pmcValues.push(new PMCDataValue(7, 55.8));
+    } else {
+      return Promise.reject("no map named: " + key);
+    }
+
+    return pmcValues;
   });
 
   return ds as InterpreterDataSource;

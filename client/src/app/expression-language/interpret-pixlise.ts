@@ -325,7 +325,7 @@ export class PixliseDataQuerier {
     } else if (callee == "pow") {
       return this.pow(args);
     } else if (callee == "data") {
-      const r = await this._dataSource.readMap(args);
+      const r = await this._dataSource.readQuantMap(args);
       // If we didn't die so far, it must be valid
       if (args && args.length == 2) {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(args[0], args[1]));

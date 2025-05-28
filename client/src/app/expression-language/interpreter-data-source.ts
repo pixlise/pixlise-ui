@@ -40,6 +40,7 @@ import { MinMax } from "../models/BasicTypes";
 import { catchError, lastValueFrom, map, of } from "rxjs";
 import { MemoisedItem } from "../generated-protos/memoisation";
 import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
+import { ClientMap } from "../generated-protos/scan";
 
 export class InterpreterDataSource {
   constructor(
@@ -174,7 +175,7 @@ export class InterpreterDataSource {
   }
 
   // Expects: chisq, A for example
-  public async readMap(argList: any[]): Promise<PMCDataValues> {
+  public async readQuantMap(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "string") {
       throw new Error("data() expression expects 2 parameters: quantified column name, detector Id. Received: " + argList.length + " parameters");
     }
@@ -422,6 +423,40 @@ export class InterpreterDataSource {
     const arr = new TextEncoder().encode(str);
 
     return await lastValueFrom(this._exprMemoService.memoise(key, arr, this.getScanId(), this.getQuantId(), this._scanId).pipe(map(() => true)));
+  }
+
+  public async readMap(argList: any[]): Promise<PMCDataValues> {
+    if (argList.length != 1 || typeof argList[0] != "string") {
+      throw new Error("readMap() expects 1 parameters: key. Received: " + argList.length + " parameters");
+    }
+
+    if (!this._exprMemoService) {
+      throw new Error("readMap() failed: service not available");
+    }
+
+    // Here we only read maps from the memoisation cache that are the name specified (but prefixed with...)
+    const key = "client-map-" + argList[0];
+    return await lastValueFrom(
+      this._exprMemoService.getExprMemoised(key, true).pipe(
+        map((memItem: MemoisedItem) => {
+          // Parse to ClientMap structure and build a map to return
+          const clMap = ClientMap.decode(memItem.data);
+
+          const result = new PMCDataValues();
+          result.isBinary = true; // pre-set for detection in addValue
+
+          const readVals = clMap.FloatValues.length > 0 ? clMap.FloatValues : clMap.IntValues;
+          for (let c = 0; c < clMap.EntryPMCs.length; c++) {
+            result.addValue(new PMCDataValue(clMap.EntryPMCs[c], readVals[c]));
+          }
+
+          return result;
+        }),
+        catchError(err => {
+          throw new Error(`InterpreterDataSource: Failed to get memoised cache for : ${argList[0]}: ${err}`);
+        })
+      )
+    );
   }
 
   // Properties we can query

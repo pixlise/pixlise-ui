@@ -228,7 +228,7 @@ export class LuaDataQuerier {
         value: async (a: any, b: any) => {
           const t0 = performance.now();
           this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-          return this.makeLuaTableAsync(`data(${a},${b})`, t0, this._dataSource!.readMap([a, b]));
+          return this.makeLuaTableAsync(`data(${a},${b})`, t0, this._dataSource!.readQuantMap([a, b]));
         },
         argsIfFunc: 2,
         debugTiming: true,
@@ -360,6 +360,17 @@ export class LuaDataQuerier {
           return this._dataSource!.memoise([k, table]);
         },
         argsIfFunc: 2,
+        debugTiming: true,
+      },
+    ],
+    [
+      "readMap_async",
+      {
+        value: async (k: any) => {
+          const t0 = performance.now();
+          return this.makeLuaTableAsync(`readMap(${k})`, t0, this._dataSource!.readMap([k]));
+        },
+        argsIfFunc: 1,
         debugTiming: true,
       },
     ],
