@@ -1,3 +1,13 @@
+## 4.68.0 (LATEST)
+
+### New Features
+- Adds ability for viewers to propogate viewership to other users
+  - This makes it so users can share a workspace with other users that contains items they don't have edit access to without having to manually duplicate or request edit access for each item
+
+### Bug Fixes
+- Fixes bug with user icon in share dialog
+- Adds better accessibility metadata labels to share dialog and expression layer
+
 ## 4.67.0 (05-14-2025)
 
 ### New Features
