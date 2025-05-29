@@ -30,7 +30,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { combineLatest, map, Subscription, switchMap } from "rxjs";
+import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
 import { FullScreenLayout, ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
 import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
 import { ObjectType, OwnershipSummary, UserGroupList } from "../../../../../../generated-protos/ownership-access";
@@ -422,7 +422,11 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         })
       )
       .pipe(editResp => {
-        return this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig!.id);
+        if (!this.screenConfig) {
+          return of([]);
+        }
+
+        return this._workspaceService.fetchWorkspaceSnapshots(this.screenConfig.id);
       })
       .subscribe(snapshots => {
         this.snapshots = snapshots.filter(snapshot => !snapshot.reviewerId);
@@ -435,14 +439,16 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
             };
           });
 
-        // Copy to clipboard
-        this.onCopy(this.generateLinkFromId(id));
+        if (this.activeConfigurationTab === "review") {
+          // Copy to clipboard
+          this.onCopy(this.generateLinkFromId(id));
+        }
       });
   }
 
   onShareSnapshot(existingSnapshot: ScreenConfiguration | null = null, isReviewerSnapshot: boolean = false): void {
-    let objectId = existingSnapshot?.id || this.screenConfig?.id;
-    let ownershipSummary = existingSnapshot?.owner || this.screenConfig?.owner;
+    const objectId = existingSnapshot?.id || this.screenConfig?.id;
+    const ownershipSummary = existingSnapshot?.owner || this.screenConfig?.owner;
 
     this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId, objectType: this.objectType })).subscribe(workspaceOwnershipResp => {
       if (!workspaceOwnershipResp || !workspaceOwnershipResp.ownership || !objectId || !ownershipSummary) {
@@ -450,13 +456,13 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         return;
       }
 
-      let workspaceId = this.screenConfig?.id || "";
-      let roiIds = this._analysisLayoutService.getLoadedROIIDsFromActiveScreenConfiguration();
-      let expressionIds = this._analysisLayoutService.getLoadedExpressionIDsFromActiveScreenConfiguration();
-      let expressionGroupIds = this._analysisLayoutService.getLoadedExpressionGroupIDsFromActiveScreenConfiguration();
-      let quantIds = this._analysisLayoutService.getLoadedQuantificationIDsFromActiveScreenConfiguration();
+      const workspaceId = this.screenConfig?.id || "";
+      const roiIds = this._analysisLayoutService.getLoadedROIIDsFromActiveScreenConfiguration();
+      const expressionIds = this._analysisLayoutService.getLoadedExpressionIDsFromActiveScreenConfiguration();
+      const expressionGroupIds = this._analysisLayoutService.getLoadedExpressionGroupIDsFromActiveScreenConfiguration();
+      const quantIds = this._analysisLayoutService.getLoadedQuantificationIDsFromActiveScreenConfiguration();
 
-      let workspaceSubItem: SharingSubItem = {
+      const workspaceSubItem: SharingSubItem = {
         id: workspaceId,
         type: ObjectType.OT_SCREEN_CONFIG,
         typeName: "Workspace",
@@ -465,33 +471,33 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         ownershipItem: workspaceOwnershipResp.ownership,
       };
 
-      let roiRequests = roiIds.map(roiId => {
-        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: roiId, objectType: ObjectType.OT_ROI }));
-        let itemReq = this._apiCachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }));
+      const roiRequests = roiIds.map(roiId => {
+        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: roiId, objectType: ObjectType.OT_ROI }));
+        const itemReq = this._apiCachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }));
         return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
       });
 
-      let expressionRequests = expressionIds.map(expressionId => {
-        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: expressionId, objectType: ObjectType.OT_EXPRESSION }));
-        let itemReq = this._apiCachedDataService.getExpression(ExpressionGetReq.create({ id: expressionId }));
+      const expressionRequests = expressionIds.map(expressionId => {
+        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: expressionId, objectType: ObjectType.OT_EXPRESSION }));
+        const itemReq = this._apiCachedDataService.getExpression(ExpressionGetReq.create({ id: expressionId }));
         return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
       });
 
-      let expressionGroupRequests = expressionGroupIds.map(expressionGroupId => {
-        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(
+      const expressionGroupRequests = expressionGroupIds.map(expressionGroupId => {
+        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(
           GetOwnershipReq.create({ objectId: expressionGroupId, objectType: ObjectType.OT_EXPRESSION_GROUP })
         );
-        let itemReq = this._apiCachedDataService.getExpressionGroup(ExpressionGetReq.create({ id: expressionGroupId }));
+        const itemReq = this._apiCachedDataService.getExpressionGroup(ExpressionGetReq.create({ id: expressionGroupId }));
         return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
       });
 
-      let quantRequests = quantIds.map(quantId => {
-        let ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: quantId, objectType: ObjectType.OT_QUANTIFICATION }));
-        let itemReq = this._apiCachedDataService.getQuant(QuantGetReq.create({ quantId }));
+      const quantRequests = quantIds.map(quantId => {
+        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: quantId, objectType: ObjectType.OT_QUANTIFICATION }));
+        const itemReq = this._apiCachedDataService.getQuant(QuantGetReq.create({ quantId }));
         return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
       });
 
-      let requests = [...roiRequests, ...expressionRequests, ...expressionGroupRequests, ...quantRequests];
+      const requests = [...roiRequests, ...expressionRequests, ...expressionGroupRequests, ...quantRequests];
       combineLatest(requests).subscribe(res => {
         let subItems: SharingSubItem[] = res.map(({ ownership, item }, i) => {
           if (!ownership || !item) {
@@ -505,7 +511,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
           }
 
           if (i < roiRequests.length) {
-            let roiResp = item as RegionOfInterestGetResp;
+            const roiResp = item as RegionOfInterestGetResp;
             return {
               id: roiResp.regionOfInterest?.id || "",
               type: ObjectType.OT_ROI,
@@ -515,7 +521,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
               ownershipItem: ownership,
             } as SharingSubItem;
           } else if (i < roiRequests.length + expressionGroupRequests.length) {
-            let expressionGroupResp = item as ExpressionGroupGetResp;
+            const expressionGroupResp = item as ExpressionGroupGetResp;
             return {
               id: expressionGroupResp.group?.id || "",
               type: ObjectType.OT_EXPRESSION_GROUP,
@@ -525,7 +531,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
               ownershipItem: ownership,
             } as SharingSubItem;
           } else if (i < roiRequests.length + expressionGroupRequests.length + expressionRequests.length) {
-            let expressionResp = item as ExpressionGetResp;
+            const expressionResp = item as ExpressionGetResp;
             return {
               id: expressionResp.expression?.id || "",
               type: ObjectType.OT_EXPRESSION,
@@ -535,7 +541,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
               ownershipItem: ownership,
             } as SharingSubItem;
           } else {
-            let quantResp = item as QuantGetResp;
+            const quantResp = item as QuantGetResp;
             return {
               id: quantResp.summary?.id || "",
               type: ObjectType.OT_QUANTIFICATION,
@@ -580,7 +586,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
             this.updateSnapshotPermissions(objectId, sharingChangeResponse, workspaceOwnershipResp);
           } else {
             // Create a new snapshot
-            let newScreenConfig = ScreenConfiguration.create(this.screenConfig!);
+            const newScreenConfig = ScreenConfiguration.create(this.screenConfig!);
             newScreenConfig.snapshotParentId = this.screenConfig!.id;
             newScreenConfig.name = this.workspaceName || this.placeholderName || "";
             newScreenConfig.id = "";
@@ -589,7 +595,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
               if (sharingChangeResponse.reviewerAccessTime) {
                 // Actual expiration time for auth purposes is calculated in the API,
                 // but this is a "close enough" approximation for displaying in the UI without making another API call
-                let currentTimeMS = new Date().getTime();
+                const currentTimeMS = new Date().getTime();
                 newScreenConfig.reviewerExpirationDateUnixSec = sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000;
               }
             }
@@ -617,14 +623,14 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
   }
 
   dropTab(event: CdkDragDrop<NavigationTab>) {
-    let moveFromIndex = event.previousIndex;
-    let moveToIndex = event.currentIndex;
+    const moveFromIndex = event.previousIndex;
+    const moveToIndex = event.currentIndex;
 
     moveItemInArray(this.openTabs, moveFromIndex, moveToIndex);
 
-    let layouts = this._analysisLayoutService.activeScreenConfiguration$.value.layouts;
+    const layouts = this._analysisLayoutService.activeScreenConfiguration$.value.layouts;
     // If current open tab is moveFromLayoutIndex, then move it to moveToLayoutIndex
-    let currentTab = parseInt(this.queryParam["tab"] || "0");
+    const currentTab = parseInt(this.queryParam["tab"] || "0");
     moveItemInArray(layouts, moveFromIndex, moveToIndex);
     this._analysisLayoutService.activeScreenConfiguration$.value.layouts = layouts;
     this._analysisLayoutService.writeScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value, undefined, false, () => {

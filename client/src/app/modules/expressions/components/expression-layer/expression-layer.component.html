@@ -30,15 +30,21 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 <ng-template #moreOptionsMenu>
   <div class="layer-options-menu">
-    <div *ngIf="!isExpressionGroup" class="option" (click)="onFullScreenCodeEditor()">
-      <img src="assets/button-icons/layout-single-view.svg" />
+    <div *ngIf="!isExpressionGroup" class="option" (click)="onFullScreenCodeEditor()" tabindex="0" role="button" (keydown.enter)="onFullScreenCodeEditor()">
+      <img src="assets/button-icons/layout-single-view.svg" alt="Open Expression Editor" />
       <span class="option-label" [ngStyle]="{ 'margin-left': 0 }">Open Expression Editor</span>
     </div>
-    <div *ngIf="isModule && hasTopExpression" class="option" (click)="onSplitScreenCodeEditor()">
-      <img src="assets/button-icons/layout-split-bottom-view.svg" />
+    <div
+      *ngIf="isModule && hasTopExpression"
+      class="option"
+      (click)="onSplitScreenCodeEditor()"
+      tabindex="0"
+      role="button"
+      (keydown.enter)="onSplitScreenCodeEditor()">
+      <img src="assets/button-icons/layout-split-bottom-view.svg" alt="Open in Split Screen" />
       <span class="option-label" [ngStyle]="{ 'margin-left': 0 }">Open in Split Screen</span>
     </div>
-    <div class="option" (click)="onTriggerTagPicker()">
+    <div class="option" (click)="onTriggerTagPicker()" tabindex="0" role="button" (keydown.enter)="onTriggerTagPicker()">
       <tag-picker
         [type]="isExpressionGroup ? 'expression-mix' : 'expression'"
         placeholderText="Search Expression Tags ..."
@@ -51,7 +57,8 @@ POSSIBILITY OF SUCH DAMAGE.
       </tag-picker>
       <span class="option-label">Tags</span>
     </div>
-    <div class="option" *ngIf="canEdit" (click)="onToggleShareDialog(!isShareDialogOpen)">
+    <!-- *ngIf="canEdit" -->
+    <div class="option" (click)="onToggleShareDialog(!isShareDialogOpen)" tabindex="0" role="button" (keydown.enter)="onToggleShareDialog(!isShareDialogOpen)">
       <share-ownership-item-button
         [id]="expression?.id || ''"
         [triggerOpen]="isShareDialogOpen"
@@ -59,7 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
       <span class="option-label">Share</span>
     </div>
-    <div class="option" *ngIf="canEdit" (click)="onDelete()">
+    <div class="option" *ngIf="canEdit" (click)="onDelete()" tabindex="0" role="button" (keydown.enter)="onDelete()">
       <icon-button icon="assets/button-icons/delete.svg"></icon-button>
       <span class="option-label">Delete</span>
     </div>
@@ -73,7 +80,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="option-label">Clear Workspace Cache</span>
       </div>
     </push-button> -->
-    <div class="option" (click)="onConfirmClearFromCache()">
+    <div class="option" (click)="onConfirmClearFromCache()" tabindex="0" role="button" (keydown.enter)="onConfirmClearFromCache()">
       <icon-button icon="assets/button-icons/delete.svg"></icon-button>
       <span class="option-label">Clear Workspace Cache</span>
     </div>
@@ -87,11 +94,14 @@ POSSIBILITY OF SUCH DAMAGE.
       class="creator {{ selectAuthorToFilter ? 'filterable' : '' }}"
       #tooltip="matTooltip"
       (click)="filterToAuthor()"
-      matTooltip="Creator: {{ creatorName || 'N/A' }} {{ selectAuthorToFilter && creatorName ? '\n\n(Click to filter)' : '' }}">
-      <img *ngIf="creatorIcon" [src]="creatorIcon" />
+      matTooltip="Creator: {{ creatorName || 'N/A' }} {{ selectAuthorToFilter && creatorName ? '\n\n(Click to filter)' : '' }}"
+      tabindex="0"
+      role="button"
+      (keydown.enter)="filterToAuthor()">
+      <img *ngIf="creatorIcon" [src]="creatorIcon" alt="Creator" />
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
-    <div class="info" (click)="onCheckboxClick()">
+    <div class="info" (click)="onCheckboxClick()" tabindex="0" role="button" (keydown.enter)="onCheckboxClick()">
       <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip" [matTooltipShowDelay]="200">
         {{ name }}
         <span
@@ -100,7 +110,7 @@ POSSIBILITY OF SUCH DAMAGE.
           #tooltip="matTooltip"
           matTooltip="You are an editor of this {{ isModule ? 'module' : 'expression' }}."
           [matTooltipShowDelay]="1000">
-          <img src="assets/button-icons/pen-yellow.svg" />
+          <img src="assets/button-icons/pen-yellow.svg" alt="You are an editor of this {{ isModule ? 'module' : 'expression' }}." />
         </span>
       </h4>
       <span class="details-line">
@@ -108,7 +118,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="description" [title]="description">{{ description }}</span>
       </span>
     </div>
-    <div class="spacer-gap" (click)="onCheckboxClick()"></div>
+    <div class="spacer-gap" (click)="onCheckboxClick()" tabindex="0" role="button" (keydown.enter)="onCheckboxClick()"></div>
     <div class="buttons">
       <!-- <icon-button
         #tooltip="matTooltip"

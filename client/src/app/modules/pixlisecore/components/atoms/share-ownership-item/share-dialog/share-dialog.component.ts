@@ -235,7 +235,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
     this.validShareCount = 0;
 
     this.subItems.forEach(subItem => {
-      let idsToAddAsViewers = new Set<string>();
+      const idsToAddAsViewers = new Set<string>();
       this.newUserViewers.forEach(id => idsToAddAsViewers.add(id));
       this.newGroupViewers.forEach(id => idsToAddAsViewers.add(id));
       this.newUserEditors.forEach(id => idsToAddAsViewers.add(id));
@@ -257,7 +257,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
       idsToAddAsViewers.delete(this.currentUser.info?.id || "");
 
       if (subItem?.ownershipItem) {
-        let ownershipItem = subItem.ownershipItem;
+        const ownershipItem = subItem.ownershipItem;
 
         if (ownershipItem.editors) {
           ownershipItem.editors.userIds.forEach(id => {
@@ -305,8 +305,8 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
   }
 
   get dialogTitle(): string {
-    let title = this.data.title ? this.data.title : `Share ${this.data.typeName}`;
-    return `${title}${!this.canEdit ? " (Read Only)" : ""}`;
+    const title = this.data.title ? this.data.title : `Share ${this.data.typeName}`;
+    return `${title}${!this.canEdit ? " (Viewer)" : ""}`;
   }
 
   get canEdit(): boolean {
@@ -341,7 +341,9 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
 
   onSelectUser(user: UserInfo, evt: MatOptionSelectionChange) {
     if (evt.isUserInput && !this.memberIds.has(user.id)) {
-      this.members = [{ id: user.id, name: user.name, icon: user.iconURL, isGroup: false, isEditor: false }, ...this.members];
+      // If user doesn't have edit access, only allow adding as viewer
+      const isEditor = this.canEdit;
+      this.members = [{ id: user.id, name: user.name, icon: user.iconURL, isGroup: false, isEditor }, ...this.members];
       this.memberIds.add(user.id);
       this.isChanged = true;
       this.calculateChanges();
@@ -355,7 +357,9 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
 
   onSelectGroup(group: UserGroupInfo, evt: MatOptionSelectionChange) {
     if (evt.isUserInput && !this.memberIds.has(group.id)) {
-      this.members = [{ id: group.id, name: group.name, description: group.description, isGroup: true, isEditor: false }, ...this.members];
+      // If user doesn't have edit access, only allow adding as viewer
+      const isEditor = this.canEdit;
+      this.members = [{ id: group.id, name: group.name, description: group.description, isGroup: true, isEditor }, ...this.members];
       this.memberIds.add(group.id);
       this.isChanged = true;
       this.calculateChanges();
@@ -380,7 +384,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
 
     this.members = [];
     this.groupEditors.forEach(id => {
-      let group = this.groups.find(group => group.id === id);
+      const group = this.groups.find(group => group.id === id);
 
       // TODO: Fix edge case - What if the user isn't a member of the group
       // someone else added this item to, but they are an editor?
@@ -394,12 +398,12 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
         return;
       }
 
-      let group = this.groups.find(group => group.id === id);
+      const group = this.groups.find(group => group.id === id);
       this.members.push({ id, name: group?.name || id, description: group?.description, isGroup: true, isEditor: false });
     });
 
     this.userEditors.forEach(id => {
-      let user = this.users.find(user => user.id === id);
+      const user = this.users.find(user => user.id === id);
       this.members.push({ id, name: user?.name || id, icon: user?.iconURL, isGroup: false, isEditor: true });
     });
 
@@ -408,7 +412,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
         // This shouldn't happen, but just in case we don't want to add a duplicate
         return;
       }
-      let user = this.users.find(user => user.id === id);
+      const user = this.users.find(user => user.id === id);
       this.members.push({ id, name: user?.name || id, icon: user?.iconURL, isGroup: false, isEditor: false });
     });
 
@@ -421,7 +425,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
   }
 
   onAccessChange(id: string, evt: MatSelectChange) {
-    let member = this.members.find(member => member.id === id);
+    const member = this.members.find(member => member.id === id);
     if (member) {
       member.isEditor = evt.value;
       this.isChanged = true;
@@ -444,42 +448,42 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
     let tooltip = "";
 
     if (this.newUserEditors.size > 0) {
-      let newUserEditorNames = Array.from(this.newUserEditors).map(editor => this.users.find(user => user.id === editor)?.name || editor);
+      const newUserEditorNames = Array.from(this.newUserEditors).map(editor => this.users.find(user => user.id === editor)?.name || editor);
       tooltip += `Add ${this.newUserEditors.size} new user editor(s):\n${newUserEditorNames.join("\n")}\n\n`;
     }
 
     if (this.removedUserEditors.size > 0) {
-      let removedUserEditorNames = Array.from(this.removedUserEditors).map(editor => this.users.find(user => user.id === editor)?.name || editor);
+      const removedUserEditorNames = Array.from(this.removedUserEditors).map(editor => this.users.find(user => user.id === editor)?.name || editor);
       tooltip += `Remove ${this.removedUserEditors.size} user editor(s):\n${removedUserEditorNames.join("\n")}\n\n`;
     }
 
     if (this.newUserViewers.size > 0) {
-      let newUserViewerNames = Array.from(this.newUserViewers).map(viewer => this.users.find(user => user.id === viewer)?.name || viewer);
+      const newUserViewerNames = Array.from(this.newUserViewers).map(viewer => this.users.find(user => user.id === viewer)?.name || viewer);
       tooltip += `Add ${this.newUserViewers.size} new user viewer(s):\n${newUserViewerNames.join("\n")}\n\n`;
     }
 
     if (this.removedUserViewers.size > 0) {
-      let removedUserViewerNames = Array.from(this.removedUserViewers).map(viewer => this.users.find(user => user.id === viewer)?.name || viewer);
+      const removedUserViewerNames = Array.from(this.removedUserViewers).map(viewer => this.users.find(user => user.id === viewer)?.name || viewer);
       tooltip += `Remove ${this.removedUserViewers.size} user viewer(s):\n${removedUserViewerNames.join("\n")}\n\n`;
     }
 
     if (this.newGroupEditors.size > 0) {
-      let newGroupEditorNames = Array.from(this.newGroupEditors).map(editor => this.groups.find(group => group.id === editor)?.name || editor);
+      const newGroupEditorNames = Array.from(this.newGroupEditors).map(editor => this.groups.find(group => group.id === editor)?.name || editor);
       tooltip += `Add ${this.newGroupEditors.size} new group editor(s):\n${newGroupEditorNames.join("\n")}\n\n`;
     }
 
     if (this.removedGroupEditors.size > 0) {
-      let removedGroupEditorNames = Array.from(this.removedGroupEditors).map(editor => this.groups.find(group => group.id === editor)?.name || editor);
+      const removedGroupEditorNames = Array.from(this.removedGroupEditors).map(editor => this.groups.find(group => group.id === editor)?.name || editor);
       tooltip += `Remove ${this.removedGroupEditors.size} group editor(s):\n${removedGroupEditorNames.join("\n")}\n\n`;
     }
 
     if (this.newGroupViewers.size > 0) {
-      let newGroupViewerNames = Array.from(this.newGroupViewers).map(viewer => this.groups.find(group => group.id === viewer)?.name || viewer);
+      const newGroupViewerNames = Array.from(this.newGroupViewers).map(viewer => this.groups.find(group => group.id === viewer)?.name || viewer);
       tooltip += `Add ${this.newGroupViewers.size} new group viewer(s):\n${newGroupViewerNames.join("\n")}\n\n`;
     }
 
     if (this.removedGroupViewers.size > 0) {
-      let removedGroupViewerNames = Array.from(this.removedGroupViewers).map(viewer => this.groups.find(group => group.id === viewer)?.name || viewer);
+      const removedGroupViewerNames = Array.from(this.removedGroupViewers).map(viewer => this.groups.find(group => group.id === viewer)?.name || viewer);
       tooltip += `Remove ${this.removedGroupViewers.size} group viewer(s):\n${removedGroupViewerNames.join("\n")}\n\n`;
     }
 
@@ -498,6 +502,11 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
 
     // Determine new editors/viewers
     this.members.forEach(member => {
+      // Skip existing members if user doesn't have edit access
+      if (!this.canEdit && this.memberIds.has(member.id)) {
+        return;
+      }
+
       if (member.isEditor) {
         if (member.isGroup) {
           if (this.groupEditors.includes(member.id)) {
@@ -525,50 +534,53 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Determine removed editors/viewers
-    this.groupEditors.forEach(editor => {
-      if (!this.memberIds.has(editor)) {
-        this.removedGroupEditors.add(editor);
-      } else {
-        let member = this.members.find(member => member.id === editor);
-        if (member && !member.isEditor) {
+    // Only calculate removals if user has edit access
+    if (this.canEdit) {
+      // Determine removed editors/viewers
+      this.groupEditors.forEach(editor => {
+        if (!this.memberIds.has(editor)) {
           this.removedGroupEditors.add(editor);
+        } else {
+          const member = this.members.find(member => member.id === editor);
+          if (member && !member.isEditor) {
+            this.removedGroupEditors.add(editor);
+          }
         }
-      }
-    });
+      });
 
-    this.userEditors.forEach(editor => {
-      if (!this.memberIds.has(editor)) {
-        this.removedUserEditors.add(editor);
-      } else {
-        let member = this.members.find(member => member.id === editor);
-        if (member && !member.isEditor) {
+      this.userEditors.forEach(editor => {
+        if (!this.memberIds.has(editor)) {
           this.removedUserEditors.add(editor);
+        } else {
+          const member = this.members.find(member => member.id === editor);
+          if (member && !member.isEditor) {
+            this.removedUserEditors.add(editor);
+          }
         }
-      }
-    });
+      });
 
-    this.groupViewers.forEach(viewer => {
-      if (!this.memberIds.has(viewer)) {
-        this.removedGroupViewers.add(viewer);
-      } else {
-        let member = this.members.find(member => member.id === viewer);
-        if (member && member.isEditor) {
+      this.groupViewers.forEach(viewer => {
+        if (!this.memberIds.has(viewer)) {
           this.removedGroupViewers.add(viewer);
+        } else {
+          const member = this.members.find(member => member.id === viewer);
+          if (member && member.isEditor) {
+            this.removedGroupViewers.add(viewer);
+          }
         }
-      }
-    });
+      });
 
-    this.userViewers.forEach(viewer => {
-      if (!this.memberIds.has(viewer)) {
-        this.removedUserViewers.add(viewer);
-      } else {
-        let member = this.members.find(member => member.id === viewer);
-        if (member && member.isEditor) {
+      this.userViewers.forEach(viewer => {
+        if (!this.memberIds.has(viewer)) {
           this.removedUserViewers.add(viewer);
+        } else {
+          const member = this.members.find(member => member.id === viewer);
+          if (member && member.isEditor) {
+            this.removedUserViewers.add(viewer);
+          }
         }
-      }
-    });
+      });
+    }
 
     this.formConfirmButtonTooltip();
     this.calculateSubItemViewershipChanges();
@@ -579,12 +591,24 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
       return of([]);
     }
 
-    let editAccessUpdateRequests: Observable<ObjectEditAccessResp>[] = [];
+    const editAccessUpdateRequests: Observable<ObjectEditAccessResp>[] = [];
     this.subItems.forEach(subItem => {
+      let userEditorIds: string[] = [];
+      let groupEditorIds: string[] = [];
+      let userViewerIds: string[] = [];
+      let groupViewerIds: string[] = [];
+
+      // If user does not have edit access, only allow adding as viewer
       if (!subItem.ownershipSummary.canEdit) {
-        // this._snackbarService.openWarning(`You do not have permission to edit sub-expression ${subItem.name}.`);
-        console.warn(`User does not have permission to edit sub-item ${subItem.name}. Skipping...`);
-        return;
+        // Merge unique editors and viewers into viewers
+        userViewerIds = Array.from(new Set([...this.newUserEditors, ...this.newUserViewers]));
+        groupViewerIds = Array.from(new Set([...this.newGroupEditors, ...this.newGroupViewers]));
+      } else {
+        // Allow editors to be added
+        userEditorIds = Array.from(this.newUserEditors);
+        groupEditorIds = Array.from(this.newGroupEditors);
+        userViewerIds = Array.from(this.newUserViewers);
+        groupViewerIds = Array.from(this.newGroupViewers);
       }
 
       // Skip excluded sub-items (used for excluding sub-items that are already being shared, but we still want to show)
@@ -598,12 +622,12 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
             objectId: subItem.id,
             objectType: subItem.type,
             addEditors: UserGroupList.create({
-              userIds: Array.from(this.newUserEditors),
-              groupIds: Array.from(this.newGroupEditors),
+              userIds: userEditorIds,
+              groupIds: groupEditorIds,
             }),
             addViewers: UserGroupList.create({
-              userIds: Array.from(this.newUserViewers),
-              groupIds: Array.from(this.newGroupViewers),
+              userIds: userViewerIds,
+              groupIds: groupViewerIds,
             }),
           })
         )
@@ -657,7 +681,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
   onConfirm(): void {
     this.calculateChanges();
 
-    let appConfig = EnvConfigurationInitService.appConfig;
+    const appConfig = EnvConfigurationInitService.appConfig;
 
     if (this.data.isReviewerSnapshot) {
       this._apiDataService
