@@ -32,7 +32,8 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
-import { MapChangeMonitor } from "src/app/modules/pixlisecore/models/map-change-monitor";
+import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
+import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
 @Component({
   selector: "histogram-widget",
@@ -54,7 +55,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   modelErrors: WidgetError[] = [];
 
   private _subs = new Subscription();
-  private _mapChangeMonitor = new MapChangeMonitor();
+  private _objChangeMonitor = new ObjectChangeMonitor();
 
   constructor(
     public dialog: MatDialog,
@@ -63,7 +64,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     private _snackService: SnackbarService,
     private _selectionService: SelectionService,
     private _roiService: ROIService,
-    private _memoService: MemoisationService
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     super();
 
@@ -105,16 +106,6 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         },
       },
     };
-
-    this._subs.add(
-      this._memoService.savedMapChanged$.subscribe((name: string) => {
-        // If we're interested in any of these, call update!
-        if (this._mapChangeMonitor.isMapUsed(name)) {
-          console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
-          this.update();
-        }
-      })
-    );
   }
 
   ngOnInit() {
@@ -226,6 +217,16 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       })
     );
 
+    this._subs.add(
+      this._objChangeService.objectChanged$.subscribe((change: ObjectChange) => {
+        // If we're interested in any of these, call update!
+        if ((change.mapName && this._objChangeMonitor.isMapUsed(change.mapName)) || (change.roiId && this._objChangeMonitor.isROIUsed(change.roiId))) {
+          console.log("Histogram: Updating due to change " + change.toString());
+          this.update();
+        }
+      })
+    );
+
     this.reDraw();
   }
 
@@ -309,7 +310,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         .subscribe({
           next: data => {
             // If we've got maps we're subscribed for, listen to the memo service for changes to those
-            this._mapChangeMonitor.checkResultsUseMaps(data);
+            this._objChangeMonitor.checkExpressionResultObjectsUsed(data);
 
             this.setData(data).pipe(first()).subscribe();
           },

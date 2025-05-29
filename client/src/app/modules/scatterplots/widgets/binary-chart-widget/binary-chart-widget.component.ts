@@ -36,9 +36,9 @@ import { RGBA } from "../../../../utils/colours";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { DataQueryResult } from "src/app/expression-language/data-values";
 import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
-import { MapChangeMonitor } from "src/app/modules/pixlisecore/models/map-change-monitor";
+import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
+import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -78,7 +78,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
-  private _mapChangeMonitor = new MapChangeMonitor();
+  private _objChangeMonitor = new ObjectChangeMonitor();
 
   axisLabelFontSize = 14;
 
@@ -89,7 +89,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
-    private _memoService: MemoisationService
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     super();
 
@@ -145,16 +145,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         },
       },
     };
-
-    this._subs.add(
-      this._memoService.savedMapChanged$.subscribe((name: string) => {
-        // If we're interested in any of these, call update!
-        if (this._mapChangeMonitor.isMapUsed(name)) {
-          console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
-          this.update();
-        }
-      })
-    );
   }
 
   private setInitialConfig() {
@@ -219,7 +209,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       .subscribe({
         next: data => {
           // If we've got maps we're subscribed for, listen to the memo service for changes to those
-          this._mapChangeMonitor.checkResultsUseMaps(data);
+          this._objChangeMonitor.checkExpressionResultObjectsUsed(data);
 
           this.setData(data).pipe(first()).subscribe();
         },
@@ -412,6 +402,16 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         // Only update if we have the right expression count otherwise this will just trigger an error
         this.mdl.expressionIds = exprIds;
         this.update();
+      })
+    );
+
+    this._subs.add(
+      this._objChangeService.objectChanged$.subscribe((change: ObjectChange) => {
+        // If we're interested in any of these, call update!
+        if ((change.mapName && this._objChangeMonitor.isMapUsed(change.mapName)) || (change.roiId && this._objChangeMonitor.isROIUsed(change.roiId))) {
+          console.log("Binary Chart: Updating due to change " + change.toString());
+          this.update();
+        }
       })
     );
 

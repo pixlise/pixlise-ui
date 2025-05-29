@@ -42,8 +42,9 @@ import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
-import { MapChangeMonitor } from "src/app/modules/pixlisecore/models/map-change-monitor";
+import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
+import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -86,7 +87,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private _subs = new Subscription();
   private destroy$ = new Subject<void>();
 
-  private _mapChangeMonitor = new MapChangeMonitor();
+  private _objChangeMonitor = new ObjectChangeMonitor();
 
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
@@ -100,7 +101,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
     private _snackService: SnackbarService,
-    private _memoService: MemoisationService
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     super();
 
@@ -157,16 +158,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         },
       },
     };
-
-    this._subs.add(
-      this._memoService.savedMapChanged$.subscribe((name: string) => {
-        // If we're interested in any of these, call update!
-        if (this._mapChangeMonitor.isMapUsed(name)) {
-          console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
-          this.update();
-        }
-      })
-    );
   }
 
   private setInitialConfig() {
@@ -297,7 +288,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       .pipe(
         switchMap(data => {
           // If we've got maps we're subscribed for, listen to the memo service for changes to those
-          this._mapChangeMonitor.checkResultsUseMaps(data);
+          this._objChangeMonitor.checkExpressionResultObjectsUsed(data);
 
           return this.setData(data);
         }),
@@ -485,6 +476,16 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         // Add spectrum selection to expressions list and redraw
         if (targetId === this._widgetId && this.mdl.expressionIds.length >= 3) {
           this.mdl.expressionIds[2] = DataExpressionId.SpectrumSelectionExpression;
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._objChangeService.objectChanged$.subscribe((change: ObjectChange) => {
+        // If we're interested in any of these, call update!
+        if ((change.mapName && this._objChangeMonitor.isMapUsed(change.mapName)) || (change.roiId && this._objChangeMonitor.isROIUsed(change.roiId))) {
+          console.log("Ternary Chart: Updating due to change " + change.toString());
           this.update();
         }
       })

@@ -12,6 +12,7 @@ import { APIDataService } from "./apidata.service";
 import { NotificationType } from "src/app/generated-protos/notification";
 import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
+import { ObjectChangeMonitorService } from "./object-change-monitor.service";
 
 
 @Injectable({
@@ -26,7 +27,8 @@ export class MemoisationService {
   constructor(
     private _httpClient: HttpClient,
     private _dataService: APIDataService,
-    private _localStorageService: LocalStorageService
+    private _localStorageService: LocalStorageService,
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
@@ -39,13 +41,10 @@ export class MemoisationService {
       if (upd.notification && upd.notification.notificationType == NotificationType.NT_SYS_DATA_CHANGED && (upd.notification.mapId || "").length > 0) {
         // Map changed! Clear out this map if we have it and trigger anything that needs to redisplay
         this.delete(upd.notification.mapId);
-
-        // Now we notify
-        const mapName = DataQueryResult.getClientMapNameFromMemoId(upd.notification.mapId);
-        if (mapName.length > 0) {
-          this.savedMapChanged$.next(mapName);
-        }
       }
+
+      // Now we notify on changes
+      this._objChangeService.handleNotification(upd);
     });
   }
 
