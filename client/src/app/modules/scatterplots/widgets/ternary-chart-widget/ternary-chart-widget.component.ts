@@ -42,6 +42,8 @@ import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
+import { MapChangeMonitor } from "src/app/modules/pixlisecore/models/map-change-monitor";
+import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -84,6 +86,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private _subs = new Subscription();
   private destroy$ = new Subject<void>();
 
+  private _mapChangeMonitor = new MapChangeMonitor();
+
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
@@ -95,7 +99,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _memoService: MemoisationService
   ) {
     super();
 
@@ -152,6 +157,16 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         },
       },
     };
+
+    this._subs.add(
+      this._memoService.savedMapChanged$.subscribe((name: string) => {
+        // If we're interested in any of these, call update!
+        if (this._mapChangeMonitor.isMapUsed(name)) {
+          console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
+          this.update();
+        }
+      })
+    );
   }
 
   private setInitialConfig() {
@@ -280,7 +295,12 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this._widgetData
       .getData(query)
       .pipe(
-        switchMap(data => this.setData(data)),
+        switchMap(data => {
+          // If we've got maps we're subscribed for, listen to the memo service for changes to those
+          this._mapChangeMonitor.checkResultsUseMaps(data);
+
+          return this.setData(data);
+        }),
         catchError(err => this.setData(new RegionDataResults([], err))),
         tap(() => {
           if (this.widgetControlConfiguration.topRightInsetButton) {

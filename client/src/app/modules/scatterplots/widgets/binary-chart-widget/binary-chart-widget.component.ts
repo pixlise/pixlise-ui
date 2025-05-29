@@ -38,6 +38,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
+import { MapChangeMonitor } from "src/app/modules/pixlisecore/models/map-change-monitor";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -77,7 +78,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
-  private _mapsUsed = new Set<string>();
+  private _mapChangeMonitor = new MapChangeMonitor();
 
   axisLabelFontSize = 14;
 
@@ -145,13 +146,15 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       },
     };
 
-    this._memoService.savedMapChanged$.subscribe((name: string) => {
-      // If we're interested in any of these, call update!
-      if (this._mapsUsed.has(name)) {
-        console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
-        this.update();
-      }
-    });
+    this._subs.add(
+      this._memoService.savedMapChanged$.subscribe((name: string) => {
+        // If we're interested in any of these, call update!
+        if (this._mapChangeMonitor.isMapUsed(name)) {
+          console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
+          this.update();
+        }
+      })
+    );
   }
 
   private setInitialConfig() {
@@ -215,18 +218,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       .pipe(first())
       .subscribe({
         next: data => {
-          this.setData(data).pipe(first()).subscribe();
-
           // If we've got maps we're subscribed for, listen to the memo service for changes to those
-          this._mapsUsed.clear();
+          this._mapChangeMonitor.checkResultsUseMaps(data);
 
-          for (const result of data.queryResults) {
-            const savedMaps = result.exprResult.dataRequired.filter(dataType => DataQueryResult.isDataTypeSavedMap(dataType));
-            const savedMapNames = savedMaps.map(val => DataQueryResult.getDataTypeSavedMapName(val));
-            for (const name of savedMapNames) {
-              this._mapsUsed.add(name);
-            }
-          }
+          this.setData(data).pipe(first()).subscribe();
         },
         error: err => {
           this.setData(new RegionDataResults([], err)).pipe(first()).subscribe();

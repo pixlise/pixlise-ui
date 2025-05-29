@@ -31,6 +31,8 @@ import { ROIService } from "../../../roi/services/roi.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
+import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
+import { MapChangeMonitor } from "src/app/modules/pixlisecore/models/map-change-monitor";
 
 @Component({
   selector: "histogram-widget",
@@ -52,6 +54,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   modelErrors: WidgetError[] = [];
 
   private _subs = new Subscription();
+  private _mapChangeMonitor = new MapChangeMonitor();
 
   constructor(
     public dialog: MatDialog,
@@ -59,7 +62,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
     private _selectionService: SelectionService,
-    private _roiService: ROIService
+    private _roiService: ROIService,
+    private _memoService: MemoisationService
   ) {
     super();
 
@@ -101,6 +105,16 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         },
       },
     };
+
+    this._subs.add(
+      this._memoService.savedMapChanged$.subscribe((name: string) => {
+        // If we're interested in any of these, call update!
+        if (this._mapChangeMonitor.isMapUsed(name)) {
+          console.log("Binary Chart: Updating due to memoised map change detection for: " + name);
+          this.update();
+        }
+      })
+    );
   }
 
   ngOnInit() {
@@ -294,6 +308,9 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         .pipe(first())
         .subscribe({
           next: data => {
+            // If we've got maps we're subscribed for, listen to the memo service for changes to those
+            this._mapChangeMonitor.checkResultsUseMaps(data);
+
             this.setData(data).pipe(first()).subscribe();
           },
           error: err => {
