@@ -34,13 +34,14 @@ import {
   QuantifiedDataQuerierSource,
   SpectrumDataQuerierSource,
 } from "src/app/expression-language/data-sources";
-import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
+import { DataQueryResult, PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { MinMax } from "../models/BasicTypes";
 import { catchError, lastValueFrom, map, of } from "rxjs";
 import { MemoisedItem } from "../generated-protos/memoisation";
 import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
 import { ClientMap } from "../generated-protos/scan";
+import { httpErrorToString } from "../utils/utils";
 
 export class InterpreterDataSource {
   constructor(
@@ -435,7 +436,7 @@ export class InterpreterDataSource {
     }
 
     // Here we only read maps from the memoisation cache that are the name specified (but prefixed with...)
-    const key = "client-map-" + argList[0];
+    const key = DataQueryResult.MemoIdClientMapPrefix + argList[0];
     return await lastValueFrom(
       this._exprMemoService.getExprMemoised(key, true).pipe(
         map((memItem: MemoisedItem) => {
@@ -453,7 +454,7 @@ export class InterpreterDataSource {
           return result;
         }),
         catchError(err => {
-          throw new Error(`InterpreterDataSource: Failed to get memoised cache for : ${argList[0]}: ${err}`);
+          throw new Error(httpErrorToString(err, `InterpreterDataSource: Failed to get memoised cache for : ${argList[0]}`));
         })
       )
     );

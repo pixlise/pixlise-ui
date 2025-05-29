@@ -160,7 +160,7 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
       quantBin,
       modules,
       "readMap",
-      [],
+      ["savedMap(one)"],
       done
     );
   });

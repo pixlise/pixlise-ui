@@ -368,6 +368,7 @@ export class LuaDataQuerier {
       {
         value: async (k: any) => {
           const t0 = performance.now();
+          this._runtimeDataRequired.add(DataQueryResult.getDataTypeSavedMap(k));
           return this.makeLuaTableAsync(`readMap(${k})`, t0, this._dataSource!.readMap([k]));
         },
         argsIfFunc: 1,

@@ -29,7 +29,6 @@
 
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataExpression } from "../generated-protos/expressions";
-import { ROIItem } from "../generated-protos/roi";
 import { RegionSettings } from "../modules/roi/models/roi-region";
 
 export class PMCDataValue {
@@ -109,6 +108,28 @@ export class DataQueryResult {
   }
   public static get DataTypePosition() {
     return "position";
+  }
+  public static getDataTypeSavedMap(mapId: string) {
+    return "savedMap(" + mapId + ")";
+  }
+  public static isDataTypeSavedMap(saveType: string) {
+    return saveType.startsWith("savedMap(");
+  }
+  public static getDataTypeSavedMapName(saveType: string) {
+    if (saveType.startsWith("savedMap(")) {
+      return saveType.substring("savedMap(".length, saveType.length - 1);
+    }
+    return "";
+  }
+
+  public static get MemoIdClientMapPrefix() {
+    return "client-map-";
+  }
+  public static getClientMapNameFromMemoId(saveType: string) {
+    if (saveType.startsWith(DataQueryResult.MemoIdClientMapPrefix)) {
+      return saveType.substring(DataQueryResult.MemoIdClientMapPrefix.length);
+    }
+    return "";
   }
 }
 

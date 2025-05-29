@@ -440,16 +440,23 @@ export class WidgetDataService {
 
                 // Also, add to memoisation cache
                 if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId) && result.isPMCTable) {
-                  // WARN If we're saving selected points ROI, this will help us detect future issues
-                  if (PredefinedROIID.isSelectedPointsROI(query.roiId)) {
-                    SentryHelper.logMsg(
-                      false,
-                      `WARNING: Caching Widget query result for selected points! Scan: ${query.scanId}, Expression: ${query.exprId}, Quant: ${query.quantId}, ROI: ${query.roiId}`
-                    );
-                  }
+                  // If this expression used readMap() we don't cache its output because the assumption is it'll use something
+                  // computationally heavy that's saved in a map, and anything it does is just light on top of that
+                  const savedMaps = result.dataRequired.filter(dataType => DataQueryResult.isDataTypeSavedMap(dataType));
+                  if (savedMaps.length <= 0) {
+                    // WARN If we're saving selected points ROI, this will help us detect future issues
+                    if (PredefinedROIID.isSelectedPointsROI(query.roiId)) {
+                      SentryHelper.logMsg(
+                        false,
+                        `WARNING: Caching Widget query result for selected points! Scan: ${query.scanId}, Expression: ${query.exprId}, Quant: ${query.quantId}, ROI: ${query.roiId}`
+                      );
+                    }
 
-                  const encodedResult = this.toMemoised(result);
-                  this._memoisationService.memoise(cacheKey, encodedResult, query.scanId, query.quantId, expr.id).subscribe();
+                    const encodedResult = this.toMemoised(result);
+                    this._memoisationService.memoise(cacheKey, encodedResult, query.scanId, query.quantId, expr.id).subscribe();
+                  } else {
+                    console.log(`Skipping memoisation of ${query.exprId} because it uses saved map data: ${savedMaps.join(",")}`);
+                  }
                 }
 
                 return result;
