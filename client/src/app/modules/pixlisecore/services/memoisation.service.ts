@@ -11,8 +11,6 @@ import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { APIDataService } from "./apidata.service";
 import { NotificationType } from "src/app/generated-protos/notification";
 import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
-import { DataQueryResult } from "src/app/expression-language/data-values";
-import { ObjectChangeMonitorService } from "./object-change-monitor.service";
 
 
 @Injectable({
@@ -27,8 +25,7 @@ export class MemoisationService {
   constructor(
     private _httpClient: HttpClient,
     private _dataService: APIDataService,
-    private _localStorageService: LocalStorageService,
-    private _objChangeService: ObjectChangeMonitorService
+    private _localStorageService: LocalStorageService
   ) {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
@@ -36,16 +33,17 @@ export class MemoisationService {
         console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
       },
     });
+  }
 
-    this._dataService.notificationUpd$.subscribe((upd: NotificationUpd) => {
-      if (upd.notification && upd.notification.notificationType == NotificationType.NT_SYS_DATA_CHANGED && (upd.notification.mapId || "").length > 0) {
-        // Map changed! Clear out this map if we have it and trigger anything that needs to redisplay
-        this.delete(upd.notification.mapId);
-      }
-
-      // Now we notify on changes
-      this._objChangeService.handleNotification(upd);
-    });
+  // Call this to check if the notification update contains anything relevant to be cleared from memoisation
+  handleSysDataChangedNotification(upd: NotificationUpd) {
+    if (!upd || !upd.notification || upd.notification.notificationType != NotificationType.NT_SYS_DATA_CHANGED) {
+      throw new Error("handleSysDataChangedNotification should only be called for NT_SYS_DATA_CHANGED notifications");
+    }
+    if ((upd.notification.mapId || "").length > 0) {
+      // Map changed! Clear out this map if we have it and trigger anything that needs to redisplay
+      this.delete(upd.notification.mapId);
+    }
   }
 
   delete(key: string): Observable<void> {

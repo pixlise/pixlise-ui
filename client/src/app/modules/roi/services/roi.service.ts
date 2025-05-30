@@ -35,6 +35,8 @@ import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "../../analysis/analysis.module";
 import { UserGroupList } from "../../../generated-protos/ownership-access";
+import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
+import { NotificationType } from "src/app/generated-protos/notification";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -103,10 +105,56 @@ export class ROIService implements OnDestroy {
         )
         .subscribe()
     );
+
+    this._dataService.notificationUpd$.subscribe((upd: NotificationUpd) => {
+      // When we get a data change notification we clear caches relevant to that
+      if (upd.notification?.notificationType == NotificationType.NT_SYS_DATA_CHANGED) {
+        if (upd.notification?.roiId) {
+          this.clearCachedROI(upd.notification.roiId);
+        }
+
+        // Finally, send to cache API data service which can delete other things...
+        this._cachedDataService.handleSysDataChangedNotification(upd);
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  clearCachedROI(roiId: string): void {
+    let refreshItems = false;
+    // Delete from anywhere it may exist
+    if (roiId in this.roiItems$.value) {
+      delete this.roiItems$.value[roiId];
+      refreshItems = true;
+    }
+
+    // let refreshDisplay = false;
+    // if (roiId in this.displaySettingsMap$.value) {
+    //   delete this.displaySettingsMap$.value[roiId];
+    //   refreshDisplay = true;
+    // }
+
+    let refreshSummaries = false;
+    if (roiId in this.roiSummaries$.value) {
+      delete this.roiSummaries$.value[roiId];
+      refreshSummaries = true;
+    }
+
+    this._regionMap.delete(roiId);
+
+    // Fire off new values for those that need it
+    if (refreshItems) {
+      this.roiItems$.next(this.roiItems$.value);
+    }
+    // if (refreshDisplay) {
+    //   this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+    // }
+    if (refreshSummaries) {
+      this.roiSummaries$.next(this.roiSummaries$.value);
+    }
   }
 
   generateSelectionROI(selection: SelectionHistoryItem) {
