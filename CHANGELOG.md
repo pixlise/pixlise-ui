@@ -6,9 +6,13 @@
   - NOTE2: If using multiple maps together (like in the case of binary map X and Y axis) ensure that the maps are the same size otherwise an error will be shown.
 - If a saved map changes and an expression in PIXLISE is using data from that saved map, it will redraw the chart. This allows someone to run code multiple times outside of PIXLISE using the client library and interactively see the chart update to reflect the latest values uploaded to the map.
 - If an ROI which is being used on a binary, ternary or histogram is changed, these views will automatically redraw to reflect the change.
+- Adds ability for viewers to propogate viewership to other users
+  - This makes it so users can share a workspace with other users that contains items they don't have edit access to without having to manually duplicate or request edit access for each item
 
 ### Bug Fixes
 - Dataset tiles page now correctly shows item count when datasets filtered by tags
+- Fixes bug with user icon in share dialog
+- Adds better accessibility metadata labels to share dialog and expression layer
 
 ## 4.67.0 (05-14-2025)
 
