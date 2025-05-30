@@ -42,6 +42,9 @@ import { NaryChartModel } from "../../base/model";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
+import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
+import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
+import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -84,6 +87,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private _subs = new Subscription();
   private destroy$ = new Subject<void>();
 
+  private _objChangeMonitor = new ObjectChangeMonitor();
+
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
@@ -95,7 +100,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     super();
 
@@ -280,7 +286,12 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this._widgetData
       .getData(query)
       .pipe(
-        switchMap(data => this.setData(data)),
+        switchMap(data => {
+          // If we've got maps we're subscribed for, listen to the memo service for changes to those
+          this._objChangeMonitor.checkExpressionResultObjectsUsed(data);
+
+          return this.setData(data);
+        }),
         catchError(err => this.setData(new RegionDataResults([], err))),
         tap(() => {
           if (this.widgetControlConfiguration.topRightInsetButton) {
@@ -465,6 +476,16 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         // Add spectrum selection to expressions list and redraw
         if (targetId === this._widgetId && this.mdl.expressionIds.length >= 3) {
           this.mdl.expressionIds[2] = DataExpressionId.SpectrumSelectionExpression;
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._objChangeService.objectChanged$.subscribe((change: ObjectChange) => {
+        // If we're interested in any of these, call update!
+        if ((change.mapName && this._objChangeMonitor.isMapUsed(change.mapName)) || (change.roiId && this._objChangeMonitor.isROIUsed(change.roiId))) {
+          console.log("Ternary Chart: Updating due to change " + change.toString());
           this.update();
         }
       })

@@ -174,7 +174,7 @@
       #tooltip="matTooltip"
       matTooltipClass="multiline-tooltip"
       [matTooltipShowDelay]="500"
-      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
+      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString + '\nROI Id: ' + id : '')">
       <h4>
         {{ name }}
         <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this ROI.">

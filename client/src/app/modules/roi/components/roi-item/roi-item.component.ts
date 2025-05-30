@@ -205,6 +205,10 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     return this.creatorUser?.iconURL || "";
   }
 
+  get id(): string {
+    return this.summary.id;
+  }
+
   get name(): string {
     return this._name || this.summary.name || "Unnamed";
   }

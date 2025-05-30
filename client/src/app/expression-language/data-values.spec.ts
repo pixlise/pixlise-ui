@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { MinMax } from "../models/BasicTypes";
-import { PMCDataValue, PMCDataValues } from "./data-values";
+import { DataQueryResult, PMCDataValue, PMCDataValues } from "./data-values";
 
 describe("PMCDataValues makeWithValues() call", () => {
   const expResult = new PMCDataValues();
@@ -110,5 +110,26 @@ describe("PMCDataValues filterToCommonPMCsOnly() call", () => {
     const filtered = PMCDataValues.filterToCommonPMCsOnly([data1, data2, data3]);
 
     expect(filtered).toEqual(expFiltered);
+  });
+});
+
+describe("DataTypeSavedMap", () => {
+  it("getDataTypeSavedMap should work", () => {
+    expect(DataQueryResult.getDataTypeSavedMap("thename")).toEqual("savedMap(thename)");
+  });
+  it("isDataTypeSavedMap should return false if name is not savedMap", () => {
+    expect(DataQueryResult.isDataTypeSavedMap("thename")).toEqual(false);
+  });
+  it("isDataTypeSavedMap should return true if name is savedMap", () => {
+    expect(DataQueryResult.isDataTypeSavedMap("savedMap(thename)")).toEqual(true);
+  });
+  it("getDataTypeSavedMapName should return empty string if name is not savedMap", () => {
+    expect(DataQueryResult.getDataTypeSavedMapName("thename")).toEqual("");
+  });
+  it("getDataTypeSavedMapName should return the name of the saved map", () => {
+    expect(DataQueryResult.getDataTypeSavedMapName("savedMap(thename)")).toEqual("thename");
+  });
+  it("getClientMapNameFromMemoId should return the name of the client", () => {
+    expect(DataQueryResult.getClientMapNameFromMemoId("client-map-blah")).toEqual("blah");
   });
 });

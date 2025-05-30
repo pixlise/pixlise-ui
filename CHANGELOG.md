@@ -1,10 +1,16 @@
-## 4.68.0 (LATEST)
+## 4.68.0 (Latest)
 
 ### New Features
+- Added readMap() function available in Lua expression language. This allows reading a map that was uploaded from the PIXLISE python client library using the saveMapData() python function. This allows code to be written external to PIXLISE that can access any datasets required to form a map of data, which can now be displayed in PIXLISE. The name of the maps must match (between the one saved in python and the one referenced in the PIXLISE expression language call to readMap) and if displaying on a binary plot you will likely want 2 maps - one for each axis.
+  - NOTE: PMCs in this case can just be a number counting up from 0 to however many points are in the map.
+  - NOTE2: If using multiple maps together (like in the case of binary map X and Y axis) ensure that the maps are the same size otherwise an error will be shown.
+- If a saved map changes and an expression in PIXLISE is using data from that saved map, it will redraw the chart. This allows someone to run code multiple times outside of PIXLISE using the client library and interactively see the chart update to reflect the latest values uploaded to the map.
+- If an ROI which is being used on a binary, ternary or histogram is changed, these views will automatically redraw to reflect the change.
 - Adds ability for viewers to propogate viewership to other users
   - This makes it so users can share a workspace with other users that contains items they don't have edit access to without having to manually duplicate or request edit access for each item
 
 ### Bug Fixes
+- Dataset tiles page now correctly shows item count when datasets filtered by tags
 - Fixes bug with user icon in share dialog
 - Adds better accessibility metadata labels to share dialog and expression layer
 

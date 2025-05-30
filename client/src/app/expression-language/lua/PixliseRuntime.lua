@@ -120,3 +120,7 @@ function readCache(k, w)
     print("Reporting readCache "..k.." failed")
     return nil
 end
+
+function readMap(key)
+    return readCSV("readMap("..key)
+end

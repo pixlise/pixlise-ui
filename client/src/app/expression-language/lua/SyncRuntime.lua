@@ -70,3 +70,7 @@ end
 function readCache(k, w)
     return readCache_async(k, w):await()
 end
+
+function readMap(k)
+    return readMap_async(k):await()
+end

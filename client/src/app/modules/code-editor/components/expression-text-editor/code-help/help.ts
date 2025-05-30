@@ -562,6 +562,12 @@ export class SourceHelp {
       ])
     );
 
+    help.addHelp(
+      new FunctionHelp("readMap", "", "Reads a map saved by the PIXLISE client library's saveMap functionality", OriginID, [
+        new FunctionParamHelp("key", "Unique key to identify the map to read"),
+      ])
+    );
+
     help.addHelp(new FunctionHelp("getVariogramInputs", "", "For use with Variograms", OriginID, []));
   }
 
