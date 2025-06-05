@@ -12,7 +12,7 @@ import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/
 import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
-import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
+import { WidgetDataGetReq, WidgetDataWriteReq, WidgetMetadataGetReq, WidgetMetadataGetResp, WidgetMetadataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
@@ -538,6 +538,54 @@ export class AnalysisLayoutService implements OnDestroy {
       if (res.widgetData) {
         this.widgetData$.next(this.widgetData$.value.set(res.widgetData.id, res.widgetData));
       }
+    });
+  }
+
+  fetchWidgetDataAsync(id: string): Observable<WidgetData | undefined> {
+    return this._dataService.sendWidgetDataGetRequest(WidgetDataGetReq.create({ id })).pipe(
+      map(res => {
+        if (res.widgetData) {
+          this.widgetData$.next(this.widgetData$.value.set(res.widgetData.id, res.widgetData));
+          return res.widgetData;
+        }
+        return undefined;
+      })
+    );
+  }
+
+  fetchWidgetMetadataAsync(id: string): Observable<WidgetMetadataGetResp | undefined> {
+    return this._dataService.sendWidgetMetadataGetRequest(WidgetMetadataGetReq.create({ id })).pipe(
+      map(res => {
+        if (res?.id) {
+          return res;
+        }
+        return undefined;
+      })
+    );
+  }
+
+  writeWidgetMetadata(id: string, widgetName: string, widgetDescription: string) {
+    this._dataService.sendWidgetMetadataWriteRequest(WidgetMetadataWriteReq.create({ id, widgetName, widgetDescription })).subscribe({
+      next: res => {
+        if (res?.id) {
+          // Update stored widget metadata
+          if (this.widgetData$.value.has(id)) {
+            const widgetData = this.widgetData$.value.get(id);
+            if (widgetData) {
+              widgetData.widgetName = widgetName;
+              widgetData.widgetDescription = widgetDescription;
+              this.widgetData$.next(this.widgetData$.value.set(id, widgetData));
+            }
+          } else {
+            this.fetchWidgetData(id);
+          }
+        }
+
+        return undefined;
+      },
+      error: err => {
+        this._snackService.openError("Error saving widget metadata", err);
+      },
     });
   }
 

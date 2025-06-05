@@ -48,19 +48,19 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
   // }
 
   onAnalysisTemplateClick(tab: ScreenTemplate): void {
-    let screenConfig = this._analysisLayoutService.addScreenConfigurationLayout(tab?.layout);
+    const screenConfig = this._analysisLayoutService.addScreenConfigurationLayout(tab?.layout);
     if (!screenConfig) {
       return;
     }
 
-    let lastTabId = screenConfig.layouts.length - 1;
+    const lastTabId = screenConfig.layouts.length - 1;
     this.queryParam["tab"] = lastTabId.toString();
 
     this._router.navigateByUrl(`${TabLinks.analysis}?${this.getQueryParamString()}`);
   }
 
   onOtherTemplateClick(tab: ScreenTemplate): void {
-    let screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    const screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
 
     if (tab.id === "browse") {
       if (screenConfig.browseTabHidden) {
@@ -90,8 +90,8 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
 
   @HostListener("window:keydown", ["$event"])
   onKeydown(event: KeyboardEvent): void {
-    let cmdOrCtrl = this._analysisLayoutService.isWindows ? "Control" : "Meta";
-    let bOrAltB = this._analysisLayoutService.isFirefox ? "∫" : "b";
+    const cmdOrCtrl = this._analysisLayoutService.isWindows ? "Control" : "Meta";
+    const bOrAltB = this._analysisLayoutService.isFirefox ? "∫" : "b";
 
     this._keyPresses.add(event.key);
     if (this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has(bOrAltB)) {

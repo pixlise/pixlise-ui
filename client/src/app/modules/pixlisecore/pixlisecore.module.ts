@@ -63,7 +63,7 @@ import { DragDropModule } from "@angular/cdk/drag-drop";
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 import { TableComponent } from "./components/atoms/table/table.component";
 import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
-import { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
+import { LayoutPreviewBoxComponent } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 import { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
 import { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
@@ -86,7 +86,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
-export { LayoutPreviewBox } from "./components/atoms/layout-preview-box/layout-preview-box.component";
+export { LayoutPreviewBoxComponent } from "./components/atoms/layout-preview-box/layout-preview-box.component";
 export { UserIconComponent } from "./components/atoms/user-icon/user-icon.component";
 export { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
@@ -146,7 +146,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     FeedbackDialogComponent,
     TableComponent,
     TextFileViewingDialogComponent,
-    LayoutPreviewBox,
+    LayoutPreviewBoxComponent,
     UserIconComponent,
     GroupIconComponent,
     SearchableListComponent,
@@ -200,7 +200,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     FeedbackDialogComponent,
     TableComponent,
     TextFileViewingDialogComponent,
-    LayoutPreviewBox,
+    LayoutPreviewBoxComponent,
     UserIconComponent,
     GroupIconComponent,
     SearchableListComponent,

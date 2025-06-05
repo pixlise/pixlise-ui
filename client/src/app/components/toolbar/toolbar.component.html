@@ -48,17 +48,27 @@ POSSIBILITY OF SUCH DAMAGE.
       *ngIf="hasActiveWorkspace && title.length > 0"
       src="assets/PIXLISE-abbreviated.svg"
       (click)="onLogoClick()"
+      tabindex="0"
+      (keydown)="onLogoClick()"
+      (keyup)="onLogoClick()"
+      (keypress)="onLogoClick()"
       #tooltip="matTooltip"
       matTooltip="Go to homepage"
-      [matTooltipShowDelay]="500" />
+      [matTooltipShowDelay]="500"
+      alt="PIXLISE Logo" />
     <img
       class="full"
       *ngIf="!hasActiveWorkspace || title.length === 0"
       src="assets/PIXLISE-red-logo.svg"
       (click)="onLogoClick()"
+      tabindex="0"
+      (keydown)="onLogoClick()"
+      (keyup)="onLogoClick()"
+      (keypress)="onLogoClick()"
       #tooltip="matTooltip"
       matTooltip="Go to homepage"
-      [matTooltipShowDelay]="500" />
+      [matTooltipShowDelay]="500"
+      alt="PIXLISE Logo" />
     <div
       class="title-text"
       [ngClass]="{ 'condensed-mode': hasActiveWorkspace && openTabs.length > 5 }"
@@ -79,8 +89,8 @@ POSSIBILITY OF SUCH DAMAGE.
       #tooltip="matTooltip"
       [matTooltip]="tab.tooltip || ''"
       [matTooltipShowDelay]="1000">
-      <a (click)="onOpenTab(tab)">
-        <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
+      <a (click)="onOpenTab(tab)" tabindex="0" (keydown)="onOpenTab(tab)" (keyup)="onOpenTab(tab)" (keypress)="onOpenTab(tab)">
+        <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" alt="Tab Icon" />
         <div *ngIf="tab.label && openTabs.length < 5" class="tab-label">
           <span class="view-label">{{ tab.label }}</span>
         </div>
@@ -95,9 +105,8 @@ POSSIBILITY OF SUCH DAMAGE.
         #tooltip="matTooltip"
         [matTooltip]="tab.tooltip || ''"
         [matTooltipShowDelay]="1000">
-        <a (click)="onOpenTab(tab)">
-          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" />
-          <!-- <div *ngIf="tab.label" class="tab-label">{{ tab.label }}</div> -->
+        <a (click)="onOpenTab(tab)" tabindex="0" (keydown)="onOpenTab(tab)" (keyup)="onOpenTab(tab)" (keypress)="onOpenTab(tab)">
+          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" alt="Tab Icon" />
           <div *ngIf="tab.label" class="tab-label">
             <span *ngIf="editingTabIndex !== getTabIndex(tab) || editingTabIndex === null" class="view-label" (dblclick)="onEditTab(tab)">{{ tab.label }}</span>
             <input
@@ -127,7 +136,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </a>
     </div>
     <div *ngIf="hasActiveWorkspace && !readOnlyMode" class="tab new-tab-btn">
-      <a (click)="onNewTab()">
+      <a (click)="onNewTab()" tabindex="0" (keydown)="onNewTab()" (keyup)="onNewTab()" (keypress)="onNewTab()">
         <span class="tab-label">+</span>
       </a>
     </div>
@@ -138,10 +147,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngIf="readOnlyMode" class="read-only-container">
         <span class="read-only">Read Only</span>
       </div>
-      <wait-spinner
-        *ngIf="outstandingInfo" 
-        #tooltip="matTooltip"
-        [matTooltip]="outstandingInfo"></wait-spinner>
+      <wait-spinner *ngIf="outstandingInfo" #tooltip="matTooltip" [matTooltip]="outstandingInfo"></wait-spinner>
       <push-button
         title="PIXLISE Version Information"
         *ngIf="uiVersionLastCommitDate > 0"
@@ -150,7 +156,11 @@ POSSIBILITY OF SUCH DAMAGE.
         class="changelog-btn"
         [buttonStyle]="hasViewedLatestVersion ? 'changelog-viewed' : 'changelog-new'"
         #changeLogBtn>
-        <img *ngIf="!hasViewedLatestVersion" class="changelog-icon {{ hasViewedLatestVersion ? 'viewed' : '' }}" src="assets/button-icons/change-log-lightning.svg" />
+        <img
+          *ngIf="!hasViewedLatestVersion"
+          class="changelog-icon {{ hasViewedLatestVersion ? 'viewed' : '' }}"
+          src="assets/button-icons/change-log-lightning.svg"
+          alt="Change Log Icon" />
         <span>{{ uiVersion }}</span>
       </push-button>
       <icon-button

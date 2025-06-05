@@ -1,0 +1,18 @@
+<button
+  #trigger
+  class="widget-switcher-trigger"
+  *ngIf="!disableSwitch"
+  (click)="openOverlay()"
+  (keydown.enter)="openOverlay()"
+  (keydown.space)="openOverlay()"
+  [attr.aria-label]="'Switch widget'"
+  [attr.aria-expanded]="isOpen"
+  #tooltip="matTooltip"
+  [matTooltip]="widgetDescription || activeWidget?.description || ''"
+  [matTooltipDisabled]="!(widgetDescription || activeWidget?.description)">
+  <div class="current-widget">
+    <img [src]="getWidgetIconUrl(activeWidget?.id || '')" alt="Widget Icon" />
+    <span class="widget-name">{{ widgetName || activeWidget?.name }}</span>
+    <icon-button [size]="16" icon="assets/button-icons/arrow-{{ isOpen ? 'up' : 'down' }}.svg"></icon-button>
+  </div>
+</button>
