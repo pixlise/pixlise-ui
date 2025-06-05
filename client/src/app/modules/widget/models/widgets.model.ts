@@ -182,7 +182,7 @@ export const WIDGETS = {
   },
   "text-view": {
     name: "Text View",
-    description: "Allows annotation of layout",
+    description: "Write freeform text using markdown",
     component: MarkdownTextViewComponent,
     dataKey: "markdownView",
     controlConfiguration: {},

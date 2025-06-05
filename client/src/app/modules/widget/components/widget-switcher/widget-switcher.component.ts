@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnInit, OnDestroy } from "@angular/core";
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnInit, OnDestroy, HostListener } from "@angular/core";
 import { WidgetConfiguration, WidgetType } from "../../models/widgets.model";
 import { getWidgetIconUrl } from "../../../pixlisecore/components/atoms/layout-preview-box/layout-preview-box.component";
 import { Overlay, OverlayRef, PositionStrategy } from "@angular/cdk/overlay";
@@ -8,6 +8,7 @@ import { WidgetSwitcherOverlayComponent } from "./widget-switcher-overlay/widget
 import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
 import { WidgetData } from "../../../../generated-protos/widget-data";
 import { WidgetMetadataGetResp } from "../../../../generated-protos/widget-data-msgs";
+import { MarkdownTooltipComponent } from "../../../pixlisecore/components/atoms/markdown-tooltip/markdown-tooltip.component";
 
 @Component({
   selector: "widget-switcher",
@@ -27,8 +28,10 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
   @Output() widgetChange = new EventEmitter<WidgetType>();
 
   private overlayRef: OverlayRef | null = null;
+  private tooltipOverlayRef: OverlayRef | null = null;
   private subscription = new Subscription();
   isOpen = false;
+  showTooltip = false;
 
   private _subs = new Subscription();
 
@@ -64,6 +67,7 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.closeOverlay();
+    this.closeTooltip();
     this.subscription.unsubscribe();
   }
 
@@ -82,6 +86,64 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
 
   getWidgetIconUrl(widgetType: string): string {
     return getWidgetIconUrl(widgetType);
+  }
+
+  @HostListener("mouseenter")
+  onMouseEnter() {
+    if (this.widgetDescription) {
+      this.showTooltip = true;
+      this.openTooltip();
+    }
+  }
+
+  @HostListener("mouseleave")
+  onMouseLeave() {
+    this.showTooltip = false;
+    this.closeTooltip();
+  }
+
+  private openTooltip() {
+    if (this.tooltipOverlayRef || !this.showTooltip) return;
+
+    const positionStrategy = this.getTooltipPositionStrategy();
+    this.tooltipOverlayRef = this.overlay.create({
+      positionStrategy,
+      scrollStrategy: this.overlay.scrollStrategies.close(),
+      hasBackdrop: false,
+    });
+
+    const portal = new ComponentPortal(MarkdownTooltipComponent);
+    const componentRef = this.tooltipOverlayRef.attach(portal);
+    componentRef.instance.content = this.widgetDescription;
+  }
+
+  private closeTooltip() {
+    if (this.tooltipOverlayRef) {
+      this.tooltipOverlayRef.dispose();
+      this.tooltipOverlayRef = null;
+    }
+  }
+
+  private getTooltipPositionStrategy(): PositionStrategy {
+    return this.overlay
+      .position()
+      .flexibleConnectedTo(this.trigger)
+      .withPositions([
+        {
+          originX: "start",
+          originY: "bottom",
+          overlayX: "start",
+          overlayY: "top",
+          offsetY: 8,
+        },
+        {
+          originX: "start",
+          originY: "top",
+          overlayX: "start",
+          overlayY: "bottom",
+          offsetY: -8,
+        },
+      ]);
   }
 
   openOverlay() {

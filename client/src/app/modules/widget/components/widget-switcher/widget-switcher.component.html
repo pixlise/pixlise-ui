@@ -6,10 +6,7 @@
   (keydown.enter)="openOverlay()"
   (keydown.space)="openOverlay()"
   [attr.aria-label]="'Switch widget'"
-  [attr.aria-expanded]="isOpen"
-  #tooltip="matTooltip"
-  [matTooltip]="widgetDescription || activeWidget?.description || ''"
-  [matTooltipDisabled]="!(widgetDescription || activeWidget?.description)">
+  [attr.aria-expanded]="isOpen">
   <div class="current-widget">
     <img [src]="getWidgetIconUrl(activeWidget?.id || '')" alt="Widget Icon" />
     <span class="widget-name">{{ widgetName || activeWidget?.name }}</span>
