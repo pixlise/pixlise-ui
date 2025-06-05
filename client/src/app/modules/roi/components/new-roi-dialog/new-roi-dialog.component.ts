@@ -213,7 +213,7 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
   getPMCsToSave(scanId: string, pmcList: Set<number>): Observable<PMCClusters> {
     if (!this.saveSeparateContiguousRegions) {
       // Just save all in one group
-      return of(new PMCClusters([], new Set<number>()));
+      return of(new PMCClusters([pmcList], new Set<number>()));
     }
     return this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })).pipe(
       switchMap((scanListResp: ScanListResp) => {
