@@ -437,3 +437,11 @@
     }
   }
 }
+
+.custom-roi-delete {
+  .button-container {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+  }
+}

@@ -643,6 +643,7 @@ export class ROIService implements OnDestroy {
       displaySettings: roi.displaySettings,
       owner: roi.owner,
       isMIST: roi.isMIST,
+      associatedROIId: roi.associatedROIId,
     });
   }
 
@@ -878,8 +879,8 @@ export class ROIService implements OnDestroy {
     this.writeROI(newROI, true);
   }
 
-  deleteROI(id: string, isMIST: boolean = false) {
-    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestDeleteReq.create({ id, isMIST })).subscribe({
+  deleteROI(id: string, isMIST: boolean = false, isAssociatedROIId: boolean = false) {
+    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestDeleteReq.create({ id, isMIST, isAssociatedROIId })).subscribe({
       next: res => {
         // Keep scan id so we can remove from mistROIsByScanId
         const scanId = this.roiSummaries$.value[id]?.scanId || this.roiItems$.value[id]?.scanId || "";
@@ -902,7 +903,7 @@ export class ROIService implements OnDestroy {
           this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
         }
 
-        this._snackBarService.openSuccess("ROI deleted!");
+        this._snackBarService.openSuccess(isAssociatedROIId ? `${res.deleteCount} ROIs deleted` : "ROI deleted!");
       },
       error: err => {
         this._snackBarService.openError(err);
