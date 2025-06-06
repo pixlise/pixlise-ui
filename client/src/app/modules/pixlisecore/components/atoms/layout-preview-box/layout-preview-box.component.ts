@@ -9,24 +9,30 @@ export const WIDGET_ICONS: Record<string, string> = {
   "context-image": "assets/chart-placeholders/context-image.svg",
   histogram: "assets/chart-placeholders/histogram.svg",
   "spectrum-chart": "assets/chart-placeholders/spectrum-chart.svg",
+  "rgbu-viewer": "assets/chart-placeholders/rgbu-viewer.svg",
+  "rgbu-plot": "assets/chart-placeholders/rgbu-plot.svg",
+  "single-axis-rgbu": "assets/chart-placeholders/single-axis-rgbu.svg",
+  "parallel-coordinates-plot": "assets/chart-placeholders/parallel-coordinates-plot.svg",
+  "quant-table": "assets/chart-placeholders/quant-table.svg",
+  "text-view": "assets/chart-placeholders/text-view.svg",
+  variogram: "assets/chart-placeholders/variogram.svg",
 };
 
-export const WIDGET_NAME_PLACEHOLDERS: Record<string, string> = {};
+const _baseIconUrl = "assets/chart-placeholders/";
+export const getWidgetIconUrl = (widgetType: string): string => {
+  return WIDGET_ICONS[widgetType] || `${_baseIconUrl}${widgetType}.svg`;
+};
 
 @Component({
   selector: "layout-preview-box",
   templateUrl: "./layout-preview-box.component.html",
   styleUrls: ["./layout-preview-box.component.scss"],
 })
-export class LayoutPreviewBox {
+export class LayoutPreviewBoxComponent {
   @Input() template: ScreenTemplate | null = null;
 
-  constructor() {}
-
-  ngOnInit(): void {}
-
   getWidgetIconUrl(widgetType: string): string {
-    return WIDGET_ICONS[widgetType] || "";
+    return getWidgetIconUrl(widgetType);
   }
 
   getWidgetNamePlaceholder(widgetType: string): string {

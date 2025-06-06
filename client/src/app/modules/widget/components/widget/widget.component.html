@@ -11,19 +11,14 @@
 
 <div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }} {{ isWidgetTargeted ? 'targeted' : '' }}" [attr.aria-label]="_activeWidget">
   <header *ngIf="!exportMode">
-    <mat-select
+    <widget-switcher
       *ngIf="!disableSwitch"
-      [(ngModel)]="activeWidget"
-      #tooltip="matTooltip"
-      [matTooltip]="widgetConfiguration?.description || ''"
-      [matTooltipDisabled]="!widgetConfiguration?.description"
-      matTooltipPositionAtOrigin="false">
-      <mat-option *ngFor="let widget of allWidgetOptions" [value]="widget.id">
-        <div class="widget-select">
-          <span>{{ widget.name }}</span>
-        </div>
-      </mat-option>
-    </mat-select>
+      [widgetId]="widgetLayoutConfig.id"
+      [widgetOptions]="allWidgetOptions"
+      [activeWidgetType]="activeWidget"
+      [description]="widgetConfiguration?.description"
+      (widgetChange)="activeWidget = $event">
+    </widget-switcher>
     <div class="widget-title" *ngIf="disableSwitch && title.length > 0" [title]="title">{{ title }}</div>
 
     <div class="buttons" #buttonsContainer>

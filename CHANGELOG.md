@@ -8,6 +8,12 @@
 - If an ROI which is being used on a binary, ternary or histogram is changed, these views will automatically redraw to reflect the change.
 - Adds ability for viewers to propogate viewership to other users
   - This makes it so users can share a workspace with other users that contains items they don't have edit access to without having to manually duplicate or request edit access for each item
+- **Chart selection picker overhaul**
+  - New chart picker that makes chart options more scannable
+  - Prevents title overflows
+  - Allows customization of chart title and description
+  - Chart descriptions support markdown formatting
+  - Chart descriptions are shown on tooltip hover and on chart title click if configured
 
 ### Bug Fixes
 - Dataset tiles page now correctly shows item count when datasets filtered by tags

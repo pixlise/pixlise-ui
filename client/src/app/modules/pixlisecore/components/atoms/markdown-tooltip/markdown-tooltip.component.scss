@@ -1,0 +1,55 @@
+:host {
+  display: block;
+}
+
+.markdown-tooltip {
+  padding: 12px;
+  max-width: 300px;
+  background: rgb(var(--clr-gray-100));
+  border: 1px solid rgb(var(--clr-gray-80));
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: rgb(var(--clr-gray-10));
+  font-size: 14px;
+  line-height: 1.4;
+
+  markdown {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: rgb(var(--clr-gray-10));
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    ul,
+    ol {
+      margin: 0 0 8px 0;
+      padding-left: 20px;
+    }
+
+    code {
+      background: rgb(var(--clr-gray-80));
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    pre {
+      background: rgb(var(--clr-gray-80));
+      padding: 8px;
+      border-radius: 4px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+  }
+}

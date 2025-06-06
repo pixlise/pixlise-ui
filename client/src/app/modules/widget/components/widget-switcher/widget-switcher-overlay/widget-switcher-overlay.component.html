@@ -1,0 +1,95 @@
+<div class="widget-switcher-overlay" role="dialog" aria-label="Widget selection">
+  <div class="header">
+    <img [src]="getWidgetIconUrl(activeWidgetType || '')" alt="Widget Icon" />
+    <span class="widget-name">{{ activeWidgetData?.widgetName || activeWidget?.name }}</span>
+    <div class="buttons">
+      <action-button *ngIf="mode === 'view' || mode === 'new'" action="edit-pencil" (click)="onOpenEditMode()"></action-button>
+      <action-button *ngIf="mode === 'edit'" action="close" (click)="onCancelEdit()"></action-button>
+      <action-button *ngIf="mode === 'edit'" action="check" (click)="onSaveEdit()"></action-button>
+    </div>
+  </div>
+
+  <div *ngIf="mode === 'edit'" class="edit-mode">
+    <div class="form-group">
+      <label for="chartTitle">Chart Title</label>
+      <input type="text" id="chartTitle" class="form-control" [(ngModel)]="chartTitle" [placeholder]="activeWidget?.name || 'Enter chart title'" />
+    </div>
+
+    <div class="form-group">
+      <label for="chartDescription">Chart Description</label>
+      <textarea
+        id="chartDescription"
+        class="form-control"
+        [(ngModel)]="chartDescription"
+        [placeholder]="activeWidget?.description || 'Enter chart description'"
+        rows="4"></textarea>
+    </div>
+
+    <div class="form-group widget-select-container">
+      <button id="widgetSelector" class="widget-select-button" (click)="mode = 'new'">
+        <span class="selected-widget">
+          <img [src]="getWidgetIconUrl(activeWidgetType || '')" alt="Widget Icon" />
+          {{ activeWidget?.name }}
+        </span>
+        <img class="dropdown-icon" src="assets/button-icons/arrow-down.svg" alt="Widget selector dropdown" />
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="mode === 'view'" class="view-mode">
+    <div class="chart-description">
+      <div class="markdown-container">
+        <markdown [lineOffset]="5" [data]="activeWidgetData?.widgetDescription || activeWidget?.description || ''"> </markdown>
+      </div>
+    </div>
+
+    <div class="form-group widget-select-container">
+      <button id="widgetSelector" class="widget-select-button" (click)="mode = 'new'">
+        <span class="selected-widget">
+          <img [src]="getWidgetIconUrl(activeWidgetType || '')" alt="Widget Icon" />
+          {{ activeWidget?.name }}
+        </span>
+        <img class="dropdown-icon" src="assets/button-icons/arrow-down.svg" alt="Widget selector dropdown" />
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="mode === 'new'" class="widget-grid">
+    <div class="widget-columns">
+      <div *ngFor="let section of sections.slice(0, 1)" class="widget-column">
+        <div class="section-title">{{ section.title }}</div>
+        <button
+          *ngFor="let widget of section.widgets"
+          class="widget-option"
+          [class.active]="widget.id === activeWidgetType"
+          (click)="selectWidget(widget.id)"
+          (keydown.enter)="selectWidget(widget.id)"
+          (keydown.space)="selectWidget(widget.id)"
+          [attr.aria-label]="'Select ' + widget.name + ' widget'"
+          [attr.aria-pressed]="widget.id === activeWidgetType">
+          <img [src]="getWidgetIconUrl(widget?.id || '')" alt="Widget Icon" />
+          <span class="widget-name">{{ widget.name }}</span>
+          <icon-button class="active-icon" *ngIf="widget.id === activeWidgetType" [size]="16" icon="assets/button-icons/check-yellow.svg"></icon-button>
+        </button>
+      </div>
+      <div class="right-column">
+        <div *ngFor="let section of sections.slice(1)" class="widget-column">
+          <div class="section-title">{{ section.title }}</div>
+          <button
+            *ngFor="let widget of section.widgets"
+            class="widget-option"
+            [class.active]="widget.id === activeWidgetType"
+            (click)="selectWidget(widget.id)"
+            (keydown.enter)="selectWidget(widget.id)"
+            (keydown.space)="selectWidget(widget.id)"
+            [attr.aria-label]="'Select ' + widget.name + ' widget'"
+            [attr.aria-pressed]="widget.id === activeWidgetType">
+            <img [src]="getWidgetIconUrl(widget?.id || '')" alt="Widget Icon" />
+            <span class="widget-name">{{ widget.name }}</span>
+            <icon-button class="active-icon" *ngIf="widget.id === activeWidgetType" [size]="16" icon="assets/button-icons/check-yellow.svg"></icon-button>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

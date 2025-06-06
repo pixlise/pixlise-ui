@@ -1,0 +1,54 @@
+:host {
+  display: block;
+}
+
+.widget-switcher-trigger {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid #00000029;
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgb(var(--clr-gray-100));
+  transition: background-color 0.2s;
+  margin-left: 4px;
+
+  &:hover {
+    background: rgb(var(--clr-gray-90));
+  }
+
+  &:focus {
+    outline: none;
+    border-color: rgb(var(--clr-gray-50));
+  }
+}
+
+.current-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 6px 4px;
+
+  img {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) invert(1);
+  }
+
+  .widget-name {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: none;
+    font-family: "Inter", sans-serif;
+    color: rgb(var(--clr-gray-10));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+}
+
+::ng-deep .widget-switcher-backdrop {
+  background: transparent;
+}
