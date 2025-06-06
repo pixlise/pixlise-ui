@@ -52,9 +52,8 @@ export class RequestGroupDialogComponent implements OnInit, AfterViewInit {
   columns: { displayName: string; id: string }[] = [
     { displayName: "Name", id: "name" },
     { displayName: "Description", id: "description" },
-    { displayName: "Datasets", id: "datasets" },
   ];
-  columnIDs: string[] = ["select", "asMember", "name", "description", "administrators", "datasets", "lastUserJoinedUnixSec"];
+  columnIDs: string[] = ["select", "asMember", "name", "description", "administrators", "lastUserJoinedUnixSec"];
 
   groupAdminTooltips: Record<string, string> = {};
   groupRequestAsMember: Record<string, boolean> = {};

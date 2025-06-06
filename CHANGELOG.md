@@ -20,6 +20,7 @@
 - Dataset tiles page now correctly shows item count when datasets filtered by tags
 - Fixes bug with user icon in share dialog
 - Adds better accessibility metadata labels to share dialog and expression layer
+- Removed incorrectly calculated dataset count column on manage groups dialog (where users can ask to join a group)
 
 ## 4.67.0 (05-14-2025)
 
