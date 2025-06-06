@@ -145,12 +145,12 @@ export class ExpressionLayerComponent implements OnInit, OnDestroy {
     return !!this._route.snapshot.queryParams[EditorConfig.topExpressionId];
   }
 
-  get expression(): DataExpression | ExpressionGroup | null {
-    return this._expression;
-  }
-
   get isSharedWithOthers(): boolean {
     return this._expression?.owner?.sharedWithOthers || false;
+  }
+
+  get expression(): DataExpression | ExpressionGroup | null {
+    return this._expression;
   }
 
   @Input() set expression(expression: DataExpression | ExpressionGroup | null) {

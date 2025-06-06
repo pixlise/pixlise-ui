@@ -29,9 +29,17 @@
 
 import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { Subscription, scan } from "rxjs";
+import { string } from "mathjs";
+import { Observable, Subscription, combineLatest, map, of, scan, switchMap } from "rxjs";
+import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
+import { ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ROIItem } from "src/app/generated-protos/roi";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ContextImageScanModelGenerator, PMCClusters } from "src/app/modules/image-viewers/widgets/context-image/context-image-scan-model-generator";
+import { ContextImageDataService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 export type NewROIDialogData = {
@@ -56,9 +64,12 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
   selectedScanIds: string[] = [];
   defaultScanId: string = "";
 
+  saveSeparateContiguousRegions: boolean = false;
+
   constructor(
     private _roiService: ROIService,
     private _selectionService: SelectionService,
+    private _cachedDataService: APICachedDataService,
     @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<NewROIDialogComponent>
   ) {
@@ -69,7 +80,18 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
     if (this.data.pmcs === undefined) {
       this._subs.add(
         this._selectionService.selection$.subscribe(selection => {
-          this.selectedScanIds = selection.beamSelection.getScanIds();
+          // NOTE: We can get multiple scan ids here but we need to check that each one
+          // actually has PMCs selected before we go warning all over the place
+          const scanIds = selection.beamSelection.getScanIds();
+          this.selectedScanIds = [];
+
+          for (const scanId of scanIds) {
+            const pmcs = selection.beamSelection.getSelectedScanEntryPMCs(scanId);
+            if (pmcs.size > 0 || selection.pixelSelection.selectedPixels.size > 0) {
+              this.selectedScanIds.push(scanId);
+            }
+          }
+
           this.pixelCount = selection.pixelSelection.selectedPixels.size;
           this.entryCount = selection.beamSelection.getSelectedEntryCount();
         })
@@ -81,6 +103,10 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  onToggleSeparateContiguous() {
+    this.saveSeparateContiguousRegions = !this.saveSeparateContiguousRegions;
   }
 
   onSaveNewROI() {
@@ -109,26 +135,110 @@ export class NewROIDialogComponent implements OnInit, OnDestroy {
         }
       }
 
+      // Now we create the ROIs - NOTE that we only create an ROI if there are more than 0 PMCs or 0 pixels in it!
+
       // TODO: There's a weird edge case here if we have PMCs from multiple scans selected AND pixels selected
       // In this case, the pixels will be duplicated to each scan, which is probably not what we want
       // However, this edge case can currently only be manually crafted and would require changing PixelSelection
       // to include a scan id, which is too big of an undertaking for now.
       scanIds.forEach(scanId => {
-        this._roiService.createROI(
-          ROIItem.create({
-            name: this.newROIName,
-            description: this.newROIDescription,
-            tags: this.newROITags,
-            scanId,
-            pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
-            imageName: selection.pixelSelection.imageName,
-            scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId)),
-          })
-        );
+        const pmcs = selection.beamSelection.getSelectedScanEntryPMCs(scanId);
+        if (selection.pixelSelection.selectedPixels.size > 0 || pmcs.size > 0) {
+          // If we're saving separate contiguous regions, do that here
+          this.getPMCsToSave(scanId, pmcs).subscribe(pmcGroups => {
+            if (pmcGroups.clusters.length == 1 && pmcGroups.residual.size <= 0) {
+              // Just create one normally
+              const roi = ROIItem.create({
+                name: this.newROIName,
+                description: this.newROIDescription,
+                tags: this.newROITags,
+                scanId,
+                pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+                imageName: selection.pixelSelection.imageName,
+                scanEntryIndexesEncoded: Array.from(pmcGroups.clusters[0].values()),
+              });
+              this._roiService.createROI(roi);
+            } else {
+              const rois: ROIItem[] = [];
+              let counter = 1;
+
+              for (const pmcGroup of pmcGroups.clusters) {
+                if (pmcGroup.size > 0) {
+                  let padChars = 1;
+                  if (pmcGroups.clusters.length >= 100) {
+                    padChars = 3;
+                  } else if (pmcGroups.clusters.length >= 10) {
+                    padChars = 2;
+                  }
+
+                  const roi = ROIItem.create({
+                    name: `${this.newROIName} (${String(counter).padStart(padChars, "0")})`,
+                    description: `${pmcGroup.size} points` + (this.newROIDescription.length > 0 ? ": " + this.newROIDescription : ""),
+                    tags: this.newROITags,
+                    scanId,
+                    pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+                    imageName: selection.pixelSelection.imageName,
+                    scanEntryIndexesEncoded: Array.from(pmcGroup),
+                  });
+
+                  rois.push(roi);
+                  counter++;
+                }
+              }
+
+              // If we have residual points, create a differently named cluster for that
+              if (pmcGroups.residual.size > 0) {
+                const residualROI = ROIItem.create({
+                  name: this.newROIName + " residual points",
+                  description: `${pmcGroups.residual.size} individual points left over from clustering of ROI: "${this.newROIName}"`,
+                  tags: this.newROITags,
+                  scanId,
+                  pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+                  imageName: selection.pixelSelection.imageName,
+                  scanEntryIndexesEncoded: Array.from(pmcGroups.residual),
+                });
+                rois.push(residualROI);
+              }
+
+              this._roiService.bulkWriteROIs(rois, false, false, false);
+            }
+
+            this.dialogRef.close(true);
+          });
+        }
       });
     }
+  }
 
-    this.dialogRef.close(true);
+  getPMCsToSave(scanId: string, pmcList: Set<number>): Observable<PMCClusters> {
+    if (!this.saveSeparateContiguousRegions) {
+      // Just save all in one group
+      return of(new PMCClusters([pmcList], new Set<number>()));
+    }
+    return this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })).pipe(
+      switchMap((scanListResp: ScanListResp) => {
+        // There should be one scan!
+        if (scanListResp.scans.length != 1) {
+          throw new Error("Expected single scan to load for: " + scanId);
+        }
+
+        const requests = [
+          this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId })),
+          this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })),
+        ];
+
+        return combineLatest(requests).pipe(
+          map((results: (ScanBeamLocationsResp | ScanEntryResp | DetectorConfigResp)[]) => {
+            const beamResp: ScanBeamLocationsResp = results[0] as ScanBeamLocationsResp;
+            const scanEntryResp: ScanEntryResp = results[1] as ScanEntryResp;
+
+            // Loop through all PMCs and find contiguous regions, saved in separate groups
+            const gen = new ContextImageScanModelGenerator();
+            return gen.processBeamDataToGenerateClusters(3, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, pmcList);
+          })
+        );
+      })
+    );
   }
 
   onNewTagSelectionChanged(tagIDs: string[]) {

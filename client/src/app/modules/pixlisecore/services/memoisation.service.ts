@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 
-import { Observable, catchError, firstValueFrom, from, map, of, switchMap } from "rxjs";
+import { Observable, Subject, catchError, firstValueFrom, from, map, of, switchMap } from "rxjs";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -8,6 +8,10 @@ import { httpErrorToString, SentryHelper } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
+import { APIDataService } from "./apidata.service";
+import { NotificationType } from "src/app/generated-protos/notification";
+import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
+
 
 @Injectable({
   providedIn: "root",
@@ -16,11 +20,31 @@ export class MemoisationService {
   // Local cache, if it's not in here, we reach out to API and cache what it says
   private _local = new Map<string, MemoisedItem>();
 
+  savedMapChanged$: Subject<string> = new Subject<string>();
+
   constructor(
     private _httpClient: HttpClient,
-    //private _dataService: APIDataService,
+    private _dataService: APIDataService,
     private _localStorageService: LocalStorageService
-  ) {}
+  ) {
+    this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
+      next: (notificationResp: NotificationResp) => {
+        // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+        console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
+      },
+    });
+  }
+
+  // Call this to check if the notification update contains anything relevant to be cleared from memoisation
+  handleSysDataChangedNotification(upd: NotificationUpd) {
+    if (!upd || !upd.notification || upd.notification.notificationType != NotificationType.NT_SYS_DATA_CHANGED) {
+      throw new Error("handleSysDataChangedNotification should only be called for NT_SYS_DATA_CHANGED notifications");
+    }
+    if ((upd.notification.mapId || "").length > 0) {
+      // Map changed! Clear out this map if we have it and trigger anything that needs to redisplay
+      this.delete(upd.notification.mapId);
+    }
+  }
 
   delete(key: string): Observable<void> {
     this._local.delete(key);

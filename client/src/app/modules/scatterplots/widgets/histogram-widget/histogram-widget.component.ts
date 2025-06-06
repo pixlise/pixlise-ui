@@ -31,6 +31,9 @@ import { ROIService } from "../../../roi/services/roi.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
+import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
+import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
+import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
 @Component({
   selector: "histogram-widget",
@@ -52,6 +55,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   modelErrors: WidgetError[] = [];
 
   private _subs = new Subscription();
+  private _objChangeMonitor = new ObjectChangeMonitor();
 
   constructor(
     public dialog: MatDialog,
@@ -59,7 +63,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
     private _selectionService: SelectionService,
-    private _roiService: ROIService
+    private _roiService: ROIService,
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     super();
 
@@ -212,6 +217,16 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       })
     );
 
+    this._subs.add(
+      this._objChangeService.objectChanged$.subscribe((change: ObjectChange) => {
+        // If we're interested in any of these, call update!
+        if ((change.mapName && this._objChangeMonitor.isMapUsed(change.mapName)) || (change.roiId && this._objChangeMonitor.isROIUsed(change.roiId))) {
+          console.log("Histogram: Updating due to change " + change.toString());
+          this.update();
+        }
+      })
+    );
+
     this.reDraw();
   }
 
@@ -294,6 +309,9 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         .pipe(first())
         .subscribe({
           next: data => {
+            // If we've got maps we're subscribed for, listen to the memo service for changes to those
+            this._objChangeMonitor.checkExpressionResultObjectsUsed(data);
+
             this.setData(data).pipe(first()).subscribe();
           },
           error: err => {

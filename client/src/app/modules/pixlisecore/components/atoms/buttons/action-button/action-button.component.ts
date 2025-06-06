@@ -43,6 +43,7 @@ export const matActionIcons = {
 
 const customActionIcons = {
   "edit-clipboard": "assets/button-icons/edit.svg",
+  "edit-pencil": "assets/button-icons/edit-pencil.svg",
   delete: "assets/button-icons/delete.svg",
   confirm: "assets/button-icons/radio-tick-on.svg",
   deny: "assets/button-icons/grey-circle-x.svg",

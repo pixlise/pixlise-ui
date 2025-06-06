@@ -302,7 +302,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   onOpenTab(tab: NavigationTab): void {
-    let strippedURL = this.router.url.split("?")[0];
+    const strippedURL = this.router.url.split("?")[0];
 
     let isOnTab = strippedURL.endsWith(tab.url);
     if (tab.params && Object.keys(tab.params).length > 0) {

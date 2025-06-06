@@ -2,57 +2,35 @@
   <analysis-sidepanel></analysis-sidepanel>
   <div class="new-tab-container">
     <div class="presets analysis-presets">
-      <div *ngFor="let template of analysisTemplates" class="layout-container" (click)="onAnalysisTemplateClick(template)">
+      <div
+        *ngFor="let template of analysisTemplates"
+        class="layout-container"
+        (click)="onAnalysisTemplateClick(template)"
+        tabindex="0"
+        (keydown)="onAnalysisTemplateClick(template)"
+        (keyup)="onAnalysisTemplateClick(template)"
+        (keypress)="onAnalysisTemplateClick(template)">
         <div class="title-bar">
-          <img [src]="template.templateIcon" />
+          <img [src]="template.templateIcon" alt="Analysis Template Icon" />
           <span class="label">{{ template.templateName }}</span>
         </div>
         <layout-preview-box [template]="template"></layout-preview-box>
-        <!-- <div
-          class="layout-preview"
-          [ngStyle]="{
-            'grid-template-columns': template.screenConfiguration.templateColumns,
-            'grid-template-rows': template.screenConfiguration.templateRows
-          }">
-          <div
-            *ngFor="let widget of template.layout.widgets"
-            class="widget-preview"
-            [ngStyle]="{
-              'grid-column-start': widget.startColumn,
-              'grid-column-end': widget.endColumn,
-              'grid-row-start': widget.startRow,
-              'grid-row-end': widget.endRow
-            }">
-            <img *ngIf="widget.type" [src]="getWidgetIconUrl(widget.type)" />
-          </div>
-        </div> -->
       </div>
     </div>
     <div class="presets other-tabs">
-      <div *ngFor="let template of otherTemplates" class="layout-container" (click)="onOtherTemplateClick(template)">
+      <div
+        *ngFor="let template of otherTemplates"
+        class="layout-container"
+        (click)="onOtherTemplateClick(template)"
+        tabindex="0"
+        (keydown)="onOtherTemplateClick(template)"
+        (keyup)="onOtherTemplateClick(template)"
+        (keypress)="onOtherTemplateClick(template)">
         <div class="title-bar">
-          <img [src]="template.templateIcon" />
+          <img [src]="template.templateIcon" alt="Other Template Icon" />
           <span class="label">{{ template.templateName }}</span>
         </div>
         <layout-preview-box [template]="template"></layout-preview-box>
-        <!-- <div
-          class="layout-preview"
-          [ngStyle]="{
-            'grid-template-columns': template.screenConfiguration.templateColumns,
-            'grid-template-rows': template.screenConfiguration.templateRows
-          }">
-          <div
-            *ngFor="let widget of template.layout.widgets"
-            class="widget-preview"
-            [ngStyle]="{
-              'grid-column-start': widget.startColumn,
-              'grid-column-end': widget.endColumn,
-              'grid-row-start': widget.startRow,
-              'grid-row-end': widget.endRow 
-            }">
-            <img *ngIf="widget.type" [src]="getWidgetIconUrl(widget.type)" />
-          </div>
-        </div> -->
       </div>
     </div>
   </div>

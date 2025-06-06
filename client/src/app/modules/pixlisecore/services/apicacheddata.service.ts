@@ -31,6 +31,8 @@ import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src
 import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { VariogramPoint } from "../../scatterplots/widgets/variogram-widget/vario-data";
 import { MemoisationService } from "./memoisation.service";
+import { ObjectChangeMonitorService } from "./object-change-monitor.service";
+import { ROIService } from "../../roi/services/roi.service";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -90,7 +92,8 @@ export class APICachedDataService {
 
   constructor(
     private _dataService: APIDataService,
-    private _memoisationService: MemoisationService
+    private _memoisationService: MemoisationService,
+    private _objChangeService: ObjectChangeMonitorService
   ) {
     this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
       next: (notificationResp: NotificationResp) => {
@@ -98,26 +101,35 @@ export class APICachedDataService {
         console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
       },
     });
+  }
 
-    this._dataService.notificationUpd$.subscribe((upd: NotificationUpd) => {
-      // When we get a data change notification we clear caches relevant to that
-      if (upd.notification?.notificationType == NotificationType.NT_SYS_DATA_CHANGED) {
-        // Clear all our caches for this notification
-        if (upd.notification.scanIds) {
-          for (const scanId of upd.notification.scanIds) {
-            this.clearCacheForScanId(scanId);
-          }
-        }
-
-        if (upd.notification.quantId) {
-          this.clearCacheForQuantId(upd.notification.quantId);
-        }
-
-        if (upd.notification.imageName) {
-          this.clearCacheForImage(upd.notification.imageName);
+  handleSysDataChangedNotification(upd: NotificationUpd) {
+    if (upd.notification?.notificationType == NotificationType.NT_SYS_DATA_CHANGED) {
+      // Clear all our caches for this notification
+      if (upd.notification.scanIds) {
+        for (const scanId of upd.notification.scanIds) {
+          this.clearCacheForScanId(scanId);
         }
       }
-    });
+
+      if (upd.notification.quantId) {
+        this.clearCacheForQuantId(upd.notification.quantId);
+      }
+
+      if (upd.notification.imageName) {
+        this.clearCacheForImage(upd.notification.imageName);
+      }
+
+      if (upd.notification.roiId) {
+        this.clearCacheForROI(upd.notification.roiId);
+      }
+
+      // Send to memoisation service, it may also need to clear stuff
+      this._memoisationService.handleSysDataChangedNotification(upd);
+
+      // Finally, send to change monitor as it might need to notify UI elements
+      this._objChangeService.handleNotification(upd);
+    }
   }
 
   // Expects to be passed an id, and one of: _scanIdCacheKeys, _quantIdCacheKeys, _imageCacheKeys
@@ -202,6 +214,19 @@ export class APICachedDataService {
 
     // We've cleared it!
     this._imageCacheKeys.delete(imageName);
+  }
+
+  private clearCacheForROI(roiId: string) {
+    // NOTE: we're called by roi service so those are already handled...
+
+    for (const id of this._regionOfInterestGetReqMap.keys()) {
+      // NOTE: ids here are a JSON structure containing:
+      // {id: roiId, isMIST: bool}
+      // But we only have the roiId part, so we search for matches
+      if (id.indexOf(roiId) >= 0) {
+        this._regionOfInterestGetReqMap.delete(id);
+      }
+    }
   }
 
   getQuant(req: QuantGetReq): Observable<QuantGetResp> {

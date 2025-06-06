@@ -1,4 +1,28 @@
-## 4.67.0 (LATEST)
+## 4.68.0 (Latest)
+
+### New Features
+- Added readMap() function available in Lua expression language. This allows reading a map that was uploaded from the PIXLISE python client library using the saveMapData() python function. This allows code to be written external to PIXLISE that can access any datasets required to form a map of data, which can now be displayed in PIXLISE. The name of the maps must match (between the one saved in python and the one referenced in the PIXLISE expression language call to readMap) and if displaying on a binary plot you will likely want 2 maps - one for each axis.
+  - NOTE: PMCs in this case can just be a number counting up from 0 to however many points are in the map.
+  - NOTE2: If using multiple maps together (like in the case of binary map X and Y axis) ensure that the maps are the same size otherwise an error will be shown.
+- If a saved map changes and an expression in PIXLISE is using data from that saved map, it will redraw the chart. This allows someone to run code multiple times outside of PIXLISE using the client library and interactively see the chart update to reflect the latest values uploaded to the map.
+- If an ROI which is being used on a binary, ternary or histogram is changed, these views will automatically redraw to reflect the change.
+- Adds ability for viewers to propogate viewership to other users
+  - This makes it so users can share a workspace with other users that contains items they don't have edit access to without having to manually duplicate or request edit access for each item
+- **Chart selection picker overhaul**
+  - New chart picker that makes chart options more scannable
+  - Prevents title overflows
+  - Allows customization of chart title and description
+  - Chart descriptions support markdown formatting
+  - Chart descriptions are shown on tooltip hover and on chart title click if configured
+- Added new switch to ROI creation dialog which allows saving one ROI per contiguous cluster of PMCs in the selection. This creates one ROI per cluster of PMCs, and any clusters which have less than 3 PMCs end up in a "residual points" ROI. When deleting one of these ROIs, the user is asked if they want to delete just the one clicked on or all the ROIs created with this feature. This allows easy clean-up of the ROIs created.
+
+### Bug Fixes
+- Dataset tiles page now correctly shows item count when datasets filtered by tags
+- Fixes bug with user icon in share dialog
+- Adds better accessibility metadata labels to share dialog and expression layer
+- Removed incorrectly calculated dataset count column on manage groups dialog (where users can ask to join a group)
+
+## 4.67.0 (05-14-2025)
 
 ### New Features
 - Shows locked icon on groups page for non-joinable groups
@@ -7,9 +31,13 @@
 - Updates "Add Role" dialog to include role descriptions
 - Adds default roles option to group management page
   - Admins can now set default roles that users will get when they are added to a group as a member
+- Adds descriptive label for image upload on dataset customisation page and filters alignable image options to MCC images
 
 ### Bug Fixes
 - Fixed issue on spectrum chart where selection was still showing up after being cleared 
+- Adds better error handling to image uploading in dataset customisation page
+- Disables image alignment controls for non-aligned images
+- Fixes quantification table bug where data for All Points ROI was not being displayed correctly
 
 ## 4.66.0 (04-25-2025)
 

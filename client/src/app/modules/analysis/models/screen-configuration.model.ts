@@ -461,8 +461,8 @@ const CONTEXT_IMAGE_PCP: FullScreenLayout = {
 };
 
 export const generateTemplateConfiguration = (layout: FullScreenLayout): ScreenConfigurationCSS => {
-  let templateRows = layout.rows.map(row => `${row.height}fr`).join(" ");
-  let templateColumns = layout.columns.map(column => `${column.width}fr`).join(" ");
+  const templateRows = layout.rows.map(row => `${row.height}fr`).join(" ");
+  const templateColumns = layout.columns.map(column => `${column.width}fr`).join(" ");
   return { templateColumns, templateRows };
 };
 

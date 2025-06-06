@@ -14,7 +14,7 @@ import {
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
 import { BehaviorSubject, EMPTY, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
-import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
+import { decodeIndexList, encodeIndexList, SentryHelper } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
 import { COLOURS, ColourOption } from "../models/roi-colors";
@@ -35,6 +35,8 @@ import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "../../analysis/analysis.module";
 import { UserGroupList } from "../../../generated-protos/ownership-access";
+import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
+import { NotificationType } from "src/app/generated-protos/notification";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -103,10 +105,56 @@ export class ROIService implements OnDestroy {
         )
         .subscribe()
     );
+
+    this._dataService.notificationUpd$.subscribe((upd: NotificationUpd) => {
+      // When we get a data change notification we clear caches relevant to that
+      if (upd.notification?.notificationType == NotificationType.NT_SYS_DATA_CHANGED) {
+        if (upd.notification?.roiId) {
+          this.clearCachedROI(upd.notification.roiId);
+        }
+
+        // Finally, send to cache API data service which can delete other things...
+        this._cachedDataService.handleSysDataChangedNotification(upd);
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  clearCachedROI(roiId: string): void {
+    let refreshItems = false;
+    // Delete from anywhere it may exist
+    if (roiId in this.roiItems$.value) {
+      delete this.roiItems$.value[roiId];
+      refreshItems = true;
+    }
+
+    // let refreshDisplay = false;
+    // if (roiId in this.displaySettingsMap$.value) {
+    //   delete this.displaySettingsMap$.value[roiId];
+    //   refreshDisplay = true;
+    // }
+
+    let refreshSummaries = false;
+    if (roiId in this.roiSummaries$.value) {
+      delete this.roiSummaries$.value[roiId];
+      refreshSummaries = true;
+    }
+
+    this._regionMap.delete(roiId);
+
+    // Fire off new values for those that need it
+    if (refreshItems) {
+      this.roiItems$.next(this.roiItems$.value);
+    }
+    // if (refreshDisplay) {
+    //   this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+    // }
+    if (refreshSummaries) {
+      this.roiSummaries$.next(this.roiSummaries$.value);
+    }
   }
 
   generateSelectionROI(selection: SelectionHistoryItem) {
@@ -595,6 +643,7 @@ export class ROIService implements OnDestroy {
       displaySettings: roi.displaySettings,
       owner: roi.owner,
       isMIST: roi.isMIST,
+      associatedROIId: roi.associatedROIId,
     });
   }
 
@@ -830,31 +879,49 @@ export class ROIService implements OnDestroy {
     this.writeROI(newROI, true);
   }
 
-  deleteROI(id: string, isMIST: boolean = false) {
-    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestDeleteReq.create({ id, isMIST })).subscribe({
+  deleteROI(roiId: string, isMIST: boolean = false, isAssociatedROIId: boolean = false) {
+    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestDeleteReq.create({ id: roiId, isMIST, isAssociatedROIId })).subscribe({
       next: res => {
-        // Keep scan id so we can remove from mistROIsByScanId
-        const scanId = this.roiSummaries$.value[id]?.scanId || this.roiItems$.value[id]?.scanId || "";
+        let triggerROIItems = false;
+        let triggerROISummaries = false;
+        let triggerMistROIs = false;
 
-        // Remove cached full version
-        if (this.roiItems$.value[id]) {
-          delete this.roiItems$.value[id];
+        for (const deletedId of res.deletedIds) {
+          // Keep scan id so we can remove from mistROIsByScanId
+          const scanId = this.roiSummaries$.value[deletedId]?.scanId || this.roiItems$.value[deletedId]?.scanId || "";
+
+          // Remove cached full version
+          if (this.roiItems$.value[deletedId]) {
+            delete this.roiItems$.value[deletedId];
+            triggerROIItems = true;
+          }
+
+          // Remove cached summary
+          if (this.roiSummaries$.value[deletedId]) {
+            delete this.roiSummaries$.value[deletedId];
+            triggerROISummaries = true;
+          }
+
+          // If this is a mist roi, remove cached mist roi summary
+          if (isMIST && this.mistROIsByScanId$.value[scanId] && this.mistROIsByScanId$.value[scanId][deletedId]) {
+            delete this.mistROIsByScanId$.value[scanId][deletedId];
+            triggerMistROIs = true;
+          }
+        }
+
+        if (triggerROIItems) {
           this.roiItems$.next(this.roiItems$.value);
         }
 
-        // Remove cached summary
-        if (this.roiSummaries$.value[id]) {
-          delete this.roiSummaries$.value[id];
+        if (triggerROISummaries) {
           this.roiSummaries$.next(this.roiSummaries$.value);
         }
 
-        // If this is a mist roi, remove cached mist roi summary
-        if (isMIST && this.mistROIsByScanId$.value[scanId] && this.mistROIsByScanId$.value[scanId][id]) {
-          delete this.mistROIsByScanId$.value[scanId][id];
+        if (triggerMistROIs) {
           this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
         }
 
-        this._snackBarService.openSuccess("ROI deleted!");
+        this._snackBarService.openSuccess(isAssociatedROIId ? `${res.deletedIds.length} ROIs deleted` : "ROI deleted!");
       },
       error: err => {
         this._snackBarService.openError(err);

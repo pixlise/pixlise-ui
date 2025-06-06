@@ -82,15 +82,27 @@
   </div>
 </ng-template>
 
+<ng-template #deleteROIConfirm>
+  <div class="dlg-border-with-backdrop custom-roi-delete">
+    <h1>Confirm</h1>
+    <h5>Are you sure you want to delete ROI: {{ name }}?</h5>
+    <div class="button-container">
+      <push-button buttonStyle="outline" (onClick)="onCloseDelete()">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onConfirmDelete(false)">Delete This One</push-button>
+      <push-button *ngIf="summary.associatedROIId" buttonStyle="yellow" (onClick)="onConfirmDelete(true)">Delete All In Group</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #roiSettingsMenu>
   <div class="roi-settings">
     <div class="settings-buttons">
       <action-button
         [disabled]="!canEdit"
-        title="Delete this ROI"
+        title="Delete ROI"
         action="delete"
-        confirmText="Are you sure you want to delete ROI: {{ name }}?"
-        (onClick)="onDelete()">
+        [customDialog]="deleteROIConfirm"
+        #deleteROIConfirmButton>
       </action-button>
       <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
@@ -174,7 +186,7 @@
       #tooltip="matTooltip"
       matTooltipClass="multiline-tooltip"
       [matTooltipShowDelay]="500"
-      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
+      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString + '\nROI Id: ' + id : '')">
       <h4>
         {{ name }}
         <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this ROI.">

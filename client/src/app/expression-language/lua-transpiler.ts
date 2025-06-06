@@ -50,6 +50,7 @@ export class LuaTranspiler {
     "position",
     "makeMap",
     "getVariogramInputs",
+    // TODO: should we add writeCache, readCache and readMap?
   ];
   private _mapReturningFuncs = LuaTranspiler.builtinFunctions;
 

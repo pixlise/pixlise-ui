@@ -63,6 +63,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   @ViewChild("settingsButton") settingsButton!: ElementRef;
   @ViewChild("editROIButton") editROIButton!: ElementRef;
+  @ViewChild("deleteROIConfirmButton") deleteROIConfirmButton!: ElementRef;
 
   private _subs = new Subscription();
 
@@ -203,6 +204,10 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   get icon(): string {
     return this.creatorUser?.iconURL || "";
+  }
+
+  get id(): string {
+    return this.summary.id;
   }
 
   get name(): string {
@@ -373,9 +378,17 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     this.closeEditROIMenu();
   }
 
-  onDelete() {
-    this._roiService.deleteROI(this.summary.id);
+  onCloseDelete() {
+    if (this.deleteROIConfirmButton && this.deleteROIConfirmButton instanceof ActionButtonComponent) {
+      (this.deleteROIConfirmButton as ActionButtonComponent).closeDialog();
+    }
+  }
+
+  onConfirmDelete(deleteAll: boolean) {
+    this._roiService.deleteROI(deleteAll ? this.summary.associatedROIId : this.summary.id, false, deleteAll);
     this.closeSettingsMenu();
+
+    this.onCloseDelete();
   }
 
   onShare() {

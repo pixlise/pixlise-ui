@@ -35,15 +35,8 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngFor="let member of members; trackBy: trackByMemberId" class="member-item">
         <div class="member-container" *ngIf="subItemViewershipChangeMap.get(selectedSubItemId)?.has(member.id)">
           <div class="icon {{ !member.isGroup && member.id === currentUserId ? 'current-user' : '' }}">
-            <img *ngIf="member.icon" [src]="member.icon" />
-            <span *ngIf="!member.icon && !member.isGroup" class="user-icon">{{ member.name ? member.name[0].toUpperCase() : "N/A" }}</span>
-            <span
-              *ngIf="!member.icon && member.isGroup"
-              #tooltip="matTooltip"
-              [matTooltip]="'Group: ' + member.name + '\nDescription: ' + (member.description ? 'N/A' : '')"
-              class="group-icon">
-              <img src="assets/PIXLISE.svg" />
-            </span>
+            <user-icon *ngIf="!member.isGroup" [userId]="member?.id || ''" size="32px"></user-icon>
+            <group-icon *ngIf="member.isGroup" [groupId]="member?.id || ''" size="32px"></group-icon>
           </div>
           <div class="name">{{ member.name }}</div>
           <div class="access-type">
@@ -63,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="fields">
     <div *ngIf="!data.isReviewerSnapshot" class="search-field">
       <div class="auto-container" *ngIf="isSearchingGroups">
-        <input [disabled]="!canEdit" type="text" placeholder="Search Groups..." matInput [matAutocomplete]="groupAuto" [(ngModel)]="searchField" />
+        <input type="text" placeholder="Search Groups..." matInput [matAutocomplete]="groupAuto" [(ngModel)]="searchField" />
         <mat-autocomplete #groupAuto="matAutocomplete">
           <mat-option
             [disabled]="memberIds.has(group.id)"
@@ -75,7 +68,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </mat-autocomplete>
       </div>
       <div class="auto-container" *ngIf="!isSearchingGroups">
-        <input [disabled]="!canEdit" type="text" placeholder="Search Users..." matInput [matAutocomplete]="userAuto" [(ngModel)]="searchField" />
+        <input type="text" placeholder="Search Users..." matInput [matAutocomplete]="userAuto" [(ngModel)]="searchField" />
         <mat-autocomplete #userAuto="matAutocomplete">
           <mat-option [disabled]="memberIds.has(user.id)" (onSelectionChange)="onSelectUser(user, $event)" *ngFor="let user of filteredUsers" [value]="user.id">{{
             user.name
@@ -84,7 +77,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
 
       <div class="search-type {{ canEdit ? '' : 'disabled' }}">
-        <mat-select [disabled]="!canEdit" [(ngModel)]="isSearchingGroups">
+        <mat-select [(ngModel)]="isSearchingGroups">
           <mat-option [value]="true">Groups</mat-option>
           <mat-option [value]="false">Users</mat-option>
         </mat-select>
@@ -103,7 +96,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <h1 class="has-access">Has access</h1>
     <div *ngIf="data.isReviewerSnapshot" class="access-list review-time">
       <mat-select [(ngModel)]="reviewerAccessTime" (selectionChange)="onReviewerAccessTimeChange($event)">
-        <mat-select-trigger class="access-dropdown"><img src="assets/icons/clock.svg" />{{ reviewerAccessTime.label }}</mat-select-trigger>
+        <mat-select-trigger class="access-dropdown"><img src="assets/icons/clock.svg" alt="Access Time Icon" />{{ reviewerAccessTime.label }}</mat-select-trigger>
 
         <mat-option *ngFor="let timeOption of reviewTimeOptions" [value]="timeOption">{{ timeOption.label }}</mat-option>
       </mat-select>
@@ -122,18 +115,12 @@ POSSIBILITY OF SUCH DAMAGE.
               'Sharing without resolving these issues could potentially lead to broken items for this user.'
             "
             class="sharing-warning"
-            src="assets/icons/error-triangle.svg" />
+            src="assets/icons/error-triangle.svg"
+            alt="Error Icon" />
         </div>
         <div class="icon {{ !member.isGroup && member.id === currentUserId ? 'current-user' : '' }}">
-          <img *ngIf="member.icon" [src]="member.icon" />
-          <span *ngIf="!member.icon && !member.isGroup" class="user-icon">{{ member.name ? member.name[0].toUpperCase() : "N/A" }}</span>
-          <span
-            *ngIf="!member.icon && member.isGroup"
-            #tooltip="matTooltip"
-            [matTooltip]="'Group: ' + member.name + '\nDescription: ' + (member.description ? 'N/A' : '')"
-            class="group-icon">
-            <img src="assets/PIXLISE.svg" />
-          </span>
+          <user-icon *ngIf="!member.isGroup" [userId]="member?.id || ''" size="32px"></user-icon>
+          <group-icon *ngIf="member.isGroup" [groupId]="member?.id || ''" size="32px"></group-icon>
         </div>
         <div class="name">{{ member.name }}</div>
         <div class="access-type">
@@ -143,7 +130,7 @@ POSSIBILITY OF SUCH DAMAGE.
           <span class="static-access" *ngIf="member.id !== currentUserId && data.restrictSubItemSharingToViewer && subItems.length > 0">View all included items</span>
           <mat-select
             *ngIf="(member.id !== currentUserId && (!data.restrictSubItemSharingToViewer || subItems.length === 0)) || !preventSelfAssignment"
-            [disabled]="!canEdit || (member.id === currentUserId && preventSelfAssignment)"
+            [disabled]="!canEdit || (member.id === currentUserId && preventSelfAssignment) || (!canEdit && memberIds.has(member.id))"
             [(ngModel)]="member.isEditor"
             (selectionChange)="onAccessChange('', $event)">
             <mat-option [value]="true">Editor</mat-option>
@@ -169,7 +156,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
       <div class="warning-not-shared" *ngIf="!shareWithSubItems">
         <div class="warning-icon">
-          <img class="sharing-warning" src="assets/icons/error-triangle.svg" />
+          <img class="sharing-warning" src="assets/icons/error-triangle.svg" alt="Error Icon" />
         </div>
         <span class="text-label">
           Sharing settings will not be updated for sub-items in this {{ data.typeName }}, so it may appear broken for users who don't already have access.
@@ -188,11 +175,9 @@ POSSIBILITY OF SUCH DAMAGE.
                 ') to make you an editor to share this group with others.'
               "
               class="sharing-warning"
-              src="assets/icons/error-triangle.svg" />
-            <img [src]="subItem.ownershipSummary.creatorUser?.iconURL" />
-            <span *ngIf="!subItem.ownershipSummary.creatorUser?.iconURL" class="user-icon">{{
-              subItem?.ownershipSummary?.creatorUser?.name?.[0] ? subItem.ownershipSummary.creatorUser!.name[0].toUpperCase() : "N/A"
-            }}</span>
+              src="assets/icons/error-triangle.svg"
+              alt="Error Icon" />
+            <user-icon [userId]="subItem.ownershipSummary.creatorUser?.id || ''" size="32px"></user-icon>
           </div>
           <div class="details {{ subItemSharingErrorMap.get(subItem.id) ? 'error-state' : '' }}">
             <h2>{{ subItem.name }}</h2>
@@ -217,20 +202,18 @@ POSSIBILITY OF SUCH DAMAGE.
       <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
       <push-button
         *ngIf="validShareCount > 0 && shareWithSubItems"
-        [disabled]="!canEdit"
         buttonStyle="yellow"
         (onClick)="onConfirm()"
         #tooltip="matTooltip"
-        [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
+        [matTooltip]="canEdit ? confirmButtonTooltip : 'NOTE: You only have permission to add viewers.'"
         >Share {{ validShareCount }} items</push-button
       >
       <push-button
         *ngIf="validShareCount === 0 || !shareWithSubItems"
-        [disabled]="!canEdit"
         buttonStyle="yellow"
         (onClick)="onConfirm()"
         #tooltip="matTooltip"
-        [matTooltip]="canEdit ? confirmButtonTooltip : 'You don\'t have permission to edit the sharing settings.'"
+        [matTooltip]="canEdit ? confirmButtonTooltip : 'NOTE: You only have permission to add viewers.'"
         >{{ data.isReviewerSnapshot ? "Create reviewer snapshot" : "Confirm" }}</push-button
       >
     </div>
