@@ -14,6 +14,7 @@
   - Allows customization of chart title and description
   - Chart descriptions support markdown formatting
   - Chart descriptions are shown on tooltip hover and on chart title click if configured
+- Added new switch to ROI creation dialog which allows saving one ROI per contiguous cluster of PMCs in the selection. This creates one ROI per cluster of PMCs, and any clusters which have less than 3 PMCs end up in a "residual points" ROI. When deleting one of these ROIs, the user is asked if they want to delete just the one clicked on or all the ROIs created with this feature. This allows easy clean-up of the ROIs created.
 
 ### Bug Fixes
 - Dataset tiles page now correctly shows item count when datasets filtered by tags
