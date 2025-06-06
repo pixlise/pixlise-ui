@@ -15,6 +15,14 @@
   <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
   <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
 
+  <div class="separate-roi">
+    <span>Separate ROIs for contiguous PMCs</span>
+    <switch-button
+      [active]="saveSeparateContiguousRegions"
+      title="When enabled, will cause one ROI to be saved for each contiguous region of selected PMCs. Region names will have a counter appended to them."
+      (onToggle)="onToggleSeparateContiguous()"></switch-button>
+  </div>
+
   <div class="multiple-scan-warning" *ngIf="selectedScanIds.length > 1">
     <span>*ROI spans multiple scans, so multiple ROIs for the following scans will be created: {{ selectedScanIds.join(", ") }}</span>
   </div>

@@ -28,6 +28,13 @@ import { RGBA } from "src/app/utils/colours";
 import { ContextImageScanModel, convertLocationComponentToPixelPosition } from "./context-image-model";
 import { environment } from "src/environments/environment";
 
+export class PMCClusters {
+  constructor(
+    public clusters: Set<number>[],
+    public residual: Set<number>
+  ) {}
+}
+
 // Just a namespace really that collects a bunch of code that calculates the model data (footprints, polygons, bounding boxes, etc)
 export class ContextImageScanModelGenerator {
   private _locationPointBBox: Rect = new Rect(0, 0, 0, 0);
@@ -144,6 +151,116 @@ export class ContextImageScanModelGenerator {
       this._locationPointBBox,
       new Map<number, RGBA>()
     );
+    return result;
+  }
+
+  // A stripped down processing of the data to only generate clusters of PMCs
+  processBeamDataToGenerateClusters(
+    minClusterPMCs: number,
+    scanItem: ScanItem,
+    scanEntries: ScanEntry[],
+    beamXYZs: Coordinate3D[],
+    pmcList: Set<number>
+  ): PMCClusters {
+    // Only include PMCs that are in our list
+    const scanEntriesFiltered: ScanEntry[] = [];
+    const beamXYZsFiltered: Coordinate3D[] = [];
+
+    for (let c = 0; c < scanEntries.length; c++) {
+      if (pmcList.has(scanEntries[c].id)) {
+        scanEntriesFiltered.push(scanEntries[c]);
+        beamXYZsFiltered.push(beamXYZs[c]);
+      }
+    }
+    const scanPoints = this.initLocationCachingForBeams(scanItem.instrument, scanEntriesFiltered, beamXYZsFiltered, null, "");
+
+    if (this._locationCount <= 0) {
+      throw new Error("Failed to generate scan points for scan: " + scanItem.id);
+    }
+
+    // Work out what units we're in, original test data had mm but at one point in about 2020 we switched to meters
+    // and FM delivers it that way since
+    this._beamUnitsInMeters = ContextImageScanModelGenerator.decideBeamUnitsIsMeters(scanItem.instrument, this._locationPointZMax);
+
+    const contextPixelsTommConversion = this.calcImagePixelsToPhysicalmm(this._beamUnitsInMeters);
+    console.log("  Conversion factor for image pixels to mm: " + contextPixelsTommConversion);
+
+    // Find the average distance between subsequent points (search first 10 for eg)
+    let pointsChecked = 0;
+    let totalDistanceSq = 0;
+    for (let c = 1; c < beamXYZs.length; c++) {
+      if (scanEntries[c].normalSpectra > 0 && scanEntries[c - 1].normalSpectra > 0 && beamXYZs[c] && beamXYZs[c - 1]) {
+        const vec = subtractVectors(new Point(beamXYZs[c].x, beamXYZs[c].y), new Point(beamXYZs[c - 1].x, beamXYZs[c - 1].y));
+        totalDistanceSq += getVectorDotProduct(vec, vec);
+        pointsChecked++;
+
+        if (pointsChecked > 10) {
+          break;
+        }
+      }
+    }
+
+    const minDistSq = totalDistanceSq / pointsChecked * 1.5;
+
+    const clusters: Set<number>[] = [];
+    for (let i = 0; i < scanPoints.length; i++) {
+      if (/*scanPoints[i].hasNormalSpectra &&*/ scanPoints[i].coord) {
+        // Check if this point is connected to any of the clusters we've got so far
+        let foundConnection = false;
+        for (let c = 0; c < clusters.length && !foundConnection; c++) {
+          for (const pt of clusters[c]) {
+            if (scanPoints[pt].coord) {
+              const vec = subtractVectors(scanPoints[pt].coord, scanPoints[i].coord);
+              if (getVectorDotProduct(vec, vec) <= minDistSq) {
+                foundConnection = true;
+                clusters[c].add(i);
+                break;
+              }
+            }
+          }
+        }
+
+        if (!foundConnection) {
+          clusters.push(new Set<number>([i]));
+        }
+      }
+    }
+
+    const clusterPMCs: Set<number>[] = [];
+    for (const cluster of clusters) {
+      const pmcs = new Set<number>();
+      for (const locIdx of cluster.values()) {
+        if (locIdx < 0 || locIdx >= scanPoints.length) {
+          throw new Error("Failed to find PMC for loc idx: " + locIdx);
+        }
+        const pmc = scanPoints[locIdx].PMC;
+        pmcs.add(pmc);
+      }
+      clusterPMCs.push(pmcs);
+    }
+
+    // Enforce the min cluster size - if anything is not in that cluster, add it to a separate one at the end
+    const result = new PMCClusters([], new Set<number>());
+    for (const cluster of clusterPMCs) {
+      if (cluster.size < minClusterPMCs) {
+        // It's got too few points, add it to the residual cluster
+        for (const pmc of cluster.values()) {
+          result.residual.add(pmc);
+        }
+      } else {
+        // preserve this cluster
+        result.clusters.push(cluster);
+      }
+    }
+
+    // Order the clusters by size
+    result.clusters.sort((a: Set<number>, b: Set<number>) => {
+      if (a.size == b.size) {
+        return 0;
+      }
+      return a.size < b.size ? 1 : -1;
+    });
+
     return result;
   }
 
