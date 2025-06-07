@@ -46,6 +46,7 @@
       .top-toolbar {
         display: flex;
         margin-right: 4px;
+        gap: 4px;
 
         &.hidden {
           display: none;
@@ -131,7 +132,11 @@
   align-items: center;
   background-color: #1b1d1e;
   height: 40px;
-  width: 100%;
+  gap: 4px;
+
+  width: calc(100% - 8px);
+  padding-right: 4px;
+  padding-left: 4px;
 
   border-bottom-right-radius: 8px;
   border-bottom-left-radius: 8px;
@@ -139,12 +144,14 @@
   &.hidden {
     display: none;
   }
+}
 
-  .btn-container {
-    margin-right: 4px;
+.settings-button-container {
+  display: flex;
+  align-items: center;
+  gap: 0px;
 
-    &:first-of-type {
-      margin-left: 6px;
-    }
+  icon-button:first-of-type {
+    margin-right: -8px;
   }
 }

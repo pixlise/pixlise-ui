@@ -23,7 +23,8 @@ export type WidgetToolbarButtonTypes =
   | "multi-state-button"
   | "selection-changer"
   | "widget-key"
-  | "plus-minus-switch";
+  | "plus-minus-switch"
+  | "divider";
 
 export type WidgetToolbarButtonConfiguration = {
   id: string;

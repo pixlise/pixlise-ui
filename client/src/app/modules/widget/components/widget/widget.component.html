@@ -33,7 +33,10 @@
         [settingsDialog]="settingsMenu || defaultOverflowSection"
         [overflowSection]="overflowSection"
         #settingsButton>
-        <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>
+        <div class="settings-button-container">
+          <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"></icon-button>
+          <icon-button icon="assets/button-icons/arrow-down.svg"></icon-button>
+        </div>
       </widget-settings-menu>
     </div>
   </header>
@@ -74,6 +77,7 @@
   <div class="bottom-toolbar {{ showBottomToolbar ? 'visible' : 'hidden' }}" #bottomToolbar *ngIf="!exportMode">
     <widget-configuration-button
       *ngFor="let button of bottomToolbarButtons"
+      [ngClass]="{ 'bottom-toolbar-button': button.type !== 'divider' }"
       [buttonConfiguration]="button"
       [ngStyle]="{ margin: button.margin }"></widget-configuration-button>
   </div>

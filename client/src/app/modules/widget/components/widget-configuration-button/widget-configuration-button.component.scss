@@ -9,7 +9,7 @@
 }
 
 .btn-container {
-  margin-right: 4px;
+  // margin-right: 4px;
 
   &.overflowed {
     display: none;
@@ -21,9 +21,9 @@
     }
   }
 
-  &:first-of-type {
-    margin-left: 6px;
-  }
+  // &:first-of-type {
+  //   margin-left: 6px;
+  // }
 }
 
 .status-icon {
@@ -34,4 +34,23 @@ multi-switch-button {
   white-space: pre;
 
   display: flex;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background-color: rgb(var(--clr-gray-70));
+  margin: 0 2px;
+}
+
+.toolbar-button-active {
+  background-color: rgb(var(--clr-gray-80));
+  border-bottom: 1px solid #feff91;
+  padding-top: 9px;
+  padding-bottom: 8px;
+}
+
+.toolbar-button-selectable {
+  padding-left: 4px;
+  padding-right: 4px;
 }

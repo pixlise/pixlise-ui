@@ -574,3 +574,11 @@ color-picker {
     }
   }
 }
+
+.settings-button-container {
+  &:hover {
+    .clickable.icon-btn {
+      filter: brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(3201%);
+    }
+  }
+}

@@ -1,4 +1,10 @@
-<div class="button" [ngStyle]="buttonConfiguration?.style || {}">
+<div
+  class="button"
+  [ngStyle]="buttonConfiguration?.style || {}"
+  [ngClass]="{
+    'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value,
+    'toolbar-button-selectable': buttonConfiguration?.type === 'selectable-button'
+  }">
   <span
     #buttonTrigger
     *ngIf="buttonConfiguration"
@@ -6,11 +12,15 @@
     [matTooltip]="buttonConfiguration.tooltip || ''"
     [matTooltipDisabled]="!buttonConfiguration.tooltip"
     class="btn-container"
-    (click)="buttonClick(buttonTrigger)">
+    (click)="buttonClick(buttonTrigger)"
+    (keyup)="buttonClick(buttonTrigger)"
+    (keydown)="buttonClick(buttonTrigger)"
+    (keypress)="buttonClick(buttonTrigger)"
+    tabindex="0">
     <two-state-push-button [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled" *ngIf="buttonConfiguration.title"
       >{{ buttonConfiguration.title }}
-      <img *ngIf="buttonConfiguration.activeIcon && buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.activeIcon" />
-      <img *ngIf="buttonConfiguration.inactiveIcon && !buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.inactiveIcon" />
+      <img *ngIf="buttonConfiguration.activeIcon && buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.activeIcon" alt="Active Icon" />
+      <img *ngIf="buttonConfiguration.inactiveIcon && !buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.inactiveIcon" alt="Inactive Icon" />
     </two-state-push-button>
     <plus-minus-switch *ngIf="buttonConfiguration.type === 'plus-minus-switch'" [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled">
     </plus-minus-switch>
@@ -27,8 +37,11 @@
       class="{{ buttonConfiguration.type }}"
       [icon]="buttonConfiguration.icon">
     </icon-button>
+    <div *ngIf="buttonConfiguration.type === 'divider'" class="divider"></div>
   </span>
-  <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'" [imageInfo]="buttonConfiguration?.getImageInfo ? buttonConfiguration?.getImageInfo() : undefined"></selection-changer>
+  <selection-changer
+    *ngIf="buttonConfiguration?.type === 'selection-changer'"
+    [imageInfo]="buttonConfiguration?.getImageInfo ? buttonConfiguration?.getImageInfo() : undefined"></selection-changer>
   <widget-key-display
     *ngIf="buttonConfiguration?.type === 'widget-key'"
     [items]="buttonConfiguration?.value || []"
