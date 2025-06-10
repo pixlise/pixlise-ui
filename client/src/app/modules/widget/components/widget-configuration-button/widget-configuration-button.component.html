@@ -2,7 +2,7 @@
   class="button"
   [ngStyle]="buttonConfiguration?.style || {}"
   [ngClass]="{
-    'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value,
+    'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true,
     'toolbar-button-selectable': buttonConfiguration?.type === 'selectable-button'
   }">
   <span
