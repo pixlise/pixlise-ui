@@ -393,7 +393,7 @@ export class InterpreterDataSource {
           return JSON.parse(str);
         }),
         catchError(err => {
-          console.error(`InterpreterDataSource: Failed to get memoised value for : ${key}: ${err}`);
+          console.error(httpErrorToString(err, `InterpreterDataSource: Failed to get memoised value for : ${key}`));
           return of(null);
         })
       )
