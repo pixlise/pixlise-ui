@@ -240,17 +240,19 @@ export class WorkspaceService implements OnDestroy {
                 });
 
                 allImages.forEach((image, i) => {
-                  let scanId = image?.originScanId || image?.associatedScanIds?.[0];
+                  const scanId = image?.originScanId || image?.associatedScanIds?.[0];
                   if (!scanId) {
                     return;
                   }
 
-                  productsByDataset[scanId].searchableImages = productsByDataset[scanId].searchableImages || [...WorkspaceService.DEFAULT_DUPLICATE_OPTIONS];
-                  productsByDataset[scanId].searchableImages.push({
-                    icon: "assets/icons/image-gray.svg",
-                    id: image.imagePath,
-                    name: this._analysisLayoutService.getImageName(image),
-                  });
+                  if (productsByDataset[scanId]) {
+                    productsByDataset[scanId].searchableImages = productsByDataset[scanId].searchableImages || [...WorkspaceService.DEFAULT_DUPLICATE_OPTIONS];
+                    productsByDataset[scanId].searchableImages.push({
+                      icon: "assets/icons/image-gray.svg",
+                      id: image.imagePath,
+                      name: this._analysisLayoutService.getImageName(image),
+                    });
+                  }
                 });
 
                 return { workspace, products: productsByDataset };

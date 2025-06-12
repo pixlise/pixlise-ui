@@ -1,4 +1,10 @@
-## 4.68.0 (Latest)
+## 4.69.0 (Latest)
+
+### Bug Fixes
+- Made group list scrollable on groups page
+- Fixed issue with sharing workspace that is showing an image with invalid associated scans defined
+
+## 4.68.0 (2025-06-06)
 
 ### New Features
 - Added readMap() function available in Lua expression language. This allows reading a map that was uploaded from the PIXLISE python client library using the saveMapData() python function. This allows code to be written external to PIXLISE that can access any datasets required to form a map of data, which can now be displayed in PIXLISE. The name of the maps must match (between the one saved in python and the one referenced in the PIXLISE expression language call to readMap) and if displaying on a binary plot you will likely want 2 maps - one for each axis.
@@ -22,7 +28,7 @@
 - Adds better accessibility metadata labels to share dialog and expression layer
 - Removed incorrectly calculated dataset count column on manage groups dialog (where users can ask to join a group)
 
-## 4.67.0 (05-14-2025)
+## 4.67.0 (2025-05-14)
 
 ### New Features
 - Shows locked icon on groups page for non-joinable groups
@@ -39,7 +45,7 @@
 - Disables image alignment controls for non-aligned images
 - Fixes quantification table bug where data for All Points ROI was not being displayed correctly
 
-## 4.66.0 (04-25-2025)
+## 4.66.0 (2025-04-25)
 
 ### New Features
 - Shows spinner in expression console on code editor page when expression is running
