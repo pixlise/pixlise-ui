@@ -120,6 +120,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   // something's wrong with loading a scale range
   private _requestedNewRange: boolean = false;
 
+  private _imageBrightnessCache: Map<string, number> = new Map<string, number>();
+
   @Output() optionChange = new EventEmitter();
 
   loadingBeamVersions: boolean = false;
@@ -263,6 +265,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   onResetBrightness(): void {
     this._options.imageBrightness = 1;
+    this._imageBrightnessCache.set(this._options.currentImage, this._options.imageBrightness);
     this.publishOptionChange();
   }
 
@@ -270,6 +273,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     this._options.imageBrightness = event.value;
 
     if (event.finish) {
+      this._imageBrightnessCache.set(this._options.currentImage, this._options.imageBrightness);
+
       // Regenerate the image
       this.publishOptionChange();
     }
@@ -284,6 +289,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     const parsedBrightness = parseFloat(brightness);
     if (!isNaN(parsedBrightness)) {
       this._options.imageBrightness = parsedBrightness;
+      this._imageBrightnessCache.set(this._options.currentImage, this._options.imageBrightness);
       this.publishOptionChange();
     }
   }
@@ -298,6 +304,13 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
     this.selectedBeamVersions = {};
 
+    // Set brightness back to whatever we last had it as for this image, or 1
+    let br = this._imageBrightnessCache.get(selection.path);
+    if (!br) {
+      br = 1;
+    }
+
+    this._options.imageBrightness = br;
     this.publishOptionChange();
 
     this.getBeamLocationVersions(selection.path);
@@ -450,6 +463,16 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     this.autoSelectTiff().subscribe((tiff: string) => {
       if (tiff) {
         this._options.currentImage = tiff;
+
+        // Restore brightness if it was set
+        let br = this._imageBrightnessCache.get(tiff);
+        if (!br) {
+          br = 1;
+        }
+
+        this._options.imageBrightness = br;
+        this._imageBrightnessCache.set(tiff, br);
+
         this._options.rgbuChannels = this._chosenChannels;
         this.publishOptionChange();
       }
@@ -460,7 +483,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     this.autoSelectTiff().subscribe((tiff: string) => {
       if (tiff) {
         this._options.currentImage = tiff;
-        this.onResetBrightness();
+
+        //this._options.imageBrightness = 1;
+        //this._imageBrightnessCache.set(this._options.currentImage, this._options.imageBrightness);
+
         this._options.rgbuChannels = this._chosenRatios;
         this.publishOptionChange();
       }
@@ -478,7 +504,9 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   onResetRatioColourRemapping(): void {
-    this.onResetBrightness();
+    this._options.imageBrightness = 1;
+    this._imageBrightnessCache.set(this._options.currentImage, this._options.imageBrightness);
+
     this._options.colourRatioMin = this.colourRatioRangeMin;
     this._options.colourRatioMax = this.colourRatioRangeMax;
     this.publishOptionChange();

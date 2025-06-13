@@ -3,6 +3,7 @@
 ### Bug Fixes
 - Made group list scrollable on groups page
 - Fixed issue with sharing workspace that is showing an image with invalid associated scans defined
+- Image options window now remembers brightness settings while it's open so if switching between images or ratio vs RGB it should be more user friendly
 
 ## 4.68.0 (2025-06-06)
 
