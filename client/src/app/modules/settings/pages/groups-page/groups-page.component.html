@@ -36,88 +36,89 @@
       <user-icon size="26px"></user-icon>
       <h3 class="name">{{ name }}</h3>
     </div>
-    <div class="groups my-groups"></div>
-    <div class="groups admin-groups">
-      <div class="header">
-        <h2>Admin</h2>
-        <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
-      </div>
-      <div class="content-container">
-        <div *ngFor="let group of groupsWithAdminAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
-              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
-            </span>
-            <span class="group-name">{{ group.name }}</span>
-            <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+    <div class="group-list">
+      <div class="groups admin-groups">
+        <div class="header">
+          <h2>Admin</h2>
+          <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
+        </div>
+        <div class="content-container">
+          <div *ngFor="let group of groupsWithAdminAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
+            <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+              <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+                <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+              </span>
+              <span class="group-name">{{ group.name }}</span>
+              <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+            </div>
+            <action-button
+              color="#BCBCBC"
+              *ngIf="canDeleteGroup"
+              action="close"
+              [disabled]="!group"
+              confirmText="Are you sure you want to delete {{ group.name }}?"
+              tooltipTitle="Delete"
+              (onClick)="onDeleteGroup(group)"></action-button>
           </div>
-          <action-button
-            color="#BCBCBC"
-            *ngIf="canDeleteGroup"
-            action="close"
-            [disabled]="!group"
-            confirmText="Are you sure you want to delete {{ group.name }}?"
-            tooltipTitle="Delete"
-            (onClick)="onDeleteGroup(group)"></action-button>
-        </div>
-        <div *ngIf="groupsWithAdminAccess.length === 0" class="group-row empty">
-          <h5>None</h5>
-        </div>
-      </div>
-    </div>
-    <div class="groups member-groups">
-      <div class="header">
-        <h2>Member</h2>
-        <img src="assets/icons/member-badge.svg" alt="Member Badge" />
-      </div>
-      <div class="content-container">
-        <div *ngFor="let group of groupsWithMemberAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
-              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
-            </span>
-            <span class="group-name">{{ group.name }}</span>
-            <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+          <div *ngIf="groupsWithAdminAccess.length === 0" class="group-row empty">
+            <h5>None</h5>
           </div>
-          <action-button
-            color="#BCBCBC"
-            *ngIf="canDeleteGroup"
-            action="close"
-            [disabled]="!group"
-            confirmText="Are you sure you want to delete {{ group.name }}?"
-            tooltipTitle="Delete"
-            (onClick)="onDeleteGroup(group)"></action-button>
-        </div>
-        <div *ngIf="groupsWithMemberAccess.length === 0" class="group-row empty">
-          <h5>None</h5>
         </div>
       </div>
-    </div>
-    <div class="groups viewer-groups">
-      <div class="header">
-        <h2>Viewer</h2>
-        <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" />
-      </div>
-      <div class="content-container">
-        <div *ngFor="let group of groupsWithViewerAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-          <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-            <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
-              <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
-            </span>
-            <span class="group-name">{{ group.name }}</span>
-            <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+      <div class="groups member-groups">
+        <div class="header">
+          <h2>Member</h2>
+          <img src="assets/icons/member-badge.svg" alt="Member Badge" />
+        </div>
+        <div class="content-container">
+          <div *ngFor="let group of groupsWithMemberAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
+            <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+              <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+                <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+              </span>
+              <span class="group-name">{{ group.name }}</span>
+              <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+            </div>
+            <action-button
+              color="#BCBCBC"
+              *ngIf="canDeleteGroup"
+              action="close"
+              [disabled]="!group"
+              confirmText="Are you sure you want to delete {{ group.name }}?"
+              tooltipTitle="Delete"
+              (onClick)="onDeleteGroup(group)"></action-button>
           </div>
-          <action-button
-            color="#BCBCBC"
-            *ngIf="canDeleteGroup"
-            action="close"
-            [disabled]="!group"
-            confirmText="Are you sure you want to delete {{ group.name }}?"
-            tooltipTitle="Delete"
-            (onClick)="onDeleteGroup(group)"></action-button>
+          <div *ngIf="groupsWithMemberAccess.length === 0" class="group-row empty">
+            <h5>None</h5>
+          </div>
         </div>
-        <div *ngIf="groupsWithViewerAccess.length === 0" class="group-row empty">
-          <h5>None</h5>
+      </div>
+      <div class="groups viewer-groups">
+        <div class="header">
+          <h2>Viewer</h2>
+          <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" />
+        </div>
+        <div class="content-container">
+          <div *ngFor="let group of groupsWithViewerAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
+            <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
+              <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
+                <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
+              </span>
+              <span class="group-name">{{ group.name }}</span>
+              <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+            </div>
+            <action-button
+              color="#BCBCBC"
+              *ngIf="canDeleteGroup"
+              action="close"
+              [disabled]="!group"
+              confirmText="Are you sure you want to delete {{ group.name }}?"
+              tooltipTitle="Delete"
+              (onClick)="onDeleteGroup(group)"></action-button>
+          </div>
+          <div *ngIf="groupsWithViewerAccess.length === 0" class="group-row empty">
+            <h5>None</h5>
+          </div>
         </div>
       </div>
     </div>
