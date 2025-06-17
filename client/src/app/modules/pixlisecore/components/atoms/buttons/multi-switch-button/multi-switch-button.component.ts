@@ -37,11 +37,13 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 export class MultiSwitchButtonComponent {
   @Input() options: string[] = [];
   @Input() optionIcons?: string[] = [];
+  @Input() optionLabels?: string[] = [];
   @Input() value: string = "";
   @Input() disabled: boolean = false;
   @Input() showLabels: boolean = true;
   @Input() darkMode: boolean = false;
   @Input() colorizeActiveIcon: boolean = false;
+  @Input() noPadding: boolean = false;
 
   @Output() onChange = new EventEmitter();
 

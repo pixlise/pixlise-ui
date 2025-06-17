@@ -41,9 +41,11 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   private _subs = new Subscription();
 
+  correlationDisplayModes = [ChordDrawMode.NEGATIVE, ChordDrawMode.BOTH, ChordDrawMode.POSITIVE];
+
   // For settings menu items:
   stateNames = [ChordDrawMode.NEGATIVE, ChordDrawMode.BOTH, ChordDrawMode.POSITIVE];
-  sliderTrackColourYellow = Colours.GRAY_50.asString();
+  sliderTrackColourYellow = Colours.YELLOW.asString();
   sliderTrackColourGray = Colours.GRAY_50.asString();
 
   constructor(
@@ -67,6 +69,9 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           title: "Nodes",
           tooltip: "Choose expressions to calculate nodes from",
           onClick: () => this.onNodes(),
+          settingTitle: "Nodes",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/chart-placeholders/chord-diagram.svg",
         },
         {
           id: "regions",
@@ -74,6 +79,9 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/roi.svg",
         },
         {
           id: "solo",
@@ -81,6 +89,8 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
         },
       ],
     };

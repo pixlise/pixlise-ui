@@ -29,7 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="multi-switch-container {{ disabled ? 'disabled' : '' }} {{ darkMode ? 'dark-mode' : '' }}">
+<div class="multi-switch-container {{ disabled ? 'disabled' : '' }} {{ darkMode ? 'dark-mode' : '' }} {{ noPadding ? 'no-padding' : '' }}">
   <div
     *ngFor="let option of options; let i = index"
     (click)="onClick(option)"
@@ -38,9 +38,8 @@ POSSIBILITY OF SUCH DAMAGE.
     (keyup)="onClick(option)"
     (keydown)="onClick(option)"
     (keypress)="onClick(option)">
-    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" alt="Option Icon" [ngClass]="{ 'colorize-active-icon': colorizeActiveIcon }" />{{
-      showLabels ? option : ""
-    }}
+    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" alt="Option Icon" [ngClass]="{ 'colorize-active-icon': colorizeActiveIcon }" />
+    <span *ngIf="showLabels">{{ optionLabels?.[i] !== undefined ? optionLabels?.[i] : option }}</span>
   </div>
   <div class="active-selector" [style.margin-left]="activeLeftOffset" [style.width]="activeWidth"></div>
 </div>

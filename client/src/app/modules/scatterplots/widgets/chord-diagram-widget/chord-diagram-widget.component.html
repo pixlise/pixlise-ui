@@ -1,32 +1,53 @@
 <ng-template #settingsMenu>
-  <div class="settings">
-    <two-state-button
-      leftLabel="Bulk"
-      rightLabel="Selection"
-      title="Toggle to show data only for selected poitns vs bulk sum of all points"
-      [active]="showSelectionOnly"
-      (onToggle)="onToggleShowSelectionOnly()">
-    </two-state-button>
-    <h4>Correlation Display</h4>
-    <multi-state-button
-      class="gap-top"
-      [stateNames]="stateNames"
-      [items]="['assets/button-icons/minus-yellow.svg', 'Both', 'assets/button-icons/plus-blue.svg']"
-      [activeState]="correlationDisplayMode"
-      (onChange)="onToggleCorrelationDisplayMode($event)"></multi-state-button>
-    <h4>Threshold</h4>
-    <div class="row">
-      <span class="slider-end">0</span>
-      <slider
-        [minValue]="0"
-        [maxValue]="1"
-        [pxLength]="100"
-        [trackColourBelowValue]="sliderTrackColourYellow"
-        [trackColourAboveValue]="sliderTrackColourGray"
-        [value]="threshold"
-        (onChange)="onChangeThreshold($event)">
-      </slider>
-      <span class="slider-end">1</span>
+  <div class="widget-settings-menu">
+    <div class="row above-title">
+      <div class="row-title">Display Mode</div>
+      <!-- <two-state-button
+        leftLabel="Bulk"
+        rightLabel="Selection"
+        title="Toggle to show data only for selected points vs bulk sum of all points"
+        [active]="showSelectionOnly"
+        (onToggle)="onToggleShowSelectionOnly()">
+      </two-state-button> -->
+      <multi-switch-button
+        [options]="['Bulk', 'Selection']"
+        [value]="showSelectionOnly ? 'Selection' : 'Bulk'"
+        (onChange)="onToggleShowSelectionOnly()"
+        [darkMode]="true">
+      </multi-switch-button>
+    </div>
+    <div class="row above-title">
+      <div class="row-title">Correlation Display</div>
+      <!-- <multi-state-button
+        [stateNames]="stateNames"
+        [items]="['assets/button-icons/minus-yellow.svg', 'Both', 'assets/button-icons/plus-blue.svg']"
+        [activeState]="correlationDisplayMode"
+        (onChange)="onToggleCorrelationDisplayMode($event)"></multi-state-button> -->
+      <multi-switch-button
+        [options]="correlationDisplayModes"
+        [optionIcons]="['assets/button-icons/minus-yellow.svg', '', 'assets/button-icons/plus-blue.svg']"
+        [optionLabels]="['', 'Both', '']"
+        [value]="correlationDisplayMode"
+        (onChange)="onToggleCorrelationDisplayMode($event)"
+        [darkMode]="true"
+        [noPadding]="true">
+      </multi-switch-button>
+    </div>
+    <div class="row above-title">
+      <div class="row-title">Threshold</div>
+      <div class="slider-container">
+        <span class="slider-end">0</span>
+        <slider
+          [minValue]="0"
+          [maxValue]="1"
+          [pxLength]="148"
+          [trackColourBelowValue]="sliderTrackColourYellow"
+          [trackColourAboveValue]="sliderTrackColourGray"
+          [value]="threshold"
+          (onChange)="onChangeThreshold($event)">
+        </slider>
+        <span class="slider-end">1</span>
+      </div>
     </div>
   </div>
 </ng-template>

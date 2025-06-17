@@ -383,8 +383,7 @@ export class HistogramBars {
     public bars: HistogramBar[],
     public shortLabel: string,
     public longLabel: string,
-    public valueRange: MinMax //public roiName: string,
-    //public roiID: string,
+    public valueRange: MinMax
   ) {}
 }
 
