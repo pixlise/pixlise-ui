@@ -95,8 +95,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           tooltip: "Pan Tool (Shift)\nClick and drag to move the context image in the viewport",
           value: false,
           onClick: () => this.onToolSelected("pan"),
-          settingTitle: "Move Tool",
-          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom",

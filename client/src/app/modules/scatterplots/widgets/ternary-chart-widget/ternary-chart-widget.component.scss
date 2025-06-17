@@ -38,3 +38,31 @@ interactive-canvas {
   bottom: $sz-qtr;
   right: 40px;
 }
+
+.selection-mode-btn {
+  width: calc(100% - 24px);
+  multi-switch-button {
+    width: 100%;
+  }
+}
+
+.display-mode-btn {
+  width: 100%;
+  multi-switch-button {
+    width: 100%;
+  }
+}
+
+.above-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .row-title {
+    margin-right: auto;
+  }
+}
+
+.widget-settings-menu {
+  width: 200px;
+}

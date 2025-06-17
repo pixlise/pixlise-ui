@@ -5,7 +5,6 @@
       <div class="setting-title">{{ group.title }}</div>
       <widget-configuration-button
         *ngFor="let button of group.buttons"
-        [location]="'top-toolbar'"
         [buttonConfiguration]="button"
         [rowMode]="true"
         [ngStyle]="{ display: button.type !== 'divider' ? 'block' : 'none', margin: button.margin }">
@@ -13,20 +12,6 @@
     </div>
   </div>
 </ng-template>
-
-<!-- <ng-template #contextMenu>
-  <widget-settings-menu
-    *ngIf="settingsMenu || isOverflowed"
-    [settingsDialog]="settingsMenu || defaultOverflowSection"
-    [noPadding]="true"
-    [overflowSection]="overflowSection"
-    #settingsButton>
-    <div class="settings-button-container">
-      <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"></icon-button>
-      <icon-button icon="assets/button-icons/arrow-down.svg"></icon-button>
-    </div>
-  </widget-settings-menu>
-</ng-template> -->
 
 <ng-template #defaultOverflowSection>
   <div class="default-overflow"></div>

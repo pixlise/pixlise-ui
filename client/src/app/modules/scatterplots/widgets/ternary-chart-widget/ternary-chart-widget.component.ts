@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { catchError, first, map, Observable, Subject, Subscription, switchMap, takeUntil, tap } from "rxjs";
+import { catchError, Observable, Subject, Subscription, switchMap, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
@@ -43,7 +43,6 @@ import { DataExpressionId } from "../../../../expression-language/expression-id"
 import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
-import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
@@ -92,6 +91,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
+  displayModeOptions: string[] = ["Weight%", "Mmol"];
+
   axisLabelFontSize = 14;
 
   constructor(
@@ -121,9 +122,17 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         {
           id: "regions",
           type: "button",
-          title: "Regions",
+          // title: "Regions",
+          icon: "assets/button-icons/roi.svg",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
+        },
+        {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
         },
         {
           id: "export",
@@ -131,6 +140,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           icon: "assets/button-icons/export.svg",
           tooltip: "Export Data",
           onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
         },
         {
           id: "solo",
@@ -138,6 +149,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
         },
       ],
       topLeftInsetButton: {
@@ -172,6 +185,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         this.update();
       });
     }
+  }
+
+  get displayMode(): string {
+    return this.mdl.showMmol ? "Mmol" : "Weight%";
   }
 
   get topAxisSwitcher(): ScatterPlotAxisInfo | null {
@@ -671,7 +688,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     return this.mdl.showMmol;
   }
 
-  setShowMmol() {
+  toggleShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
     this.update();
     this.saveState();

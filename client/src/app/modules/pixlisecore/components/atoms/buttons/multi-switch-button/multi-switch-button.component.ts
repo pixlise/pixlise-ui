@@ -39,6 +39,8 @@ export class MultiSwitchButtonComponent {
   @Input() optionIcons?: string[] = [];
   @Input() value: string = "";
   @Input() disabled: boolean = false;
+  @Input() showLabels: boolean = true;
+  @Input() darkMode: boolean = false;
 
   @Output() onChange = new EventEmitter();
 

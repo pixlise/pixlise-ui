@@ -10,7 +10,7 @@ import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 export class WidgetConfigurationButtonComponent {
   @Input() buttonConfiguration?: WidgetToolbarButtonConfiguration;
   @Input() rowMode = false;
-  @Input() location: "top-toolbar" | "bottom-toolbar" | "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-right" = "top-toolbar";
+  @Input() location: "top-toolbar" | "bottom-toolbar" | "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-right" | "" = "";
   constructor() {}
 
   onMultiSwitchChange(value: string) {

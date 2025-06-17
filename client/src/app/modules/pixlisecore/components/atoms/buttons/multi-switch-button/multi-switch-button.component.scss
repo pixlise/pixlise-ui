@@ -36,6 +36,9 @@
   align-items: center;
   justify-content: space-between;
   background: $clr-gray-90;
+  &.dark-mode {
+    background: $clr-gray-100;
+  }
   border-radius: $sz-half;
   width: 100%;
 
@@ -61,6 +64,10 @@
       background: transparent;
       color: white;
       z-index: 10;
+
+      img {
+        filter: brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(3201%);
+      }
     }
   }
 

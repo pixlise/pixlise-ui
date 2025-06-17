@@ -29,9 +29,16 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="multi-switch-container {{ disabled ? 'disabled' : '' }}">
-  <div *ngFor="let option of options; let i = index" (click)="onClick(option)" class="multi-switch-option {{ value === option ? 'active' : '' }}">
-    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" />{{ option }}
+<div class="multi-switch-container {{ disabled ? 'disabled' : '' }} {{ darkMode ? 'dark-mode' : '' }}">
+  <div
+    *ngFor="let option of options; let i = index"
+    (click)="onClick(option)"
+    class="multi-switch-option {{ value === option ? 'active' : '' }}"
+    [tabindex]="0"
+    (keyup)="onClick(option)"
+    (keydown)="onClick(option)"
+    (keypress)="onClick(option)">
+    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" alt="Option Icon" />{{ showLabels ? option : "" }}
   </div>
   <div class="active-selector" [style.margin-left]="activeLeftOffset" [style.width]="activeWidth"></div>
 </div>
