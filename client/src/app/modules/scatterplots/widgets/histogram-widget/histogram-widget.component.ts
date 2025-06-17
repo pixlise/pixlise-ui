@@ -31,7 +31,6 @@ import { ROIService } from "../../../roi/services/roi.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
-import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
@@ -79,6 +78,9 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           title: "Bars",
           tooltip: "Choose expressions to calculate bars from",
           onClick: () => this.onBars(),
+          settingTitle: "Bars",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/bars.svg",
         },
         {
           id: "regions",
@@ -86,6 +88,9 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/roi.svg",
         },
         {
           id: "solo",
@@ -93,6 +98,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
         },
       ],
       topRightInsetButton: {
@@ -446,8 +453,18 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     );
   }
 
+  get isWhiskerDisplayModeNone(): boolean {
+    return this.mdl.whiskerDisplayMode === HistogramModel.WhiskersNone;
+  }
+
+  onToggleWhiskerDisplayMode(): void {
+    this.mdl.whiskerDisplayMode = this.mdl.whiskerDisplayMode === HistogramModel.WhiskersNone ? HistogramModel.WhiskersStdDev : HistogramModel.WhiskersNone;
+    this.update();
+    this.saveState();
+  }
+
   get whiskerDisplayModes(): string[] {
-    return [HistogramModel.WhiskersNone, HistogramModel.WhiskersStdDev, HistogramModel.WhiskersStdErr];
+    return [HistogramModel.WhiskersStdDev, HistogramModel.WhiskersStdErr];
   }
 
   get whiskerDisplayMode(): string {

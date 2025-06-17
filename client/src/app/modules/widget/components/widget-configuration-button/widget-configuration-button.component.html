@@ -22,7 +22,7 @@
     (keydown)="buttonClick(buttonTrigger)"
     (keypress)="buttonClick(buttonTrigger)"
     tabindex="0">
-    <two-state-push-button [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled" *ngIf="buttonConfiguration.title"
+    <two-state-push-button [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled" *ngIf="buttonConfiguration.title && !rowMode"
       >{{ buttonConfiguration.title }}
       <img *ngIf="buttonConfiguration.activeIcon && buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.activeIcon" alt="Active Icon" />
       <img *ngIf="buttonConfiguration.inactiveIcon && !buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.inactiveIcon" alt="Inactive Icon" />
@@ -37,11 +37,12 @@
       [options]="buttonConfiguration?.options || []"
       [disabled]="!!buttonConfiguration.disabled"></multi-switch-button>
     <icon-button
-      *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
+      *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon && !(rowMode && buttonConfiguration.settingIcon)"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
       class="{{ buttonConfiguration.type }}"
       [icon]="buttonConfiguration.icon">
     </icon-button>
+    <img *ngIf="buttonConfiguration.settingIcon && rowMode" class="status-icon" [src]="buttonConfiguration.settingIcon" alt="Setting Icon" />
     <div *ngIf="buttonConfiguration.type === 'divider'" class="divider"></div>
     <div *ngIf="rowMode" class="row-mode-button">
       <div class="row-mode-label">

@@ -1,32 +1,54 @@
 <ng-template #settingsMenu>
-    <div class="settings">
-        <div class="row">
-            <div class="label">Log Scale</div>
-            <switch-button
-                [active]="logScale"
-                (onToggle)="onToggleLogScale()"
-                title="Toggles logarithmic y-scale"
-            />
-        </div>
-        <div class="label">Whisker Display Mode</div>
-        <multi-state-button
-          [stateNames]="whiskerDisplayModes"
-          [items]="whiskerDisplayModes"
-          [activeState]="whiskerDisplayMode"
-          (onChange)="onChangeWhiskerDisplayMode($event)">
-        </multi-state-button>
-        <div class="label">Zoom Columns To</div>
-        <multi-state-button
-          [stateNames]="zoomModes"
-          [items]="zoomModes"
-          [activeState]="zoomMode"
-          (onChange)="onChangeZoomMode($event)">
-        </multi-state-button>
+  <div class="widget-settings-menu">
+    <div
+      class="row link {{ logScale ? 'active' : '' }}"
+      (click)="onToggleLogScale()"
+      (keyup)="onToggleLogScale()"
+      (keydown)="onToggleLogScale()"
+      (keypress)="onToggleLogScale()"
+      tabindex="0">
+      <div class="row-title">Log Scale</div>
+      <action-button class="switch" [action]="logScale ? 'checkOn' : 'checkOff'"></action-button>
     </div>
+    <div
+      class="row link {{ !isWhiskerDisplayModeNone ? 'active' : '' }}"
+      (click)="onToggleWhiskerDisplayMode()"
+      (keyup)="onToggleWhiskerDisplayMode()"
+      (keydown)="onToggleWhiskerDisplayMode()"
+      (keypress)="onToggleWhiskerDisplayMode()"
+      tabindex="0">
+      <div class="row-title">Show Whiskers</div>
+      <action-button class="switch" [action]="!isWhiskerDisplayModeNone ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+    <div class="row above-title multi-switch-button-container">
+      <div class="row-title {{ !isWhiskerDisplayModeNone ? 'active' : '' }}">Standard</div>
+      <multi-switch-button
+        *ngIf="!isWhiskerDisplayModeNone"
+        [options]="whiskerDisplayModes"
+        [value]="whiskerDisplayMode"
+        (onChange)="onChangeWhiskerDisplayMode($event)"
+        [darkMode]="true">
+      </multi-switch-button>
+      <div
+        *ngIf="isWhiskerDisplayModeNone"
+        class="empty-value"
+        (click)="onToggleWhiskerDisplayMode()"
+        (keyup)="onToggleWhiskerDisplayMode()"
+        (keydown)="onToggleWhiskerDisplayMode()"
+        (keypress)="onToggleWhiskerDisplayMode()"
+        tabindex="0">
+        None
+      </div>
+    </div>
+    <div class="row above-title multi-switch-button-container">
+      <div class="row-title active">Zoom Columns To</div>
+      <multi-switch-button [options]="zoomModes" [value]="zoomMode" (onChange)="onChangeZoomMode($event)" [darkMode]="true"> </multi-switch-button>
+    </div>
+  </div>
 </ng-template>
 
 <interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
 <div *ngIf="modelErrors.length > 0" class="err-display">
-  <div *ngFor="let err of modelErrors">{{err.message}}</div> 
+  <div *ngFor="let err of modelErrors">{{ err.message }}</div>
 </div>

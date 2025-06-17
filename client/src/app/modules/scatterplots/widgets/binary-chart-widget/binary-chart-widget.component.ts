@@ -108,12 +108,12 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         {
           id: "regions",
           type: "button",
-          // title: "Regions",
-          icon: "assets/button-icons/roi.svg",
+          title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
           settingTitle: "Regions",
           settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/roi.svg",
         },
         {
           id: "export",

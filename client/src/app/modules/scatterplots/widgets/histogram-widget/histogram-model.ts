@@ -16,10 +16,13 @@ import { WidgetDataService, WidgetError } from "src/app/modules/pixlisecore/serv
 import { ScanItem } from "../../../../generated-protos/scan";
 import { PredefinedROIID } from "../../../../models/RegionOfInterest";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.component";
 
 export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
+  public static WhiskersStdDev = "Deviation";
+  public static WhiskersStdErr = "Error";
+  public static WhiskersNone = "None";
+
   needsDraw$: Subject<void> = new Subject<void>();
 
   // The raw data we start with
@@ -46,11 +49,6 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   private _recalcNeeded = true;
 
   whiskerDisplayMode: string = HistogramModel.WhiskersNone;
-
-  public static WhiskersStdDev = "Std Dev";
-  public static WhiskersStdErr = "Std Err";
-  public static WhiskersNone = "None";
-
   zoomMode: string = HistogramModel.ZoomModeAll;
 
   public static ZoomModeWhisker = "Whiskers";
@@ -386,8 +384,8 @@ export class HistogramBars {
     public shortLabel: string,
     public longLabel: string,
     public valueRange: MinMax //public roiName: string,
-  ) //public roiID: string,
-  {}
+    //public roiID: string,
+  ) {}
 }
 
 // Stores groups of bars - all bars (different colours for each region), for each expression

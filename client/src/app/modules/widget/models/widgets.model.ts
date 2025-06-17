@@ -32,6 +32,7 @@ export type WidgetToolbarButtonConfiguration = {
   title?: string;
   settingTitle?: string;
   settingGroupTitle?: string;
+  settingIcon?: string;
   icon?: string;
   inactiveIcon?: string;
   activeIcon?: string;

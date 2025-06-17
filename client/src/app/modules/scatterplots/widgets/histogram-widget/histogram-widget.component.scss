@@ -1,34 +1,92 @@
 @import "variables.scss";
 @import "atoms.scss";
 
-.settings {
+:host {
+  display: flex;
+  height: 100%;
+}
+
+.widget-settings-menu {
+  width: 200px;
+
+  .row {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: $sz-unit;
 
-    .label {
-        font-size: 14px;
-        font-weight: normal;
-        color: $clr-gray-30;
+    &.above-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .row-title {
+        margin-right: auto;
+
+        color: rgb(var(--clr-gray-50));
+        &.active {
+          color: rgb(var(--clr-gray-10));
+        }
+      }
     }
 
-    .row {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: $sz-unit;
+    &.link {
+      cursor: pointer;
+      border-radius: 4px;
+
+      &:hover {
+        background-color: rgb(var(--clr-gray-90));
+      }
+
+      .row-title {
+        margin-right: auto;
+      }
     }
+  }
+}
+
+interactive-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
 }
 
 .err-display {
-    position: absolute;
-    top: $sz-double;
-    left: 50%;
-    transform: translate(-50%, 0);
-    background-color: $clr-gray-90;
-    border-radius: $sz-unit;
-    color: $clr-gray-30;
-    padding: $sz-unit;
-    margin: $sz-unit;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgb(var(--clr-error-100));
+  color: rgb(var(--clr-error-50));
+  padding: 8px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.multi-switch-button-container {
+  width: calc(100% - 24px);
+
+  multi-switch-button {
+    width: 100%;
+    font-size: 12px;
+    line-height: 12px;
+  }
+}
+
+.empty-value {
+  display: flex;
+  width: calc(100% - 6px);
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  background-color: rgb(var(--clr-gray-100));
+  border: 1px solid #444c50;
+  color: rgb(var(--clr-gray-30));
+  font-size: 12px;
+  line-height: 12px;
+  font-weight: 500;
+  text-align: center;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
