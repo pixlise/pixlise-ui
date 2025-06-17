@@ -33,6 +33,7 @@
 .panel {
   display: flex;
   flex-direction: column;
+  background-color: rgb(var(--clr-gray-90));
 
   .overflow-section {
     display: flex;
@@ -45,4 +46,9 @@
 
 .unit-padding {
   padding: 8px;
+}
+
+.action-section {
+  display: flex;
+  flex-direction: column;
 }

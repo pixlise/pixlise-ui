@@ -123,20 +123,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        // {
-        //   id: "crop",
-        //   type: "button",
-        //   icon: "assets/button-icons/crop.svg",
-        //   disabled: true,
-        //   tooltip: "Not implemented yet. Click here to remove unselected pixels",
-        //   value: false,
-        //   onClick: (value, trigger) => this.onCrop(trigger),
-        // },
         {
           id: "visibility-layers",
           type: "button",
           icon: "assets/button-icons/visibility-layers.svg",
           tooltip: "Toggle visibility of scan data",
+          settingTitle: "Layer Visibility",
+          settingGroupTitle: "Data",
           value: false,
           onClick: (value, trigger) => this.onToggleLayerVisibilityDialog(trigger),
         },
@@ -144,7 +137,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           id: "all-points-toggle",
           type: "button",
           icon: "assets/button-icons/all-points-on.svg",
-          tooltip: "Toggle visibility of all points and footprints",
+          tooltip: "Show all points",
+          settingTitle: "Show All Points",
+          settingGroupTitle: "Actions",
           value: false,
           onClick: (value, trigger) => this.onToggleAllPoints(trigger),
         },
@@ -159,6 +154,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-in.svg",
           tooltip: "Zoom In",
+          settingTitle: "Zoom In",
+          settingGroupTitle: "Actions",
           onClick: () => this.onZoomIn(),
         },
         {
@@ -166,6 +163,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-out.svg",
           tooltip: "Zoom Out",
+          settingTitle: "Zoom Out",
+          settingGroupTitle: "Actions",
           onClick: () => this.onZoomOut(),
         },
         {
@@ -173,6 +172,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-all.svg",
           tooltip: "Show Whole Image",
+          settingTitle: "Show Whole Image",
+          settingGroupTitle: "Actions",
           onClick: () => this.onResetViewToWholeImage(),
         },
         {
@@ -180,6 +181,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-experiment.svg",
           tooltip: "Show Experiment Area",
+          settingTitle: "Focus Experiment Area",
+          settingGroupTitle: "Actions",
           onClick: () => this.onResetViewToExperiment(),
         },
         {
@@ -193,6 +196,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
           onClick: () => this.onSoloView(),
         },
         {
@@ -200,6 +205,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/export.svg",
           tooltip: "Export Data",
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
           onClick: () => this.onExportWidgetData.emit(),
         },
       ],

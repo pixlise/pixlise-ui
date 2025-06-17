@@ -2,15 +2,18 @@
   class="button"
   [ngStyle]="buttonConfiguration?.style || {}"
   [ngClass]="{
-    'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true,
-    'toolbar-button-selectable': buttonConfiguration?.type === 'selectable-button'
-  }">
+    'toolbar-button-bottom-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true && location === 'bottom-toolbar',
+    'toolbar-button-selectable': buttonConfiguration?.type === 'selectable-button',
+    'row-mode': rowMode,
+    'btn-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true
+  }"
+  tabindex="0">
   <span
     #buttonTrigger
     *ngIf="buttonConfiguration"
     #tooltip="matTooltip"
     [matTooltip]="buttonConfiguration.tooltip || ''"
-    [matTooltipDisabled]="!buttonConfiguration.tooltip"
+    [matTooltipDisabled]="!buttonConfiguration.tooltip || rowMode"
     class="btn-container"
     (click)="buttonClick(buttonTrigger)"
     (keyup)="buttonClick(buttonTrigger)"
@@ -38,6 +41,11 @@
       [icon]="buttonConfiguration.icon">
     </icon-button>
     <div *ngIf="buttonConfiguration.type === 'divider'" class="divider"></div>
+    <div *ngIf="rowMode" class="row-mode-button">
+      <div class="row-mode-label">
+        {{ buttonConfiguration?.settingTitle }}
+      </div>
+    </div>
   </span>
   <selection-changer
     *ngIf="buttonConfiguration?.type === 'selection-changer'"

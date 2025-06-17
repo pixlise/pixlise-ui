@@ -3,6 +3,23 @@
   height: 100%;
   align-items: center;
 
+  &.row-mode {
+    gap: 4px;
+    cursor: pointer;
+
+    .btn-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      padding: 0 8px;
+
+      &:hover {
+        background-color: rgb(var(--clr-gray-80));
+      }
+    }
+  }
+
   &.overflowed {
     display: none;
   }
@@ -43,7 +60,7 @@ multi-switch-button {
   margin: 0 2px;
 }
 
-.toolbar-button-active {
+.toolbar-button-bottom-active {
   background-color: rgb(var(--clr-gray-80));
   border-bottom: 1px solid #feff91;
   padding-top: 9px;
@@ -53,4 +70,15 @@ multi-switch-button {
 .toolbar-button-selectable {
   padding-left: 4px;
   padding-right: 4px;
+}
+
+.row-mode-label {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--clr-gray-20));
+
+  user-select: none;
 }
