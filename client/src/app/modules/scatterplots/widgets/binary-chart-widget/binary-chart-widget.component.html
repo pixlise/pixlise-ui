@@ -1,19 +1,24 @@
 <ng-template #settingsMenu>
-  <div class="settings">
-    <two-state-button leftLabel="Weight%" rightLabel="mmol" toolTip="Show results in mmol vs weight %" [active]="showMmol" (onToggle)="setShowMmol()">
-    </two-state-button>
-    <multi-state-button
-      [stateNames]="selectionModes"
-      [items]="['assets/button-icons/minus-yellow.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus-white.svg']"
-      [activeState]="currentSelectionMode"
-      (onChange)="onChangeSelectionMode($event)">
-    </multi-state-button>
-    <!-- <two-state-push-button
-        [active]="selectModeExcludeROI"
-        (onToggle)="onToggleSelectModeExcludeROI()"
-        title="Exclude Lasso: will not select points that are in an ROI"
-    >Exclude
-    </two-state-push-button> -->
+  <div class="widget-settings-menu">
+    <div class="row above-title">
+      <div class="row-title">Display</div>
+      <multi-switch-button
+        class="display-mode-btn"
+        [options]="['Weight%', 'Mmol']"
+        [value]="showMmol ? 'Mmol' : 'Weight%'"
+        (onChange)="setShowMmol()"
+        [darkMode]="true"></multi-switch-button>
+    </div>
+    <div class="row selection-mode-btn above-title">
+      <div class="row-title">Selection Mode</div>
+      <multi-switch-button
+        [options]="selectionModes"
+        [optionIcons]="['assets/button-icons/minus.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus.svg']"
+        [value]="currentSelectionMode"
+        [showLabels]="false"
+        (onChange)="onChangeSelectionMode($event)"
+        [darkMode]="true"></multi-switch-button>
+    </div>
   </div>
 </ng-template>
 

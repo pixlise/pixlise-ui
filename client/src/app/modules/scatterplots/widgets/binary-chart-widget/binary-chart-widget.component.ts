@@ -109,9 +109,12 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         {
           id: "regions",
           type: "button",
-          title: "Regions",
+          // title: "Regions",
+          icon: "assets/button-icons/roi.svg",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
         },
         {
           id: "export",
@@ -119,6 +122,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           icon: "assets/button-icons/export.svg",
           tooltip: "Export Data",
           onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
         },
         {
           id: "solo",
@@ -126,6 +131,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
         },
       ],
       topLeftInsetButton: {
