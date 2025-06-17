@@ -100,6 +100,18 @@ export const fitElementLinePrefix = fitLinePrefix + "_elem_";
 
 export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
+  needsCanvasResize$: Subject<void> = new Subject<void>();
+  resolution$: ReplaySubject<number> = new ReplaySubject<number>(1);
+  borderWidth$: ReplaySubject<number> = new ReplaySubject<number>(1);
+
+  borderColor: string = "";
+
+  axisLabelFontSize: number = 14;
+  axisLabelFontFamily: string = "Arial";
+  axisLabelFontWeight: string = "";
+  axisLabelFontColor: string = "";
+
+  exportMode: boolean = false;
 
   // The drawable data
   private _drawModel: SpectrumDrawModel = new SpectrumDrawModel();
@@ -929,7 +941,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return "Channel: " + Math.round(value).toString();
   }
 
-  // Rebuilding this models display data
+  // Rebuilding this models display data if needed
   recalcDisplayDataIfNeeded(canvasParams: CanvasParams): Observable<void> {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {

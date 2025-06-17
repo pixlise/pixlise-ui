@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, S
 import { Subscription } from "rxjs";
 import { SDSFields, getPathBase, invalidPMC } from "src/app/utils/utils";
 import { ContextImageItemTransform } from "../../models/image-transform";
-import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { makeImageTooltip } from "src/app/utils/image-details";
 import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -50,7 +50,6 @@ export class ContextImageItem {
     public hasBeamData: boolean,
     public beamIJIndex: number, // -1=default context image beam ij's, 0+ indexes into beam.context_locations[]
     public imageDrawTransform: ContextImageItemTransform | null // public rgbuSourceImage: RGBUImage, // eg if image was a floating point TIF
-    // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
   ) {}
 }
 

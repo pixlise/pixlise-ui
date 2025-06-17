@@ -67,9 +67,11 @@ multi-switch-button {
   padding-bottom: 8px;
 }
 
-.toolbar-button-selectable {
-  padding-left: 4px;
-  padding-right: 4px;
+.bottom-toolbar {
+  &.toolbar-button-selectable {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
 }
 
 .row-mode-label {
