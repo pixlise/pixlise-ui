@@ -41,6 +41,7 @@ export class MultiSwitchButtonComponent {
   @Input() disabled: boolean = false;
   @Input() showLabels: boolean = true;
   @Input() darkMode: boolean = false;
+  @Input() colorizeActiveIcon: boolean = false;
 
   @Output() onChange = new EventEmitter();
 
@@ -51,7 +52,7 @@ export class MultiSwitchButtonComponent {
   }
 
   get activeLeftOffset(): number | string {
-    let index = this.options.findIndex(option => option === this.value);
+    const index = this.options.findIndex(option => option === this.value);
     return index >= 0 && this.options.length > 0 ? `${Math.round((index / this.options.length) * 1000) / 10}%` : 0;
   }
 
