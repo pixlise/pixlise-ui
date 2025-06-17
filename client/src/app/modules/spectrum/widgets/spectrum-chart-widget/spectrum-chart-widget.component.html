@@ -1,11 +1,45 @@
 <ng-template #settingsMenu>
-  <div class="settings">
-    <div class="scale-buttons">
-      <two-state-push-button [active]="resizeSpectraY" (click)="onToggleResizeSpectraY()">Resize</two-state-push-button>
-      <two-state-push-button [active]="yAxislogScale" (click)="onToggleYAxislogScale()">Log Scale</two-state-push-button>
+  <div class="widget-settings-menu">
+    <div
+      class="row link {{ resizeSpectraY ? 'active' : '' }}"
+      (click)="onToggleResizeSpectraY()"
+      (keyup)="onToggleResizeSpectraY()"
+      (keydown)="onToggleResizeSpectraY()"
+      (keypress)="onToggleResizeSpectraY()"
+      tabindex="0">
+      <div class="row-title">Enable Resize</div>
+      <action-button class="switch" [action]="resizeSpectraY ? 'checkOn' : 'checkOff'"></action-button>
     </div>
-    <switch-button label="Normalise Counts/min:" [active]="countsPerMin" (onToggle)="onToggleCountsPerMin()"></switch-button>
-    <switch-button label="Normalise Counts/PMC:" [active]="countsPerPMC" (onToggle)="onToggleCountsPerPMC()"></switch-button>
+    <div
+      class="row link {{ yAxislogScale ? 'active' : '' }}"
+      (click)="onToggleYAxislogScale()"
+      (keyup)="onToggleYAxislogScale()"
+      (keydown)="onToggleYAxislogScale()"
+      (keypress)="onToggleYAxislogScale()"
+      tabindex="0">
+      <div class="row-title">Use Log Scale</div>
+      <action-button class="switch" [action]="yAxislogScale ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+    <div
+      class="row link {{ countsPerMin ? 'active' : '' }}"
+      (click)="onToggleCountsPerMin()"
+      (keyup)="onToggleCountsPerMin()"
+      (keydown)="onToggleCountsPerMin()"
+      (keypress)="onToggleCountsPerMin()"
+      tabindex="0">
+      <div class="row-title">Normalise Counts/min</div>
+      <action-button class="switch" [action]="countsPerMin ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+    <div
+      class="row link {{ countsPerPMC ? 'active' : '' }}"
+      (click)="onToggleCountsPerPMC()"
+      (keyup)="onToggleCountsPerPMC()"
+      (keydown)="onToggleCountsPerPMC()"
+      (keypress)="onToggleCountsPerPMC()"
+      tabindex="0">
+      <div class="row-title">Normalise Counts/PMC</div>
+      <action-button class="switch" [action]="countsPerPMC ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
   </div>
 </ng-template>
 

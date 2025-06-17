@@ -95,6 +95,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           tooltip: "Pan Tool (Shift)\nClick and drag to move the context image in the viewport",
           value: false,
           onClick: () => this.onToolSelected("pan"),
+          settingTitle: "Move Tool",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom",
@@ -116,6 +118,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
           value: false,
           onClick: () => this.onToolSelected("spectrum-range"),
+          settingTitle: "Range Selection Tool",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom-in",
@@ -123,6 +127,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/zoom-in.svg",
           tooltip: "Zoom In",
           onClick: () => this.onZoomIn(),
+          settingTitle: "Zoom In",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom-out",
@@ -130,6 +136,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/zoom-out.svg",
           tooltip: "Zoom Out",
           onClick: () => this.onZoomOut(),
+          settingTitle: "Zoom Out",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom-all",
@@ -137,6 +145,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/zoom-all-arrows.svg",
           tooltip: "Zoom To Fit Whole Spectrum",
           onClick: () => this.onResetZoom(),
+          settingTitle: "Show whole image",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "xray-tube-element",
@@ -145,6 +155,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           tooltip: "Show XRF Lines for X-ray Tube Element",
           value: false,
           onClick: () => this.onShowXRayTubeLines(),
+          settingTitle: "Show XRF Lines",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "divider",
@@ -157,6 +169,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
         },
         {
           id: "export",
