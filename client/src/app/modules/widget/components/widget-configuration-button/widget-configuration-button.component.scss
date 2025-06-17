@@ -60,17 +60,37 @@ multi-switch-button {
   margin: 0 2px;
 }
 
-.toolbar-button-bottom-active {
-  background-color: rgb(var(--clr-gray-80));
-  border-bottom: 1px solid #feff91;
-  padding-top: 9px;
-  padding-bottom: 8px;
-}
-
 .bottom-toolbar {
   &.toolbar-button-selectable {
     padding-left: 4px;
     padding-right: 4px;
+  }
+
+  &.toolbar-button-active {
+    background-color: rgb(var(--clr-gray-80));
+    border-bottom: 1px solid #feff91;
+    padding-top: 9px;
+    padding-bottom: 8px;
+  }
+}
+
+.top-toolbar {
+  &.toolbar-button-active {
+    border-bottom: 1px solid #feff91;
+    height: calc(100% - 1px);
+  }
+
+  height: 40px;
+  padding: 0 2px;
+
+  display: flex;
+  align-items: center;
+
+  &:not(.btn-divider) {
+    &:hover {
+      background-color: rgb(var(--clr-gray-90));
+    }
+    padding: 0 2px;
   }
 }
 

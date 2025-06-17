@@ -2,11 +2,12 @@
   class="button"
   [ngStyle]="buttonConfiguration?.style || {}"
   [ngClass]="{
-    'toolbar-button-bottom-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true && location === 'bottom-toolbar',
+    'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true,
     'toolbar-button-selectable': buttonConfiguration?.type === 'selectable-button',
     'row-mode': rowMode,
-    'btn-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true,
-    'bottom-toolbar': location === 'bottom-toolbar'
+    'bottom-toolbar': location === 'bottom-toolbar',
+    'top-toolbar': location === 'top-toolbar',
+    'btn-divider': buttonConfiguration?.type === 'divider'
   }"
   tabindex="0">
   <span

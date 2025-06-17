@@ -53,6 +53,7 @@
           [ngStyle]="{ display: button._overflowed ? 'none' : 'block', margin: button.margin }"></widget-configuration-button>
       </div>
       <widget-settings-menu
+        class="settings-menu-trigger-btn"
         *ngIf="settingsMenu || isOverflowed"
         [settingsDialog]="settingsMenu || defaultOverflowSection"
         [noPadding]="true"
