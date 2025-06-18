@@ -89,6 +89,15 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           onClick: () => null,
         },
         {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+        },
+        {
           id: "export",
           type: "button",
           icon: "assets/button-icons/export.svg",
@@ -97,15 +106,6 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           settingTitle: "Export / Download",
           settingGroupTitle: "Actions",
           settingIcon: "assets/button-icons/export.svg",
-        },
-        {
-          id: "solo",
-          type: "button",
-          icon: "assets/button-icons/widget-solo.svg",
-          tooltip: "Toggle Solo View",
-          onClick: () => this.onSoloView(),
-          settingTitle: "Solo",
-          settingGroupTitle: "Actions",
         },
       ],
     };

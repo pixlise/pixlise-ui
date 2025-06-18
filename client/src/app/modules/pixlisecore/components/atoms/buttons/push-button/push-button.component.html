@@ -34,6 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
   [ngClass]="styleCSS"
   [ngStyle]="customStyle"
   (click)="onClickInternal($event)"
+  (keyup)="onClickInternal()"
+  (keydown)="onClickInternal()"
+  (keypress)="onClickInternal()"
+  tabindex="0"
   #tooltip="matTooltip"
   [matTooltip]="tooltipTitle"
   [matTooltipDisabled]="!tooltipTitle || tooltipTitle.length === 0">

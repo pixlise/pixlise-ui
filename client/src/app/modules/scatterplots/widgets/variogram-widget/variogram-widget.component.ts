@@ -167,6 +167,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           title: "Elements",
           tooltip: "Choose regions to display",
           onClick: () => this.onExpressions(),
+          settingTitle: "Elements",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/elements.svg",
         },
         {
           id: "regions",
@@ -174,13 +177,14 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/roi.svg",
         },
         {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export Data",
-          onClick: () => this.onExportWidgetData.emit(),
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
         },
         {
           id: "solo",
@@ -188,6 +192,17 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onToggleSolo(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
         },
       ],
       topRightInsetButton: {
@@ -401,7 +416,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   onChangeDistance(event: SliderValue) {
-    this._variogramModel.maxDistance = event.value;
+    this._variogramModel.maxDistance = isNaN(event.value) ? event.value : Math.round(Number(event.value) * 100) / 100;
 
     if (this.liveUpdate) {
       this.update();
@@ -419,6 +434,24 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       if (event.finish) {
         this.saveState();
       }
+    }
+  }
+
+  onMaxDistanceInputChange(value: number) {
+    this._variogramModel.maxDistance = isNaN(value) ? value : Math.round(Number(value) * 100) / 100;
+
+    if (this.liveUpdate) {
+      this.update();
+      this.saveState();
+    }
+  }
+
+  onBinNumberInputChange(value: number) {
+    this._variogramModel.binCount = Math.floor(value);
+
+    if (this.liveUpdate) {
+      this.update();
+      this.saveState();
     }
   }
 
@@ -489,7 +522,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     if (leftAlgorithm && !this.crossCombiningAlgorithms.includes(leftAlgorithm)) {
       // Algorithm is an expression ID, so we need to fetch it
-      let expressionId = leftAlgorithm;
+      const expressionId = leftAlgorithm;
       this.activeLeftCrossCombiningAlgorithm = "Custom";
 
       this._expressionsService.fetchCachedExpression(expressionId).subscribe(expr => {
@@ -503,7 +536,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     if (rightAlgorithm && !this.crossCombiningAlgorithms.includes(rightAlgorithm)) {
       // Algorithm is an expression ID, so we need to fetch it
-      let expressionId = rightAlgorithm;
+      const expressionId = rightAlgorithm;
       this.activeRightCrossCombiningAlgorithm = "Custom";
 
       this._expressionsService.fetchCachedExpression(expressionId).subscribe(expr => {
@@ -588,8 +621,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
 
-    let selectedId = left ? this.customLeftAlgorithm?.id : this.customRightAlgorithm?.id;
-    let selectedIds = selectedId ? [selectedId] : [];
+    const selectedId = left ? this.customLeftAlgorithm?.id : this.customRightAlgorithm?.id;
+    const selectedIds = selectedId ? [selectedId] : [];
 
     dialogConfig.data = {
       widgetId: this._widgetId,
@@ -629,20 +662,20 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
   updateAsync(shouldStoreBinnedDataForExport: boolean = false, shouldStoreRawDataForExport: boolean = false): Observable<void> {
     this.isWidgetDataLoading = true;
-    let t0 = performance.now();
+    const t0 = performance.now();
 
-    let query: DataSourceParams[] = [];
+    const query: DataSourceParams[] = [];
 
     // Query each region for both expressions if we have any...
     if (this._expressionIds.length > 0) {
-      for (let roi of this._variogramModel.visibleROIs) {
-        for (let exprId of this._expressionIds) {
-          let quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId) || "";
+      for (const roi of this._variogramModel.visibleROIs) {
+        for (const exprId of this._expressionIds) {
+          const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId) || "";
           query.push(new DataSourceParams(roi.scanId, exprId, quantId, roi.id));
         }
       }
 
-      let allowAnyResponse = this.activeLeftCrossCombiningAlgorithm === "Custom" || this.activeRightCrossCombiningAlgorithm === "Custom";
+      const allowAnyResponse = this.activeLeftCrossCombiningAlgorithm === "Custom" || this.activeRightCrossCombiningAlgorithm === "Custom";
 
       return this._widgetDataService.getData(query, allowAnyResponse).pipe(
         map(queryData => {
@@ -663,8 +696,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       return of({ found: false, cacheKey: "", varioPoints: [] });
     }
 
-    let expressionRequests$ = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpressionHash(exprId));
-    let comparisonRequests$ = this.formComparisonAlgorithms().map(algorithm => {
+    const expressionRequests$ = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpressionHash(exprId));
+    const comparisonRequests$ = this.formComparisonAlgorithms().map(algorithm => {
       if (this.crossCombiningAlgorithms.includes(algorithm)) {
         return of(algorithm);
       } else {
@@ -674,7 +707,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     return combineLatest([...expressionRequests$, ...comparisonRequests$]).pipe(
       switchMap(results => {
-        let cacheKey = JSON.stringify({
+        const cacheKey = JSON.stringify({
           expressionHashes: results,
           visibleROIs: this._variogramModel.visibleROIs.map(roi => roi.id),
           minDistance: this._variogramModel.maxDistance,
@@ -711,8 +744,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
             if (queryData.error) {
               errorStr = "Error: " + queryData.error;
             } else {
-              let valsOnly: PMCDataValues[] = [];
-              for (let result of queryData.queryResults) {
+              const valsOnly: PMCDataValues[] = [];
+              for (const result of queryData.queryResults) {
                 if (result.values) {
                   valsOnly.push(result.values);
                 } else {
@@ -773,39 +806,39 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
     this.fetchVariogramPointsWithError(queryData, shouldStoreRawDataForExport).subscribe({
       next: ({ errorStr, varioPoints }) => {
         // Decide what to draw
-        let dispPoints: VariogramPointGroup[] = [];
-        let dispMinMax = new MinMax();
+        const dispPoints: VariogramPointGroup[] = [];
+        const dispMinMax = new MinMax();
 
         this._binnedPointDataForExport = [];
 
-        let pointsForExport: VariogramExportPoint[] = [];
-        let comparisonAlgorithm = this.getExportableAlgorithmNames();
+        const pointsForExport: VariogramExportPoint[] = [];
+        const comparisonAlgorithm = this.getExportableAlgorithmNames();
 
-        let previousKeyItems = this.keyItems.slice();
+        const previousKeyItems = this.keyItems.slice();
         this.keyItems = [];
 
         varioPoints.forEach((pts, i) => {
-          let region = queryData?.queryResults[i].region;
+          const region = queryData?.queryResults[i].region;
           if (!region?.displaySettings.colour) {
             return;
           }
 
-          let roiId = region.region.id;
+          const roiId = region.region.id;
           let roiName = region.region.name;
           if (PredefinedROIID.isAllPointsROI(roiId)) {
             roiName = "All Points";
           }
 
-          let scanId = region.region.scanId;
-          let scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
+          const scanId = region.region.scanId;
+          const scanName = scanItems.find(scan => scan.id == scanId)?.title || scanId;
           let isROIVisible = true;
 
-          let existingROIKey = previousKeyItems.find(item => item.id === roiId);
+          const existingROIKey = previousKeyItems.find(item => item.id === roiId);
           if (existingROIKey) {
             this.keyItems.push(existingROIKey);
             isROIVisible = existingROIKey.isVisible;
           } else {
-            let keyItem = new WidgetKeyItem(roiId, roiName, region.displaySettings.colour, null, region.displaySettings.shape, scanName, true, true);
+            const keyItem = new WidgetKeyItem(roiId, roiName, region.displaySettings.colour, null, region.displaySettings.shape, scanName, true, true);
             this.keyItems.push(keyItem);
           }
 
@@ -814,8 +847,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           }
 
           // Find the minmax
-          let ptValueRange = new MinMax();
-          for (let pt of pts) {
+          const ptValueRange = new MinMax();
+          for (const pt of pts) {
             if (pt.meanValue !== null) {
               ptValueRange.expand(pt.meanValue);
 
@@ -834,7 +867,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
             }
           }
 
-          let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange, roiId);
+          const ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape, pts, ptValueRange, roiId);
           dispPoints.push(ptGroup);
           dispMinMax.expandByMinMax(ptValueRange);
         });
@@ -850,31 +883,31 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
         }
 
         // If previousKeyItems were sorted, sort the new ones following the layerOrder
-        let sortedPointGroups = dispPoints.sort((a, b) => {
-          let keyItemA = previousKeyItems.find(key => key.id == a.roiId);
-          let keyItemB = previousKeyItems.find(key => key.id == b.roiId);
+        const sortedPointGroups = dispPoints.sort((a, b) => {
+          const keyItemA = previousKeyItems.find(key => key.id == a.roiId);
+          const keyItemB = previousKeyItems.find(key => key.id == b.roiId);
 
-          if (keyItemA === undefined) {
+          if (keyItemA === undefined && keyItemB === undefined) {
+            return 0;
+          } else if (keyItemA === undefined) {
             return 1;
           } else if (keyItemB === undefined) {
             return -1;
-          } else if (keyItemA === undefined && keyItemB === undefined) {
-            return 0;
           } else {
             return keyItemB.layerOrder - keyItemA.layerOrder;
           }
         });
 
-        let variogramData: VariogramData = new VariogramData(title, sortedPointGroups, dispMinMax, errorStr);
+        const variogramData: VariogramData = new VariogramData(title, sortedPointGroups, dispMinMax, errorStr);
 
         this.interaction = new VariogramInteraction(this._variogramModel, this._selectionService);
         this.drawer = new VariogramDrawer(this._variogramModel);
 
         this._variogramModel.raw = variogramData;
 
-        let t1 = performance.now();
+        const t1 = performance.now();
         this.needsDraw$.next();
-        let t2 = performance.now();
+        const t2 = performance.now();
 
         this.isWidgetDataLoading = false;
         console.log("  Variogram update took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
@@ -899,14 +932,14 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           this._lastRunExpressionIds = this._expressionIds;
 
           this.expressions = [];
-          let expressionRequests = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpression(exprId));
+          const expressionRequests = this._expressionIds.map(exprId => this._expressionsService.fetchCachedExpression(exprId));
           combineLatest(expressionRequests).subscribe(expressions => {
             let title = "";
             let fullTitle = "";
-            for (let expr of expressions) {
+            for (const expr of expressions) {
               if (expr?.expression) {
                 this.expressions.push(expr.expression);
-                let displayName = getExpressionShortDisplayName(24, expr.expression.id, expr.expression.name);
+                const displayName = getExpressionShortDisplayName(24, expr.expression.id, expr.expression.name);
                 if (title.length > 0) {
                   title += " / ";
                   fullTitle += " / ";
@@ -939,18 +972,18 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
     let minDist: number | null = null;
     let maxDist: number | null = null;
 
-    let allPoints: (Point | null)[][] = [];
-    queryData.forEach(data => {
-      let pts: (Point | null)[] = [];
-      for (let val of data.values) {
-        let scanLocation = this.scanLocations.get(val.pmc);
+    const allPoints: (Point | null)[][] = [];
+    queryData.forEach((data, index) => {
+      const pts: (Point | null)[] = [];
+      for (const val of data.values) {
+        const scanLocation = this.scanLocations.get(val.pmc);
         if (!scanLocation || !scanLocation.location) {
           console.error("Failed to find scan location for PMC: " + val.pmc);
           pts.push(null);
           continue;
         }
 
-        let pt = new Point(scanLocation.location.x, scanLocation.location.y);
+        const pt = new Point(scanLocation.location.x, scanLocation.location.y);
         if (this.variogramMetadata?.beamUnitsInMeters) {
           pt.x *= 1000;
           pt.y *= 1000;
@@ -959,7 +992,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
         pts.push(pt);
       }
 
-      let bounds = this.calcVariogramPointsDistanceBounds(pts);
+      const bounds = this.calcVariogramPointsDistanceBounds(pts);
       if (!minDist || bounds.minDist < minDist) {
         minDist = bounds.minDist;
       }
@@ -971,7 +1004,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       allPoints.push(pts);
     });
 
-    let distanceChanged = minDist !== this.distanceSliderMin || maxDist !== this.distanceSliderMax;
+    const distanceChanged = minDist !== this.distanceSliderMin || maxDist !== this.distanceSliderMax;
 
     this.distanceSliderMin = minDist || 0;
     this.distanceSliderMax = maxDist ?? 1;
@@ -980,7 +1013,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       this._variogramModel.maxDistance = (this.distanceSliderMax - this.distanceSliderMin) / 2;
     }
 
-    let crossVariogramPointsRequests: Observable<VariogramPoint[]>[] = [];
+    const crossVariogramPointsRequests: Observable<VariogramPoint[]>[] = [];
     this._rawPointDataForExport = [];
     for (let c = 0; c < queryData.length; c++) {
       const data = queryData[c];
@@ -988,7 +1021,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
         return of([]);
       }
 
-      let pts: (Point | null)[] = allPoints[c];
+      const pts: (Point | null)[] = allPoints[c];
 
       // If we're only showing 1 expression, we use that as elem 1+2, as we're drawing a Variogram
       // If we have 2 expressions, we use those as elem1, elem2 respectively, and drawing a Co-variogram
@@ -1004,7 +1037,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private crossCombiningFunction(left: boolean): ((currentValue1: any, comparisonValue1: any) => number) | null {
-    let activeAlgorithm = left ? this.activeLeftCrossCombiningAlgorithm : this.activeRightCrossCombiningAlgorithm;
+    const activeAlgorithm = left ? this.activeLeftCrossCombiningAlgorithm : this.activeRightCrossCombiningAlgorithm;
 
     if (activeAlgorithm === "XOR-Sum") {
       return xor_sum;
@@ -1014,6 +1047,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       // We'll handle this externally
       return null;
     } else {
+      console.warn(`Unknown algorithm "${activeAlgorithm}", returning 0 function`);
       return (currentValue1: any, comparisonValue1: any) => {
         return 0;
       };
@@ -1021,28 +1055,31 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private runBulkCombiningFunction(left: boolean, values: any[][]): Observable<number[]> {
-    let activeAlgorithm = left ? this.activeLeftCrossCombiningAlgorithm : this.activeRightCrossCombiningAlgorithm;
+    const activeAlgorithm = left ? this.activeLeftCrossCombiningAlgorithm : this.activeRightCrossCombiningAlgorithm;
     if (activeAlgorithm !== "Custom") {
       return of(
         values.map(([v1, v2]) => {
           // If v1 and v2 are numbers, we can just pass them in
-          if (!isNaN(Number(v1)) && !isNaN(Number(v2))) {
-            return this.crossCombiningFunction(left)!(v1, v2);
-          } else {
+          const crossCombiningFunction = this.crossCombiningFunction(left);
+          if (!isNaN(Number(v1)) && !isNaN(Number(v2)) && crossCombiningFunction) {
+            return crossCombiningFunction(v1, v2);
+          } else if (crossCombiningFunction && v1 && v2) {
             // Assume they are PMCDataValues
-            return this.crossCombiningFunction(left)!(v1.value, v2.value);
+            return crossCombiningFunction(v1.value, v2.value);
+          } else {
+            return 0;
           }
         })
       );
     }
 
-    let expr = left ? this.customLeftAlgorithm : this.customRightAlgorithm;
+    const expr = left ? this.customLeftAlgorithm : this.customRightAlgorithm;
     if (!expr) {
       return of([]);
     }
 
-    let query: DataSourceParams[] = [];
-    let scanIdsFromROIS: Set<string> = new Set(this._variogramModel.visibleROIs.map(roi => roi.scanId));
+    const query: DataSourceParams[] = [];
+    const scanIdsFromROIS: Set<string> = new Set(this._variogramModel.visibleROIs.map(roi => roi.scanId));
     if (scanIdsFromROIS.size <= 0) {
       console.warn("No ROIs selected, custom algorithm not run");
       return of([]);
@@ -1052,11 +1089,20 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       return of([]);
     }
 
-    let scanId = scanIdsFromROIS.values().next().value!;
-    let quantId = this._analysisLayoutService.getQuantIdForScan(scanId) || "";
-    let allPointsId = PredefinedROIID.getAllPointsForScan(scanId);
+    const scanId = scanIdsFromROIS.values().next().value;
+    if (!scanId) {
+      console.error("No scan ID found, custom algorithm not run");
+      return of([]);
+    }
 
-    let injectedFunctions: Map<string, number[][]> = new Map<string, number[][]>([["getVariogramInputs", values]]);
+    const quantId = this._analysisLayoutService.getQuantIdForScan(scanId) || "";
+    const allPointsId = PredefinedROIID.getAllPointsForScan(scanId);
+    if (!quantId || !allPointsId) {
+      console.error("No quant ID or all points ID found, custom algorithm not run");
+      return of([]);
+    }
+
+    const injectedFunctions: Map<string, number[][]> = new Map<string, number[][]>([["getVariogramInputs", values]]);
     query.push(new DataSourceParams(scanId, expr.id, quantId, allPointsId, DataUnit.UNIT_DEFAULT, injectedFunctions));
     return this._widgetDataService.getData(query, true).pipe(
       map(queryData => {
@@ -1097,18 +1143,18 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
     let maxDist = 0;
 
     for (let i = 0; i < coords.length; i++) {
-      let coord1 = coords[i];
+      const coord1 = coords[i];
       if (!coord1) {
         continue;
       }
 
       for (let j = i + 1; j < coords.length; j++) {
-        let coord2 = coords[j];
+        const coord2 = coords[j];
         if (!coord2) {
           continue;
         }
 
-        let dist = distanceBetweenPoints(coord1, coord2);
+        const dist = distanceBetweenPoints(coord1, coord2);
         if (dist < minDist) {
           minDist = dist;
         }
@@ -1128,47 +1174,70 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
     coords: (Point | null)[],
     shouldStoreRawDataForExport: boolean = false
   ): Observable<VariogramPoint[]> {
-    let result: VariogramPoint[] = [];
+    const result: VariogramPoint[] = [];
 
-    const binWidth = this._variogramModel.maxDistance / this._variogramModel.binCount;
+    // For small datasets, we might need to adjust the maxDistance to ensure we get some data
+    let effectiveMaxDistance = this._variogramModel.maxDistance;
+    if (elem1.values.length <= 10) {
+      // Calculate the maximum distance between any two points in this region
+      let maxDistInRegion = 0;
+      for (let i = 0; i < coords.length; i++) {
+        for (let j = i + 1; j < coords.length; j++) {
+          if (coords[i] && coords[j]) {
+            const dist = distanceBetweenPoints(coords[i]!, coords[j]!);
+            if (dist > maxDistInRegion) {
+              maxDistInRegion = dist;
+            }
+          }
+        }
+      }
+
+      // If the region's max distance is greater than our current maxDistance, use the region's max distance
+      if (maxDistInRegion > effectiveMaxDistance) {
+        effectiveMaxDistance = maxDistInRegion;
+      }
+    }
+
+    const binWidth = effectiveMaxDistance / this._variogramModel.binCount;
     for (let c = 0; c < this._variogramModel.binCount; c++) {
       result.push(new VariogramPoint(binWidth * (c + 1), 0, 0, 0));
     }
 
-    let maxDistSquared = this._variogramModel.maxDistance * this._variogramModel.maxDistance;
+    const maxDistSquared = effectiveMaxDistance * effectiveMaxDistance;
 
-    let leftCombiningFunction = this.crossCombiningFunction(true);
-    let rightCombiningFunction = this.crossCombiningFunction(false);
+    const leftCombiningFunction = this.crossCombiningFunction(true);
+    const rightCombiningFunction = this.crossCombiningFunction(false);
 
-    let leftInputs: PMCDataValue[][] = [];
-    let rightInputs: PMCDataValue[][] = [];
-    let outputBinIndexes: number[] = [];
+    const leftInputs: PMCDataValue[][] = [];
+    const rightInputs: PMCDataValue[][] = [];
+    const outputBinIndexes: number[] = [];
+
     for (let c = 0; c < elem1.values.length; c++) {
       if (elem1.values[c].pmc !== elem2.values[c].pmc) {
         console.error("calcCrossVariogramPoints failed, elem1 PMC order doesn't match elem2");
         return of([]);
       }
 
-      let elem1Coord = coords[c];
+      const elem1Coord = coords[c];
       if (!elem1Coord) {
         continue;
       }
 
-      let currentLeftValue = elem1.values[c].value;
-      let currentRightValue = elem2.values[c].value;
+      const currentLeftValue = elem1.values[c].value;
+      const currentRightValue = elem2.values[c].value;
 
       for (let i = c + 1; i < elem1.values.length; i++) {
-        let elem2Coord = coords[i];
+        const elem2Coord = coords[i];
         if (!elem2Coord) {
           continue;
         }
 
         // Find distance between points
-        let distSquared = distanceSquaredBetweenPoints(elem1Coord, elem2Coord);
+        const distSquared = distanceSquaredBetweenPoints(elem1Coord, elem2Coord);
 
         if (distSquared < maxDistSquared) {
           // Find the right bin
-          let binIdx = Math.floor(Math.sqrt(distSquared) / binWidth);
+          const binIdx = Math.floor(Math.sqrt(distSquared) / binWidth);
 
           if (!leftCombiningFunction || !rightCombiningFunction || shouldStoreRawDataForExport) {
             // We're using a custom function, so we'll handle this externally
@@ -1178,11 +1247,11 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
             continue;
           }
 
-          let comparisonLeftValue = elem1.values[i].value;
-          let comparisonRightValue = elem2.values[i].value;
+          const comparisonLeftValue = elem1.values[i].value;
+          const comparisonRightValue = elem2.values[i].value;
 
-          let lvalue = leftCombiningFunction(currentLeftValue, comparisonLeftValue);
-          let rvalue = rightCombiningFunction(currentRightValue, comparisonRightValue);
+          const lvalue = leftCombiningFunction(currentLeftValue, comparisonLeftValue);
+          const rvalue = rightCombiningFunction(currentRightValue, comparisonRightValue);
 
           result[binIdx].sum += lvalue * rvalue;
           result[binIdx].count++;
@@ -1193,9 +1262,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
     if (!leftCombiningFunction || !rightCombiningFunction || shouldStoreRawDataForExport) {
       return forkJoin([this.runBulkCombiningFunction(true, leftInputs), this.runBulkCombiningFunction(false, rightInputs)]).pipe(
         map(([leftValues, rightValues]) => {
-          let comparisonAlgorithmName = this.getExportableAlgorithmNames();
+          const comparisonAlgorithmName = this.getExportableAlgorithmNames();
           for (let c = 0; c < leftValues.length; c++) {
-            let binIdx = outputBinIndexes[c];
+            const binIdx = outputBinIndexes[c];
             result[binIdx].sum += leftValues[c] * rightValues[c];
             result[binIdx].count++;
 
@@ -1277,7 +1346,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
               this.scanLocations = new Map<number, ScanLocation>();
               scanEntryResp.entries.forEach((scanEntry, i) => {
-                let beamLocation = beamResp.beamLocations[i] || null;
+                const beamLocation = beamResp.beamLocations[i] || null;
                 this.scanLocations.set(scanEntry.id, {
                   id: scanEntry.id,
                   entry: scanEntry,
@@ -1295,7 +1364,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
   generateScanMetadata(scan: ScanItem, entries: ScanEntry[], beamLocations: Coordinate3D[], detConf: DetectorConfigResp): VariogramScanMetadata {
     const gen = new ContextImageScanModelGenerator();
     gen.processBeamData("", scan, entries, beamLocations, 0, null, detConf);
-    let metadata = new VariogramScanMetadata(gen.minXYDistance_mm, gen.locationPointXSize, gen.locationPointYSize, gen.beamUnitsInMeters, gen.locationCount);
+    const metadata = new VariogramScanMetadata(gen.minXYDistance_mm, gen.locationPointXSize, gen.locationPointYSize, gen.beamUnitsInMeters, gen.locationCount);
     return metadata;
   }
 
@@ -1311,7 +1380,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
         this.binSliderMax = metadata.locationCount;
         if (valuesWereDefaults || this._variogramModel.maxDistance > this.distanceSliderMax || this._variogramModel.maxDistance < this.distanceSliderMin) {
           // Start off with some reasonable defaults
-          this._variogramModel.maxDistance = (this.distanceSliderMin + this.distanceSliderMax) / 2;
+          this._variogramModel.maxDistance = Math.round(((this.distanceSliderMin + this.distanceSliderMax) / 2) * 100) / 100;
           this._variogramModel.binCount = Math.floor((this.binSliderMin + this.binSliderMax) / 2);
         }
 
@@ -1326,8 +1395,8 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
-    let requestBinnedCSVData = request.dataProducts["binnedCSVData"]?.selected;
-    let requestRawCSVData = request.dataProducts["rawCSVData"]?.selected;
+    const requestBinnedCSVData = request.dataProducts["binnedCSVData"]?.selected;
+    const requestRawCSVData = request.dataProducts["rawCSVData"]?.selected;
 
     return this.updateAsync(requestBinnedCSVData, requestRawCSVData).pipe(
       switchMap(() => {

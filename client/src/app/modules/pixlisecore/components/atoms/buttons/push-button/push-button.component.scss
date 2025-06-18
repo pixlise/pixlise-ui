@@ -245,6 +245,8 @@
 
 .clickable {
   position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &.flex-btn {
     display: flex;
