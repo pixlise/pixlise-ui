@@ -57,19 +57,15 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        // {
-        //   id: "refs",
-        //   type: "button",
-        //   title: "Refs",
-        //   tooltip: "Choose reference areas to display",
-        //   onClick: () => this.onReferences(),
-        // },
         {
           id: "quants",
           type: "button",
           title: "Quantifications",
           tooltip: "Choose quantifications to display",
           onClick: (val, event) => this.onQuants(event),
+          settingTitle: "Quantifications",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/quantification.svg",
         },
         {
           id: "regions",
@@ -77,6 +73,24 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/roi.svg",
+        },
+        {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
+          settingIcon: "assets/button-icons/export.svg",
         },
         {
           id: "solo",
@@ -84,6 +98,8 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
         },
       ],
     };
@@ -221,10 +237,12 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
           // Ensure each table has the same element list
           let emptyValues = [];
-          const uniqueLabels = new Set<string>();
+          const uniqueLabels: string[] = [];
           for (const table of this.regionDataTables) {
             for (const r of table.rows) {
-              uniqueLabels.add(r.label);
+              if (!uniqueLabels.includes(r.label)) {
+                uniqueLabels.push(r.label);
+              }
               if (r.values.length > emptyValues.length) {
                 emptyValues = [];
                 for (let c = 0; c < r.values.length; c++) {
@@ -234,10 +252,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
             }
           }
 
-          const allLabels = [];
-          for (const label of Array.from(uniqueLabels).sort()) {
-            allLabels.push(label);
-          }
+          const allLabels = uniqueLabels;
 
           for (const table of this.regionDataTables) {
             const rowLookup = new Map<string, TableRow>();
@@ -739,10 +754,9 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     return this._orderByAbundance;
   }
 
-  setOrderByAbundance(event: any): void {
-    this._orderByAbundance = !this._orderByAbundance;
-
-    this.saveState();
+  setOrderByAbundance(orderByAbundance: boolean): void {
+    this._orderByAbundance = orderByAbundance;
     this.updateTable();
+    this.saveState();
   }
 }
