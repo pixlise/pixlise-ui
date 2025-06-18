@@ -1,4 +1,17 @@
-## 4.69.0 (Latest)
+## 4.70.0 (Latest)
+
+### New Features
+- Updates all widget toolbars to have more consistent theming and layout
+- Updates iconography to consolidate space and better represent actions and charts
+- Redesigns chart settings menus to be more accessible and always show all options
+  - Chart settings menus now also pop up on right click on a widget
+- Adds new exporter to the spectrum chart
+
+### Bug Fixes
+- Fixes bug where sorting by abundance in quantification table wasn't updating the table
+
+
+## 4.69.0 (2025-06-13)
 
 ### Bug Fixes
 - Made group list scrollable on groups page

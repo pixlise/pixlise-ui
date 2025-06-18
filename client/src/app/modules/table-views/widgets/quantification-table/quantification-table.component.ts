@@ -25,6 +25,12 @@ import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportRequest,
+  WidgetExportFile,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
   selector: "app-quantification-table",
@@ -758,5 +764,66 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     this._orderByAbundance = orderByAbundance;
     this.updateTable();
     this.saveState();
+  }
+
+  override getExportOptions(): WidgetExportDialogData {
+    return {
+      title: "Export Quantification Table",
+      defaultZipName: "Quantification Table Data",
+      options: [],
+      dataProducts: [
+        {
+          id: "tableData",
+          name: "Table Data .csv",
+          type: "checkbox",
+          description: "Export the quantification table data as CSV",
+          selected: true,
+        },
+      ],
+      showPreview: false,
+    };
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return new Observable<WidgetExportData>(observer => {
+      const csvs: WidgetExportFile[] = [];
+      if (request.dataProducts) {
+        if (request.dataProducts["tableData"]?.selected) {
+          csvs.push({
+            fileName: `Quantification Table Data.csv`,
+            data: this.exportTableData(),
+          });
+        }
+      }
+
+      observer.next({ csvs });
+      observer.complete();
+    });
+  }
+
+  private exportTableData(): string {
+    if (this.regionDataTables.length === 0) {
+      return "No data available for export";
+    }
+
+    let csvData = "";
+
+    const headerRow = ["Region", "Quantification", "Unit", "Element", "Weight %"];
+    csvData += headerRow.map(h => `"${h}"`).join(",") + "\n";
+
+    for (const table of this.regionDataTables) {
+      const region = table.title.replace("Region: ", "");
+      const quant = table.subtitle.replace("Quant: ", "");
+      const unit = table.valueSuffix;
+
+      for (const row of table.rows) {
+        if (row.values.length > 0) {
+          const rowData = [region, quant, unit, row.label, row.values[0].toFixed(6)];
+          csvData += rowData.map(cell => `"${cell}"`).join(",") + "\n";
+        }
+      }
+    }
+
+    return csvData;
   }
 }
