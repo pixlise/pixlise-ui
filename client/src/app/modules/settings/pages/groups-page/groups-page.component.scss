@@ -61,66 +61,57 @@
     }
   }
 
-  .groups {
-    .header {
-      display: flex;
-      background-color: var(--gray-100, #1b1d1e);
-      h2 {
-        padding-left: 16px;
-        font-family: "Inter", sans-serif;
-        text-transform: none;
+  .group-list {
+    overflow-y: auto;
+
+    .groups {
+      .header {
+        display: flex;
+        background-color: var(--gray-100, #1b1d1e);
+        h2 {
+          padding-left: 16px;
+          font-family: "Inter", sans-serif;
+          text-transform: none;
+        }
+
+        img {
+          margin-left: 8px;
+          width: 12px;
+        }
       }
 
-      img {
-        margin-left: 8px;
-        width: 12px;
-      }
-    }
+      .group-row {
+        display: flex;
+        align-items: center;
 
-    .group-row {
-      display: flex;
-      align-items: center;
+        // padding: 4px 16px;
+        border-bottom: 1px solid var(--gray-80, #293137);
 
-      // padding: 4px 16px;
-      border-bottom: 1px solid var(--gray-80, #293137);
+        &.selected {
+          background: var(--gray-70, #444c50);
+          color: var(--yellow, #ffff8d);
+        }
 
-      &.selected {
-        background: var(--gray-70, #444c50);
-        color: var(--yellow, #ffff8d);
-      }
+        &.empty {
+          justify-content: center;
+          color: rgb(var(--clr-gray-30));
+          font-weight: bold;
+          padding: 8px 16px;
+        }
 
-      &.empty {
-        justify-content: center;
-        color: rgb(var(--clr-gray-30));
-        font-weight: bold;
-        padding: 8px 16px;
-      }
+        &:not(.empty):not(.selected):hover {
+          background: var(--gray-80, #293137);
+          cursor: pointer;
+        }
 
-      &:not(.empty):not(.selected):hover {
-        background: var(--gray-80, #293137);
-        cursor: pointer;
-      }
+        h5 {
+          margin: 0;
+        }
 
-      h5 {
-        margin: 0;
-      }
-
-      action-button {
-        margin-left: auto;
-        margin-right: 16px;
-      }
-    }
-  }
-
-  .my-groups {
-    .content-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      input {
-        margin: 16px;
-        font-family: "Inter", sans-serif;
+        action-button {
+          margin-left: auto;
+          margin-right: 16px;
+        }
       }
     }
   }
