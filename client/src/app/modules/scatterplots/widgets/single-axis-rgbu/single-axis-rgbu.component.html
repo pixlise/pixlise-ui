@@ -30,20 +30,64 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <ng-template #settingsMenu>
-  <div class="settings">
-    <multi-state-button
-      [stateNames]="selectionModes"
-      [items]="['assets/button-icons/minus-yellow.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus-white.svg']"
-      [activeState]="currentSelectionMode"
-      (onChange)="onChangeSelectionMode($event)"></multi-state-button>
-    <two-state-push-button [active]="mdl.showAllMineralLabels" (onToggle)="onToggleMineralLabels()" title="Toggle Mineral Labels"
-      >Mineral Labels</two-state-push-button
-    >
+  <div class="widget-settings-menu">
+    <div class="row selection-mode-btn above-title">
+      <div class="row-title">Selection Mode</div>
+      <multi-switch-button
+        [options]="selectionModes"
+        [optionIcons]="['assets/button-icons/minus.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus.svg']"
+        [value]="currentSelectionMode"
+        [showLabels]="false"
+        (onChange)="onChangeSelectionMode($event)"
+        [colorizeActiveIcon]="true"
+        [darkMode]="true"></multi-switch-button>
+    </div>
 
-    <push-button (onClick)="onSelectionClear()" title="Clears selected pixels">Clear Selection</push-button>
-    <div>
-      <div>ROI Overlap:</div>
-      <two-state-button leftLabel="Opacity" rightLabel="Stacked" [active]="roiStackedOverlap" (onToggle)="onToggleROIStackedOverlap()"></two-state-button>
+    <div
+      class="row link {{ mdl.showAllMineralLabels ? 'active' : '' }}"
+      (click)="onToggleMineralLabels()"
+      (keyup)="onToggleMineralLabels()"
+      (keydown)="onToggleMineralLabels()"
+      (keypress)="onToggleMineralLabels()"
+      tabindex="0">
+      <div class="row-title">Mineral Labels</div>
+      <action-button class="switch" [action]="mdl.showAllMineralLabels ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+
+    <div class="row above-title">
+      <div class="row-title">ROI Overlap</div>
+      <multi-switch-button
+        [options]="['Opacity', 'Stacked']"
+        [value]="roiStackedOverlap ? 'Stacked' : 'Opacity'"
+        (onChange)="onToggleROIStackedOverlap()"
+        [darkMode]="true"></multi-switch-button>
+    </div>
+
+    <div class="row above-title">
+      <div class="row-title">Plot Colour</div>
+      <multi-switch-button
+        [options]="['Monochrome', 'Viridis']"
+        [optionIcons]="['assets/button-icons/monochrome.svg', 'assets/button-icons/viridis.svg']"
+        [value]="drawMonochrome ? 'Monochrome' : 'Viridis'"
+        [showLabels]="false"
+        (onChange)="onToggleDrawMonochrome()"
+        [colorizeActiveIcon]="true"
+        [darkMode]="true">
+      </multi-switch-button>
+    </div>
+    <div class="row selection-container">
+      <div class="row-title">Selection</div>
+      <div class="action-container">
+        <div
+          class="clear-selection-btn"
+          (click)="onSelectionClear()"
+          (keyup)="onSelectionClear()"
+          (keydown)="onSelectionClear()"
+          (keypress)="onSelectionClear()"
+          tabindex="0">
+          Clear
+        </div>
+      </div>
     </div>
   </div>
 </ng-template>
@@ -54,7 +98,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </interactive-canvas>
 
     <div *ngIf="mdl.hasRawData()" class="axis x-axis">
-      <h5 class="axis-label" (click)="onAxisClick()">
+      <h5 class="axis-label" (click)="onAxisClick()" (keyup)="onAxisClick()" (keydown)="onAxisClick()" (keypress)="onAxisClick()" tabindex="0">
         <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg" /></span>
         {{ mdl.drawModel.xAxisUnitLabel }}
       </h5>
