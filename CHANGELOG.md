@@ -5,10 +5,14 @@
 - Updates iconography to consolidate space and better represent actions and charts
 - Redesigns chart settings menus to be more accessible and always show all options
   - Chart settings menus now also pop up on right click on a widget
-- Adds new exporter to the spectrum chart
+- Adds new interactive exporter to the spectrum chart
+- Adds new exporter to the histogram widget
+- Adds new simple quantification table exporter
+- Adds new interactive exporter to the multi-channel viewer
 
 ### Bug Fixes
 - Fixes bug where sorting by abundance in quantification table wasn't updating the table
+- Fixes styling on exporter
 
 
 ## 4.69.0 (2025-06-13)

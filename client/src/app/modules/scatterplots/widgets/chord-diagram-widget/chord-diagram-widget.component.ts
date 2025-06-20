@@ -22,6 +22,13 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportRequest,
+  WidgetExportFile,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { Observable } from "rxjs";
 
 @Component({
   selector: "app-chord-diagram-widget",
@@ -84,12 +91,26 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           settingIcon: "assets/button-icons/roi.svg",
         },
         {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
+        },
+        {
           id: "solo",
           type: "button",
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
           settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
           settingGroupTitle: "Actions",
         },
       ],
@@ -399,5 +420,70 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     this.mdl.drawForSelection = !this.mdl.drawForSelection;
     this.update();
     this.saveState();
+  }
+
+  override getExportOptions(): WidgetExportDialogData {
+    return {
+      title: "Export Chord Diagram",
+      defaultZipName: "Chord Diagram Data",
+      options: [],
+      dataProducts: [
+        {
+          id: "chordData",
+          name: "Chord Diagram Data .csv",
+          type: "checkbox",
+          description: "Export the chord diagram data as CSV",
+          selected: true,
+        },
+      ],
+      showPreview: false,
+    };
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return new Observable<WidgetExportData>(observer => {
+      const csvs: WidgetExportFile[] = [];
+      if (request.dataProducts) {
+        if (request.dataProducts["chordData"]?.selected) {
+          csvs.push({
+            fileName: `Chord Diagram Data.csv`,
+            data: this.exportChordData(),
+          });
+        }
+      }
+
+      observer.next({ csvs });
+      observer.complete();
+    });
+  }
+
+  private exportChordData(): string {
+    if (!this.mdl.raw || this.mdl.raw.length === 0) {
+      return "No data available for export";
+    }
+
+    let csvData = "";
+
+    // Create header row with node names
+    const headerRow = ["Node", "Expression ID", "Value (%)", "Display Value", "Error Value", "Error Message"];
+    // Add correlation columns for each node
+    for (const node of this.mdl.raw) {
+      headerRow.push(`Correlation with ${node.label}`);
+    }
+    csvData += headerRow.map(h => `"${h}"`).join(",") + "\n";
+
+    // Add data rows
+    for (const node of this.mdl.raw) {
+      const rowData = [node.label, node.exprId, node.value.toFixed(6), node.displayValue.toFixed(6), node.errorValue.toFixed(6), node.errorMsg || ""];
+
+      // Add correlation values for each node
+      for (const chordValue of node.chords) {
+        rowData.push(chordValue.toFixed(6));
+      }
+
+      csvData += rowData.map(cell => `"${cell}"`).join(",") + "\n";
+    }
+
+    return csvData;
   }
 }

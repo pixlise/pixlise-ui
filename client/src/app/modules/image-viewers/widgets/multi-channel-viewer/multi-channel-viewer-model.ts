@@ -1,4 +1,4 @@
-import { combineLatest, Observable, of, Subject } from "rxjs";
+import { combineLatest, Observable, of, Subject, ReplaySubject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -6,6 +6,8 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 
 export class MultiChannelViewerModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
+  needsCanvasResize$: Subject<void> = new Subject<void>();
+  resolution$: ReplaySubject<number> = new ReplaySubject<number>(1);
 
   transform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null));
 
