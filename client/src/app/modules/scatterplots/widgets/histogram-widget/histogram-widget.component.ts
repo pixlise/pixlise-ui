@@ -33,6 +33,12 @@ import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.se
 import { httpErrorToString } from "src/app/utils/utils";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportRequest,
+  WidgetExportFile,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
   selector: "histogram-widget",
@@ -93,6 +99,11 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           settingIcon: "assets/button-icons/roi.svg",
         },
         {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
+        },
+        {
           id: "solo",
           type: "button",
           icon: "assets/button-icons/widget-solo.svg",
@@ -100,6 +111,16 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           onClick: () => this.onSoloView(),
           settingTitle: "Solo",
           settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
+          settingIcon: "assets/button-icons/export.svg",
         },
       ],
       topRightInsetButton: {
@@ -499,5 +520,99 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     this.mdl.logScale = !this.mdl.logScale;
     this.update();
     this.saveState();
+  }
+
+  override getExportOptions(): WidgetExportDialogData {
+    return {
+      title: "Export Histogram",
+      defaultZipName: "Histogram Data",
+      options: [],
+      dataProducts: [
+        {
+          id: "histogramData",
+          name: "Histogram Data .csv",
+          type: "checkbox",
+          description: "Export the histogram data as CSV",
+          selected: true,
+        },
+      ],
+      showPreview: false,
+    };
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return new Observable<WidgetExportData>(observer => {
+      const csvs: WidgetExportFile[] = [];
+      if (request.dataProducts) {
+        if (request.dataProducts["histogramData"]?.selected) {
+          csvs.push({
+            fileName: `Histogram Data.csv`,
+            data: this.exportHistogramData(),
+          });
+        }
+      }
+
+      observer.next({ csvs });
+      observer.complete();
+    });
+  }
+
+  private exportHistogramData(): string {
+    if (!this.mdl.raw || this.mdl.raw.barGroups.length === 0) {
+      return "No data available for export";
+    }
+
+    let csvData = "";
+
+    const headerRow = [
+      "Expression",
+      "Region",
+      "Mean Value",
+      "Standard Deviation",
+      "Standard Error",
+      "Min Value",
+      "Max Value",
+      "Whisker Min",
+      "Whisker Max",
+      "Error Value",
+      "Count",
+    ];
+    csvData += headerRow.map(h => `"${h}"`).join(",") + "\n";
+
+    for (const barGroup of this.mdl.raw.barGroups) {
+      for (const bar of barGroup.bars) {
+        let stdErr = bar.stdErr;
+        if (stdErr === 0 && bar.concentrationBands.count > 1) {
+          stdErr = bar.stdDev / Math.sqrt(bar.concentrationBands.count);
+        }
+
+        let whiskerMin = bar.whiskerRange.min;
+        let whiskerMax = bar.whiskerRange.max;
+        if ((whiskerMin === null || whiskerMax === null) && bar.stdDev > 0) {
+          const stdDevWhiskerMin = bar.meanValue - bar.stdDev;
+          const stdDevWhiskerMax = bar.meanValue + bar.stdDev;
+
+          whiskerMin = stdDevWhiskerMin;
+          whiskerMax = stdDevWhiskerMax;
+        }
+
+        const rowData = [
+          barGroup.shortLabel,
+          bar.colourInfo,
+          bar.meanValue.toFixed(6),
+          bar.stdDev.toFixed(6),
+          stdErr.toFixed(6),
+          (bar.valueRange.min ?? 0).toFixed(6),
+          (bar.valueRange.max ?? 0).toFixed(6),
+          (whiskerMin ?? 0).toFixed(6),
+          (whiskerMax ?? 0).toFixed(6),
+          bar.errorValue.toFixed(6),
+          bar.concentrationBands.count,
+        ];
+        csvData += rowData.map(cell => `"${cell}"`).join(",") + "\n";
+      }
+    }
+
+    return csvData;
   }
 }
