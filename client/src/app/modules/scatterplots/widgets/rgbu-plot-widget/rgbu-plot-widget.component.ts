@@ -115,6 +115,9 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           title: "Minerals",
           tooltip: "Choose mineral areas to display",
           onClick: trigger => this.onMinerals(trigger),
+          settingTitle: "Minerals",
+          settingIcon: "assets/button-icons/elements.svg",
+          settingGroupTitle: "Data",
         },
         {
           id: "regions",
@@ -122,6 +125,9 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingIcon: "assets/button-icons/roi.svg",
+          settingGroupTitle: "Data",
         },
         {
           id: "image-picker",
@@ -129,13 +135,14 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+          settingTitle: "Image",
+          settingIcon: "assets/button-icons/image.svg",
+          settingGroupTitle: "Data",
         },
         {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export Data",
-          onClick: () => this.onExportWidgetData.emit(),
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
         },
         {
           id: "solo",
@@ -143,6 +150,19 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo View",
+          settingIcon: "assets/button-icons/widget-solo.svg",
+          settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingIcon: "assets/button-icons/export.svg",
+          settingGroupTitle: "Actions",
         },
       ],
       topRightInsetButton: {
@@ -303,6 +323,16 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
   get drawMonochrome(): boolean {
     return this.mdl.drawMonochrome;
+  }
+
+  get roiStackedOverlap(): boolean {
+    return this.mdl.roiStackedOverlap;
+  }
+
+  onToggleROIStackedOverlap(): void {
+    this.mdl.roiStackedOverlap = !this.mdl.roiStackedOverlap;
+    this.mdl.rebuild();
+    this.saveState();
   }
 
   onImagePicker() {
