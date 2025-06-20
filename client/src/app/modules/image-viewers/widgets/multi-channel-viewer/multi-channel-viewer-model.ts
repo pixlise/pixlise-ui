@@ -61,7 +61,6 @@ export class MultiChannelViewerModel implements CanvasDrawNotifier {
 
   private regenerate() {
     this.drawModel.regenerate(this);
-    this.needsDraw$.next();
   }
 }
 
@@ -74,13 +73,13 @@ export class MultiChannelViewerDrawModel {
 
   regenerate(fromModel: MultiChannelViewerModel) {
     if (fromModel.raw) {
-      this.regenerateDisplayImages(fromModel.raw, fromModel.brightness);
+      this.regenerateDisplayImages(fromModel.raw, fromModel.brightness, fromModel);
     }
     this.maskImage = fromModel.maskImage;
     this.cropMaskImage = fromModel.cropMaskImage;
   }
 
-  protected regenerateDisplayImages(rgbuImage: RGBUImage, brightness: number): void {
+  protected regenerateDisplayImages(rgbuImage: RGBUImage, brightness: number, model: MultiChannelViewerModel): void {
     const channelFloatImages = [rgbuImage.r, rgbuImage.g, rgbuImage.b, rgbuImage.u];
     this.channelDisplayImages = [];
 
@@ -92,6 +91,7 @@ export class MultiChannelViewerDrawModel {
 
     combineLatest(obs$).subscribe((channels: HTMLImageElement[]) => {
       this.channelDisplayImages = channels;
+      model.needsDraw$.next();
     });
   }
 }

@@ -63,6 +63,14 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+          settingTitle: "Image",
+          settingIcon: "assets/button-icons/image.svg",
+          settingGroupTitle: "Data",
+        },
+        {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
         },
         {
           id: "solo",
@@ -70,6 +78,9 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo View",
+          settingIcon: "assets/button-icons/widget-solo.svg",
+          settingGroupTitle: "Actions",
         },
       ],
     };
@@ -204,6 +215,15 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this.saveState();
   }
 
+  onBrightnessInputChange(value: string) {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 10) {
+      this.mdl.brightness = numValue;
+      this.mdl.setRecalcNeeded();
+      this.saveState();
+    }
+  }
+
   onImagePicker() {
     const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
     // Pass data to dialog
@@ -253,7 +273,7 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
       },
       error: err => {
         this.isWidgetDataLoading = false;
-      }
+      },
     });
   }
 }
