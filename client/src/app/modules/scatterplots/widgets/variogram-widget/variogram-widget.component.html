@@ -30,74 +30,112 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <ng-template #settingsMenu>
-  <div class="settings-menu">
-    <h3>Max Distance</h3>
-    <div class="setting-option">
-      <div class="slider-val">{{ maxDistance | number: "1.4-4" }}mm</div>
-      <slider
-        class="slider-control"
-        [minValue]="distanceSliderMin"
-        [maxValue]="distanceSliderMax"
-        [pxLength]="225"
-        [value]="maxDistance"
-        (onChange)="onChangeDistance($event)">
-      </slider>
+  <div class="widget-settings-menu">
+    <div class="row above-title slider-container-row">
+      <div class="row-title">
+        <span class="option-title">Max Distance (mm)</span>
+        <span class="option-value">
+          <input
+            type="number"
+            [ngModel]="maxDistance | number: '1.1-2'"
+            (ngModelChange)="onMaxDistanceInputChange($event)"
+            [min]="distanceSliderMin"
+            [max]="distanceSliderMax"
+            step="0.1"
+            class="slider-input" />
+        </span>
+      </div>
+      <div class="slider-container">
+        <slider [minValue]="distanceSliderMin" [maxValue]="distanceSliderMax" [pxLength]="180" [value]="maxDistance" (onChange)="onChangeDistance($event)"> </slider>
+      </div>
     </div>
-
-    <h3>Number Of Bins</h3>
-    <div class="setting-option">
-      <div class="slider-val">{{ binNumber }}</div>
-      <slider class="slider-control" [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="225" [value]="binNumber" (onChange)="onChangeBins($event)">
-      </slider>
+    <div class="row above-title slider-container-row">
+      <div class="row-title">
+        <span class="option-title">Number Of Bins</span>
+        <span class="option-value">
+          <input
+            type="number"
+            [ngModel]="binNumber"
+            (ngModelChange)="onBinNumberInputChange($event)"
+            [min]="binSliderMin"
+            [max]="binSliderMax"
+            step="1"
+            class="slider-input" />
+        </span>
+      </div>
+      <div class="slider-container">
+        <slider [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="180" [value]="binNumber" (onChange)="onChangeBins($event)"> </slider>
+      </div>
     </div>
-
-    <h3 class="line-of-best-fit">
-      Line of Best Fit
-      <switch-button class="toggle" [active]="bestFitLineShowing" (onToggle)="toggleBestFitLine()"></switch-button>
-    </h3>
+    <div
+      class="row link {{ bestFitLineShowing ? 'active' : '' }}"
+      (click)="toggleBestFitLine()"
+      (keyup)="toggleBestFitLine()"
+      (keydown)="toggleBestFitLine()"
+      (keypress)="toggleBestFitLine()"
+      tabindex="0">
+      <div class="row-title">Line of Best Fit</div>
+      <action-button class="switch" [action]="bestFitLineShowing ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
 
     <ng-container *ngIf="expressions.length > 0">
-      <h3 class="algorithm-label">Cross-Combining Algorithm</h3>
       <div class="expressions-container">
         <div class="algorithm-option-container">
-          <div class="setting-option">
-            <div class="label" title="{{ expressions[0].name }}">{{ expressions[0].name }}</div>
-            <multi-switch-button
-              class="algorithm-switch"
-              [options]="crossCombiningAlgorithms"
-              [value]="activeLeftCrossCombiningAlgorithm"
-              (onChange)="setActiveCrossCombiningAlgorithm(true, $event)">
-            </multi-switch-button>
+          <div class="row-title">{{ expressions[0].name }}</div>
+          <div class="radio-group">
+            <div
+              *ngFor="let algorithm of crossCombiningAlgorithms"
+              class="row link {{ activeLeftCrossCombiningAlgorithm === algorithm ? 'active' : '' }}"
+              (click)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+              (keyup)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+              (keydown)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+              (keypress)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+              tabindex="0">
+              <div class="row-title">{{ algorithm }}</div>
+              <action-button class="switch" [action]="activeLeftCrossCombiningAlgorithm === algorithm ? 'radioOn' : 'radioOff'"></action-button>
+            </div>
           </div>
           <div *ngIf="activeLeftCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
-            <push-button (onClick)="onCustomAlgorithm(true)">{{ customLeftAlgorithm?.name || "Select Combining Algorithm" }}</push-button>
+            <push-button (onClick)="onCustomAlgorithm(true)">{{ customLeftAlgorithm?.name || "Select Algorithm" }}</push-button>
           </div>
         </div>
         <ng-container *ngIf="expressions.length > 1">
           <div class="algorithm-option-container">
-            <div class="setting-option">
-              <div class="label" title="{{ expressions[1].name }}">{{ expressions[1].name }}</div>
-              <multi-switch-button
-                class="algorithm-switch"
-                [options]="crossCombiningAlgorithms"
-                [value]="activeRightCrossCombiningAlgorithm"
-                (onChange)="setActiveCrossCombiningAlgorithm(false, $event)">
-              </multi-switch-button>
+            <div class="row-title">{{ expressions[1].name }}</div>
+            <div class="radio-group">
+              <div
+                *ngFor="let algorithm of crossCombiningAlgorithms"
+                class="row link {{ activeRightCrossCombiningAlgorithm === algorithm ? 'active' : '' }}"
+                (click)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                (keyup)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                (keydown)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                (keypress)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                tabindex="0">
+                <div class="row-title">{{ algorithm }}</div>
+                <action-button class="switch" [action]="activeRightCrossCombiningAlgorithm === algorithm ? 'radioOn' : 'radioOff'"></action-button>
+              </div>
             </div>
             <div *ngIf="activeRightCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
-              <push-button (onClick)="onCustomAlgorithm(false)">{{ customRightAlgorithm?.name || "Select Combining Algorithm" }}</push-button>
+              <push-button (onClick)="onCustomAlgorithm(false)">{{ customRightAlgorithm?.name || "Select Algorithm" }}</push-button>
             </div>
           </div>
         </ng-container>
       </div>
     </ng-container>
 
-    <div class="bottom-buttons">
-      <div class="live-update" (click)="liveUpdate = !liveUpdate">
-        <action-button [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
-        <span class="label">Live Update</span>
-      </div>
-      <push-button [disabled]="liveUpdate" (onClick)="saveAndUpdate()">Update</push-button>
+    <div
+      class="row link {{ liveUpdate ? 'active' : '' }}"
+      (click)="liveUpdate = !liveUpdate"
+      (keyup)="liveUpdate = !liveUpdate"
+      (keydown)="liveUpdate = !liveUpdate"
+      (keypress)="liveUpdate = !liveUpdate"
+      tabindex="0">
+      <div class="row-title">Live Update</div>
+      <action-button class="switch" [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+
+    <div class="update-button-container">
+      <push-button [disabled]="liveUpdate" (onClick)="saveAndUpdate()" class="full-width-button">Update</push-button>
     </div>
   </div>
 </ng-template>

@@ -11,7 +11,6 @@ import { SpectrumChartModel } from "./spectrum-model";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
-import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { SpectrumType } from "src/app/generated-protos/spectrum";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -22,7 +21,7 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
@@ -33,6 +32,13 @@ import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-c
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { SpectrumExpressionDataSourceImpl } from "../../models/SpectrumRespDataSource";
 import { RGBA } from "../../../../utils/colours";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportRequest,
+  WidgetExportOption,
+} from "../../../widget/components/widget-export-dialog/widget-export-model";
+import { SpectrumChartExporter } from "./spectrum-chart-exporter";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -46,6 +52,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   mdl: SpectrumChartModel;
   drawer: CanvasDrawer;
   toolhost: SpectrumChartToolHost;
+  exporter: SpectrumChartExporter;
 
   private _shownDisplaySpectra: MatDialogRef<ROIPickerComponent> | null = null;
   private _shownPiquant: MatDialogRef<SpectrumPeakIdentificationComponent> | null = null;
@@ -77,6 +84,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this.mdl = this._spectrumService.mdl;
     this.toolhost = new SpectrumChartToolHost(this.mdl, dialog, clipboard, _snackService, _widgetDataService, _analysisLayoutService);
     this.drawer = new SpectrumChartDrawer(this.mdl, this.toolhost);
+    this.exporter = new SpectrumChartExporter(_snackService, this.drawer, this.mdl.transform, this._widgetId);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -97,12 +105,19 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           onClick: () => this.onToolSelected("zoom"),
         },
         {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
+        },
+        {
           id: "spectrum-range",
           type: "selectable-button",
           icon: "assets/button-icons/tool-spectrum-range.svg",
           tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
           value: false,
           onClick: () => this.onToolSelected("spectrum-range"),
+          settingTitle: "Range Selection Tool",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom-in",
@@ -110,6 +125,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/zoom-in.svg",
           tooltip: "Zoom In",
           onClick: () => this.onZoomIn(),
+          settingTitle: "Zoom In",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom-out",
@@ -117,6 +134,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/zoom-out.svg",
           tooltip: "Zoom Out",
           onClick: () => this.onZoomOut(),
+          settingTitle: "Zoom Out",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "zoom-all",
@@ -124,6 +143,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/zoom-all-arrows.svg",
           tooltip: "Zoom To Fit Whole Spectrum",
           onClick: () => this.onResetZoom(),
+          settingTitle: "Show whole image",
+          settingGroupTitle: "Image Tools",
         },
         {
           id: "xray-tube-element",
@@ -132,6 +153,13 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           tooltip: "Show XRF Lines for X-ray Tube Element",
           value: false,
           onClick: () => this.onShowXRayTubeLines(),
+          settingTitle: "Show XRF Lines",
+          settingGroupTitle: "Image Tools",
+        },
+        {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
         },
         {
           id: "solo",
@@ -139,6 +167,17 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
+          onClick: () => this.onExportWidgetData.emit(),
         },
       ],
       bottomToolbar: [
@@ -193,7 +232,13 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
+    if (this.mdl) {
+      this.mdl.exportMode = this._exportMode;
+    }
+
     this.onToolSelected("pan");
+
+    this.exporter = new SpectrumChartExporter(this._snackService, this.drawer, this.transform, this._widgetId);
 
     if (!this.scanId) {
       this.scanId = this._analysisLayoutService.defaultScanId;
@@ -443,6 +488,92 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this.mdl.setLineList(items);
       this.updateLines();
     }
+  }
+
+  override getExportOptions(): WidgetExportDialogData {
+    return this.exporter.getExportOptions(this.mdl);
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return this.exporter.onExport(this.mdl, request);
+  }
+
+  updateExportOptions(exportOptions: WidgetExportOption[], exportChartOptions: WidgetExportOption[]) {
+    const backgroundColorOption = exportOptions.find(opt => opt.id === "background");
+    const backgroundColor = backgroundColorOption ? backgroundColorOption.selectedOption : null;
+    if (backgroundColor) {
+      (this.drawer as SpectrumChartDrawer).lightMode = ["white"].includes(backgroundColor);
+      (this.drawer as SpectrumChartDrawer).transparentBackground = backgroundColor === "transparent";
+    }
+
+    const borderWidthOption = exportChartOptions.find(opt => opt.id === "borderWidth");
+    if (borderWidthOption) {
+      (this.drawer as SpectrumChartDrawer).borderWidth = isNaN(Number(borderWidthOption.value)) ? 1 : Number(borderWidthOption.value);
+      (this.drawer as SpectrumChartDrawer).borderColor = borderWidthOption.colorPickerValue || "";
+      this.reDraw();
+    }
+
+    const aspectRatioOption = exportOptions.find(opt => opt.id === "aspectRatio");
+
+    // If the aspect ratio option is set, we need to trigger a canvas resize on next frame render
+    if (aspectRatioOption) {
+      setTimeout(() => {
+        this.mdl.needsDraw$.next();
+        this.mdl.needsCanvasResize$.next();
+        this.reDraw();
+      }, 0);
+    }
+
+    const resolutionOption = exportOptions.find(opt => opt.id === "resolution");
+    if (resolutionOption) {
+      const resolutionMapping = {
+        high: 3,
+        med: 1.5,
+        low: 1,
+      };
+
+      const newResolution = resolutionOption.selectedOption;
+      if (newResolution && resolutionMapping[newResolution as keyof typeof resolutionMapping]) {
+        this.mdl.resolution$.next(resolutionMapping[newResolution as keyof typeof resolutionMapping]);
+      }
+    }
+
+    const labelsOption = exportChartOptions.find(opt => opt.id === "labels");
+    if (labelsOption) {
+      (this.drawer as SpectrumChartDrawer).axisLabelFontSize = isNaN(Number(labelsOption.value)) ? 14 : Number(labelsOption.value);
+      this.reDraw();
+    }
+
+    const fontOption = exportChartOptions.find(opt => opt.id === "font");
+    if (fontOption) {
+      (this.drawer as SpectrumChartDrawer).axisLabelFontFamily = fontOption.selectedOption || "Arial";
+      (this.drawer as SpectrumChartDrawer).axisLabelFontColor = fontOption.colorPickerValue || "";
+      this.reDraw();
+    }
+
+    if (resolutionOption && aspectRatioOption) {
+      if (aspectRatioOption.selectedOption === "square") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "500px x 500px" },
+          { id: "med", name: "750px x 750px" },
+          { id: "high", name: "1500px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "4:3") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "666px x 500px" },
+          { id: "med", name: "1000px x 750px" },
+          { id: "high", name: "2000px x 1500px" },
+        ];
+      } else if (aspectRatioOption.selectedOption === "16:9") {
+        resolutionOption.dropdownOptions = [
+          { id: "low", name: "700px x 393px" },
+          { id: "med", name: "750px x 422px" },
+          { id: "high", name: "1500px x 844px" },
+        ];
+      }
+    }
+
+    this.reDraw();
   }
 
   onSoloView() {

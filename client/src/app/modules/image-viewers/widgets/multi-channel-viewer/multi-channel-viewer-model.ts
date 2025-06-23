@@ -1,4 +1,4 @@
-import { combineLatest, Observable, of, Subject } from "rxjs";
+import { combineLatest, Observable, of, Subject, ReplaySubject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -6,6 +6,8 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 
 export class MultiChannelViewerModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
+  needsCanvasResize$: Subject<void> = new Subject<void>();
+  resolution$: ReplaySubject<number> = new ReplaySubject<number>(1);
 
   transform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null));
 
@@ -61,7 +63,6 @@ export class MultiChannelViewerModel implements CanvasDrawNotifier {
 
   private regenerate() {
     this.drawModel.regenerate(this);
-    this.needsDraw$.next();
   }
 }
 
@@ -74,13 +75,13 @@ export class MultiChannelViewerDrawModel {
 
   regenerate(fromModel: MultiChannelViewerModel) {
     if (fromModel.raw) {
-      this.regenerateDisplayImages(fromModel.raw, fromModel.brightness);
+      this.regenerateDisplayImages(fromModel.raw, fromModel.brightness, fromModel);
     }
     this.maskImage = fromModel.maskImage;
     this.cropMaskImage = fromModel.cropMaskImage;
   }
 
-  protected regenerateDisplayImages(rgbuImage: RGBUImage, brightness: number): void {
+  protected regenerateDisplayImages(rgbuImage: RGBUImage, brightness: number, model: MultiChannelViewerModel): void {
     const channelFloatImages = [rgbuImage.r, rgbuImage.g, rgbuImage.b, rgbuImage.u];
     this.channelDisplayImages = [];
 
@@ -92,6 +93,7 @@ export class MultiChannelViewerDrawModel {
 
     combineLatest(obs$).subscribe((channels: HTMLImageElement[]) => {
       this.channelDisplayImages = channels;
+      model.needsDraw$.next();
     });
   }
 }

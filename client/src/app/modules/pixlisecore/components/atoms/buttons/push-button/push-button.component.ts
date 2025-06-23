@@ -109,7 +109,7 @@ export class PushButtonComponent implements OnInit {
     return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
   }
 
-  onClickInternal(event: MouseEvent): void {
+  onClickInternal(event?: MouseEvent): void {
     if (!this.disabled) {
       if (this.confirmInputText) {
         const dialogConfig = new MatDialogConfig<ConfirmInputDialogData>();

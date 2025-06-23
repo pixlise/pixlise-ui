@@ -43,6 +43,14 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
   protected _mdl: SpectrumChartModel;
   protected _toolHost: SpectrumChartToolHost;
 
+  public lightMode: boolean = false;
+  public transparentBackground: boolean = false;
+  public borderWidth: number = 1;
+  public borderColor: string = "";
+  public axisLabelFontSize: number = 14;
+  public axisLabelFontFamily: string = "Arial";
+  public axisLabelFontColor: string = "";
+
   constructor(ctx: SpectrumChartModel, toolHost: SpectrumChartToolHost) {
     super();
 
@@ -59,7 +67,34 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
       return;
     }
 
-    const axisDrawer = new ChartAxisDrawer();
+    if (!this._mdl.exportMode) {
+      // Use defaults
+      this.lightMode = false;
+      this.transparentBackground = false;
+      this.borderWidth = 1;
+      this.borderColor = "";
+      this.axisLabelFontSize = 14;
+      this.axisLabelFontFamily = "Arial";
+      this.axisLabelFontColor = "";
+    }
+
+    // Draw background
+    screenContext.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
+    screenContext.fillRect(0, 0, drawParams.drawViewport.width, drawParams.drawViewport.height);
+    if (this.transparentBackground) {
+      screenContext.clearRect(0, 0, drawParams.drawViewport.width, drawParams.drawViewport.height);
+    }
+
+    // Create axis drawer with custom properties
+    const axisDrawer = new ChartAxisDrawer(
+      `${this.axisLabelFontSize}px ${this.axisLabelFontFamily}`,
+      this.borderColor || (this.lightMode ? Colours.GRAY_90.asString() : Colours.GRAY_60.asString()),
+      this.axisLabelFontColor || (this.lightMode ? Colours.GRAY_90.asString() : Colours.GRAY_60.asString()),
+      4,
+      4,
+      false,
+      this.borderWidth
+    );
     axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, this._mdl.xAxisLabel, this._mdl.yAxis, this._mdl.yAxisLabel);
   }
 
@@ -151,6 +186,14 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
       clr = RGBA.fromString(spectrum.color).asStringWithA(opacity);
     }
 
+    // Adjust color for light mode if needed
+    if (this.lightMode && spectrum.color === Colours.WHITE.asString()) {
+      clr = Colours.GRAY_80.asString();
+      if (opacity < 1) {
+        clr = Colours.GRAY_80.asStringWithA(opacity);
+      }
+    }
+
     if (spectrum.drawFilled) {
       screenContext.fillStyle = clr;
     } else {
@@ -184,9 +227,7 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
     if (spectrum.drawFilled) {
       // Draw 2 more points to bring it down to the x axis
       screenContext.lineTo(xAxis.valueToCanvas(endX), yAxis.valueToCanvas(0));
-
       screenContext.lineTo(xAxis.valueToCanvas(startX), yAxis.valueToCanvas(0));
-
       screenContext.fill();
     } else {
       screenContext.stroke();
@@ -194,7 +235,7 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
   }
 
   drawDiffractionPeakBand(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, peak: DiffractionPeak, xAxis: ChartAxis) {
-    screenContext.fillStyle = Colours.GRAY_60.asStringWithA(0.3);
+    screenContext.fillStyle = this.lightMode ? Colours.GRAY_90.asStringWithA(0.3) : Colours.GRAY_60.asStringWithA(0.3);
 
     const x1 = xAxis.valueToCanvas(peak.keV - 0.1);
     const x2 = xAxis.valueToCanvas(peak.keV + 0.1);

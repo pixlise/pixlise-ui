@@ -1,19 +1,37 @@
 <ng-template #settingsMenu>
-  <div class="settings">
-    <div class="row link" (click)="onToggleLinkToDataset()">
-      <div>Link to dataset:</div>
-      <switch-button [active]="linkToDataset" #tooltip="matTooltip" [matTooltip]="linkToDataset ? 'Unlink from dataset' : 'Link to dataset'">Link</switch-button>
+  <div class="widget-settings-menu">
+    <div
+      class="row link {{ linkToDataset ? 'active' : '' }}"
+      (click)="onToggleLinkToDataset()"
+      (keyup)="onToggleLinkToDataset()"
+      (keydown)="onToggleLinkToDataset()"
+      (keypress)="onToggleLinkToDataset()"
+      tabindex="0">
+      <img src="assets/button-icons/link.svg" alt="Link to dataset" />
+      <div class="row-title">Link to dataset</div>
+      <action-button class="switch" [action]="linkToDataset ? 'checkOn' : 'checkOff'"></action-button>
     </div>
-    <div class="row link" (click)="onToggleROIConfidence()">
-      <div>Show MIST ROI Reproducibility:</div>
-      <switch-button
-        [active]="mdl.drawModel.showROIConfidence"
-        #tooltip="matTooltip"
-        [matTooltip]="mdl.drawModel.showROIConfidence ? 'Hide MIST Reproducibility' : 'Show MIST Reproducibility'"></switch-button>
+    <div
+      class="row link {{ mdl.drawModel.showROIConfidence ? 'active' : '' }}"
+      (click)="onToggleROIConfidence()"
+      (keyup)="onToggleROIConfidence()"
+      (keydown)="onToggleROIConfidence()"
+      (keypress)="onToggleROIConfidence()"
+      tabindex="0">
+      <img src="assets/button-icons/mist.svg" alt="MIST Reproducibility" />
+      <div class="row-title">MIST Reproducibility</div>
+      <action-button class="switch" [action]="mdl.drawModel.showROIConfidence ? 'checkOn' : 'checkOff'"></action-button>
     </div>
-    <div *ngIf="isMapsPage" class="row link" (click)="onToggleBottomToolbar()">
-      <div>Show bottom toolbar:</div>
-      <switch-button [active]="showBottomToolbar" #tooltip="matTooltip" [matTooltip]="showBottomToolbar ? 'Hide' : 'Show'">Show</switch-button>
+    <div
+      *ngIf="isMapsPage"
+      class="row link {{ showBottomToolbar ? 'active' : '' }}"
+      (click)="onToggleBottomToolbar()"
+      (keyup)="onToggleBottomToolbar()"
+      (keydown)="onToggleBottomToolbar()"
+      (keypress)="onToggleBottomToolbar()"
+      tabindex="0">
+      <div class="row-title">Show bottom toolbar</div>
+      <action-button class="switch" [action]="showBottomToolbar ? 'checkOn' : 'checkOff'"></action-button>
     </div>
   </div>
 </ng-template>

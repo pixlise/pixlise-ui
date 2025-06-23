@@ -124,41 +124,38 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._widgetControlConfiguration = {
       topToolbar: [
         {
-          id: "crop",
+          id: "visibility-layers",
           type: "button",
-          title: "Crop",
-          disabled: true,
-          tooltip: "Not implemented yet. Click here to remove unselected pixels",
-          value: false,
-          onClick: (value, trigger) => this.onCrop(trigger),
-        },
-        {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export Data",
-          onClick: () => this.onExportWidgetData.emit(),
-        },
-        {
-          id: "solo",
-          type: "button",
-          icon: "assets/button-icons/widget-solo.svg",
-          tooltip: "Toggle Solo View",
-          onClick: () => this.onSoloView(),
-        },
-        {
-          id: "show-options",
-          type: "button",
-          title: "Visibility",
+          icon: "assets/button-icons/visibility-layers.svg",
           tooltip: "Toggle visibility of scan data",
+          settingTitle: "Layer Visibility",
+          settingGroupTitle: "Data",
           value: false,
           onClick: (value, trigger) => this.onToggleLayerVisibilityDialog(trigger),
+        },
+        {
+          id: "all-points-toggle",
+          type: "button",
+          icon: "assets/button-icons/all-points-on.svg",
+          tooltip: "Show all points",
+          settingTitle: "Show All Points",
+          settingGroupTitle: "Actions",
+          value: false,
+          onClick: (value, trigger) => this.onToggleAllPoints(trigger),
+        },
+        {
+          id: "divider",
+          type: "divider",
+          value: false,
+          onClick: () => null,
         },
         {
           id: "zoom-in",
           type: "button",
           icon: "assets/button-icons/zoom-in.svg",
           tooltip: "Zoom In",
+          settingTitle: "Zoom In",
+          settingGroupTitle: "Actions",
           onClick: () => this.onZoomIn(),
         },
         {
@@ -166,6 +163,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-out.svg",
           tooltip: "Zoom Out",
+          settingTitle: "Zoom Out",
+          settingGroupTitle: "Actions",
           onClick: () => this.onZoomOut(),
         },
         {
@@ -173,6 +172,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-all.svg",
           tooltip: "Show Whole Image",
+          settingTitle: "Show Whole Image",
+          settingGroupTitle: "Actions",
           onClick: () => this.onResetViewToWholeImage(),
         },
         {
@@ -180,7 +181,33 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           type: "button",
           icon: "assets/button-icons/zoom-experiment.svg",
           tooltip: "Show Experiment Area",
+          settingTitle: "Focus Experiment Area",
+          settingGroupTitle: "Actions",
           onClick: () => this.onResetViewToExperiment(),
+        },
+        {
+          id: "divider",
+          type: "divider",
+          value: false,
+          onClick: () => null,
+        },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+          onClick: () => this.onSoloView(),
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
+          onClick: () => this.onExportWidgetData.emit(),
         },
       ],
       topLeftInsetButton: {
@@ -285,17 +312,17 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     ];
 
     for (const tool of this.toolhost.getToolButtons()) {
-      let customStyle = {};
-      if (tool.toolId === ContextImageToolId.ZOOM) {
-        customStyle = { "border-left": "1px solid rgb(var(--clr-gray-70))", "margin-left": "4px" };
-      } else if (tool.toolId === ContextImageToolId.PAN) {
-        customStyle = { "border-right": "1px solid rgb(var(--clr-gray-70))", "padding-right": "4px" };
+      if (tool.toolId === ContextImageToolId.ZOOM || tool.toolId === ContextImageToolId.SELECT_LINE) {
+        this._widgetControlConfiguration.bottomToolbar?.push({
+          id: "divider",
+          type: "divider",
+          value: false,
+          onClick: () => null,
+        });
       }
-
       this._widgetControlConfiguration.bottomToolbar?.push({
         id: "tool-" + tool.toolId.toString(),
         type: "selectable-button",
-        style: customStyle,
         icon: tool.icon,
         value: tool.state != ToolState.OFF,
         onClick: () => this.onToolSelected(tool.toolId),
@@ -404,6 +431,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.imageSmoothing = contextData.contextImageSmoothing.length > 0;
 
           this.mdl.drawModel.showROIConfidence = contextData.showMISTROIReproducibility;
+
+          // Set the all points toggle icon
+          const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
+          if (allPointsButton) {
+            allPointsButton.icon = this.allPointsToggleIcon;
+          }
 
           this.reloadModel();
         } else {
@@ -958,6 +991,37 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.mdl.drawModel.showROIConfidence = !this.mdl.drawModel.showROIConfidence;
     this.reloadModel();
     this.reDraw("onToggleROIConfidence");
+    this.saveState();
+  }
+
+  get allPointsToggleIcon(): string {
+    if (this.mdl.hidePointsForScans.size > 0 || this.mdl.hideFootprintsForScans.size > 0) {
+      return "assets/button-icons/all-points-off.svg";
+    } else {
+      return "assets/button-icons/all-points-on.svg";
+    }
+  }
+
+  onToggleAllPoints(trigger: Element | undefined) {
+    if (this.mdl.hidePointsForScans.size > 0 || this.mdl.hideFootprintsForScans.size > 0) {
+      this.mdl.hidePointsForScans.clear();
+      this.mdl.hideFootprintsForScans.clear();
+    } else {
+      // Add all scan ids to the hide lists
+      for (const scanId of this.mdl.scanIds) {
+        this.mdl.hidePointsForScans.add(scanId);
+        this.mdl.hideFootprintsForScans.add(scanId);
+      }
+    }
+
+    // Update the button icon
+    const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
+    if (allPointsButton) {
+      allPointsButton.icon = this.allPointsToggleIcon;
+    }
+
+    // this.reloadModel();
+    this.reDraw("onToggleAllPoints");
     this.saveState();
   }
 

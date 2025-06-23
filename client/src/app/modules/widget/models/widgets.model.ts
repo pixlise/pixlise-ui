@@ -23,12 +23,16 @@ export type WidgetToolbarButtonTypes =
   | "multi-state-button"
   | "selection-changer"
   | "widget-key"
-  | "plus-minus-switch";
+  | "plus-minus-switch"
+  | "divider";
 
 export type WidgetToolbarButtonConfiguration = {
   id: string;
   type: WidgetToolbarButtonTypes;
   title?: string;
+  settingTitle?: string;
+  settingGroupTitle?: string;
+  settingIcon?: string;
   icon?: string;
   inactiveIcon?: string;
   activeIcon?: string;

@@ -29,7 +29,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row" fxLayoutAlign="start center" (click)="onClick($event)" class="btn-bg button-margin clickable" [title]="toolTip">
+<div
+  (click)="onClick($event)"
+  (keyup)="onClick($event)"
+  (keydown)="onClick($event)"
+  (keypress)="onClick($event)"
+  class="btn-bg button-margin clickable"
+  [title]="toolTip"
+  tabindex="0">
   <div class="btn-side" [ngClass]="{ 'btn-on': !active, 'btn-off': active }">
     <!-- minus icon -->
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

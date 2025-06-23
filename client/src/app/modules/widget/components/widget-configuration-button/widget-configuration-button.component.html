@@ -1,16 +1,31 @@
-<div class="button" [ngStyle]="buttonConfiguration?.style || {}">
+<div
+  class="button"
+  [ngStyle]="buttonConfiguration?.style || {}"
+  [ngClass]="{
+    'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true,
+    'toolbar-button-selectable': buttonConfiguration?.type === 'selectable-button',
+    'row-mode': rowMode,
+    'bottom-toolbar': location === 'bottom-toolbar',
+    'top-toolbar': location === 'top-toolbar',
+    'btn-divider': buttonConfiguration?.type === 'divider'
+  }"
+  tabindex="0">
   <span
     #buttonTrigger
     *ngIf="buttonConfiguration"
     #tooltip="matTooltip"
     [matTooltip]="buttonConfiguration.tooltip || ''"
-    [matTooltipDisabled]="!buttonConfiguration.tooltip"
+    [matTooltipDisabled]="!buttonConfiguration.tooltip || rowMode"
     class="btn-container"
-    (click)="buttonClick(buttonTrigger)">
-    <two-state-push-button [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled" *ngIf="buttonConfiguration.title"
+    (click)="buttonClick(buttonTrigger)"
+    (keyup)="buttonClick(buttonTrigger)"
+    (keydown)="buttonClick(buttonTrigger)"
+    (keypress)="buttonClick(buttonTrigger)"
+    tabindex="0">
+    <two-state-push-button [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled" *ngIf="buttonConfiguration.title && !rowMode"
       >{{ buttonConfiguration.title }}
-      <img *ngIf="buttonConfiguration.activeIcon && buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.activeIcon" />
-      <img *ngIf="buttonConfiguration.inactiveIcon && !buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.inactiveIcon" />
+      <img *ngIf="buttonConfiguration.activeIcon && buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.activeIcon" alt="Active Icon" />
+      <img *ngIf="buttonConfiguration.inactiveIcon && !buttonConfiguration.value" class="status-icon" [src]="buttonConfiguration.inactiveIcon" alt="Inactive Icon" />
     </two-state-push-button>
     <plus-minus-switch *ngIf="buttonConfiguration.type === 'plus-minus-switch'" [active]="buttonConfiguration.value" [disabled]="!!buttonConfiguration.disabled">
     </plus-minus-switch>
@@ -22,13 +37,22 @@
       [options]="buttonConfiguration?.options || []"
       [disabled]="!!buttonConfiguration.disabled"></multi-switch-button>
     <icon-button
-      *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
+      *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon && !(rowMode && buttonConfiguration.settingIcon)"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
       class="{{ buttonConfiguration.type }}"
       [icon]="buttonConfiguration.icon">
     </icon-button>
+    <img *ngIf="buttonConfiguration.settingIcon && rowMode" class="status-icon" [src]="buttonConfiguration.settingIcon" alt="Setting Icon" />
+    <div *ngIf="buttonConfiguration.type === 'divider'" class="divider"></div>
+    <div *ngIf="rowMode" class="row-mode-button">
+      <div class="row-mode-label">
+        {{ buttonConfiguration?.settingTitle }}
+      </div>
+    </div>
   </span>
-  <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'" [imageInfo]="buttonConfiguration?.getImageInfo ? buttonConfiguration?.getImageInfo() : undefined"></selection-changer>
+  <selection-changer
+    *ngIf="buttonConfiguration?.type === 'selection-changer'"
+    [imageInfo]="buttonConfiguration?.getImageInfo ? buttonConfiguration?.getImageInfo() : undefined"></selection-changer>
   <widget-key-display
     *ngIf="buttonConfiguration?.type === 'widget-key'"
     [items]="buttonConfiguration?.value || []"

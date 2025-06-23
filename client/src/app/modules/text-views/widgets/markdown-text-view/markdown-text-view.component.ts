@@ -1,8 +1,16 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
+import { Observable } from "rxjs";
 import { Subscription } from "rxjs";
 import { MarkdownViewState } from "src/app/generated-protos/widget-data";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import {
+  WidgetExportData,
+  WidgetExportDialogData,
+  WidgetExportRequest,
+  WidgetExportFile,
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
   selector: "app-markdown-text-view",
@@ -20,7 +28,8 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
 
   constructor(
     private _elementRef: ElementRef,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {
     super();
 
@@ -32,6 +41,33 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
           icon: "assets/button-icons/edit.svg",
           tooltip: "Toggle editing or viewing of text content",
           onClick: (val, event) => this.onToggleEdit(),
+          settingTitle: "Edit",
+          settingGroupTitle: "Actions",
+          settingIcon: "assets/button-icons/edit.svg",
+        },
+        {
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
+        },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
+          settingIcon: "assets/button-icons/export.svg",
         },
       ],
     };
@@ -100,6 +136,14 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
     return w - 10;
   }
 
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
+
   onToggleEdit() {
     if (this.editMode) {
       // Edit mode, so we're now saving...
@@ -129,5 +173,40 @@ Paragraph text
       btns[0].icon = this.editMode ? "" : "assets/button-icons/edit.svg";
       btns[0].title = this.editMode ? "Save" : "";
     }
+  }
+
+  override getExportOptions(): WidgetExportDialogData {
+    return {
+      title: "Export Markdown Text",
+      defaultZipName: "Markdown Text",
+      options: [],
+      dataProducts: [
+        {
+          id: "markdownContent",
+          name: "Markdown Text .md",
+          type: "checkbox",
+          description: "Export the markdown content as a .md file",
+          selected: true,
+        },
+      ],
+      showPreview: false,
+    };
+  }
+
+  override onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+    return new Observable<WidgetExportData>(observer => {
+      const markdownTexts: WidgetExportFile[] = [];
+      if (request.dataProducts) {
+        if (request.dataProducts["markdownContent"]?.selected) {
+          markdownTexts.push({
+            fileName: `Markdown Text.md`,
+            data: this.content || "",
+          });
+        }
+      }
+
+      observer.next({ mds: markdownTexts });
+      observer.complete();
+    });
   }
 }

@@ -43,13 +43,13 @@ class StateInfo {
   styleUrls: ["./multi-state-button.component.scss"],
 })
 export class MultiStateButtonComponent implements OnInit {
-  @Input() stateNames: string[] = null;
-  @Input() items: string[] = null;
-  @Input() activeState: string;
+  @Input() stateNames: string[] = [];
+  @Input() items: string[] = [];
+  @Input() activeState: string = "";
 
   @Output() onChange = new EventEmitter();
 
-  states: StateInfo[];
+  states: StateInfo[] = [];
 
   constructor() {}
 
@@ -61,10 +61,9 @@ export class MultiStateButtonComponent implements OnInit {
       return;
     }
 
-    //for(let item of this.items)
     for (let c = 0; c < this.stateNames.length; c++) {
-      let stateName = this.stateNames[c];
-      let item = this.items[c];
+      const stateName = this.stateNames[c];
+      const item = this.items[c];
 
       if (item.startsWith("assets/")) {
         this.states.push(new StateInfo(stateName, "", item));
@@ -72,10 +71,6 @@ export class MultiStateButtonComponent implements OnInit {
         this.states.push(new StateInfo(stateName, item, ""));
       }
     }
-    /*
-        console.log(this.states);
-        console.log(this.stateIdx);
-*/
   }
 
   onClick(state: StateInfo): void {

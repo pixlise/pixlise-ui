@@ -36,7 +36,6 @@ import { RGBA } from "../../../../utils/colours";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { MemoisationService } from "src/app/modules/pixlisecore/services/memoisation.service";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
 
@@ -112,13 +111,14 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           title: "Regions",
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
+          settingTitle: "Regions",
+          settingGroupTitle: "Data",
+          settingIcon: "assets/button-icons/roi.svg",
         },
         {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export Data",
-          onClick: () => this.onExportWidgetData.emit(),
+          id: "divider",
+          type: "divider",
+          onClick: () => null,
         },
         {
           id: "solo",
@@ -126,6 +126,17 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+        },
+        {
+          id: "export",
+          type: "button",
+          icon: "assets/button-icons/export.svg",
+          tooltip: "Export Data",
+          onClick: () => this.onExportWidgetData.emit(),
+          settingTitle: "Export / Download",
+          settingGroupTitle: "Actions",
         },
       ],
       topLeftInsetButton: {

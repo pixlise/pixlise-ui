@@ -27,18 +27,36 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+@import "variables.scss";
+@import "atoms.scss";
 
 .btn-side {
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .on {
-    fill: $clr-yellow;
+  fill: $clr-yellow;
+  border: 1px solid rgb(var(--clr-gray-70));
 }
 
 .off {
-    fill: $clr-gray-60;
+  fill: $clr-gray-60;
+}
+
+.btn-bg {
+  background-color: rgb(var(--clr-gray-90));
+  border: 1px solid rgb(var(--clr-gray-80));
+
+  &:hover {
+    background-color: rgb(var(--clr-gray-80));
+  }
+}
+
+.btn-side {
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
 }

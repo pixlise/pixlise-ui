@@ -28,12 +28,58 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import "variables.scss";
+@import "atoms.scss";
+
+:host {
+  display: flex;
+  height: 100%;
+}
+
+.widget-settings-menu {
+  min-width: 205px;
+
+  .row {
+    display: flex;
+    align-items: center;
+
+    &.above-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .row-title {
+        margin-right: auto;
+        color: rgb(var(--clr-gray-50));
+        &.active {
+          color: rgb(var(--clr-gray-10));
+        }
+      }
+    }
+
+    &.link {
+      cursor: pointer;
+      border-radius: 4px;
+
+      &:hover {
+        background-color: rgb(var(--clr-gray-90));
+      }
+
+      .row-title {
+        margin-right: auto;
+      }
+    }
+  }
+
+  .display-mode-btn {
+    width: 100%;
+    multi-switch-button {
+      width: 100%;
+    }
+  }
+}
 
 .table-area {
+  flex: 1;
+  height: 100%;
   overflow: auto;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 100%;
-  max-width: 100%;
 }

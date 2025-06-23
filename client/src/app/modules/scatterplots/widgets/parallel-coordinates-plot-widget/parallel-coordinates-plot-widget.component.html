@@ -1,5 +1,5 @@
 <!--
-Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Copyright (c) 2018-2022 California Institute of Technology ("Caltech"). U.S.
 Government sponsorship acknowledged.
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
@@ -30,28 +30,53 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <ng-template #settingsMenu>
-  <div class="dimensions" *ngIf="dimensions">
-    <div class="axis-toggle-container-mini">
-      <div *ngFor="let axis of axes" class="axis-toggle">
-        <div class="ctrl-row gap-separated-horizontal-elements">
-          <div class="setting-label">{{ axis.title }}:</div>
-          <switch-button [active]="axis.visible" (onToggle)="toggleAxis(axis.key)"></switch-button>
+  <div class="widget-settings-menu">
+    <div class="row selection-row">
+      <div class="settings-title">Dimensions</div>
+      <div class="selection-container">
+        <div class="select-opt link" (click)="toggleAll(true)" (keyup)="toggleAll(true)" (keydown)="toggleAll(true)" (keypress)="toggleAll(true)" tabindex="0">
+          <div class="row-title">All</div>
+        </div>
+        <div class="select-opt link" (click)="toggleAll(false)" (keyup)="toggleAll(false)" (keydown)="toggleAll(false)" (keypress)="toggleAll(false)" tabindex="0">
+          <div class="row-title">None</div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="selection-container">
-    <push-button (onClick)="toggleAll(true)">Select All</push-button>
-    <push-button (onClick)="toggleAll(false)">Deselect All</push-button>
-  </div>
+    <div class="dimensions" *ngIf="dimensions">
+      <div
+        *ngFor="let axis of axes"
+        class="row link {{ axis.visible ? 'active' : '' }}"
+        (click)="toggleAxis(axis.key)"
+        (keyup)="toggleAxis(axis.key)"
+        (keydown)="toggleAxis(axis.key)"
+        (keypress)="toggleAxis(axis.key)"
+        tabindex="0">
+        <div class="row-title">{{ axis.title }}</div>
+        <action-button class="switch" [action]="axis.visible ? 'checkOn' : 'checkOff'"></action-button>
+      </div>
+    </div>
 
-  <div class="ctrl-row gap-separated-horizontal-elements line-toggle">
-    <div class="setting-label">Lines:</div>
-    <switch-button [active]="showLines" (onToggle)="toggleLineVisibility()"></switch-button>
-  </div>
-  <div class="ctrl-row gap-separated-horizontal-elements line-toggle">
-    <div class="setting-label">Labels:</div>
-    <switch-button [active]="showLabels" (onToggle)="toggleLabelVisibility()"></switch-button>
+    <div class="subheading-line settings-title">Display Options</div>
+    <div
+      class="row link {{ showLines ? 'active' : '' }}"
+      (click)="toggleLineVisibility()"
+      (keyup)="toggleLineVisibility()"
+      (keydown)="toggleLineVisibility()"
+      (keypress)="toggleLineVisibility()"
+      tabindex="0">
+      <div class="row-title">Lines</div>
+      <action-button class="switch" [action]="showLines ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+    <div
+      class="row link {{ showLabels ? 'active' : '' }}"
+      (click)="toggleLabelVisibility()"
+      (keyup)="toggleLabelVisibility()"
+      (keydown)="toggleLabelVisibility()"
+      (keypress)="toggleLabelVisibility()"
+      tabindex="0">
+      <div class="row-title">Labels</div>
+      <action-button class="switch" [action]="showLabels ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
   </div>
 </ng-template>
 

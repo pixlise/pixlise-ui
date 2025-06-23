@@ -1,11 +1,51 @@
 @import "variables.scss";
 @import "atoms.scss";
 
-/* Resulted in canvas getting a width of 0px
 :host {
   display: flex;
   height: 100%;
-}*/
+}
+
+.widget-settings-menu {
+  width: 200px;
+
+  .row {
+    display: flex;
+    align-items: center;
+
+    &.above-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .row-title {
+        margin-right: auto;
+        color: rgb(var(--clr-gray-50));
+        &.active {
+          color: rgb(var(--clr-gray-10));
+        }
+      }
+    }
+
+    multi-switch-button {
+      width: 100%;
+      font-size: 12px;
+      line-height: 12px;
+    }
+  }
+
+  .slider-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .slider-end {
+    color: rgb(var(--clr-gray-50));
+    font-size: 12px;
+  }
+}
 
 interactive-canvas {
   position: relative;

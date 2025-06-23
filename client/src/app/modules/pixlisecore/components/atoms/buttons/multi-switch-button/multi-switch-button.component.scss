@@ -36,6 +36,9 @@
   align-items: center;
   justify-content: space-between;
   background: $clr-gray-90;
+  &.dark-mode {
+    background: $clr-gray-100;
+  }
   border-radius: $sz-half;
   width: 100%;
 
@@ -53,14 +56,24 @@
     color: $clr-gray-30;
     cursor: pointer;
 
-    img {
-      margin-right: 4px;
-    }
+    gap: 4px;
 
     &.active {
       background: transparent;
       color: white;
       z-index: 10;
+
+      img {
+        &.colorize-active-icon {
+          filter: brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(3201%);
+        }
+      }
+    }
+  }
+
+  &.no-padding {
+    .multi-switch-option {
+      padding: 0;
     }
   }
 

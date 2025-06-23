@@ -20,11 +20,11 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module"
 import { catchError, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
-import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
+import { SnackbarService, WidgetSettingsMenuComponent } from "../../../pixlisecore/pixlisecore.module";
 
 const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
@@ -53,6 +53,9 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   @ViewChild("bottomLeftInset") bottomLeftInset!: ElementRef;
   @ViewChild("bottomRightInset") bottomRightInset!: ElementRef;
 
+  @ViewChild("contextMenu") contextMenu!: ElementRef;
+  @ViewChild("overflowSection") overflowSection!: ElementRef;
+
   @Input() widgetLayoutConfig!: WidgetLayoutConfiguration;
   @Input() layoutIndex: number = 0;
   @Input() disableSwitch: boolean = false;
@@ -79,6 +82,10 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
   showTopToolbar: boolean = false;
   showBottomToolbar: boolean = false;
+
+  settingsGroups: { title: string; buttons: WidgetToolbarButtonConfiguration[] }[] = [];
+
+  contextMenuDialog: MatDialogRef<any> | null = null;
 
   topToolbarButtons: WidgetToolbarButtonConfiguration[] = [];
   bottomToolbarButtons: WidgetToolbarButtonConfiguration[] = [];
@@ -156,12 +163,12 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   }
 
   updateShowTopToolbar() {
-    let topToolbar = this.widgetConfiguration?.controlConfiguration?.topToolbar;
+    const topToolbar = this.widgetConfiguration?.controlConfiguration?.topToolbar;
     this.showTopToolbar = !!(topToolbar && topToolbar.length > 0);
   }
 
   updateShowBottomToolbar() {
-    let bottomToolbar = this.widgetConfiguration?.controlConfiguration?.bottomToolbar;
+    const bottomToolbar = this.widgetConfiguration?.controlConfiguration?.bottomToolbar;
     this.showBottomToolbar = !!(bottomToolbar && bottomToolbar.length > 0);
   }
 
@@ -301,6 +308,50 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     }
   }
 
+  onContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Close the context menu dialog if it is open
+    if (this.contextMenuDialog) {
+      this.contextMenuDialog.close();
+    }
+
+    // Create a temporary element to serve as the overlay origin
+    const tempElement = document.createElement("div");
+    tempElement.style.position = "fixed";
+    tempElement.style.top = `${event.clientY}px`;
+    tempElement.style.left = `${event.clientX}px`;
+    document.body.appendChild(tempElement);
+
+    // Open widget-settings-menu component
+    this.contextMenuDialog = this._dialog.open(WidgetSettingsMenuComponent, {
+      panelClass: "widget-context-menu-panel",
+      backdropClass: "widget-context-menu-backdrop",
+      hasBackdrop: false,
+      position: {
+        top: `${event.clientY}px`,
+        left: `${event.clientX + 205}px`,
+      },
+    });
+
+    // Inject settingsDialog into the dialog
+    setTimeout(() => {
+      if (this.contextMenuDialog?.componentInstance) {
+        this.contextMenuDialog.componentInstance.settingsDialog = this.settingsMenu;
+        this.contextMenuDialog.componentInstance.overflowSection = this.overflowSection;
+        this.contextMenuDialog.componentInstance.noPadding = true;
+        this.contextMenuDialog.componentInstance.triggerOpen = true;
+        this.contextMenuDialog.componentInstance._overlayOrigin = { nativeElement: tempElement };
+      }
+    }, 100);
+
+    // Clean up the temporary element when the dialog closes
+    this.contextMenuDialog.afterClosed().subscribe(() => {
+      document.body.removeChild(tempElement);
+    });
+  }
+
   @Input() set exportOptions(exportOptions: WidgetExportOption[]) {
     this._exportOptions = exportOptions;
     this._updateWidgetExportOptions();
@@ -317,6 +368,22 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     }
   }
 
+  groupButtonsBySettingGroupTitle(buttons: WidgetToolbarButtonConfiguration[]) {
+    const groups: { title: string; buttons: WidgetToolbarButtonConfiguration[] }[] = [];
+    buttons.forEach(button => {
+      if (button.settingGroupTitle) {
+        const group = groups.find(group => group.title === button.settingGroupTitle);
+        if (group) {
+          group.buttons.push(button);
+        } else {
+          groups.push({ title: button.settingGroupTitle, buttons: [button] });
+        }
+      }
+    });
+
+    return groups;
+  }
+
   updateButtons() {
     this.updateShowBottomToolbar();
     this.updateShowTopToolbar();
@@ -328,6 +395,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     this.topRightInsetButton = this.widgetConfiguration?.controlConfiguration?.topRightInsetButton;
     this.bottomLeftInsetButton = this.widgetConfiguration?.controlConfiguration?.bottomLeftInsetButton;
     this.bottomRightInsetButton = this.widgetConfiguration?.controlConfiguration?.bottomRightInsetButton;
+
+    this.settingsGroups = this.groupButtonsBySettingGroupTitle([...this.topToolbarButtons, ...this.bottomToolbarButtons]);
   }
 
   copyConfiguration() {
@@ -452,8 +521,10 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
             }
 
             const data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
-            data[this.widgetConfiguration!.dataKey] = widgetData;
-            this._analysisLayoutService.writeWidgetData(data);
+            if (this.widgetConfiguration?.dataKey) {
+              data[this.widgetConfiguration.dataKey] = widgetData;
+              this._analysisLayoutService.writeWidgetData(data);
+            }
           })
         );
       }

@@ -6,6 +6,39 @@
   height: 100%;
 }
 
+.widget-settings-menu {
+  width: 200px;
+
+  .row {
+    display: flex;
+    align-items: center;
+
+    &.above-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .row-title {
+        margin-right: auto;
+      }
+    }
+  }
+
+  .selection-mode-btn {
+    width: calc(100% - 24px);
+    multi-switch-button {
+      width: 100%;
+    }
+  }
+
+  .display-mode-btn {
+    width: 100%;
+    multi-switch-button {
+      width: 100%;
+    }
+  }
+}
+
 interactive-canvas {
   position: relative;
   width: 100%;
@@ -23,15 +56,15 @@ interactive-canvas {
   }
 }
 
-.y-switcher {
-  position: absolute;
-  bottom: 50%;
-  left: $sz-qtr;
-}
-
 .x-switcher {
   position: absolute;
   bottom: $sz-qtr;
   left: 50%;
   transform: translate(-50%, 0);
+}
+
+.y-switcher {
+  position: absolute;
+  left: $sz-qtr;
+  top: 50%;
 }

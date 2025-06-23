@@ -1,16 +1,27 @@
 <ng-template #settingsMenu>
-    <div class="settings">
-        <switch-button label="Pure Element:" [active]="usePureElement" (onToggle)="togglePureElement()"></switch-button>
-        <two-state-button
-            leftLabel="Atomic Number"
-            rightLabel="Abundance"
-            toolTip="Toggles table ordering"
-            [active]="orderByAbundance"
-            (onToggle)="setOrderByAbundance($event)">
-        </two-state-button>
+  <div class="widget-settings-menu">
+    <div
+      class="row link {{ usePureElement ? 'active' : '' }}"
+      (click)="togglePureElement()"
+      (keyup)="togglePureElement()"
+      (keydown)="togglePureElement()"
+      (keypress)="togglePureElement()"
+      tabindex="0">
+      <div class="row-title">Pure Element</div>
+      <action-button class="switch" [action]="usePureElement ? 'checkOn' : 'checkOff'"></action-button>
     </div>
+    <div class="row above-title">
+      <div class="row-title">Order By</div>
+      <multi-switch-button
+        class="display-mode-btn"
+        [options]="['Atomic Num', 'Abundance']"
+        [value]="orderByAbundance ? 'Abundance' : 'Atomic Num'"
+        (onChange)="setOrderByAbundance($event === 'Abundance')"
+        [darkMode]="true"></multi-switch-button>
+    </div>
+  </div>
 </ng-template>
 
 <div class="table-area">
-    <table-view [tables]="regionDataTables"></table-view>
+  <table-view [tables]="regionDataTables"></table-view>
 </div>

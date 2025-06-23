@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="panel {{ data.noPadding ? '' : 'unit-padding dlg-border-no-backdrop' }}">
-  <div *ngIf="data.overflowSectionTemplate" class="overflow-section">
+  <div *ngIf="data.overflowSectionTemplate" class="overflow-section action-section">
     <ng-container *ngTemplateOutlet="data.overflowSectionTemplate"></ng-container>
   </div>
   <ng-container *ngTemplateOutlet="data.menuTemplate"></ng-container>
