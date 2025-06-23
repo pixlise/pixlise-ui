@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-  class="clickable {{ flexBtn ? 'flex-btn' : '' }}"
+  class="clickable {{ flexBtn ? 'flex-btn' : '' }} {{ notificationCount > 0 ? 'has-badge' : '' }}"
   [ngClass]="styleCSS"
   [ngStyle]="customStyle"
   (click)="onClickInternal($event)"
@@ -41,7 +41,9 @@ POSSIBILITY OF SUCH DAMAGE.
   #tooltip="matTooltip"
   [matTooltip]="tooltipTitle"
   [matTooltipDisabled]="!tooltipTitle || tooltipTitle.length === 0">
-  <ng-content></ng-content>
+  <span class="btn-content">
+    <ng-content></ng-content>
+  </span>
   <badge
     *ngIf="notificationCount > 0"
     class="notifications"
