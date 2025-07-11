@@ -15,6 +15,7 @@ import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-w
 import { WidgetKeyItem } from "../../pixlisecore/pixlisecore.module";
 import { MarkdownTextViewComponent } from "../../text-views/text-views.module";
 import { SelectionChangerImageInfo } from "../../pixlisecore/components/atoms/selection-changer/selection-changer.component";
+import { Scan3DViewComponent } from "../../image-viewers/widgets/scan-3d-view/scan-3d-view.component";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -146,6 +147,15 @@ export const WIDGETS = {
     hasExpressions: true,
     component: ContextImageComponent,
     dataKey: "contextImage",
+    showRGBMixExpressionPickerMode: true,
+    controlConfiguration: {},
+  },
+  "scan-3d-view": {
+    name: "3D View",
+    description: "3D View",
+    hasExpressions: true,
+    component: Scan3DViewComponent,
+    dataKey: "scan3DView",
     showRGBMixExpressionPickerMode: true,
     controlConfiguration: {},
   },
