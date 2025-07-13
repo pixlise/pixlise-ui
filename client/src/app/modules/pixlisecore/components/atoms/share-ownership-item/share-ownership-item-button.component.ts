@@ -27,11 +27,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ShareDialogComponent, ShareDialogData, ShareDialogResponse, SharingSubItem } from "./share-dialog/share-dialog.component";
 import { ObjectType, OwnershipSummary, objectTypeToJSON } from "src/app/generated-protos/ownership-access";
-import { APIDataService, SnackbarService } from "../../../pixlisecore.module";
+import { APIDataService } from "../../../services/apidata.service";
+import { SnackbarService } from "../../../services/snackbar.service";
 import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
 import { catchError, combineLatest, map, Observable, of, switchMap } from "rxjs";
 import { ExpressionGroupGetReq } from "../../../../../generated-protos/expression-group-msgs";

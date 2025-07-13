@@ -1,11 +1,11 @@
 import { Injectable } from "@angular/core";
 import { CachedImageItem, CachedRGBUImageItem, CachedSpectraItem, db } from "../models/local-storage-db";
-import { liveQuery, PromiseExtended } from "dexie";
-import { SnackbarDataItem } from "./snackbar.service";
+import { liveQuery } from "dexie";
+import { SnackbarDataItem } from "../models/snackbar-data";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { UINotification } from "src/app/modules/settings/services/notifications.service";
-import { ScanSpectrumData } from "./spectrum-data.service";
+import { ScanSpectrumData } from "../models/scan-spectrum-data";
 import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { Spectra } from "src/app/generated-protos/spectrum";
 

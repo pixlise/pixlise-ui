@@ -7,16 +7,8 @@ import { WidgetError } from "./widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { Subscription } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
+import { SnackbarDataItem, SnackbarType } from "../models/snackbar-data";
 
-export type SnackbarType = "warning" | "error" | "info" | "success";
-
-export type SnackbarDataItem = {
-  message: string;
-  details: string;
-  action: string;
-  type: SnackbarType;
-  timestamp: number;
-};
 
 @Injectable({
   providedIn: "root",

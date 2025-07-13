@@ -1,7 +1,12 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, defaultIfEmpty, map, mergeMap, of, switchMap, throwError } from "rxjs";
+
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { APIDataService } from "../../pixlisecore/services/apidata.service";
+import { SnackbarService } from "../../pixlisecore/services/snackbar.service";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
+
 import {
   ExpressionDeleteReq,
   ExpressionDisplaySettingsGetReq,
@@ -23,11 +28,9 @@ import {
   ExpressionGroupWriteReq,
 } from "src/app/generated-protos/expression-group-msgs";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ColourRamp } from "src/app/utils/colours";
 import { getPredefinedExpression } from "../../../expression-language/predefined-expressions";
-import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
 
 @Injectable({
   providedIn: "root",

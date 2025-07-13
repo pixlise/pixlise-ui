@@ -3,7 +3,8 @@ import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, map,
 import { APIEndpointsService } from "./apiendpoints.service";
 import { APICachedDataService } from "./apicacheddata.service";
 import { WidgetError } from "./widget-data.service";
-import { DataSourceParams, RegionDataResults, SnackbarService, WidgetDataService } from "../pixlisecore.module";
+import { SnackbarService } from "./snackbar.service";
+import { WidgetDataService, DataSourceParams, RegionDataResults } from "./widget-data.service";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageScanModelGenerator } from "../../image-viewers/widgets/context-image/context-image-scan-model-generator";

@@ -1,9 +1,8 @@
-import { Component, Input, OnDestroy, OnInit } from "@angular/core";
+import { Component, Input, OnDestroy } from "@angular/core";
 import { UserGroupInfo } from "../../../../../generated-protos/user-group";
-import { UsersService } from "../../../../settings/services/users.service";
-import { UserOptionsService } from "../../../../settings/settings.module";
+//import { GroupsService } from "../../../../settings/services/groups.service"; <-- Causes circular dependencies
 import { Subscription } from "rxjs";
-import { GroupsService } from "../../../../settings/services/groups.service";
+
 @Component({
   selector: "group-icon",
   templateUrl: "./group-icon.component.html",
@@ -24,7 +23,7 @@ export class GroupIconComponent implements OnDestroy {
 
   groupInfo: UserGroupInfo | null = null;
 
-  constructor(private _groupsService: GroupsService) {}
+  constructor(/*private _groupsService: GroupsService*/) {}
 
   ngOnDestroy() {
     this._subs.unsubscribe();

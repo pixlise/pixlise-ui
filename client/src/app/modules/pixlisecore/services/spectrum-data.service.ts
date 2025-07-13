@@ -13,22 +13,7 @@ import { LocalStorageService } from "./local-storage.service";
 import { CachedSpectraItem } from "../models/local-storage-db";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
-
-export class ScanSpectrumData {
-  constructor(
-    public scanTimeStampUnixSec: number,
-    public bulkSum: Spectrum[],
-    public maxValue: Spectrum[],
-    public pmcSpectra: Spectrum[][],
-    public channelCount: number,
-    public normalSpectraForScan: number,
-    public dwellSpectraForScan: number,
-    public liveTimeMetaIndex: number,
-    public loadedAllPMCs: boolean,
-    public loadedBulkSum: boolean, // Flag needed because dataset may not have any bulk spectra, but we've requested it already
-    public loadedMaxValue: boolean // Flag needed because dataset may not have any bulk spectra, but we've requested it already
-  ) {}
-}
+import { ScanSpectrumData } from "../models/scan-spectrum-data";
 
 @Injectable({
   providedIn: "root",

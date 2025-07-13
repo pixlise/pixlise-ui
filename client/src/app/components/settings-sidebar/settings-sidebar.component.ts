@@ -10,7 +10,7 @@ import { ImageUploaderDialogComponent } from "src/app/modules/settings/component
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
 import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
-import { SnackbarDataItem } from "src/app/modules/pixlisecore/services/snackbar.service";
+import { SnackbarDataItem } from "src/app/modules/pixlisecore/models/snackbar-data";
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 import { Subscription } from "rxjs";
 
