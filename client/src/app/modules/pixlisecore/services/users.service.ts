@@ -1,12 +1,14 @@
 import { Injectable } from "@angular/core";
-
-import { APIDataService } from "../../pixlisecore/pixlisecore.module";
 import { BehaviorSubject, catchError, filter, map, Observable, of, ReplaySubject, switchMap } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
+
 import { UserAddRoleReq, UserDeleteRoleReq, UserListReq, UserRoleListReq, UserRolesListReq } from "src/app/generated-protos/user-management-msgs";
 import { Auth0UserDetails, Auth0UserRole, UserInfo } from "src/app/generated-protos/user";
 import { UserSearchReq } from "src/app/generated-protos/user-msgs";
+
+import { APIDataService } from "./apidata.service";
+
 
 @Injectable({
   providedIn: "root",

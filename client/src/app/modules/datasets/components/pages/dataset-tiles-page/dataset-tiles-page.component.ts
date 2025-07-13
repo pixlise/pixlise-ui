@@ -72,7 +72,7 @@ import {
 import { filterScans, sortScans } from "src/app/utils/search";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { DatasetsService } from "../../../services/datasets.service";
-import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { GroupsService } from "src/app/modules/settings/settings.module";
 import { UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 

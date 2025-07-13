@@ -35,11 +35,11 @@ import { combineLatest, Observable, of, Subscription } from "rxjs";
 import { ObjectType, OwnershipItem, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
 import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { UserGroupInfo } from "src/app/generated-protos/user-group";
-import { GroupsService } from "src/app/modules/settings/services/groups.service";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { UsersService } from "src/app/modules/settings/services/users.service";
+import { GroupsService, UserOptionsService } from "src/app/modules/settings/settings.module";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ObjectEditAccessReq, ObjectEditAccessResp } from "../../../../../../generated-protos/ownership-access-msgs";
-import { APIDataService, SnackbarService } from "../../../../pixlisecore.module";
+import { APIDataService } from "../../../../services/apidata.service";
+import { SnackbarService } from "../../../../services/snackbar.service";
 import { ReviewerMagicLinkCreateReq } from "../../../../../../generated-protos/user-management-msgs";
 import { EnvConfigurationInitService } from "../../../../../../services/env-configuration-init.service";
 

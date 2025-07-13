@@ -19,7 +19,6 @@ import { WSError } from "src/app/modules/pixlisecore/services/wsMessageHandler";
 import { QuantModes, getQuantifiedElements } from "src/app/models/Quantification";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -35,7 +34,7 @@ import {
   TextFileViewingDialogComponent,
   TextFileViewingDialogData,
 } from "src/app/modules/pixlisecore/components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
-import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 const SelectQuantText = "Select a quantification job";
 

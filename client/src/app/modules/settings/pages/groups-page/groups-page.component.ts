@@ -12,7 +12,7 @@ import { RequestGroupDialogComponent } from "../../components/request-group-dial
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserGroupMembershipDialogComponent } from "../../components/user-group-membership-dialog/user-group-membership-dialog.component";
 import { AddSubGroupDialogComponent } from "../../components/add-subgroup-dialog/add-subgroup-dialog.component";
-import { UsersService } from "../../services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActionButtonComponent } from "../../../pixlisecore/components/atoms/buttons/action-button/action-button.component";
 
 @Component({

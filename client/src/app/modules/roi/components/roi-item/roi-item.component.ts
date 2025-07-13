@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROIService } from "../../services/roi.service";
-import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService, WidgetSettingsMenuComponent, UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { Subscription } from "rxjs";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.component";
@@ -10,7 +10,6 @@ import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../model
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserInfo } from "src/app/generated-protos/user";
 import { PredefinedROIID } from "../../../../models/RegionOfInterest";
 import { RGBA } from "../../../../utils/colours";

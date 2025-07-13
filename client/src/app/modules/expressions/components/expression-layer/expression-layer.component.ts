@@ -15,7 +15,7 @@ import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { RGB_MIX_MODE_OPTIONS, WidgetLayerPositionConfigMap, widgetLayerPositions } from "../../models/expression-widget-layer-configs";
 import { WidgetType } from "../../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
-import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserInfo } from "src/app/generated-protos/user";
 
 @Component({

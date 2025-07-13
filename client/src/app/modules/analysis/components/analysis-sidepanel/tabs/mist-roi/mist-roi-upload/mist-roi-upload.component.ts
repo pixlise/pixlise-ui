@@ -35,10 +35,9 @@ import { ROIItem } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { GroupsService } from "../../../../../../settings/services/groups.service";
 import { UserGroupInfo, UserGroupRelationship } from "../../../../../../../generated-protos/user-group";
 import { UserGroupList } from "../../../../../../../generated-protos/ownership-access";
-import { UserOptionsService } from "src/app/modules/settings/settings.module";
+import { GroupsService, UserOptionsService } from "src/app/modules/settings/settings.module";
 
 export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];

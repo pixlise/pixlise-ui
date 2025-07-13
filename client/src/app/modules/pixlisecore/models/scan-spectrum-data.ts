@@ -1,3 +1,5 @@
+import { Spectrum } from "src/app/generated-protos/spectrum";
+
 export class ScanSpectrumData {
   constructor(
     public scanTimeStampUnixSec: number,

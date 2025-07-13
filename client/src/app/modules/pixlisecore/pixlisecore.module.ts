@@ -76,6 +76,7 @@ export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
 export { SnackbarService } from "./services/snackbar.service";
+export { UsersService } from "./services/users.service";
 export { ContextImageDataService } from "./services/context-image-data.service";
 export { WidgetDataService, DataSourceParams, RegionDataResults, RegionDataResultItem, DataUnit } from "./services/widget-data.service";
 export { WidgetKeyItem } from "./models/widget-key-item";

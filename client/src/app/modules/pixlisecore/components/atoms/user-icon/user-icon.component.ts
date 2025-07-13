@@ -1,8 +1,9 @@
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
-import { UserInfo } from "../../../../../generated-protos/user";
-import { UsersService } from "../../../../settings/services/users.service";
-import { UserOptionsService } from "../../../../settings/settings.module";
 import { Subscription } from "rxjs";
+import { UserInfo } from "../../../../../generated-protos/user";
+import { UserOptionsService } from "../../../../settings/settings.module";
+import { UsersService } from "../../../pixlisecore.module";
+
 @Component({
   selector: "user-icon",
   templateUrl: "./user-icon.component.html",
