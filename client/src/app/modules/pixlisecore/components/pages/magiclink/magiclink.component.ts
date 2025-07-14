@@ -28,9 +28,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { Subscription } from "rxjs";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
 import { ActivatedRoute } from "@angular/router";
+
+import { Subscription } from "rxjs";
+
+import { AnalysisLayoutService } from "../../../services/analysis-layout.service";
+
 
 @Component({
   selector: "app-magic-link",

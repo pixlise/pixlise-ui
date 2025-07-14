@@ -1,5 +1,5 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { AnalysisLayoutService } from "../../services/analysis-layout.service";
+import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
 import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";

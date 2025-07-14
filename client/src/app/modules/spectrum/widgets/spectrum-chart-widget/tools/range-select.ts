@@ -50,8 +50,8 @@ import { DataExpression } from "../../../../../generated-protos/expressions";
 import { DataExpressionId } from "../../../../../expression-language/expression-id";
 import { EXPR_LANGUAGE_LUA } from "../../../../../expression-language/expression-language";
 import { PredefinedROIID } from "../../../../../models/RegionOfInterest";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
-import { MapLayerVisibility } from "../../../../../generated-protos/widget-data";
+import { AnalysisLayoutService } from "../../../../pixlisecore/pixlisecore.module";
+
 const MOUSE_TOLERANCE_TO_LINE = 10;
 
 enum HandleState {

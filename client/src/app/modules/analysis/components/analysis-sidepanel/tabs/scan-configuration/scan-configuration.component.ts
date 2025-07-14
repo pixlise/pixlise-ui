@@ -29,7 +29,7 @@
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { combineLatest, Subscription } from "rxjs";
 import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanItem } from "src/app/generated-protos/scan";

@@ -6,7 +6,7 @@ import { ExpressionsService } from "../../../../expressions/services/expressions
 import { combineLatest, Subscription } from "rxjs";
 import { ColourRamp, Colours } from "../../../../../utils/colours";
 import { ExpressionGroup, ExpressionGroupItem } from "../../../../../generated-protos/expression-group";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../../services/analysis-layout.service";
 import { SliderValue } from "../slider/slider.component";
 import { SnackbarService } from "../../../services/snackbar.service";
 

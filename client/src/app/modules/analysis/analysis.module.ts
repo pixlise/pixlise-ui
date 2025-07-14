@@ -38,7 +38,6 @@ import { NewTabPageComponent } from "./pages/new-tab-page/new-tab-page.component
 import { ReplaceScanDialogComponent } from "./components/analysis-sidepanel/tabs/scan-configuration/scan-configuration-item/replace-scan-dialog/replace-scan-dialog.component";
 
 export { DataExporterService } from "./services/exporter.service";
-export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
 const APP_ROUTES: Routes = [
   {

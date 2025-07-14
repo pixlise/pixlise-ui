@@ -4,7 +4,7 @@ import { Observable } from "rxjs";
 import { Subscription } from "rxjs";
 import { MarkdownViewState } from "src/app/generated-protos/widget-data";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   WidgetExportData,
   WidgetExportDialogData,

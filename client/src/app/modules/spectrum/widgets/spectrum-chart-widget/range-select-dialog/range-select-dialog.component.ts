@@ -2,7 +2,7 @@ import { Component, EventEmitter, Inject, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { MinMax } from "../../../../../models/BasicTypes";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../../../pixlisecore/pixlisecore.module";
 import { WIDGETS, WidgetType } from "../../../../widget/models/widgets.model";
 
 export type RangeSelectData = {

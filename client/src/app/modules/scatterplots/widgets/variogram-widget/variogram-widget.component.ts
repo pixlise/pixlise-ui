@@ -52,7 +52,7 @@ import {
   WidgetKeyItem,
 } from "../../../pixlisecore/pixlisecore.module";
 import { BaseWidgetModel } from "../../../widget/models/base-widget.model";
-import { AnalysisLayoutService } from "../../../analysis/analysis.module";
+import { AnalysisLayoutService, APICachedDataService } from "../../../pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "../../../roi/components/roi-picker/roi-picker.component";
 import { VariogramState, VisibleROI } from "../../../../generated-protos/widget-data";
 import {
@@ -64,7 +64,6 @@ import { ROIService } from "../../../roi/services/roi.service";
 import { ExpressionsService } from "../../../expressions/services/expressions.service";
 import { DataExpression } from "../../../../generated-protos/expressions";
 import { getExpressionShortDisplayName } from "../../../../expression-language/expression-short-name";
-import { APICachedDataService } from "../../../pixlisecore/services/apicacheddata.service";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "../../../../generated-protos/scan-beam-location-msgs";
 import { ScanEntryReq, ScanEntryResp } from "../../../../generated-protos/scan-entry-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "../../../../generated-protos/detector-config-msgs";
@@ -74,7 +73,7 @@ import { ScanItem } from "../../../../generated-protos/scan";
 import { ScanEntry } from "../../../../generated-protos/scan-entry";
 import { Coordinate3D } from "../../../../generated-protos/scan-beam-location";
 import { PredefinedROIID } from "../../../../models/RegionOfInterest";
-import { DefaultExpressions } from "../../../analysis/services/analysis-layout.service";
+import { DefaultExpressions } from "../../../pixlisecore/services/analysis-layout.service";
 import { ContextImageScanModelGenerator } from "../../../image-viewers/widgets/context-image/context-image-scan-model-generator";
 import { BuiltInTags } from "../../../tags/models/tag.model";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "../../../widget/components/widget-export-dialog/widget-export-model";

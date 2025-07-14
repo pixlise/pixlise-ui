@@ -5,7 +5,15 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  AnalysisLayoutService,
+  DataSourceParams,
+  DataUnit,
+  RegionDataResults,
+  SelectionService,
+  SnackbarService,
+  WidgetDataService,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ChordDiagramModel, ChordDrawMode } from "./chord-model";
 import { ChordDiagramDrawer } from "./chord-drawer";
@@ -20,7 +28,7 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
+import { DefaultExpressions } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import {
   WidgetExportData,

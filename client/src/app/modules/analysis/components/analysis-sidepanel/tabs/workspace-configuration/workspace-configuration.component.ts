@@ -42,14 +42,12 @@ import { ExpressionGetReq, ExpressionGetResp } from "../../../../../../generated
 import { QuantGetReq, QuantGetResp } from "../../../../../../generated-protos/quantification-retrieval-msgs";
 import { ExpressionGroupGetResp } from "../../../../../../generated-protos/expression-group-msgs";
 
-import { NavigationTab } from "../../../../services/analysis-layout.service";
+import { NavigationTab } from "../../../../../pixlisecore/services/analysis-layout.service";
 import { WorkspaceService } from "../../../../services/workspaces.service";
 
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService, APIDataService, APICachedDataService, SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
 
-import { APIDataService, APICachedDataService, SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
-
-import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
+import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "src/app/utils/utils";
 import { TabLinks } from "../../../../../../models/TabLinks";
 
 import { ShareDialogComponent, ShareDialogData, ShareDialogResponse, SharingSubItem } from "../../../../../pixlisecore/pixlisecore.module";

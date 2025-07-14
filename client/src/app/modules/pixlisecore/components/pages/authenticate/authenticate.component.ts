@@ -33,8 +33,7 @@ import { Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
-import { ActivatedRoute, Router } from "@angular/router";
+import { Router } from "@angular/router";
 
 // The purpose of this page is to process the auth0 code/state that comes in. This is why we have an auth service
 // injected here - if the application is brought to this page and it has the code/state the auth service will see

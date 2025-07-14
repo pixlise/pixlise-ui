@@ -39,7 +39,7 @@ import {
   SelectionOptionsDialogResult,
   SelectionOption,
 } from "./selection-options/selection-options.component";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { APICachedDataService } from "../../../services/apicacheddata.service";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";

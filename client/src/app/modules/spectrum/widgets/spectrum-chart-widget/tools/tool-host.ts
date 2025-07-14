@@ -51,8 +51,7 @@ import { XRFBrowser } from "../ui-elements/xrf-browser";
 import { ZoomMap } from "../ui-elements/zoom-map";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { RangeSelect } from "./range-select";
-import { SnackbarService, WidgetDataService } from "../../../../pixlisecore/pixlisecore.module";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { AnalysisLayoutService, SnackbarService, WidgetDataService } from "../../../../pixlisecore/pixlisecore.module";
 
 // TODO: Mostly copied from context image, can probably unify
 export enum ToolState {

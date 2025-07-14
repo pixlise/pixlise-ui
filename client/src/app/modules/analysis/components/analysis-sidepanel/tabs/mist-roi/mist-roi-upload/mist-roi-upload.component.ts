@@ -33,7 +33,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dial
 import papa from "papaparse";
 import { ROIItem } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { UserGroupInfo, UserGroupRelationship } from "../../../../../../../generated-protos/user-group";
 import { UserGroupList } from "../../../../../../../generated-protos/ownership-access";

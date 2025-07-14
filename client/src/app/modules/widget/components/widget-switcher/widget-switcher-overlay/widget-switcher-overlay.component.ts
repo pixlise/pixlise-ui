@@ -1,11 +1,10 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from "@angular/core";
 import { WidgetConfiguration, WidgetType } from "../../../models/widgets.model";
 import { getWidgetIconUrl } from "../../../../pixlisecore/components/atoms/layout-preview-box/layout-preview-box.component";
-import { AnalysisLayoutService } from "../../../../analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "../../../../pixlisecore/pixlisecore.module";
 import { WidgetData } from "../../../../../generated-protos/widget-data";
 import { Subscription } from "rxjs";
 import { SnackbarService } from "../../../../pixlisecore/services/snackbar.service";
-import { WidgetMetadataGetResp } from "../../../../../generated-protos/widget-data-msgs";
 
 @Component({
   selector: "widget-switcher-overlay",

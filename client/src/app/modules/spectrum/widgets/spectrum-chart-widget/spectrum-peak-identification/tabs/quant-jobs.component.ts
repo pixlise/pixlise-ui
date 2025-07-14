@@ -18,8 +18,7 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { WSError } from "src/app/modules/pixlisecore/services/wsMessageHandler";
 import { QuantModes, getQuantifiedElements } from "src/app/models/Quantification";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";

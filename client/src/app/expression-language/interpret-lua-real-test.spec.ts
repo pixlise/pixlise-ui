@@ -29,7 +29,7 @@
 
 import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
-import { decompressZeroRunLengthEncoding, SpectrumChannels } from "../utils/utils";
+import { decompressZeroRunLengthEncoding, SpectrumChannels } from "src/app/utils/utils";
 import { Diffraction, Diffraction_Location } from "src/app/generated-protos/files/diffraction";
 import { Experiment, Experiment_Location_MetaDataItem, Experiment_MetaDataType } from "src/app/generated-protos/files/experiment";
 import { Quantification } from "src/app/generated-protos/quantification";

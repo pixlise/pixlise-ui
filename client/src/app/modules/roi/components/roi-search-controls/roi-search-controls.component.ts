@@ -4,7 +4,7 @@ import { ROIService } from "../../services/roi.service";
 import { Subscription } from "rxjs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { UserInfo } from "src/app/generated-protos/user";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SearchParams } from "src/app/generated-protos/search-params";
 import { ROISearchFilter, ROIType, ROITypeInfo, ROI_TYPES, checkMistFullyIdentified, checkROITypeIsMIST } from "../../models/roi-search";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";

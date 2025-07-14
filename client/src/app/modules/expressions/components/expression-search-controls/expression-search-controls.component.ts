@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angu
 import { Subscription } from "rxjs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { UserInfo } from "src/app/generated-protos/user";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
@@ -11,7 +11,6 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getAnomalyExpressions, getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";

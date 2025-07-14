@@ -1,5 +1,5 @@
 import { Injectable, OnDestroy } from "@angular/core";
-import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import {
   RegionOfInterestBulkDuplicateReq,
   RegionOfInterestBulkWriteReq,
@@ -14,7 +14,7 @@ import {
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
 import { BehaviorSubject, EMPTY, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
-import { decodeIndexList, encodeIndexList, SentryHelper } from "src/app/utils/utils";
+import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
 import { COLOURS, ColourOption } from "../models/roi-colors";
@@ -33,7 +33,6 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SelectionHistoryItem } from "../../pixlisecore/services/selection.service";
 import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "../../analysis/analysis.module";
 import { UserGroupList } from "../../../generated-protos/ownership-access";
 import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
 import { NotificationType } from "src/app/generated-protos/notification";

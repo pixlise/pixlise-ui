@@ -6,6 +6,7 @@ import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/c
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import {
+  AnalysisLayoutService,
   DataSourceParams,
   DataUnit,
   RegionDataResults,
@@ -25,7 +26,6 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIService } from "../../../roi/services/roi.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
@@ -39,6 +39,7 @@ import {
   WidgetExportRequest,
   WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { DefaultExpressions } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 
 @Component({
   selector: "histogram-widget",

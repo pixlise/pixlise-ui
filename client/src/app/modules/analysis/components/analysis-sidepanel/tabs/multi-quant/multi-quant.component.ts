@@ -1,24 +1,27 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest, map } from "rxjs";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
-import { TableData, TableHeaderItem, TableRow } from "src/app/modules/pixlisecore/components/atoms/table/table.component";
+
 import { ZStackItemForDisplay } from "./zstack/zstack-item/zstack-item.component";
+import { MultiQuantService } from "src/app/modules/analysis/services/multi-quant.service";
+
 import { Colours } from "src/app/utils/colours";
-import { QuantCombineItem, QuantCombineSummary } from "src/app/generated-protos/quantification-multi";
-import { ScanItem } from "src/app/generated-protos/scan";
-import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { httpErrorToString } from "src/app/utils/utils";
-import { QuantCombineReq, QuantCombineResp } from "src/app/generated-protos/quantification-multi-msgs";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { MultiQuantService } from "src/app/modules/analysis/services/multi-quant.service";
+
 import { NewROIDialogData, NewROIDialogComponent } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
+import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { RemainingPointsColour } from "src/app/modules/roi/models/roi-region";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { TableData, TableHeaderItem, TableRow } from "src/app/modules/pixlisecore/components/atoms/table/table.component";
+import { AnalysisLayoutService, APICachedDataService, APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { QuantCombineItem, QuantCombineSummary } from "src/app/generated-protos/quantification-multi";
+import { QuantCombineReq, QuantCombineResp } from "src/app/generated-protos/quantification-multi-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 @Component({
   selector: "app-multi-quant",
@@ -29,7 +32,7 @@ export class MultiQuantComponent implements OnInit, OnDestroy {
   @ViewChild("createMQModal") createMQModal!: ElementRef;
 
   configuredScans: ScanItem[] = [];
-  private _allScans: ScanItem[] = [];
+  //private _allScans: ScanItem[] = [];
   private _selectedScanId: string = "";
 
   private _subs = new Subscription();
@@ -56,7 +59,7 @@ export class MultiQuantComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
-        this._allScans = scans;
+        //this._allScans = scans;
         if (!this.selectedScanId && scans.length > 0) {
           this.selectedScanId = this._analysisLayoutService.defaultScanId || scans[0].id;
         }

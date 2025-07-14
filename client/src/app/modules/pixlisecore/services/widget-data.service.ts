@@ -38,9 +38,8 @@ import { APIDataService } from "./apidata.service";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionWriteExecStatReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModuleVersion } from "src/app/generated-protos/modules";
-import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataQuerier } from "src/app/expression-language/expression-language";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { APICachedDataService } from "./apicacheddata.service";
@@ -51,7 +50,7 @@ import { EnergyCalibrationService } from "./energy-calibration.service";
 import { MemoisationService } from "./memoisation.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { MemDataQueryResult, MemPMCDataValue, MemPMCDataValues, MemRegionSettings } from "src/app/generated-protos/memoisation";
-import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
@@ -63,7 +62,9 @@ import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
 import { ExpressionMemoisationService } from "./expression-memoisation.service";
 import { AuthService, User } from "@auth0/auth0-angular";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "../services/analysis-layout.service";
+
+
 export type DataModuleVersionWithRef = {
   id: string;
   name: string;

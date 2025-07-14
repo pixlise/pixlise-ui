@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnInit, OnDestroy, Output } from "@angu
 import { Subscription } from "rxjs";
 import { QuantificationItemInfo } from "./quantification-item/quantification-item.component";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 
 @Component({
   selector: "quantification-list",

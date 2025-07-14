@@ -5,8 +5,7 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { ContextImageDataService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { AverageRGBURatio, SelectionTabModel } from "./model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";

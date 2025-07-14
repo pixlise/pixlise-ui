@@ -1,5 +1,5 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { AnalysisLayoutService } from "../../services/analysis-layout.service";
+import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { combineLatest, distinctUntilChanged, map, of, Subscription, switchMap } from "rxjs";

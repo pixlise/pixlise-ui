@@ -54,7 +54,7 @@ import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiend
 import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
 import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
 import { ScanInstrument } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { TagService } from "../../../../tags/services/tag.service";
 import { Tag } from "../../../../../generated-protos/tags";
 import { ScanConfiguration, ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";

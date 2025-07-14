@@ -1,9 +1,9 @@
 import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription, combineLatest, concatMap, first, map, switchMap, tap } from "rxjs";
+import { Observable, Subscription, combineLatest, first, map, switchMap, tap } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import {
+  AnalysisLayoutService,
   WidgetDataService,
   SnackbarService,
   DataSourceParams,

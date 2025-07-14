@@ -7,8 +7,7 @@ import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
 import { ContextImageState, MapLayerVisibility, ROILayerVisibility } from "src/app/generated-protos/widget-data";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
 import { Point, Rect } from "src/app/models/Geometry";

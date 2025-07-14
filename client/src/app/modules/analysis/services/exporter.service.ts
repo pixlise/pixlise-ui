@@ -17,7 +17,7 @@ import {
 import { SpectrumResp } from "../../../generated-protos/spectrum-msgs";
 import { Spectrum, SpectrumType } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
-import { decodeIndexList, getPathBase, SDSFields } from "../../../utils/utils";
+import { decodeIndexList, getPathBase } from "src/app/utils/utils";
 import { DiffractionExporter } from "../components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
 import { DiffractionService } from "../../spectrum/services/diffraction.service";
 import { EnergyCalibrationService } from "../../pixlisecore/services/energy-calibration.service";

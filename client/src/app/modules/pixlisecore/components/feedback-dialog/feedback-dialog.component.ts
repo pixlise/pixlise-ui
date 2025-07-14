@@ -1,6 +1,6 @@
 import { Component, HostListener, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { SentryHelper } from "../../../../utils/utils";
+import { SentryHelper } from "src/app/utils/utils";
 import { SnackbarService } from "../../services/snackbar.service";
 
 export interface FeedbackTextDialogData {

@@ -5,7 +5,7 @@ import { Overlay, OverlayRef, PositionStrategy } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
 import { Subscription } from "rxjs";
 import { WidgetSwitcherOverlayComponent } from "./widget-switcher-overlay/widget-switcher-overlay.component";
-import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
 import { WidgetData } from "../../../../generated-protos/widget-data";
 import { WidgetMetadataGetResp } from "../../../../generated-protos/widget-data-msgs";
 import { MarkdownTooltipComponent } from "../../../pixlisecore/components/atoms/markdown-tooltip/markdown-tooltip.component";

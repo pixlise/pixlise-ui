@@ -1,9 +1,9 @@
-import { OwnershipItem, OwnershipSummary } from "src/app/generated-protos/ownership-access";
+import { OwnershipSummary } from "src/app/generated-protos/ownership-access";
 import { DataExpression } from "../generated-protos/expressions";
 import { DataExpressionId } from "./expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "./expression-language";
 import { UserInfo } from "src/app/generated-protos/user";
-import { SpectrumChannels } from "../utils/utils";
+import { SpectrumChannels } from "src/app/utils/utils";
 
 export const DefaultDetectorId = "Default";
 

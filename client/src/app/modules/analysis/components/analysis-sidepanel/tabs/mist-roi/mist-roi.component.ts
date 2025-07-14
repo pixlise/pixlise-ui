@@ -36,7 +36,7 @@ import { MistRoiUploadComponent, MistROIUploadData } from "./mist-roi-upload/mis
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanItem } from "src/app/generated-protos/scan";

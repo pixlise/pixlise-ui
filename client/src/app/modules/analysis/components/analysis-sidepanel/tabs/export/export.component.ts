@@ -4,9 +4,9 @@ import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxj
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
-import { AnalysisLayoutService, DataExporterService } from "src/app/modules/analysis/analysis.module";
+import { DataExporterService } from "src/app/modules/analysis/analysis.module";
 import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import {
   WidgetExportData,
@@ -14,7 +14,6 @@ import {
   WidgetExportDialogData,
   WidgetExportOption,
   WidgetExportRequest,
-  WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({

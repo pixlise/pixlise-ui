@@ -35,7 +35,7 @@ import { Subscription } from "rxjs";
 // import { DataSetService } from "src/app/services/data-set.service";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 // import { DataExpressionService } from "src/app/services/data-expression.service";
 
 export class ExpressionEditorConfig {

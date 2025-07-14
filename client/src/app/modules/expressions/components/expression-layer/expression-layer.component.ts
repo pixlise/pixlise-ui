@@ -6,16 +6,14 @@ import { DataModule } from "src/app/generated-protos/modules";
 import { ExpressionsService } from "../../services/expressions.service";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { Subscription } from "rxjs";
-import { AnalysisLayoutService } from "../../../analysis/analysis.module";
+import { AnalysisLayoutService, WidgetSettingsMenuComponent, UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ConfirmDialogComponent } from "../../../pixlisecore/components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
-import { WidgetSettingsMenuComponent } from "../../../pixlisecore/pixlisecore.module";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { RGB_MIX_MODE_OPTIONS, WidgetLayerPositionConfigMap, widgetLayerPositions } from "../../models/expression-widget-layer-configs";
 import { WidgetType } from "../../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
-import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserInfo } from "src/app/generated-protos/user";
 
 @Component({

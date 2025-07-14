@@ -1,6 +1,7 @@
-import { Component, Input, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import {
+  AnalysisLayoutService,
   DataSourceParams,
   DataUnit,
   RegionDataResults,
@@ -9,7 +10,7 @@ import {
   WidgetDataService,
   WidgetKeyItem,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { catchError, first, map, Observable, Subscription, tap } from "rxjs";
+import { catchError, first, Observable, Subscription, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -25,7 +26,7 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
+import { DefaultExpressions } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";

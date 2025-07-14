@@ -1,4 +1,4 @@
-import { UNICODE_GREEK_LOWERCASE_PSI } from "../utils/utils";
+import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
 import { DataExpressionId } from "./expression-id";
 
 export class ShortName {

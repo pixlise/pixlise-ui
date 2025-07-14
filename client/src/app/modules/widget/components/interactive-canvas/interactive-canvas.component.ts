@@ -32,7 +32,7 @@ import { Observable, ReplaySubject, Subject, Subscription, of } from "rxjs";
 import { tap } from "rxjs/operators";
 
 import { addVectors, Point, Rect } from "src/app/models/Geometry";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 // import { LayoutService } from "src/app/services/layout.service";
 
 export class CanvasParams {

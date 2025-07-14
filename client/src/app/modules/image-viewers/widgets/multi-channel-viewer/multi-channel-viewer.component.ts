@@ -9,8 +9,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanImagePurpose } from "src/app/generated-protos/image";

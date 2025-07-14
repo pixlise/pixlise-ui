@@ -70,6 +70,7 @@ import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-b
 import { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 import { MatMenuModule } from "@angular/material/menu";
 import { MagicLinkComponent } from "./components/pages/magiclink/magiclink.component";
+//import { AnalysisLayoutService } from "./services/analysis-layout.service";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -95,6 +96,7 @@ export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-b
 export { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 export { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
 export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
+export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
 
 @NgModule({

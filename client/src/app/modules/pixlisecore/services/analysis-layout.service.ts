@@ -1,19 +1,19 @@
 import { Injectable, OnDestroy } from "@angular/core";
-import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, forkJoin, map, of, timer } from "rxjs";
+import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../../analysis/models/sidebar.model";
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, forkJoin, map, of } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
-import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
+import { APICachedDataService } from "./apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { APIDataService, SelectionService, SnackbarService } from "../pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
+import { createDefaultScreenConfiguration, WidgetReference } from "../../analysis/models/screen-configuration.model";
 import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq, WidgetMetadataGetReq, WidgetMetadataGetResp, WidgetMetadataWriteReq } from "src/app/generated-protos/widget-data-msgs";
-import { WSError } from "../../pixlisecore/services/wsMessageHandler";
+import { WSError } from "./wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -29,11 +29,11 @@ import { PredefinedROIID } from "../../../models/RegionOfInterest";
 import { ScanImage } from "../../../generated-protos/image";
 import { EnvConfigurationInitService } from "../../../services/env-configuration-init.service";
 import { ReviewerMagicLinkLoginReq } from "../../../generated-protos/user-management-msgs";
-import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
+import { APIEndpointsService } from "./apiendpoints.service";
 import { HttpClient } from "@angular/common/http";
 import { UserOptionsService } from "../../settings/settings.module";
 import { MemoiseDeleteByRegexReq } from "../../../generated-protos/memoisation-msgs";
-import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
+import { MemoisationService } from "./memoisation.service";
 
 export class DefaultExpressions {
   constructor(

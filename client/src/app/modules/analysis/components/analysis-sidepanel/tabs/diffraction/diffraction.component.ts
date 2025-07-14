@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { forkJoin, mergeMap, Subscription, map, switchMap, tap, catchError, throwError, Observable, of, from } from "rxjs";
+import { forkJoin, Subscription, map, switchMap, tap, catchError, throwError, Observable, of, from } from "rxjs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
@@ -47,14 +47,13 @@ import {
   HistogramData,
   HistogramSelectionOwner,
 } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { ExpressionDataSource } from "src/app/modules/pixlisecore/models/expression-data-source";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-import { SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";

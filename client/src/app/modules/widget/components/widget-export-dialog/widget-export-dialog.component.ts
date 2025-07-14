@@ -43,10 +43,9 @@ import {
 import { MatSelectChange } from "@angular/material/select";
 import { ROIItemSummary } from "../../../../generated-protos/roi";
 import { DataExpression } from "../../../../generated-protos/expressions";
-import { SnackbarService, WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SnackbarService, WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 import { makeValidFileName } from "src/app/utils/utils";
 import { WidgetLayoutConfiguration } from "../../../../generated-protos/screen-configuration";
-import { AnalysisLayoutService } from "../../../analysis/analysis.module";
 import { WidgetComponent } from "../widget/widget.component";
 import html2canvas from "html2canvas";
 
