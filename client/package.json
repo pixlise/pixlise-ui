@@ -56,7 +56,7 @@
     "ts-proto": "^1.150.0",
     "tslib": "^2.3.0",
     "voronoi": "^1.0.0",
-    "zone.js": "~0.14.0"
+    "zone.js": "~0.14.10"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^16.1.0",
