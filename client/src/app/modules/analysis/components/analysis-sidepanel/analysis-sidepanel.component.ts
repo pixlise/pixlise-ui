@@ -1,7 +1,7 @@
 import { Component, ComponentRef, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { SidebarTabItem, SidebarViewShortcut } from "../../models/sidebar.model";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { UserOptionsService } from "src/app/modules/settings/settings.module";
 import { Subscription } from "rxjs";
 
 @Component({

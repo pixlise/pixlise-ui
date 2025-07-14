@@ -75,6 +75,7 @@ export { RouteNotFoundComponent } from "./components/pages/route-not-found/route
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
+export { APICachedDataService } from "./services/apicacheddata.service";
 export { SnackbarService } from "./services/snackbar.service";
 export { UsersService } from "./services/users.service";
 export { ContextImageDataService } from "./services/context-image-data.service";
@@ -92,6 +93,9 @@ export { UserIconComponent } from "./components/atoms/user-icon/user-icon.compon
 export { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 export { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
+export { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
+export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
+
 
 @NgModule({
   declarations: [

@@ -160,10 +160,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "pixlise:build:production"
+              "buildTarget": "pixlise:build:production"
             },
             "development": {
-              "browserTarget": "pixlise:build:development"
+              "buildTarget": "pixlise:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -171,7 +171,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "pixlise:build"
+            "buildTarget": "pixlise:build"
           }
         },
         "test": {

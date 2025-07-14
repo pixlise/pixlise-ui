@@ -27,9 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// @import "@angular/material/theming";
 @use "@angular/material" as mat;
-@import "@angular/material/theming";
+//@import "@angular/material/theming";
 
 @import "variables.scss";
 
@@ -61,11 +60,11 @@ Background - Colors used for element backgrounds.
 // (imported above). For each palette, you can optionally specify a default, lighter, and darker
 // hue. Available color palettes: https://material.io/design/color/
 // Also useful: https://material.io/design/color/#tools-for-picking-colors
-$pixlise-app-primary: mat.define-palette($mat-grey, 900, 900, 900);
-$pixlise-app-accent: mat.define-palette($mat-yellow, A100);
+$pixlise-app-primary: mat.define-palette(mat.$grey-palette, 900, 900, 900);
+$pixlise-app-accent: mat.define-palette(mat.$yellow-palette, A100);
 
 // The warn palette is optional (defaults to red).
-$pixlise-app-warn: mat.define-palette($mat-red);
+$pixlise-app-warn: mat.define-palette(mat.$red-palette);
 
 // Create the theme object (a Sass map containing all of the palettes).
 $pixlise-app-theme: mat.define-dark-theme(
@@ -84,5 +83,5 @@ $pixlise-app-theme: mat.define-dark-theme(
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-@include angular-material-theme($pixlise-app-theme);
+//@include angular-material-theme($pixlise-app-theme);
 @include mat.typography-hierarchy($pixlise-typography);

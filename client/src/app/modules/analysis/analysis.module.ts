@@ -55,9 +55,6 @@ const APP_ROUTES: Routes = [
   declarations: [
     AnalysisPageComponent,
     NewTabPageComponent,
-    AnalysisSidepanelComponent,
-    ROITabComponent,
-    MistROIComponent,
     MistRoiConvertComponent,
     MistRoiUploadComponent,
     ScanConfigurationTabComponent,
@@ -71,6 +68,9 @@ const APP_ROUTES: Routes = [
     ExportTabComponent,
     WorkspaceConfigurationTabComponent,
     ReplaceScanDialogComponent,
+    ROITabComponent,
+    MistROIComponent,
+    AnalysisSidepanelComponent,
   ],
   imports: [
     CommonModule,

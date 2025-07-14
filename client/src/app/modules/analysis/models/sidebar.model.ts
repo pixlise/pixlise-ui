@@ -1,11 +1,11 @@
-import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
+import { ScanConfigurationTabComponent } from "../components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
 import { MistROIComponent } from "../components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
 import { ROITabComponent } from "../components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { DiffractionTabComponent } from "../components/analysis-sidepanel/tabs/diffraction/diffraction.component";
 import { SelectionComponent } from "../components/analysis-sidepanel/tabs/selection/selection.component";
 import { MultiQuantComponent } from "../components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
-import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
-import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
+import { RoughnessComponent } from "../components/analysis-sidepanel/tabs/roughness/roughness.component";
+import { ExportTabComponent } from "../components/analysis-sidepanel/tabs/export/export.component";
 import { WorkspaceConfigurationTabComponent } from "../components/analysis-sidepanel/tabs/workspace-configuration/workspace-configuration.component";
 
 export interface SidebarTabItem {
