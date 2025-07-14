@@ -8,6 +8,7 @@ import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/c
 import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import {
+  DefaultExpressions,
   AnalysisLayoutService,
   DataSourceParams,
   SelectionService,
@@ -44,7 +45,6 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
-import { DefaultExpressions } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(

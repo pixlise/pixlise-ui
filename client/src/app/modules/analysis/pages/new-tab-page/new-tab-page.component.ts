@@ -1,9 +1,10 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
-import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
-import { Subscription } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
-import { TabLinks } from "../../../../models/TabLinks";
+import { Subscription } from "rxjs";
+
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
+import { TabLinks } from "src/app/models/TabLinks";
 
 @Component({
   selector: "app-new-tab-page",

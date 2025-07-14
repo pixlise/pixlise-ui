@@ -6,6 +6,7 @@ import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/c
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import {
+  DefaultExpressions,
   AnalysisLayoutService,
   DataSourceParams,
   DataUnit,
@@ -28,7 +29,6 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { DefaultExpressions } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import {
   WidgetExportData,

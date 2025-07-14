@@ -29,20 +29,19 @@
 
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { catchError, combineLatest, forkJoin, map, Observable, of, shareReplay, Subject, Subscription, switchMap, take } from "rxjs";
+import { catchError, combineLatest, forkJoin, map, Observable, of, Subject, Subscription, switchMap, take } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { MinMax } from "src/app/models/BasicTypes";
-import { distanceBetweenPoints, distanceSquaredBetweenPoints, Point } from "src/app/models/Geometry";
-import { RGBA } from "src/app/utils/colours";
-import { xor_sum } from "src/app/utils/utils";
 import { VariogramDrawer } from "./drawer";
 import { VariogramInteraction } from "./interaction";
 import { VariogramModel } from "./model";
+import { VariogramChartExporter } from "./variogram-chart-exporter";
 import { VariogramData, VariogramExportPoint, VariogramExportRawPoint, VariogramPoint, VariogramPointGroup, VariogramScanMetadata } from "./vario-data";
-import { PanZoom } from "../../../widget/components/interactive-canvas/pan-zoom";
-import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "../../../widget/components/interactive-canvas/interactive-canvas.component";
-import { SliderValue } from "../../../pixlisecore/components/atoms/slider/slider.component";
+
+import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import {
+  AnalysisLayoutService,
+  APICachedDataService,
+  DefaultExpressions,
   DataSourceParams,
   DataUnit,
   RegionDataResults,
@@ -50,34 +49,40 @@ import {
   SnackbarService,
   WidgetDataService,
   WidgetKeyItem,
-} from "../../../pixlisecore/pixlisecore.module";
-import { BaseWidgetModel } from "../../../widget/models/base-widget.model";
-import { AnalysisLayoutService, APICachedDataService } from "../../../pixlisecore/pixlisecore.module";
-import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "../../../roi/components/roi-picker/roi-picker.component";
-import { VariogramState, VisibleROI } from "../../../../generated-protos/widget-data";
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   ExpressionPickerComponent,
   ExpressionPickerData,
   ExpressionPickerResponse,
-} from "../../../expressions/components/expression-picker/expression-picker.component";
-import { ROIService } from "../../../roi/services/roi.service";
-import { ExpressionsService } from "../../../expressions/services/expressions.service";
-import { DataExpression } from "../../../../generated-protos/expressions";
-import { getExpressionShortDisplayName } from "../../../../expression-language/expression-short-name";
-import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "../../../../generated-protos/scan-beam-location-msgs";
-import { ScanEntryReq, ScanEntryResp } from "../../../../generated-protos/scan-entry-msgs";
-import { DetectorConfigReq, DetectorConfigResp } from "../../../../generated-protos/detector-config-msgs";
-import { ImageBeamLocationsResp } from "../../../../generated-protos/image-beam-location-msgs";
-import { ScanListReq, ScanListResp } from "../../../../generated-protos/scan-msgs";
-import { ScanItem } from "../../../../generated-protos/scan";
-import { ScanEntry } from "../../../../generated-protos/scan-entry";
-import { Coordinate3D } from "../../../../generated-protos/scan-beam-location";
-import { PredefinedROIID } from "../../../../models/RegionOfInterest";
-import { DefaultExpressions } from "../../../pixlisecore/services/analysis-layout.service";
-import { ContextImageScanModelGenerator } from "../../../image-viewers/widgets/context-image/context-image-scan-model-generator";
-import { BuiltInTags } from "../../../tags/models/tag.model";
-import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "../../../widget/components/widget-export-dialog/widget-export-model";
-import { VariogramChartExporter } from "./variogram-chart-exporter";
+} from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
+import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
+
+import { DataExpression } from "src/app/generated-protos/expressions";
+import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
+import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
+import { ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanEntry } from "src/app/generated-protos/scan-entry";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { VariogramState, VisibleROI } from "src/app/generated-protos/widget-data";
+
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { MinMax } from "src/app/models/BasicTypes";
+import { distanceBetweenPoints, distanceSquaredBetweenPoints, Point } from "src/app/models/Geometry";
+import { RGBA } from "src/app/utils/colours";
+import { xor_sum } from "src/app/utils/utils";
+
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
+import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { ContextImageScanModelGenerator } from "src/app/modules/image-viewers/widgets/context-image/context-image-scan-model-generator";
+import { BuiltInTags } from "src/app/modules/tags/models/tag.model";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 
 export type ScanLocation = {
   id: number;

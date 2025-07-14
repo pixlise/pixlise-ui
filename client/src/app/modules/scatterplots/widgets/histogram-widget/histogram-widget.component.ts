@@ -6,6 +6,7 @@ import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/c
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import {
+  DefaultExpressions,
   AnalysisLayoutService,
   DataSourceParams,
   DataUnit,
@@ -39,7 +40,6 @@ import {
   WidgetExportRequest,
   WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { DefaultExpressions } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 
 @Component({
   selector: "histogram-widget",

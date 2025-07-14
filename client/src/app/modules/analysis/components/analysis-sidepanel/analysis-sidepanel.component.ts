@@ -2,10 +2,10 @@ import { Component, ComponentRef, OnDestroy, OnInit, ViewChild, ViewContainerRef
 
 import { Subscription } from "rxjs";
 
-import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserOptionsService } from "src/app/modules/settings/settings.module";
 
-import { SidebarTabItem, SidebarViewShortcut } from "../../models/sidebar.model";
+import { SidebarTabItem, SidebarViewShortcut } from "src/app/modules/analysis/models/sidebar.model";
 
 
 @Component({

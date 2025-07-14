@@ -96,7 +96,7 @@ export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-b
 export { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
 export { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
 export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
-export { AnalysisLayoutService } from "./services/analysis-layout.service";
+export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./services/analysis-layout.service";
 
 
 @NgModule({
