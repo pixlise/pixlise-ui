@@ -11,19 +11,33 @@ import {
   AfterContentInit,
   ChangeDetectorRef,
 } from "@angular/core";
-import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "../../models/widgets.model";
-import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
-import { WidgetData } from "src/app/generated-protos/widget-data";
-import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { AnalysisLayoutService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { catchError, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
-import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+
+import { catchError, map, Observable, Subscription, switchMap, tap, throwError } from "rxjs";
+
+import {
+  WIDGETS,
+  WidgetConfiguration,
+  WidgetControlConfiguration,
+  WidgetToolbarButtonConfiguration,
+  WidgetType,
+  getWidgetComponent,
+} from "src/app/modules/widget/models/widgets.model";
+import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
+
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WidgetData } from "src/app/generated-protos/widget-data";
+
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { AnalysisLayoutService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
+
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+
 
 const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
@@ -398,10 +412,14 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     this.settingsGroups = this.groupButtonsBySettingGroupTitle([...this.topToolbarButtons, ...this.bottomToolbarButtons]);
   }
 
-  copyConfiguration() {
-    return {
-      ...WIDGETS[this.activeWidget],
-    };
+  private copyConfiguration(): Observable<WidgetConfiguration> {
+    return getWidgetComponent(this.activeWidget).pipe(
+      map(widgetComp => {
+        const widgetCfg = WIDGETS[this.activeWidget as WidgetType];
+        widgetCfg.widgetComponent = widgetComp;
+        return widgetCfg;
+      })
+    );
   }
 
   onOpenExport() {
@@ -454,89 +472,92 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       this._currentWidgetRef = null;
     }
 
-    this.widgetConfiguration = this.copyConfiguration();
-    if (!this.widgetConfiguration!.component || !this.currentWidget) {
-      console.warn("Widget component or container not found");
-      return;
-    }
+    this.copyConfiguration().subscribe((widgetConfig: WidgetConfiguration) => {
+      this.widgetConfiguration = widgetConfig;
 
-    this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.component);
-
-    if (this._currentWidgetRef?.instance) {
-      // Set the widget id
-      this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
-      this._currentWidgetRef.instance._ref = this._currentWidgetRef;
-      this._currentWidgetRef.instance._isWidgetHighlighted = this.isWidgetHighlighted;
-      this._currentWidgetRef.instance._exportMode = this.exportMode;
-
-      if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
-        this._subs.add(
-          this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
-            this.widgetConfiguration!.controlConfiguration = config;
-            this.initOverflowState();
-          })
-        );
+      if (!this.widgetConfiguration!.widgetComponent || !this.currentWidget) {
+        console.warn("Widget component or container not found");
+        return;
       }
 
-      if (this._currentWidgetRef.instance.onWidgetHighlight) {
-        this._subs.add(
-          this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
-            this.isWidgetHighlighted = isWidgetHighlighted;
-          })
-        );
+      this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.widgetComponent);
+
+      if (this._currentWidgetRef?.instance) {
+        // Set the widget id
+        this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
+        this._currentWidgetRef.instance._ref = this._currentWidgetRef;
+        this._currentWidgetRef.instance._isWidgetHighlighted = this.isWidgetHighlighted;
+        this._currentWidgetRef.instance._exportMode = this.exportMode;
+
+        if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
+          this._subs.add(
+            this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
+              this.widgetConfiguration!.controlConfiguration = config;
+              this.initOverflowState();
+            })
+          );
+        }
+
+        if (this._currentWidgetRef.instance.onWidgetHighlight) {
+          this._subs.add(
+            this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
+              this.isWidgetHighlighted = isWidgetHighlighted;
+            })
+          );
+        }
+
+        if (this._currentWidgetRef.instance.onWidgetLoading) {
+          this._subs.add(
+            this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
+              this.isWidgetDataError = false;
+              this.widgetDataErrorMessage = "";
+              this.isWidgetDataLoading = isWidgetDataLoading;
+            })
+          );
+        }
+
+        if (this._currentWidgetRef.instance.onWidgetDataErrorMessage) {
+          this._subs.add(
+            this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
+              this.isWidgetDataLoading = false;
+              this.isWidgetDataError = !!widgetDataErrorMessage;
+              this.widgetDataErrorMessage = widgetDataErrorMessage;
+            })
+          );
+        }
+
+        if (this._currentWidgetRef.instance.widgetData$) {
+          // Set the widget data stored for this location
+          this._currentWidgetRef.instance.widgetData$.next(this.widgetLayoutConfig.data?.[this.widgetConfiguration.dataKey]);
+        }
+
+        if (this._currentWidgetRef.instance.onSaveWidgetData) {
+          this._subs.add(
+            this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
+              if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId || this.exportMode) {
+                // Don't save if the widget id is not set, if it's a preview widget, or if it's in export mode
+                return;
+              }
+
+              const data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
+              if (this.widgetConfiguration?.dataKey) {
+                data[this.widgetConfiguration.dataKey] = widgetData;
+                this._analysisLayoutService.writeWidgetData(data);
+              }
+            })
+          );
+        }
+
+        if (this._currentWidgetRef.instance.onExportWidgetData) {
+          this._subs.add(
+            this._currentWidgetRef.instance.onExportWidgetData.subscribe(() => {
+              this.onOpenExport();
+            })
+          );
+        }
       }
 
-      if (this._currentWidgetRef.instance.onWidgetLoading) {
-        this._subs.add(
-          this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
-            this.isWidgetDataError = false;
-            this.widgetDataErrorMessage = "";
-            this.isWidgetDataLoading = isWidgetDataLoading;
-          })
-        );
-      }
-
-      if (this._currentWidgetRef.instance.onWidgetDataErrorMessage) {
-        this._subs.add(
-          this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
-            this.isWidgetDataLoading = false;
-            this.isWidgetDataError = !!widgetDataErrorMessage;
-            this.widgetDataErrorMessage = widgetDataErrorMessage;
-          })
-        );
-      }
-
-      if (this._currentWidgetRef.instance.widgetData$) {
-        // Set the widget data stored for this location
-        this._currentWidgetRef.instance.widgetData$.next(this.widgetLayoutConfig.data?.[this.widgetConfiguration.dataKey]);
-      }
-
-      if (this._currentWidgetRef.instance.onSaveWidgetData) {
-        this._subs.add(
-          this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
-            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId || this.exportMode) {
-              // Don't save if the widget id is not set, if it's a preview widget, or if it's in export mode
-              return;
-            }
-
-            const data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
-            if (this.widgetConfiguration?.dataKey) {
-              data[this.widgetConfiguration.dataKey] = widgetData;
-              this._analysisLayoutService.writeWidgetData(data);
-            }
-          })
-        );
-      }
-
-      if (this._currentWidgetRef.instance.onExportWidgetData) {
-        this._subs.add(
-          this._currentWidgetRef.instance.onExportWidgetData.subscribe(() => {
-            this.onOpenExport();
-          })
-        );
-      }
-    }
-
-    this._changeDetector.detectChanges();
+      this._changeDetector.detectChanges();
+    });
   }
 }
