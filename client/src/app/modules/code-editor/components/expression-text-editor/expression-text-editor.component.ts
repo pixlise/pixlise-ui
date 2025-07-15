@@ -27,23 +27,22 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChange, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
+
 import { Subscription } from "rxjs";
-// import { DataExpression } from "src/app/models/Expression";
-import { ObjectCreator } from "src/app/models/BasicTypes";
+
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
-import { LuaRuntimeError } from "../../models/editor-config";
+
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { UserInfo } from "src/app/generated-protos/user";
-import { MONACO_LUA_LANGUAGE_NAME, MonacoEditorService } from "../../services/monaco-editor.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { DataModuleGetReq } from "src/app/generated-protos/module-msgs";
+
+import { LuaRuntimeError } from "src/app/modules/code-editor/models/editor-config";
+import { MONACO_LUA_LANGUAGE_NAME, MonacoEditorService } from "src/app/modules/code-editor/services/monaco-editor.service";
+
 import { DataModule } from "src/app/generated-protos/modules";
 import { SemanticVersion } from "src/app/generated-protos/version";
-// import { AuthenticationService } from "src/app/services/authentication.service";
-// import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
-// import { LuaRuntimeError } from "src/app/routes/dataset/code-editor/editor-config";
+import { UserInfo } from "src/app/generated-protos/user";
+import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
 
 export class DataExpressionModule {
   allVersions: SemanticVersion[] = [];

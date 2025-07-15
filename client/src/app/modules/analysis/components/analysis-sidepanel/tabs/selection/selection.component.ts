@@ -9,7 +9,7 @@ import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pix
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { UserOptionsService } from "src/app/modules/settings/settings.module";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 const emptySelectionDescription = "Empty";
 

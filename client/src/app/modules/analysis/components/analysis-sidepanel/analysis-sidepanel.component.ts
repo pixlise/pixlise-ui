@@ -3,7 +3,7 @@ import { Component, ComponentRef, OnDestroy, OnInit, ViewChild, ViewContainerRef
 import { Subscription } from "rxjs";
 
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { UserOptionsService } from "src/app/modules/settings/settings.module";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 import { SidebarTabItem, SidebarViewShortcut } from "src/app/modules/analysis/models/sidebar.model";
 

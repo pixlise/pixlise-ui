@@ -1,9 +1,12 @@
 import { Injectable } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
 
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { ReplaySubject } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
+
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
 import {
   UserNotificationSettingsReq,
   UserNotificationSettingsResp,
@@ -12,12 +15,20 @@ import {
 } from "src/app/generated-protos/user-notification-setting-msgs";
 import { UserDetailsReq, UserDetailsResp, UserDetailsWriteReq, UserDetailsWriteResp } from "src/app/generated-protos/user-msgs";
 import { UserDetails, UserInfo } from "src/app/generated-protos/user";
+
+import { FeatureRequest, PermissionsModel } from "src/app/modules/settings/models/permissions.model";
+import {
+  NotificationConfig,
+  NotificationMethod,
+  NotificationSetting,
+  NotificationSubscriptions,
+  NotificationTopic,
+} from "src/app/modules/settings/models/notification.model";
+
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
-import { HttpClient } from "@angular/common/http";
 import { makeHeaders } from "src/app/utils/api-helpers";
-import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from "../models/notification.model";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
-import { FeatureRequest, PermissionsModel } from "../models/permissions.model";
+
 
 @Injectable({
   providedIn: "root",

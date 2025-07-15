@@ -1,18 +1,21 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { UserInfo } from "src/app/generated-protos/user";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { CommonModule } from "@angular/common";
+
+import { Subscription } from "rxjs";
+
+import { UserInfo } from "src/app/generated-protos/user";
+import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
+
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DataCollectionDialogComponent } from "src/app/modules/settings/components/data-collection-dialog/data-collection-dialog.component";
 import { NotificationSetting, NotificationSubscriptions, NotificationTopic } from "src/app/modules/settings/models/notification.model";
-import { CommonModule } from "@angular/common";
 import { PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImageUploaderDialogComponent } from "src/app/modules/settings/components/image-uploader-dialog/image-uploader-dialog.component";
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
-import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { SnackbarDataItem } from "src/app/modules/pixlisecore/models/snackbar-data";
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
-import { Subscription } from "rxjs";
 
 @Component({
   selector: "app-settings-sidebar",

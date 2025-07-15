@@ -31,17 +31,21 @@ import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MatOptionSelectionChange } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MatSelectChange } from "@angular/material/select";
+
 import { combineLatest, Observable, of, Subscription } from "rxjs";
+
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { APIDataService } from "src/app/modules/pixlisecore/services/apidata.service";
+import { SnackbarService } from "src/app/modules/pixlisecore/services/snackbar.service";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
+import { ObjectEditAccessReq, ObjectEditAccessResp } from "src/app/generated-protos/ownership-access-msgs";
+import { ReviewerMagicLinkCreateReq } from "src/app/generated-protos/user-management-msgs";
 import { ObjectType, OwnershipItem, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
 import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { UserGroupInfo } from "src/app/generated-protos/user-group";
-import { GroupsService, UserOptionsService } from "src/app/modules/settings/settings.module";
-import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ObjectEditAccessReq, ObjectEditAccessResp } from "../../../../../../generated-protos/ownership-access-msgs";
-import { APIDataService } from "../../../../services/apidata.service";
-import { SnackbarService } from "../../../../services/snackbar.service";
-import { ReviewerMagicLinkCreateReq } from "../../../../../../generated-protos/user-management-msgs";
-import { EnvConfigurationInitService } from "../../../../../../services/env-configuration-init.service";
 
 export type SharingSubItem = {
   id: string;

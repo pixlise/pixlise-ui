@@ -13,7 +13,7 @@ import { SnackbarService } from "./snackbar.service";
 import { APIEndpointsService } from "./apiendpoints.service";
 import { MemoisationService } from "./memoisation.service";
 
-import { UserOptionsService } from "src/app/modules/settings/settings.module";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 

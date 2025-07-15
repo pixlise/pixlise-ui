@@ -31,13 +31,16 @@ import { Component, Inject, OnInit } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 
 import papa from "papaparse";
+
+import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
+import { UserGroupList } from "src/app/generated-protos/ownership-access";
 import { ROIItem } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { UserGroupInfo, UserGroupRelationship } from "../../../../../../../generated-protos/user-group";
-import { UserGroupList } from "../../../../../../../generated-protos/ownership-access";
+
 import { GroupsService, UserOptionsService } from "src/app/modules/settings/settings.module";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
+
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];

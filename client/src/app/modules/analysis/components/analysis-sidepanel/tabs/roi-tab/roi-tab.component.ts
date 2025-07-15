@@ -29,16 +29,19 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
+
 import { Subscription } from "rxjs";
+
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { AnalysisLayoutService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { UserOptionsService } from "src/app/modules/settings/settings.module";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { Colours } from "src/app/utils/colours";
 
 export type HighlightedROIs = {
