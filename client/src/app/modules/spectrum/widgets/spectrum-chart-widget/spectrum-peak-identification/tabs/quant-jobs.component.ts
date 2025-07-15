@@ -21,7 +21,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import {
   WidgetExportDialogData,

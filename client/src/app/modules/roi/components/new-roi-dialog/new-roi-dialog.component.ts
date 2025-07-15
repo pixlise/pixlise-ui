@@ -29,16 +29,14 @@
 
 import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { string } from "mathjs";
-import { Observable, Subscription, combineLatest, map, of, scan, switchMap } from "rxjs";
-import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
+import { Observable, Subscription, combineLatest, map, of, switchMap } from "rxjs";
+import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { ROIItem } from "src/app/generated-protos/roi";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ContextImageScanModelGenerator, PMCClusters } from "src/app/modules/image-viewers/widgets/context-image/context-image-scan-model-generator";
-import { ContextImageDataService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 

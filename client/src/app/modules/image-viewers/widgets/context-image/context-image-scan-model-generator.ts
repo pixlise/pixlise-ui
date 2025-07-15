@@ -25,7 +25,8 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { radToDeg } from "src/app/utils/utils";
 import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { RGBA } from "src/app/utils/colours";
-import { ContextImageScanModel, convertLocationComponentToPixelPosition } from "./context-image-model";
+import { ContextImageScanModel } from "./context-image-model-internals";
+import { convertLocationComponentToPixelPosition } from "./context-image-model";
 import { environment } from "src/environments/environment";
 
 export class PMCClusters {

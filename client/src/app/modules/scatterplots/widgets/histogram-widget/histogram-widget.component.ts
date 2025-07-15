@@ -30,7 +30,7 @@ import {
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIService } from "../../../roi/services/roi.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { httpErrorToString } from "src/app/utils/utils";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";

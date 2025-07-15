@@ -36,10 +36,8 @@ import { Quantification } from "src/app/generated-protos/quantification";
 import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
-import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
+import { ImageMatchTransform } from "src/app/generated-protos/image";
 import { ExpressionExporter } from "src/app/expression-language/expression-export";
-import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
-import { LoadedSources } from "../../pixlisecore/services/widget-data.service";
 import { DataExpression } from "src/app/generated-protos/expressions";
 
 @Injectable({

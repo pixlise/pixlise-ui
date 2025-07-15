@@ -3,7 +3,7 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
-import { ContextImageDrawModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
+import { ContextImageDrawModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model-internals";
 import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 import { ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
 

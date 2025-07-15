@@ -6,7 +6,7 @@ import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { ScanItem } from "../../../../generated-protos/scan";
 

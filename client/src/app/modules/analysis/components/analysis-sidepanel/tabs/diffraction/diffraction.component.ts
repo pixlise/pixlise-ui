@@ -57,7 +57,7 @@ import { AnalysisLayoutService, SelectionService, SnackbarService, WidgetDataSer
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";

@@ -4,7 +4,7 @@ import { BehaviorSubject, Observable, defaultIfEmpty, map, mergeMap, of, switchM
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { APIDataService } from "../../pixlisecore/services/apidata.service";
 import { SnackbarService } from "../../pixlisecore/services/snackbar.service";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
 
 import {

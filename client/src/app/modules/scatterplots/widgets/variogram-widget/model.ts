@@ -28,20 +28,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Point, Rect } from "src/app/models/Geometry";
-// import { ChartAxis, LinearChartAxis } from "src/app/UI/atoms/interactive-canvas/chart-axis";
-// import { CursorId } from "src/app/UI/atoms/interactive-canvas/cursor-id";
-// import { CanvasParams } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
-// import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { HOVER_POINT_RADIUS, PLOT_POINTS_SIZE } from "src/app/utils/drawing";
 import { niceNum } from "src/app/utils/utils";
-import { VariogramData } from "./vario-data";
-import { CanvasParams } from "../../../widget/components/interactive-canvas/interactive-canvas.component";
-import { ChartAxis, LinearChartAxis } from "../../../widget/components/interactive-canvas/chart-axis";
-import { CursorId } from "../../../widget/components/interactive-canvas/cursor-id";
-import { PanZoom } from "../../../widget/components/interactive-canvas/pan-zoom";
-import { VisibleROI } from "../../../../generated-protos/widget-data";
-import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
-import { ScanDataIds, WidgetDataIds } from "../../../pixlisecore/models/widget-data-source";
+import { VariogramData } from "src/app/modules/scatterplots/widgets/variogram-widget/vario-data";
+import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { ChartAxis, LinearChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+
+import { VisibleROI } from "src/app/generated-protos/widget-data";
 
 // Recalc the scales
 const xMargin = 60;

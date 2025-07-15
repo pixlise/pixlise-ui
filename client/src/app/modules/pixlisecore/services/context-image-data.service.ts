@@ -2,20 +2,20 @@ import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
 import { APIEndpointsService } from "./apiendpoints.service";
 import { APICachedDataService } from "./apicacheddata.service";
-import { WidgetError } from "./widget-data.service";
+import { WidgetError, DataSourceParams, RegionDataResults } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { SnackbarService } from "./snackbar.service";
-import { WidgetDataService, DataSourceParams, RegionDataResults } from "./widget-data.service";
+import { WidgetDataService } from "./widget-data.service";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ColourRamp } from "src/app/utils/colours";
-import { ContextImageScanModelGenerator } from "../../image-viewers/widgets/context-image/context-image-scan-model-generator";
-import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "../../image-viewers/models/map-layer";
-import { ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/widgets/context-image/context-image-model";
+import { ContextImageScanModelGenerator } from "src/app/modules/image-viewers/widgets/context-image/context-image-scan-model-generator";
+import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "src/app/modules/image-viewers/models/map-layer";
+import { ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { ContextImageItemTransform } from "../../image-viewers/image-viewers.module";
+import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
 import { Point } from "src/app/models/Geometry";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
-import { PMCDataValues } from "../../../expression-language/data-values";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 
 import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
@@ -26,6 +26,7 @@ import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
+
 import { getPathBase } from "src/app/utils/utils";
 
 export type SyncedTransform = {
