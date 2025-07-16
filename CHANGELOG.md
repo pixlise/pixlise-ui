@@ -1,4 +1,10 @@
-## 4.70.0 (Latest)
+## 4.71.0 (LATEST)
+
+### Bug Fixes
+- Fixes issue with Variogram widget where custom expressions were not returning any values
+- Hides empty sections in widget picker if no widgets are available
+
+## 4.70.0 (2025-06-23)
 
 ### New Features
 - Updates all widget toolbars to have more consistent theming and layout
