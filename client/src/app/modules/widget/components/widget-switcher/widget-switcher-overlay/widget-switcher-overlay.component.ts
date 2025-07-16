@@ -93,6 +93,9 @@ export class WidgetSwitcherOverlayComponent implements OnInit, OnDestroy {
         widgets: this.widgetOptions.filter(widget => !XRF_WIDGET_IDS.includes(widget.id as WidgetType) && !RGBU_WIDGET_IDS.includes(widget.id as WidgetType)),
       },
     ];
+
+    // Remove empty sections
+    this.sections = this.sections.filter(section => section.widgets.length > 0);
   }
 
   ngOnDestroy(): void {
