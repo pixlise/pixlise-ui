@@ -3,6 +3,7 @@
 ### Bug Fixes
 - Fixes issue with Variogram widget where custom expressions were not returning any values
 - Hides empty sections in widget picker if no widgets are available
+- Fixes issue with quant table where it was breaking workspace layout
 
 ## 4.70.0 (2025-06-23)
 
