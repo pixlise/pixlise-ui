@@ -2,6 +2,10 @@ import { APP_INITIALIZER, ErrorHandler, NgModule } from "@angular/core";
 import { BrowserModule, Title } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
+import { provideRouter } from "@angular/router";
+import { provideAnimations } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
@@ -149,6 +153,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
 @NgModule({
   declarations: [AppComponent],
   imports: [
+    PIXLISECoreModule,
     ToolbarComponent,
     SettingsSidebarComponent,
     BrowserModule,
@@ -164,7 +169,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     CodeEditorModule,
     MapBrowserModule,
     SettingsModule,
-    PIXLISECoreModule,
     AuthModule.forRoot(),
   ],
   providers: [

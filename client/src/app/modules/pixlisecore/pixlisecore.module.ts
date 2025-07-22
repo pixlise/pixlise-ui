@@ -160,9 +160,19 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     LayoutPreviewBoxComponent,
     UserIconComponent,
     GroupIconComponent,
-    SearchableListComponent,
+    SearchableListComponent
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule, MatMenuModule],
+  imports: [
+    CommonModule,
+    OverlayModule,
+    MaterialModule,
+    FormsModule,
+    MatAutocompleteModule,
+    DragDropModule,
+    MatMenuModule,
+    DragDropModule,
+    MatMenuModule
+  ],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,
