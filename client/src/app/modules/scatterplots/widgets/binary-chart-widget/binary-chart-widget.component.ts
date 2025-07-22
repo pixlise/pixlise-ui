@@ -533,6 +533,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       widgetType: "binary-plot",
       widgetId: this._widgetId,
       allowEdit: true,
+      requiredExpressions: this.mdl.expressionIds,
     };
 
     const dialogRef = this.dialog.open(ReferencePickerComponent, dialogConfig);

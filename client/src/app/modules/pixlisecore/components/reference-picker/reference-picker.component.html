@@ -11,12 +11,29 @@
   <section class="columns">
     <section class="column browse">
       <div class="title">
-        <h4>References</h4>
+        <h4>References ({{ filteredReferences.length }})</h4>
         <push-button *ngIf="allowEdit" buttonStyle="outline" title="Add Reference" (onClick)="onAddReference()"> + Add Reference </push-button>
       </div>
-      <div class="references-list">
+
+      <div class="search-controls">
+        <div class="search-bar">
+          <filter-box placeholder="Search references..." (onFilterChanged)="onSearchChange($event)"> </filter-box>
+        </div>
+        <div class="filter-controls">
+          <push-button
+            buttonStyle="outline"
+            [matTooltip]="'Show only references with required expressions: ' + requiredExpressions.join(', ')"
+            matTooltipShowDelay="500"
+            [active]="showMatchingExpressionsOnly"
+            (onClick)="onToggleExpressionFilter()">
+            Has required expressions
+          </push-button>
+        </div>
+      </div>
+
+      <div class="references-list {{ filteredReferences.length === 0 ? 'no-results' : '' }}">
         <cdk-virtual-scroll-viewport [itemSize]="400" class="references-viewport">
-          <div *cdkVirtualFor="let reference of references; trackBy: trackByReferenceId" class="reference-item">
+          <div *cdkVirtualFor="let reference of filteredReferences; trackBy: trackByReferenceId" class="reference-item">
             <div class="reference-header">
               <div class="selection-checkbox">
                 <two-state-icon-button
@@ -156,6 +173,14 @@
           </div>
         </cdk-virtual-scroll-viewport>
       </div>
+
+      <div *ngIf="filteredReferences.length === 0" class="no-results">
+        <div class="no-results-content">
+          <span class="no-results-text">No references found</span>
+          <span class="no-results-hint" *ngIf="searchText">Try adjusting your search terms</span>
+          <span class="no-results-hint" *ngIf="showMatchingExpressionsOnly && !searchText">No references have all required expressions</span>
+        </div>
+      </div>
     </section>
 
     <section class="column selected-references">
@@ -178,7 +203,7 @@
                 <span class="pair-text">{{ pair.expression || "No expression" }}: {{ pair.value !== undefined ? pair.value : "-" }}</span>
               </div>
               <div *ngIf="reference.expressionValuePairs.length === 0" class="no-pairs-summary">
-                <span class="pair-text">No expression-value pairs</span>
+                <span class="pair-text">No expressions</span>
               </div>
             </div>
           </div>
@@ -188,7 +213,6 @@
   </section>
 
   <div class="button-container">
-    <div class="selection-summary">Selected: {{ selectedReferences.size }} reference(s)</div>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button buttonStyle="yellow" (onClick)="onSave()">Select References</push-button>
   </div>

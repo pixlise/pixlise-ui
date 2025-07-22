@@ -61,7 +61,8 @@
 
   .column {
     .title {
-      padding: 12px 16px;
+      height: 42px;
+      padding: 0 16px;
       background-color: #232829;
       border-bottom: 1px solid #545f64;
       display: flex;
@@ -80,6 +81,40 @@
         padding: 4px 12px;
       }
     }
+
+    .search-controls {
+      padding: 12px 16px;
+      background-color: #2a3037;
+      border-bottom: 1px solid #545f64;
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+
+      .search-bar {
+        width: 100%;
+
+        filter-box {
+          width: 100%;
+        }
+      }
+
+      .filter-controls {
+        display: flex;
+        align-items: center;
+
+        .filter-label {
+          color: rgb(var(--clr-gray-30));
+          font-size: 12px;
+          user-select: none;
+
+          .expression-count {
+            color: rgb(var(--clr-gray-40));
+            font-size: 11px;
+            font-style: italic;
+          }
+        }
+      }
+    }
   }
 
   .browse {
@@ -87,10 +122,41 @@
     border-right: 1px solid #545f64;
 
     .references-list {
-      height: 550px;
+      height: 516px;
+      &.no-results {
+        height: 0;
+      }
 
       .references-viewport {
         height: 100%;
+      }
+    }
+
+    .no-results {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 516px;
+      background: #232829;
+
+      .no-results-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+
+        .no-results-text {
+          color: rgb(var(--clr-gray-40));
+          font-size: 16px;
+          font-weight: 500;
+        }
+
+        .no-results-hint {
+          color: rgb(var(--clr-gray-50));
+          font-size: 12px;
+          font-style: italic;
+        }
       }
     }
 
@@ -132,6 +198,7 @@
 
             .field-content {
               display: flex;
+
               .title-input {
                 width: 100%;
                 font-size: 14px;
@@ -177,6 +244,7 @@
 
               .field-content {
                 display: flex;
+
                 .meta-input {
                   width: 100%;
                   font-size: 12px;
@@ -233,6 +301,7 @@
 
             .field-content {
               display: flex;
+
               .citation-input,
               .link-input {
                 width: 100%;
@@ -329,19 +398,10 @@
                 padding-left: 8px;
                 height: 100%;
 
-                .pair-label {
-                  display: block;
-                  color: rgb(var(--clr-gray-40));
-                  font-size: 9px;
-                  font-weight: 500;
-                  text-transform: uppercase;
-                  margin-bottom: 4px;
-                  letter-spacing: 0.5px;
-                }
-
                 .pair-content {
                   flex: 1;
                   display: flex;
+
                   push-button {
                     flex: 1;
                   }
@@ -376,7 +436,6 @@
                 display: flex;
                 align-items: center;
                 width: 80px;
-
                 height: 100%;
 
                 &.editing {
@@ -386,24 +445,10 @@
 
                 border-left: 1px solid #444c50;
 
-                .pair-label {
-                  display: flex;
-                  color: rgb(var(--clr-gray-40));
-                  font-size: 9px;
-                  font-weight: 500;
-                  text-transform: uppercase;
-                  margin-bottom: 4px;
-                  letter-spacing: 0.5px;
-                }
-
                 .pair-content {
                   display: flex;
                   justify-content: center;
                   flex: 1;
-
-                  push-button {
-                    flex: 1;
-                  }
 
                   .value-input {
                     width: 100%;
@@ -462,7 +507,7 @@
     flex: 2;
 
     .selected-list {
-      height: 550px;
+      height: 569px;
 
       .selected-viewport {
         height: 100%;
@@ -525,7 +570,7 @@
 .button-container {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   background-color: #202425;
   border-top: 1px solid #545f64;

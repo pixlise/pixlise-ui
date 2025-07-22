@@ -28,6 +28,7 @@ export interface ReferencePickerData {
   widgetId?: string;
   selectedReferences?: ReferenceData[];
   allowEdit?: boolean;
+  requiredExpressions?: string[];
 }
 
 export interface ReferencePickerResponse {
@@ -43,10 +44,14 @@ export class ReferencePickerComponent implements OnDestroy {
   private _subs = new Subscription();
 
   references: ReferenceData[] = [];
+  filteredReferences: ReferenceData[] = [];
   selectedReferences: Set<string> = new Set();
   allowEdit: boolean = false;
 
-  // For tracking current expression selection
+  searchText: string = "";
+  showMatchingExpressionsOnly: boolean = false;
+  requiredExpressions: string[] = [];
+
   private _currentExpressionSelection: { reference: ReferenceData; pairIndex: number } | null = null;
 
   constructor(
@@ -55,19 +60,19 @@ export class ReferencePickerComponent implements OnDestroy {
     private dialog: MatDialog
   ) {
     this.allowEdit = this.data.allowEdit || false;
+    this.requiredExpressions = this.data.requiredExpressions || [];
 
-    // Initialize with existing data or sample data
     this.references = this.data.selectedReferences || this.getSampleData();
 
-    // Initialize editing state for all references
     this.references.forEach(ref => (ref.isEditing = false));
 
-    // Mark initially selected references
     if (this.data.selectedReferences) {
       this.data.selectedReferences.forEach(ref => {
         this.selectedReferences.add(ref.id);
       });
     }
+
+    this.applyFilters();
   }
 
   ngOnDestroy(): void {
@@ -103,6 +108,21 @@ export class ReferencePickerComponent implements OnDestroy {
         ],
         isEditing: false,
       },
+      {
+        id: "3",
+        category: "Metamorphic",
+        group: "Gneiss",
+        mineralSampleName: "Sample ABC-123",
+        sourceCitation: "Smith et al. (2020)",
+        sourceLink: "https://doi.org/10.1000/xyz.2020.001",
+        expressionValuePairs: [
+          { expression: "SiO2", value: 65.8 },
+          { expression: "Al2O3", value: 15.2 },
+          { expression: "Fe2O3", value: 6.1 },
+          { expression: "MgO", value: 3.4 },
+        ],
+        isEditing: false,
+      },
     ];
   }
 
@@ -110,8 +130,56 @@ export class ReferencePickerComponent implements OnDestroy {
     return this.references.filter(ref => this.selectedReferences.has(ref.id));
   }
 
+  get matchingReferencesCount(): number {
+    return this.references.filter(ref => this.hasAllRequiredExpressions(ref)).length;
+  }
+
   trackByReferenceId(index: number, reference: ReferenceData): string {
     return reference.id;
+  }
+
+  onSearchChange(searchText: string): void {
+    this.searchText = searchText;
+    this.applyFilters();
+  }
+
+  onToggleExpressionFilter(): void {
+    this.showMatchingExpressionsOnly = !this.showMatchingExpressionsOnly;
+    this.applyFilters();
+  }
+
+  private applyFilters(): void {
+    let filtered = [...this.references];
+
+    if (this.searchText.trim()) {
+      const search = this.searchText.toLowerCase().trim();
+      filtered = filtered.filter(ref => this.matchesSearch(ref, search));
+    }
+
+    if (this.showMatchingExpressionsOnly) {
+      filtered = filtered.filter(ref => this.hasAllRequiredExpressions(ref));
+    }
+
+    this.filteredReferences = filtered;
+  }
+
+  private matchesSearch(reference: ReferenceData, searchText: string): boolean {
+    const searchableFields = [
+      reference.mineralSampleName,
+      reference.category,
+      reference.group,
+      reference.sourceCitation,
+      reference.sourceLink,
+      ...reference.expressionValuePairs.map(pair => pair.expression),
+      ...reference.expressionValuePairs.map(pair => pair.value?.toString() || ""),
+    ];
+
+    return searchableFields.some(field => field?.toLowerCase().includes(searchText));
+  }
+
+  private hasAllRequiredExpressions(reference: ReferenceData): boolean {
+    const referenceExpressions = reference.expressionValuePairs.map(pair => pair.expression);
+    return this.requiredExpressions.every(required => referenceExpressions.includes(required));
   }
 
   onToggleSelection(referenceId: string): void {
@@ -139,14 +207,16 @@ export class ReferencePickerComponent implements OnDestroy {
       sourceCitation: "",
       sourceLink: "",
       expressionValuePairs: [],
-      isEditing: true, // Start new references in edit mode
+      isEditing: true,
     };
     this.references.push(newReference);
+    this.applyFilters();
   }
 
   onDeleteReference(referenceId: string): void {
     this.references = this.references.filter(ref => ref.id !== referenceId);
     this.selectedReferences.delete(referenceId);
+    this.applyFilters();
   }
 
   onAddExpressionPair(reference: ReferenceData): void {
@@ -158,6 +228,7 @@ export class ReferencePickerComponent implements OnDestroy {
 
   onDeleteExpressionPair(reference: ReferenceData, index: number): void {
     reference.expressionValuePairs.splice(index, 1);
+    this.applyFilters();
   }
 
   onSelectExpression(reference: ReferenceData, pairIndex: number): void {
@@ -179,6 +250,7 @@ export class ReferencePickerComponent implements OnDestroy {
           const selectedExpression = response.selectedExpressions[0];
           if (this._currentExpressionSelection) {
             this._currentExpressionSelection.reference.expressionValuePairs[this._currentExpressionSelection.pairIndex].expression = selectedExpression.name;
+            this.applyFilters();
           }
         }
         this._currentExpressionSelection = null;
