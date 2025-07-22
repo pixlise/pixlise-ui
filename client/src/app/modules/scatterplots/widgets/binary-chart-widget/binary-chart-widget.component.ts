@@ -29,6 +29,7 @@ import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analy
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { ReferencePickerComponent, ReferencePickerData, ReferencePickerResponse } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
@@ -98,13 +99,13 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        // {
-        //   id: "refs",
-        //   type: "button",
-        //   title: "Refs",
-        //   tooltip: "Choose reference areas to display",
-        //   onClick: () => this.onReferences(),
-        // },
+        {
+          id: "refs",
+          type: "button",
+          title: "Refs",
+          tooltip: "Choose reference areas to display",
+          onClick: () => this.onReferences(),
+        },
         {
           id: "regions",
           type: "button",
@@ -526,7 +527,24 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     });
   }
 
-  onReferences() {}
+  onReferences() {
+    const dialogConfig = new MatDialogConfig<ReferencePickerData>();
+    dialogConfig.data = {
+      widgetType: "binary-plot",
+      widgetId: this._widgetId,
+      allowEdit: true,
+    };
+
+    const dialogRef = this.dialog.open(ReferencePickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ReferencePickerResponse) => {
+      if (result) {
+        console.log("Selected references:", result.selectedReferences);
+        // TODO: Store references and use them for plotting
+        // this.mdl.selectedReferences = result.selectedReferences;
+        // this.update();
+      }
+    });
+  }
   onToggleKey() {
     if (this.widgetControlConfiguration.topRightInsetButton) {
       this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
