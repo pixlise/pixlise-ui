@@ -34,6 +34,7 @@ import { LandingRouteName } from "../landing-page/landing-page.component";
 import { AboutUsRouteName } from "../about-us-page/about-us-page.component";
 
 @Component({
+  standalone: false,
   selector: "app-public-page",
   templateUrl: "./public-page.component.html",
   styleUrls: ["./public-page.component.scss"],

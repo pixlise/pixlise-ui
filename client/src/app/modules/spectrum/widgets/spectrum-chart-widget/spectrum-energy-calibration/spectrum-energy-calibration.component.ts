@@ -50,6 +50,7 @@ export class SpectrumEnergyCalibrationResult {
 }
 
 @Component({
+  standalone: false,
   selector: "spectrum-energy-calibration",
   templateUrl: "./spectrum-energy-calibration.component.html",
   styleUrls: ["./spectrum-energy-calibration.component.scss"],

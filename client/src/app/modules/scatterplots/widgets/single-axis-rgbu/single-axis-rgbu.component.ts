@@ -64,6 +64,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import { getScanIdFromImagePath } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "single-axis-rgbu",
   templateUrl: "./single-axis-rgbu.component.html",
   styleUrls: ["./single-axis-rgbu.component.scss"],

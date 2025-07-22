@@ -40,6 +40,7 @@ import { GroupsService } from "src/app/modules/settings/services/groups.service"
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 @Component({
+  standalone: false,
   selector: "app-user-menu-panel",
   templateUrl: "./user-menu-panel.component.html",
   styleUrls: ["./user-menu-panel.component.scss"],

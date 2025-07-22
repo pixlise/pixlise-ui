@@ -42,6 +42,7 @@ import { COLOURS, ColourOption } from "src/app/modules/roi/models/roi-colors";
 import { ReplaceScanDialogComponent, ReplaceScanDialogData } from "./replace-scan-dialog/replace-scan-dialog.component";
 
 @Component({
+  standalone: false,
   selector: "scan-configuration-item",
   templateUrl: "./scan-configuration-item.component.html",
   styleUrls: ["./scan-configuration-item.component.scss"],

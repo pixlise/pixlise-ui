@@ -58,6 +58,7 @@ export class MarkPosition {
 }
 
 @Component({
+  standalone: false,
   selector: "app-expression-editor",
   templateUrl: "./expression-editor.component.html",
   styleUrls: ["./expression-editor.component.scss"],

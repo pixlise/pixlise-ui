@@ -32,6 +32,7 @@ import { Component, Input } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
 @Component({
+  standalone: false,
   selector: "two-state-icon-button",
   templateUrl: "./two-state-icon-button.component.html",
   styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss"],

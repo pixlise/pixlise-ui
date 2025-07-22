@@ -15,6 +15,7 @@ class ContributorGroup {
 }
 
 @Component({
+  standalone: false,
   selector: "team-list",
   templateUrl: "./team-list.component.html",
   styleUrls: ["./team-list.component.scss"],

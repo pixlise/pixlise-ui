@@ -76,6 +76,7 @@ export type DiffractionExpressionResponse = {
 };
 
 @Component({
+  standalone: false,
   selector: "diffraction",
   templateUrl: "./diffraction.component.html",
   styleUrls: ["./diffraction.component.scss"],

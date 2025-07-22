@@ -36,6 +36,7 @@ import { ElementTileClickEvent } from "src/app/modules/pixlisecore/components/at
 import { SpectrumChartModel } from "../../spectrum-model";
 
 @Component({
+  standalone: false,
   selector: "fit-element-selection",
   templateUrl: "./fit-element-selection.component.html",
   styleUrls: ["./fit-element-selection.component.scss", "../spectrum-fit-container.component.scss"],

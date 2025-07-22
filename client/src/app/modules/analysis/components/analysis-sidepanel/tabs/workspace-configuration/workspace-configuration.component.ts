@@ -61,6 +61,7 @@ import { TabLinks } from "src/app/models/TabLinks";
 
 
 @Component({
+  standalone: false,
   selector: "workspace-configuration",
   templateUrl: "./workspace-configuration.component.html",
   styleUrls: ["./workspace-configuration.component.scss"],

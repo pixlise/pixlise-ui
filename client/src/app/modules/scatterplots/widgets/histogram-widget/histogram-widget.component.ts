@@ -42,6 +42,7 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "histogram-widget",
   templateUrl: "./histogram-widget.component.html",
   styleUrls: ["./histogram-widget.component.scss"],

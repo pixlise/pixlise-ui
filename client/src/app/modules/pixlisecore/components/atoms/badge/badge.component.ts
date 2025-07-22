@@ -32,6 +32,7 @@ import { Component, Input, OnInit } from "@angular/core";
 export type BadgeStyle = "notification" | "warning" | "error";
 
 @Component({
+  standalone: false,
   selector: "badge",
   templateUrl: "./badge.component.html",
   styleUrls: ["./badge.component.scss"],

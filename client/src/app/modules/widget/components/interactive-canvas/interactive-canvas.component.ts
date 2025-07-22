@@ -194,6 +194,7 @@ export interface CanvasWorldTransform {
 }
 
 @Component({
+  standalone: false,
   selector: "interactive-canvas",
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],

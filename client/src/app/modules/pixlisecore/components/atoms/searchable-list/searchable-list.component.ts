@@ -40,6 +40,7 @@ export type SearchableListItem = {
 };
 
 @Component({
+  standalone: false,
   selector: "searchable-list",
   templateUrl: "./searchable-list.component.html",
   styleUrls: ["./searchable-list.component.scss"],

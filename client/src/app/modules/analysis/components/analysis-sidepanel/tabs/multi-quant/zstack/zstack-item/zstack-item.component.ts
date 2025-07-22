@@ -43,6 +43,7 @@ export class ZStackItemForDisplay {
 }
 
 @Component({
+  standalone: false,
   selector: "zstack-item",
   templateUrl: "./zstack-item.component.html",
   styleUrls: ["./zstack-item.component.scss"],

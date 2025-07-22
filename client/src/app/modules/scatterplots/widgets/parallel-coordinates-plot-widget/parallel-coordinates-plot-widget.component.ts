@@ -65,6 +65,7 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-parallel-coordinates-plot-widget",
   templateUrl: "./parallel-coordinates-plot-widget.component.html",
   styleUrls: ["./parallel-coordinates-plot-widget.component.scss"],
@@ -1117,7 +1118,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     });
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     this.recalculateLines();
   }

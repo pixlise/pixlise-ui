@@ -49,6 +49,7 @@ export interface DataCell {
 }
 
 @Component({
+  standalone: false,
   selector: "expression-console",
   templateUrl: "./expression-console.component.html",
   styleUrls: ["./expression-console.component.scss"],

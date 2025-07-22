@@ -55,6 +55,7 @@ export type MapLayers = Map<string, ContextImageMapLayer[]>;
 export type ContextImageLayers = { mapLayers: MapLayers; regions: RegionMap };
 
 @Component({
+  standalone: false,
   selector: "app-context-image",
   templateUrl: "./context-image.component.html",
   styleUrls: ["./context-image.component.scss"],

@@ -42,6 +42,7 @@ export interface AddUserDialogData {
 export type Role = "viewer" | "editor";
 
 @Component({
+  standalone: false,
   selector: "app-add-subgroup-dialog",
   templateUrl: "./add-subgroup-dialog.component.html",
   styleUrls: ["./add-subgroup-dialog.component.scss"],

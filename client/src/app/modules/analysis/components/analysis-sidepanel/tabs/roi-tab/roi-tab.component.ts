@@ -51,6 +51,7 @@ export type HighlightedROIs = {
 };
 
 @Component({
+  standalone: false,
   selector: "roi-tab",
   templateUrl: "./roi-tab.component.html",
   styleUrls: ["./roi-tab.component.scss"],

@@ -13,6 +13,7 @@ export class SingleScanEnergyCalibration {
 }
 
 @Component({
+  standalone: false,
   selector: "single-scan-energy-calibration",
   templateUrl: "./single-scan-energy-calibration.component.html",
   styleUrls: ["./single-scan-energy-calibration.component.scss"],

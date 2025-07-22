@@ -72,6 +72,7 @@ const customActionIcons = {
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;
 
 @Component({
+  standalone: false,
   selector: "action-button",
   templateUrl: "./action-button.component.html",
   styleUrls: ["./action-button.component.scss"],

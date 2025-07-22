@@ -3,6 +3,7 @@ import { WidgetToolbarButtonConfiguration } from "../../models/widgets.model";
 import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 
 @Component({
+  standalone: false,
   selector: "widget-configuration-button",
   templateUrl: "./widget-configuration-button.component.html",
   styleUrls: ["./widget-configuration-button.component.scss"],

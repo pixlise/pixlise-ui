@@ -39,6 +39,7 @@ import { filterScans, sortScans } from "src/app/utils/search";
 import { getScanTitle, SentryHelper } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "scan-configuration",
   templateUrl: "./scan-configuration.component.html",
   styleUrls: ["./scan-configuration.component.scss"],

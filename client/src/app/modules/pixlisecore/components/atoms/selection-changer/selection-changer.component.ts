@@ -59,6 +59,7 @@ export class SelectionChangerImageInfo {
 }
 
 @Component({
+  standalone: false,
   selector: "selection-changer",
   templateUrl: "./selection-changer.component.html",
   styleUrls: ["./selection-changer.component.scss"],

@@ -9,6 +9,7 @@ import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module
 import { parseNumberRangeString } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "pmc-selector-dialog",
   templateUrl: "./pmc-selector-dialog.component.html",
   styleUrls: ["./pmc-selector-dialog.component.scss"],

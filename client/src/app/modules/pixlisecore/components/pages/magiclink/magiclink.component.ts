@@ -36,6 +36,7 @@ import { AnalysisLayoutService } from "../../../services/analysis-layout.service
 
 
 @Component({
+  standalone: false,
   selector: "app-magic-link",
   templateUrl: "./magiclink.component.html",
   styleUrls: ["./magiclink.component.scss"],

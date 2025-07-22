@@ -22,6 +22,7 @@ export interface DuplicateWorkspaceDialogResult {
 }
 
 @Component({
+  standalone: false,
   selector: "duplicate-workspace-dialog",
   templateUrl: "./duplicate-workspace-dialog.component.html",
   styleUrls: ["./duplicate-workspace-dialog.component.scss"],

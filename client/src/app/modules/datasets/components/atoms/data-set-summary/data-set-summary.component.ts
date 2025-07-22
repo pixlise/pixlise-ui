@@ -34,6 +34,7 @@ import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiend
 import { getScanTitle } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "data-set-summary",
   templateUrl: "./data-set-summary.component.html",
   styleUrls: ["./data-set-summary.component.scss"],

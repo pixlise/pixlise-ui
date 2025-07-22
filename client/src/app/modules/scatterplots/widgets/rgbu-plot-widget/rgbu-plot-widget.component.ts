@@ -61,6 +61,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import { RGBUPlotExporter } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-exporter";
 
 @Component({
+  standalone: false,
   selector: "rgbu-plot",
   templateUrl: "./rgbu-plot-widget.component.html",
   styleUrls: ["./rgbu-plot-widget.component.scss"],

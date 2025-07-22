@@ -32,6 +32,7 @@ import { MatDialogRef } from "@angular/material/dialog";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
+  standalone: false,
   selector: "app-data-collection-dialog",
   templateUrl: "./data-collection-dialog.component.html",
   styleUrls: ["./data-collection-dialog.component.scss"],

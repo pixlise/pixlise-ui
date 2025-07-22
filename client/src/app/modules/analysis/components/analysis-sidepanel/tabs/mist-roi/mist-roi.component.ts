@@ -42,6 +42,7 @@ import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-confi
 import { ScanItem } from "src/app/generated-protos/scan";
 
 @Component({
+  standalone: false,
   selector: "app-mist-roi",
   templateUrl: "./mist-roi.component.html",
   styleUrls: ["./mist-roi.component.scss"],

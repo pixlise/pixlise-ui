@@ -36,6 +36,7 @@ import { NumberButtonParams } from "../../atoms/number-button/number-button.comp
 import { MetaTagService } from "../../../services/meta-tag.service";
 
 @Component({
+  standalone: false,
   selector: "app-workflow-page",
   templateUrl: "./workflow-page.component.html",
   styleUrls: ["./workflow-page.component.scss"],

@@ -93,6 +93,7 @@ export class ImagePickerResult {
 }
 
 @Component({
+  standalone: false,
   selector: "image-options",
   templateUrl: "./image-options.component.html",
   styleUrls: ["./image-options.component.scss"],

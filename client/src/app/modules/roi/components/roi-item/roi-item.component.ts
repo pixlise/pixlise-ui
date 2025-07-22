@@ -20,6 +20,7 @@ export type SubItemOptionSection = {
 };
 
 @Component({
+  standalone: false,
   selector: "roi-item",
   templateUrl: "./roi-item.component.html",
   styleUrls: ["./roi-item.component.scss"],

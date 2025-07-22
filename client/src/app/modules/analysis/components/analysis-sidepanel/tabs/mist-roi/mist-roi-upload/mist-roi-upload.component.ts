@@ -69,6 +69,7 @@ export type ROIUploadSummary = {
 };
 
 @Component({
+  standalone: false,
   selector: "app-mist-roi-upload",
   templateUrl: "./mist-roi-upload.component.html",
   styleUrls: ["./mist-roi-upload.component.scss"],

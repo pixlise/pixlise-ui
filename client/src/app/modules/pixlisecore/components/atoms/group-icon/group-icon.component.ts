@@ -4,6 +4,7 @@ import { UserGroupInfo } from "../../../../../generated-protos/user-group";
 import { Subscription } from "rxjs";
 
 @Component({
+  standalone: false,
   selector: "group-icon",
   templateUrl: "./group-icon.component.html",
   styleUrls: ["./group-icon.component.scss"],

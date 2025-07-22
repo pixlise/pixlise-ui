@@ -73,6 +73,7 @@ export class TableData {
 }
 
 @Component({
+  standalone: false,
   selector: "table-view",
   templateUrl: "./table.component.html",
   styleUrls: ["./table.component.scss"],

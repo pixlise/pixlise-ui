@@ -9,6 +9,7 @@ import { SidebarTabItem, SidebarViewShortcut } from "src/app/modules/analysis/mo
 
 
 @Component({
+  standalone: false,
   selector: "analysis-sidepanel",
   templateUrl: "./analysis-sidepanel.component.html",
   styleUrls: ["./analysis-sidepanel.component.scss"],

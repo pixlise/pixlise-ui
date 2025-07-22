@@ -39,6 +39,7 @@ import {
 import { Observable } from "rxjs";
 
 @Component({
+  standalone: false,
   selector: "app-chord-diagram-widget",
   templateUrl: "./chord-diagram-widget.component.html",
   styleUrls: ["./chord-diagram-widget.component.scss"],

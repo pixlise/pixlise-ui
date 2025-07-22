@@ -54,6 +54,7 @@ export class QuantificationItemInfo {
 }
 
 @Component({
+  standalone: false,
   selector: "quantification-item",
   templateUrl: "./quantification-item.component.html",
   styleUrls: ["./quantification-item.component.scss"],

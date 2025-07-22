@@ -32,6 +32,7 @@ import {
 import { Observable } from "rxjs";
 
 @Component({
+  standalone: false,
   selector: "app-multi-channel-viewer",
   templateUrl: "./multi-channel-viewer.component.html",
   styleUrls: ["./multi-channel-viewer.component.scss"],

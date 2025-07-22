@@ -58,6 +58,7 @@ export class SelectionOptionsDialogResult {
 }
 
 @Component({
+  standalone: false,
   selector: "selection-options",
   templateUrl: "./selection-options.component.html",
   styleUrls: ["./selection-options.component.scss"],

@@ -46,6 +46,7 @@ import { Router } from "@angular/router";
 // state=dnpfeC1Gc1ZVWi1PYmw2ODE4dE5qZkxIR190Sl82dElRaHIyUGxwSlJHNQ%3D%3D
 
 @Component({
+  standalone: false,
   selector: "app-authenticate",
   templateUrl: "./authenticate.component.html",
   styleUrls: ["./authenticate.component.scss"],

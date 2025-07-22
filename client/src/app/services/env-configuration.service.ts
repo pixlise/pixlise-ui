@@ -29,9 +29,9 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { APIPaths, makeHeaders } from "../utils/api-helpers";
 import { Observable, Subscription, map } from "rxjs";
-import { VersionResponse } from "../generated-protos/restmsgs";
+import { VersionResponse } from "src/app/generated-protos/restmsgs";
+import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 
 @Injectable({
   providedIn: "root",

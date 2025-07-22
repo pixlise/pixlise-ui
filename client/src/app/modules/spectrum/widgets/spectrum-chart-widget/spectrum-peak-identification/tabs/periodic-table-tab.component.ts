@@ -38,6 +38,7 @@ import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.serv
 import { MinMax } from "src/app/models/BasicTypes";
 
 @Component({
+  standalone: false,
   selector: TabSelectors.tabPeriodicTable,
   templateUrl: "./periodic-table-tab.component.html",
   styleUrls: ["./periodic-table-tab.component.scss"],

@@ -16,6 +16,7 @@ import { ExpressionBrowseSections } from "../../models/expression-browse-section
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 
 @Component({
+  standalone: false,
   selector: "expression-search-controls",
   templateUrl: "./expression-search-controls.component.html",
   styleUrls: ["./expression-search-controls.component.scss"],

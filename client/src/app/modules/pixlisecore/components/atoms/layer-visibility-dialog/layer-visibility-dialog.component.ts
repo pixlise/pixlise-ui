@@ -59,6 +59,7 @@ export type LayerOpacityChange = {
 };
 
 @Component({
+  standalone: false,
   selector: "layer-visibility-dialog",
   templateUrl: "./layer-visibility-dialog.component.html",
   styleUrls: ["./layer-visibility-dialog.component.scss"],

@@ -32,6 +32,7 @@ import { ZStackItemForDisplay } from "./zstack-item/zstack-item.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 @Component({
+  standalone: false,
   selector: "quant-combine-zstack",
   templateUrl: "./zstack.component.html",
   styleUrls: ["./zstack.component.scss"],

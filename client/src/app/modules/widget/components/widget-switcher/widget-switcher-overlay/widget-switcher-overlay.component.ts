@@ -7,6 +7,7 @@ import { Subscription } from "rxjs";
 import { SnackbarService } from "../../../../pixlisecore/services/snackbar.service";
 
 @Component({
+  standalone: false,
   selector: "widget-switcher-overlay",
   templateUrl: "./widget-switcher-overlay.component.html",
   styleUrls: ["./widget-switcher-overlay.component.scss"],

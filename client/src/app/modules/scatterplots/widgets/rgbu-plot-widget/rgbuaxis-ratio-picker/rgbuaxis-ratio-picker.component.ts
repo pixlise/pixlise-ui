@@ -39,6 +39,7 @@ export type RatioPickerData = {
 };
 
 @Component({
+  standalone: false,
   selector: "app-rgbuaxis-ratio-picker",
   templateUrl: "./rgbuaxis-ratio-picker.component.html",
   styleUrls: ["./rgbuaxis-ratio-picker.component.scss"],

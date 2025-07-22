@@ -8,6 +8,7 @@ export interface FeedbackTextDialogData {
 }
 
 @Component({
+  standalone: false,
   selector: "feedback-dialog",
   templateUrl: "./feedback-dialog.component.html",
   styleUrls: ["./feedback-dialog.component.scss"],

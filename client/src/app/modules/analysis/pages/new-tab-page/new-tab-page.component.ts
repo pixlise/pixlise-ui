@@ -7,6 +7,7 @@ import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemp
 import { TabLinks } from "src/app/models/TabLinks";
 
 @Component({
+  standalone: false,
   selector: "app-new-tab-page",
   templateUrl: "./new-tab-page.component.html",
   styleUrls: ["./new-tab-page.component.scss"],
@@ -111,7 +112,7 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
     this._keyPresses.delete(event.key);
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

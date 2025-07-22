@@ -35,6 +35,7 @@ import { AnalysisLayoutService } from "../../../services/analysis-layout.service
 import { QuantSelection, QuantSelectorPanelSettings } from "../quant-selector-panel/quant-selector-panel.component";
 
 @Component({
+  standalone: false,
   selector: "quantification-selector",
   templateUrl: "./quantification-selector.component.html",
   styleUrls: ["./quantification-selector.component.scss"],

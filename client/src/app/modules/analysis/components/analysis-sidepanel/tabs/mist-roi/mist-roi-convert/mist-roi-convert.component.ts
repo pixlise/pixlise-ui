@@ -36,6 +36,7 @@ export class MistROIConvertData {
 }
 
 @Component({
+  standalone: false,
   selector: "app-mist-roi-convert",
   templateUrl: "./mist-roi-convert.component.html",
   styleUrls: ["./mist-roi-convert.component.scss"],

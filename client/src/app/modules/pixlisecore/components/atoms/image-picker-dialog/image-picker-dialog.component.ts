@@ -81,6 +81,7 @@ export interface ImagePickerDialogResponse {
 }
 
 @Component({
+  standalone: false,
   selector: "image-picker-dialog",
   templateUrl: "./image-picker-dialog.component.html",
   styleUrls: ["./image-picker-dialog.component.scss"],

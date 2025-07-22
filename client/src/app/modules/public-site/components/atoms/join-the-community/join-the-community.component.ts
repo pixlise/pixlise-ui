@@ -33,6 +33,7 @@ import { SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
 
 @Component({
+  standalone: false,
   selector: "join-the-community",
   templateUrl: "./join-the-community.component.html",
   styleUrls: ["./join-the-community.component.scss"],

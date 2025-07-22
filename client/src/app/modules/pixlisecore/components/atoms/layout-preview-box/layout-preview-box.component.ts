@@ -24,6 +24,7 @@ export const getWidgetIconUrl = (widgetType: string): string => {
 };
 
 @Component({
+  standalone: false,
   selector: "layout-preview-box",
   templateUrl: "./layout-preview-box.component.html",
   styleUrls: ["./layout-preview-box.component.scss"],

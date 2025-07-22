@@ -11,6 +11,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 @Component({
+  standalone: false,
   selector: "roi-search-controls",
   templateUrl: "./roi-search-controls.component.html",
   styleUrls: ["./roi-search-controls.component.scss"],

@@ -88,6 +88,7 @@ type MembershipItem = {
 };
 
 @Component({
+  standalone: false,
   selector: "share-dialog",
   templateUrl: "./share-dialog.component.html",
   styleUrls: ["./share-dialog.component.scss"],

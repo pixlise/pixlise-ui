@@ -54,6 +54,7 @@ class Publication {
 export const AboutUsRouteName = "about-us";
 
 @Component({
+  standalone: false,
   selector: "app-about-us-page",
   templateUrl: "./about-us-page.component.html",
   styleUrls: ["./about-us-page.component.scss"],

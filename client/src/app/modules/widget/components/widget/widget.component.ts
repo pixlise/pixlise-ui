@@ -44,6 +44,7 @@ const getWidgetOptions = (): WidgetConfiguration[] => {
 };
 
 @Component({
+  standalone: false,
   selector: "widget",
   templateUrl: "./widget.component.html",
   styleUrls: ["./widget.component.scss"],

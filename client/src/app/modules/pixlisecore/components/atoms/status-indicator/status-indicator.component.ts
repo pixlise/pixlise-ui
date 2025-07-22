@@ -30,6 +30,7 @@
 import { Component, Input } from "@angular/core";
 
 @Component({
+  standalone: false,
     selector: "status-indicator",
     templateUrl: "./status-indicator.component.html",
     styleUrls: ["./status-indicator.component.scss"]

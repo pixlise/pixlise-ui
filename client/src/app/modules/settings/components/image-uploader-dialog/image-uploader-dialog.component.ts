@@ -6,6 +6,7 @@ import Compressor from "compressorjs";
 import { UserOptionsService } from "../../services/user-options.service";
 
 @Component({
+  standalone: false,
   selector: "app-image-uploader-dialog",
   templateUrl: "./image-uploader-dialog.component.html",
   styleUrls: ["./image-uploader-dialog.component.scss"],

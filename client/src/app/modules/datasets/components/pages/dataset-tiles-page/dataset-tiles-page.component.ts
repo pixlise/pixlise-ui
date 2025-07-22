@@ -84,6 +84,7 @@ class SummaryItem {
 }
 
 @Component({
+  standalone: false,
   selector: "dataset-tiles-page",
   templateUrl: "./dataset-tiles-page.component.html",
   styleUrls: ["./dataset-tiles-page.component.scss"],

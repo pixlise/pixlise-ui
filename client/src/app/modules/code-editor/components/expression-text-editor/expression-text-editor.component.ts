@@ -123,6 +123,7 @@ export class MarkPosition {
 }
 
 @Component({
+  standalone: false,
   selector: "expression-text-editor",
   templateUrl: "./expression-text-editor.component.html",
   styleUrls: ["./expression-text-editor.component.scss"],

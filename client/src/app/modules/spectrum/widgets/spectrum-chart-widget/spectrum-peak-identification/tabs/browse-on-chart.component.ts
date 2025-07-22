@@ -33,6 +33,7 @@ import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.serv
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
 
 @Component({
+  standalone: false,
   selector: TabSelectors.tabBrowseOnChart,
   templateUrl: "./browse-on-chart.component.html",
   styleUrls: ["./browse-on-chart.component.scss"],

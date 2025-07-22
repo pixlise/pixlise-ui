@@ -15,6 +15,7 @@ export type ReplaceScanDialogData = {
 };
 
 @Component({
+  standalone: false,
   selector: "replace-scan-dialog",
   templateUrl: "./replace-scan-dialog.component.html",
   styleUrls: ["./replace-scan-dialog.component.scss"],

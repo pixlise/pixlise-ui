@@ -71,10 +71,10 @@ class TabNav {
 }
 
 @Component({
+  standalone: true,
   selector: "app-toolbar",
   templateUrl: "./toolbar.component.html",
   styleUrls: ["./toolbar.component.scss"],
-  standalone: true,
   imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule, DragDropModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {

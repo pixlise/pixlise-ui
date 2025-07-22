@@ -24,6 +24,7 @@ import { QuantCombineReq, QuantCombineResp } from "src/app/generated-protos/quan
 import { ScanItem } from "src/app/generated-protos/scan";
 
 @Component({
+  standalone: false,
   selector: "app-multi-quant",
   templateUrl: "./multi-quant.component.html",
   styleUrls: ["./multi-quant.component.scss"],

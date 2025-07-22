@@ -46,6 +46,7 @@ import {
 import { ScanImagePurpose } from "../../../../../generated-protos/image";
 
 @Component({
+  standalone: false,
   selector: "widget-export-button",
   templateUrl: "./widget-export-button.component.html",
   styleUrls: ["./widget-export-button.component.scss"],

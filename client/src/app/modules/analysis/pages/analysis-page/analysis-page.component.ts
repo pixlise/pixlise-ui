@@ -12,6 +12,7 @@ export type ScreenConfigurationCSS = {
 };
 
 @Component({
+  standalone: false,
   selector: "app-analysis-page",
   templateUrl: "./analysis-page.component.html",
   styleUrls: ["./analysis-page.component.scss"],
@@ -162,7 +163,7 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
     this._keyPresses.clear();
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

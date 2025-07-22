@@ -57,6 +57,7 @@ export type DiffractionExpressionResponse = {
 };
 
 @Component({
+  standalone: false,
   selector: "roughness",
   templateUrl: "./roughness.component.html",
   styleUrls: ["./roughness.component.scss", "../diffraction/diffraction.component.scss"],

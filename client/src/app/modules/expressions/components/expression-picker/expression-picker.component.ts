@@ -85,6 +85,7 @@ export type ExpressionPickerData = {
 };
 
 @Component({
+  standalone: false,
   selector: "expression-picker",
   templateUrl: "./expression-picker.component.html",
   styleUrls: ["./expression-picker.component.scss"],
@@ -1031,7 +1032,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onChangeWidgetPosition(expression: DataExpression, widgetPosition: number): void {
+  onChangeWidgetPosition(expression: DataExpression | ExpressionGroup, widgetPosition: number): void {
     const existingOrder = Array.from(this.selectedExpressionIdOrder);
     const idInRequestedPosition = existingOrder[widgetPosition];
     if (idInRequestedPosition) {

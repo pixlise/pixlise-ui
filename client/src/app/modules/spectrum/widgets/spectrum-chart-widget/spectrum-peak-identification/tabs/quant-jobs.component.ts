@@ -38,6 +38,7 @@ import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 const SelectQuantText = "Select a quantification job";
 
 @Component({
+  standalone: false,
   selector: TabSelectors.tabQuantJobs,
   templateUrl: "./quant-jobs.component.html",
   styleUrls: ["./quant-jobs.component.scss"],

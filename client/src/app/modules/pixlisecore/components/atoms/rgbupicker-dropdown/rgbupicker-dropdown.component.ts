@@ -13,6 +13,7 @@ class ImageChoice {
 }
 
 @Component({
+  standalone: false,
   selector: "rgbupicker-dropdown",
   templateUrl: "./rgbupicker-dropdown.component.html",
   styleUrls: ["./rgbupicker-dropdown.component.scss"],

@@ -1,8 +1,10 @@
 import { AuthGuard } from "@auth0/auth0-angular";
-import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Injectable } from "@angular/core";
 import { ActivatedRouteSnapshot, Router } from "@angular/router";
 import { map, Observable } from "rxjs";
+
+import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
+
 
 @Injectable({
   providedIn: "root",

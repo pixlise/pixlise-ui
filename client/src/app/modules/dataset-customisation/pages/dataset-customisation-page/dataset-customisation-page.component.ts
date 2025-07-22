@@ -43,6 +43,7 @@ import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { ElementRef, ViewChild } from "@angular/core";
 @Component({
+  standalone: false,
   selector: "app-dataset-customisation-page",
   templateUrl: "./dataset-customisation-page.component.html",
   styleUrls: ["./dataset-customisation-page.component.scss"],
@@ -196,7 +197,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

@@ -7,6 +7,7 @@ import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pix
 import { httpErrorToString } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "mvimport-status",
   templateUrl: "./mvimport-status.component.html",
   styleUrls: ["./mvimport-status.component.scss"]

@@ -42,6 +42,7 @@ import { DataExpression } from "../../../../../generated-protos/expressions";
 import { DataExpressionId } from "../../../../../expression-language/expression-id";
 
 @Component({
+  standalone: false,
   selector: "share-ownership-item-button",
   templateUrl: "./share-ownership-item-button.component.html",
   styleUrls: ["./share-ownership-item-button.component.scss"],

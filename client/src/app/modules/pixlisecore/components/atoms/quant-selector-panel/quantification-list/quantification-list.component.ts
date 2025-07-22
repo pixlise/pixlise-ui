@@ -34,6 +34,7 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 
 @Component({
+  standalone: false,
   selector: "quantification-list",
   templateUrl: "./quantification-list.component.html",
   styleUrls: ["./quantification-list.component.scss"],

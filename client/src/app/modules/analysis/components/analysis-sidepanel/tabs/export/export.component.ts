@@ -17,9 +17,10 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-export",
-  templateUrl: "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.html",
-  styleUrls: ["./export.component.scss", "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.scss"],
+  templateUrl: "../../../../../widget/components/widget-export-dialog/widget-export-dialog.component.html",
+  styleUrls: ["./export.component.scss", "../../../../../widget/components/widget-export-dialog/widget-export-dialog.component.scss"],
 })
 export class ExportTabComponent extends WidgetExportDialogComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();

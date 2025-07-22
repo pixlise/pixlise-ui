@@ -39,6 +39,7 @@ import { CustomAuthService as AuthService } from "src/app/services/custom-auth-s
 import { Subscription } from "rxjs";
 
 @Component({
+  standalone: false,
   selector: "nav-top-menu",
   templateUrl: "./nav-top-menu.component.html",
   styleUrls: ["./nav-top-menu.component.scss", "./nav-menu/nav-menu.component.scss"],

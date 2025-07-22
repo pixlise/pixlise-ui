@@ -71,6 +71,7 @@ class TernaryChartToolHost extends InteractionWithLassoHover {
 }
 
 @Component({
+  standalone: false,
   selector: "ternary-chart-widget",
   templateUrl: "./ternary-chart-widget.component.html",
   styleUrls: ["./ternary-chart-widget.component.scss"],

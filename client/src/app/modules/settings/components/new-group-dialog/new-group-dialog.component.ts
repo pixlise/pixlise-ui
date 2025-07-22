@@ -38,6 +38,7 @@ import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 import { UserOptionsService } from "../../services/user-options.service";
 
 @Component({
+  standalone: false,
   selector: "app-new-group-dialog",
   templateUrl: "./new-group-dialog.component.html",
   styleUrls: ["./new-group-dialog.component.scss"],

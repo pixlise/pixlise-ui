@@ -91,6 +91,7 @@ export type ScanLocation = {
 };
 
 @Component({
+  standalone: false,
   selector: "app-variogram-widget",
   templateUrl: "./variogram-widget.component.html",
   styleUrls: ["./variogram-widget.component.scss"],

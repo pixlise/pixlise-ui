@@ -40,6 +40,7 @@ import {
 import { SpectrumChartExporter } from "./spectrum-chart-exporter";
 
 @Component({
+  standalone: false,
   selector: "app-spectrum-chart-widget",
   templateUrl: "./spectrum-chart-widget.component.html",
   styleUrls: ["./spectrum-chart-widget.component.scss"],

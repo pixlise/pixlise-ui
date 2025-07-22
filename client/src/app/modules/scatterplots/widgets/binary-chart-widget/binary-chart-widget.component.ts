@@ -60,6 +60,7 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
 }
 
 @Component({
+  standalone: false,
   selector: "binary-chart-widget",
   templateUrl: "./binary-chart-widget.component.html",
   styleUrls: ["./binary-chart-widget.component.scss"],

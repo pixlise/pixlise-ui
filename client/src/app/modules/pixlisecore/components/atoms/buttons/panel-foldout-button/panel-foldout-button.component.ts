@@ -44,6 +44,7 @@ export enum PanelFoldOutDirection {
 }
 
 @Component({
+  standalone: false,
   selector: "panel-foldout-button",
   templateUrl: "./panel-foldout-button.component.html",
   styleUrls: ["./panel-foldout-button.component.scss"],

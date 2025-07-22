@@ -33,6 +33,7 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-quantification-table",
   templateUrl: "./quantification-table.component.html",
   styleUrls: ["./quantification-table.component.scss"],

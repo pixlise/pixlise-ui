@@ -4,6 +4,7 @@ import { JobStatus, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/gen
 import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 @Component({
+  standalone: false,
   selector: "quant-job-item",
   templateUrl: "./quant-job-item.component.html",
   styleUrls: ["./quant-job-item.component.scss"],

@@ -16,6 +16,7 @@ export type SubItemOptionSection = {
 };
 
 @Component({
+  standalone: false,
   selector: "sectioned-select-dialog",
   templateUrl: "./sectioned-select-dialog.component.html",
   styleUrls: ["./sectioned-select-dialog.component.scss"],

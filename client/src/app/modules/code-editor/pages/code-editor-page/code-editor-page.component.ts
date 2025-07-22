@@ -60,6 +60,7 @@ import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-confi
 import { environment } from "src/environments/environment";
 
 @Component({
+  standalone: false,
   selector: "code-editor",
   templateUrl: "./code-editor-page.component.html",
   styleUrls: ["./code-editor-page.component.scss"],
@@ -1464,7 +1465,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   onClose() {}
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

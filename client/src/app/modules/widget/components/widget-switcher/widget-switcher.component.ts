@@ -11,6 +11,7 @@ import { WidgetMetadataGetResp } from "../../../../generated-protos/widget-data-
 import { MarkdownTooltipComponent } from "../../../pixlisecore/components/atoms/markdown-tooltip/markdown-tooltip.component";
 
 @Component({
+  standalone: false,
   selector: "widget-switcher",
   templateUrl: "./widget-switcher.component.html",
   styleUrls: ["./widget-switcher.component.scss"],

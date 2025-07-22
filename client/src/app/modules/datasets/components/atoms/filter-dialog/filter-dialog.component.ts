@@ -42,6 +42,7 @@ export class FilterDialogData {
 }
 
 @Component({
+  standalone: false,
   selector: "app-filter-dialog",
   templateUrl: "./filter-dialog.component.html",
   styleUrls: ["./filter-dialog.component.scss"],

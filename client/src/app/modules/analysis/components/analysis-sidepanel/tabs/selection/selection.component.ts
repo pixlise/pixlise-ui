@@ -21,6 +21,7 @@ class DisplayPMC {
 }
 
 @Component({
+  standalone: false,
   selector: "app-selection",
   templateUrl: "./selection.component.html",
   styleUrls: ["./selection.component.scss"],

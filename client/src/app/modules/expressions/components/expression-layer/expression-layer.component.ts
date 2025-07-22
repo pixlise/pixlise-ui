@@ -17,6 +17,7 @@ import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { UserInfo } from "src/app/generated-protos/user";
 
 @Component({
+  standalone: false,
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",
   styleUrls: ["./expression-layer.component.scss"],

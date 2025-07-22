@@ -30,6 +30,7 @@
 import { Component, OnInit, Input } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "wait-spinner",
   templateUrl: "./wait-spinner.component.html",
   styleUrls: ["./wait-spinner.component.scss"],

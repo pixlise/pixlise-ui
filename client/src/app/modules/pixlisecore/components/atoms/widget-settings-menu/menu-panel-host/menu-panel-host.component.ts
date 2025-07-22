@@ -39,6 +39,7 @@ export class MenuPanelHostData {
 }
 
 @Component({
+  standalone: false,
   selector: "app-menu-panel-host",
   templateUrl: "./menu-panel-host.component.html",
   styleUrls: ["./menu-panel-host.component.scss"],

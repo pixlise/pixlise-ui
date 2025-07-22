@@ -52,6 +52,7 @@ export type DiffVersions = {
 };
 
 @Component({
+  standalone: false,
   selector: "expression-metadata-editor",
   templateUrl: "./expression-metadata-editor.component.html",
   styleUrls: ["./expression-metadata-editor.component.scss"],

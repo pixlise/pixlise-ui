@@ -30,6 +30,7 @@
 import { Component, OnInit, Input } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "text-with-highlights",
   templateUrl: "./text-with-highlights.component.html",
   styleUrls: ["./text-with-highlights.component.scss"],

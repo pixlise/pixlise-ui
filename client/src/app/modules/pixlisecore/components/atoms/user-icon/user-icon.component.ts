@@ -8,6 +8,7 @@ import { UserInfo } from "src/app/generated-protos/user";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 @Component({
+  standalone: false,
   selector: "user-icon",
   templateUrl: "./user-icon.component.html",
   styleUrls: ["./user-icon.component.scss"],

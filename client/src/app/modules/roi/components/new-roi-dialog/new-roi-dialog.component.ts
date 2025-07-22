@@ -46,6 +46,7 @@ export type NewROIDialogData = {
 };
 
 @Component({
+  standalone: false,
   selector: "new-roi-dialog",
   templateUrl: "./new-roi-dialog.component.html",
   styleUrls: ["./new-roi-dialog.component.scss"],

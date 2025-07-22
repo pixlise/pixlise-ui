@@ -54,6 +54,7 @@ export class QuantSelectorPanelSettings {
 }
 
 @Component({
+  standalone: false,
   selector: "app-quant-selector-panel",
   templateUrl: "./quant-selector-panel.component.html",
   styleUrls: ["./quant-selector-panel.component.scss"],

@@ -12,6 +12,7 @@ export type RangeSelectData = {
 };
 
 @Component({
+  standalone: false,
   selector: "range-select-dialog",
   templateUrl: "./range-select-dialog.component.html",
   styleUrls: ["./range-select-dialog.component.scss"],

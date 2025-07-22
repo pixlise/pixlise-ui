@@ -18,10 +18,10 @@ import { SnackbarDataItem } from "src/app/modules/pixlisecore/models/snackbar-da
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 
 @Component({
+  standalone: true,
   selector: "app-settings-sidebar",
   templateUrl: "./settings-sidebar.component.html",
   styleUrls: ["./settings-sidebar.component.scss"],
-  standalone: true,
   imports: [CommonModule, PIXLISECoreModule, SettingsModule],
 })
 export class SettingsSidebarComponent implements OnInit, OnDestroy {

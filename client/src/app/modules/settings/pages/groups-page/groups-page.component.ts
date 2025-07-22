@@ -16,6 +16,7 @@ import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActionButtonComponent } from "../../../pixlisecore/components/atoms/buttons/action-button/action-button.component";
 
 @Component({
+  standalone: false,
   selector: "app-groups-page",
   templateUrl: "./groups-page.component.html",
   styleUrls: ["./groups-page.component.scss"],

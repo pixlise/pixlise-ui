@@ -50,6 +50,7 @@ import { WidgetComponent } from "../widget/widget.component";
 import html2canvas from "html2canvas";
 
 @Component({
+  standalone: false,
   selector: "widget-export-dialog",
   templateUrl: "./widget-export-dialog.component.html",
   styleUrls: ["./widget-export-dialog.component.scss"],

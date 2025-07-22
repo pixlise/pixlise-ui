@@ -13,6 +13,7 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-markdown-text-view",
   templateUrl: "./markdown-text-view.component.html",
   styleUrls: ["./markdown-text-view.component.scss"],
