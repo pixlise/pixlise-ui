@@ -105,7 +105,6 @@
               "src/version.json"
             ],
             "styles": [
-              "src/scss/material-theme.scss",
               "src/styles.scss",
               "node_modules/prismjs/themes/prism-okaidia.css",
               "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.css",
@@ -239,7 +238,6 @@
               }
             ],
             "styles": [
-              "src/scss/material-theme.scss",
               "src/styles.scss"
             ],
             "stylePreprocessorOptions": {

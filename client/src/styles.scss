@@ -35,13 +35,16 @@
 @include inter-ui.weight-400;
 @include inter-ui.weight-700;
 */
+
+@use '@angular/material' as mat;
+
+
 :root {
   --top-toolbar-height: 37px;
   --widget-drop-below-title: 42px; // 38px title bar + standard padding
   //--title-height-and-padding: 53px; // 37px title bar + top & bottom unit height
 }
 
-@import "material-theme.scss";
 @import "variables.scss";
 @import "atoms.scss";
 @import "cursors.scss";
@@ -61,12 +64,80 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #bec0c2;
+  background: $clr-gray-30;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #f8f8f8;
 }
+
+/*
+html {
+  color-scheme: dark;
+  @include mat.theme((
+    color: (
+      primary: mat.$violet-palette,
+      tertiary: mat.$orange-palette,
+      theme-type: dark,
+    ),
+    //typography: Roboto,
+    typography: (
+      plain-family: Roboto,
+      brand-family: Roboto,
+      bold-weight: 700,
+      medium-weight: 500,
+      //regular-weight: 300,
+    ),
+    density: 0
+  ));
+}
+*/
+/*
+ $font-family: "Roboto, monospace",
+  $body-1: mat.define-typography-level(14px, 14px, 400),
+  $button: mat.define-typography-level(12px, 12px, 400),
+  $headline-1: mat.define-typography-level(18px, 24px, 700),
+  $headline-2: mat.define-typography-level(16px, 24px, 700),
+  $headline-3: mat.define-typography-level(14px, 24px, 700),
+  $subtitle-1: mat.define-typography-level(16px, 24px, 700),
+  $caption: mat.define-typography-level(4px, 12px, 400),
+  $body-2: mat.define-typography-level(14px, 1.25, 400),
+  */
+@include mat.core();
+
+// https://material.angular.io/guide/typography
+// Define a custom typography config that overrides the font-family and specific items
+$pixlise-typography: mat.m2-define-typography-config(
+  $font-family: "Roboto, monospace",
+  $body-1: mat.m2-define-typography-level(14px, 14px, 400),
+  $button: mat.m2-define-typography-level(12px, 12px, 400),
+  $headline-1: mat.m2-define-typography-level(18px, 24px, 700),
+  $headline-2: mat.m2-define-typography-level(16px, 24px, 700),
+  $headline-3: mat.m2-define-typography-level(14px, 24px, 700),
+  $subtitle-1: mat.m2-define-typography-level(16px, 24px, 700),
+  $caption: mat.m2-define-typography-level(4px, 12px, 400),
+  $body-2: mat.m2-define-typography-level(14px, 1.25, 400),
+);
+
+// Create the theme object (a Sass map containing all of the palettes).
+$pixlise-app-theme: mat.m2-define-dark-theme(
+  (
+    color: (
+      primary: mat.m2-define-palette(mat.$m2-grey-palette, 900, 900, 900),
+      accent: mat.m2-define-palette(mat.$m2-yellow-palette, A100),
+      warn: mat.m2-define-palette(mat.$m2-red-palette),
+    ),
+    typography: $pixlise-typography,
+  )
+);
+
+@include mat.all-component-themes($pixlise-app-theme);
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+//@include mat.m2-angular-material-theme($pixlise-app-theme);
+@include mat.typography-hierarchy($pixlise-typography);
 
 html,
 body {
@@ -75,7 +146,6 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color: #1b1d1e;
 }
 
 :root {
@@ -90,9 +160,7 @@ body {
   }
 }
 
-/* TODO: There has to be a better way than !important with overriding angular things! */
 body {
-  //   background-color: $ui-color-background !important;
   font-family: Roboto, "Helvetica Neue", sans-serif;
 
   &::-webkit-scrollbar {
@@ -146,7 +214,7 @@ textarea {
 }
 
 .mat-app-background {
-  background-color: #1b1d1e;
+  background-color: $clr-gray-100;
 }
 
 .mat-flat-button {
