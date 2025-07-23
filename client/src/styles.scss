@@ -406,9 +406,12 @@ h3 {
   /* Deliberately empty: we don't want to tint the screen when a backdrop is showing */
 }
 
+// This colour didn't come from our defined variables but it's a little brighter than clr-gray-80
+$clr-gray-80-plus: #2b3135;
+
 .mat-mdc-tooltip {
   --mdc-plain-tooltip-supporting-text-size: 10px;
-  --mdc-plain-tooltip-container-color: #2b3135;
+  --mdc-plain-tooltip-container-color: $clr-gray-80-plus;
   --mdc-plain-tooltip-supporting-text-color: rgb(var(--clr-gray-10));
   white-space: pre;
 }
@@ -431,7 +434,7 @@ h3 {
 }
 
 .mat-mdc-autocomplete-panel {
-  --mat-autocomplete-background-color: #2b3135;
+  --mat-autocomplete-background-color: $clr-gray-80-plus;
 }
 
 .mdc-text-field--filled:not(.mdc-text-field--disabled) {
@@ -452,7 +455,7 @@ h3 {
 }
 
 .mdc-menu-surface {
-  --mdc-theme-surface: #2b3135;
+  --mdc-theme-surface: $clr-gray-80-plus;
 
   &.scan-menu,
   &.search-menu {
@@ -548,33 +551,72 @@ h3 {
   color: white;
 }
 
+// Customising snack bar. Idea for these these came from:
+// https://stackoverflow.com/questions/47763799/angular-material-overriding-default-style-of-snackbar-component
+// Angular material post angular 16 changed it so the --mdc-* variables don't work any more and !important
+// was needed again. There must be a "better" way to do this, but the token method only seems to apply
+// globally and we set these styles as panelClass fields on openWithComponent() depending on the kind of
+// snack we're displaying
 .pixlise-message {
-  --mdc-snackbar-container-color: #2b3135;
+  .mdc-snackbar__surface { background-color: $clr-gray-80-plus !important; }
+  .mdc-snackbar__label { color: $clr-gray-10 !important; }
+  button { color: $clr-yellow !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: #2b3135 !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));
   --mat-snack-bar-button-color: rgb(var(--clr-yellow));
   --mdc-typography-button-font-weight: 800;
+  */
 }
 
 .pixlise-warn {
-  --mdc-snackbar-container-color: rgb(var(--clr-orange));
+  .mdc-snackbar__surface { background-color: $clr-orange !important; }
+  .mdc-snackbar__label { color: $clr-gray-90 !important; }
+  button { color: $clr-gray-90 !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: rgb(var(--clr-orange)) !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
   --mdc-typography-button-font-weight: 800;
+  */
 }
 
 .pixlise-error {
-  --mdc-snackbar-container-color: rgb(var(--clr-red));
+  .mdc-snackbar__surface { background-color: $clr-red !important; }
+  .mdc-snackbar__label { color: $clr-gray-10 !important; }
+  button { color: $clr-gray-10 !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: rgb(var(--clr-red)) !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-10));
   --mdc-typography-button-font-weight: 800;
+  */
 }
 
 .pixlise-success {
-  --mdc-snackbar-container-color: #66bb6a;
+  .mdc-snackbar__surface { background-color: $clr-green !important; }
+  .mdc-snackbar__label { color: $clr-gray-90 !important; }
+  button { color: $clr-gray-90 !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: #66bb6a !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
   --mdc-typography-button-font-weight: 800;
+  */
 }
+
+/*
+:root {
+  @include mat.snack-bar-overrides((
+    button-color: orange,
+    container-color: red,
+  ));
+}
+*/
 
 color-picker {
   .color-picker {
