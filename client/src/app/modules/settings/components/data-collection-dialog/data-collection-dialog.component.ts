@@ -51,6 +51,6 @@ export class DataCollectionDialogComponent implements OnInit {
   }
 
   get appDomain(): string {
-    return EnvConfigurationInitService.appConfig.appDomain;
+    return EnvConfigurationInitService.getConfig$.value!.appDomain;
   }
 }

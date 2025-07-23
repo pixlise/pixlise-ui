@@ -103,6 +103,6 @@ export class NewGroupDialogComponent implements OnInit {
   }
 
   get appDomain(): string {
-    return EnvConfigurationInitService.appConfig.appDomain;
+    return EnvConfigurationInitService.getConfig$.value!.appDomain;
   }
 }

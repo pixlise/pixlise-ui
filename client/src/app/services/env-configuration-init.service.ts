@@ -31,7 +31,7 @@ import { HttpBackend, HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { environment } from "src/environments/environment";
-import { ReplaySubject, take, firstValueFrom } from "rxjs";
+import { take, firstValueFrom, BehaviorSubject } from "rxjs";
 import { AuthClientConfig, AuthConfig } from "@auth0/auth0-angular";
 
 // App config is retrieved from a json file that is injected into the built container. We ONLY use the
@@ -72,8 +72,13 @@ export class AppConfig {
   providedIn: "root",
 })
 export class EnvConfigurationInitService {
-  private static _appConfig?: AppConfig;
-  private _gotConfig$: ReplaySubject<void> = new ReplaySubject<void>();
+  // This is static because some code will want to reference this without having
+  // an instance of the env service. Reasons are historical, because this used to
+  // simply be fields from the environment file, so code could always reach out
+  // and say environment.something
+  // Since the app config is loaded on module init, the config should always be
+  // valid by the time it's accessed... should...
+  static getConfig$: BehaviorSubject<AppConfig | null> = new BehaviorSubject<AppConfig | null>(null);
 
   constructor() {}
 
@@ -121,13 +126,12 @@ export class EnvConfigurationInitService {
             authConfig.set(authCfg);
           }
 
-          EnvConfigurationInitService._appConfig = config;
-
           // We want a default here as this file is now fixed in the UI repo
           if (config && !config?.dataCollectionAgreementVersionUrl) {
             config.dataCollectionAgreementVersionUrl = "/agreement-version.json";
           }
-          this._gotConfig$.next();
+
+          EnvConfigurationInitService.getConfig$.next(config);
           console.log("Loaded application config...");
 
           return config;
@@ -141,19 +145,5 @@ export class EnvConfigurationInitService {
         console.error("Failed to load application config: ", err);
         return null;
       });
-  }
-
-  // This is static because some code will want to reference this without having
-  // an instance of the env service. Reasons are historical, because this used to
-  // simply be fields from the environment file, so code could always reach out
-  // and say environment.something
-  // Since the app config is loaded on module init, the config should always be
-  // valid by the time it's accessed... should...
-  public static get appConfig(): AppConfig {
-    return EnvConfigurationInitService._appConfig!;
-  }
-
-  get gotConfig$(): ReplaySubject<void> {
-    return this._gotConfig$;
   }
 }

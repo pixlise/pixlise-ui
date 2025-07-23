@@ -98,7 +98,7 @@ export class UserOptionsService {
 
   fetchCurrentDataCollectionVersion(): void {
     this.http
-      .get<{ version: string }>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders())
+      .get<{ version: string }>(EnvConfigurationInitService.getConfig$.value!.dataCollectionAgreementVersionUrl, makeHeaders())
       .subscribe((version: { version: string }) => {
         this._currentDataCollectionVersion = version.version;
       });

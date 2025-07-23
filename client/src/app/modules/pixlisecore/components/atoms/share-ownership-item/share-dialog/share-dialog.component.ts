@@ -686,7 +686,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
   onConfirm(): void {
     this.calculateChanges();
 
-    const appConfig = EnvConfigurationInitService.appConfig;
+    const appConfig = EnvConfigurationInitService.getConfig$.value;
 
     if (this.data.isReviewerSnapshot) {
       this._apiDataService
@@ -694,8 +694,8 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
           ReviewerMagicLinkCreateReq.create({
             accessLength: this.reviewerAccessTime.value,
             workspaceId: this.data.ownershipItem.id,
-            clientId: appConfig.auth0_client,
-            audience: appConfig.auth0_audience,
+            clientId: appConfig!.auth0_client,
+            audience: appConfig!.auth0_audience,
           })
         )
         .subscribe({

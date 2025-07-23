@@ -1139,28 +1139,28 @@ export class AnalysisLayoutService implements OnDestroy {
 
   loginWithMagicLink(magicLink: string) {
     let decodedWorkspaceId = decodeUrlSafeBase64(magicLink);
-    let appConfig = EnvConfigurationInitService.appConfig;
+    let appConfig = EnvConfigurationInitService.getConfig$.value;
     this._apiEndpointsService
       .magicLinkLogin(
         ReviewerMagicLinkLoginReq.create({
           magicLink: decodedWorkspaceId,
-          clientId: appConfig.auth0_client,
-          domain: appConfig.auth0_domain,
-          audience: appConfig.auth0_audience,
+          clientId: appConfig!.auth0_client,
+          domain: appConfig!.auth0_domain,
+          audience: appConfig!.auth0_audience,
           redirectURI: `${window.location.origin}/authenticate`,
         })
       )
       .subscribe({
         next: res => {
-          const loginUrl = `https://${appConfig.auth0_domain}/oauth/token`;
+          const loginUrl = `https://${appConfig!.auth0_domain}/oauth/token`;
 
           this.http
             .post(loginUrl, {
               grant_type: "password",
               username: res.email,
               password: res.nonSecretPassword,
-              client_id: appConfig.auth0_client,
-              audience: appConfig.auth0_audience,
+              client_id: appConfig!.auth0_client,
+              audience: appConfig!.auth0_audience,
               scope: "openid profile email",
             })
             .subscribe({
