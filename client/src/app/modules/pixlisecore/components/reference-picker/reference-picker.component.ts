@@ -209,7 +209,7 @@ export class ReferencePickerComponent implements OnDestroy {
       expressionValuePairs: [],
       isEditing: true,
     };
-    this.references.push(newReference);
+    this.references = [newReference, ...this.references];
     this.applyFilters();
   }
 
