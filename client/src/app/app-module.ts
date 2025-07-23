@@ -1,9 +1,9 @@
-import { APP_INITIALIZER, ErrorHandler, NgModule, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from "@angular/core";
+import { APP_INITIALIZER, ErrorHandler, inject, NgModule, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from "@angular/core";
 import { BrowserModule, Title } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { provideAnimations } from "@angular/platform-browser/animations";
-import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from "@angular/common/http";
+import { HttpEvent, HttpRequest, provideHttpClient, withInterceptors, withInterceptorsFromDi } from "@angular/common/http";
 
 import { AppRoutingModule } from "./app-routing-module";
 import { AppComponent } from "./app.component";
@@ -17,7 +17,7 @@ import * as Sentry from "@sentry/angular";
 import { VERSION } from "src/environments/version";
 import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angular/material/dialog";
 import { MaterialModule } from "./modules/material.module";
-import { AuthModule, AuthClientConfig, authHttpInterceptorFn } from "@auth0/auth0-angular";
+import { AuthModule, AuthClientConfig } from "@auth0/auth0-angular";
 import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { NotFoundModule } from "./modules/not-found/not-found.module";
 import { CodeEditorModule } from "./modules/code-editor/code-editor.module";
@@ -28,6 +28,7 @@ import { ToolbarComponent } from "./components/toolbar/toolbar.component";
 import { SettingsSidebarComponent } from "./components/settings-sidebar/settings-sidebar.component";
 import { MarkdownModule } from "ngx-markdown";
 import { CustomAuthHttpInterceptor } from "./services/custom-http-interceptor.service";
+import { Observable } from "rxjs";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -153,6 +154,14 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
   };
 };
 
+// Wrote our own authHttpInterceptorFn based on:
+// https://github.com/auth0/auth0-angular/blob/6ac4ab1/projects/auth0-angular/src/lib/functional.ts#L32
+// Where we inject our own customised version of auth0's AuthHttpInterceptor
+export const authHttpInterceptorCustomFn = (
+  req: HttpRequest<any>,
+  handle: (req: HttpRequest<unknown>) => Observable<HttpEvent<unknown>>
+) => inject(CustomAuthHttpInterceptor).intercept(req, { handle });
+
 @NgModule({
   declarations: [AppComponent],
   imports: [
@@ -178,7 +187,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimations(),
    // provideHttpClient(withInterceptorsFromDi()),
-   provideHttpClient(withInterceptors([authHttpInterceptorFn])),
+   provideHttpClient(withInterceptors([authHttpInterceptorCustomFn])),
     /* We used to define our own HttpInterceptorService but switched to use Auth0's built in one. The "extra" things ours did were:
         - Show snack saying "You are not online" if !window.navigator.onLine
         - If getAccessTokenSilently() returned an error that contains "Login required": snackService.openError(
@@ -193,7 +202,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
 
     // The below is the Auth0 interceptor, but we have to wrap it in our own to allow "magic link" login to work
     { provide: HTTP_INTERCEPTORS, useClass: CustomAuthHttpInterceptor, multi: true },
-    // AuthHttpInterceptor,
+    CustomAuthHttpInterceptor,
     EnvConfigurationInitService,
     {
       provide: APP_INITIALIZER,
