@@ -41,9 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
   #tooltip="matTooltip"
   [matTooltip]="tooltipTitle"
   [matTooltipDisabled]="!tooltipTitle || tooltipTitle.length === 0">
-  <span class="btn-content">
-    <ng-content></ng-content>
-  </span>
+  <ng-content></ng-content>
   <badge
     *ngIf="notificationCount > 0"
     class="notifications"

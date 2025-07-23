@@ -245,12 +245,11 @@
 
 .clickable {
   position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
-  .btn-content {
-    display: block;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
+  &.has-badge {
+    overflow: visible;
   }
 
   &.flex-btn {
