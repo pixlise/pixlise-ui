@@ -264,6 +264,11 @@ small {
   color: $clr-gray-70;
 }
 
+@include mat.dialog-overrides((
+  container-color: $ui-panel-title-colour,
+  content-padding: 0px,
+));
+/* Replaces:
 .mat-dialog-container,
 .mat-mdc-dialog-container {
   .mdc-dialog__container {
@@ -273,6 +278,7 @@ small {
     border-radius: $sz-unit !important;
   }
 }
+*/
 
 .panel {
   background-color: $ui-panel-title-colour;
@@ -410,6 +416,15 @@ h3 {
 // This colour didn't come from our defined variables but it's a little brighter than clr-gray-80
 $clr-gray-80-plus: #2b3135;
 
+:root {
+  @include mat.tooltip-overrides((
+    container-color: $clr-gray-80-plus,
+    container-shape: red,
+    supporting-text-color: $clr-gray-10,
+    supporting-text-size: 10px,
+  ));
+}
+/* Replaces:
 .mat-mdc-tooltip {
   --mdc-plain-tooltip-supporting-text-size: 10px;
   --mdc-plain-tooltip-container-color: $clr-gray-80-plus;
@@ -421,6 +436,7 @@ $clr-gray-80-plus: #2b3135;
   max-width: fit-content !important;
   box-shadow: 0px 0px 8px 0px rgb(0 0 0 / 50%);
 }
+*/
 
 .role-option {
   .mdc-label {
@@ -434,9 +450,16 @@ $clr-gray-80-plus: #2b3135;
   }
 }
 
+:root {
+  @include mat.autocomplete-overrides((
+    background-color: $clr-gray-80-plus,
+  ));
+}
+/* Replaces:
 .mat-mdc-autocomplete-panel {
   --mat-autocomplete-background-color: $clr-gray-80-plus;
 }
+*/
 
 .mdc-text-field--filled:not(.mdc-text-field--disabled) {
   background-color: #474c50 !important;
@@ -455,6 +478,12 @@ $clr-gray-80-plus: #2b3135;
   border-bottom-color: white;
 }
 
+:root {
+  @include mat.menu-overrides((
+    container-color: $clr-gray-80-plus
+  ));
+}
+/* Replaces:
 .mdc-menu-surface {
   --mdc-theme-surface: $clr-gray-80-plus;
 
@@ -463,6 +492,7 @@ $clr-gray-80-plus: #2b3135;
     max-height: 500px !important;
   }
 }
+*/
 
 .mat-mdc-menu-content {
   padding-top: 0 !important;
@@ -626,7 +656,7 @@ color-picker {
     .box {
       input {
         background: #454c50;
-        color: rgb(var(--clr-gray-30));
+        color: $clr-gray-30;
       }
     }
 
@@ -652,7 +682,7 @@ color-picker {
     h4,
     h5,
     h6 {
-      color: rgb(var(--clr-gray-10));
+      color: $clr-gray-10;
       margin-top: 0;
       margin-bottom: 8px;
     }
@@ -671,13 +701,13 @@ color-picker {
     }
 
     code {
-      background: rgb(var(--clr-gray-70));
+      background: $clr-gray-70;
       padding: 2px 4px;
       border-radius: 3px;
     }
 
     pre {
-      background: rgb(var(--clr-gray-70));
+      background: $clr-gray-70;
       padding: 8px;
       border-radius: 4px;
       margin: 8px 0;
@@ -730,7 +760,7 @@ color-picker {
 
     &:not(.active) {
       .row-title {
-        color: rgb(var(--clr-gray-50));
+        color: $clr-gray-50;
         opacity: 0.5;
       }
     }
