@@ -33,7 +33,7 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { AnalysisLayoutService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
@@ -54,6 +54,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
   private _currentWidgetRef: ComponentRef<any> | null = null;
+  private _copyConfigActive: boolean = false;
 
   @ViewChild("buttonsContainer") buttonsContainer!: ElementRef;
 
@@ -122,7 +123,6 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _dialog: MatDialog,
-    private _snackbarService: SnackbarService,
     private _changeDetector: ChangeDetectorRef
   ) {}
 
@@ -155,7 +155,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   }
 
   ngAfterContentInit() {
-    if (!this._currentWidgetRef) {
+    if (!this._currentWidgetRef && !this._copyConfigActive) {
       setTimeout(() => this.loadWidget(), 0);
     }
   }
@@ -473,15 +473,18 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       this._currentWidgetRef = null;
     }
 
+    this._copyConfigActive = true;
     this.copyConfiguration().subscribe((widgetConfig: WidgetConfiguration) => {
       this.widgetConfiguration = widgetConfig;
 
       if (!this.widgetConfiguration!.widgetComponent || !this.currentWidget) {
         console.warn("Widget component or container not found");
+        this._copyConfigActive = false;
         return;
       }
 
       this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.widgetComponent);
+      this._copyConfigActive = false;
 
       if (this._currentWidgetRef?.instance) {
         // Set the widget id
