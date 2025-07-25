@@ -175,7 +175,7 @@
           "builder": "@angular/build:extract-i18n"
         },
         "test": {
-          "builder": "@angular/build:karma",
+          "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "polyfills": [
               "zone.js",
@@ -245,10 +245,7 @@
                 "src/scss",
                 "src/app/modules/pixlisecore/scss",
                 "./node_modules"
-              ],
-              "sass": {
-                "silenceDeprecations": ["mixed-decls", "color-functions", "global-builtin", "import"]
-              }
+              ]
             },
             "scripts": [],
             "karmaConfig": "karma.conf.js"
