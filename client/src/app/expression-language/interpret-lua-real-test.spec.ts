@@ -56,38 +56,45 @@ describe("LuaDataQuerier runQuery() for real expression", () => {
   } = { allPeaks: [], roughnessItems: [] };
 
   beforeEach(done => {
-    //waitForAsync(() => {
-    Promise.all([
-      // NOTE: These are only served by karma if they're mentioned in karma.conf.js
-      readTestFile(`scan/${scanId}/dataset.bin`),
-      readTestFile(`scan/${scanId}/diffraction-db.bin`),
-      readTestFile(`quant/${scanId}/quant-616i0uwwtns0yfbt.bin`),
-      readTestFile("expressions/m1jronthh7qkdx6q.lua"),
-      readTestFile("modules/Locations0.3.0.lua"),
-      readTestFile("modules/Estimate0.29.0.lua"),
-      readTestFile("modules/GeoAndDiffCorrection2.9.0.lua"),
-      readTestFile("expected-output/m1jronthh7qkdx6q.json"),
-    ]).then((results: [ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer]) => {
-      datasetBin = Experiment.decode(new Uint8Array(results[0], 0, results[0].byteLength));
-      diffractionBin = Diffraction.decode(new Uint8Array(results[1], 0, results[1].byteLength));
-      quantBin = Quantification.decode(new Uint8Array(results[2], 0, results[2].byteLength));
-      modules.set("Locations", new TextDecoder().decode(results[4]));
-      modules.set("Estimate", new TextDecoder().decode(results[5]));
-      modules.set("GeoAndDiffCorrection", new TextDecoder().decode(results[6]));
+    try {
+      //waitForAsync(() => {
+      Promise.all([
+        // NOTE: These are only served by karma if they're mentioned in karma.conf.js
+        readTestFile(`scan/${scanId}/dataset.bin`),
+        readTestFile(`scan/${scanId}/diffraction-db.bin`),
+        readTestFile(`quant/${scanId}/quant-616i0uwwtns0yfbt.bin`),
+        readTestFile("expressions/m1jronthh7qkdx6q.lua"),
+        readTestFile("modules/Locations0.3.0.lua"),
+        readTestFile("modules/Estimate0.29.0.lua"),
+        readTestFile("modules/GeoAndDiffCorrection2.9.0.lua"),
+        readTestFile("expected-output/m1jronthh7qkdx6q.json"),
+      ]).then((results: [ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer]) => {
+        datasetBin = Experiment.decode(new Uint8Array(results[0], 0, results[0].byteLength));
+        diffractionBin = Diffraction.decode(new Uint8Array(results[1], 0, results[1].byteLength));
+        quantBin = Quantification.decode(new Uint8Array(results[2], 0, results[2].byteLength));
+        modules.set("Locations", new TextDecoder().decode(results[4]));
+        modules.set("Estimate", new TextDecoder().decode(results[5]));
+        modules.set("GeoAndDiffCorrection", new TextDecoder().decode(results[6]));
 
-      spectrumEnergyCalibration = readBulkSpectrumCalibration(datasetBin);
-      const diffPerLoc: DetectedDiffractionPerLocation[] = readDiffraction(datasetBin, diffractionBin);
+        spectrumEnergyCalibration = readBulkSpectrumCalibration(datasetBin);
+        const diffPerLoc: DetectedDiffractionPerLocation[] = readDiffraction(datasetBin, diffractionBin);
 
-      // We now have the "API request" done, do the UI-side of this
-      diffractionInfoRead = ExpressionDataSource.readDiffractionPeaks(
-        DetectedDiffractionPeaksResp.create({ peaksPerLocation: diffPerLoc }),
-        scanId,
-        {},
-        spectrumEnergyCalibration
-      );
+        // We now have the "API request" done, do the UI-side of this
+        diffractionInfoRead = ExpressionDataSource.readDiffractionPeaks(
+          DetectedDiffractionPeaksResp.create({ peaksPerLocation: diffPerLoc }),
+          scanId,
+          {},
+          spectrumEnergyCalibration
+        );
 
-      done();
-    });
+        done();
+      }).catch(function(err) {
+        done.fail(err);
+      });
+    }
+    catch (error) {
+      done.fail(error as Error);
+    }
   });
 
   it("should run complex expression SiO2'", done => {
@@ -317,9 +324,22 @@ function readDiffraction(datasetBin: Experiment, diffractionBin: Diffraction): D
 async function readTestFile(relativePath: string): Promise<ArrayBuffer> {
   const fullPath = "base/src/app/expression-language/test-data/" + relativePath;
 
-  const response = await fetch(fullPath);
-  const blob = await response.blob();
-  return blob.arrayBuffer();
+  try {
+    const response = await fetch(fullPath);
+    const blob = await response.blob();
+    const result = await blob.arrayBuffer();
+
+    const decoder = new TextDecoder('utf-8')
+    if (decoder.decode(result) == "NOT FOUND") {
+      throw new Error(`File: ${fullPath} not found`);
+    }
+    //if (result)
+    return result;
+  }
+  catch (error) {
+    console.error("Error reading test file: " + fullPath + ". Error: " + error);
+    throw error;
+  }
 }
 
 function readQuant(scanId: string, dataLabel: string, detectorId: string, quantBin: Quantification): PMCDataValues {
