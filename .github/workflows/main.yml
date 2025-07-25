@@ -81,7 +81,7 @@ jobs:
       - name: Generate protobuf code
         uses: addnab/docker-run-action@v3
         with:
-          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
+          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-22
           options: -v ${{ github.workspace }}:/work #-q
           run: |
             cd /work
@@ -134,7 +134,7 @@ jobs:
       - name: Build UI
         uses: addnab/docker-run-action@v3
         with:
-          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
+          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-22
           options: -v ${{ github.workspace }}:/work #-q
           # NOTE: we set the env var for Sentry token (so we upload source maps)
           run: |
