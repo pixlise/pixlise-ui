@@ -91,11 +91,14 @@ jobs:
       - name: Run UI Tests
         uses: addnab/docker-run-action@v3
         with:
-          image: atlassianlabs/docker-node-jdk-chrome-firefox:latest
+          image: atlassianlabs/docker-node-jdk-chrome-firefox:2024-03-22
           options: -v ${{ github.workspace }}:/work #-q
           run: |
             cd /work/client
             npm i -g @angular/cli@20.1.1
+            node -v
+            apt-get install -y nodejs
+            node -v
             export TERM=xterm
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
             ng test --no-watch --no-progress --browsers=ChromeHeadless
