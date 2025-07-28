@@ -81,7 +81,7 @@ jobs:
       - name: Generate protobuf code
         uses: addnab/docker-run-action@v3
         with:
-          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-22
+          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-20.1.1-nodejs-22
           options: -v ${{ github.workspace }}:/work #-q
           run: |
             cd /work
@@ -91,19 +91,11 @@ jobs:
       - name: Run UI Tests
         uses: addnab/docker-run-action@v3
         with:
-          image: atlassianlabs/docker-node-jdk-chrome-firefox:2024-03-22
+          image: ghcr.io/pixlise/build-container:ui-test-angular-20.1.1-nodejs-22
           options: -v ${{ github.workspace }}:/work #-q
           run: |
-            bash
             cd /work/client
-            npm i -g @angular/cli@20.1.1
-            node -v
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-            export NVM_DIR=$HOME/.nvm
-            # bash -c "$NVM_DIR/nvm.sh && nvm install 22.17.0"
-            source $NVM_DIR/nvm.sh
-            nvm install 22.17.0
-            # nvm use 22.17.0
+            ng v
             node -v
             export TERM=xterm
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
