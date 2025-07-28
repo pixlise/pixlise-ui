@@ -97,8 +97,10 @@ jobs:
             cd /work/client
             npm i -g @angular/cli@20.1.1
             node -v
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+            bash
             nvm install 22.17.0
+            exit
             node -v
             export TERM=xterm
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
