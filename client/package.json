@@ -5,13 +5,15 @@
     "prestart": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua && cp ../CHANGELOG.md .",
     "start": "clear&&ng serve",
     "prebuild": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua  && cp ../CHANGELOG.md .",
-    "build": "ng build && npm run sentry:sourcemaps",
+    "build": "ng build && npm run assets:backup && npm run sentry:sourcemaps && npm run assets:replace",
     "watch": "ng build --watch --configuration development",
     "postinstall": "node src/version.js",
     "pretest": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "test": "clear&&ng test",
     "lint": "ng lint",
-    "sentry:sourcemaps": "mv ./dist/pixlise/assets ./&&sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise&&mv ./assets ./dist/pixlise/"
+    "assets:backup": "mkdir -p /tmp/pixlise-assets/assets/ && mv ./dist/pixlise/browser/assets /tmp/pixlise-assets/assets/ && ls -al /tmp/pixlise-assets/assets/",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise/browser/ && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise/browser",
+    "assets:replace": "ls -al /tmp/pixlise-assets/assets/ && mv /tmp/pixlise-assets/assets ./dist/pixlise/browser/assets/"
   },
   "prettier": {
     "overrides": [
@@ -37,6 +39,7 @@
     "@angular/router": "^20.1.0",
     "@auth0/auth0-angular": "^2.2.1",
     "@sentry/angular": "^9.0.0",
+    "@sentry/cli": "^2.50.2",
     "@types/file-saver": "^2.0.7",
     "auth0-js": "^9.28.0",
     "compressorjs": "^1.2.1",
@@ -68,6 +71,7 @@
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
+    "@angular-devkit/build-angular": "^20.1.3",
     "@angular-eslint/builder": "20.1.1",
     "@angular-eslint/eslint-plugin": "20.1.1",
     "@angular-eslint/eslint-plugin-template": "20.1.1",
