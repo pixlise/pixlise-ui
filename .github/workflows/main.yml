@@ -95,8 +95,6 @@ jobs:
           options: -v ${{ github.workspace }}:/work #-q
           run: |
             cd /work/client
-            ng v
-            node -v
             export TERM=xterm
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
             ng test --no-watch --no-progress --browsers=ChromeHeadless
