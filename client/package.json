@@ -5,13 +5,15 @@
     "prestart": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua && cp ../CHANGELOG.md .",
     "start": "clear&&ng serve",
     "prebuild": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua  && cp ../CHANGELOG.md .",
-    "build": "ng build && npm run sentry:sourcemaps",
+    "build": "ng build && npm run assets:backup && npm run sentry:sourcemaps && npm run assets:replace",
     "watch": "ng build --watch --configuration development",
     "postinstall": "node src/version.js",
     "pretest": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "test": "clear&&ng test",
     "lint": "ng lint",
-    "sentry:sourcemaps": "mv ./dist/pixlise/browser/assets ./&&sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise/browser/ && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise/browser&&mv ./assets ./dist/pixlise/browser/"
+    "assets:backup": "mv ./dist/pixlise/browser/assets /tmp/pixlise-build/",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise/browser/ && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise/browser",
+    "assets:replace": "mv /tmp/pixlise-build/assets ./dist/pixlise/browser/"
   },
   "prettier": {
     "overrides": [
@@ -37,6 +39,7 @@
     "@angular/router": "^20.1.0",
     "@auth0/auth0-angular": "^2.2.1",
     "@sentry/angular": "^9.0.0",
+    "@sentry/cli": "^2.50.2",
     "@types/file-saver": "^2.0.7",
     "auth0-js": "^9.28.0",
     "compressorjs": "^1.2.1",
