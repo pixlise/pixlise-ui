@@ -11,7 +11,7 @@
     "pretest": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "test": "clear&&ng test",
     "lint": "ng lint",
-    "assets:backup": "mv ./dist/pixlise/browser/assets /tmp/pixlise-build/",
+    "assets:backup": "mv ./dist/pixlise/browser/assets /tmp/pixlise-build/ && ls -al /tmp/pixlise-build/",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise/browser/ && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise/browser",
     "assets:replace": "mv /tmp/pixlise-build/assets ./dist/pixlise/browser/"
   },
