@@ -32,8 +32,10 @@
       </div>
 
       <div class="references-list {{ filteredReferences.length === 0 ? 'no-results' : '' }}">
-        <cdk-virtual-scroll-viewport [itemSize]="400" class="references-viewport">
-          <div *cdkVirtualFor="let reference of filteredReferences; trackBy: trackByReferenceId" class="reference-item">
+        <cdk-virtual-scroll-viewport [itemSize]="65" class="references-viewport">
+          <div
+            *cdkVirtualFor="let reference of filteredReferences; trackBy: trackByReferenceId"
+            class="reference-item {{ reference.isCollapsed ? 'collapsed' : 'expanded' }}">
             <div class="reference-header">
               <div class="selection-checkbox">
                 <two-state-icon-button
@@ -44,19 +46,35 @@
                 </two-state-icon-button>
               </div>
               <div class="reference-info">
-                <div class="reference-name">
-                  <span class="field-label">Sample Name</span>
-                  <div class="field-content">
-                    <input
-                      *ngIf="reference.isEditing"
-                      type="text"
-                      [(ngModel)]="reference.mineralSampleName"
-                      placeholder="Enter mineral/sample name"
-                      class="edit-input title-input" />
-                    <span *ngIf="!reference.isEditing" class="field-value">{{ reference.mineralSampleName || "Unnamed Sample" }}</span>
+                <div class="reference-info-header">
+                  <action-button
+                    [action]="reference.isCollapsed ? 'openAccordion' : 'closeAccordion'"
+                    color="rgb(var(--clr-gray-30))"
+                    [tooltipTitle]="reference.isCollapsed ? 'Expand details' : 'Collapse details'"
+                    (onClick)="onToggleAccordion(reference)">
+                  </action-button>
+                  <div class="reference-name-container" [class.collapsed]="reference.isCollapsed && !reference.isEditing">
+                    <div class="field-content">
+                      <input
+                        *ngIf="reference.isEditing"
+                        type="text"
+                        [(ngModel)]="reference.mineralSampleName"
+                        placeholder="Enter mineral/sample name"
+                        class="edit-input title-input" />
+                      <span
+                        *ngIf="!reference.isEditing"
+                        class="field-value"
+                        [class.collapsed-name]="reference.isCollapsed"
+                        #tooltip="matTooltip"
+                        [matTooltip]="reference.isCollapsed ? generateTooltipContent(reference) : ''"
+                        [matTooltipShowDelay]="500"
+                        [matTooltipClass]="'reference-details-tooltip'">
+                        {{ reference.mineralSampleName || "Unnamed Sample" }}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div class="reference-meta">
+                <div class="reference-meta" *ngIf="!reference.isCollapsed || reference.isEditing">
                   <div class="meta-field">
                     <span class="field-label">Category</span>
                     <div class="field-content">
@@ -86,7 +104,7 @@
                   action="check"
                   color="rgb(var(--clr-green-50))"
                   tooltipTitle="Save changes"
-                  (onClick)="onToggleReferenceEdit(reference)">
+                  (onClick)="onSaveReference(reference)">
                 </action-button>
                 <action-button
                   *ngIf="allowEdit"
@@ -98,7 +116,7 @@
               </div>
             </div>
 
-            <div class="reference-details">
+            <div class="reference-details" *ngIf="!reference.isCollapsed || reference.isEditing">
               <div class="citation-info">
                 <div class="citation-field">
                   <span class="field-label">Citation</span>
@@ -142,15 +160,15 @@
                       <div class="pair-expression">
                         <div class="pair-content">
                           <push-button *ngIf="reference.isEditing" buttonStyle="outline" title="Select Expression" (onClick)="onSelectExpression(reference, i)">
-                            {{ pair.expression || "Select Expression" }}
+                            {{ pair.expressionName || "Select Expression" }}
                           </push-button>
-                          <span *ngIf="!reference.isEditing" class="field-value expression-name">{{ pair.expression || "No expression" }}</span>
+                          <span *ngIf="!reference.isEditing" class="field-value expression-name">{{ pair.expressionName || "No expression" }}</span>
                         </div>
                       </div>
                       <div class="pair-value {{ reference.isEditing ? 'editing' : '' }}">
                         <div class="pair-content">
-                          <input *ngIf="reference.isEditing" type="number" [(ngModel)]="pair.value" placeholder="Value" class="edit-input value-input" step="any" />
-                          <span *ngIf="!reference.isEditing" class="field-value value">{{ pair.value !== undefined ? pair.value : "-" }}</span>
+                          <input *ngIf="reference.isEditing" type="number" [(ngModel)]="pair.value" placeholder="Value" class="edit-input value-input" step="0.01" />
+                          <span *ngIf="!reference.isEditing" class="field-value value">{{ formatExpressionValue(pair.value) }}</span>
                         </div>
                       </div>
                     </div>
@@ -200,7 +218,7 @@
             </div>
             <div class="selected-pairs">
               <div *ngFor="let pair of reference.expressionValuePairs" class="selected-pair">
-                <span class="pair-text">{{ pair.expression || "No expression" }}: {{ pair.value !== undefined ? pair.value : "-" }}</span>
+                <span class="pair-text">{{ pair.expressionName || "No expression" }}: {{ pair.value !== undefined ? pair.value : "-" }}</span>
               </div>
               <div *ngIf="reference.expressionValuePairs.length === 0" class="no-pairs-summary">
                 <span class="pair-text">No expressions</span>

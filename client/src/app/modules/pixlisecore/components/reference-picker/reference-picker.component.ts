@@ -6,21 +6,18 @@ import {
   ExpressionPickerData,
   ExpressionPickerResponse,
 } from "../../../expressions/components/expression-picker/expression-picker.component";
+import { ReferenceData } from "src/app/generated-protos/references";
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ReferenceDataListReq, ReferenceDataListResp, ReferenceDataWriteReq, ReferenceDataWriteResp } from "../../../../generated-protos/references-msgs";
 
 export interface ExpressionValuePair {
   expression: string;
   value: number;
 }
 
-export interface ReferenceData {
-  id: string;
-  category: string;
-  group: string;
-  mineralSampleName: string;
-  sourceCitation: string;
-  sourceLink: string;
-  expressionValuePairs: ExpressionValuePair[];
+export interface ReferenceDataItem extends ReferenceData {
   isEditing?: boolean;
+  isCollapsed?: boolean;
 }
 
 export interface ReferencePickerData {
@@ -43,8 +40,8 @@ export interface ReferencePickerResponse {
 export class ReferencePickerComponent implements OnDestroy {
   private _subs = new Subscription();
 
-  references: ReferenceData[] = [];
-  filteredReferences: ReferenceData[] = [];
+  references: ReferenceDataItem[] = [];
+  filteredReferences: ReferenceDataItem[] = [];
   selectedReferences: Set<string> = new Set();
   allowEdit: boolean = false;
 
@@ -57,14 +54,21 @@ export class ReferencePickerComponent implements OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ReferencePickerData,
     public dialogRef: MatDialogRef<ReferencePickerComponent, ReferencePickerResponse>,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private _apiDataService: APIDataService
   ) {
     this.allowEdit = this.data.allowEdit || false;
     this.requiredExpressions = this.data.requiredExpressions || [];
 
-    this.references = this.data.selectedReferences || this.getSampleData();
+    // this.references = (this.data.selectedReferences || this.getSampleData()).map(
+    //   ref =>
+    //     ({
+    //       ...ref,
+    //       isEditing: false,
+    //     }) as ReferenceDataItem
+    // );
 
-    this.references.forEach(ref => (ref.isEditing = false));
+    this.fetchLatestReferences();
 
     if (this.data.selectedReferences) {
       this.data.selectedReferences.forEach(ref => {
@@ -73,6 +77,17 @@ export class ReferencePickerComponent implements OnDestroy {
     }
 
     this.applyFilters();
+  }
+
+  fetchLatestReferences(): void {
+    this._apiDataService.sendReferenceDataListRequest(ReferenceDataListReq.create({})).subscribe({
+      next: (response: ReferenceDataListResp) => {
+        if (response?.referenceData) {
+          this.references = response.referenceData.map(ref => ({ ...ref, isEditing: false, isCollapsed: true }) as ReferenceDataItem);
+          this.applyFilters();
+        }
+      },
+    });
   }
 
   ngOnDestroy(): void {
@@ -89,11 +104,10 @@ export class ReferencePickerComponent implements OnDestroy {
         sourceCitation: "Achilles et al. (2017)",
         sourceLink: "https://doi.org/10.1016/j.icarus.2017.02.025",
         expressionValuePairs: [
-          { expression: "Na2O", value: 2.75 },
-          { expression: "MgO", value: 8.45 },
-          { expression: "Al2O3", value: 9.12 },
+          { expressionId: "Na2O", expressionName: "Na2O", value: 2.75 },
+          { expressionId: "MgO", expressionName: "MgO", value: 8.45 },
+          { expressionId: "Al2O3", expressionName: "Al2O3", value: 9.12 },
         ],
-        isEditing: false,
       },
       {
         id: "2",
@@ -103,10 +117,9 @@ export class ReferencePickerComponent implements OnDestroy {
         sourceCitation: "Treiman et al. (2016)",
         sourceLink: "https://doi.org/10.1016/j.epsl.2016.07.014",
         expressionValuePairs: [
-          { expression: "SiO2", value: 56.2 },
-          { expression: "K2O", value: 4.8 },
+          { expressionId: "SiO2", expressionName: "SiO2", value: 56.2 },
+          { expressionId: "K2O", expressionName: "K2O", value: 4.8 },
         ],
-        isEditing: false,
       },
       {
         id: "3",
@@ -116,12 +129,11 @@ export class ReferencePickerComponent implements OnDestroy {
         sourceCitation: "Smith et al. (2020)",
         sourceLink: "https://doi.org/10.1000/xyz.2020.001",
         expressionValuePairs: [
-          { expression: "SiO2", value: 65.8 },
-          { expression: "Al2O3", value: 15.2 },
-          { expression: "Fe2O3", value: 6.1 },
-          { expression: "MgO", value: 3.4 },
+          { expressionId: "SiO2", expressionName: "SiO2", value: 65.8 },
+          { expressionId: "Al2O3", expressionName: "Al2O3", value: 15.2 },
+          { expressionId: "Fe2O3", expressionName: "Fe2O3", value: 6.1 },
+          { expressionId: "MgO", expressionName: "MgO", value: 3.4 },
         ],
-        isEditing: false,
       },
     ];
   }
@@ -170,7 +182,7 @@ export class ReferencePickerComponent implements OnDestroy {
       reference.group,
       reference.sourceCitation,
       reference.sourceLink,
-      ...reference.expressionValuePairs.map(pair => pair.expression),
+      ...reference.expressionValuePairs.map(pair => pair.expressionName),
       ...reference.expressionValuePairs.map(pair => pair.value?.toString() || ""),
     ];
 
@@ -178,7 +190,7 @@ export class ReferencePickerComponent implements OnDestroy {
   }
 
   private hasAllRequiredExpressions(reference: ReferenceData): boolean {
-    const referenceExpressions = reference.expressionValuePairs.map(pair => pair.expression);
+    const referenceExpressions = reference.expressionValuePairs.map(pair => pair.expressionName);
     return this.requiredExpressions.every(required => referenceExpressions.includes(required));
   }
 
@@ -194,13 +206,13 @@ export class ReferencePickerComponent implements OnDestroy {
     return this.selectedReferences.has(referenceId);
   }
 
-  onToggleReferenceEdit(reference: ReferenceData): void {
+  onToggleReferenceEdit(reference: ReferenceDataItem): void {
     reference.isEditing = !reference.isEditing;
   }
 
   onAddReference(): void {
-    const newReference: ReferenceData = {
-      id: Date.now().toString(),
+    const newReference: ReferenceDataItem = {
+      id: "",
       category: "",
       group: "",
       mineralSampleName: "",
@@ -208,9 +220,41 @@ export class ReferencePickerComponent implements OnDestroy {
       sourceLink: "",
       expressionValuePairs: [],
       isEditing: true,
+      isCollapsed: false,
     };
     this.references = [newReference, ...this.references];
     this.applyFilters();
+  }
+
+  onSaveReference(reference: ReferenceDataItem): void {
+    reference.isEditing = false;
+    const referenceData = ReferenceData.create({
+      id: reference.id,
+      category: reference.category,
+      group: reference.group,
+      mineralSampleName: reference.mineralSampleName,
+      sourceCitation: reference.sourceCitation,
+      sourceLink: reference.sourceLink,
+      expressionValuePairs: reference.expressionValuePairs,
+    });
+    console.log(reference, "referenceData", referenceData);
+    this._apiDataService.sendReferenceDataWriteRequest(ReferenceDataWriteReq.create({ referenceData })).subscribe({
+      next: (response: ReferenceDataWriteResp) => {
+        console.log(response);
+        this.references = this.references.map(ref => (ref.id === reference.id && response?.referenceData ? response.referenceData : ref));
+        this.applyFilters();
+      },
+      error: error => {
+        console.error(error);
+      },
+    });
+  }
+
+  formatExpressionValue(value: number | undefined): number | string {
+    if (value === undefined) {
+      return "-";
+    }
+    return Math.round(value * 1000) / 1000;
   }
 
   onDeleteReference(referenceId: string): void {
@@ -221,7 +265,8 @@ export class ReferencePickerComponent implements OnDestroy {
 
   onAddExpressionPair(reference: ReferenceData): void {
     reference.expressionValuePairs.push({
-      expression: "",
+      expressionId: "",
+      expressionName: "",
       value: 0,
     });
   }
@@ -249,7 +294,8 @@ export class ReferencePickerComponent implements OnDestroy {
         if (response && response.selectedExpressions && response.selectedExpressions.length > 0) {
           const selectedExpression = response.selectedExpressions[0];
           if (this._currentExpressionSelection) {
-            this._currentExpressionSelection.reference.expressionValuePairs[this._currentExpressionSelection.pairIndex].expression = selectedExpression.name;
+            this._currentExpressionSelection.reference.expressionValuePairs[this._currentExpressionSelection.pairIndex].expressionName = selectedExpression.name;
+            this._currentExpressionSelection.reference.expressionValuePairs[this._currentExpressionSelection.pairIndex].expressionId = selectedExpression.id;
             this.applyFilters();
           }
         }
@@ -270,5 +316,25 @@ export class ReferencePickerComponent implements OnDestroy {
 
   onCancel(): void {
     this.dialogRef.close();
+  }
+
+  onToggleAccordion(reference: ReferenceDataItem): void {
+    reference.isCollapsed = !reference.isCollapsed;
+  }
+
+  generateTooltipContent(reference: ReferenceDataItem): string {
+    const category = reference.category || "No category";
+    const group = reference.group || "No group";
+    const citation = reference.sourceCitation || "No citation";
+    const expressionCount = reference.expressionValuePairs?.length || 0;
+
+    const expressionText =
+      expressionCount === 0 ? "No expressions defined" : expressionCount === 1 ? "1 expression defined" : `${expressionCount} expressions defined`;
+
+    return `${reference.mineralSampleName || "Unnamed Sample"}
+Category: ${category}
+Group: ${group}
+Citation: ${citation}
+Expressions: ${expressionText}`;
   }
 }

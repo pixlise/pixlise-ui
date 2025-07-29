@@ -165,6 +165,20 @@
       padding: 16px;
       background: #232829;
 
+      &.collapsed {
+        .reference-header {
+          align-items: center;
+          margin-bottom: 0;
+
+          .reference-info {
+            .reference-info-header {
+              align-items: center;
+              margin-bottom: 0;
+            }
+          }
+        }
+      }
+
       &:hover {
         background: rgb(68 76 80 / 20%);
       }
@@ -177,11 +191,34 @@
 
         .selection-checkbox {
           flex-shrink: 0;
-          padding-top: 4px;
         }
 
         .reference-info {
           flex: 1;
+
+          .reference-info-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+
+            .reference-name-container {
+              flex: 1;
+
+              &.collapsed {
+                margin-bottom: 0;
+              }
+
+              .field-content {
+                .collapsed-name {
+                  font-size: 16px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  padding: 8px 0;
+                }
+              }
+            }
+          }
 
           .reference-name {
             margin-bottom: 8px;
@@ -228,6 +265,7 @@
           .reference-meta {
             display: flex;
             gap: 16px;
+            margin-left: 32px;
 
             .meta-field {
               flex: 1;
@@ -279,7 +317,7 @@
       }
 
       .reference-details {
-        margin-left: 42px;
+        margin-left: 77px;
         margin-right: 68px;
 
         .citation-info {
