@@ -157,6 +157,16 @@ export const WIDGETS = {
     showRGBMixExpressionPickerMode: true,
     controlConfiguration: {},
   },
+  "scan-3d-view": {
+    name: "3D View",
+    description: "3D View",
+    hasExpressions: true,
+    widgetComponent: null,
+    //component: Scan3DViewComponent,
+    dataKey: "scan3DView",
+    showRGBMixExpressionPickerMode: true,
+    controlConfiguration: {},
+  },
   "multi-channel-image": {
     name: "RGBU Viewer",
     description: "RGBU Viewer",
@@ -236,6 +246,7 @@ const readWidgets = async () => {
     const { QuantificationTableComponent } = await import("src/app/modules/table-views/table-views.module");
     const { MarkdownTextViewComponent } = await import("src/app/modules/text-views/text-views.module");
     const { VariogramWidgetComponent } = await import("src/app/modules/scatterplots/widgets/variogram-widget/variogram-widget.component");
+    const { Scan3DViewComponent } = await import("src/app/modules/image-viewers/widgets/scan-3d-view/scan-3d-view.component");
 
     loadedWidgets.set("spectrum-chart", SpectrumChartWidgetComponent);
     loadedWidgets.set("binary-plot", BinaryChartWidgetComponent);
@@ -250,6 +261,7 @@ const readWidgets = async () => {
     loadedWidgets.set("quant-table", QuantificationTableComponent);
     loadedWidgets.set("text-view", MarkdownTextViewComponent);
     loadedWidgets.set("variogram", VariogramWidgetComponent);
+    loadedWidgets.set("scan-3d-view", Scan3DViewComponent);
   }
   return loadedWidgets;
 };
