@@ -479,10 +479,24 @@ $clr-gray-80-plus: #2b3135;
 }
 
 :root {
-  @include mat.menu-overrides((
-    container-color: $clr-gray-80-plus
+  @include mat.select-overrides((
+    panel-background-color: $clr-gray-80-plus,
+    /*enabled-trigger-text-color: red,
+    disabled-trigger-text-color: blue,
+    placeholder-text-color: blue,*/
   ));
 }
+
+mat-option {
+  .mdc-list-item__primary-text {
+    color: white !important;
+  }
+/* Checkbox is black :(
+  .mdc-pseudo-checkbox {
+    color: white !important;
+  }*/
+}
+
 /* Replaces:
 .mdc-menu-surface {
   --mdc-theme-surface: $clr-gray-80-plus;
