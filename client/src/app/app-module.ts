@@ -29,6 +29,7 @@ import { SettingsSidebarComponent } from "./components/settings-sidebar/settings
 import { MarkdownModule } from "ngx-markdown";
 import { CustomAuthHttpInterceptor } from "./services/custom-http-interceptor.service";
 import { Observable } from "rxjs";
+import { provideNgtRenderer } from "angular-three/dom";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -186,6 +187,7 @@ export const authHttpInterceptorCustomFn = (
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimations(),
+    provideNgtRenderer(),
    // provideHttpClient(withInterceptorsFromDi()),
    provideHttpClient(withInterceptors([authHttpInterceptorCustomFn])),
     /* We used to define our own HttpInterceptorService but switched to use Auth0's built in one. The "extra" things ours did were:

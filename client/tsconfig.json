@@ -21,6 +21,7 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
+    //"moduleResolution": "node",
     "typeRoots": [
       "node_modules/@types"
     ],
