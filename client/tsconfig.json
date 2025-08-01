@@ -31,7 +31,7 @@
       "dom"
     ]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/app/modules/image-viewers/widgets/scan-3d-view/scene-graph-grid.ts_", "src/app/modules/image-viewers/widgets/scan-3d-view/scene-graph.ts"],
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,

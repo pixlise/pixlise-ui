@@ -1,11 +1,10 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { Scan3DViewModel } from "./scan-3d-view-model";
 import { SceneGraph } from "./scene-graph";
+import { SceneGraphGrid } from "./scene-graph-grid";
 import { NgtCanvas } from "angular-three/dom";
-import { Mesh, BoxGeometry, Scene } from 'three';
+import { Mesh, BoxGeometry } from 'three';
 import { extend } from "angular-three";
 
 extend({
@@ -19,7 +18,7 @@ extend({
   selector: "app-scan-3d-view",
   templateUrl: "./scan-3d-view.component.html",
   styleUrls: ["./scan-3d-view.component.scss"],
-  imports: [NgtCanvas, SceneGraph],
+  imports: [NgtCanvas, SceneGraph, SceneGraphGrid],
 })
 export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   // private _subs = new Subscription();
