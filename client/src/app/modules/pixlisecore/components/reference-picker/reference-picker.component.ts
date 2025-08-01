@@ -1,19 +1,27 @@
 import { Component, Inject, OnDestroy } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
+import * as papa from "papaparse";
 import {
   ExpressionPickerComponent,
   ExpressionPickerData,
   ExpressionPickerResponse,
 } from "../../../expressions/components/expression-picker/expression-picker.component";
-import { ReferenceData } from "src/app/generated-protos/references";
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ReferenceDataListReq, ReferenceDataListResp, ReferenceDataWriteReq, ReferenceDataWriteResp } from "../../../../generated-protos/references-msgs";
-
-export interface ExpressionValuePair {
-  expression: string;
-  value: number;
-}
+import { ReferenceData, ExpressionValuePair } from "src/app/generated-protos/references";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  ReferenceDataListReq,
+  ReferenceDataListResp,
+  ReferenceDataWriteReq,
+  ReferenceDataWriteResp,
+  ReferenceDataBulkWriteReq,
+  ReferenceDataBulkWriteResp,
+  ReferenceDataDeleteReq,
+  ReferenceDataDeleteResp,
+} from "../../../../generated-protos/references-msgs";
+import { DataExpression } from "../../../../generated-protos/expressions";
+import { ExpressionsService } from "../../../expressions/services/expressions.service";
+import { levenshteinDistance } from "../../../../utils/search";
 
 export interface ReferenceDataItem extends ReferenceData {
   isEditing?: boolean;
@@ -48,6 +56,7 @@ export class ReferencePickerComponent implements OnDestroy {
   searchText: string = "";
   showMatchingExpressionsOnly: boolean = false;
   requiredExpressions: string[] = [];
+  _allExpressions: Record<string, DataExpression[]> = {};
 
   private _currentExpressionSelection: { reference: ReferenceData; pairIndex: number } | null = null;
 
@@ -55,20 +64,15 @@ export class ReferencePickerComponent implements OnDestroy {
     @Inject(MAT_DIALOG_DATA) public data: ReferencePickerData,
     public dialogRef: MatDialogRef<ReferencePickerComponent, ReferencePickerResponse>,
     private dialog: MatDialog,
-    private _apiDataService: APIDataService
+    private _apiDataService: APIDataService,
+    private _snackBarService: SnackbarService,
+    private _expressionsService: ExpressionsService
   ) {
     this.allowEdit = this.data.allowEdit || false;
     this.requiredExpressions = this.data.requiredExpressions || [];
 
-    // this.references = (this.data.selectedReferences || this.getSampleData()).map(
-    //   ref =>
-    //     ({
-    //       ...ref,
-    //       isEditing: false,
-    //     }) as ReferenceDataItem
-    // );
-
     this.fetchLatestReferences();
+    this.fetchLatestExpressions();
 
     if (this.data.selectedReferences) {
       this.data.selectedReferences.forEach(ref => {
@@ -90,52 +94,18 @@ export class ReferencePickerComponent implements OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    this._subs.unsubscribe();
+  fetchLatestExpressions(): void {
+    this._expressionsService.fetchExpressionsAsync().subscribe({
+      next: expressions => {
+        Object.values(expressions).forEach(expr => {
+          this._allExpressions[expr.name] = [...(this._allExpressions[expr.name] || []), expr];
+        });
+      },
+    });
   }
 
-  getSampleData(): ReferenceData[] {
-    return [
-      {
-        id: "1",
-        category: "Igneous",
-        group: "Basalt",
-        mineralSampleName: "MSL Gale Crater O-Tray Dust Sol 571",
-        sourceCitation: "Achilles et al. (2017)",
-        sourceLink: "https://doi.org/10.1016/j.icarus.2017.02.025",
-        expressionValuePairs: [
-          { expressionId: "Na2O", expressionName: "Na2O", value: 2.75 },
-          { expressionId: "MgO", expressionName: "MgO", value: 8.45 },
-          { expressionId: "Al2O3", expressionName: "Al2O3", value: 9.12 },
-        ],
-      },
-      {
-        id: "2",
-        category: "Sedimentary",
-        group: "Sandstone",
-        mineralSampleName: "Windjana Target",
-        sourceCitation: "Treiman et al. (2016)",
-        sourceLink: "https://doi.org/10.1016/j.epsl.2016.07.014",
-        expressionValuePairs: [
-          { expressionId: "SiO2", expressionName: "SiO2", value: 56.2 },
-          { expressionId: "K2O", expressionName: "K2O", value: 4.8 },
-        ],
-      },
-      {
-        id: "3",
-        category: "Metamorphic",
-        group: "Gneiss",
-        mineralSampleName: "Sample ABC-123",
-        sourceCitation: "Smith et al. (2020)",
-        sourceLink: "https://doi.org/10.1000/xyz.2020.001",
-        expressionValuePairs: [
-          { expressionId: "SiO2", expressionName: "SiO2", value: 65.8 },
-          { expressionId: "Al2O3", expressionName: "Al2O3", value: 15.2 },
-          { expressionId: "Fe2O3", expressionName: "Fe2O3", value: 6.1 },
-          { expressionId: "MgO", expressionName: "MgO", value: 3.4 },
-        ],
-      },
-    ];
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   get selectedReferencesArray(): ReferenceData[] {
@@ -237,7 +207,6 @@ export class ReferencePickerComponent implements OnDestroy {
       sourceLink: reference.sourceLink,
       expressionValuePairs: reference.expressionValuePairs,
     });
-    console.log(reference, "referenceData", referenceData);
     this._apiDataService.sendReferenceDataWriteRequest(ReferenceDataWriteReq.create({ referenceData })).subscribe({
       next: (response: ReferenceDataWriteResp) => {
         console.log(response);
@@ -258,9 +227,16 @@ export class ReferencePickerComponent implements OnDestroy {
   }
 
   onDeleteReference(referenceId: string): void {
-    this.references = this.references.filter(ref => ref.id !== referenceId);
-    this.selectedReferences.delete(referenceId);
-    this.applyFilters();
+    this._apiDataService.sendReferenceDataDeleteRequest(ReferenceDataDeleteReq.create({ id: referenceId })).subscribe({
+      next: (response: ReferenceDataDeleteResp) => {
+        this.references = this.references.filter(ref => ref.id !== referenceId);
+        this.selectedReferences.delete(referenceId);
+        this.applyFilters();
+      },
+      error: error => {
+        console.error(error);
+      },
+    });
   }
 
   onAddExpressionPair(reference: ReferenceData): void {
@@ -336,5 +312,126 @@ Category: ${category}
 Group: ${group}
 Citation: ${citation}
 Expressions: ${expressionText}`;
+  }
+
+  onUploadCSV(): void {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".csv";
+    fileInput.style.display = "none";
+
+    fileInput.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const fileReader = new FileReader();
+      fileReader.onload = evt => {
+        const csvData = evt.target?.result as string;
+        this.parseCsvAndUpload(csvData);
+      };
+      fileReader.readAsText(file);
+    };
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+  }
+
+  private parseCsvAndUpload(csvData: string): void {
+    try {
+      const parseResult = papa.parse(csvData, { header: true, skipEmptyLines: true });
+
+      if (parseResult.errors.length > 0) {
+        this._snackBarService.openError("CSV parsing failed", parseResult.errors.map(e => e.message).join(", "));
+        return;
+      }
+
+      const rows = parseResult.data as any[];
+      if (rows.length === 0) {
+        this._snackBarService.openError("No data found in CSV");
+        return;
+      }
+
+      const referenceDataList: ReferenceData[] = [];
+      const metaLabels = ["Category", "Group", "Mineral/Sample Name", "Source Citation", "Source Link"];
+
+      for (const row of rows) {
+        const reference: ReferenceData = {
+          id: "",
+          mineralSampleName: row["Mineral/Sample Name"] || "",
+          category: row["Category"] || "",
+          group: row["Group"] || "",
+          sourceCitation: row["Source Citation"] || "",
+          sourceLink: row["Source Link"] || "",
+          expressionValuePairs: [],
+        };
+
+        const keys = Object.keys(row);
+        const expressionKeys = keys.filter(key => !metaLabels.includes(key) && row[key] !== "");
+
+        for (const expressionKey of expressionKeys) {
+          let expressionName = row[expressionKey];
+          const value = parseFloat(row[expressionKey]);
+
+          if (expressionName && !isNaN(value)) {
+            const matchingExpressions = this._allExpressions[expressionName];
+            let expressionId = matchingExpressions?.[0]?.id || "";
+            if (!expressionId) {
+              const closestMatches = Object.keys(this._allExpressions).sort((a, b) => {
+                const aDistance = levenshteinDistance(a, expressionName);
+                const bDistance = levenshteinDistance(b, expressionName);
+                return aDistance - bDistance;
+              });
+
+              const closestMatch = closestMatches[0];
+              const distanceToClosestMatch = levenshteinDistance(expressionName, closestMatch);
+              if (distanceToClosestMatch < 3) {
+                const closestExpression = this._allExpressions[closestMatch]?.[0];
+                if (closestExpression) {
+                  expressionId = closestExpression.id;
+                  expressionName = closestExpression.name;
+                }
+              }
+            }
+
+            reference.expressionValuePairs.push({
+              expressionId: expressionId,
+              expressionName: expressionName,
+              value: value,
+            });
+          }
+        }
+
+        if (reference.mineralSampleName) {
+          referenceDataList.push(reference);
+        }
+      }
+
+      if (referenceDataList.length === 0) {
+        this._snackBarService.openError("No valid reference data found in CSV");
+        return;
+      }
+
+      this.bulkUploadReferences(referenceDataList);
+    } catch (error) {
+      this._snackBarService.openError("Failed to parse CSV file", error instanceof Error ? error.message : "Unknown error");
+    }
+  }
+
+  private bulkUploadReferences(referenceDataList: ReferenceData[]): void {
+    this._apiDataService.sendReferenceDataBulkWriteRequest(ReferenceDataBulkWriteReq.create({ referenceData: referenceDataList, matchByFields: true })).subscribe({
+      next: (response: ReferenceDataBulkWriteResp) => {
+        if (response?.referenceData && response.referenceData.length > 0) {
+          this._snackBarService.openSuccess(`Successfully uploaded ${response.referenceData.length} references from CSV`);
+
+          this.fetchLatestReferences();
+        } else {
+          this._snackBarService.openError("No references were created from the CSV upload");
+        }
+      },
+      error: error => {
+        this._snackBarService.openError("Failed to upload references", error?.message || "Unknown error");
+      },
+    });
   }
 }

@@ -76,9 +76,20 @@
         font-weight: 500;
       }
 
+      .title-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
       push-button {
         font-size: 12px;
         padding: 4px 12px;
+      }
+
+      .upload-button {
+        padding-left: 0;
+        padding-right: 0;
       }
     }
 
@@ -651,5 +662,16 @@
         flex: 1;
       }
     }
+  }
+}
+
+.upload-button {
+  .upload-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: -1px;
+    margin-bottom: -1px;
   }
 }

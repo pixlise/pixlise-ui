@@ -12,7 +12,15 @@
     <section class="column browse">
       <div class="title">
         <h4>References ({{ filteredReferences.length }})</h4>
-        <push-button *ngIf="allowEdit" buttonStyle="outline" title="Add Reference" (onClick)="onAddReference()"> + Add Reference </push-button>
+        <div class="title-actions">
+          <push-button *ngIf="allowEdit" buttonStyle="outline" title="Add Reference" (onClick)="onAddReference()"> + Add Reference </push-button>
+          <push-button *ngIf="allowEdit" buttonStyle="outline" title="Upload CSV" (onClick)="onUploadCSV()" class="upload-button">
+            <div class="upload-container">
+              <img src="assets/button-icons/upload.svg" alt="Upload icon" class="upload-icon" />
+              <span class="upload-text">Upload CSV</span>
+            </div>
+          </push-button>
+        </div>
       </div>
 
       <div class="search-controls">
