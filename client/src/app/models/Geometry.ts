@@ -247,7 +247,7 @@ export function distanceBetweenPoints(pt1: Point, pt2: Point): number {
   return Math.sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
-export function closestDistanceBetweenPointAndLine(pt: Point, lineStart: Point, lineDirNormalVec: Point, lineLength: number): number {
+export function closestDistanceBetweenPointAndLine(pt: Point, lineStart: Point, lineDirNormalVec: Point, lineLength: number): number | null {
   // Flip the vector so we now have the perpendicular direction we need to measure in to see how far
   // the point is from the line
   let perpLineVec = new Point(lineDirNormalVec.y, -lineDirNormalVec.x);
