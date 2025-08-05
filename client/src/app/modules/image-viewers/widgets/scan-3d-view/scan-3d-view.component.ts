@@ -3,12 +3,12 @@ import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
-import * as THREE from 'three';
 import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ThreeRenderData } from "./interactive-canvas-3d.component";
 import { Point } from "src/app/models/Geometry";
-import { AxisAlignedBBox, scaleVec3D, Vec3D } from "src/app/models/Geometry3D";
+import { AxisAlignedBBox } from "src/app/models/Geometry3D";
+import * as THREE from 'three';
 
 @Component({
   standalone: false,
@@ -53,8 +53,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         const size = new AxisAlignedBBox();
 				for (const loc of resp.beamLocations) {
 					if (loc.x != 0 && loc.y != 0 && loc.z != 0) {
-            let pt = new Vec3D(loc.x, loc.y, loc.z);
-            pt = scaleVec3D(pt, scale);
+            let pt = new THREE.Vector3(loc.x * scale, loc.z * scale, loc.y * scale);
+            //pt = scaleVec3D(pt, scale);
 
             size.expandToFit(pt);
 
@@ -123,7 +123,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     geometry.setAttribute( 'position', new THREE.BufferAttribute(new Float32Array(pmcLocations), 3));
     const points = new THREE.Points(
       geometry,
-      new THREE.PointsMaterial({color: new THREE.Color(0,1,0), size: 0.1})
+      new THREE.PointsMaterial({color: new THREE.Color(0,1,0), size: 0.01})
     );
     this.renderData.scene.add(points);
 
@@ -139,11 +139,14 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       1000
     );
 
-    const dataSize = size.center();
+    const dataCenter = size.center();
     //this.renderData.camera.lookAt(new THREE.vector3dataSize.).rotateX(0.3);
-    this.renderData.camera.position.x = dataSize.x;
-    this.renderData.camera.position.y = dataSize.y;
-    this.renderData.camera.position.z = size.minCorner.z*1.1;
+    this.renderData.camera.position.x = dataCenter.x;
+    this.renderData.camera.position.y = size.maxCorner.y + (size.maxCorner.y-size.minCorner.y) * 3;
+    this.renderData.camera.position.z = dataCenter.z + (size.maxCorner.z-size.minCorner.z)*0.8;
+    
+    this.renderData.camera.lookAt(dataCenter);
+
     this.renderData.scene.add(this.renderData.camera);
 
     this.mdl.needsDraw$.next();

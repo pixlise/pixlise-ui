@@ -1,32 +1,22 @@
-export class Vec3D {
-  constructor(
-    public x: number = 0,
-    public y: number = 0,
-    public z: number = 0
-  ) {}
-
-  public copy(): Vec3D {
-    return new Vec3D(this.x, this.y, this.z);
-  }
-}
+import * as THREE from 'three';
 
 export class AxisAlignedBBox {
-  constructor(public minCorner: Vec3D = new Vec3D(Infinity, Infinity, Infinity), public maxCorner: Vec3D = new Vec3D(-Infinity, -Infinity, -Infinity)) {
+  constructor(public minCorner: THREE.Vector3 = new THREE.Vector3(Infinity, Infinity, Infinity), public maxCorner: THREE.Vector3 = new THREE.Vector3(-Infinity, -Infinity, -Infinity)) {
   }
 
   public copy(): AxisAlignedBBox {
-    return new AxisAlignedBBox(this.minCorner.copy(), this.maxCorner.copy());
+    return new AxisAlignedBBox(new THREE.Vector3().copy(this.minCorner), new THREE.Vector3().copy(this.maxCorner));
   }
 
-  public center(): Vec3D {
-    return new Vec3D(
+  public center(): THREE.Vector3 {
+    return new THREE.Vector3(
       (this.maxCorner.x+this.minCorner.x) / 2,
       (this.maxCorner.y+this.minCorner.y) / 2,
       (this.maxCorner.z+this.minCorner.z) / 2
     );
   }
 
-  public expandToFit(pt: Vec3D): void {
+  public expandToFit(pt: THREE.Vector3): void {
     if (pt.x > this.maxCorner.x) {
       this.maxCorner.x = pt.x;
     }
@@ -47,7 +37,7 @@ export class AxisAlignedBBox {
     }
   }
 }
-
+/*
 export function scaleVec3D(v: Vec3D, s: number) {
   return new Vec3D(v.x * s, v.y * s, v.z * s);
 }
@@ -59,4 +49,4 @@ export function addVec3Ds(v1: Vec3D, v2: Vec3D) {
 // Returns v1-v2
 export function subtractVec3Ds(v1: Vec3D, v2: Vec3D) {
   return new Vec3D(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
-}
+}*/
