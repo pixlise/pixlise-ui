@@ -1,7 +1,12 @@
-import { Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
+import { BehaviorSubject } from "rxjs";
+import { Point } from "src/app/models/Geometry";
 import { CanvasDrawNotifier, CanvasParams, ResizingCanvasComponent } from "src/app/modules/widget/components/interactive-canvas/resizing-canvas.component";
 import * as THREE from 'three';
 
+export class ThreeRenderData {
+  constructor(public scene: THREE.Scene, public camera: THREE.PerspectiveCamera) {}
+}
 
 @Component({
   standalone: false,
@@ -9,16 +14,13 @@ import * as THREE from 'three';
   templateUrl: "./interactive-canvas-3d.component.html",
   styleUrls: ["./interactive-canvas-3d.component.scss"],
 })
-export class InteractiveCanvas3DComponent extends ResizingCanvasComponent implements OnInit {
+export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
   @ViewChild("InteractiveCanvas3D") _imgCanvas?: ElementRef;
 
-  protected _scene?: THREE.Scene;
-  protected _sceneCamera?: THREE.PerspectiveCamera;
-  protected _renderer?: THREE.WebGLRenderer;
+  @Output() canvasSize = new EventEmitter();
 
-  ngOnInit() {
-    this.createThreeJsBox();
-  }
+  @Input() renderData: ThreeRenderData | undefined;
+  protected _renderer?: THREE.WebGLRenderer;
 
   get drawNotifier(): CanvasDrawNotifier | null {
     return this._drawNotifier;
@@ -37,64 +39,52 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent implem
   }
 
   override triggerRedraw(): void {
-    // ???
+    if (this._renderer && this.renderData) {
+      window.requestAnimationFrame(() => {
+        if (this._renderer && this.renderData) {
+          this._renderer.render(this.renderData.scene, this.renderData.camera);
+        }
+      });
+    }
   }
 
   protected override setTransformCanvasParams(params: CanvasParams): void {
-    if (!this._sceneCamera || !this._renderer || !this._scene) {
-      this.createThreeJsBox();
+    if (!this._renderer) {
+      this.create3();
     }
 
-    if (!this._sceneCamera || !this._renderer || !this._scene) {
-      console.error("No scene, renderer or camera for setTransformCanvasParams");
+    if (!this._renderer) {
+      console.error("No renderer for setTransformCanvasParams");
+      return;
+    }
+    this._renderer.setSize(params.width, params.height);
+
+    this.canvasSize.emit(new Point(params.width, params.height));
+
+    if (!this.renderData) {
+      console.warn("No renderData for setTransformCanvasParams");
       return;
     }
 
-    this._sceneCamera.aspect = params.width / params.height;
-    this._sceneCamera.updateProjectionMatrix();
+    this.renderData.camera.aspect = params.width / params.height;
+    this.renderData.camera.updateProjectionMatrix();
 
-    this._renderer.setSize(params.width, params.height);
-    this._renderer.render(this._scene, this._sceneCamera);
+    this.triggerRedraw();
   }
 
   protected override refreshContext(): void {
     // We don't need a context
   }
 
-  createThreeJsBox(): void {
+  create3(): void {
     const canvasContainer = document.getElementsByClassName("canvas-container").item(0);
     const canvas = this.getCanvasElement()?.nativeElement;
-
-    this._scene = new THREE.Scene();
-
-    const material = new THREE.MeshToonMaterial();
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    this._scene.add(ambientLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 0.5);
-    pointLight.position.x = 2;
-    pointLight.position.y = 2;
-    pointLight.position.z = 2;
-    this._scene.add(pointLight);
-
-    const box = new THREE.Mesh(
-      new THREE.BoxGeometry(1.5, 1.5, 1.5), 
-      material
-    );
-
-    const torus = new THREE.Mesh(
-      new THREE.TorusGeometry(5, 1.5, 16, 100),
-      material
-    );
-
-    this._scene.add(torus, box);
 
     const canvasSizes = {
       width: canvasContainer!.clientWidth * window.devicePixelRatio, // window.innerWidth,
       height: canvasContainer!.clientHeight * window.devicePixelRatio, // window.innerHeight,
     };
-
+/*
     this._sceneCamera = new THREE.PerspectiveCamera(
       75,
       canvasSizes.width / canvasSizes.height,
@@ -103,7 +93,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent implem
     );
     this._sceneCamera.position.z = 30;
     this._scene.add(this._sceneCamera);
-
+*/
     if (!canvas) {
       console.error("No canvas for creating WebGLRenderer");
       return;
@@ -113,7 +103,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent implem
       canvas: canvas,
     });
 
-    this._renderer.setClearColor(0xe232222, 1);
+    this._renderer.setClearColor(new THREE.Color(0.005, 0.01, 0.005), 1);
     this._renderer.setSize(canvasSizes.width, canvasSizes.height);
 /*
   window.addEventListener('resize', () =>
@@ -129,6 +119,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent implem
     renderer.render(scene, camera);
   });
 */
+/*
     const clock = new THREE.Clock();
 
     const animateGeometry = () => {
@@ -152,6 +143,6 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent implem
       window.requestAnimationFrame(animateGeometry);
     };
 
-    animateGeometry();
+    animateGeometry();*/
   }
 }

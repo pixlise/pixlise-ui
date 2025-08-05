@@ -1,9 +1,14 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import * as THREE from 'three';
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
+import { ThreeRenderData } from "./interactive-canvas-3d.component";
+import { Point } from "src/app/models/Geometry";
+import { AxisAlignedBBox, scaleVec3D, Vec3D } from "src/app/models/Geometry3D";
 
 @Component({
   standalone: false,
@@ -17,8 +22,14 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   mdl: Scan3DViewModel;
 
   cursorShown: string = "";
+  renderData: ThreeRenderData = new ThreeRenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
+  private _sceneInited = false;
+  private _canvasSize?: Point;
 
-  constructor(public dialog: MatDialog) {
+  constructor(
+		private _cacheDataService: APICachedDataService,
+		private _analysisLayoutService: AnalysisLayoutService
+  ) {
     super();
 
     this.mdl = new Scan3DViewModel();
@@ -30,26 +41,71 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   }
 
   ngOnInit() {
-    this.isWidgetDataLoading = false;
-    //this.createThreeJsBox();
   }
-/*
-  createThreeJsBox(): void {
-    const canvasContainer = document.getElementsByClassName("canvas-container").item(0);
-    const canvas = document.getElementById('canvas-box');
 
-    const scene = new THREE.Scene();
+  protected load() {
+		const scanId = this._analysisLayoutService.defaultScanId;
+		this._cacheDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })).subscribe(
+			(resp: ScanBeamLocationsResp) => {
+				const locs: number[] = [];
+				
+				const scale = 100;
+        const size = new AxisAlignedBBox();
+				for (const loc of resp.beamLocations) {
+					if (loc.x != 0 && loc.y != 0 && loc.z != 0) {
+            let pt = new Vec3D(loc.x, loc.y, loc.z);
+            pt = scaleVec3D(pt, scale);
 
-    const material = new THREE.MeshToonMaterial();
+            size.expandToFit(pt);
+
+						locs.push(pt.x);
+						locs.push(pt.y);
+						locs.push(pt.z);
+					}
+				}
+
+        this.isWidgetDataLoading = false;
+
+        this.initScene(locs, size);
+			}
+		);
+  }
+  
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
+  onCanvasSize(size: Point) {
+    const isFirst = this._canvasSize === undefined;
+    this._canvasSize = size;
+
+    // If we have a size and it's the first time it was set, we now load our model data
+    if (isFirst && this._canvasSize) {
+      this.load();
+    }
+  }
+
+  protected initScene(pmcLocations: number[], size: AxisAlignedBBox) {
+    if (!this._canvasSize) {
+      console.error("initScene called without known canvas size");
+      return;
+    }
+    if (this._sceneInited) {
+      console.error("initScene already called");
+      return;
+    }
+    this._sceneInited = true;
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 0.5);
+    this.renderData.scene.add(ambientLight);
+/*
+    const pointLight = new THREE.PointLight(0xffffff, 1);
     pointLight.position.x = 2;
-    pointLight.position.y = 2;
-    pointLight.position.z = 2;
-    scene.add(pointLight);
+    pointLight.position.y = 1;
+    pointLight.position.z = 10;
+    this.renderData.scene.add(pointLight);
+
+    const material = new THREE.MeshToonMaterial();
 
     const box = new THREE.Mesh(
       new THREE.BoxGeometry(1.5, 1.5, 1.5), 
@@ -61,70 +117,35 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       material
     );
 
-    scene.add(torus, box);
-
-  const canvasSizes = {
-    width: canvasContainer!.clientWidth * window.devicePixelRatio, // window.innerWidth,
-    height: canvasContainer!.clientHeight * window.devicePixelRatio, // window.innerHeight,
-  };
-
-  const camera = new THREE.PerspectiveCamera(
-    75,
-    canvasSizes.width / canvasSizes.height,
-    0.001,
-    1000
-  );
-  camera.position.z = 30;
-  scene.add(camera);
-
-  if (!canvas) {
-    return;
-  }
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-  });
-
-  renderer.setClearColor(0xe232222, 1);
-  renderer.setSize(canvasSizes.width, canvasSizes.height);
-
-  window.addEventListener('resize', () => {
-    //const theCanvas = document.getElementById('canvas-box');
-    canvasSizes.width = canvasContainer!.clientWidth * window.devicePixelRatio; //window.innerWidth;
-    canvasSizes.height = canvasContainer!.clientHeight * window.devicePixelRatio; //window.innerHeight;
-
-    camera.aspect = canvasSizes.width / canvasSizes.height;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize(canvasSizes.width, canvasSizes.height);
-    renderer.render(scene, camera);
-  });
-
-  const clock = new THREE.Clock();
-
-  const animateGeometry = () => {
-    const elapsedTime = clock.getElapsedTime();
-
-    // Update animation objects
-    box.rotation.x = elapsedTime;
-    box.rotation.y = elapsedTime;
-    box.rotation.z = elapsedTime;
-
-    torus.rotation.x = -elapsedTime;
-    torus.rotation.y = -elapsedTime;
-    torus.rotation.z = -elapsedTime;
-
-    // Render
-    renderer.render(scene, camera);
-
-    // Call animateGeometry again on the next frame
-    window.requestAnimationFrame(animateGeometry);
-  };
-
-  animateGeometry();
-}
+    this.renderData.scene.add(torus, box);
 */
-  ngOnDestroy() {
-    this._subs.unsubscribe();
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute( 'position', new THREE.BufferAttribute(new Float32Array(pmcLocations), 3));
+    const points = new THREE.Points(
+      geometry,
+      new THREE.PointsMaterial({color: new THREE.Color(0,1,0), size: 0.1})
+    );
+    this.renderData.scene.add(points);
+
+    if (!this._canvasSize.x || !this._canvasSize.y) {
+      console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
+      return;
+    }
+
+    this.renderData.camera = new THREE.PerspectiveCamera(
+      60,
+      this._canvasSize.x / this._canvasSize.y,
+      0.001,
+      1000
+    );
+
+    const dataSize = size.center();
+    //this.renderData.camera.lookAt(new THREE.vector3dataSize.).rotateX(0.3);
+    this.renderData.camera.position.x = dataSize.x;
+    this.renderData.camera.position.y = dataSize.y;
+    this.renderData.camera.position.z = size.minCorner.z*1.1;
+    this.renderData.scene.add(this.renderData.camera);
+
+    this.mdl.needsDraw$.next();
   }
 }

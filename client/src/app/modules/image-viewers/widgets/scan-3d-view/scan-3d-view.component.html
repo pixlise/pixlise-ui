@@ -1,4 +1,6 @@
 <interactive-canvas-3d
+  [renderData]="renderData"
+  (canvasSize)="onCanvasSize($event)"
   [drawNotifier]="mdl">
 </interactive-canvas-3d>
   <!-- [ngClass]="cursorShown" -->
