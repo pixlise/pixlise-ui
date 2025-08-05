@@ -28,32 +28,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, ViewChild } from "@angular/core";
-import { Observable, ReplaySubject, Subject, Subscription, of } from "rxjs";
+import { Observable, of } from "rxjs";
 import { tap } from "rxjs/operators";
 
-import { addVectors, Point, Rect } from "src/app/models/Geometry";
+import { addVectors, Point, } from "src/app/models/Geometry";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
-// import { LayoutService } from "src/app/services/layout.service";
+import { CanvasParams, CanvasDrawNotifier, ResizingCanvasComponent } from "./resizing-canvas.component";
 
-export class CanvasParams {
-  constructor(
-    public width: number,
-    public height: number,
-    public dpi: number
-  ) {}
+export { CanvasParams, CanvasDrawNotifier };
 
-  getCenterPoint(): Point {
-    return new Point(this.width / 2, this.height / 2);
-  }
-
-  getRect(): Rect {
-    return new Rect(0, 0, this.width, this.height);
-  }
-
-  equals(other: CanvasParams): boolean {
-    return this.width == other.width && this.height == other.height && this.dpi == other.dpi;
-  }
-}
 
 export class CanvasDrawParameters {
   constructor(
@@ -151,13 +134,6 @@ export class CanvasKeyEvent {
   ) {}
 }
 
-export interface CanvasDrawNotifier {
-  needsDraw$: Subject<void>;
-  needsCanvasResize$?: Subject<void>;
-  resolution$?: ReplaySubject<number>;
-  borderWidth$?: ReplaySubject<number>;
-}
-
 export class CanvasInteractionResult {
   constructor(
     public redraw: boolean,
@@ -199,11 +175,10 @@ export interface CanvasWorldTransform {
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],
 })
-export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
+export class InteractiveCanvasComponent extends ResizingCanvasComponent implements AfterViewInit, OnDestroy {
   @Input() drawer: CanvasDrawer | null = null;
-  _drawNotifier: CanvasDrawNotifier | null = null;
-  @Input() interactionHandler: CanvasInteractionHandler | null = null;
   @Input() transform: CanvasWorldTransform | null = null;
+  @Input() interactionHandler: CanvasInteractionHandler | null = null;
 
   @ViewChild("InteractiveCanvas") _imgCanvas?: ElementRef;
 
@@ -212,92 +187,29 @@ export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
   private _mouseDown: Point | null = null;
   private _mouseLast: Point | null = null;
 
-  protected _subs = new Subscription();
-  protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
+  constructor(layoutService: AnalysisLayoutService) { super(layoutService); }
 
-  private _resolutionMultiplier = 1;
-
-  constructor(private _layoutService: AnalysisLayoutService) {}
-
-  ngOnDestroy() {
-    this._subs.unsubscribe();
+  get drawNotifier(): CanvasDrawNotifier | null {
+    return this._drawNotifier;
   }
 
-  ngAfterViewInit(): void {
-    this.triggerRedraw();
-    this.callFitCanvasToContainer();
-
-    this._subs.add(
-      this._layoutService.resizeCanvas$.subscribe(() => {
-        this.callFitCanvasToContainer();
-      })
-    );
-
-    if (this.drawNotifier) {
-      this._subs.add(
-        this.drawNotifier.needsDraw$.subscribe(() => {
-          this.triggerRedraw();
-        })
-      );
-
-      if (this.drawNotifier.needsCanvasResize$) {
-        this._subs.add(
-          this.drawNotifier.needsCanvasResize$.subscribe(() => {
-            this.callFitCanvasToContainer();
-          })
-        );
-      }
-
-      if (this.drawNotifier.resolution$) {
-        this._subs.add(
-          this.drawNotifier.resolution$.subscribe(multiplier => {
-            this._resolutionMultiplier = multiplier;
-            this.callFitCanvasToContainer();
-          })
-        );
-      }
-
-      if (this.drawNotifier.borderWidth$) {
-        this._subs.add(
-          this.drawNotifier.borderWidth$.subscribe(borderWidth => {
-            this.drawer!.borderWidth = borderWidth;
-
-            this.callFitCanvasToContainer();
-            this.triggerRedraw();
-          })
-        );
-      }
-    }
+  @Input() set drawNotifier(notifier: CanvasDrawNotifier | null) {
+    this.setDrawNotifier(notifier);
   }
 
   get transparentBackground(): boolean {
     return this.drawer?.transparentBackground || false;
   }
 
-  get drawNotifier() {
-    return this._drawNotifier;
+  protected override setDrawerBorderWidth(width: number): void {
+    this.drawer!.borderWidth = width;
   }
 
-  @Input() set drawNotifier(notifier: CanvasDrawNotifier | null) {
-    this._drawNotifier = notifier;
-    if (this.drawNotifier) {
-      this._subs.add(
-        this.drawNotifier.needsDraw$.subscribe(() => {
-          this.triggerRedraw();
-        })
-      );
-
-      if (this.drawNotifier.needsCanvasResize$) {
-        this._subs.add(
-          this.drawNotifier.needsCanvasResize$.subscribe(() => {
-            this.callFitCanvasToContainer();
-          })
-        );
-      }
-    }
+  protected override getCanvasElement(): ElementRef | undefined {
+    return this._imgCanvas;
   }
 
-  triggerRedraw(): void {
+  override triggerRedraw(): void {
     window.requestAnimationFrame(() => {
       if (this._screenContext && this._viewport && this.transform && this.drawer) {
         InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer).subscribe();
@@ -305,60 +217,22 @@ export class InteractiveCanvasComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private callFitCanvasToContainer() {
+  protected override setTransformCanvasParams(params: CanvasParams): void {
+      this.transform?.setCanvasParams(params);
+  }
+
+  protected override refreshContext(): void {
     if (!this._imgCanvas) {
       console.error("this._imgCanvas was not set");
       return;
     }
 
     const canvasElem = this._imgCanvas.nativeElement;
-    const newViewport = this.fitCanvasToContainer(this._imgCanvas);
-    if (newViewport) {
-      //console.log('callFitCanvasToContainer viewport: '+newViewport.width+'x'+newViewport.height+', dpi='+newViewport.dpi);
-      //console.log(canvasElem);
-
-      this._viewport = newViewport;
-      this.transform?.setCanvasParams(newViewport);
-      this.triggerRedraw();
-    }
 
     const canvasContext = (<HTMLCanvasElement>canvasElem).getContext("2d", { colorSpace: "display-p3" }) || (<HTMLCanvasElement>canvasElem).getContext("2d");
     if (canvasContext) {
       this._screenContext = canvasContext;
     }
-  }
-
-  fitCanvasToContainer(canvas: ElementRef): CanvasParams | null {
-    if (!canvas) {
-      //console.error('fitCanvasToContainer failed: null canvas');
-      return null;
-    }
-
-    const dpi = window.devicePixelRatio * this._resolutionMultiplier;
-
-    const canvasElem = canvas.nativeElement;
-    if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
-      //console.error('fitCanvasToContainer failed: size already matched');
-      return null;
-    }
-
-    const width = canvasElem.parentNode.clientWidth;
-    const height = canvasElem.parentNode.clientHeight;
-
-    const displayBackup = canvasElem.style.display;
-    canvasElem.style.display = "none";
-
-    canvasElem.width = width * dpi;
-    canvasElem.height = height * dpi;
-
-    canvasElem.style.display = displayBackup;
-
-    // canvasElem.style.width = width + "px";
-    // canvasElem.style.height = height + "px";
-    canvasElem.style.width = "100%";
-    canvasElem.style.height = "100%";
-
-    return new CanvasParams(width, height, dpi);
   }
 
   // Not using this because it's a global event, we're only interested if this canvas received it

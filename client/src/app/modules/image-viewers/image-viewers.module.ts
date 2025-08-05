@@ -12,6 +12,8 @@ import { ImageOptionsComponent } from "./widgets/context-image/image-options/ima
 
 import { WidgetModule } from "../widget/widget.module";
 import { MultiChannelViewerComponent } from "./widgets/multi-channel-viewer/multi-channel-viewer.component";
+import { InteractiveCanvas3DComponent } from "./widgets/scan-3d-view/interactive-canvas-3d.component";
+import { Scan3DViewComponent } from "./widgets/scan-3d-view/scan-3d-view.component";
 
 export { ContextImageComponent } from "./widgets/context-image/context-image.component";
 export { ContextImagePickerComponent, ContextImageItem } from "./components/context-image-picker/context-image-picker.component";
@@ -24,7 +26,7 @@ export { ContextImagePan } from "./widgets/context-image/tools/pan";
 export { ContextImageItemTransform } from "./models/image-transform";
 
 @NgModule({
-  declarations: [ContextImageComponent, ImageOptionsComponent, ContextImagePickerComponent, MultiChannelViewerComponent],
+  declarations: [ContextImageComponent, ImageOptionsComponent, ContextImagePickerComponent, MultiChannelViewerComponent, InteractiveCanvas3DComponent, Scan3DViewComponent],
   imports: [CommonModule, PIXLISECoreModule, /*AnalysisModule,*/ FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [ContextImageComponent, ContextImagePickerComponent],
 })

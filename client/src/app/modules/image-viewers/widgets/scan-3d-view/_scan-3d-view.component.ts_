@@ -6,7 +6,6 @@ import { Scan3DViewModel } from "./scan-3d-view-model";
 import * as THREE from 'three';
 
 @Component({
-  standalone: false,
   selector: "app-scan-3d-view",
   templateUrl: "./scan-3d-view.component.html",
   styleUrls: ["./scan-3d-view.component.scss"],
@@ -31,9 +30,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
   ngOnInit() {
     this.isWidgetDataLoading = false;
-    //this.createThreeJsBox();
+    this.createThreeJsBox();
   }
-/*
+
   createThreeJsBox(): void {
     const canvasContainer = document.getElementsByClassName("canvas-container").item(0);
     const canvas = document.getElementById('canvas-box');
@@ -123,7 +122,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
   animateGeometry();
 }
-*/
+
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
