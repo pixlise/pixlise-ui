@@ -8,7 +8,18 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 
 export class ThreeRenderData {
-  constructor(public scene: THREE.Scene, public camera: THREE.PerspectiveCamera) {}
+  constructor(
+    public scene: THREE.Scene,
+    public camera: THREE.PerspectiveCamera,
+    public controls?: OrbitControls
+  ) {}
+}
+
+export class CanvasSizeNotification {
+  constructor(
+    public size: Point,
+    public canvasElement?: ElementRef
+  ) {}
 }
 
 @Component({
@@ -22,9 +33,8 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
 
   @Output() canvasSize = new EventEmitter();
 
-  @Input() renderData: ThreeRenderData | undefined;
+  @Input() renderData?: ThreeRenderData;
   protected _renderer?: THREE.WebGLRenderer;
-  protected _controls?: OrbitControls;
 
   get drawNotifier(): CanvasDrawNotifier | null {
     return this._drawNotifier;
@@ -46,7 +56,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
     if (this._renderer && this.renderData) {
       window.requestAnimationFrame(() => {
         if (this._renderer && this.renderData) {
-          this._controls?.update();
+          //this._controls?.update();
           this._renderer.render(this.renderData.scene, this.renderData.camera);
         }
       });
@@ -64,7 +74,10 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
     }
     this._renderer.setSize(params.width, params.height);
 
-    this.canvasSize.emit(new Point(params.width, params.height));
+    this.canvasSize.emit(new CanvasSizeNotification(
+      new Point(params.width, params.height),
+      this._imgCanvas
+    ));
 
     if (!this.renderData) {
       console.warn("No renderData for setTransformCanvasParams");
@@ -73,22 +86,6 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
 
     this.renderData.camera.aspect = params.width / params.height;
     this.renderData.camera.updateProjectionMatrix();
-
-
-    if (!this._controls) {
-      const canvas = this.getCanvasElement()?.nativeElement;
-      this._controls = new OrbitControls(this.renderData.camera, canvas);//this._renderer.domElement);
-
-      //controls.update() must be called after any manual changes to the camera's transform
-      this.renderData.camera.position.set(0, 20, 100);
-      this._controls.target.set(1, 0, 0);
-      this._controls.update();
-      this._controls.enableDamping = true;
-      this._controls.addEventListener('change', (e) => {
-        console.log(e);
-        this.triggerRedraw();
-      });
-    }
 
     this.triggerRedraw();
   }
