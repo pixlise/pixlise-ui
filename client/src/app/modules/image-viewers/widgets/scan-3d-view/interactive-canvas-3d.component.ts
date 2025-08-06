@@ -2,7 +2,10 @@ import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@
 import { BehaviorSubject } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import { CanvasDrawNotifier, CanvasParams, ResizingCanvasComponent } from "src/app/modules/widget/components/interactive-canvas/resizing-canvas.component";
+
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
 
 export class ThreeRenderData {
   constructor(public scene: THREE.Scene, public camera: THREE.PerspectiveCamera) {}
@@ -21,6 +24,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
 
   @Input() renderData: ThreeRenderData | undefined;
   protected _renderer?: THREE.WebGLRenderer;
+  protected _controls?: OrbitControls;
 
   get drawNotifier(): CanvasDrawNotifier | null {
     return this._drawNotifier;
@@ -42,6 +46,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
     if (this._renderer && this.renderData) {
       window.requestAnimationFrame(() => {
         if (this._renderer && this.renderData) {
+          this._controls?.update();
           this._renderer.render(this.renderData.scene, this.renderData.camera);
         }
       });
@@ -68,6 +73,22 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
 
     this.renderData.camera.aspect = params.width / params.height;
     this.renderData.camera.updateProjectionMatrix();
+
+
+    if (!this._controls) {
+      const canvas = this.getCanvasElement()?.nativeElement;
+      this._controls = new OrbitControls(this.renderData.camera, canvas);//this._renderer.domElement);
+
+      //controls.update() must be called after any manual changes to the camera's transform
+      this.renderData.camera.position.set(0, 20, 100);
+      this._controls.target.set(1, 0, 0);
+      this._controls.update();
+      this._controls.enableDamping = true;
+      this._controls.addEventListener('change', (e) => {
+        console.log(e);
+        this.triggerRedraw();
+      });
+    }
 
     this.triggerRedraw();
   }
@@ -105,6 +126,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
 
     this._renderer.setClearColor(new THREE.Color(0.005, 0.01, 0.005), 1);
     this._renderer.setSize(canvasSizes.width, canvasSizes.height);
+
 /*
   window.addEventListener('resize', () =>
 {

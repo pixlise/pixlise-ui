@@ -123,7 +123,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     geometry.setAttribute( 'position', new THREE.BufferAttribute(new Float32Array(pmcLocations), 3));
     const points = new THREE.Points(
       geometry,
-      new THREE.PointsMaterial({color: new THREE.Color(0,1,0), size: 0.01})
+      new THREE.PointsMaterial({color: new THREE.Color(0,1,0), size: 1, sizeAttenuation: false})
     );
     this.renderData.scene.add(points);
 
