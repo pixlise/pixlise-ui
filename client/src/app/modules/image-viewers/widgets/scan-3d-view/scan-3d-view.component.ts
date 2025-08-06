@@ -82,34 +82,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         pmcForLocs.push(pmc);
       }
 
-/*
-      let pmcLocs2D: number[] = [];
-      let pmcLocs3D: number[] = [];
-      const coords = [377,479,  453,434,  326,387,  444,359,  511,389,
-              586,429,  470,315,  622,493,  627,367,  570,314];
-
-      for (let c = 0; c < coords.length; c += 2) {
-        pmcLocs2D.push(coords[c]);
-        pmcLocs2D.push(coords[c + 1]);
-
-        const tmp = new THREE.Vector3(coords[c], -3, coords[c+1]);
-
-        pmcLocs3D.push(tmp.x);
-        pmcLocs3D.push(tmp.y);
-        pmcLocs3D.push(tmp.z);
-        
-        bbox.expandToFit(tmp);
-      }
-*/
       const delaunay = new Delaunator(pmcLocs2D);
-/*
-      const coords = [377,479,  453,434,  326,387,  444,359,  511,389,
-                586,429,  470,315,  622,493,  627,367,  570,314];
-      const delaunay2 = new Delaunator(coords);
-      console.log(delaunay2.triangles);
-// [4,3,1,  4,6,3,  1,5,4,  4,9,6,  2,0,1,  1,7,5,
-//  5,9,4,  6,2,3,  3,2,1,  5,8,9,  0,7,1,  5,7,8]
-*/
+
       // Now associate them back to PMC, hence the xyz, location and form 3D triangles using these indexes
       if (delaunay.triangles.length % 3 != 0) {
         throw new Error("Expected delaunay to deliver a multiple of 3 indexes");
@@ -128,9 +102,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       // terrainGeom.setAttribute(
       //     'uv',
       //     new THREE.BufferAttribute(new Float32Array(uvs), uvNumComponents));
-      /*for (let c = 0; c < delaunay.length; c += 3) {
-
-      }*/
 
       terrainGeom.setIndex(new THREE.BufferAttribute(delaunay.triangles, 1));
       terrainGeom.computeVertexNormals();
