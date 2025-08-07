@@ -1,26 +1,65 @@
-import { Subject, ReplaySubject, Observable } from "rxjs";
-import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { Subject, ReplaySubject } from "rxjs";
+import { CanvasDrawNotifier } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { MapColourScaleSourceData } from "../context-image/ui-elements/map-colour-scale/map-colour-scale-model";
+import { ContextImageModelLoadedData, ContextImageScanModel } from "../context-image/context-image-model-internals";
 
-export class Scan3DViewModel implements CanvasDrawNotifier, BaseChartModel {
+export class Scan3DViewModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
-  drawModel: BaseChartDrawModel = new Scan3DViewDrawModel();
-
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext?: CanvasRenderingContext2D): Observable<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  hasRawData(): boolean {
-    throw new Error("Method not implemented.");
-  }
 
   needsCanvasResize$?: Subject<void> | undefined;
   resolution$?: ReplaySubject<number> | undefined;
   borderWidth$?: ReplaySubject<number> | undefined;
-}
 
-export class Scan3DViewDrawModel implements BaseChartDrawModel {
-  // Our rendered to an image, cached and only regenerated on resolution
-  // change or data change
-  drawnData: OffscreenCanvas | null = null;
+  // Settings/Layers
+  imageName: string = "";
+  beamLocationVersionsRequested = new Map<string, number>();
+
+  drawImage: boolean = true;
+  imageSmoothing: boolean = true;
+  imageBrightness: number = 1;
+  selectionModeAdd: boolean = true; // Add or Subtract, nothing else!
+  elementRelativeShading: boolean = false; // A toggle available in Element Maps tab version of context image only!
+
+  removeTopSpecularArtifacts: boolean = true;
+  removeBottomSpecularArtifacts: boolean = true;
+  colourRatioMin: number | null = null;
+  colourRatioMax: number | null = null;
+  rgbuChannels: string = "";
+  unselectedOpacity: number = 0.3;
+  unselectedGrayscale: boolean = false;
+
+  hidePointsForScans = new Set<string>();
+  hideFootprintsForScans = new Set<string>();
+  lighting: boolean = true;
+
+  get rgbuImageScaleData(): MapColourScaleSourceData | null {
+    return null;
+  }
+
+  get scanIds(): string[] {
+    if (!this._raw) {
+      return [];
+    }
+    return Array.from(this._raw.scanModels.keys());
+  }
+
+  // Loaded data, based on the above, we load these. Draw models are generated from these
+  // on the fly
+  private _raw: ContextImageModelLoadedData | null = null;
+  
+  getScanModelFor(scanId: string): ContextImageScanModel | null {
+    if (this._raw) {
+      const mdl = this._raw.scanModels.get(scanId);
+      if (mdl) {
+        return mdl;
+      }
+    }
+
+    return null;
+  }
+
+  setData(loadedData: ContextImageModelLoadedData) {
+    // It's processed externally so we just take it and save it
+    this._raw = loadedData;
+  }
 }
