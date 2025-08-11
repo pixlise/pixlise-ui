@@ -121,7 +121,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
       canvas: canvas,
     });
 
-    this._renderer.setClearColor(new THREE.Color(0.005, 0.01, 0.005), 1);
+    this._renderer.setClearColor(new THREE.Color(0, 0, 0), 1);
     this._renderer.setSize(canvasSizes.width, canvasSizes.height);
 
 /*

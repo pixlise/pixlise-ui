@@ -3,7 +3,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { BehaviorSubject, combineLatest, Observable, Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
-import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { CanvasSizeNotification, ThreeRenderData } from "./interactive-canvas-3d.component";
 import { Point, Rect } from "src/app/models/Geometry";
@@ -21,6 +21,7 @@ import { ScanPoint } from "../../models/scan-point";
 import { Colours } from "src/app/utils/colours";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 
 // Class to represent a picked point
 class PickedPoint {
@@ -62,6 +63,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   private _points?: THREE.Points;
   private _light?: THREE.PointLight;
   private _ambientLight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
+  private _selection?: THREE.Object3D;
   
   // Raycasting for point picking
   private _raycaster = new THREE.Raycaster();
@@ -69,9 +71,12 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   // Store PMC data for point lookup
   private _pmcForLocs: number[] = [];
   private _pmcUVs: Float32Array = new Float32Array([]);
+  private _pmcLocs3D: number[] = [];
   
   // Visual indicator for picked point
-  private _pickedPointIndicator?: THREE.Mesh;
+  //private _pickedPointIndicator?: THREE.Mesh;
+
+  private _mouseMoved = false;
 
   private _terrainMatStandard = new THREE.MeshStandardMaterial({
     color: new THREE.Color(1, 1, 1),
@@ -82,10 +87,15 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     color: new THREE.Color(1, 1, 1)
   });
 
+  private _selectionColour = new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255);
+  private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
+  private _pointSize: number = 0.02;
+
   constructor(
     private _cacheDataService: APICachedDataService,
     private _contextDataService: ContextImageDataService,
     private _analysisLayoutService: AnalysisLayoutService,
+    private _selectionService: SelectionService,
     private _snackService: SnackbarService,
     public dialog: MatDialog
   ) {
@@ -199,6 +209,18 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         }
       })
     );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe((currSel: SelectionHistoryItem) => {
+        this.updateSelection();
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
+        this.updateSelection();
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -245,14 +267,31 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     const canvas = canvasElement.nativeElement;
     
     // Remove existing event listeners to avoid duplicates
-    canvas.removeEventListener('click', this.onMouseClick.bind(this));
+    canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
+    canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
     
     // Add click event listener
-    canvas.addEventListener('click', this.onMouseClick.bind(this));
+    canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
+    canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+    canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
   }
 
-  private onMouseClick(event: MouseEvent) {
+  private onMouseDown(event: MouseEvent) {
+    this._mouseMoved = false;
+  }
+
+  private onMouseMove(event: MouseEvent) {
+    this._mouseMoved = true;
+  }
+
+  private onMouseUp(event: MouseEvent) {
     if (!this.renderData || !this._points) {
+      return;
+    }
+
+    // We're only interested in mouse clicks not drags
+    if (this._mouseMoved) {
       return;
     }
 
@@ -308,6 +347,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // Get the PMC for this point index
     const pmc = this._pmcForLocs[pickedPoint.pointIndex];
     
+    // Notify the selection service, treat this like a hover
+    this._selectionService.setHoverEntryPMC(this.scanId, pmc);
+    /*
     // Get position from the geometry
     const positions = this._points.geometry.attributes['position'];
     const x = positions.getX(pickedPoint.pointIndex);
@@ -328,8 +370,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // - Show detailed information in a panel
     // - Trigger analysis on the selected point
     // - Navigate to related data
+    */
   }
-
+/*
   private updatePickedPointIndicator(x: number, y: number, z: number) {
     // Remove existing indicator if it exists
     if (this._pickedPointIndicator) {
@@ -337,11 +380,11 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     }
 
     // Create a small red sphere as the indicator
-    const geometry = new THREE.SphereGeometry(0.01, 8, 8);
+    const geometry = new THREE.SphereGeometry(this._pointSize * 1.2, 8, 8);
     const material = new THREE.MeshBasicMaterial({ 
       color: new THREE.Color(0xff00f6), // Bright magenta/pink color
       transparent: true,
-      opacity: 0.8
+      opacity: 0.5
     });
     
     this._pickedPointIndicator = new THREE.Mesh(geometry, material);
@@ -353,7 +396,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // Trigger a redraw to show the indicator
     this.mdl.needsDraw$.next();
   }
-
+*/
   get allPointsToggleIcon(): string {
     if (this.mdl.hidePointsForScans.size > 0 || this.mdl.hideFootprintsForScans.size > 0) {
       return "assets/button-icons/all-points-off.svg";
@@ -657,10 +700,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           this._terrainMatStandard.map = texture;
           this._terrainMatBasic.map = texture;
 
-          this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain, contextImgModel.image.width, contextImgModel.image.height);
+          this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain);
         });
       } else {
-        this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain, contextImgModel.image.width, contextImgModel.image.height);
+        this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain);
       }
     });
   }
@@ -764,9 +807,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     bbox: AxisAlignedBBox,
     pmcLocs3D: number[],
     pmcForLocs: number[],
-    terrain: THREE.Mesh,
-    contextImageWidth: number,
-    contextImageHeight: number
+    terrain: THREE.Mesh
   ) {
     // Form point cloud too
     const pointsGeom = new THREE.BufferGeometry();
@@ -776,20 +817,21 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     // Store PMC data for point lookup
     this._pmcForLocs = [...pmcForLocs];
+    this._pmcLocs3D = [...pmcLocs3D];
 
     const points = new THREE.Points(
       pointsGeom,
       new THREE.PointsMaterial({
-        color: new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255,),
-        size: 3,
-        sizeAttenuation: false
+        color: this._selectionColour,
+        size: this._pointSize,
+        sizeAttenuation: true
       })
     );
     points.position.y += 0.002;
 
     this.isWidgetDataLoading = false;
 
-    this.initScene(terrain, points, bbox, contextImageWidth, contextImageHeight, pmcLocs3D, this._canvasElement$.value);
+    this.initScene(terrain, points, bbox, this._canvasElement$.value);
   }
 
   protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {
@@ -826,12 +868,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   protected initScene(
     terrain: THREE.Mesh,
     points: THREE.Points,
-    //pmcLocations: number[],
     size: AxisAlignedBBox,
-    contextImageWidth: number,
-    contextImageHeight: number,
-    pmcLocs3D: number[],
-    //contextImgModel: ContextImageModelLoadedData,
     canvasElement?: ElementRef
   ) {
     if (!canvasElement) {
@@ -859,11 +896,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     this._terrain = terrain;
     this.renderData.scene.add(this._terrain);
     
-    // Add a debug mesh to test UV locations
-    this.renderData.scene.add(this.createDebugMesh(dataCenter, size, contextImageWidth, contextImageHeight, pmcLocs3D));
-
     this._points = points;
     this.renderData.scene.add(this._points);
+
+    this.updateSelection();
 
     if (!this._canvasSize.x || !this._canvasSize.y) {
       console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
@@ -896,71 +932,64 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     this.mdl.needsDraw$.next();
   }
 
-  protected createDebugMesh(
-    dataCenter: THREE.Vector3,
-    size: AxisAlignedBBox, 
-    contextImageWidth: number,
-    contextImageHeight: number,
-    pmcLocs3D: number[]): THREE.Mesh {
-    /*
-    const h = dataCenter.y + 5;
-    const x = dataCenter.x;
-    const z = dataCenter.z;
+  protected updateSelection() {
+    if (this._selection) {
+      this.renderData.scene.remove(this._selection);
+    }
 
-    const dbgGeom = new THREE.BufferGeometry();
-    dbgGeom.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array([x,h,z, x+752,h,z, x+752,h,z+580, x,h,z+580]), 3));
+    this._selection = new THREE.Object3D();
 
-    dbgGeom.setAttribute(
-        'uv',
-        new THREE.BufferAttribute(new Float32Array([0,0, 1,0, 1,1, 0,1]), 2));
+    // Form the points we're drawing the selection for
+    const pmcToIdx = new Map<number, number>();
+    for (let c = 0; c < this._pmcForLocs.length; c++) {
+      pmcToIdx.set(this._pmcForLocs[c], c);
+    }
 
-    dbgGeom.setIndex(new THREE.BufferAttribute(new Int32Array([0,1,2, 2,3,0]), 1));
-    //dbgGeom.computeVertexNormals();
-    
-    return new THREE.Mesh(
-      dbgGeom,
-      new THREE.MeshBasicMaterial({color: new THREE.Color(0xffffff), map: this._terrainMatStandard.map})
-    );
-    */
 
-    const dbgG = new THREE.PlaneGeometry(contextImageWidth, contextImageHeight);
-
-    dbgG.setAttribute("uv", new THREE.BufferAttribute(new Float32Array([0,1, 1,1, 0,0, 1,0]), 2))
-
-    const dbgM = new THREE.Mesh(dbgG, new THREE.MeshBasicMaterial({color: new THREE.Color(0xffffff), map: this._terrainMatStandard.map}))
-//    dbgM.position.set(contextImageWidth / 2, contextImageHeight / 2, 0);
-    //dbgM.position.set(dataCenter.x, size.maxCorner.y, dataCenter.z);
-    //dbgM.lookAt(new THREE.Vector3(0, size.maxCorner.y+1, 0));
-    //dbgM.rotation.x = -Math.PI/2;
-  
-    const geometry = new THREE.SphereGeometry(2, 8, 8);
-    /*const material = new THREE.MeshBasicMaterial({ 
-      color: new THREE.Color(0xff0000),
+    const sphere = new THREE.SphereGeometry(this._pointSize, 8, 8);
+    const matSelect = new THREE.MeshBasicMaterial({
+      color: this._selectionColour,
+      opacity: 0.5,
       transparent: true,
-      opacity: 0.8
-    });*/
+    });
+    const matHover = new THREE.MeshBasicMaterial({
+      color: this._hoverColour,
+      opacity: 0.5,
+      transparent: true,
+    });
 
-    let dbgPts = new THREE.Object3D();
+    const sel = this._selectionService.getCurrentSelection();
 
-    // Red - first PMC
-    let m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff0000) }));
-    m.position.set(this._pmcUVs[0] * contextImageWidth, this._pmcUVs[2] * contextImageHeight, 0);
-    dbgPts.add(m);
+    for (const scanId of sel.beamSelection.getScanIds()) {
+      // Find which locations we need to highlight. We have a list of PMCs, but we need to map the other way
+      const pmcs = sel.beamSelection.getSelectedScanEntryPMCs(scanId);
+      for (const pmc of pmcs) {
+        let idx = pmcToIdx.get(pmc);
+        if (idx !== undefined) {
+          idx *= 3;
 
-    // Green - center
-    m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x00ff00) }));
-    dbgPts.add(m);
+          let m = new THREE.Mesh(sphere, matSelect);
+          m.position.set(this._pmcLocs3D[idx], this._pmcLocs3D[idx+1], this._pmcLocs3D[idx+2]);
 
-    // Blue - "far" corner
-    m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x0000ff) }));
-    m.position.set(contextImageWidth, contextImageHeight, 0);
-    dbgPts.add(m);
+          this._selection.add(m);
+        }
+      }
 
-    dbgPts.position.set(-contextImageWidth / 2, -contextImageHeight / 2, 0)
+      if (this._selectionService.hoverScanId == scanId && this._selectionService.hoverEntryPMC > -1) {
+        let idx = pmcToIdx.get(this._selectionService.hoverEntryPMC);
 
-    dbgM.add(dbgPts);
-    return dbgM;
+        if (idx !== undefined) {
+          idx *= 3;
+
+          let m = new THREE.Mesh(sphere, matHover);
+          m.position.set(this._pmcLocs3D[idx], this._pmcLocs3D[idx+1], this._pmcLocs3D[idx+2]);
+
+          this._selection.add(m);
+        }
+      }
+    }
+
+    this.renderData.scene.add(this._selection);
+    this.mdl.needsDraw$.next();
   }
 }
