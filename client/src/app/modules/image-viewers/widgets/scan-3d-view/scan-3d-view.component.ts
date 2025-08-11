@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { combineLatest, Observable, Subscription } from "rxjs";
+import { BehaviorSubject, combineLatest, Observable, Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -20,6 +20,16 @@ import { ContextImageModelLoadedData } from "../context-image/context-image-mode
 import { ScanPoint } from "../../models/scan-point";
 import { Colours } from "src/app/utils/colours";
 import { MinMax } from "src/app/models/BasicTypes";
+import { Scan3DViewState } from "src/app/generated-protos/widget-data";
+
+// Class to represent a picked point
+class PickedPoint {
+  constructor(
+    public pointIndex: number,
+    public worldPosition: THREE.Vector3,
+    public distance: number
+  ) {}
+}
 
 
 const positionNumComponents = 3;
@@ -45,13 +55,23 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   renderData: ThreeRenderData = new ThreeRenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
   private _sceneInited = false;
   private _canvasSize?: Point;
-  private _canvasElement?: ElementRef<any> | undefined;
+  private _canvasElement$ = new BehaviorSubject<ElementRef<any> | undefined>(undefined);
 
   // The "Draw Model"...
   private _terrain?: THREE.Mesh;
   private _points?: THREE.Points;
   private _light?: THREE.PointLight;
   private _ambientLight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
+  
+  // Raycasting for point picking
+  private _raycaster = new THREE.Raycaster();
+  
+  // Store PMC data for point lookup
+  private _pmcForLocs: number[] = [];
+  private _pmcUVs: Float32Array = new Float32Array([]);
+  
+  // Visual indicator for picked point
+  private _pickedPointIndicator?: THREE.Mesh;
 
   private _terrainMatStandard = new THREE.MeshStandardMaterial({
     color: new THREE.Color(1, 1, 1),
@@ -77,6 +97,15 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     this._widgetControlConfiguration = {
       topToolbar: [
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          settingTitle: "Solo",
+          settingGroupTitle: "Actions",
+          onClick: () => this.onSoloView(),
+        },
         {
           id: "all-points-toggle",
           type: "button",
@@ -120,10 +149,83 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         }
       })
     );
+
+    this._subs.add(
+      combineLatest([
+        this.widgetData$,
+        this._canvasElement$
+      ]).subscribe((initItems) => {
+        const scan3DState = initItems[0] as Scan3DViewState;
+        const canvasElement = initItems[1] as ElementRef<any> | undefined;
+
+        if (!canvasElement) {
+          console.warn("Skipping scan 3d view init, no canvas element");
+          return;
+        }
+
+        if (scan3DState && scan3DState.contextImage.length > 0) {
+          this.mdl.hideFootprintsForScans = new Set<string>(scan3DState?.hideFootprintsForScans || []);
+          this.mdl.hidePointsForScans = new Set<string>(scan3DState?.hidePointsForScans || []);
+          //this.mdl.drawImage = !(scan3DState?.hideImage ?? false);
+
+          // Set up model
+          if (scan3DState.colourRatioMin) {
+            this.mdl.colourRatioMin = scan3DState.colourRatioMin;
+          }
+
+          if (scan3DState.colourRatioMax) {
+            this.mdl.colourRatioMax = scan3DState.colourRatioMax;
+          }
+
+          this.mdl.imageBrightness = scan3DState.brightness;
+          this.mdl.removeTopSpecularArtifacts = scan3DState.removeTopSpecularArtifacts;
+          this.mdl.removeBottomSpecularArtifacts = scan3DState.removeBottomSpecularArtifacts;
+          this.mdl.rgbuChannels = scan3DState.rgbuChannels;
+          this.mdl.unselectedOpacity = scan3DState.unselectedOpacity;
+          this.mdl.unselectedGrayscale = scan3DState.unselectedGrayscale;
+
+          this.mdl.imageName = scan3DState.contextImage;
+          this.mdl.imageSmoothing = scan3DState.contextImageSmoothing.length > 0;
+
+          // Set the all points toggle icon
+          const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
+          if (allPointsButton) {
+            allPointsButton.icon = this.allPointsToggleIcon;
+          }
+
+          this.reloadModel();
+        } else {
+          this.setInitialConfig();
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  protected setInitialConfig() {
+    // Get the "default" image for the loaded scan if there is one
+    const scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+
+    if (scanId.length > 0) {
+      this._cacheDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).subscribe({
+        next: (resp: ImageGetDefaultResp) => {
+          const img = resp.defaultImagesPerScanId[scanId];
+          if (img) {
+            // Set this as our default image
+            this.mdl.imageName = img;
+          } else {
+            this.mdl.imageName = "";
+          }
+          this.reloadModel();
+        },
+        error: err => {
+          this._snackService.openError("Failed to get default image for scan: " + scanId, err);
+        },
+      });
+    }
   }
 
   onCanvasSize(event: CanvasSizeNotification) {
@@ -132,29 +234,124 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     // If we have a size and it's the first time it was set, we now load our model data
     if (isFirst && this._canvasSize) {
-      this._canvasElement = event.canvasElement;
+      this._canvasElement$.next(event.canvasElement);
+      this.setupMouseEvents(event.canvasElement);
+    }
+  }
 
-      // Get the "default" image for the loaded scan if there is one
-      const scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+  private setupMouseEvents(canvasElement?: ElementRef) {
+    if (!canvasElement) return;
+    
+    const canvas = canvasElement.nativeElement;
+    
+    // Remove existing event listeners to avoid duplicates
+    canvas.removeEventListener('click', this.onMouseClick.bind(this));
+    
+    // Add click event listener
+    canvas.addEventListener('click', this.onMouseClick.bind(this));
+  }
 
-      if (scanId.length > 0) {
-        this._cacheDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).subscribe({
-          next: (resp: ImageGetDefaultResp) => {
-            const img = resp.defaultImagesPerScanId[scanId];
-            if (img) {
-              // Set this as our default image
-              this.mdl.imageName = img;
-            } else {
-              this.mdl.imageName = "";
-            }
-            this.reloadModel();
-          },
-          error: err => {
-            this._snackService.openError("Failed to get default image for scan: " + scanId, err);
-          },
-        });
+  private onMouseClick(event: MouseEvent) {
+    if (!this.renderData || !this._points) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Calculate mouse position in normalized device coordinates (-1 to +1)
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+
+    // Update the picking ray with the camera and mouse position
+    this._raycaster.setFromCamera(mouse, this.renderData.camera);
+
+    // Calculate objects intersecting the picking ray
+    const intersects = this._raycaster.intersectObject(this._points);
+
+    if (intersects.length > 0) {
+      //console.log("intersects", intersects);
+      
+      // Find the intersection with the smallest distanceToRay (closest to the mouse ray)
+      let closestIntersection = intersects[0];
+      for (const intersect of intersects) {
+        if ((intersect.distanceToRay ?? Infinity) < (closestIntersection.distanceToRay ?? Infinity)) {
+          closestIntersection = intersect;
+        }
+      }
+      
+      // Get the point index directly from the intersection
+      const pointIndex = closestIntersection.index;
+      console.log("closestIntersection", closestIntersection);
+      if (pointIndex !== undefined) {
+        const pickedPoint = new PickedPoint(
+          pointIndex,
+          closestIntersection.point.clone(),
+          closestIntersection.distanceToRay ?? 0
+        );
+        
+        this.onPointPicked(pickedPoint);
       }
     }
+  }
+
+  private onPointPicked(pickedPoint: PickedPoint) {
+    //console.log('Point picked:', pickedPoint);
+    
+    if (!this._points || pickedPoint.pointIndex >= this._pmcForLocs.length) {
+      return;
+    }
+    
+    // Get the PMC for this point index
+    const pmc = this._pmcForLocs[pickedPoint.pointIndex];
+    
+    // Get position from the geometry
+    const positions = this._points.geometry.attributes['position'];
+    const x = positions.getX(pickedPoint.pointIndex);
+    const y = positions.getY(pickedPoint.pointIndex);
+    const z = positions.getZ(pickedPoint.pointIndex);
+    
+    //console.log('Point data:', { pmc, x, y, z, scanId: this.scanId });
+    
+    // Show a snackbar with the picked point information
+    this._snackService.open(
+      `Point picked: PMC ${pmc}, Position: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}), UV: (${this._pmcUVs[pickedPoint.pointIndex*2]}, ${this._pmcUVs[pickedPoint.pointIndex*2+1]})`
+    );
+    
+    // Create or update visual indicator at the picked point
+    this.updatePickedPointIndicator(x, y, z);
+    
+    // Here you can add more functionality:
+    // - Show detailed information in a panel
+    // - Trigger analysis on the selected point
+    // - Navigate to related data
+  }
+
+  private updatePickedPointIndicator(x: number, y: number, z: number) {
+    // Remove existing indicator if it exists
+    if (this._pickedPointIndicator) {
+      this.renderData.scene.remove(this._pickedPointIndicator);
+    }
+
+    // Create a small red sphere as the indicator
+    const geometry = new THREE.SphereGeometry(0.01, 8, 8);
+    const material = new THREE.MeshBasicMaterial({ 
+      color: new THREE.Color(0xff00f6), // Bright magenta/pink color
+      transparent: true,
+      opacity: 0.8
+    });
+    
+    this._pickedPointIndicator = new THREE.Mesh(geometry, material);
+    this._pickedPointIndicator.position.set(x, y, z);
+    
+    // Add to scene
+    this.renderData.scene.add(this._pickedPointIndicator);
+    
+    // Trigger a redraw to show the indicator
+    this.mdl.needsDraw$.next();
   }
 
   get allPointsToggleIcon(): string {
@@ -162,6 +359,14 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       return "assets/button-icons/all-points-off.svg";
     } else {
       return "assets/button-icons/all-points-on.svg";
+    }
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
     }
   }
 
@@ -319,7 +524,24 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   }
 
   protected saveState() {
-    // TODO implement this?!?!
+    this.onSaveWidgetData.emit(
+      Scan3DViewState.create({
+        contextImage: this.mdl.imageName,
+        contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
+        brightness: this.mdl.imageBrightness,
+        rgbuChannels: this.mdl.rgbuChannels,
+        unselectedOpacity: this.mdl.unselectedOpacity,
+        unselectedGrayscale: this.mdl.unselectedGrayscale,
+        colourRatioMin: this.mdl.colourRatioMin ?? undefined,
+        colourRatioMax: this.mdl.colourRatioMax ?? undefined,
+        removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
+        removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
+        hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
+        hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
+        //showPoints: this.mdl.hidePointsForScans
+        showLight: this.mdl.lighting,
+      })
+    );
   }
 
   protected reloadModel() {
@@ -408,6 +630,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         const uvs = this.readUVs(pmcLocs2D, pmcForLocs, scanPointLookup);
         this.processUVs(uvs, contextImgModel.image.width, contextImgModel.image.height);
 
+        this._pmcUVs = uvs;
         terrainGeom.setAttribute(
             'uv',
             new THREE.BufferAttribute(uvs, uvNumComponents));
@@ -434,10 +657,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           this._terrainMatStandard.map = texture;
           this._terrainMatBasic.map = texture;
 
-          this.continueInitScene(bbox, pmcLocs3D, terrain);
+          this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain, contextImgModel.image.width, contextImgModel.image.height);
         });
       } else {
-        this.continueInitScene(bbox, pmcLocs3D, terrain);
+        this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain, contextImgModel.image.width, contextImgModel.image.height);
       }
     });
   }
@@ -474,8 +697,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     contextImageWidth: number,
     contextImageHeight: number) {
     for (let c = 0; c < uvs.length; c += 2) {
-      uvs[c] = 1 - (uvs[c] / contextImageWidth); // NOT SURE WHY WE NEED A X-FLIP???
-      uvs[c+1] = uvs[c+1] / contextImageHeight;
+      uvs[c] = /*1 -*/ (uvs[c] / contextImageWidth); // NOT SURE WHY WE NEED A X-FLIP???
+      uvs[c+1] = (1 - (uvs[c+1] / contextImageHeight)); // OpenGL textures start at 0,0 => bottom left corner
     }
   }
 
@@ -491,14 +714,21 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     const bboxCenter = bbox.center();
 
     // Find the conversion factor between pixels and physical units in both directions
-    let pixelToX = Math.abs((bbox.maxCorner.x-bbox.minCorner.x)/(uvbbox.maxCorner.x-uvbbox.minCorner.x));
-    let pixelToZ = Math.abs((bbox.maxCorner.z-bbox.minCorner.z)/(uvbbox.maxCorner.z-uvbbox.minCorner.z));
+    const uvboxSize = new Point(uvbbox.maxCorner.x-uvbbox.minCorner.x, uvbbox.maxCorner.z-uvbbox.minCorner.z);
+    const xyzboxSize = new Point(bbox.maxCorner.x-bbox.minCorner.x, bbox.maxCorner.z-bbox.minCorner.z);
 
+    // Calculate diagonal size of both
+    const uvDiag = Math.sqrt(uvboxSize.x*uvboxSize.x + uvboxSize.y*uvboxSize.y);
+    const xyzDiag = Math.sqrt(xyzboxSize.x*xyzboxSize.x + xyzboxSize.y*xyzboxSize.y);
+
+    // Calculate pixels per physical unit
+    const pixPerPhysical = uvDiag / xyzDiag;
+  
     // Add the 4 corners of the image
-    const rectL = bbox.minCorner.x - pixelToX * uvbbox.minCorner.x;
-    const rectT = bbox.minCorner.z - pixelToZ * uvbbox.minCorner.z;
-    const rectR = bbox.maxCorner.x + pixelToX * (contextImageWidth - uvbbox.maxCorner.x);
-    const rectB = bbox.maxCorner.z + pixelToZ * (contextImageHeight - uvbbox.maxCorner.z);
+    const rectL = bbox.minCorner.x - uvbbox.minCorner.x / pixPerPhysical;
+    const rectT = bbox.minCorner.z - uvbbox.minCorner.z / pixPerPhysical;
+    const rectR = bbox.maxCorner.x + (contextImageWidth - uvbbox.maxCorner.x) / pixPerPhysical;
+    const rectB = bbox.maxCorner.z + (contextImageHeight - uvbbox.maxCorner.z) / pixPerPhysical;
 
     pmcLocs2D.push(rectL);
     pmcLocs2D.push(rectT);
@@ -512,7 +742,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     pmcLocs2D.push(rectL);
     pmcLocs2D.push(rectB);
 
-    let paddedUVs: number[] = [0,0, contextImageWidth,0, contextImageWidth,contextImageHeight, 0,contextImageHeight];
+    // Originally defined as:
+    //let paddedUVs: number[] = [0,0, contextImageWidth,0, contextImageWidth,contextImageHeight, 0,contextImageHeight];
+    // But needed a x-flip
+    let paddedUVs: number[] = [contextImageWidth,contextImageHeight, 0,contextImageHeight, 0,0, contextImageWidth,0];
 
     let i = 0;
     for (let c = pmcLocs2D.length-8; c < pmcLocs2D.length; c += 2) {
@@ -530,13 +763,19 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   protected continueInitScene(
     bbox: AxisAlignedBBox,
     pmcLocs3D: number[],
-    terrain: THREE.Mesh
+    pmcForLocs: number[],
+    terrain: THREE.Mesh,
+    contextImageWidth: number,
+    contextImageHeight: number
   ) {
     // Form point cloud too
     const pointsGeom = new THREE.BufferGeometry();
     pointsGeom.setAttribute(
       "position",
       new THREE.BufferAttribute(new Float32Array(pmcLocs3D), positionNumComponents));
+
+    // Store PMC data for point lookup
+    this._pmcForLocs = [...pmcForLocs];
 
     const points = new THREE.Points(
       pointsGeom,
@@ -546,11 +785,11 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         sizeAttenuation: false
       })
     );
-    points.position.y += 0.01;
+    points.position.y += 0.002;
 
     this.isWidgetDataLoading = false;
 
-    this.initScene(terrain, points, bbox, this._canvasElement);
+    this.initScene(terrain, points, bbox, contextImageWidth, contextImageHeight, pmcLocs3D, this._canvasElement$.value);
   }
 
   protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {
@@ -589,6 +828,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     points: THREE.Points,
     //pmcLocations: number[],
     size: AxisAlignedBBox,
+    contextImageWidth: number,
+    contextImageHeight: number,
+    pmcLocs3D: number[],
     //contextImgModel: ContextImageModelLoadedData,
     canvasElement?: ElementRef
   ) {
@@ -616,6 +858,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     this._terrain = terrain;
     this.renderData.scene.add(this._terrain);
+    
+    // Add a debug mesh to test UV locations
+    this.renderData.scene.add(this.createDebugMesh(dataCenter, size, contextImageWidth, contextImageHeight, pmcLocs3D));
 
     this._points = points;
     this.renderData.scene.add(this._points);
@@ -632,9 +877,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       1000
     );
 
-    this.renderData.camera.position.set(dataCenter.x, dataCenter.y, size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
+    this.renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
 
-    this.renderData.camera.lookAt(dataCenter);
+    //this.renderData.camera.lookAt(dataCenter);
     this.renderData.scene.add(this.renderData.camera);
 
     this.renderData.controls = new OrbitControls(this.renderData.camera, canvasElement!.nativeElement);
@@ -649,5 +894,73 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     });
 
     this.mdl.needsDraw$.next();
+  }
+
+  protected createDebugMesh(
+    dataCenter: THREE.Vector3,
+    size: AxisAlignedBBox, 
+    contextImageWidth: number,
+    contextImageHeight: number,
+    pmcLocs3D: number[]): THREE.Mesh {
+    /*
+    const h = dataCenter.y + 5;
+    const x = dataCenter.x;
+    const z = dataCenter.z;
+
+    const dbgGeom = new THREE.BufferGeometry();
+    dbgGeom.setAttribute(
+      "position",
+      new THREE.BufferAttribute(new Float32Array([x,h,z, x+752,h,z, x+752,h,z+580, x,h,z+580]), 3));
+
+    dbgGeom.setAttribute(
+        'uv',
+        new THREE.BufferAttribute(new Float32Array([0,0, 1,0, 1,1, 0,1]), 2));
+
+    dbgGeom.setIndex(new THREE.BufferAttribute(new Int32Array([0,1,2, 2,3,0]), 1));
+    //dbgGeom.computeVertexNormals();
+    
+    return new THREE.Mesh(
+      dbgGeom,
+      new THREE.MeshBasicMaterial({color: new THREE.Color(0xffffff), map: this._terrainMatStandard.map})
+    );
+    */
+
+    const dbgG = new THREE.PlaneGeometry(contextImageWidth, contextImageHeight);
+
+    dbgG.setAttribute("uv", new THREE.BufferAttribute(new Float32Array([0,1, 1,1, 0,0, 1,0]), 2))
+
+    const dbgM = new THREE.Mesh(dbgG, new THREE.MeshBasicMaterial({color: new THREE.Color(0xffffff), map: this._terrainMatStandard.map}))
+//    dbgM.position.set(contextImageWidth / 2, contextImageHeight / 2, 0);
+    //dbgM.position.set(dataCenter.x, size.maxCorner.y, dataCenter.z);
+    //dbgM.lookAt(new THREE.Vector3(0, size.maxCorner.y+1, 0));
+    //dbgM.rotation.x = -Math.PI/2;
+  
+    const geometry = new THREE.SphereGeometry(2, 8, 8);
+    /*const material = new THREE.MeshBasicMaterial({ 
+      color: new THREE.Color(0xff0000),
+      transparent: true,
+      opacity: 0.8
+    });*/
+
+    let dbgPts = new THREE.Object3D();
+
+    // Red - first PMC
+    let m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff0000) }));
+    m.position.set(this._pmcUVs[0] * contextImageWidth, this._pmcUVs[2] * contextImageHeight, 0);
+    dbgPts.add(m);
+
+    // Green - center
+    m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x00ff00) }));
+    dbgPts.add(m);
+
+    // Blue - "far" corner
+    m = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x0000ff) }));
+    m.position.set(contextImageWidth, contextImageHeight, 0);
+    dbgPts.add(m);
+
+    dbgPts.position.set(-contextImageWidth / 2, -contextImageHeight / 2, 0)
+
+    dbgM.add(dbgPts);
+    return dbgM;
   }
 }
