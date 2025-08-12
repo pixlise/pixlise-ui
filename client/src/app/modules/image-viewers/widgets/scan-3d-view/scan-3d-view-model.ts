@@ -2,6 +2,21 @@ import { Subject, ReplaySubject } from "rxjs";
 import { CanvasDrawNotifier } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MapColourScaleSourceData } from "../context-image/ui-elements/map-colour-scale/map-colour-scale-model";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../context-image/context-image-model-internals";
+import { RGBUImage } from "src/app/models/RGBUImage";
+import { ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
+import { ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
+import { ElementRef } from "@angular/core";
+import { number, size } from "mathjs";
+import { c } from "node_modules/@angular/cdk/portal-directives.d-DbeNrI5D";
+import { ScanEntry } from "src/app/generated-protos/scan-entry";
+import { Point } from "src/app/models/Geometry";
+import { AxisAlignedBBox } from "src/app/models/Geometry3D";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { ScanPoint } from "../../models/scan-point";
+
+import * as THREE from 'three';
+import { Scan3DDrawModel } from "./scan-3d-draw-model";
+
 
 export class Scan3DViewModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -45,7 +60,11 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
 
   // Loaded data, based on the above, we load these. Draw models are generated from these
   // on the fly
-  private _raw: ContextImageModelLoadedData | null = null;
+  private _raw?: ContextImageModelLoadedData;
+  private _scanEntries?: ScanEntryResp;
+  private _beams?: ScanBeamLocationsResp;
+
+  drawModel = new Scan3DDrawModel();
   
   getScanModelFor(scanId: string): ContextImageScanModel | null {
     if (this._raw) {
@@ -58,8 +77,44 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     return null;
   }
 
-  setData(loadedData: ContextImageModelLoadedData) {
+  get rgbuSourceImage(): RGBUImage | null {
+    if (this._raw) {
+      return this._raw.rgbuSourceImage;
+    }
+    return null;
+  }
+
+  setData(scanId: string, loadedData: ContextImageModelLoadedData, scanEntries: ScanEntryResp, beams: ScanBeamLocationsResp) {
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
+    this._scanEntries = scanEntries;
+    this._beams = beams;
+
+    let bbox = new AxisAlignedBBox();
+    let pmcLocs = this.getBeamXYZs(beams, scanEntries.entries, bbox);
+    const scanMdl = loadedData.scanModels.get(scanId);
+
+    this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], loadedData.image || undefined).subscribe(
+      () => {
+
+      }
+    );
+  }
+
+  protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {
+    let result = new Map<number, THREE.Vector3>();
+
+    const scale = 1000;
+    for (let c = 0; c < scanEntries.length; c++) {
+      const scanEntry = scanEntries[c];
+      if(scanEntry.location && scanEntry.normalSpectra) {
+        const loc = beams.beamLocations[c];
+        const pt = new THREE.Vector3(loc.x * scale, loc.z * scale, loc.y * scale);
+        result.set(scanEntry.id, pt);
+        bbox.expandToFit(pt);
+      }
+    }
+
+    return result;
   }
 }
