@@ -1,18 +1,12 @@
-import { Subject, ReplaySubject } from "rxjs";
+import { Subject, ReplaySubject, Observable } from "rxjs";
 import { CanvasDrawNotifier } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MapColourScaleSourceData } from "../context-image/ui-elements/map-colour-scale/map-colour-scale-model";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../context-image/context-image-model-internals";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
-import { ElementRef } from "@angular/core";
-import { number, size } from "mathjs";
-import { c } from "node_modules/@angular/cdk/portal-directives.d-DbeNrI5D";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { Point } from "src/app/models/Geometry";
 import { AxisAlignedBBox } from "src/app/models/Geometry3D";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { ScanPoint } from "../../models/scan-point";
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
@@ -84,7 +78,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     return null;
   }
 
-  setData(scanId: string, loadedData: ContextImageModelLoadedData, scanEntries: ScanEntryResp, beams: ScanBeamLocationsResp) {
+  setData(scanId: string, loadedData: ContextImageModelLoadedData, scanEntries: ScanEntryResp, beams: ScanBeamLocationsResp): Observable<void> {
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
     this._scanEntries = scanEntries;
@@ -94,11 +88,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     let pmcLocs = this.getBeamXYZs(beams, scanEntries.entries, bbox);
     const scanMdl = loadedData.scanModels.get(scanId);
 
-    this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], loadedData.image || undefined).subscribe(
-      () => {
-
-      }
-    );
+    return this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], loadedData.image || undefined);
   }
 
   protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {

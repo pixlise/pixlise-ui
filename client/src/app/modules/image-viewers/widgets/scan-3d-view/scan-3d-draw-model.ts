@@ -6,11 +6,14 @@ import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
 import { ScanPoint } from '../../models/scan-point';
 import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
+import { Observable, Subject, Subscriber } from 'rxjs';
+import { ElementRef } from '@angular/core';
 
 
 const positionNumComponents = 3;
 
 export class Scan3DDrawModel {
+  private _sceneInited = false;
   renderData: ThreeRenderData = new ThreeRenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
 
   // The "Draw Model"...
@@ -20,13 +23,12 @@ export class Scan3DDrawModel {
   private _ambientLight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
   private _selection?: THREE.Object3D;
   
-  // Raycasting for point picking
-  private _raycaster = new THREE.Raycaster();
-  
   // Store PMC data for point lookup
   private _pmcForLocs: number[] = [];
   private _pmcUVs: Float32Array = new Float32Array([]);
   private _pmcLocs3D: number[] = [];
+
+  private _bbox: AxisAlignedBBox = new AxisAlignedBBox();
 
   // Visual indicator for picked point
   //private _pickedPointIndicator?: THREE.Mesh;
@@ -44,104 +46,119 @@ export class Scan3DDrawModel {
   private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
   private _pointSize: number = 0.02;
 
+  get bbox(): AxisAlignedBBox {
+    return this._bbox.copy();
+  }
+
   // Create the initial draw model
-  create(scanId: string, pmcLocs: Map<number, THREE.Vector3>, bbox: AxisAlignedBBox, scanPoints: ScanPoint[], image?: HTMLImageElement) {
-    const bboxCenter = bbox.center();
+  create(
+    scanId: string,
+    pmcLocs: Map<number, THREE.Vector3>,
+    bbox: AxisAlignedBBox,
+    scanPoints: ScanPoint[],
+    image?: HTMLImageElement): Observable<void> {
+      return new Observable(
+        (subscriber) => {
+          // Remember the bounding volume of our scene data here
+          this._bbox = bbox;
+          const bboxCenter = this._bbox.center();
 
-    // At this point we use a delaunay lib to generate 2D polygons. The z-value is not required for this, we know
-    // our surface was scanned from above so polygons generated will be "correct", we just need to add the "z" back
+          // At this point we use a delaunay lib to generate 2D polygons. The z-value is not required for this, we know
+          // our surface was scanned from above so polygons generated will be "correct", we just need to add the "z" back
 
-    // First, generate the 2D coordinates needed
-    let pmcLocs2D: number[] = [];
-    let pmcLocs3D: number[] = [];
-    let pmcForLocs: number[] = [];
-    for (const [pmc, loc] of pmcLocs.entries()) {
-      pmcLocs2D.push(loc.x);
-      pmcLocs2D.push(loc.z);
+          // First, generate the 2D coordinates needed
+          let pmcLocs2D: number[] = [];
+          let pmcLocs3D: number[] = [];
+          let pmcForLocs: number[] = [];
+          for (const [pmc, loc] of pmcLocs.entries()) {
+            pmcLocs2D.push(loc.x);
+            pmcLocs2D.push(loc.z);
 
-      pmcLocs3D.push(loc.x);
-      pmcLocs3D.push(loc.y);
-      pmcLocs3D.push(loc.z);
+            pmcLocs3D.push(loc.x);
+            pmcLocs3D.push(loc.y);
+            pmcLocs3D.push(loc.z);
 
-      pmcForLocs.push(pmc);
-    }
+            pmcForLocs.push(pmc);
+          }
 
-    let scanPointLookup = new Map<number, ScanPoint>();
+          let scanPointLookup = new Map<number, ScanPoint>();
 
-    // If we have an image, we can generate an outer border of locations that give us
-    // enough triangle mesh to drape the MCC Image over it
-    if (scanPoints && scanPoints.length > 0 && image) {
-    let uvbbox = new AxisAlignedBBox();
-      for (const pt of scanPoints) {
-        scanPointLookup.set(pt.PMC, pt);
-        if (pt.coord) {
-          uvbbox.expandToFit(new THREE.Vector3(pt.coord.x, bboxCenter.y, pt.coord.y));
+          // If we have an image, we can generate an outer border of locations that give us
+          // enough triangle mesh to drape the MCC Image over it
+          if (scanPoints && scanPoints.length > 0 && image) {
+          let uvbbox = new AxisAlignedBBox();
+            for (const pt of scanPoints) {
+              scanPointLookup.set(pt.PMC, pt);
+              if (pt.coord) {
+                uvbbox.expandToFit(new THREE.Vector3(pt.coord.x, bboxCenter.y, pt.coord.y));
+              }
+            }
+
+            this.padPMCLocationsToImageBorder(this._bbox, uvbbox, image.width, image.height, pmcLocs2D, pmcLocs3D, pmcForLocs, scanPointLookup);
+          }
+
+          const delaunay = new Delaunator(pmcLocs2D);
+
+          // Now associate them back to PMC, hence the xyz, location and form 3D triangles using these indexes
+          if (delaunay.triangles.length % 3 != 0) {
+            throw new Error("Expected delaunay to deliver a multiple of 3 indexes");
+          }
+
+          const terrainGeom = new THREE.BufferGeometry();
+          // const normalNumComponents = 3;
+          const uvNumComponents = 2;
+          terrainGeom.setAttribute(
+            "position",
+            new THREE.BufferAttribute(new Float32Array(pmcLocs3D), positionNumComponents));
+          // terrainGeom.setAttribute(
+          //     'normal',
+          //     new THREE.BufferAttribute(new Float32Array(normals), normalNumComponents));
+
+          if (scanPoints && scanPoints.length > 0 && image) {
+            const uvs = this.readUVs(pmcLocs2D, pmcForLocs, scanPointLookup);
+            this.processUVs(uvs, image.width, image.height);
+
+            this._pmcUVs = uvs;
+            terrainGeom.setAttribute(
+                'uv',
+                new THREE.BufferAttribute(uvs, uvNumComponents));
+          }
+
+          terrainGeom.setIndex(new THREE.BufferAttribute(delaunay.triangles, 1));
+          terrainGeom.computeVertexNormals();
+
+          // Load the texture if there is one
+          // Form triangle mesh
+          const terrain = new THREE.Mesh(
+            terrainGeom,
+            this._terrainMatStandard
+          );
+
+          if (image) {
+            const loader = new THREE.TextureLoader();
+            const imgDataUrl = THREE.ImageUtils.getDataURL(image)
+            loader.load(imgDataUrl, (texture) => {
+              // Texture loaded!
+              texture.colorSpace = THREE.SRGBColorSpace;
+
+              // Set it in any materials that need it
+              this._terrainMatStandard.map = texture;
+              this._terrainMatBasic.map = texture;
+
+              this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber);
+            });
+          } else {
+            this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber);
+          }
         }
-      }
-
-      this.padPMCLocationsToImageBorder(bbox, uvbbox, image.width, image.height, pmcLocs2D, pmcLocs3D, pmcForLocs, scanPointLookup);
-    }
-
-    const delaunay = new Delaunator(pmcLocs2D);
-
-    // Now associate them back to PMC, hence the xyz, location and form 3D triangles using these indexes
-    if (delaunay.triangles.length % 3 != 0) {
-      throw new Error("Expected delaunay to deliver a multiple of 3 indexes");
-    }
-
-    const terrainGeom = new THREE.BufferGeometry();
-    // const normalNumComponents = 3;
-    const uvNumComponents = 2;
-    terrainGeom.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array(pmcLocs3D), positionNumComponents));
-    // terrainGeom.setAttribute(
-    //     'normal',
-    //     new THREE.BufferAttribute(new Float32Array(normals), normalNumComponents));
-
-    if (scanPoints && scanPoints.length > 0 && image) {
-      const uvs = this.readUVs(pmcLocs2D, pmcForLocs, scanPointLookup);
-      this.processUVs(uvs, image.width, image.height);
-
-      this._pmcUVs = uvs;
-      terrainGeom.setAttribute(
-          'uv',
-          new THREE.BufferAttribute(uvs, uvNumComponents));
-    }
-
-    terrainGeom.setIndex(new THREE.BufferAttribute(delaunay.triangles, 1));
-    terrainGeom.computeVertexNormals();
-
-    // Load the texture if there is one
-    // Form triangle mesh
-    const terrain = new THREE.Mesh(
-      terrainGeom,
-      this._terrainMatStandard
-    );
-
-    if (image) {
-      const loader = new THREE.TextureLoader();
-      const imgDataUrl = THREE.ImageUtils.getDataURL(image)
-      loader.load(imgDataUrl, (texture) => {
-        // Texture loaded!
-        texture.colorSpace = THREE.SRGBColorSpace;
-
-        // Set it in any materials that need it
-        this._terrainMatStandard.map = texture;
-        this._terrainMatBasic.map = texture;
-
-        this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain);
-      });
-    } else {
-      this.continueInitScene(bbox, pmcLocs3D, pmcForLocs, terrain);
-    }
+      );
   }
 
   protected continueInitScene(
-    bbox: AxisAlignedBBox,
     pmcLocs3D: number[],
     pmcForLocs: number[],
-    terrain: THREE.Mesh
+    terrain: THREE.Mesh,
+    subscriber: Subscriber<void>
     ) {
     // Form point cloud too
     const pointsGeom = new THREE.BufferGeometry();
@@ -163,11 +180,11 @@ export class Scan3DDrawModel {
     );
     points.position.y += 0.002;
   
-    this.isWidgetDataLoading = false;
-  
-    this.initScene(terrain, points, bbox, this._canvasElement$.value);
+    this.initScene(terrain, points;
+    subscriber.next();
+    subscriber.complete();
   }
-    
+
   protected readUVs(
     pmcLocs2D: number[],
     pmcForLocs: number[],
@@ -279,30 +296,20 @@ export class Scan3DDrawModel {
 
   protected initScene(
     terrain: THREE.Mesh,
-    points: THREE.Points,
-    size: AxisAlignedBBox,
-    canvasElement?: ElementRef
+    points: THREE.Points
     ) {
-    if (!canvasElement) {
-      console.error("initScene called without canvas reference");
-      return;
-    }
-    if (!this._canvasSize) {
-      console.error("initScene called without known canvas size");
-      return;
-    }
     if (this._sceneInited) {
       console.error("initScene already called");
       return;
     }
     this._sceneInited = true;
   
-    const dataCenter = size.center();
+    const dataCenter = this._bbox.center();
   
     this.renderData.scene.add(this._ambientLight);
   
     // Add all the stuff to the scene with references separately so we can remove them if toggled 
-    this._light = this.makeLight(new THREE.Vector3(dataCenter.x, size.maxCorner.y + (size.maxCorner.y-size.minCorner.y) * 5, dataCenter.z));
+    this._light = this.makeLight(new THREE.Vector3(dataCenter.x, this._bbox.maxCorner.y + (this._bbox.maxCorner.y-this._bbox.minCorner.y) * 5, dataCenter.z));
     this.renderData.scene.add(this._light);
   
     this._terrain = terrain;
@@ -310,41 +317,9 @@ export class Scan3DDrawModel {
   
     this._points = points;
     this.renderData.scene.add(this._points);
-  
-    this.updateSelection();
-  
-    if (!this._canvasSize.x || !this._canvasSize.y) {
-      console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
-      return;
-    }
-  
-    this.renderData.camera = new THREE.PerspectiveCamera(
-      60,
-      this._canvasSize.x / this._canvasSize.y,
-      0.001,
-      1000
-    );
-  
-    this.renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
-  
-    //this.renderData.camera.lookAt(dataCenter);
-    this.renderData.scene.add(this.renderData.camera);
-  
-    this.renderData.controls = new OrbitControls(this.renderData.camera, canvasElement!.nativeElement);
-  
-    // Set up what to orbit around
-    this.renderData.controls.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
-    this.renderData.controls.update();
-  
-    // Redraw if camera changes
-    this.renderData.controls.addEventListener('change', (e) => {
-      this.mdl.needsDraw$.next();
-    });
-  
-    this.mdl.needsDraw$.next();
   }
   
-  protected updateSelection(selectionService: SelectionService) {
+  updateSelection(selectionService: SelectionService) {
     if (this._selection) {
       this.renderData.scene.remove(this._selection);
     }
@@ -356,7 +331,6 @@ export class Scan3DDrawModel {
     for (let c = 0; c < this._pmcForLocs.length; c++) {
       pmcToIdx.set(this._pmcForLocs[c], c);
     }
-
 
     const sphere = new THREE.SphereGeometry(this._pointSize, 8, 8);
     const matSelect = new THREE.MeshBasicMaterial({
