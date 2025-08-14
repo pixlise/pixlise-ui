@@ -29,7 +29,7 @@
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
 //import { Router } from "@angular/router";
-import { Subscription } from "rxjs";
+import { first, Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
@@ -63,15 +63,41 @@ export class AuthenticateComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this._subs.add(
-      this.authService.error$.subscribe((errStr: Error) => {
-        this.errorString += `${errStr}\n`;
+      this.authService.error$.subscribe((err: Error) => {
+        console.error(err);
+
+        // We get some weird effects here - if it's a missing_refresh_token, this seems to happen
+        // due to a non-verified email account (for new users), or it might be a legit missing_refresh_token
+        // but at this point Auth0 should show the linking screen.
+
+        // We also get a "missing_transaction" Invalid State message on every login. Not sure what's
+        // causing this but we probably can skip displaying it
+        // Try display it
+        let prefix = "";
+        if (err["error"] != undefined) {
+          if (typeof err["error"] === "string") { 
+            prefix = err["error"];
+          }
+        }
+
+        if (prefix == "missing_transaction" && err.message == "Invalid state") {
+          this.errorString = "Login in progress...";
+        } else if (prefix == "missing_refresh_token") {
+          this.errorString = "Please click the verification link you were emailed and follow prompts to link your account to PIXLISE"
+        } else {
+          this.errorString = `${prefix} ${err.message}\n`;
+        }
       })
     );
 
     this._subs.add(
       this.authService.isLoading$.subscribe((loading: boolean) => {
         if (!loading) {
-          this._router.navigate(["/datasets"]);
+          this.authService.isAuthenticated$.pipe(first()).subscribe((isAuthenticated: boolean)=> {
+            if (isAuthenticated) {
+              this._router.navigate(["/datasets"]);
+            }
+          });
         }
       })
     );

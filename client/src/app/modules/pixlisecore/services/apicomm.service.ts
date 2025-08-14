@@ -82,7 +82,7 @@ export class APICommService implements OnDestroy {
         // then sits in a loop saying error: Login required. To break this cycle, we navigate to the root page, because our token
         // must've failed to renew or something. Not getting a useful error message back from auth0 makes this hard to diagnose!
         const errMsg = `${err?.message || err}`;
-        if (errMsg != "Login required") {
+        if (errMsg != "Login required" && !errMsg.startsWith("Missing Refresh Token")) {
           console.error(`APICommService [${this._id}] beginConnect error: ${errMsg}`);
           this._snackService.openError(
             `Failed to connect to PIXLISE server. Retrying...`,
