@@ -1,15 +1,52 @@
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { Scan3DToolId, Scan3DToolBase, Scan3DToolHost } from "./base";
 import * as THREE from 'three';
+import { ThreeRenderData } from "./interactive-canvas-3d.component";
+import { Scan3DDrawModel } from "./scan-3d-draw-model";
+import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ElementRef } from "@angular/core";
+import { Scan3DViewModel } from "./scan-3d-view-model";
 
-export class OrbitTool extends Scan3DToolBase {
+// Class to represent a picked point
+class PickedPoint {
+    constructor(
+      public pointIndex: number,
+      public worldPosition: THREE.Vector3,
+      public distance: number
+    ) {}
+  }
+
+export class Scan3DMouseInteraction {
   private _mouseMoved = false;
 
   // Raycasting for point picking
   private _raycaster = new THREE.Raycaster();
 
-  constructor(host: Scan3DToolHost, protected _controls?: OrbitControls) {
-    super(host, Scan3DToolId.ORBIT);
+  private _canvas: any;
+
+  constructor(
+    protected _scanId: string,
+    protected _selectionService: SelectionService,
+    protected _mdl: Scan3DViewModel) {
+  }
+
+  setupMouseEvents(canvasElement?: ElementRef) {
+    if (!canvasElement) return;
+    
+    this._canvas = canvasElement.nativeElement;
+    
+    // Remove existing event listeners to avoid duplicates
+    this.clearMouseEventListeners();
+
+    // Add click event listener
+    this._canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
+    this._canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+    this._canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
+  }
+
+  clearMouseEventListeners() {
+    this._canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
+    this._canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    this._canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
   }
 
   onMouseDown(event: MouseEvent): void {
@@ -26,7 +63,7 @@ export class OrbitTool extends Scan3DToolBase {
       return;
     }
 
-    if (!this.renderData || !this._points) {
+    if (!this._mdl.drawModel.renderData || !this._mdl.drawModel.points) {
       return;
     }
 
@@ -46,10 +83,10 @@ export class OrbitTool extends Scan3DToolBase {
     );
 
     // Update the picking ray with the camera and mouse position
-    this._raycaster.setFromCamera(mouse, this.renderData.camera);
+    this._raycaster.setFromCamera(mouse, this._mdl.drawModel.renderData.camera);
 
     // Calculate objects intersecting the picking ray
-    const intersects = this._raycaster.intersectObject(this._points);
+    const intersects = this._raycaster.intersectObject(this._mdl.drawModel.points);
 
     if (intersects.length > 0) {
       //console.log("intersects", intersects);
@@ -80,15 +117,15 @@ export class OrbitTool extends Scan3DToolBase {
   private onPointPicked(pickedPoint: PickedPoint) {
     //console.log('Point picked:', pickedPoint);
     
-    if (!this._points || pickedPoint.pointIndex >= this._pmcForLocs.length) {
+    if (!this._mdl.drawModel.points || pickedPoint.pointIndex >= this._mdl.drawModel.pmcForLocs.length) {
       return;
     }
     
     // Get the PMC for this point index
-    const pmc = this._pmcForLocs[pickedPoint.pointIndex];
+    const pmc = this._mdl.drawModel.pmcForLocs[pickedPoint.pointIndex];
     
     // Notify the selection service, treat this like a hover
-    this._selectionService.setHoverEntryPMC(this.scanId, pmc);
+    this._selectionService.setHoverEntryPMC(this._scanId, pmc);
     /*
     // Get position from the geometry
     const positions = this._points.geometry.attributes['position'];

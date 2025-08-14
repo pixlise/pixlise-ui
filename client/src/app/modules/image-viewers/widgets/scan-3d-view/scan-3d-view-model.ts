@@ -39,7 +39,31 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
 
   hidePointsForScans = new Set<string>();
   hideFootprintsForScans = new Set<string>();
-  lighting: boolean = true;
+
+  protected _lighting: boolean = true;
+  get lighting(): boolean {
+    return this._lighting;
+  }
+  set lighting(on: boolean) {
+    this._lighting = on;
+
+    // Here we can update the draw model if needed
+    this.drawModel.setLighting(on);
+  }
+
+  toggleShowPoints(scanId: string) {
+    let show = false;
+    if (this.hidePointsForScans.has(scanId)) {
+      // We're un-hiding
+      this.hidePointsForScans.delete(scanId);
+      show = true;
+    } else {
+      // We're hiding
+      this.hidePointsForScans.add(scanId);
+    }
+
+    this.drawModel.setShowPoints(show);
+  }
 
   get rgbuImageScaleData(): MapColourScaleSourceData | null {
     return null;
@@ -88,7 +112,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     let pmcLocs = this.getBeamXYZs(beams, scanEntries.entries, bbox);
     const scanMdl = loadedData.scanModels.get(scanId);
 
-    return this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], loadedData.image || undefined);
+    return this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], this._lighting, !this.hidePointsForScans.has(scanId), loadedData.image || undefined);
   }
 
   protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {

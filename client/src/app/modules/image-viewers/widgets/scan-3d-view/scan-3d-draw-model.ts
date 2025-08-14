@@ -50,13 +50,22 @@ export class Scan3DDrawModel {
     return this._bbox.copy();
   }
 
+  get points(): THREE.Points | undefined {
+    return this._points;
+  }
+  get pmcForLocs(): number[] {
+    return this._pmcForLocs;
+  }
+
   // Create the initial draw model
   create(
     scanId: string,
     pmcLocs: Map<number, THREE.Vector3>,
     bbox: AxisAlignedBBox,
     scanPoints: ScanPoint[],
-    image?: HTMLImageElement): Observable<void> {
+    lighting: boolean,
+    showPoints: boolean,
+    image?: HTMLImageElement,): Observable<void> {
       return new Observable(
         (subscriber) => {
           // Remember the bounding volume of our scene data here
@@ -145,10 +154,10 @@ export class Scan3DDrawModel {
               this._terrainMatStandard.map = texture;
               this._terrainMatBasic.map = texture;
 
-              this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber);
+              this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber, lighting, showPoints);
             });
           } else {
-            this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber);
+            this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber, lighting, showPoints);
           }
         }
       );
@@ -158,7 +167,9 @@ export class Scan3DDrawModel {
     pmcLocs3D: number[],
     pmcForLocs: number[],
     terrain: THREE.Mesh,
-    subscriber: Subscriber<void>
+    subscriber: Subscriber<void>,
+    lighting: boolean,
+    showPoints: boolean,
     ) {
     // Form point cloud too
     const pointsGeom = new THREE.BufferGeometry();
@@ -180,7 +191,17 @@ export class Scan3DDrawModel {
     );
     points.position.y += 0.002;
   
-    this.initScene(terrain, points;
+    this.initScene(terrain, points);
+
+    // Add optional items depending on visibility flags
+    if (this._light) {
+      this.setLighting(lighting);
+    }
+
+    if (this._points) {
+      this.setShowPoints(showPoints);
+    }
+
     subscriber.next();
     subscriber.complete();
   }
@@ -296,7 +317,7 @@ export class Scan3DDrawModel {
 
   protected initScene(
     terrain: THREE.Mesh,
-    points: THREE.Points
+    points: THREE.Points,
     ) {
     if (this._sceneInited) {
       console.error("initScene already called");
@@ -310,13 +331,13 @@ export class Scan3DDrawModel {
   
     // Add all the stuff to the scene with references separately so we can remove them if toggled 
     this._light = this.makeLight(new THREE.Vector3(dataCenter.x, this._bbox.maxCorner.y + (this._bbox.maxCorner.y-this._bbox.minCorner.y) * 5, dataCenter.z));
-    this.renderData.scene.add(this._light);
-  
+    // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
+
     this._terrain = terrain;
     this.renderData.scene.add(this._terrain);
   
     this._points = points;
-    this.renderData.scene.add(this._points);
+    // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._points);
   }
   
   updateSelection(selectionService: SelectionService) {
@@ -376,5 +397,33 @@ export class Scan3DDrawModel {
     }
 
     this.renderData.scene.add(this._selection);
+  }
+
+  setLighting(on: boolean) {
+    if (!this._light) {
+      console.error("setLighting: Light not set up yet");
+      return;
+    }
+
+    if (!on) {
+      this.renderData.scene.remove(this._light);
+      this._terrain!.material = this._terrainMatBasic;
+    } else {
+      this.renderData.scene.add(this._light);
+      this._terrain!.material = this._terrainMatStandard;
+    }
+  }
+
+  setShowPoints(show: boolean) {
+    if (!this._points) {
+      console.error("setShowPoints: Points not set up yet");
+      return;
+    }
+
+    if (!show) {
+      this.renderData.scene.remove(this._points);
+    } else {
+      this.renderData.scene.add(this._points);
+    }
   }
 }

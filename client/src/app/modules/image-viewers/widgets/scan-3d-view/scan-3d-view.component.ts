@@ -16,8 +16,8 @@ import { ContextImageModelLoadedData } from "../context-image/context-image-mode
 import { Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
-import { Scan3DToolHost } from "./tools/base";
-import { Scan3DViewToolHost } from "./tools/tool-host";
+import { Scan3DMouseInteraction } from "./mouse-interaction";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 // Class to represent a picked point
 class PickedPoint {
@@ -34,11 +34,11 @@ class PickedPoint {
   templateUrl: "./scan-3d-view.component.html",
   styleUrls: ["./scan-3d-view.component.scss"],
 })
-export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDestroy, Scan3DToolHost {
+export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   mdl: Scan3DViewModel;
-  toolHost?: Scan3DViewToolHost;
+  private _mouseInteractionHandler?: Scan3DMouseInteraction;
 
   cursorShown: string = "";
 
@@ -61,7 +61,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     super();
 
     this.mdl = new Scan3DViewModel();
-    this.toolHost = new Scan3DViewToolHost(this._selectionService, this.mdl);
 
     this.scanId = this._analysisLayoutService.defaultScanId;
 
@@ -137,16 +136,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         },
       ],
     };
-
-    for (const tool of this.toolHost.tools) {
-      this._widgetControlConfiguration.bottomToolbar?.push({
-        id: "tool-" + tool.toolId.toString(),
-        type: "selectable-button",
-        icon: tool.icon,
-        value: tool.state != ToolState.OFF,
-        onClick: () => this.onToolSelected(tool.toolId),
-      });
-    }
   }
 
   ngOnInit() {
@@ -195,6 +184,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           this.mdl.imageName = scan3DState.contextImage;
           this.mdl.imageSmoothing = scan3DState.contextImageSmoothing.length > 0;
 
+          this.mdl.lighting = scan3DState.showLight;
+
           // Set the all points toggle icon
           const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
           if (allPointsButton) {
@@ -223,6 +214,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+    this._mouseInteractionHandler?.clearMouseEventListeners();
   }
 
   protected setInitialConfig() {
@@ -255,36 +247,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // If we have a size and it's the first time it was set, we now load our model data
     if (isFirst && this._canvasSize) {
       this._canvasElement$.next(event.canvasElement);
-      this.setupMouseEvents(event.canvasElement);
+
+      this._mouseInteractionHandler = new Scan3DMouseInteraction(this.scanId, this._selectionService, this.mdl);
+      this._mouseInteractionHandler.setupMouseEvents(event.canvasElement);
     }
-  }
-
-  private setupMouseEvents(canvasElement?: ElementRef) {
-    if (!canvasElement) return;
-    
-    const canvas = canvasElement.nativeElement;
-    
-    // Remove existing event listeners to avoid duplicates
-    canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
-    canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
-    canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
-    
-    // Add click event listener
-    canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
-    canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
-    canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
-  }
-
-  private onMouseDown(event: MouseEvent) {
-    this.toolHost?.onMouseDown(event);
-  }
-
-  private onMouseMove(event: MouseEvent) {
-    this.toolHost?.onMouseMove(event);
-  }
-
-  private onMouseUp(event: MouseEvent) {
-    this.toolHost?.onMouseUp(event);
   }
 
   get allPointsToggleIcon(): string {
@@ -304,22 +270,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   }
 
   onToggleAllPoints(trigger: Element | undefined) {
-    if (this.mdl.hidePointsForScans.size > 0 || this.mdl.hideFootprintsForScans.size > 0) {
-      this.mdl.hidePointsForScans.clear();
-      this.mdl.hideFootprintsForScans.clear();
-      if (this._points) {
-        this.renderData.scene.add(this._points);
-      }
-    } else {
-      // Add all scan ids to the hide lists
-      for (const scanId of this.mdl.scanIds) {
-        this.mdl.hidePointsForScans.add(scanId);
-        this.mdl.hideFootprintsForScans.add(scanId);
-      }
-      if (this._points) {
-        this.renderData.scene.remove(this._points);
-      }
-    }
+    this.mdl.toggleShowPoints(this.scanId);
 
     // Update the button icon
     const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
@@ -338,16 +289,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     this.mdl.lighting = !this.mdl.lighting;
 
     let icon = "assets/button-icons/all-points-off.svg";
-    if (!this.mdl.lighting) {
-      if (this._light) {
-        this.renderData.scene.remove(this._light);
-        this._terrain!.material = this._terrainMatBasic;
-      }
-    } else {
-      if (this._light) {
-        this.renderData.scene.add(this._light);
-        this._terrain!.material = this._terrainMatStandard;
-      }
+    if (this.mdl.lighting) {
       icon = "assets/button-icons/all-points-on.svg";
     }
 
