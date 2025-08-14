@@ -1037,7 +1037,6 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
       crossVariogramPointsRequests.push(this.calcCrossVariogramPoints(data, data2, pts, shouldStoreRawDataForExport));
     }
-
     return combineLatest(crossVariogramPointsRequests);
   }
 
@@ -1061,6 +1060,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
   private runBulkCombiningFunction(left: boolean, values: any[][]): Observable<number[]> {
     const activeAlgorithm = left ? this.activeLeftCrossCombiningAlgorithm : this.activeRightCrossCombiningAlgorithm;
+
     if (activeAlgorithm !== "Custom") {
       return of(
         values.map(([v1, v2]) => {
@@ -1085,6 +1085,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     const query: DataSourceParams[] = [];
     const scanIdsFromROIS: Set<string> = new Set(this._variogramModel.visibleROIs.map(roi => roi.scanId));
+
     if (scanIdsFromROIS.size <= 0) {
       console.warn("No ROIs selected, custom algorithm not run");
       return of([]);
@@ -1102,6 +1103,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     const quantId = this._analysisLayoutService.getQuantIdForScan(scanId) || "";
     const allPointsId = PredefinedROIID.getAllPointsForScan(scanId);
+
     if (!quantId || !allPointsId) {
       console.error("No quant ID or all points ID found, custom algorithm not run");
       return of([]);
@@ -1109,7 +1111,9 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     const injectedFunctions: Map<string, number[][]> = new Map<string, number[][]>([["getVariogramInputs", values]]);
     query.push(new DataSourceParams(scanId, expr.id, quantId, allPointsId, DataUnit.UNIT_DEFAULT, injectedFunctions));
+
     return this._widgetDataService.getData(query, true).pipe(
+      take(1),
       map(queryData => {
         if (queryData.error || !queryData.queryResults || queryData.queryResults.length <= 0) {
           console.error("Failed to run custom algorithm: ", queryData.error);
@@ -1139,6 +1143,11 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
         } else {
           return queryValues.map((value: PMCDataValue) => value.value);
         }
+      }),
+      catchError(error => {
+        console.error("Failed to run custom algorithm: ", error);
+        this._snackService.openError("Failed to run custom algorithm", error?.message || error || "Unknown error");
+        return of([]);
       })
     );
   }

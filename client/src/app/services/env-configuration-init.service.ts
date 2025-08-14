@@ -101,7 +101,8 @@ export class EnvConfigurationInitService {
             const authCfg: AuthConfig = {
               domain: config.auth0_domain,
               clientId: config.auth0_client,
-              cacheLocation: "localstorage",
+              cacheLocation: "localstorage", // https://auth0.com/docs/libraries/auth0-single-page-app-sdk#use-rotating-refresh-tokens
+              useRefreshTokens: true, // https://auth0.com/docs/libraries/auth0-single-page-app-sdk#use-rotating-refresh-tokens
               authorizationParams: {
                 audience: config.auth0_audience,
                 redirect_uri: `${window.location.origin}/authenticate`,
