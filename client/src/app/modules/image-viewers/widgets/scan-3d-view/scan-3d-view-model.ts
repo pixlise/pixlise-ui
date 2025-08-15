@@ -129,7 +129,16 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     let pmcLocs = this.getBeamXYZs(beams, scanEntries.entries, bbox);
     const scanMdl = loadedData.scanModels.get(scanId);
 
-    return this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], this._lightMode, !this.hidePointsForScans.has(scanId), loadedData.image || undefined);
+    return this.drawModel.create(
+      scanId,
+      pmcLocs,
+      bbox,
+      scanMdl?.scanPoints || [],
+      this._lightMode,
+      !this.hidePointsForScans.has(scanId),
+      this._planeYScale,
+      loadedData.image || undefined
+    );
   }
 
   protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {

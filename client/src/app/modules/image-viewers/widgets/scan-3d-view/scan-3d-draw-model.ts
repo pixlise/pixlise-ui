@@ -83,7 +83,9 @@ export class Scan3DDrawModel {
     scanPoints: ScanPoint[],
     lightMode: LightMode,
     showPoints: boolean,
-    image?: HTMLImageElement,): Observable<void> {
+    planeScaleY: number,
+    image?: HTMLImageElement
+  ): Observable<void> {
       return new Observable(
         (subscriber) => {
           // Remember the bounding volume of our scene data here
@@ -154,6 +156,8 @@ export class Scan3DDrawModel {
           terrainGeom.setIndex(new THREE.BufferAttribute(delaunay.triangles, 1));
           terrainGeom.computeVertexNormals();
 
+          this._planeScaleY = planeScaleY;
+
           // Load the texture if there is one
           // Form triangle mesh
           const terrain = new THREE.Mesh(
@@ -187,7 +191,7 @@ export class Scan3DDrawModel {
     terrain: THREE.Mesh,
     subscriber: Subscriber<void>,
     lightMode: LightMode,
-    showPoints: boolean,
+    showPoints: boolean
     ) {
     // Form point cloud too
     const pointsGeom = new THREE.BufferGeometry();
