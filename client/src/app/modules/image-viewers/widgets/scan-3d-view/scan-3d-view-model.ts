@@ -41,6 +41,22 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   hidePointsForScans = new Set<string>();
   hideFootprintsForScans = new Set<string>();
 
+  protected _planeYScale: number = 0.5;
+
+  get planeYScale(): number {
+    return this._planeYScale;
+  }
+
+  // Only valid values for display are between 0 and 1, others are treated as "not enabled"
+  set planeYScale(s: number) {
+    if (s <= 0 || s > 1) {
+      this._planeYScale = -1;
+    } else {
+      this._planeYScale = s;
+    }
+    this.drawModel.setPlaneYScale(this._planeYScale);
+  }
+
   protected _lightMode: LightMode = LightMode.LM_UNKNOWN;
   get lightMode(): LightMode {
     return this._lightMode;
@@ -64,16 +80,6 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     }
 
     this.drawModel.setShowPoints(show);
-  }
-
-  private _planeHeight?: number;
-  set planeHeight(height: number | undefined) {
-    this._planeHeight = height;
-    this.drawModel.setPlaneHeight(height);
-  }
-
-  get planeHeight(): number | undefined {
-    return this._planeHeight;
   }
 
   get rgbuImageScaleData(): MapColourScaleSourceData | null {

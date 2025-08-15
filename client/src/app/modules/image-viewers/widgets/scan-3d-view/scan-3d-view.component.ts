@@ -196,6 +196,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           this.mdl.imageSmoothing = scan3DState.contextImageSmoothing.length > 0;
 
           this.mdl.lightMode = scan3DState.lightMode;
+          this.mdl.planeYScale = scan3DState.planeYScale;
 
           // Set the all points toggle icon
           const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
@@ -316,10 +317,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   onTogglePlane(trigger: Element | undefined) {
     const btn = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "light-toggle");
 
-    this.mdl.planeHeight = this.mdl.planeHeight === undefined ? 1 : undefined;
+    this.mdl.planeYScale = this.mdl.planeYScale < 0 ? 0.5 : -1;
 
     let icon = "assets/button-icons/all-points-off.svg";
-    if (this.mdl.planeHeight === undefined) {
+    if (this.mdl.planeYScale <= 0) {
       icon = "assets/button-icons/all-points-on.svg";
     }
 
@@ -444,6 +445,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
         lightMode: this.mdl.lightMode,
+        planeYScale: this.mdl.planeYScale
       })
     );
   }

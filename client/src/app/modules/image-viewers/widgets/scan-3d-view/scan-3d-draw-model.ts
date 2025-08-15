@@ -22,6 +22,9 @@ export class Scan3DDrawModel {
   private _points?: THREE.Points;
   private _selection?: THREE.Object3D;
   private _plane?: THREE.Mesh;
+  private _planeDragBox?: THREE.Mesh;
+
+  private _planeScaleY = 0.5;
 
   // The lights we can use
   private _pointLight?: THREE.PointLight;
@@ -212,6 +215,10 @@ export class Scan3DDrawModel {
       this.setShowPoints(showPoints);
     }
 
+    if (this._planeScaleY > 0) {
+      this.setPlaneYScale(this._planeScaleY);
+    }
+
     subscriber.next();
     subscriber.complete();
   }
@@ -355,18 +362,40 @@ export class Scan3DDrawModel {
     this.renderData.scene.add(this._terrain);
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
+    const planeXSize = this._bboxMCC.maxCorner.x-this._bboxMCC.minCorner.x;
+    const planeYSize = this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y;
+    const planeZSize = this._bboxMCC.maxCorner.z-this._bboxMCC.minCorner.z;
     this._plane = new THREE.Mesh(
       new THREE.BoxGeometry(
-        this._bboxMCC.maxCorner.x-this._bboxMCC.minCorner.x,
-        (this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y) / 2,
-        this._bboxMCC.maxCorner.z-this._bboxMCC.minCorner.z,
+        planeXSize,
+        planeYSize * this._planeScaleY,
+        planeZSize,
         1, 1, 1),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(.37, .17, .08) })
+      new THREE.MeshPhongMaterial({ color: new THREE.Color(.37, .17, .08) })
     );
     this._plane.position.set(dataCenter.x, this._bboxMCC.minCorner.y, dataCenter.z);
 
+    // And a box to adjust the plane height
+    let dragBoxSize = Math.sqrt(planeXSize * planeXSize + planeZSize * planeZSize) / 100;
+    if (dragBoxSize < 1) {
+      dragBoxSize = 1;
+    }
+
+    this._planeDragBox = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        dragBoxSize, dragBoxSize, dragBoxSize,
+        1, 1, 1),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(.37, .17, .08) })
+    );
+    this._planeDragBox.position.set(dataCenter.x, this.getPlaneY(), dataCenter.z);
+
     this._points = points;
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._points);
+  }
+
+  protected getPlaneY(): number {
+    const planeYSize = this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y;
+    return this._bboxMCC.minCorner.y + planeYSize * this._planeScaleY;
   }
   
   updateSelection(selectionService: SelectionService) {
@@ -471,17 +500,25 @@ export class Scan3DDrawModel {
     }
   }
 
-  setPlaneHeight(height: number | undefined) {
-    if (!this._plane) {
+  setPlaneYScale(scale: number) {
+    if (!this._plane || !this._planeDragBox) {
       console.error("setPlaneHeight: Plane not set up yet");
       return;
     }
 
     this.renderData.scene.remove(this._plane);
+    this.renderData.scene.remove(this._planeDragBox);
+    
 
-    if (height !== undefined) {
-      this._plane.position.y = this._bboxMCC.center().y;// + height;
+    if (scale > 0 && scale <= 1) {
+      this._planeScaleY = scale;
+      //this._plane.position.y = this._bboxMCC.center().y;// + height;
+      //this._plane.scale.setY(2);
+
+      this._planeDragBox.position.setY(this.getPlaneY());
+
       this.renderData.scene.add(this._plane);
+      this.renderData.scene.add(this._planeDragBox);
     }
   }
 }
