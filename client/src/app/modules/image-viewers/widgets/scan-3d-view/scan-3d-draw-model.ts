@@ -264,7 +264,7 @@ export class Scan3DDrawModel {
     contextImageWidth: number,
     contextImageHeight: number) {
     for (let c = 0; c < uvs.length; c += 2) {
-      uvs[c] = /*1 -*/ (uvs[c] / contextImageWidth); // NOT SURE WHY WE NEED A X-FLIP???
+      uvs[c] = uvs[c] / contextImageWidth;
       uvs[c+1] = (1 - (uvs[c+1] / contextImageHeight)); // OpenGL textures start at 0,0 => bottom left corner
     }
   }
