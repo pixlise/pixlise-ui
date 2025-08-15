@@ -6,29 +6,36 @@ import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
 import { ScanPoint } from '../../models/scan-point';
 import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
-import { Observable, Subject, Subscriber } from 'rxjs';
-import { ElementRef } from '@angular/core';
+import { Observable, Subscriber } from 'rxjs';
+import { LightMode } from 'src/app/generated-protos/widget-data';
 
 
 const positionNumComponents = 3;
 
+
 export class Scan3DDrawModel {
+  renderData?: ThreeRenderData;
+
   private _sceneInited = false;
-  renderData: ThreeRenderData = new ThreeRenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
 
   // The "Draw Model"...
   private _terrain?: THREE.Mesh;
   private _points?: THREE.Points;
-  private _light?: THREE.PointLight;
-  private _ambientLight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
   private _selection?: THREE.Object3D;
-  
+  private _plane?: THREE.Mesh;
+
+  // The lights we can use
+  private _pointLight?: THREE.PointLight;
+  private _ambientLight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
+  private _hemisphereLight = new THREE.HemisphereLight(new THREE.Color(.63, .48, .41), new THREE.Color(.37, .17, .08), 1)
+
   // Store PMC data for point lookup
   private _pmcForLocs: number[] = [];
-  private _pmcUVs: Float32Array = new Float32Array([]);
+  //private _pmcUVs: Float32Array = new Float32Array([]);
   private _pmcLocs3D: number[] = [];
 
-  private _bbox: AxisAlignedBBox = new AxisAlignedBBox();
+  private _bboxFootprint: AxisAlignedBBox = new AxisAlignedBBox();
+  private _bboxMCC: AxisAlignedBBox = new AxisAlignedBBox();
 
   // Visual indicator for picked point
   //private _pickedPointIndicator?: THREE.Mesh;
@@ -46,8 +53,8 @@ export class Scan3DDrawModel {
   private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
   private _pointSize: number = 0.02;
 
-  get bbox(): AxisAlignedBBox {
-    return this._bbox.copy();
+  get bboxMCC(): AxisAlignedBBox {
+    return this._bboxMCC.copy();
   }
 
   get points(): THREE.Points | undefined {
@@ -57,20 +64,24 @@ export class Scan3DDrawModel {
     return this._pmcForLocs;
   }
 
+  get pointLight(): THREE.PointLight | undefined {
+    return this._pointLight;
+  }
+
   // Create the initial draw model
   create(
     scanId: string,
     pmcLocs: Map<number, THREE.Vector3>,
     bbox: AxisAlignedBBox,
     scanPoints: ScanPoint[],
-    lighting: boolean,
+    lightMode: LightMode,
     showPoints: boolean,
     image?: HTMLImageElement,): Observable<void> {
       return new Observable(
         (subscriber) => {
           // Remember the bounding volume of our scene data here
-          this._bbox = bbox;
-          const bboxCenter = this._bbox.center();
+          this._bboxFootprint = bbox;
+          const bboxCenter = this._bboxFootprint.center();
 
           // At this point we use a delaunay lib to generate 2D polygons. The z-value is not required for this, we know
           // our surface was scanned from above so polygons generated will be "correct", we just need to add the "z" back
@@ -103,7 +114,7 @@ export class Scan3DDrawModel {
               }
             }
 
-            this.padPMCLocationsToImageBorder(this._bbox, uvbbox, image.width, image.height, pmcLocs2D, pmcLocs3D, pmcForLocs, scanPointLookup);
+            this.padPMCLocationsToImageBorder(this._bboxFootprint, uvbbox, image.width, image.height, pmcLocs2D, pmcLocs3D, pmcForLocs, scanPointLookup);
           }
 
           const delaunay = new Delaunator(pmcLocs2D);
@@ -127,7 +138,7 @@ export class Scan3DDrawModel {
             const uvs = this.readUVs(pmcLocs2D, pmcForLocs, scanPointLookup);
             this.processUVs(uvs, image.width, image.height);
 
-            this._pmcUVs = uvs;
+            //this._pmcUVs = uvs;
             terrainGeom.setAttribute(
                 'uv',
                 new THREE.BufferAttribute(uvs, uvNumComponents));
@@ -154,10 +165,10 @@ export class Scan3DDrawModel {
               this._terrainMatStandard.map = texture;
               this._terrainMatBasic.map = texture;
 
-              this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber, lighting, showPoints);
+              this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber, lightMode, showPoints);
             });
           } else {
-            this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber, lighting, showPoints);
+            this.continueInitScene(pmcLocs3D, pmcForLocs, terrain, subscriber, lightMode, showPoints);
           }
         }
       );
@@ -168,7 +179,7 @@ export class Scan3DDrawModel {
     pmcForLocs: number[],
     terrain: THREE.Mesh,
     subscriber: Subscriber<void>,
-    lighting: boolean,
+    lightMode: LightMode,
     showPoints: boolean,
     ) {
     // Form point cloud too
@@ -194,8 +205,8 @@ export class Scan3DDrawModel {
     this.initScene(terrain, points);
 
     // Add optional items depending on visibility flags
-    if (this._light) {
-      this.setLighting(lighting);
+    if (this._pointLight) {
+      this.setLightMode(lightMode);
     }
 
     if (this._points) {
@@ -288,11 +299,15 @@ export class Scan3DDrawModel {
     // But needed a x-flip
     let paddedUVs: number[] = [contextImageWidth,contextImageHeight, 0,contextImageHeight, 0,0, contextImageWidth,0];
 
+    this._bboxMCC = this._bboxFootprint.copy();
     let i = 0;
     for (let c = pmcLocs2D.length-8; c < pmcLocs2D.length; c += 2) {
-      pmcLocs3D.push(pmcLocs2D[c]);
-      pmcLocs3D.push(bboxCenter.y);
-      pmcLocs3D.push(pmcLocs2D[c + 1]);
+      const pt = new THREE.Vector3(pmcLocs2D[c], bboxCenter.y, pmcLocs2D[c + 1])
+      pmcLocs3D.push(pt.x);
+      pmcLocs3D.push(pt.y);
+      pmcLocs3D.push(pt.z);
+
+      this._bboxMCC.expandToFit(pt)
 
       const padPMC = -(1+i);
       pmcForLocs.push(padPMC);
@@ -302,7 +317,7 @@ export class Scan3DDrawModel {
   }
 
   protected makeLight(lightPos: THREE.Vector3) {
-    const pointLight = new THREE.PointLight(new THREE.Color(1,1,1), 10);
+    const pointLight = new THREE.PointLight(new THREE.Color(1,1,1), 100);
     pointLight.position.set(lightPos.x, lightPos.y, lightPos.z);
   
     const lightPointMat = new THREE.MeshToonMaterial();
@@ -325,24 +340,39 @@ export class Scan3DDrawModel {
     }
     this._sceneInited = true;
   
-    const dataCenter = this._bbox.center();
-  
-    this.renderData.scene.add(this._ambientLight);
+    const dataCenter = this._bboxMCC.center();
   
     // Add all the stuff to the scene with references separately so we can remove them if toggled 
-    this._light = this.makeLight(new THREE.Vector3(dataCenter.x, this._bbox.maxCorner.y + (this._bbox.maxCorner.y-this._bbox.minCorner.y) * 5, dataCenter.z));
+    this._pointLight = this.makeLight(
+      new THREE.Vector3(
+        dataCenter.x,
+        this._bboxMCC.maxCorner.y + (this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y) * 10,
+        dataCenter.z
+      )
+    );
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
 
     this._terrain = terrain;
-    this.renderData.scene.add(this._terrain);
-  
+    this.renderData!.scene.add(this._terrain);
+
+    // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
+    this._plane = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        this._bboxMCC.maxCorner.x-this._bboxMCC.minCorner.x,
+        (this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y) / 2,
+        this._bboxMCC.maxCorner.z-this._bboxMCC.minCorner.z,
+        1, 1, 1),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(.37, .17, .08) })
+    );
+    this._plane.position.set(dataCenter.x, this._bboxMCC.minCorner.y, dataCenter.z);
+
     this._points = points;
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._points);
   }
   
   updateSelection(selectionService: SelectionService) {
     if (this._selection) {
-      this.renderData.scene.remove(this._selection);
+      this.renderData!.scene.remove(this._selection);
     }
 
     this._selection = new THREE.Object3D();
@@ -396,20 +426,41 @@ export class Scan3DDrawModel {
       }
     }
 
-    this.renderData.scene.add(this._selection);
+    if (this.renderData) {
+      this.renderData.scene.add(this._selection);
+    }
   }
 
-  setLighting(on: boolean) {
-    if (!this._light) {
-      console.error("setLighting: Light not set up yet");
+  setLightMode(mode: LightMode) {
+    if (!this._pointLight) {
+      console.error("setLighting: Lights not set up yet");
+      return;
+    }
+    if (!this.renderData) {
+      console.error("setLighting: renderData not set up yet");
       return;
     }
 
-    if (!on) {
-      this.renderData.scene.remove(this._light);
+    this.renderData.scene.remove(this._ambientLight);
+    this.renderData.scene.remove(this._pointLight);
+    this.renderData.scene.remove(this._hemisphereLight);
+
+    if (this.renderData.transformControl) {
+      this.renderData.transformControl.detach();
+    }
+
+    if (mode == LightMode.LM_UNKNOWN) {
+      this.renderData.scene.add(this._ambientLight);
       this._terrain!.material = this._terrainMatBasic;
+    } else if (mode == LightMode.LM_POINT) {
+      this.renderData.scene.add(this._pointLight);
+      this._terrain!.material = this._terrainMatStandard;
+
+      if (this.renderData.transformControl) {
+        this.renderData.transformControl.attach(this._pointLight);
+      }
     } else {
-      this.renderData.scene.add(this._light);
+      this.renderData.scene.add(this._hemisphereLight);
       this._terrain!.material = this._terrainMatStandard;
     }
   }
@@ -419,11 +470,33 @@ export class Scan3DDrawModel {
       console.error("setShowPoints: Points not set up yet");
       return;
     }
+    if (!this.renderData) {
+      console.error("setLighting: renderData not set up yet");
+      return;
+    }
 
     if (!show) {
       this.renderData.scene.remove(this._points);
     } else {
       this.renderData.scene.add(this._points);
+    }
+  }
+
+  setPlaneHeight(height: number | undefined) {
+    if (!this._plane) {
+      console.error("setPlaneHeight: Plane not set up yet");
+      return;
+    }
+    if (!this.renderData) {
+      console.error("setLighting: renderData not set up yet");
+      return;
+    }
+
+    this.renderData.scene.remove(this._plane);
+
+    if (height !== undefined) {
+      this._plane.position.y = this._bboxMCC.center().y;// + height;
+      this.renderData.scene.add(this._plane);
     }
   }
 }

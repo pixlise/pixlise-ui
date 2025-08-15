@@ -10,6 +10,7 @@ import { AxisAlignedBBox } from "src/app/models/Geometry3D";
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
+import { LightMode } from "src/app/generated-protos/widget-data";
 
 
 export class Scan3DViewModel implements CanvasDrawNotifier {
@@ -40,15 +41,15 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   hidePointsForScans = new Set<string>();
   hideFootprintsForScans = new Set<string>();
 
-  protected _lighting: boolean = true;
-  get lighting(): boolean {
-    return this._lighting;
+  protected _lightMode: LightMode = LightMode.LM_UNKNOWN;
+  get lightMode(): LightMode {
+    return this._lightMode;
   }
-  set lighting(on: boolean) {
-    this._lighting = on;
+  set lightMode(mode: LightMode) {
+    this._lightMode = mode;
 
     // Here we can update the draw model if needed
-    this.drawModel.setLighting(on);
+    this.drawModel.setLightMode(mode);
   }
 
   toggleShowPoints(scanId: string) {
@@ -63,6 +64,16 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     }
 
     this.drawModel.setShowPoints(show);
+  }
+
+  private _planeHeight?: number;
+  set planeHeight(height: number | undefined) {
+    this._planeHeight = height;
+    this.drawModel.setPlaneHeight(height);
+  }
+
+  get planeHeight(): number | undefined {
+    return this._planeHeight;
   }
 
   get rgbuImageScaleData(): MapColourScaleSourceData | null {
@@ -112,7 +123,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     let pmcLocs = this.getBeamXYZs(beams, scanEntries.entries, bbox);
     const scanMdl = loadedData.scanModels.get(scanId);
 
-    return this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], this._lighting, !this.hidePointsForScans.has(scanId), loadedData.image || undefined);
+    return this.drawModel.create(scanId, pmcLocs, bbox, scanMdl?.scanPoints || [], this._lightMode, !this.hidePointsForScans.has(scanId), loadedData.image || undefined);
   }
 
   protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {

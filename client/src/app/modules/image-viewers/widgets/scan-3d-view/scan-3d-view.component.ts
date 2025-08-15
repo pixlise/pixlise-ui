@@ -5,7 +5,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
-import { CanvasSizeNotification } from "./interactive-canvas-3d.component";
+import { CanvasSizeNotification, ThreeRenderData } from "./interactive-canvas-3d.component";
 import { Point } from "src/app/models/Geometry";
 import * as THREE from 'three';
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
@@ -13,11 +13,12 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions, ImageOptionsComponent, ImagePickerParams, ImagePickerResult } from "../context-image/image-options/image-options.component";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageModelLoadedData } from "../context-image/context-image-model-internals";
-import { Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { LightMode, Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { Scan3DMouseInteraction } from "./mouse-interaction";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 // Class to represent a picked point
 class PickedPoint {
@@ -94,6 +95,16 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           settingGroupTitle: "Actions",
           value: false,
           onClick: (value, trigger) => this.onToggleLighting(trigger),
+        },
+        {
+          id: "plane-toggle",
+          type: "button",
+          icon: "assets/button-icons/all-points-on.svg",
+          tooltip: "Toggle Plane",
+          settingTitle: "Toggle Plane",
+          settingGroupTitle: "Actions",
+          value: false,
+          onClick: (value, trigger) => this.onTogglePlane(trigger),
         }
       ],
       topLeftInsetButton: {
@@ -159,6 +170,13 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           console.warn("Skipping scan 3d view init, no canvas element");
           return;
         }
+        if (!this._canvasSize) {
+          console.warn("Skipping scan 3d view init, no canvas size");
+          return;
+        }
+
+        const renderData = this.initRenderer(canvasElement, this._canvasSize);
+        this.mdl.drawModel.renderData = renderData;
 
         if (scan3DState && scan3DState.contextImage.length > 0) {
           this.mdl.hideFootprintsForScans = new Set<string>(scan3DState?.hideFootprintsForScans || []);
@@ -184,7 +202,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           this.mdl.imageName = scan3DState.contextImage;
           this.mdl.imageSmoothing = scan3DState.contextImageSmoothing.length > 0;
 
-          this.mdl.lighting = scan3DState.showLight;
+          this.mdl.lightMode = scan3DState.lightMode;
 
           // Set the all points toggle icon
           const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
@@ -215,6 +233,56 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   ngOnDestroy() {
     this._subs.unsubscribe();
     this._mouseInteractionHandler?.clearMouseEventListeners();
+  }
+
+  protected initRenderer(canvasElement: ElementRef, canvasSize: Point): ThreeRenderData {
+    const cam = new THREE.PerspectiveCamera()
+    const renderData = new ThreeRenderData(
+      new THREE.Scene(),
+      cam,
+      new OrbitControls(cam, canvasElement!.nativeElement),
+      new TransformControls(cam, canvasElement!.nativeElement)
+    );
+    renderData.camera = new THREE.PerspectiveCamera(
+      60,
+      canvasSize.x / canvasSize.y,
+      0.001,
+      1000
+    );
+
+    // renderData.camera.position will be set once the scene exists
+
+    //this.renderData.camera.lookAt(dataCenter);
+    renderData.scene.add(renderData.camera);
+  
+    // renderData.orbitControl.target will be set once we have a scene
+
+    renderData.scene.add(renderData.transformControl.getHelper());
+    
+    // Setup listeners
+    // Redraw if camera changes
+    renderData.orbitControl.addEventListener("change", (e) => {
+      this.mdl.needsDraw$.next();
+    });
+
+    // Same for transform
+    renderData.transformControl.addEventListener("change", (e) => {
+      this.mdl.needsDraw$.next();
+    });
+
+    // Also if user is dragging transform, disable orbit
+    renderData.transformControl.addEventListener("objectChange", (e) => {
+      if (renderData.orbitControl) {
+        renderData.orbitControl.enabled = false;
+      }
+    });
+    renderData.transformControl.addEventListener("mouseUp", (e) => {
+      if (renderData.orbitControl) {
+        renderData.orbitControl.enabled = true;
+      }
+    });
+
+    return renderData;
   }
 
   protected setInitialConfig() {
@@ -286,10 +354,29 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   onToggleLighting(trigger: Element | undefined) {
     const btn = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "light-toggle");
 
-    this.mdl.lighting = !this.mdl.lighting;
+    this.mdl.lightMode = this.mdl.lightMode == LightMode.LM_UNKNOWN ? LightMode.LM_POINT : LightMode.LM_UNKNOWN;
 
     let icon = "assets/button-icons/all-points-off.svg";
-    if (this.mdl.lighting) {
+    if (this.mdl.lightMode != LightMode.LM_UNKNOWN) {
+      icon = "assets/button-icons/all-points-on.svg";
+    }
+
+    if(btn) {
+      btn.icon = icon;
+    }
+
+    // this.reloadModel();
+    this.mdl.needsDraw$.next();
+    this.saveState();
+  }
+
+  onTogglePlane(trigger: Element | undefined) {
+    const btn = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "light-toggle");
+
+    this.mdl.planeHeight = this.mdl.planeHeight === undefined ? 1 : undefined;
+
+    let icon = "assets/button-icons/all-points-off.svg";
+    if (this.mdl.planeHeight === undefined) {
       icon = "assets/button-icons/all-points-on.svg";
     }
 
@@ -413,8 +500,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
-        //showPoints: this.mdl.hidePointsForScans
-        showLight: this.mdl.lighting,
+        lightMode: this.mdl.lightMode,
       })
     );
   }
@@ -448,54 +534,21 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
           this.updateSelection();
 
-          if (!this._canvasSize) {
-            console.error(`Canvas size unknown`);
-            return;
-          }
-
-          if (!this._canvasSize.x || !this._canvasSize.y) {
-            console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
-            return;
-          }
-
-          const canvasElement = this._canvasElement$.value;
-          if (!canvasElement) {
-            console.error("initScene called without canvas reference");
-            return;
-          }
-
           const renderData = this.mdl.drawModel.renderData;
           if (!renderData) {
             console.error(`Failed to get render data for created scene`);
             return;
           }
-        
-          renderData.camera = new THREE.PerspectiveCamera(
-            60,
-            this._canvasSize.x / this._canvasSize.y,
-            0.001,
-            1000
-          );
-        
-          const size = this.mdl.drawModel.bbox;
+
+          const size = this.mdl.drawModel.bboxMCC;
           const dataCenter = size.center();
 
           renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
-        
-          //this.renderData.camera.lookAt(dataCenter);
-          renderData.scene.add(renderData.camera);
-        
-          renderData.controls = new OrbitControls(renderData.camera, canvasElement!.nativeElement);
-        
+
           // Set up what to orbit around
-          renderData.controls.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
-          renderData.controls.update();
-        
-          // Redraw if camera changes
-          renderData.controls.addEventListener('change', (e) => {
-            this.mdl.needsDraw$.next();
-          });
-        
+          renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
+          renderData.orbitControl.update();
+
           this.mdl.needsDraw$.next();
         }
       );

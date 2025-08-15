@@ -5,13 +5,15 @@ import { CanvasDrawNotifier, CanvasParams, ResizingCanvasComponent } from "src/a
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 
 export class ThreeRenderData {
   constructor(
     public scene: THREE.Scene,
     public camera: THREE.PerspectiveCamera,
-    public controls?: OrbitControls
+    public orbitControl: OrbitControls,
+    public transformControl: TransformControls
   ) {}
 }
 
