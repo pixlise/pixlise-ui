@@ -14,9 +14,8 @@ const positionNumComponents = 3;
 
 
 export class Scan3DDrawModel {
-  renderData?: ThreeRenderData;
-
   private _sceneInited = false;
+  renderData: ThreeRenderData = new ThreeRenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
 
   // The "Draw Model"...
   private _terrain?: THREE.Mesh;
@@ -353,7 +352,7 @@ export class Scan3DDrawModel {
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
 
     this._terrain = terrain;
-    this.renderData!.scene.add(this._terrain);
+    this.renderData.scene.add(this._terrain);
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
     this._plane = new THREE.Mesh(
@@ -372,7 +371,7 @@ export class Scan3DDrawModel {
   
   updateSelection(selectionService: SelectionService) {
     if (this._selection) {
-      this.renderData!.scene.remove(this._selection);
+      this.renderData.scene.remove(this._selection);
     }
 
     this._selection = new THREE.Object3D();
@@ -426,18 +425,12 @@ export class Scan3DDrawModel {
       }
     }
 
-    if (this.renderData) {
-      this.renderData.scene.add(this._selection);
-    }
+    this.renderData.scene.add(this._selection);
   }
 
   setLightMode(mode: LightMode) {
     if (!this._pointLight) {
       console.error("setLighting: Lights not set up yet");
-      return;
-    }
-    if (!this.renderData) {
-      console.error("setLighting: renderData not set up yet");
       return;
     }
 
@@ -470,10 +463,6 @@ export class Scan3DDrawModel {
       console.error("setShowPoints: Points not set up yet");
       return;
     }
-    if (!this.renderData) {
-      console.error("setLighting: renderData not set up yet");
-      return;
-    }
 
     if (!show) {
       this.renderData.scene.remove(this._points);
@@ -485,10 +474,6 @@ export class Scan3DDrawModel {
   setPlaneHeight(height: number | undefined) {
     if (!this._plane) {
       console.error("setPlaneHeight: Plane not set up yet");
-      return;
-    }
-    if (!this.renderData) {
-      console.error("setLighting: renderData not set up yet");
       return;
     }
 

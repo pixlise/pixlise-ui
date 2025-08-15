@@ -12,8 +12,8 @@ export class ThreeRenderData {
   constructor(
     public scene: THREE.Scene,
     public camera: THREE.PerspectiveCamera,
-    public orbitControl: OrbitControls,
-    public transformControl: TransformControls
+    public orbitControl?: OrbitControls,
+    public transformControl?: TransformControls
   ) {}
 }
 

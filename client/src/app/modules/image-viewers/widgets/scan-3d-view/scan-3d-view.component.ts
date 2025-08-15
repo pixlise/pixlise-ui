@@ -5,7 +5,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
-import { CanvasSizeNotification, ThreeRenderData } from "./interactive-canvas-3d.component";
+import { CanvasSizeNotification } from "./interactive-canvas-3d.component";
 import { Point } from "src/app/models/Geometry";
 import * as THREE from 'three';
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
@@ -170,13 +170,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           console.warn("Skipping scan 3d view init, no canvas element");
           return;
         }
-        if (!this._canvasSize) {
-          console.warn("Skipping scan 3d view init, no canvas size");
-          return;
-        }
-
-        const renderData = this.initRenderer(canvasElement, this._canvasSize);
-        this.mdl.drawModel.renderData = renderData;
 
         if (scan3DState && scan3DState.contextImage.length > 0) {
           this.mdl.hideFootprintsForScans = new Set<string>(scan3DState?.hideFootprintsForScans || []);
@@ -233,56 +226,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   ngOnDestroy() {
     this._subs.unsubscribe();
     this._mouseInteractionHandler?.clearMouseEventListeners();
-  }
-
-  protected initRenderer(canvasElement: ElementRef, canvasSize: Point): ThreeRenderData {
-    const cam = new THREE.PerspectiveCamera()
-    const renderData = new ThreeRenderData(
-      new THREE.Scene(),
-      cam,
-      new OrbitControls(cam, canvasElement!.nativeElement),
-      new TransformControls(cam, canvasElement!.nativeElement)
-    );
-    renderData.camera = new THREE.PerspectiveCamera(
-      60,
-      canvasSize.x / canvasSize.y,
-      0.001,
-      1000
-    );
-
-    // renderData.camera.position will be set once the scene exists
-
-    //this.renderData.camera.lookAt(dataCenter);
-    renderData.scene.add(renderData.camera);
-  
-    // renderData.orbitControl.target will be set once we have a scene
-
-    renderData.scene.add(renderData.transformControl.getHelper());
-    
-    // Setup listeners
-    // Redraw if camera changes
-    renderData.orbitControl.addEventListener("change", (e) => {
-      this.mdl.needsDraw$.next();
-    });
-
-    // Same for transform
-    renderData.transformControl.addEventListener("change", (e) => {
-      this.mdl.needsDraw$.next();
-    });
-
-    // Also if user is dragging transform, disable orbit
-    renderData.transformControl.addEventListener("objectChange", (e) => {
-      if (renderData.orbitControl) {
-        renderData.orbitControl.enabled = false;
-      }
-    });
-    renderData.transformControl.addEventListener("mouseUp", (e) => {
-      if (renderData.orbitControl) {
-        renderData.orbitControl.enabled = true;
-      }
-    });
-
-    return renderData;
   }
 
   protected setInitialConfig() {
@@ -534,21 +477,74 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
           this.updateSelection();
 
+          if (!this._canvasSize) {
+            console.error(`Canvas size unknown`);
+            return;
+          }
+
+          if (!this._canvasSize.x || !this._canvasSize.y) {
+            console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
+            return;
+          }
+
+          const canvasElement = this._canvasElement$.value;
+          if (!canvasElement) {
+            console.error("initScene called without canvas reference");
+            return;
+          }
+
           const renderData = this.mdl.drawModel.renderData;
           if (!renderData) {
             console.error(`Failed to get render data for created scene`);
             return;
           }
-
+        
+          renderData.camera = new THREE.PerspectiveCamera(
+            60,
+            this._canvasSize.x / this._canvasSize.y,
+            0.001,
+            1000
+          );
+        
           const size = this.mdl.drawModel.bboxMCC;
           const dataCenter = size.center();
 
           renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
-
+        
+          //this.renderData.camera.lookAt(dataCenter);
+          renderData.scene.add(renderData.camera);
+        
+          renderData.orbitControl = new OrbitControls(renderData.camera, canvasElement!.nativeElement);
+        
           // Set up what to orbit around
           renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
           renderData.orbitControl.update();
 
+          renderData.transformControl = new TransformControls(renderData.camera, canvasElement!.nativeElement);
+          renderData.scene.add(renderData.transformControl.getHelper());
+
+          // Redraw if camera changes
+          renderData.orbitControl.addEventListener("change", (e) => {
+            this.mdl.needsDraw$.next();
+          });
+
+          // Same for transform
+          renderData.transformControl.addEventListener("change", (e) => {
+            this.mdl.needsDraw$.next();
+          });
+
+          // Also if user is dragging transform, disable orbit
+          renderData.transformControl.addEventListener("objectChange", (e) => {
+            if (renderData.orbitControl) {
+              renderData.orbitControl.enabled = false;
+            }
+          });
+          renderData.transformControl.addEventListener("mouseUp", (e) => {
+            if (renderData.orbitControl) {
+              renderData.orbitControl.enabled = true;
+            }
+          });
+        
           this.mdl.needsDraw$.next();
         }
       );
