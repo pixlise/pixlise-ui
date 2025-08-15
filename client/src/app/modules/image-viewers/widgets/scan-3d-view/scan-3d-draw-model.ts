@@ -21,8 +21,8 @@ export class Scan3DDrawModel {
   private _terrain?: THREE.Mesh;
   private _points?: THREE.Points;
   private _selection?: THREE.Object3D;
-  private _plane?: THREE.Mesh;
-  private _planeDragBox?: THREE.Mesh;
+  private _plane?: THREE.Object3D;
+  private _planeDragBoxes: THREE.Mesh[] = [];
 
   private _planeScaleY = 0.5;
 
@@ -53,6 +53,7 @@ export class Scan3DDrawModel {
 
   private _selectionColour = new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255);
   private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
+  private _marsDirtColour = new THREE.Color(.37, .17, .08);
   private _pointSize: number = 0.02;
 
   get bboxMCC(): AxisAlignedBBox {
@@ -68,6 +69,10 @@ export class Scan3DDrawModel {
 
   get pointLight(): THREE.PointLight | undefined {
     return this._pointLight;
+  }
+
+  get planeDragBoxes(): THREE.Mesh[] {
+    return this._planeDragBoxes;
   }
 
   // Create the initial draw model
@@ -362,35 +367,57 @@ export class Scan3DDrawModel {
     this.renderData.scene.add(this._terrain);
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
-    const planeXSize = this._bboxMCC.maxCorner.x-this._bboxMCC.minCorner.x;
-    const planeYSize = this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y;
-    const planeZSize = this._bboxMCC.maxCorner.z-this._bboxMCC.minCorner.z;
-    this._plane = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        planeXSize,
-        planeYSize * this._planeScaleY,
-        planeZSize,
-        1, 1, 1),
-      new THREE.MeshPhongMaterial({ color: new THREE.Color(.37, .17, .08) })
-    );
-    this._plane.position.set(dataCenter.x, this._bboxMCC.minCorner.y, dataCenter.z);
-
-    // And a box to adjust the plane height
-    let dragBoxSize = Math.sqrt(planeXSize * planeXSize + planeZSize * planeZSize) / 100;
-    if (dragBoxSize < 1) {
-      dragBoxSize = 1;
-    }
-
-    this._planeDragBox = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        dragBoxSize, dragBoxSize, dragBoxSize,
-        1, 1, 1),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(.37, .17, .08) })
-    );
-    this._planeDragBox.position.set(dataCenter.x, this.getPlaneY(), dataCenter.z);
+    this.initPlane(dataCenter);
 
     this._points = points;
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._points);
+  }
+
+  protected initPlane(dataCenter: THREE.Vector3) {
+    const planeXSize = this._bboxMCC.maxCorner.x-this._bboxMCC.minCorner.x;
+    const planeYSize = this._bboxMCC.maxCorner.y-this._bboxMCC.minCorner.y;
+    const planeZSize = this._bboxMCC.maxCorner.z-this._bboxMCC.minCorner.z;
+    const planeMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(
+        planeXSize,
+        planeYSize,
+        planeZSize,
+        1, 1, 1),
+      new THREE.MeshPhongMaterial({ color: this._marsDirtColour })
+    );
+
+    // Box comes centered around 0,0,0, so we re-center it to be at 0,bottom,0
+    this._plane = new THREE.Object3D();
+    planeMesh.position.setY(planeYSize/2);
+
+    this._plane.add(planeMesh);
+    this._plane.position.set(dataCenter.x, this._bboxMCC.minCorner.y, dataCenter.z);
+
+    // And a box to adjust the plane height
+    let dragBoxSize = Math.sqrt(planeXSize * planeXSize + planeZSize * planeZSize) / 200;
+    if (dragBoxSize < 0.1) {
+      dragBoxSize = 0.1;
+    }
+
+    const boxGeom = new THREE.BoxGeometry(
+      dragBoxSize, dragBoxSize, dragBoxSize,
+      1, 1, 1);
+
+    // Place boxes on each side of the plane so it can be easily moved
+    const positions = [
+      new THREE.Vector3(this._bboxMCC.minCorner.x, this.getPlaneY(), dataCenter.z),
+      new THREE.Vector3(this._bboxMCC.maxCorner.x, this.getPlaneY(), dataCenter.z),
+      new THREE.Vector3(dataCenter.x, this.getPlaneY(), this._bboxMCC.minCorner.z),
+      new THREE.Vector3(dataCenter.x, this.getPlaneY(), this._bboxMCC.maxCorner.z),
+    ]
+    for (let c = 0; c < 4; c++) {
+      const boxMesh = new THREE.Mesh(
+        boxGeom,
+        new THREE.MeshBasicMaterial({ color: this._marsDirtColour })
+      );
+      boxMesh.position.set(positions[c].x, positions[c].y, positions[c].z);
+      this._planeDragBoxes.push(boxMesh);
+    }
   }
 
   protected getPlaneY(): number {
@@ -501,24 +528,40 @@ export class Scan3DDrawModel {
   }
 
   setPlaneYScale(scale: number) {
-    if (!this._plane || !this._planeDragBox) {
+    if (!this._plane) {
       console.error("setPlaneHeight: Plane not set up yet");
       return;
     }
 
     this.renderData.scene.remove(this._plane);
-    this.renderData.scene.remove(this._planeDragBox);
-    
+    for (const box of this._planeDragBoxes) {
+      this.renderData.scene.remove(box);
+    }
 
     if (scale > 0 && scale <= 1) {
       this._planeScaleY = scale;
       //this._plane.position.y = this._bboxMCC.center().y;// + height;
       //this._plane.scale.setY(2);
-
-      this._planeDragBox.position.setY(this.getPlaneY());
+      this._plane.scale.setY(scale);
 
       this.renderData.scene.add(this._plane);
-      this.renderData.scene.add(this._planeDragBox);
+
+      for (const box of this._planeDragBoxes) {
+        box.position.setY(this.getPlaneY());
+        this.renderData.scene.add(box);
+      }
+    }
+  }
+
+  setPlaneDragBoxHover(hover: boolean) {
+    // If they're hovered, change colour
+    let clr = this._marsDirtColour;
+    if (hover) {
+      clr = new THREE.Color(1,1,0);
+    }
+
+    for (const box of this._planeDragBoxes) {
+      (box.material as THREE.MeshBasicMaterial).color = clr;
     }
   }
 }

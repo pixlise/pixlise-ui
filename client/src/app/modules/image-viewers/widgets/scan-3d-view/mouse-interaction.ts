@@ -5,6 +5,7 @@ import { Scan3DDrawModel } from "./scan-3d-draw-model";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ElementRef } from "@angular/core";
 import { Scan3DViewModel } from "./scan-3d-view-model";
+import { Point } from "src/app/models/Geometry";
 
 // Class to represent a picked point
 class PickedPoint {
@@ -17,6 +18,10 @@ class PickedPoint {
 
 export class Scan3DMouseInteraction {
   private _mouseMoved = false;
+  private _planeDragBoxesHovered = false;
+  private _planeDragStartY: number = Infinity;
+
+  private _mouseDownPos: Point = new Point();
 
   // Raycasting for point picking
   private _raycaster = new THREE.Raycaster();
@@ -50,128 +55,147 @@ export class Scan3DMouseInteraction {
   }
 
   onMouseDown(event: MouseEvent): void {
+    this._mouseDownPos = new Point(event.clientX, event.clientY);
     this._mouseMoved = false;
+    this._planeDragStartY = Infinity;
+
+    // Check what user is clicking on, if anything
+    this.checkHover(event.target as HTMLCanvasElement, new Point(event.clientX, event.clientY));
+
+    if (this._planeDragBoxesHovered) {
+      // User is dragging the plane, set up for it...
+      this._planeDragStartY = this._mdl.planeYScale;
+      if (this._mdl.drawModel.renderData.orbitControl) {
+        this._mdl.drawModel.renderData.orbitControl.enabled = false;
+      }
+    }
   }
 
   onMouseMove(event: MouseEvent): void {
     this._mouseMoved = true;
+
+    if (this._planeDragStartY != Infinity) {
+      let scale = this._planeDragStartY + this.mouseDrag(event).y * 0.01;
+      if (scale > 1) {
+        scale = 1;
+      }
+      if (scale > 0) {
+        this._mdl.planeYScale = scale;
+      }
+      this.redraw();
+    } else {
+      this.checkHover(event.target as HTMLCanvasElement, new Point(event.clientX, event.clientY));
+    }
   }
 
   onMouseUp(event: MouseEvent): void {
+    // If we're dragging the plane, finish the operation here
+    if (this._planeDragStartY != Infinity) {
+      // Finish plane drag
+      let scale = this._planeDragStartY + this.mouseDrag(event).y * 0.01;
+      if (scale > 1) {
+        scale = 1;
+      }
+      if (scale > 0) {
+        this._mdl.planeYScale = scale;
+      }
+
+      this._planeDragStartY = Infinity;
+      if (this._mdl.drawModel.renderData.orbitControl) {
+        this._mdl.drawModel.renderData.orbitControl.enabled = true;
+      }
+      this.redraw();
+    }
+
+    // Handle as selection?
     // We're only interested in mouse clicks not drags
     if (this._mouseMoved) {
       return;
     }
+  }
 
-    if (!this._mdl.drawModel.renderData || !this._mdl.drawModel.points) {
+  private mouseDrag(event: MouseEvent): Point {
+    return new Point(event.clientX-this._mouseDownPos.x, this._mouseDownPos.y-event.clientY);
+  }
+
+  private checkHover(canvas: HTMLCanvasElement, mousePoint: Point) {
+    if (!canvas) {
       return;
     }
 
-    // We're only interested in mouse clicks not drags
-    if (this._mouseMoved) {
+    if (!this._mdl.drawModel.renderData) {
       return;
     }
-
-    const canvas = event.target as HTMLCanvasElement;
-    if (!canvas) return;
 
     // Calculate mouse position in normalized device coordinates (-1 to +1)
     const rect = canvas.getBoundingClientRect();
     const mouse = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
+      ((mousePoint.x - rect.left) / rect.width) * 2 - 1,
+      -((mousePoint.y - rect.top) / rect.height) * 2 + 1
     );
 
     // Update the picking ray with the camera and mouse position
     this._raycaster.setFromCamera(mouse, this._mdl.drawModel.renderData.camera);
 
-    // Calculate objects intersecting the picking ray
-    const intersects = this._raycaster.intersectObject(this._mdl.drawModel.points);
+    // If we have points, check hover on each of them 
+    if (this._mdl.drawModel.points) {
+      // Calculate objects intersecting the picking ray
+      const intersects = this._raycaster.intersectObject(this._mdl.drawModel.points);
 
-    if (intersects.length > 0) {
-      //console.log("intersects", intersects);
-      
-      // Find the intersection with the smallest distanceToRay (closest to the mouse ray)
-      let closestIntersection = intersects[0];
-      for (const intersect of intersects) {
-        if ((intersect.distanceToRay ?? Infinity) < (closestIntersection.distanceToRay ?? Infinity)) {
-          closestIntersection = intersect;
+      if (intersects.length > 0) {
+        //console.log("intersects", intersects);
+        
+        // Find the intersection with the smallest distanceToRay (closest to the mouse ray)
+        let closestIntersection = intersects[0];
+        for (const intersect of intersects) {
+          if ((intersect.distanceToRay ?? Infinity) < (closestIntersection.distanceToRay ?? Infinity)) {
+            closestIntersection = intersect;
+          }
+        }
+        
+        // Get the point index directly from the intersection
+        const pointIndex = closestIntersection.index;
+        //console.log("closestIntersection", closestIntersection);
+        if (pointIndex !== undefined) {
+          const pickedPoint = new PickedPoint(
+            pointIndex,
+            closestIntersection.point.clone(),
+            closestIntersection.distanceToRay ?? 0
+          );
+                
+          if (pointIndex < this._mdl.drawModel.pmcForLocs.length) {
+            // Get the PMC for this point index
+            const pmc = this._mdl.drawModel.pmcForLocs[pickedPoint.pointIndex];
+            
+            // Notify the selection service, treat this like a hover
+            this._selectionService.setHoverEntryPMC(this._scanId, pmc);
+            this.redraw();
+            return;
+          }
         }
       }
-      
-      // Get the point index directly from the intersection
-      const pointIndex = closestIntersection.index;
-      //console.log("closestIntersection", closestIntersection);
-      if (pointIndex !== undefined) {
-        const pickedPoint = new PickedPoint(
-          pointIndex,
-          closestIntersection.point.clone(),
-          closestIntersection.distanceToRay ?? 0
-        );
-        
-        this.onPointPicked(pickedPoint);
+    }
+
+    // Check any interactive elements
+    let boxesHit = false;
+    for (const box of this._mdl.drawModel.planeDragBoxes) {
+      const intersects = this._raycaster.intersectObject(box);
+      if (intersects.length > 0) {
+        boxesHit = true;
+        break;
       }
     }
+
+    // If hover state changed, we have some work to do:
+    const lastPlaneDragBoxesHovered = this._planeDragBoxesHovered;
+    if (lastPlaneDragBoxesHovered != boxesHit) {
+      this._planeDragBoxesHovered = boxesHit;
+      this._mdl.drawModel.setPlaneDragBoxHover(boxesHit);
+      this.redraw();
+    }
   }
 
-  private onPointPicked(pickedPoint: PickedPoint) {
-    //console.log('Point picked:', pickedPoint);
-    
-    if (!this._mdl.drawModel.points || pickedPoint.pointIndex >= this._mdl.drawModel.pmcForLocs.length) {
-      return;
-    }
-    
-    // Get the PMC for this point index
-    const pmc = this._mdl.drawModel.pmcForLocs[pickedPoint.pointIndex];
-    
-    // Notify the selection service, treat this like a hover
-    this._selectionService.setHoverEntryPMC(this._scanId, pmc);
-    /*
-    // Get position from the geometry
-    const positions = this._points.geometry.attributes['position'];
-    const x = positions.getX(pickedPoint.pointIndex);
-    const y = positions.getY(pickedPoint.pointIndex);
-    const z = positions.getZ(pickedPoint.pointIndex);
-    
-    //console.log('Point data:', { pmc, x, y, z, scanId: this.scanId });
-    
-    // Show a snackbar with the picked point information
-    this._snackService.open(
-      `Point picked: PMC ${pmc}, Position: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}), UV: (${this._pmcUVs[pickedPoint.pointIndex*2]}, ${this._pmcUVs[pickedPoint.pointIndex*2+1]})`
-    );
-    
-    // Create or update visual indicator at the picked point
-    this.updatePickedPointIndicator(x, y, z);
-    
-    // Here you can add more functionality:
-    // - Show detailed information in a panel
-    // - Trigger analysis on the selected point
-    // - Navigate to related data
-    */
+  private redraw() {
+    this._mdl.needsDraw$.next();
   }
-/*
-  private updatePickedPointIndicator(x: number, y: number, z: number) {
-    // Remove existing indicator if it exists
-    if (this._pickedPointIndicator) {
-      this.renderData.scene.remove(this._pickedPointIndicator);
-    }
-
-    // Create a small red sphere as the indicator
-    const geometry = new THREE.SphereGeometry(this._pointSize * 1.2, 8, 8);
-    const material = new THREE.MeshBasicMaterial({ 
-      color: new THREE.Color(0xff00f6), // Bright magenta/pink color
-      transparent: true,
-      opacity: 0.5
-    });
-    
-    this._pickedPointIndicator = new THREE.Mesh(geometry, material);
-    this._pickedPointIndicator.position.set(x, y, z);
-    
-    // Add to scene
-    this.renderData.scene.add(this._pickedPointIndicator);
-    
-    // Trigger a redraw to show the indicator
-    this.mdl.needsDraw$.next();
-  }
-*/
 }
