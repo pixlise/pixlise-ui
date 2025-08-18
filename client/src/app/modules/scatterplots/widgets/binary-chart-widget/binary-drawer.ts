@@ -102,9 +102,33 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       const drawer = new OutlineDrawer(screenContext, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
+
+    // Draw reference points as pink dots
+    if (drawData.referenceCoords.length > 0) {
+      const refColor = Colours.CONTEXT_PURPLE; // Pink color for reference points
+      const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, refColor, null, PointDrawer.ShapeCircle);
+      drawer.drawPoints(drawData.referenceCoords, 1, true);
+    }
   }
 
   private drawHoverPoint(screenContext: CanvasRenderingContext2D, drawData: BinaryDrawModel, drawParams: CanvasDrawParameters) {
+    // Check if hovering over a reference point
+    if (this._mdl.hoverReferenceData) {
+      const xAxisTextY = drawParams.drawViewport.height - (BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING) * 2;
+      screenContext.font = BinaryChartModel.FONT_SIZE_SMALL + "px Roboto";
+      screenContext.textAlign = "left";
+      screenContext.textBaseline = "top";
+      screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+
+      // Display reference name
+      screenContext.fillText(
+        `Reference: ${this._mdl.hoverReferenceData.mineralSampleName}`,
+        BinaryChartModel.LABEL_PADDING,
+        xAxisTextY + (BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING)
+      );
+      return;
+    }
+
     // Draw hover values in the middle of the ticks, on top of them
     if (this._mdl.hoverPointData && drawData.xAxis && drawData.yAxis) {
       const xAxisTextY = drawParams.drawViewport.height - (BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING) * 2;

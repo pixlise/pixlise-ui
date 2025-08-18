@@ -40,7 +40,7 @@
       </div>
 
       <div class="references-list {{ filteredReferences.length === 0 ? 'no-results' : '' }}">
-        <cdk-virtual-scroll-viewport [itemSize]="65" class="references-viewport">
+        <cdk-virtual-scroll-viewport [minBufferPx]="1500" [maxBufferPx]="3000" [itemSize]="65" class="references-viewport">
           <div
             *cdkVirtualFor="let reference of filteredReferences; trackBy: trackByReferenceId"
             class="reference-item {{ reference.isCollapsed ? 'collapsed' : 'expanded' }}">

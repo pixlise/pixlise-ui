@@ -1,0 +1,61 @@
+<div class="reference-csv-upload">
+  <div class="card-toolbar card-toolbar-shadow header">
+    <div class="txt-widget-title">Reference Data Upload Preview</div>
+  </div>
+
+  <div class="upload-options">
+    <div class="upload-info">
+      <h5>{{ totalCount }} reference{{ totalCount === 1 ? "" : "s" }} found in CSV</h5>
+      <p *ngIf="selectedCount !== totalCount" class="selection-info">{{ selectedCount }} selected for upload</p>
+    </div>
+
+    <div *ngIf="uploadSummaries.length > 0" class="upload-summary">
+      <h5>Preview:</h5>
+      <div class="summary-header">
+        <div class="cell upload">
+          <two-state-icon-button
+            toolTip="Toggle all references for upload"
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            class="checkbox-button"
+            [active]="allChecked"
+            (onToggle)="onToggleAll()">
+          </two-state-icon-button>
+        </div>
+        <div class="cell name">Reference Name</div>
+        <div class="cell category">Category</div>
+        <div class="cell expressions">Expressions</div>
+      </div>
+      <div class="summary-rows">
+        <div *ngFor="let summary of uploadSummaries; trackBy: trackBySummary" class="summary-row">
+          <div class="cell upload">
+            <two-state-icon-button
+              toolTip="Toggle whether to upload this reference or not"
+              activeIcon="assets/button-icons/check-on.svg"
+              inactiveIcon="assets/button-icons/check-off.svg"
+              class="checkbox-button"
+              [active]="summary.upload"
+              (onToggle)="onToggleUpload(summary)">
+            </two-state-icon-button>
+          </div>
+          <div class="cell name" [title]="summary.reference.mineralSampleName">
+            {{ summary.reference.mineralSampleName || "Unnamed Reference" }}
+          </div>
+          <div class="cell category" [title]="summary.category">
+            {{ summary.category }}
+          </div>
+          <div class="cell expressions">
+            {{ summary.expressionCount }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-toolbar gap-separated-horizontal-elements buttons">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" [disabled]="selectedCount === 0" (onClick)="onUpload()">
+      Upload {{ selectedCount }} Reference{{ selectedCount === 1 ? "" : "s" }}
+    </push-button>
+  </div>
+</div>

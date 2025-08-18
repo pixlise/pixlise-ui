@@ -51,11 +51,36 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
   protected resetHover(): void {
     this._binMdl.hoverPoint = null;
     this._binMdl.hoverPointData = null;
+    this._binMdl.hoverReferenceData = null;
     this._binMdl.mouseLassoPoints = [];
   }
 
   protected isOverDataArea(canvasPt: Point): boolean {
     return this._binMdl.drawModel.axisBorder.containsPoint(canvasPt);
+  }
+
+  override mouseEvent(event: any): any {
+    // Handle mouse move events to check for reference hover
+    if (event.eventId === 2) {
+      // CanvasMouseEventId.MOUSE_MOVE
+      // First check if we're hovering over a reference point
+      const hoverReference = this._binMdl.getReferenceAtPoint(event.canvasPoint);
+
+      if (hoverReference) {
+        // Set reference hover state
+        this._binMdl.hoverReferenceData = hoverReference;
+        this._binMdl.hoverPoint = null;
+        this._binMdl.hoverPointData = null;
+        this._binMdl.needsDraw$.next();
+        return 1; // CanvasInteractionResult.redrawAndCatch equivalent
+      } else {
+        // Clear reference hover and use default behavior
+        this._binMdl.hoverReferenceData = null;
+      }
+    }
+
+    // For all events, use the base class behavior
+    return super.mouseEvent(event);
   }
 }
 
@@ -540,9 +565,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     dialogRef.afterClosed().subscribe((result: ReferencePickerResponse) => {
       if (result) {
         console.log("Selected references:", result.selectedReferences);
-        // TODO: Store references and use them for plotting
-        // this.mdl.selectedReferences = result.selectedReferences;
-        // this.update();
+        this.mdl.references = result.selectedReferences;
+        this.update();
       }
     });
   }

@@ -14,14 +14,19 @@ import {
   ReferenceDataListResp,
   ReferenceDataWriteReq,
   ReferenceDataWriteResp,
-  ReferenceDataBulkWriteReq,
-  ReferenceDataBulkWriteResp,
   ReferenceDataDeleteReq,
   ReferenceDataDeleteResp,
 } from "../../../../generated-protos/references-msgs";
 import { DataExpression } from "../../../../generated-protos/expressions";
 import { ExpressionsService } from "../../../expressions/services/expressions.service";
 import { levenshteinDistance } from "../../../../utils/search";
+import {
+  ReferenceCSVUploadDialogComponent,
+  ReferenceCSVUploadData,
+  ReferenceCSVUploadResponse,
+} from "../reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+import { AnalysisLayoutService } from "../../../analysis/analysis.module";
+import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 export interface ReferenceDataItem extends ReferenceData {
   isEditing?: boolean;
@@ -66,7 +71,8 @@ export class ReferencePickerComponent implements OnDestroy {
     private dialog: MatDialog,
     private _apiDataService: APIDataService,
     private _snackBarService: SnackbarService,
-    private _expressionsService: ExpressionsService
+    private _expressionsService: ExpressionsService,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {
     this.allowEdit = this.data.allowEdit || false;
     this.requiredExpressions = this.data.requiredExpressions || [];
@@ -87,7 +93,7 @@ export class ReferencePickerComponent implements OnDestroy {
     this._apiDataService.sendReferenceDataListRequest(ReferenceDataListReq.create({})).subscribe({
       next: (response: ReferenceDataListResp) => {
         if (response?.referenceData) {
-          this.references = response.referenceData.map(ref => ({ ...ref, isEditing: false, isCollapsed: true }) as ReferenceDataItem);
+          this.references = response.referenceData.filter(ref => ref.id).map(ref => ({ ...ref, isEditing: false, isCollapsed: true }) as ReferenceDataItem);
           this.applyFilters();
         }
       },
@@ -255,12 +261,22 @@ export class ReferencePickerComponent implements OnDestroy {
   onSelectExpression(reference: ReferenceData, pairIndex: number): void {
     this._currentExpressionSelection = { reference, pairIndex };
 
+    const screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    if (!screenConfig) {
+      this._snackBarService.openError("No screen configuration found");
+      return;
+    }
+    const scanId = Object.keys(screenConfig?.scanConfigurations || {})?.[0];
+    const quantId = screenConfig?.scanConfigurations?.[scanId]?.quantId || "";
+
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
       maxSelection: 1,
       disableExpressionGroups: true,
-      expressionsOnly: true,
+      widgetType: this.data.widgetType,
+      scanId,
+      quantId,
     };
 
     const expressionPickerRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
@@ -327,7 +343,7 @@ Expressions: ${expressionText}`;
       const fileReader = new FileReader();
       fileReader.onload = evt => {
         const csvData = evt.target?.result as string;
-        this.parseCsvAndUpload(csvData);
+        this.parseCsvAndShowPreview(csvData);
       };
       fileReader.readAsText(file);
     };
@@ -337,7 +353,7 @@ Expressions: ${expressionText}`;
     document.body.removeChild(fileInput);
   }
 
-  private parseCsvAndUpload(csvData: string): void {
+  private parseCsvAndShowPreview(csvData: string): void {
     try {
       const parseResult = papa.parse(csvData, { header: true, skipEmptyLines: true });
 
@@ -370,8 +386,13 @@ Expressions: ${expressionText}`;
         const expressionKeys = keys.filter(key => !metaLabels.includes(key) && row[key] !== "");
 
         for (const expressionKey of expressionKeys) {
-          let expressionName = row[expressionKey];
+          let expressionName = expressionKey;
           const value = parseFloat(row[expressionKey]);
+
+          // If ends in (wt%) or (wt.%), match it to a quantified element
+          // Use regex to match the expression name
+          const quantifiedElementRegex = /(wt%|wt\.%)$/;
+          // const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
 
           if (expressionName && !isNaN(value)) {
             const matchingExpressions = this._allExpressions[expressionName];
@@ -412,26 +433,28 @@ Expressions: ${expressionText}`;
         return;
       }
 
-      this.bulkUploadReferences(referenceDataList);
+      this.showCsvUploadPreview(referenceDataList);
     } catch (error) {
       this._snackBarService.openError("Failed to parse CSV file", error instanceof Error ? error.message : "Unknown error");
     }
   }
 
-  private bulkUploadReferences(referenceDataList: ReferenceData[]): void {
-    this._apiDataService.sendReferenceDataBulkWriteRequest(ReferenceDataBulkWriteReq.create({ referenceData: referenceDataList, matchByFields: true })).subscribe({
-      next: (response: ReferenceDataBulkWriteResp) => {
-        if (response?.referenceData && response.referenceData.length > 0) {
-          this._snackBarService.openSuccess(`Successfully uploaded ${response.referenceData.length} references from CSV`);
+  private showCsvUploadPreview(referenceDataList: ReferenceData[]): void {
+    const dialogConfig = new MatDialogConfig<ReferenceCSVUploadData>();
+    dialogConfig.data = {
+      referenceData: referenceDataList,
+    };
+    dialogConfig.maxWidth = "800px";
+    dialogConfig.maxHeight = "90vh";
 
+    const uploadDialogRef = this.dialog.open(ReferenceCSVUploadDialogComponent, dialogConfig);
+
+    this._subs.add(
+      uploadDialogRef.afterClosed().subscribe((response: ReferenceCSVUploadResponse | undefined) => {
+        if (response && response.uploaded) {
           this.fetchLatestReferences();
-        } else {
-          this._snackBarService.openError("No references were created from the CSV upload");
         }
-      },
-      error: error => {
-        this._snackBarService.openError("Failed to upload references", error?.message || "Unknown error");
-      },
-    });
+      })
+    );
   }
 }
