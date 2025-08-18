@@ -8,9 +8,13 @@ import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
 import { Observable, Subscriber } from 'rxjs';
 import { LightMode } from 'src/app/generated-protos/widget-data';
+import { ContextImageScanModel } from '../context-image/context-image-model-internals';
+import { ScanEntry } from 'src/app/generated-protos/scan-entry';
+import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
 
 
 const positionNumComponents = 3;
+
 
 
 export class Scan3DDrawModel {
@@ -80,14 +84,16 @@ export class Scan3DDrawModel {
     scanId: string,
     pmcLocs: Map<number, THREE.Vector3>,
     bbox: AxisAlignedBBox,
-    scanPoints: ScanPoint[],
     lightMode: LightMode,
     showPoints: boolean,
     planeScaleY: number,
+    scanMdl?: ContextImageScanModel,
     image?: HTMLImageElement
   ): Observable<void> {
       return new Observable(
         (subscriber) => {
+          const scanPoints = scanMdl?.scanPoints || [];
+
           // Remember the bounding volume of our scene data here
           this._bboxFootprint = bbox;
           const bboxCenter = this._bboxFootprint.center();
@@ -123,7 +129,17 @@ export class Scan3DDrawModel {
               }
             }
 
-            this.padPMCLocationsToImageBorder(this._bboxFootprint, uvbbox, image.width, image.height, pmcLocs2D, pmcLocs3D, pmcForLocs, scanPointLookup);
+            this.padPMCLocationsToImageBorder(
+              this._bboxFootprint,
+              uvbbox,
+              image.width,
+              image.height,
+              pmcLocs2D,
+              pmcLocs3D,
+              pmcForLocs,
+              scanPointLookup,
+              scanMdl
+            );
           }
 
           const delaunay = new Delaunator(pmcLocs2D);
@@ -277,7 +293,9 @@ export class Scan3DDrawModel {
     pmcLocs2D: number[],
     pmcLocs3D: number[],
     pmcForLocs: number[],
-    scanPointLookup: Map<number, ScanPoint>) {
+    scanPointLookup: Map<number, ScanPoint>,
+    scanMdl?: ContextImageScanModel
+  ) {
     const bboxCenter = bbox.center();
 
     // Find the conversion factor between pixels and physical units in both directions
@@ -316,6 +334,7 @@ export class Scan3DDrawModel {
 
     this._bboxMCC = this._bboxFootprint.copy();
     let i = 0;
+    let padPMC = -1;
     for (let c = pmcLocs2D.length-8; c < pmcLocs2D.length; c += 2) {
       const pt = new THREE.Vector3(pmcLocs2D[c], bboxCenter.y, pmcLocs2D[c + 1])
       pmcLocs3D.push(pt.x);
@@ -324,11 +343,59 @@ export class Scan3DDrawModel {
 
       this._bboxMCC.expandToFit(pt)
 
-      const padPMC = -(1+i);
       pmcForLocs.push(padPMC);
-      scanPointLookup.set(padPMC, new ScanPoint(padPMC, new Point(paddedUVs[i*2], paddedUVs[i*2+1]), -1, false, false, false, false))
+      scanPointLookup.set(padPMC, new ScanPoint(padPMC, new Point(paddedUVs[i*2], paddedUVs[i*2+1]), -1, false, false, false, false));
+      padPMC--;
       i++;
     }
+
+    // Generate points in a circle, outside the footprint to break up long triangles casting outwards
+    if (scanMdl) {
+      for (const hull of scanMdl.footprint) {
+        for (const hullPt of hull) {
+          const footprintPMC = scanMdl.scanPoints[hullPt.idx].PMC;
+
+          // Find the index... GROAN.. should be faster if we do away with this new set of indexes :(
+          let idx = -1;
+          for (let c = 0; c < pmcForLocs.length; c++) {
+            if (pmcForLocs[c] == footprintPMC) {
+              idx = c;
+              break;
+            }
+          }
+
+          if (idx >= 0) {
+            // We have the index! Now calculate a point outside the footprint area
+            const footprintPtCoord = new THREE.Vector3(pmcLocs3D[idx*3], pmcLocs3D[idx*3+1], pmcLocs3D[idx*3+2]);
+            const vec = new THREE.Vector3().subVectors(footprintPtCoord, bboxCenter);// new THREE.Vector3();
+
+            const len = vec.length();
+            vec.normalize();
+
+            const outerPoint = vec.multiplyScalar(len * 4.5);
+            outerPoint.addVectors(outerPoint, bboxCenter);
+
+            if (bbox.contains(outerPoint)) {
+              pmcLocs3D.push(outerPoint.x);
+              pmcLocs3D.push(outerPoint.y);
+              pmcLocs3D.push(outerPoint.z);
+
+              pmcLocs2D.push(outerPoint.x);
+              pmcLocs2D.push(outerPoint.z);
+
+              const u = 0.5;
+              const v = 0.5;
+
+              pmcForLocs.push(padPMC);
+              scanPointLookup.set(padPMC, new ScanPoint(padPMC, new Point(u, v), -1, false, false, false, false))
+              padPMC--;
+            }
+          }
+        }
+
+        break; // Doesn't currently work with multi-footprint!
+      }
+    } 
   }
 
   protected makeLight(lightPos: THREE.Vector3) {
@@ -387,7 +454,7 @@ export class Scan3DDrawModel {
         planeYSize,
         planeZSize,
         1, 1, 1),
-      new THREE.MeshPhongMaterial({ color: this._marsDirtColour })
+      new THREE.MeshPhongMaterial({ color: this._marsDirtColour, opacity: 0.7, transparent: true })
     );
 
     // Box comes centered around 0,0,0, so we re-center it to be at 0,bottom,0

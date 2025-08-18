@@ -36,6 +36,12 @@ export class AxisAlignedBBox {
       this.minCorner.z = pt.z;
     }
   }
+
+  public contains(pt: THREE.Vector3): boolean {
+    return pt.x <= this.maxCorner.x && pt.x >= this.minCorner.x &&
+      pt.y <= this.maxCorner.y && pt.y >= this.minCorner.y &&
+      pt.z <= this.maxCorner.z && pt.z >= this.minCorner.z;
+  }
 }
 /*
 export function scaleVec3D(v: Vec3D, s: number) {

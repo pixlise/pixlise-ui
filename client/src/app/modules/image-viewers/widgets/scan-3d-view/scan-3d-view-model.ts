@@ -133,10 +133,10 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
       scanId,
       pmcLocs,
       bbox,
-      scanMdl?.scanPoints || [],
       this._lightMode,
       !this.hidePointsForScans.has(scanId),
       this._planeYScale,
+      scanMdl,
       loadedData.image || undefined
     );
   }
