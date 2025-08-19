@@ -19,6 +19,7 @@ import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/component
 import { Scan3DMouseInteraction } from "./mouse-interaction";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { Pane } from 'tweakpane';
 
 
 @Component({
@@ -32,6 +33,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
   mdl: Scan3DViewModel;
   private _mouseInteractionHandler: Scan3DMouseInteraction;
+  private _tweakPane?: Pane;
 
   cursorShown: string = "";
 
@@ -51,7 +53,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
     private _snackService: SnackbarService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private _elementRef: ElementRef
   ) {
     super();
 
@@ -220,6 +223,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   ngOnDestroy() {
     this._subs.unsubscribe();
     this._mouseInteractionHandler.clearMouseEventListeners();
+    if (this._tweakPane) {
+      this._tweakPane.dispose();
+    }
   }
 
   onCanvasSize(event: CanvasSizeNotification) {
@@ -230,6 +236,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // If we have a size and it's the first time it was set, we now load our model data
     if (needInit) {
       console.log(`Scan3D view initialising or canvas of size: ${event.size.x}x${event.size.y}...`);
+
+      // Initialize Tweakpane when canvas is ready
+      this.initializeTweakpane();
 
       // Allow init to function normally
       this._canvas$.next(event);
@@ -544,5 +553,127 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   protected updateSelection() {
     this.mdl.drawModel.updateSelection(this._selectionService);
     this.mdl.needsDraw$.next();
+  }
+
+  private initializeTweakpane() {
+    // Create a container div for Tweakpane that's positioned relative to the component
+    const paneContainer = document.createElement('div');
+    paneContainer.style.position = 'absolute';
+    paneContainer.style.top = '10px';
+    paneContainer.style.right = '10px';
+    paneContainer.style.zIndex = '1000';
+    
+    // Append to the component's element instead of document body
+    this._elementRef.nativeElement.appendChild(paneContainer);
+
+    // Initialize Tweakpane with the container
+    this._tweakPane = new Pane({
+      container: paneContainer,
+      title: '3D View Controls'
+    });
+
+    // Add controls for the 3D view settings
+    const viewFolder = this._tweakPane.addFolder({
+      title: 'View Settings',
+      expanded: true
+    });
+
+    // Add brightness control
+    viewFolder.addBinding(this.mdl, 'imageBrightness', {
+      label: 'Brightness',
+      min: 0,
+      max: 2,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    // Add opacity controls
+    viewFolder.addBinding(this.mdl, 'unselectedOpacity', {
+      label: 'Unselected Opacity',
+      min: 0,
+      max: 1,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    viewFolder.addBinding(this.mdl, 'unselectedGrayscale', {
+      label: 'Unselected Grayscale',
+      min: 0,
+      max: 1,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    // Add colour ratio controls
+    const colorFolder = this._tweakPane.addFolder({
+      title: 'Color Settings',
+      expanded: false
+    });
+
+    if (this.mdl.colourRatioMin !== null) {
+      colorFolder.addBinding(this.mdl, 'colourRatioMin', {
+        label: 'Color Ratio Min',
+        min: 0,
+        max: 1,
+        step: 0.01
+      }).on('change', () => {
+        this.mdl.needsDraw$.next();
+        this.saveState();
+      });
+    }
+
+    if (this.mdl.colourRatioMax !== null) {
+      colorFolder.addBinding(this.mdl, 'colourRatioMax', {
+        label: 'Color Ratio Max',
+        min: 0,
+        max: 1,
+        step: 0.01
+      }).on('change', () => {
+        this.mdl.needsDraw$.next();
+        this.saveState();
+      });
+    }
+
+    // Add artifact removal toggles
+    const artifactFolder = this._tweakPane.addFolder({
+      title: 'Artifact Removal',
+      expanded: false
+    });
+
+    artifactFolder.addBinding(this.mdl, 'removeTopSpecularArtifacts', {
+      label: 'Remove Top Specular'
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    artifactFolder.addBinding(this.mdl, 'removeBottomSpecularArtifacts', {
+      label: 'Remove Bottom Specular'
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    // Add plane control
+    const planeFolder = this._tweakPane.addFolder({
+      title: 'Plane Settings',
+      expanded: false
+    });
+
+    planeFolder.addBinding(this.mdl, 'planeYScale', {
+      label: 'Plane Y Scale',
+      min: -1,
+      max: 1,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
   }
 }
