@@ -38,6 +38,8 @@ export class PMCMeshData {
   private _bboxMesh = new AxisAlignedBBox();
   private _points: PMCMeshPoint[] = [];
   private _pmcToPoint: Map<number, number> = new Map<number, number>();
+  private _rawCornerPoints: THREE.Vector3[] = [];
+  private _hullPoints: THREE.Vector3[] = [];
 
   constructor(
     private _scanEntries: ScanEntry[],
@@ -52,14 +54,15 @@ export class PMCMeshData {
 
     let scale = this.calculateDisplayScaleFactor(!!this._image)
     this.calculateScanRelatedPoints(scale, this._scanEntries, this._beamLocations, this._contextImgMdl);
+    this.makePMCMap();
 
     if (this._image) {
-      this.calculateSupportPoints(scale, this._image.width, this._image.height, this._scanEntries, this._beamLocations);
+      this.calculateSupportPoints(scale, this._image.width, this._image.height/*, this._scanEntries, this._beamLocations*/);
     }
 
-    this.processUVs();
+    this.calculateHullPoints(scale);
 
-    this.makePMCMap();
+    this.processUVs();
   }
 
   get points(): PMCMeshPoint[] {
@@ -106,26 +109,24 @@ export class PMCMeshData {
     return points;
   }
 
-  createFootprint(): THREE.Mesh | undefined {
-    if (!this._contextImgMdl) {
+  createFootprint(radius: number, mat: THREE.MeshBasicMaterial): THREE.Mesh | undefined {
+    if (this._hullPoints.length <= 0) {
       return undefined;
     }
 
-    const hullPoints: THREE.Vector3[] = [];
-    for (const hull of this._contextImgMdl.footprint) {
-      for (const hullPt of hull) {
-        const footprintPMC = this._contextImgMdl.scanPoints[hullPt.idx].PMC;
-
-        const idx = this._pmcToPoint.get(footprintPMC);
-        if (idx !== undefined) {
-          hullPoints.push(this._points[idx].terrainPoint);
-        }
-      }
+    // Create a mesh to show the footprint
+    const curvePath = new THREE.CurvePath<THREE.Vector3>();
+    for (let c = 1; c < this._hullPoints.length; c++) {
+      curvePath.add(new THREE.LineCurve3(this._hullPoints[c-1], this._hullPoints[c]));
+    }
+    // Add the last one
+    if (this._hullPoints.length > 1) {
+      curvePath.add(new THREE.LineCurve3(this._hullPoints[this._hullPoints.length-1], this._hullPoints[0]));
     }
 
-    // Create a mesh to show the footprint
-    // TODO
-    return undefined;
+    const geom = new THREE.TubeGeometry(curvePath, 100, radius, 100, false);
+    const mesh = new THREE.Mesh(geom, mat);
+    return mesh;
   }
 
   get bboxMesh(): AxisAlignedBBox {
@@ -251,14 +252,12 @@ export class PMCMeshData {
   private calculateSupportPoints(
     scale: number,
     imageWidth: number,
-    imageHeight: number,
-    scanEntries: ScanEntry[],
-    beamLocations: Coordinate3D[]
+    imageHeight: number
   ) {
     const dataCenter = this._bboxMCC.center();
 
     // We assume this is set correctly...
-    let coords: THREE.Vector3[] = [
+    this._rawCornerPoints = [
       new THREE.Vector3(this._bboxMCC.minCorner.x, this._bboxMCC.minCorner.y, dataCenter.z),
       new THREE.Vector3(this._bboxMCC.maxCorner.x, this._bboxMCC.minCorner.y, dataCenter.z),
       new THREE.Vector3(this._bboxMCC.maxCorner.x, this._bboxMCC.maxCorner.y, dataCenter.z),
@@ -272,8 +271,8 @@ export class PMCMeshData {
       new Point(imageWidth, 0)
     ];
 
-    for (let c = 0; c < coords.length; c++) {
-      const coord = coords[c];
+    for (let c = 0; c < this._rawCornerPoints.length; c++) {
+      const coord = this._rawCornerPoints[c];
       this._points.push(new PMCMeshPoint(
         this.rawToTerrainPoint(coord, dataCenter, scale),
         coord,
@@ -331,6 +330,66 @@ export class PMCMeshData {
         }
       }
     }*/
+  }
+
+  private calculateHullPoints(scale: number) {
+    if (!this._contextImgMdl) {
+      return;
+    }
+
+    const dataCenter = this._bboxMCC.center();
+
+    this._hullPoints = [];
+    for (const hull of this._contextImgMdl.footprint) {
+      for (const hullPt of hull) {
+        const footprintPMC = this._contextImgMdl.scanPoints[hullPt.idx].PMC;
+
+        const idx = this._pmcToPoint.get(footprintPMC);
+        if (idx !== undefined) {
+          let rawCoord = this._points[idx].rawPoint;
+          
+          // Move this point out towards a corner point - find the nearest one then use that vector
+          let nearestCorner = this.findNearestPoint(rawCoord, this._rawCornerPoints);
+          if (nearestCorner[0] < 0) {
+            console.error("Failed to find nearest corner point for hull PMC " + footprintPMC);
+            continue;
+          }
+
+          rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], 0.2);
+
+          const terrainCoord = this.rawToTerrainPoint(rawCoord, dataCenter, scale); //this._points[idx].terrainPoint;
+          this._hullPoints.push(terrainCoord);
+
+          // Also add them to the points array like we do for other support points
+          this._points.push(new PMCMeshPoint(
+            terrainCoord,
+            rawCoord,
+            -1,
+            0.5,
+            0.5
+          ));
+
+          // if (this._hullPoints.length > 1) {
+          //   return;
+          // }
+        }
+      }
+    }
+  }
+
+  // Returns the index, and the distance
+  private findNearestPoint(pt: THREE.Vector3, ptList: THREE.Vector3[]): number[] {
+    let dist = Infinity;
+    let idx = -1;
+    for (let c = 0; c < ptList.length; c++) {
+      const len = pt.distanceTo(ptList[c]);
+      if (len < dist) {
+        dist = len;
+        idx = c;
+      }
+    }
+
+    return [idx, dist];
   }
 
   private processUVs() {

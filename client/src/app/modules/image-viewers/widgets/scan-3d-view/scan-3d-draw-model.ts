@@ -15,6 +15,7 @@ export class Scan3DDrawModel {
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
+  protected _meshFootprint?: THREE.Mesh;
 
   get meshPoints(): THREE.Points | undefined {
     return this._meshPoints;
@@ -57,6 +58,8 @@ export class Scan3DDrawModel {
 
     this._meshPoints = this._meshData.createPoints(pointMat);
 
+    this._meshFootprint = this._meshData.createFootprint(this._pointSize, new THREE.MeshBasicMaterial({ color: this._hoverColour })); 
+
     if (texture) {
       this._terrainMatBasic.map = texture;
       this._terrainMatStandard.map = texture;
@@ -76,6 +79,10 @@ export class Scan3DDrawModel {
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
 
     this.renderData.scene.add(this._meshTerrain);
+
+    if (this._meshFootprint) {
+      this.renderData.scene.add(this._meshFootprint);
+    }
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
     this.initPlane(meshBBox, dataCenter);
