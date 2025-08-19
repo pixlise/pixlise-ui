@@ -26,18 +26,15 @@ export class Scan3DMouseInteraction {
   // Raycasting for point picking
   private _raycaster = new THREE.Raycaster();
 
-  private _canvas: any;
+  private _canvas?: HTMLCanvasElement;
 
   constructor(
-    protected _scanId: string,
     protected _selectionService: SelectionService,
     protected _mdl: Scan3DViewModel) {
   }
 
-  setupMouseEvents(canvasElement?: ElementRef) {
-    if (!canvasElement) return;
-    
-    this._canvas = canvasElement.nativeElement;
+  setupMouseEvents(canvasElement: HTMLCanvasElement) {
+    this._canvas = canvasElement;
     
     // Remove existing event listeners to avoid duplicates
     this.clearMouseEventListeners();
@@ -49,9 +46,9 @@ export class Scan3DMouseInteraction {
   }
 
   clearMouseEventListeners() {
-    this._canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
-    this._canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
-    this._canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
+    this._canvas?.removeEventListener('mousedown', this.onMouseDown.bind(this));
+    this._canvas?.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    this._canvas?.removeEventListener('mouseup', this.onMouseUp.bind(this));
   }
 
   onMouseDown(event: MouseEvent): void {
@@ -137,10 +134,30 @@ export class Scan3DMouseInteraction {
     // Update the picking ray with the camera and mouse position
     this._raycaster.setFromCamera(mouse, this._mdl.drawModel.renderData.camera);
 
+    // Check any interactive elements
+    let boxesHit = false;
+    for (const box of this._mdl.drawModel.planeDragBoxes) {
+      const intersects = this._raycaster.intersectObject(box);
+      if (intersects.length > 0) {
+        boxesHit = true;
+        break;
+      }
+    }
+
+    // If hover state changed, we have some work to do:
+    const lastPlaneDragBoxesHovered = this._planeDragBoxesHovered;
+    if (lastPlaneDragBoxesHovered != boxesHit) {
+      this._planeDragBoxesHovered = boxesHit;
+      this._mdl.drawModel.setPlaneDragBoxHover(boxesHit);
+      this.redraw();
+      return;
+    }
+
     // If we have points, check hover on each of them 
-    if (this._mdl.drawModel.points) {
+    const pts = this._mdl.drawModel.meshPoints;
+    if (pts) {
       // Calculate objects intersecting the picking ray
-      const intersects = this._raycaster.intersectObject(this._mdl.drawModel.points);
+      const intersects = this._raycaster.intersectObject(pts);
 
       if (intersects.length > 0) {
         //console.log("intersects", intersects);
@@ -162,36 +179,30 @@ export class Scan3DMouseInteraction {
             closestIntersection.point.clone(),
             closestIntersection.distanceToRay ?? 0
           );
-                
-          if (pointIndex < this._mdl.drawModel.pmcForLocs.length) {
+
+          const pt = this._mdl.drawModel.getPointForIndex(pickedPoint.pointIndex);
+          if (pt !== undefined) {
             // Get the PMC for this point index
-            const pmc = this._mdl.drawModel.pmcForLocs[pickedPoint.pointIndex];
+            const pmc = this._mdl.drawModel.getPMCForIndex(pt.scanEntryIndex);
             
-            // Notify the selection service, treat this like a hover
-            this._selectionService.setHoverEntryPMC(this._scanId, pmc);
+            if (pmc !== undefined) {
+              // Notify the selection service, treat this like a hover
+              let scanId = "";
+              if (this._mdl.scanIds.length > 0) {
+                scanId = this._mdl.scanIds[0];
+              }
+              if (scanId.length <= 0) {
+                console.error("Failed to set hover point, scan id unknown");
+              } else {
+                this._selectionService.setHoverEntryPMC(scanId, pmc);
+              }
+            }
+
             this.redraw();
             return;
           }
         }
       }
-    }
-
-    // Check any interactive elements
-    let boxesHit = false;
-    for (const box of this._mdl.drawModel.planeDragBoxes) {
-      const intersects = this._raycaster.intersectObject(box);
-      if (intersects.length > 0) {
-        boxesHit = true;
-        break;
-      }
-    }
-
-    // If hover state changed, we have some work to do:
-    const lastPlaneDragBoxesHovered = this._planeDragBoxesHovered;
-    if (lastPlaneDragBoxesHovered != boxesHit) {
-      this._planeDragBoxesHovered = boxesHit;
-      this._mdl.drawModel.setPlaneDragBoxHover(boxesHit);
-      this.redraw();
     }
   }
 

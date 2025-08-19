@@ -217,7 +217,7 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     });
   }
 
-  protected override setTransformCanvasParams(params: CanvasParams): void {
+  protected override setTransformCanvasParams(params: CanvasParams, canvas: ElementRef<any>): void {
       this.transform?.setCanvasParams(params);
   }
 

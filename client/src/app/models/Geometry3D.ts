@@ -42,6 +42,10 @@ export class AxisAlignedBBox {
       pt.y <= this.maxCorner.y && pt.y >= this.minCorner.y &&
       pt.z <= this.maxCorner.z && pt.z >= this.minCorner.z;
   }
+
+  public sizeX() { return this.maxCorner.x-this.minCorner.x; }
+  public sizeY() { return this.maxCorner.y-this.minCorner.y; }
+  public sizeZ() { return this.maxCorner.z-this.minCorner.z; }
 }
 /*
 export function scaleVec3D(v: Vec3D, s: number) {

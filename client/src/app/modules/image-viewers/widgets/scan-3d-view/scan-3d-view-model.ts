@@ -1,4 +1,4 @@
-import { Subject, ReplaySubject, Observable } from "rxjs";
+import { Subject, ReplaySubject, Observable, map, of, tap } from "rxjs";
 import { CanvasDrawNotifier } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MapColourScaleSourceData } from "../context-image/ui-elements/map-colour-scale/map-colour-scale-model";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../context-image/context-image-model-internals";
@@ -11,6 +11,7 @@ import { AxisAlignedBBox } from "src/app/models/Geometry3D";
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
 import { LightMode } from "src/app/generated-protos/widget-data";
+import { Colours } from "src/app/utils/colours";
 
 
 export class Scan3DViewModel implements CanvasDrawNotifier {
@@ -99,6 +100,11 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   private _scanEntries?: ScanEntryResp;
   private _beams?: ScanBeamLocationsResp;
 
+  private _selectionColour = new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255);
+  // private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
+  // private _marsDirtColour = new THREE.Color(.37, .17, .08);
+  private _pointSize: number = 0.02;
+
   drawModel = new Scan3DDrawModel();
   
   getScanModelFor(scanId: string): ContextImageScanModel | null {
@@ -124,37 +130,16 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this._raw = loadedData;
     this._scanEntries = scanEntries;
     this._beams = beams;
-
-    let bbox = new AxisAlignedBBox();
-    let pmcLocs = this.getBeamXYZs(beams, scanEntries.entries, bbox);
     const scanMdl = loadedData.scanModels.get(scanId);
 
-    return this.drawModel.create(
-      scanId,
-      pmcLocs,
-      bbox,
-      this._lightMode,
-      !this.hidePointsForScans.has(scanId),
-      this._planeYScale,
-      scanMdl,
-      loadedData.image || undefined
+    const img = this._raw.image ? this._raw.image : undefined;
+    return this.drawModel.create(this._scanEntries.entries, this._beams.beamLocations, scanMdl, img).pipe(
+      tap(() => {
+        // Add optional items depending on visibility flags
+        this.drawModel.setLightMode(this.lightMode);
+        this.drawModel.setShowPoints(!this.hidePointsForScans.has(scanId));
+        this.drawModel.setPlaneYScale(this._planeYScale);
+      })
     );
-  }
-
-  protected getBeamXYZs(beams: ScanBeamLocationsResp, scanEntries: ScanEntry[], bbox: AxisAlignedBBox): Map<number, THREE.Vector3> {
-    let result = new Map<number, THREE.Vector3>();
-
-    const scale = 1000;
-    for (let c = 0; c < scanEntries.length; c++) {
-      const scanEntry = scanEntries[c];
-      if(scanEntry.location && scanEntry.normalSpectra) {
-        const loc = beams.beamLocations[c];
-        const pt = new THREE.Vector3(loc.x * scale, loc.z * scale, loc.y * scale);
-        result.set(scanEntry.id, pt);
-        bbox.expandToFit(pt);
-      }
-    }
-
-    return result;
   }
 }

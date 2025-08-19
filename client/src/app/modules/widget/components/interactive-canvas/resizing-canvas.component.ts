@@ -152,7 +152,7 @@ export abstract class ResizingCanvasComponent implements AfterViewInit, OnDestro
   }
 
   abstract triggerRedraw(): void;
-  protected abstract setTransformCanvasParams(params: CanvasParams): void;
+  protected abstract setTransformCanvasParams(params: CanvasParams, canvas: ElementRef<any>): void;
   protected abstract refreshContext(): void;
   protected abstract getCanvasElement(): ElementRef | undefined;
   protected abstract setDrawerBorderWidth(width: number): void;
@@ -172,7 +172,7 @@ export abstract class ResizingCanvasComponent implements AfterViewInit, OnDestro
       //console.log(canvasElem);
 
       this._viewport = newViewport;
-      this.setTransformCanvasParams(newViewport);
+      this.setTransformCanvasParams(newViewport, imgCanvas);
       this.triggerRedraw();
     }
 

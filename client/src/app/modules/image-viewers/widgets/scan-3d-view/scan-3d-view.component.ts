@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { BehaviorSubject, combineLatest, Observable, Subscription } from "rxjs";
+import { BehaviorSubject, combineLatest, Observable, Subject, Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -20,14 +20,6 @@ import { Scan3DMouseInteraction } from "./mouse-interaction";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-// Class to represent a picked point
-class PickedPoint {
-  constructor(
-    public pointIndex: number,
-    public worldPosition: THREE.Vector3,
-    public distance: number
-  ) {}
-}
 
 @Component({
   standalone: false,
@@ -39,7 +31,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   private _subs = new Subscription();
 
   mdl: Scan3DViewModel;
-  private _mouseInteractionHandler?: Scan3DMouseInteraction;
+  private _mouseInteractionHandler: Scan3DMouseInteraction;
 
   cursorShown: string = "";
 
@@ -49,7 +41,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
 
   private _canvasSize?: Point;
-  private _canvasElement$ = new BehaviorSubject<ElementRef<any> | undefined>(undefined);
+  private _canvasElem?: HTMLCanvasElement;
+
+  private _canvas$: Subject<CanvasSizeNotification> = new Subject<CanvasSizeNotification>();
 
   constructor(
     private _cacheDataService: APICachedDataService,
@@ -62,6 +56,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     super();
 
     this.mdl = new Scan3DViewModel();
+    this._mouseInteractionHandler = new Scan3DMouseInteraction(this._selectionService, this.mdl);
 
     this.scanId = this._analysisLayoutService.defaultScanId;
 
@@ -159,59 +154,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     );
 
     this._subs.add(
-      combineLatest([
-        this.widgetData$,
-        this._canvasElement$
-      ]).subscribe((initItems) => {
-        const scan3DState = initItems[0] as Scan3DViewState;
-        const canvasElement = initItems[1] as ElementRef<any> | undefined;
-
-        if (!canvasElement) {
-          console.warn("Skipping scan 3d view init, no canvas element");
-          return;
-        }
-
-        if (scan3DState && scan3DState.contextImage.length > 0) {
-          this.mdl.hideFootprintsForScans = new Set<string>(scan3DState?.hideFootprintsForScans || []);
-          this.mdl.hidePointsForScans = new Set<string>(scan3DState?.hidePointsForScans || []);
-          //this.mdl.drawImage = !(scan3DState?.hideImage ?? false);
-
-          // Set up model
-          if (scan3DState.colourRatioMin) {
-            this.mdl.colourRatioMin = scan3DState.colourRatioMin;
-          }
-
-          if (scan3DState.colourRatioMax) {
-            this.mdl.colourRatioMax = scan3DState.colourRatioMax;
-          }
-
-          this.mdl.imageBrightness = scan3DState.brightness;
-          this.mdl.removeTopSpecularArtifacts = scan3DState.removeTopSpecularArtifacts;
-          this.mdl.removeBottomSpecularArtifacts = scan3DState.removeBottomSpecularArtifacts;
-          this.mdl.rgbuChannels = scan3DState.rgbuChannels;
-          this.mdl.unselectedOpacity = scan3DState.unselectedOpacity;
-          this.mdl.unselectedGrayscale = scan3DState.unselectedGrayscale;
-
-          this.mdl.imageName = scan3DState.contextImage;
-          this.mdl.imageSmoothing = scan3DState.contextImageSmoothing.length > 0;
-
-          this.mdl.lightMode = scan3DState.lightMode;
-          this.mdl.planeYScale = scan3DState.planeYScale;
-
-          // Set the all points toggle icon
-          const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
-          if (allPointsButton) {
-            allPointsButton.icon = this.allPointsToggleIcon;
-          }
-
-          this.reloadModel();
-        } else {
-          this.setInitialConfig();
-        }
-      })
-    );
-
-    this._subs.add(
       this._selectionService.selection$.subscribe((currSel: SelectionHistoryItem) => {
         this.updateSelection();
       })
@@ -222,11 +164,76 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         this.updateSelection();
       })
     );
+
+    this._subs.add(
+      combineLatest([
+        this.widgetData$,
+        this._canvas$
+      ]).subscribe((items) => {
+        const scan3DState = items[0] as Scan3DViewState;
+        const canvasEvent = items[1] as CanvasSizeNotification;
+
+        this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
+
+        if (!scan3DState || scan3DState.contextImage.length <= 0) {
+          this.setInitialConfig();
+          return;
+        }
+
+        this.mdl.hideFootprintsForScans = new Set<string>(scan3DState?.hideFootprintsForScans || []);
+        this.mdl.hidePointsForScans = new Set<string>(scan3DState?.hidePointsForScans || []);
+        //this.mdl.drawImage = !(scan3DState?.hideImage ?? false);
+
+        // Set up model
+        if (scan3DState.colourRatioMin) {
+          this.mdl.colourRatioMin = scan3DState.colourRatioMin;
+        }
+
+        if (scan3DState.colourRatioMax) {
+          this.mdl.colourRatioMax = scan3DState.colourRatioMax;
+        }
+
+        this.mdl.imageBrightness = scan3DState.brightness;
+        this.mdl.removeTopSpecularArtifacts = scan3DState.removeTopSpecularArtifacts;
+        this.mdl.removeBottomSpecularArtifacts = scan3DState.removeBottomSpecularArtifacts;
+        this.mdl.rgbuChannels = scan3DState.rgbuChannels;
+        this.mdl.unselectedOpacity = scan3DState.unselectedOpacity;
+        this.mdl.unselectedGrayscale = scan3DState.unselectedGrayscale;
+
+        this.mdl.imageName = scan3DState.contextImage;
+        this.mdl.imageSmoothing = scan3DState.contextImageSmoothing.length > 0;
+
+        this.mdl.lightMode = scan3DState.lightMode;
+        this.mdl.planeYScale = scan3DState.planeYScale;
+
+        // Set the all points toggle icon
+        const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
+        if (allPointsButton) {
+          allPointsButton.icon = this.allPointsToggleIcon;
+        }
+
+        this.reloadModel();
+      })
+    );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
-    this._mouseInteractionHandler?.clearMouseEventListeners();
+    this._mouseInteractionHandler.clearMouseEventListeners();
+  }
+
+  onCanvasSize(event: CanvasSizeNotification) {
+    const needInit = this._canvasSize === undefined || event.canvasElement.nativeElement !== this._canvasElem;
+    this._canvasSize = event.size;
+    this._canvasElem = event.canvasElement.nativeElement;
+
+    // If we have a size and it's the first time it was set, we now load our model data
+    if (needInit) {
+      console.log(`Scan3D view initialising or canvas of size: ${event.size.x}x${event.size.y}...`);
+
+      // Allow init to function normally
+      this._canvas$.next(event);
+    }
   }
 
   protected setInitialConfig() {
@@ -249,19 +256,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           this._snackService.openError("Failed to get default image for scan: " + scanId, err);
         },
       });
-    }
-  }
-
-  onCanvasSize(event: CanvasSizeNotification) {
-    const isFirst = this._canvasSize === undefined;
-    this._canvasSize = event.size;
-
-    // If we have a size and it's the first time it was set, we now load our model data
-    if (isFirst && this._canvasSize) {
-      this._canvasElement$.next(event.canvasElement);
-
-      this._mouseInteractionHandler = new Scan3DMouseInteraction(this.scanId, this._selectionService, this.mdl);
-      this._mouseInteractionHandler.setupMouseEvents(event.canvasElement);
     }
   }
 
@@ -290,7 +284,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       allPointsButton.icon = this.allPointsToggleIcon;
     }
 
-    // this.reloadModel();
     this.mdl.needsDraw$.next();
     this.saveState();
   }
@@ -309,7 +302,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       btn.icon = icon;
     }
 
-    // this.reloadModel();
     this.mdl.needsDraw$.next();
     this.saveState();
   }
@@ -328,7 +320,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       btn.icon = icon;
     }
 
-    // this.reloadModel();
     this.mdl.needsDraw$.next();
     this.saveState();
   }
@@ -451,6 +442,16 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   }
 
   protected reloadModel() {
+    if (!this._canvasSize) {
+      console.error(`Canvas size unknown`);
+      return;
+    }
+
+    if (!this._canvasSize.x || !this._canvasSize.y) {
+      console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
+      return;
+    }
+
     this.isWidgetDataLoading = true;
     const scanId = this._analysisLayoutService.defaultScanId;
 
@@ -477,53 +478,36 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         () => {
           this.isWidgetDataLoading = false;
 
-          this.updateSelection();
-
-          if (!this._canvasSize) {
-            console.error(`Canvas size unknown`);
-            return;
-          }
-
-          if (!this._canvasSize.x || !this._canvasSize.y) {
-            console.error(`Canvas size invalid for scene: w=${this._canvasSize.x}, h=${this._canvasSize.y}`);
-            return;
-          }
-
-          const canvasElement = this._canvasElement$.value;
-          if (!canvasElement) {
-            console.error("initScene called without canvas reference");
-            return;
-          }
-
           const renderData = this.mdl.drawModel.renderData;
           if (!renderData) {
             console.error(`Failed to get render data for created scene`);
             return;
           }
-        
+
           renderData.camera = new THREE.PerspectiveCamera(
             60,
-            this._canvasSize.x / this._canvasSize.y,
+            this._canvasSize!.x / this._canvasSize!.y,
             0.001,
             1000
           );
         
-          const size = this.mdl.drawModel.bboxMCC;
+          const size = this.mdl.drawModel.bboxMesh;
+          if (size === undefined) {
+            console.error(`Failed to get data bounding box`);
+            return;
+          }
+
           const dataCenter = size.center();
 
           renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
         
           //this.renderData.camera.lookAt(dataCenter);
           renderData.scene.add(renderData.camera);
-        
-          renderData.orbitControl = new OrbitControls(renderData.camera, canvasElement!.nativeElement);
-        
+
           // Set up what to orbit around
+          renderData.orbitControl = new OrbitControls(renderData.camera, this._canvasElem);
           renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
           renderData.orbitControl.update();
-
-          renderData.transformControl = new TransformControls(renderData.camera, canvasElement!.nativeElement);
-          renderData.scene.add(renderData.transformControl.getHelper());
 
           // Redraw if camera changes
           renderData.orbitControl.addEventListener("change", (e) => {
@@ -531,6 +515,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           });
 
           // Same for transform
+          renderData.transformControl = new TransformControls(renderData.camera, this._canvasElem);
+          renderData.scene.add(renderData.transformControl.getHelper());
+
           renderData.transformControl.addEventListener("change", (e) => {
             this.mdl.needsDraw$.next();
           });
@@ -547,6 +534,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
             }
           });
         
+          this.updateSelection();
           this.mdl.needsDraw$.next();
         }
       );

@@ -20,7 +20,7 @@ export class ThreeRenderData {
 export class CanvasSizeNotification {
   constructor(
     public size: Point,
-    public canvasElement?: ElementRef
+    public canvasElement: ElementRef
   ) {}
 }
 
@@ -65,26 +65,29 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
     }
   }
 
-  protected override setTransformCanvasParams(params: CanvasParams): void {
+  protected override setTransformCanvasParams(params: CanvasParams, canvas: ElementRef<any>): void {
     if (!this._renderer) {
-      this.create3();
-    }
+      this.create3(params, canvas);
 
-    if (!this._renderer) {
-      console.error("No renderer for setTransformCanvasParams");
-      return;
+      if (!this._renderer) {
+        console.error("No renderer for setTransformCanvasParams");
+        return;
+      }
+    } else { 
+      this._renderer.setSize(params.width, params.height);
     }
-    this._renderer.setSize(params.width, params.height);
-
-    this.canvasSize.emit(new CanvasSizeNotification(
-      new Point(params.width, params.height),
-      this._imgCanvas
-    ));
 
     if (!this.renderData) {
       console.warn("No renderData for setTransformCanvasParams");
       return;
     }
+
+    this.canvasSize.emit(
+      new CanvasSizeNotification(
+        new Point(params.width, params.height),
+        canvas
+      )
+    );
 
     this.renderData.camera.aspect = params.width / params.height;
     this.renderData.camera.updateProjectionMatrix();
@@ -96,35 +99,19 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
     // We don't need a context
   }
 
-  create3(): void {
-    const canvasContainer = document.getElementsByClassName("canvas-container").item(0);
-    const canvas = this.getCanvasElement()?.nativeElement;
-
-    const canvasSizes = {
-      width: canvasContainer!.clientWidth * window.devicePixelRatio, // window.innerWidth,
-      height: canvasContainer!.clientHeight * window.devicePixelRatio, // window.innerHeight,
-    };
-/*
-    this._sceneCamera = new THREE.PerspectiveCamera(
-      75,
-      canvasSizes.width / canvasSizes.height,
-      0.001,
-      1000
-    );
-    this._sceneCamera.position.z = 30;
-    this._scene.add(this._sceneCamera);
-*/
-    if (!canvas) {
-      console.error("No canvas for creating WebGLRenderer");
+  create3(params: CanvasParams, canvas: ElementRef<any>): void {
+    //const canvasContainer = document.getElementsByClassName("canvas-container").item(0);
+    if (!canvas.nativeElement) {
+      console.error("create 3d failed, no nativeElement defined");
       return;
     }
 
     this._renderer = new THREE.WebGLRenderer({
-      canvas: canvas,
+      canvas: canvas.nativeElement,
     });
 
     this._renderer.setClearColor(new THREE.Color(0, 0, 0), 1);
-    this._renderer.setSize(canvasSizes.width, canvasSizes.height);
+    this._renderer.setSize(params.width, params.height);
 
 /*
   window.addEventListener('resize', () =>
