@@ -73,36 +73,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           settingTitle: "Solo",
           settingGroupTitle: "Actions",
           onClick: () => this.onSoloView(),
-        },
-        {
-          id: "all-points-toggle",
-          type: "button",
-          icon: "assets/button-icons/all-points-on.svg",
-          tooltip: "Show all points",
-          settingTitle: "Show All Points",
-          settingGroupTitle: "Actions",
-          value: false,
-          onClick: (value, trigger) => this.onToggleAllPoints(trigger),
-        },
-        {
-          id: "light-toggle",
-          type: "button",
-          icon: "assets/button-icons/all-points-on.svg",
-          tooltip: "Toggle Lighting",
-          settingTitle: "Toggle Lighting",
-          settingGroupTitle: "Actions",
-          value: false,
-          onClick: (value, trigger) => this.onToggleLighting(trigger),
-        },
-        {
-          id: "plane-toggle",
-          type: "button",
-          icon: "assets/button-icons/all-points-on.svg",
-          tooltip: "Toggle Plane",
-          settingTitle: "Toggle Plane",
-          settingGroupTitle: "Actions",
-          value: false,
-          onClick: (value, trigger) => this.onTogglePlane(trigger),
         }
       ],
       topLeftInsetButton: {
@@ -282,55 +252,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     } else {
       this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
     }
-  }
-
-  onToggleAllPoints(trigger: Element | undefined) {
-    this.mdl.toggleShowPoints(this.scanId);
-
-    // Update the button icon
-    const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
-    if (allPointsButton) {
-      allPointsButton.icon = this.allPointsToggleIcon;
-    }
-
-    this.mdl.needsDraw$.next();
-    this.saveState();
-  }
-
-  onToggleLighting(trigger: Element | undefined) {
-    const btn = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "light-toggle");
-
-    this.mdl.lightMode = this.mdl.lightMode == LightMode.LM_UNKNOWN ? LightMode.LM_POINT : LightMode.LM_UNKNOWN;
-
-    let icon = "assets/button-icons/all-points-off.svg";
-    if (this.mdl.lightMode != LightMode.LM_UNKNOWN) {
-      icon = "assets/button-icons/all-points-on.svg";
-    }
-
-    if(btn) {
-      btn.icon = icon;
-    }
-
-    this.mdl.needsDraw$.next();
-    this.saveState();
-  }
-
-  onTogglePlane(trigger: Element | undefined) {
-    const btn = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "light-toggle");
-
-    this.mdl.planeYScale = this.mdl.planeYScale < 0 ? 0.5 : -1;
-
-    let icon = "assets/button-icons/all-points-off.svg";
-    if (this.mdl.planeYScale <= 0) {
-      icon = "assets/button-icons/all-points-on.svg";
-    }
-
-    if(btn) {
-      btn.icon = icon;
-    }
-
-    this.mdl.needsDraw$.next();
-    this.saveState();
   }
 
   protected getImagePickerParams(): ImagePickerParams {
@@ -569,15 +490,71 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // Initialize Tweakpane with the container
     this._tweakPane = new Pane({
       container: paneContainer,
-      title: '3D View Controls'
+      title: 'View Controls'
     });
 
     // Add controls for the 3D view settings
     const viewFolder = this._tweakPane.addFolder({
-      title: 'View Settings',
+      title: 'Objects',
       expanded: true
     });
 
+    viewFolder.addBinding(this.mdl, 'showPoints', {
+      label: 'Show PMC Points'
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    viewFolder.addBinding(this.mdl, 'planeYScale', {
+      label: 'Compare Plane Height',
+      min: 0,
+      max: 1,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    viewFolder.addBinding(this.mdl, 'planeYScale', {
+      label: 'Compare Plane Height',
+      min: 0,
+      max: 1,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    const lightingFolder = this._tweakPane.addFolder({
+      title: 'Lighting',
+      expanded: true
+    });
+
+    lightingFolder.addBinding(this.mdl, 'lightMode', {
+      label: "Lighting",
+      options: {
+        "Full Bright": LightMode.LM_UNKNOWN,
+        "Point Light": LightMode.LM_POINT,
+        "Hemisphere Light": LightMode.LM_ENVIRONMENT
+      }
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+/*
+    viewFolder.addBlade({
+      view: 'list',
+      label: 'Light Mode',
+      options: [
+        {text: 'Full Bright', value: 'LM_UNKNOWN'},
+        {text: 'Point Light', value: 'LM_POINT'},
+        {text: 'Hemisphere Light', value: 'LM_ENVIRONMENT'},
+      ],
+      value: 'LM_UNKNOWN',
+    });
+*/
+/*
     // Add brightness control
     viewFolder.addBinding(this.mdl, 'imageBrightness', {
       label: 'Brightness',
@@ -668,12 +645,49 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     planeFolder.addBinding(this.mdl, 'planeYScale', {
       label: 'Plane Y Scale',
-      min: -1,
+      min: 0,
       max: 1,
       step: 0.01
     }).on('change', () => {
       this.mdl.needsDraw$.next();
       this.saveState();
-    });
+    });*/
   }
 }
+
+/*
+{
+  id: "all-points-toggle",
+  type: "button",
+  icon: "assets/button-icons/all-points-on.svg",
+  tooltip: "Show all points",
+  settingTitle: "Show All Points",
+  settingGroupTitle: "Actions",
+  value: false,
+  onClick: (value, trigger) => this.onToggleAllPoints(trigger),
+},
+{
+  id: "light-toggle",
+  type: "button",
+  icon: "assets/button-icons/all-points-on.svg",
+  tooltip: "Toggle Lighting",
+  settingTitle: "Toggle Lighting",
+  settingGroupTitle: "Actions",
+  value: false,
+  onClick: (value, trigger) => this.onToggleLighting(trigger),
+},
+{
+  id: "plane-toggle",
+  type: "button",
+  icon: "assets/button-icons/all-points-on.svg",
+  tooltip: "Toggle Plane",
+  settingTitle: "Toggle Plane",
+  settingGroupTitle: "Actions",
+  value: false,
+  onClick: (value, trigger) => this.onTogglePlane(trigger),
+}*/
+
+
+// this.mdl.toggleShowPoints(this.scanId);
+// this.mdl.lightMode = this.mdl.lightMode == LightMode.LM_UNKNOWN ? LightM
+// this.mdl.planeYScale = this.mdl.planeYScale < 0 ? 0.5 : -1;

@@ -21,6 +21,8 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   resolution$?: ReplaySubject<number> | undefined;
   borderWidth$?: ReplaySubject<number> | undefined;
 
+  private _scanId: string = "";
+
   // Settings/Layers
   imageName: string = "";
   beamLocationVersionsRequested = new Map<string, number>();
@@ -69,18 +71,30 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setLightMode(mode);
   }
 
-  toggleShowPoints(scanId: string) {
-    let show = false;
-    if (this.hidePointsForScans.has(scanId)) {
-      // We're un-hiding
-      this.hidePointsForScans.delete(scanId);
-      show = true;
-    } else {
-      // We're hiding
-      this.hidePointsForScans.add(scanId);
-    }
+  get showPoints(): boolean {
+    return !this.hidePointsForScans.has(this._scanId);
+  }
 
+  set showPoints(show: boolean) {
+    if (show) {
+      this.hidePointsForScans.add(this._scanId);
+    } else {
+      this.hidePointsForScans.delete(this._scanId);
+    }
     this.drawModel.setShowPoints(show);
+  }
+
+  get showFootprint(): boolean {
+    return !this.hideFootprintsForScans.has(this._scanId);
+  }
+
+  set showFootprint(show: boolean) {
+    if (show) {
+      this.hideFootprintsForScans.add(this._scanId);
+    } else {
+      this.hideFootprintsForScans.delete(this._scanId);
+    }
+    this.drawModel.setShowFootprint(show);
   }
 
   get rgbuImageScaleData(): MapColourScaleSourceData | null {
@@ -126,6 +140,8 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   }
 
   setData(scanId: string, loadedData: ContextImageModelLoadedData, scanEntries: ScanEntryResp, beams: ScanBeamLocationsResp): Observable<void> {
+    this._scanId = scanId;
+
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
     this._scanEntries = scanEntries;
