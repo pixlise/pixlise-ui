@@ -80,19 +80,13 @@ export class PMCMeshData {
     return this._scanEntries[idx].id;
   }
 
-  createMesh(texture?: THREE.Texture): THREE.Mesh {
+  createMesh(material: THREE.Material): THREE.Mesh {
     const idxs = this.calculateTriangleIndexes();
     const meshGeom = this.createMeshGeometry(idxs, !!this._image);
-    
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1) });
-    if (texture) {
-      mat.map = texture;
-    }
-
-    return new THREE.Mesh(meshGeom, mat);
+    return new THREE.Mesh(meshGeom, material);
   }
 
-  createPoints(material: THREE.PointsMaterial): THREE.Points {
+  createPoints(material: THREE.Material): THREE.Points {
     const xyz = this.createPositionArray();
 
     const pointsGeom = new THREE.BufferGeometry();
@@ -109,7 +103,7 @@ export class PMCMeshData {
     return points;
   }
 
-  createFootprint(radius: number, mat: THREE.MeshBasicMaterial): THREE.Mesh | undefined {
+  createFootprint(radius: number, material: THREE.Material): THREE.Mesh | undefined {
     if (this._hullPoints.length <= 0) {
       return undefined;
     }
@@ -120,12 +114,14 @@ export class PMCMeshData {
       curvePath.add(new THREE.LineCurve3(this._hullPoints[c-1], this._hullPoints[c]));
     }
     // Add the last one
-    if (this._hullPoints.length > 1) {
-      curvePath.add(new THREE.LineCurve3(this._hullPoints[this._hullPoints.length-1], this._hullPoints[0]));
-    }
+    // if (this._hullPoints.length > 1) {
+    //   curvePath.add(new THREE.LineCurve3(this._hullPoints[this._hullPoints.length-1], this._hullPoints[0]));
+    // }
 
-    const geom = new THREE.TubeGeometry(curvePath, 100, radius, 100, false);
-    const mesh = new THREE.Mesh(geom, mat);
+    const geom = new THREE.TubeGeometry(curvePath, 10, radius, 4, false);
+    geom.computeVertexNormals();
+
+    const mesh = new THREE.Mesh(geom, material);
     return mesh;
   }
 
@@ -337,42 +333,54 @@ export class PMCMeshData {
       return;
     }
 
-    const dataCenter = this._bboxMCC.center();
+    const xyzCenter = this._bboxRawXYZ.center();
 
-    this._hullPoints = [];
+    // Written this way to be easier to debug really... want a clear list off hull PMCs
+    const visitedHullIdxs = new Set<number>();
+    const hullPMCs: number[] = [];
+
     for (const hull of this._contextImgMdl.footprint) {
       for (const hullPt of hull) {
-        const footprintPMC = this._contextImgMdl.scanPoints[hullPt.idx].PMC;
-
-        const idx = this._pmcToPoint.get(footprintPMC);
-        if (idx !== undefined) {
-          let rawCoord = this._points[idx].rawPoint;
-          
-          // Move this point out towards a corner point - find the nearest one then use that vector
-          let nearestCorner = this.findNearestPoint(rawCoord, this._rawCornerPoints);
-          if (nearestCorner[0] < 0) {
-            console.error("Failed to find nearest corner point for hull PMC " + footprintPMC);
-            continue;
-          }
-
-          rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], 0.2);
-
-          const terrainCoord = this.rawToTerrainPoint(rawCoord, dataCenter, scale); //this._points[idx].terrainPoint;
-          this._hullPoints.push(terrainCoord);
-
-          // Also add them to the points array like we do for other support points
-          this._points.push(new PMCMeshPoint(
-            terrainCoord,
-            rawCoord,
-            -1,
-            0.5,
-            0.5
-          ));
-
-          // if (this._hullPoints.length > 1) {
-          //   return;
-          // }
+        // NOTE: we may have duplicated footprint hull points due to "fattening" of the hull for the context
+        //       image. We don't need this effect because we're "fattening" it in 3D so we just want the PMCs!
+        if (visitedHullIdxs.has(hullPt.idx)) {
+          continue;
         }
+        visitedHullIdxs.add(hullPt.idx);
+
+        const footprintPMC = this._contextImgMdl.scanPoints[hullPt.idx].PMC;
+        hullPMCs.push(footprintPMC);
+      }
+      break; // NOTE: We only work on the first hull for now!
+    }
+
+    this._hullPoints = [];
+    for (const footprintPMC of hullPMCs) {
+      const idx = this._pmcToPoint.get(footprintPMC);
+      if (idx !== undefined) {
+        let rawCoord = this._points[idx].rawPoint;
+        
+        // Move this point out towards a corner point - find the nearest one then use that vector
+        let nearestCorner = this.findNearestPoint(rawCoord, this._rawCornerPoints);
+        if (nearestCorner[0] < 0) {
+          console.error("Failed to find nearest corner point for hull PMC " + footprintPMC);
+          continue;
+        }
+
+        rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], 0.1);
+
+        const terrainCoord = this.rawToTerrainPoint(rawCoord, xyzCenter, scale); //this._points[idx].terrainPoint;
+        this._hullPoints.push(terrainCoord);
+
+        // Also add them to the points array like we do for other support points
+        this._points.push(new PMCMeshPoint(
+          terrainCoord,
+          rawCoord,
+          -1,
+          // Not sure why the axis flip is required here :-/
+          this._image!.width * (1 - (rawCoord.x - this._bboxMCC.minCorner.x) / this._bboxMCC.sizeX()),
+          this._image!.height * (1 - (rawCoord.y - this._bboxMCC.minCorner.y) / this._bboxMCC.sizeY())
+        ));
       }
     }
   }

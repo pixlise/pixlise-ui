@@ -16,6 +16,9 @@ export class Scan3DDrawModel {
   protected _meshTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
   protected _meshFootprint?: THREE.Mesh;
+  protected _texture?: THREE.Texture;
+
+  protected _heightExaggerationScale: number = 1;
 
   get meshPoints(): THREE.Points | undefined {
     return this._meshPoints;
@@ -48,22 +51,27 @@ export class Scan3DDrawModel {
     }
 
     this._meshData = meshData;
-    this._meshTerrain = this._meshData!.createMesh(texture)
-
-    const pointMat = new THREE.PointsMaterial({
-      color: this._selectionColour,
-      size: this._pointSize,
-      sizeAttenuation: true
-    });
-
-    this._meshPoints = this._meshData.createPoints(pointMat);
-
-    this._meshFootprint = this._meshData.createFootprint(this._pointSize, new THREE.MeshBasicMaterial({ color: this._hoverColour })); 
+    this._texture = texture;
 
     if (texture) {
       this._terrainMatBasic.map = texture;
       this._terrainMatStandard.map = texture;
     }
+
+    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic);
+
+    const pointMat = new THREE.PointsMaterial({
+      color: this._selectionColour,
+      size: this._pointSize,
+      sizeAttenuation: false
+    });
+
+    this._meshPoints = this._meshData.createPoints(pointMat);
+
+    this._meshFootprint = this._meshData.createFootprint(
+      this._footprintSize,
+      new THREE.MeshPhongMaterial({ color: this._hoverColour })
+    );
 
     const meshBBox = meshData.bboxMesh;
     const dataCenter = meshBBox.center();
@@ -190,7 +198,9 @@ export class Scan3DDrawModel {
   private _selectionColour = new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255);
   private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
   private _marsDirtColour = new THREE.Color(.37, .17, .08);
-  private _pointSize: number = 0.02;
+  private _pointSize: number = 3;
+  private _pointSizeSelected: number = 0.5;
+  private _footprintSize: number = 0.05;
 
   get pointLight(): THREE.PointLight | undefined {
     return this._pointLight;
@@ -229,7 +239,7 @@ export class Scan3DDrawModel {
     }
 
     // Form the points we're drawing the selection for
-    const sphere = new THREE.SphereGeometry(this._pointSize, 8, 8);
+    const sphere = new THREE.SphereGeometry(this._pointSizeSelected, 8, 8);
     const matSelect = new THREE.MeshBasicMaterial({
       color: this._selectionColour,
       opacity: 0.5,
@@ -253,7 +263,7 @@ export class Scan3DDrawModel {
 
           if (pt) {
             const m = new THREE.Mesh(sphere, matSelect);
-            m.position.set(pt.x, pt.y, pt.z);
+            m.position.set(pt.x, pt.y * this._heightExaggerationScale, pt.z);
 
             this._selection.add(m);
           }
@@ -267,7 +277,7 @@ export class Scan3DDrawModel {
 
           if (pt) {
             const m = new THREE.Mesh(sphere, matHover);
-            m.position.set(pt.x, pt.y, pt.z);
+            m.position.set(pt.x, pt.y * this._heightExaggerationScale, pt.z);
 
             this._selection.add(m);
           }
@@ -322,16 +332,44 @@ export class Scan3DDrawModel {
   }
 
   setShowFootprint(show: boolean) {
-/*    if (!this._foo) {
-      console.error("setShowPoints: Points not set up yet");
+    if (!this._meshFootprint) {
+      console.error("setShowFootprint: Footprint not set up yet");
       return;
     }
 
     if (!show) {
-      this.renderData.scene.remove(this._meshPoints);
+      this.renderData.scene.remove(this._meshFootprint);
     } else {
-      this.renderData.scene.add(this._meshPoints);
-    }*/
+      this.renderData.scene.add(this._meshFootprint);
+    }
+  }
+
+  setHeightExaggerationScale(s: number) {
+    this._heightExaggerationScale = s;
+    if (this._meshPoints) {
+      this._meshPoints.scale.y = s;
+    }
+    if (this._meshTerrain) {
+      this._meshTerrain.scale.y = s;
+    }
+    if (this._meshFootprint) {
+      this._meshFootprint.scale.y = s;
+    }
+    if (this._plane) {
+      this._plane.scale.y = s;
+    }
+  }
+
+  setLightIntensity(i: number) {
+    if (this._pointLight) {
+      this._pointLight.intensity = i;
+    }
+    if (this._hemisphereLight) {
+      this._hemisphereLight.intensity = i;
+    }
+    if (this._ambientLight) {
+      this._ambientLight.intensity = i;
+    }
   }
 
   setPlaneYScale(scale: number) {
@@ -370,5 +408,18 @@ export class Scan3DDrawModel {
     for (const box of this._planeDragBoxes) {
       (box.material as THREE.MeshBasicMaterial).color = clr;
     }
+  }
+
+  setDrawTexture(draw: boolean) {
+    let texture: THREE.Texture | null = null;
+    if (draw) {
+      texture = this._texture || null;
+    }
+
+    this._terrainMatBasic.map = texture;
+    this._terrainMatStandard.map = texture;
+
+    this._terrainMatBasic.needsUpdate = true;
+    this._terrainMatStandard.needsUpdate = true;
   }
 }

@@ -13,13 +13,14 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions, ImageOptionsComponent, ImagePickerParams, ImagePickerResult } from "../context-image/image-options/image-options.component";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageModelLoadedData } from "../context-image/context-image-model-internals";
-import { LightMode, Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode, Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { Scan3DMouseInteraction } from "./mouse-interaction";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { Pane } from 'tweakpane';
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 
 
 @Component({
@@ -153,8 +154,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           return;
         }
 
-        this.mdl.hideFootprintsForScans = new Set<string>(scan3DState?.hideFootprintsForScans || []);
-        this.mdl.hidePointsForScans = new Set<string>(scan3DState?.hidePointsForScans || []);
+        this.mdl.hideFootprintsForScans = new Set<string>((scan3DState?.hideFootprintsForScans || []).filter(s => s.length > 0));
+        this.mdl.hidePointsForScans = new Set<string>((scan3DState?.hidePointsForScans || []).filter(s => s.length > 0));
         //this.mdl.drawImage = !(scan3DState?.hideImage ?? false);
 
         // Set up model
@@ -178,6 +179,11 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
         this.mdl.lightMode = scan3DState.lightMode;
         this.mdl.planeYScale = scan3DState.planeYScale;
+        this.mdl.showFootprint = scan3DState.showFootprint;
+        
+        if (scan3DState.cameraPosition && scan3DState.cameraRotation) {
+          this.mdl.setInitialCameraOrientation(scan3DState.cameraPosition, scan3DState.cameraRotation);
+        }
 
         // Set the all points toggle icon
         const allPointsButton = this._widgetControlConfiguration.topToolbar?.find(b => b.id === "all-points-toggle");
@@ -206,9 +212,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // If we have a size and it's the first time it was set, we now load our model data
     if (needInit) {
       console.log(`Scan3D view initialising or canvas of size: ${event.size.x}x${event.size.y}...`);
-
-      // Initialize Tweakpane when canvas is ready
-      this.initializeTweakpane();
 
       // Allow init to function normally
       this._canvas$.next(event);
@@ -350,24 +353,37 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     });
   }
 
+  protected vector3ToCoordinate3D(vec: THREE.Vector3Like) {
+    return Coordinate3D.create({x: vec.x, y: vec.y, z: vec.z});
+  }
+
   protected saveState() {
+    const dir = new THREE.Quaternion();
+    this.mdl.drawModel.renderData.camera.getWorldQuaternion(dir);
+
+    const obj = Scan3DViewState.create({
+      contextImage: this.mdl.imageName,
+      contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
+      brightness: this.mdl.imageBrightness,
+      rgbuChannels: this.mdl.rgbuChannels,
+      unselectedOpacity: this.mdl.unselectedOpacity,
+      unselectedGrayscale: this.mdl.unselectedGrayscale,
+      colourRatioMin: this.mdl.colourRatioMin ?? undefined,
+      colourRatioMax: this.mdl.colourRatioMax ?? undefined,
+      removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
+      removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
+      hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans).filter(s => s.length > 0),
+      hidePointsForScans: Array.from(this.mdl.hidePointsForScans).filter(s => s.length > 0),
+      
+      lightMode: this.mdl.lightMode,
+      planeYScale: this.mdl.planeYScale,
+      showFootprint: this.mdl.showFootprint,
+      cameraPosition: this.vector3ToCoordinate3D(this.mdl.drawModel.renderData.camera.position),
+      cameraRotation: Coordinate4D.create({x: dir.x, y: dir.y, z: dir.z, w: dir.w})
+    });
+
     this.onSaveWidgetData.emit(
-      Scan3DViewState.create({
-        contextImage: this.mdl.imageName,
-        contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
-        brightness: this.mdl.imageBrightness,
-        rgbuChannels: this.mdl.rgbuChannels,
-        unselectedOpacity: this.mdl.unselectedOpacity,
-        unselectedGrayscale: this.mdl.unselectedGrayscale,
-        colourRatioMin: this.mdl.colourRatioMin ?? undefined,
-        colourRatioMax: this.mdl.colourRatioMax ?? undefined,
-        removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
-        removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
-        hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
-        hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
-        lightMode: this.mdl.lightMode,
-        planeYScale: this.mdl.planeYScale
-      })
+      Scan3DViewState.create(obj)
     );
   }
 
@@ -417,7 +433,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           renderData.camera = new THREE.PerspectiveCamera(
             60,
             this._canvasSize!.x / this._canvasSize!.y,
-            0.001,
+            0.01,
             1000
           );
         
@@ -429,15 +445,42 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
           const dataCenter = size.center();
 
-          renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
-        
+          const hasInitialCameraOrientation = this.mdl.initialCameraPosition && this.mdl.initialCameraRotation;
+
+          if (hasInitialCameraOrientation) {
+            renderData.camera.position.set(
+              this.mdl.initialCameraPosition?.x || 0,
+              this.mdl.initialCameraPosition?.y || 0,
+              this.mdl.initialCameraPosition?.z || 0
+            );
+
+            renderData.camera.setRotationFromQuaternion(
+              new THREE.Quaternion(
+                this.mdl.initialCameraRotation?.x || 0,
+                this.mdl.initialCameraRotation?.y || 0,
+                this.mdl.initialCameraRotation?.z || 0,
+                this.mdl.initialCameraRotation?.w || 0
+              )
+            );
+          } else {
+            renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
+          }
+
           //this.renderData.camera.lookAt(dataCenter);
           renderData.scene.add(renderData.camera);
 
           // Set up what to orbit around
           renderData.orbitControl = new OrbitControls(renderData.camera, this._canvasElem);
-          renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
-          renderData.orbitControl.update();
+          renderData.orbitControl.mouseButtons = {
+            LEFT: THREE.MOUSE.RIGHT,
+            MIDDLE: THREE.MOUSE.MIDDLE,
+            RIGHT: THREE.MOUSE.LEFT,
+          };
+
+          if (hasInitialCameraOrientation) {
+            renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
+            renderData.orbitControl.update();
+          }
 
           // Redraw if camera changes
           renderData.orbitControl.addEventListener("change", (e) => {
@@ -466,6 +509,9 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         
           this.updateSelection();
           this.mdl.needsDraw$.next();
+
+          // Initialize Tweakpane when canvas is ready
+          this.initialiseTweakpane();
         }
       );
     });
@@ -476,7 +522,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     this.mdl.needsDraw$.next();
   }
 
-  private initializeTweakpane() {
+  private initialiseTweakpane() {
     // Create a container div for Tweakpane that's positioned relative to the component
     const paneContainer = document.createElement('div');
     paneContainer.style.position = 'absolute';
@@ -490,7 +536,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     // Initialize Tweakpane with the container
     this._tweakPane = new Pane({
       container: paneContainer,
-      title: 'View Controls'
+      title: 'View Controls',
+      expanded: false
     });
 
     // Add controls for the 3D view settings
@@ -506,11 +553,25 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       this.saveState();
     });
 
-    viewFolder.addBinding(this.mdl, 'planeYScale', {
-      label: 'Compare Plane Height',
-      min: 0,
-      max: 1,
-      step: 0.01
+    viewFolder.addBinding(this.mdl, 'showFootprint', {
+      label: 'Show Footprint'
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    viewFolder.addBinding(this.mdl, 'drawTexture', {
+      label: 'Show Image'
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    viewFolder.addBinding(this.mdl, 'heightExaggerationScale', {
+      label: 'Height Exaggeration',
+      min: 0.1,
+      max: 10,
+      step: 0.1
     }).on('change', () => {
       this.mdl.needsDraw$.next();
       this.saveState();
@@ -542,152 +603,16 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       this.mdl.needsDraw$.next();
       this.saveState();
     });
-/*
-    viewFolder.addBlade({
-      view: 'list',
-      label: 'Light Mode',
-      options: [
-        {text: 'Full Bright', value: 'LM_UNKNOWN'},
-        {text: 'Point Light', value: 'LM_POINT'},
-        {text: 'Hemisphere Light', value: 'LM_ENVIRONMENT'},
-      ],
-      value: 'LM_UNKNOWN',
-    });
-*/
-/*
-    // Add brightness control
-    viewFolder.addBinding(this.mdl, 'imageBrightness', {
-      label: 'Brightness',
-      min: 0,
-      max: 2,
-      step: 0.01
+
+    lightingFolder.addBinding(this.mdl, 'lightIntensity', {
+      hidden: this.mdl.lightMode == LightMode.LM_POINT,
+      label: 'Light Intensity',
+      min: 0.1,
+      max: 100,
+      step: 0.1
     }).on('change', () => {
       this.mdl.needsDraw$.next();
       this.saveState();
     });
-
-    // Add opacity controls
-    viewFolder.addBinding(this.mdl, 'unselectedOpacity', {
-      label: 'Unselected Opacity',
-      min: 0,
-      max: 1,
-      step: 0.01
-    }).on('change', () => {
-      this.mdl.needsDraw$.next();
-      this.saveState();
-    });
-
-    viewFolder.addBinding(this.mdl, 'unselectedGrayscale', {
-      label: 'Unselected Grayscale',
-      min: 0,
-      max: 1,
-      step: 0.01
-    }).on('change', () => {
-      this.mdl.needsDraw$.next();
-      this.saveState();
-    });
-
-    // Add colour ratio controls
-    const colorFolder = this._tweakPane.addFolder({
-      title: 'Color Settings',
-      expanded: false
-    });
-
-    if (this.mdl.colourRatioMin !== null) {
-      colorFolder.addBinding(this.mdl, 'colourRatioMin', {
-        label: 'Color Ratio Min',
-        min: 0,
-        max: 1,
-        step: 0.01
-      }).on('change', () => {
-        this.mdl.needsDraw$.next();
-        this.saveState();
-      });
-    }
-
-    if (this.mdl.colourRatioMax !== null) {
-      colorFolder.addBinding(this.mdl, 'colourRatioMax', {
-        label: 'Color Ratio Max',
-        min: 0,
-        max: 1,
-        step: 0.01
-      }).on('change', () => {
-        this.mdl.needsDraw$.next();
-        this.saveState();
-      });
-    }
-
-    // Add artifact removal toggles
-    const artifactFolder = this._tweakPane.addFolder({
-      title: 'Artifact Removal',
-      expanded: false
-    });
-
-    artifactFolder.addBinding(this.mdl, 'removeTopSpecularArtifacts', {
-      label: 'Remove Top Specular'
-    }).on('change', () => {
-      this.mdl.needsDraw$.next();
-      this.saveState();
-    });
-
-    artifactFolder.addBinding(this.mdl, 'removeBottomSpecularArtifacts', {
-      label: 'Remove Bottom Specular'
-    }).on('change', () => {
-      this.mdl.needsDraw$.next();
-      this.saveState();
-    });
-
-    // Add plane control
-    const planeFolder = this._tweakPane.addFolder({
-      title: 'Plane Settings',
-      expanded: false
-    });
-
-    planeFolder.addBinding(this.mdl, 'planeYScale', {
-      label: 'Plane Y Scale',
-      min: 0,
-      max: 1,
-      step: 0.01
-    }).on('change', () => {
-      this.mdl.needsDraw$.next();
-      this.saveState();
-    });*/
   }
 }
-
-/*
-{
-  id: "all-points-toggle",
-  type: "button",
-  icon: "assets/button-icons/all-points-on.svg",
-  tooltip: "Show all points",
-  settingTitle: "Show All Points",
-  settingGroupTitle: "Actions",
-  value: false,
-  onClick: (value, trigger) => this.onToggleAllPoints(trigger),
-},
-{
-  id: "light-toggle",
-  type: "button",
-  icon: "assets/button-icons/all-points-on.svg",
-  tooltip: "Toggle Lighting",
-  settingTitle: "Toggle Lighting",
-  settingGroupTitle: "Actions",
-  value: false,
-  onClick: (value, trigger) => this.onToggleLighting(trigger),
-},
-{
-  id: "plane-toggle",
-  type: "button",
-  icon: "assets/button-icons/all-points-on.svg",
-  tooltip: "Toggle Plane",
-  settingTitle: "Toggle Plane",
-  settingGroupTitle: "Actions",
-  value: false,
-  onClick: (value, trigger) => this.onTogglePlane(trigger),
-}*/
-
-
-// this.mdl.toggleShowPoints(this.scanId);
-// this.mdl.lightMode = this.mdl.lightMode == LightMode.LM_UNKNOWN ? LightM
-// this.mdl.planeYScale = this.mdl.planeYScale < 0 ? 0.5 : -1;

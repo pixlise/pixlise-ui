@@ -10,8 +10,9 @@ import { AxisAlignedBBox } from "src/app/models/Geometry3D";
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
-import { LightMode } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode } from "src/app/generated-protos/widget-data";
 import { Colours } from "src/app/utils/colours";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 
 
 export class Scan3DViewModel implements CanvasDrawNotifier {
@@ -44,8 +45,23 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   hidePointsForScans = new Set<string>();
   hideFootprintsForScans = new Set<string>();
 
-  protected _planeYScale: number = 0.5;
+  // Initial camera orientation - this can change, but here we store what came in the
+  // model. If not set, it's ignored and a default used
+  private _initialCameraPosition?: Coordinate3D;
+  private _initialCameraRotation?: Coordinate4D;
 
+  setInitialCameraOrientation(pos: Coordinate3D, rot: Coordinate4D) {
+    this._initialCameraPosition = pos;
+    this._initialCameraRotation = rot;
+  }
+  get initialCameraPosition(): Coordinate3D | undefined {
+    return this._initialCameraPosition;
+  }
+  get initialCameraRotation(): Coordinate4D | undefined {
+    return this._initialCameraRotation;
+  }
+
+  protected _planeYScale: number = 0.5;
   get planeYScale(): number {
     return this._planeYScale;
   }
@@ -76,7 +92,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   }
 
   set showPoints(show: boolean) {
-    if (show) {
+    if (!show) {
       this.hidePointsForScans.add(this._scanId);
     } else {
       this.hidePointsForScans.delete(this._scanId);
@@ -89,12 +105,48 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   }
 
   set showFootprint(show: boolean) {
-    if (show) {
+    if (!show) {
       this.hideFootprintsForScans.add(this._scanId);
     } else {
       this.hideFootprintsForScans.delete(this._scanId);
     }
     this.drawModel.setShowFootprint(show);
+  }
+/*
+  private _flatAroundFootprint = false;
+  set flatAroundFootprint(flat: boolean) {
+    this._flatAroundFootprint = flat;
+    this.drawModel.flatAroundFootprint(flat);
+  }
+*/
+  private _heightExaggerationScale = 1;
+  get heightExaggerationScale(): number {
+    return this._heightExaggerationScale;
+  }
+
+  set heightExaggerationScale(s: number) {
+    this._heightExaggerationScale = s;
+    this.drawModel.setHeightExaggerationScale(s);
+  }
+
+  private _drawTexture = true;
+  get drawTexture(): boolean {
+    return this._drawTexture;
+  }
+
+  set drawTexture(draw: boolean) {
+    this._drawTexture = draw;
+    this.drawModel.setDrawTexture(draw);
+  }
+
+  private _lightIntensity = 1;
+  get lightIntensity(): number {
+    return this._lightIntensity;
+  }
+
+  set lightIntensity(i: number) {
+    this._lightIntensity = i;
+    this.drawModel.setLightIntensity(i);
   }
 
   get rgbuImageScaleData(): MapColourScaleSourceData | null {
