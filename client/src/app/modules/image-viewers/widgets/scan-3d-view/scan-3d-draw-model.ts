@@ -321,6 +321,19 @@ export class Scan3DDrawModel {
     }
   }
 
+  setShowFootprint(show: boolean) {
+/*    if (!this._foo) {
+      console.error("setShowPoints: Points not set up yet");
+      return;
+    }
+
+    if (!show) {
+      this.renderData.scene.remove(this._meshPoints);
+    } else {
+      this.renderData.scene.add(this._meshPoints);
+    }*/
+  }
+
   setPlaneYScale(scale: number) {
     if (!this._plane) {
       console.error("setPlaneHeight: Plane not set up yet");

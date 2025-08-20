@@ -70,6 +70,7 @@
     "three": "^0.179.1",
     "ts-proto": "^2.7.0",
     "tslib": "^2.3.0",
+    "tweakpane": "^4.0.5",
     "voronoi": "^1.0.0",
     "zone.js": "~0.15.0"
   },
@@ -84,6 +85,7 @@
     "@angular/cli": "^20.1.1",
     "@angular/compiler-cli": "^20.1.0",
     "@eslint/js": "^9.31.0",
+    "@tweakpane/core": "^2.0.5",
     "@types/auth0-js": "^9.21.6",
     "@types/dropzone": "^5.7.4",
     "@types/jasmine": "~5.1.0",
