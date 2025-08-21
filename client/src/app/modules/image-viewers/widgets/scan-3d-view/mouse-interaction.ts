@@ -1,11 +1,8 @@
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as THREE from 'three';
-import { ThreeRenderData } from "./interactive-canvas-3d.component";
-import { Scan3DDrawModel } from "./scan-3d-draw-model";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ElementRef } from "@angular/core";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { Point } from "src/app/models/Geometry";
+import { Subject } from "rxjs";
 
 // Class to represent a picked point
 class PickedPoint {
@@ -27,6 +24,8 @@ export class Scan3DMouseInteraction {
   private _raycaster = new THREE.Raycaster();
 
   private _canvas?: HTMLCanvasElement;
+
+  saveState$ = new Subject<void>();
 
   constructor(
     protected _selectionService: SelectionService,
@@ -103,6 +102,8 @@ export class Scan3DMouseInteraction {
       }
       this.redraw();
     }
+
+    this.saveState$.next();
 
     // Handle as selection?
     // We're only interested in mouse clicks not drags

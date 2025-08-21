@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { Coordinate3D } from '../generated-protos/scan-beam-location';
+import { Coordinate4D } from '../generated-protos/widget-data';
 
 export class AxisAlignedBBox {
   constructor(public minCorner: THREE.Vector3 = new THREE.Vector3(Infinity, Infinity, Infinity), public maxCorner: THREE.Vector3 = new THREE.Vector3(-Infinity, -Infinity, -Infinity)) {
@@ -47,16 +49,19 @@ export class AxisAlignedBBox {
   public sizeY() { return this.maxCorner.y-this.minCorner.y; }
   public sizeZ() { return this.maxCorner.z-this.minCorner.z; }
 }
-/*
-export function scaleVec3D(v: Vec3D, s: number) {
-  return new Vec3D(v.x * s, v.y * s, v.z * s);
+
+export function coordinate3DToThreeVector3(coord: Coordinate3D): THREE.Vector3 {
+  return new THREE.Vector3(coord?.x||0, coord?.y||0, coord?.z||0);
 }
 
-export function addVec3Ds(v1: Vec3D, v2: Vec3D) {
-  return new Vec3D(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+export function coordinate4DToThreeQuaternion(coord: Coordinate4D): THREE.Quaternion {
+  return new THREE.Quaternion(coord?.x||0, coord?.y||0, coord?.z||0, coord?.w||0);
 }
 
-// Returns v1-v2
-export function subtractVec3Ds(v1: Vec3D, v2: Vec3D) {
-  return new Vec3D(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
-}*/
+export function vector3ToCoordinate3D(vec: THREE.Vector3Like) {
+  return Coordinate3D.create({x: vec.x, y: vec.y, z: vec.z});
+}
+
+export function quaternionToCoordinate4D(q: THREE.QuaternionLike) {
+  return Coordinate4D.create({x: q.x, y: q.y, z: q.z, w: q.w});
+}

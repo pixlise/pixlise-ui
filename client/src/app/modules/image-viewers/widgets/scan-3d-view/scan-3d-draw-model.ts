@@ -32,14 +32,17 @@ export class Scan3DDrawModel {
   ): Observable<void> {
     const meshData = new PMCMeshData(scanEntries, beamLocations, contextImgMdl, image);
 
+    this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
+    this._pointSizeSelected = meshData.maxWorldMeshSize / 1500;
+    this._footprintSize = meshData.maxWorldMeshSize / 1000;
+
     if (image) {
       return loadTexture(image).pipe(
         map(texture => {
           this.initScene(meshData, texture);
         })
       );
-    }
-
+    } // else...
     this.initScene(meshData, undefined);
     return of();
   }
@@ -60,10 +63,16 @@ export class Scan3DDrawModel {
 
     this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic);
 
+    const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
+    sprite.colorSpace = THREE.SRGBColorSpace;
+
     const pointMat = new THREE.PointsMaterial({
       color: this._selectionColour,
       size: this._pointSize,
-      sizeAttenuation: false
+      sizeAttenuation: false,
+      map: sprite,
+      alphaTest: 0.5,
+      transparent: true
     });
 
     this._meshPoints = this._meshData.createPoints(pointMat);
@@ -73,14 +82,14 @@ export class Scan3DDrawModel {
       new THREE.MeshPhongMaterial({ color: this._hoverColour })
     );
 
-    const meshBBox = meshData.bboxMesh;
+    const meshBBox = meshData.bboxMeshPMCs;
     const dataCenter = meshBBox.center();
   
     // Add all the stuff to the scene with references separately so we can remove them if toggled 
     this._pointLight = this.makeLight(
       new THREE.Vector3(
         dataCenter.x,
-        meshBBox.maxCorner.y + (meshBBox.maxCorner.y-meshBBox.minCorner.y) * 10,
+        meshBBox.maxCorner.y + (meshBBox.maxCorner.y-meshBBox.minCorner.y) * 5,
         dataCenter.z
       )
     );
@@ -93,7 +102,7 @@ export class Scan3DDrawModel {
     }
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
-    this.initPlane(meshBBox, dataCenter);
+    this.initPlane(meshData.bboxMeshAll, dataCenter);
 
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._meshPoints);
   }
@@ -102,14 +111,120 @@ export class Scan3DDrawModel {
     const pointLight = new THREE.PointLight(new THREE.Color(1,1,1), 100);
     pointLight.position.set(lightPos.x, lightPos.y, lightPos.z);
   
+    const lightGeom = this.makeLightGeom();
+/*
     const lightPointMat = new THREE.MeshToonMaterial();
-    const lightPointBox = new THREE.Mesh(
+    const lightGeom = new THREE.Mesh(
       new THREE.BoxGeometry(0.1, 0.1, 0.1), 
       lightPointMat
     );
-  
-    pointLight.add(lightPointBox);
+*/
+
+    pointLight.add(lightGeom);
     return pointLight;
+  }
+
+  protected makeLightGeom() {
+    const scale = 0.3;
+    let y = 0;
+
+    const intensity = 100;
+    const group = new THREE.Group();
+    //main bulb
+    let bulbGeometry = new THREE.SphereGeometry(scale, 16, 16);
+    let bulbMat = new THREE.MeshStandardMaterial({
+      emissive: 0xffffee,
+      emissiveIntensity: intensity,
+      color: 0xffffee,
+      roughness: 1
+    });
+  
+    let bulbMesh = new THREE.Mesh(bulbGeometry, bulbMat);
+    bulbMesh.position.set(0, y, 0);
+
+    //stem
+    y += 0.9 * scale;
+    let bulbStem = new THREE.CylinderGeometry(0.5 * scale, 0.65 * scale, 0.55 * scale, 16);
+    let stemMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffffee,
+      emissiveIntensity: intensity,
+      metalness: 0.8,
+      roughness: 0
+    });
+
+    let bStem = new THREE.Mesh(bulbStem, stemMat);
+    bStem.position.set(0, y, 0);
+
+    //plug main
+    y += 0.3 * scale;
+    let bulbPlug = new THREE.CylinderGeometry(0.52 * scale, 0.52 * scale, 1.2 * scale, 16);
+
+    let plugMat = new THREE.MeshStandardMaterial({
+      color: 0x807d7a,
+      emissive: 0x807d7a,
+      emissiveIntensity: 0.1
+    });
+
+    let plug = new THREE.Mesh(bulbPlug, plugMat);
+    plug.position.set(0, y, 0);
+
+    //plug top
+    y += 0.55 * scale;
+    let topGeo = new THREE.CylinderGeometry(0.25 * scale, 0.3 * scale, 0.2 * scale, 16);
+
+    let topMat = new THREE.MeshStandardMaterial({
+      color: 0xe8d905,
+      emissive: 0xe8d905,
+      emissiveIntensity: 0.1
+    });
+    let plugTop = new THREE.Mesh(topGeo, topMat);
+    plugTop.position.set(0, y, 0);
+
+    //plug rings
+    let ringGeo = new THREE.TorusGeometry(0.52 * scale, 0.04 * scale, 4, 16);
+
+    let ringMat = new THREE.MeshStandardMaterial({
+      color: 0x807d7a,
+      emissive: 0x807d7a,
+      emissiveIntensity: 0.1
+    });
+
+    y -= 0.4 * scale;
+    for (let i = 0; i < 3; i++) {
+      let ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(0, y, 0);
+      group.add(ring);
+
+      y += 0.15 * scale;
+    }
+
+    //top ring
+    y -= 0.05 * scale;
+    let topRingGeo = new THREE.TorusGeometry(0.49 * scale, 0.05 * scale, 8, 16);
+
+    let topRing = new THREE.Mesh(topRingGeo, ringMat);
+    topRing.position.set(0, y, 0);
+    topRing.rotation.x = -Math.PI / 2;
+
+    //bottom ring
+    y -= 0.6 * scale;
+    let botRingGeo = new THREE.TorusGeometry(0.5 * scale, 0.05 * scale, 8, 16);
+
+    let botRing = new THREE.Mesh(botRingGeo, ringMat);
+    botRing.position.set(0, y, 0);
+    botRing.rotation.x = -Math.PI / 2;
+
+    //add to group
+    group.add(bStem);
+    group.add(bulbMesh);
+    group.add(plug);
+    group.add(plugTop);
+    group.add(botRing);
+    group.add(topRing);
+
+    return group;
   }
 
   protected initPlane(meshBBox: AxisAlignedBBox, dataCenter: THREE.Vector3) {
@@ -122,7 +237,12 @@ export class Scan3DDrawModel {
         planeYSize,
         planeZSize,
         1, 1, 1),
-      new THREE.MeshPhongMaterial({ color: this._marsDirtColour, opacity: 0.7, transparent: true })
+      new THREE.MeshPhongMaterial({
+        color: this._marsDirtColour,
+        opacity: 0.7,
+        transparent: true,
+        depthWrite: false
+      })
     );
 
     // Box comes centered around 0,0,0, so we re-center it to be at 0,bottom,0
@@ -131,6 +251,7 @@ export class Scan3DDrawModel {
 
     this._plane.add(planeMesh);
     this._plane.position.set(dataCenter.x, meshBBox.minCorner.y, dataCenter.z);
+    this._plane.renderOrder = 100;
 
     // And a box to adjust the plane height
     let dragBoxSize = Math.sqrt(planeXSize * planeXSize + planeZSize * planeZSize) / 200;
@@ -164,8 +285,8 @@ export class Scan3DDrawModel {
     return meshBBox.minCorner.y + planeYSize * this._planeScaleY;
   }
 
-  get bboxMesh(): AxisAlignedBBox | undefined {
-    return this._meshData?.bboxMesh;
+  get bboxMeshPMCs(): AxisAlignedBBox | undefined {
+    return this._meshData?.bboxMeshPMCs;
   }
 
   renderData: ThreeRenderData;
@@ -239,10 +360,10 @@ export class Scan3DDrawModel {
     }
 
     // Form the points we're drawing the selection for
-    const sphere = new THREE.SphereGeometry(this._pointSizeSelected, 8, 8);
+    const sphere = new THREE.SphereGeometry(this._pointSizeSelected, 12, 12);
     const matSelect = new THREE.MeshBasicMaterial({
       color: this._selectionColour,
-      opacity: 0.5,
+      opacity: 0.3,
       transparent: true,
     });
     const matHover = new THREE.MeshBasicMaterial({
@@ -264,6 +385,7 @@ export class Scan3DDrawModel {
           if (pt) {
             const m = new THREE.Mesh(sphere, matSelect);
             m.position.set(pt.x, pt.y * this._heightExaggerationScale, pt.z);
+            m.renderOrder = 1;
 
             this._selection.add(m);
           }
@@ -278,6 +400,7 @@ export class Scan3DDrawModel {
           if (pt) {
             const m = new THREE.Mesh(sphere, matHover);
             m.position.set(pt.x, pt.y * this._heightExaggerationScale, pt.z);
+            m.renderOrder = 10;
 
             this._selection.add(m);
           }
@@ -392,7 +515,7 @@ export class Scan3DDrawModel {
       this.renderData.scene.add(this._plane);
 
       for (const box of this._planeDragBoxes) {
-        box.position.setY(this.getPlaneY(this._meshData!.bboxMesh));
+        box.position.setY(this.getPlaneY(this._meshData!.bboxMeshPMCs));
         this.renderData.scene.add(box);
       }
     }

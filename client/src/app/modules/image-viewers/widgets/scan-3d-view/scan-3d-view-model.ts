@@ -5,8 +5,7 @@ import { ContextImageModelLoadedData, ContextImageScanModel } from "../context-i
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
-import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { AxisAlignedBBox } from "src/app/models/Geometry3D";
+import { coordinate3DToThreeVector3, coordinate4DToThreeQuaternion } from "src/app/models/Geometry3D";
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
@@ -49,16 +48,47 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   // model. If not set, it's ignored and a default used
   private _initialCameraPosition?: Coordinate3D;
   private _initialCameraRotation?: Coordinate4D;
+  private _initialCameraTarget?: Coordinate3D;
+  private _initialCameraZoom?: number;
 
-  setInitialCameraOrientation(pos: Coordinate3D, rot: Coordinate4D) {
+  private _initialPointLightPosition?: THREE.Vector3;
+
+  setInitialCameraOrientation(pos: Coordinate3D, rot: Coordinate4D, target: Coordinate3D, zoom: number) {
     this._initialCameraPosition = pos;
     this._initialCameraRotation = rot;
+    this._initialCameraTarget = target;
+    this._initialCameraZoom = zoom;
   }
-  get initialCameraPosition(): Coordinate3D | undefined {
-    return this._initialCameraPosition;
+  get initialCameraPosition(): THREE.Vector3 | undefined {
+    if (!this._initialCameraPosition) {
+      return undefined;
+    }
+    return coordinate3DToThreeVector3(this._initialCameraPosition);
   }
-  get initialCameraRotation(): Coordinate4D | undefined {
-    return this._initialCameraRotation;
+  get initialCameraRotation(): THREE.Quaternion | undefined {
+    if (!this._initialCameraRotation) {
+      return undefined;
+    }
+    return coordinate4DToThreeQuaternion(this._initialCameraRotation);
+  }
+  get initialCameraTarget(): THREE.Vector3 | undefined {
+    if (!this._initialCameraTarget) {
+      return undefined;
+    }
+    return coordinate3DToThreeVector3(this._initialCameraTarget);
+  }
+  get initialCameraZoom(): number | undefined {
+    return this._initialCameraZoom;
+  }
+  hasInitialCameraOrientation(): boolean {
+    return this._initialCameraPosition !== undefined &&
+      this._initialCameraRotation !== undefined &&
+      this._initialCameraTarget !== undefined &&
+      this._initialCameraZoom !== undefined;
+  }
+
+  set initialPointLightPosition(pos: THREE.Vector3) {
+    this._initialPointLightPosition = pos;
   }
 
   protected _planeYScale: number = 0.5;
@@ -203,11 +233,18 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     const img = this._raw.image ? this._raw.image : undefined;
     return this.drawModel.create(this._scanEntries.entries, this._beams.beamLocations, scanMdl, img).pipe(
       tap(() => {
-        // Add optional items depending on visibility flags
-        this.drawModel.setLightMode(this.lightMode);
-        this.drawModel.setShowPoints(!this.hidePointsForScans.has(scanId));
-        this.drawModel.setPlaneYScale(this._planeYScale);
+        // Set light position if we had one saved
+        if (this._initialPointLightPosition && this.drawModel.pointLight) {
+          this.drawModel.pointLight.position.set(this._initialPointLightPosition.x, this._initialPointLightPosition.y, this._initialPointLightPosition.z);
+        }
       })
     );
+  }
+
+  setInitialState() {
+    // Add optional items depending on visibility flags
+    this.drawModel.setLightMode(this.lightMode);
+    this.drawModel.setShowPoints(!this.hidePointsForScans.has(this._scanId));
+    this.drawModel.setPlaneYScale(this._planeYScale);
   }
 }

@@ -35,7 +35,8 @@ export class PMCMeshData {
   private _bboxRawXYZ = new AxisAlignedBBox();
   private _bboxRawUV = new AxisAlignedBBox();
   private _bboxMCC = new AxisAlignedBBox();
-  private _bboxMesh = new AxisAlignedBBox();
+  private _bboxMeshPMCs = new AxisAlignedBBox();
+  private _bboxMeshAll = new AxisAlignedBBox();
   private _points: PMCMeshPoint[] = [];
   private _pmcToPoint: Map<number, number> = new Map<number, number>();
   private _rawCornerPoints: THREE.Vector3[] = [];
@@ -52,7 +53,7 @@ export class PMCMeshData {
       this.calculateImageBBox(this._image.width, this._image.height);
     }
 
-    let scale = this.calculateDisplayScaleFactor(!!this._image)
+    let scale = this.calculateDisplayScaleFactor(this._image ? this._bboxMCC : this._bboxRawXYZ);
     this.calculateScanRelatedPoints(scale, this._scanEntries, this._beamLocations, this._contextImgMdl);
     this.makePMCMap();
 
@@ -67,6 +68,10 @@ export class PMCMeshData {
 
   get points(): PMCMeshPoint[] {
     return this._points;
+  }
+
+  get maxWorldMeshSize(): number {
+    return 100;
   }
 
   getPointForPMC(pmc: number): number | undefined {
@@ -114,19 +119,38 @@ export class PMCMeshData {
       curvePath.add(new THREE.LineCurve3(this._hullPoints[c-1], this._hullPoints[c]));
     }
     // Add the last one
-    // if (this._hullPoints.length > 1) {
-    //   curvePath.add(new THREE.LineCurve3(this._hullPoints[this._hullPoints.length-1], this._hullPoints[0]));
-    // }
+    if (this._hullPoints.length > 1) {
+      curvePath.add(new THREE.LineCurve3(this._hullPoints[this._hullPoints.length-1], this._hullPoints[0]));
+    }
 
-    const geom = new THREE.TubeGeometry(curvePath, 10, radius, 4, false);
+    const geom = new THREE.TubeGeometry(curvePath, 500, radius, 8, false);
+    /*const width = radius;
+    const length = radius;
+    const shape = new THREE.Shape();
+    shape.moveTo( 0,0 );
+    shape.lineTo( 0, width );
+    shape.lineTo( length, width );
+    shape.lineTo( length, 0 );
+    shape.lineTo( 0, 0 );
+    const geom = new THREE.ExtrudeGeometry(shape, {
+      steps: 2,
+      depth: 16,
+      bevelEnabled: true,
+      extrudePath: curvePath
+    });*/
+
     geom.computeVertexNormals();
 
     const mesh = new THREE.Mesh(geom, material);
     return mesh;
   }
 
-  get bboxMesh(): AxisAlignedBBox {
-    return this._bboxMesh;
+  get bboxMeshPMCs(): AxisAlignedBBox {
+    return this._bboxMeshPMCs;
+  }
+
+  get bboxMeshAll(): AxisAlignedBBox {
+    return this._bboxMeshAll;
   }
 
   private makePMCMap() {
@@ -183,18 +207,17 @@ export class PMCMeshData {
     this._bboxMCC.expandToFit(new THREE.Vector3(rectL, rectB, z));
   }
 
-  private calculateDisplayScaleFactor(useMCCBBox: boolean) {
+  private calculateDisplayScaleFactor(wholeScanBBox: AxisAlignedBBox) {
     // We want our display coordinates to fit into a known bounding box, make the max width or height a known size:
-    const maxSize = 100;
+    const maxSize = this.maxWorldMeshSize;
 
     // Work out a scale factor - if we have the image bbox use that as extents otherwise just the xyzs
     let scale = 1;
-    let useBox = useMCCBBox ? this._bboxMCC : this._bboxRawXYZ;
 
-    if (useBox.sizeX() > useBox.sizeZ()) {
-      scale = maxSize / useBox.sizeX();
+    if (wholeScanBBox.sizeX() > wholeScanBBox.sizeZ()) {
+      scale = maxSize / wholeScanBBox.sizeX();
     } else {
-      scale = maxSize / useBox.sizeZ();
+      scale = maxSize / wholeScanBBox.sizeZ();
     }
 
     return scale;
@@ -232,7 +255,7 @@ export class PMCMeshData {
 
         let terrainPt = this.rawToTerrainPoint(beamLocations[c], xyzCenter, scale);
 
-        this._bboxMesh.expandToFit(terrainPt);
+        this._bboxMeshPMCs.expandToFit(terrainPt);
 
         this._points.push(new PMCMeshPoint(
           terrainPt,
@@ -251,6 +274,9 @@ export class PMCMeshData {
     imageHeight: number
   ) {
     const dataCenter = this._bboxMCC.center();
+    this._bboxMeshAll = new AxisAlignedBBox();
+    this._bboxMeshAll.expandToFit(this._bboxMeshPMCs.minCorner);
+    this._bboxMeshAll.expandToFit(this._bboxMeshPMCs.maxCorner);
 
     // We assume this is set correctly...
     this._rawCornerPoints = [
@@ -269,13 +295,16 @@ export class PMCMeshData {
 
     for (let c = 0; c < this._rawCornerPoints.length; c++) {
       const coord = this._rawCornerPoints[c];
+      const terrainPoint = this.rawToTerrainPoint(coord, dataCenter, scale);
       this._points.push(new PMCMeshPoint(
-        this.rawToTerrainPoint(coord, dataCenter, scale),
+        terrainPoint,
         coord,
         -1,
         uvs[c].x,
         uvs[c].y
       ))
+
+      this._bboxMeshAll.expandToFit(terrainPoint);
     }
 
 /*      // Generate points in a circle, outside the footprint to break up long triangles casting outwards

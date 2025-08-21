@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { BehaviorSubject, combineLatest, Observable, Subject, Subscription } from "rxjs";
+import { BehaviorSubject, combineLatest, Observable, scan, Subject, Subscription } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -21,6 +21,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { Pane } from 'tweakpane';
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { coordinate3DToThreeVector3, quaternionToCoordinate4D, vector3ToCoordinate3D } from "src/app/models/Geometry3D";
 
 
 @Component({
@@ -140,6 +141,12 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     );
 
     this._subs.add(
+      this._mouseInteractionHandler.saveState$.subscribe(() => {
+        this.saveState();
+      })
+    );
+
+    this._subs.add(
       combineLatest([
         this.widgetData$,
         this._canvas$
@@ -181,8 +188,12 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         this.mdl.planeYScale = scan3DState.planeYScale;
         this.mdl.showFootprint = scan3DState.showFootprint;
         
-        if (scan3DState.cameraPosition && scan3DState.cameraRotation) {
-          this.mdl.setInitialCameraOrientation(scan3DState.cameraPosition, scan3DState.cameraRotation);
+        if (scan3DState.cameraPosition && scan3DState.cameraRotation && scan3DState.cameraTarget && scan3DState.cameraZoom) {
+          this.mdl.setInitialCameraOrientation(scan3DState.cameraPosition, scan3DState.cameraRotation, scan3DState.cameraTarget, scan3DState.cameraZoom);
+        }
+
+        if (scan3DState.pointLightPosition) {
+          this.mdl.initialPointLightPosition = coordinate3DToThreeVector3(scan3DState.pointLightPosition);
         }
 
         // Set the all points toggle icon
@@ -353,10 +364,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     });
   }
 
-  protected vector3ToCoordinate3D(vec: THREE.Vector3Like) {
-    return Coordinate3D.create({x: vec.x, y: vec.y, z: vec.z});
-  }
-
   protected saveState() {
     const dir = new THREE.Quaternion();
     this.mdl.drawModel.renderData.camera.getWorldQuaternion(dir);
@@ -378,9 +385,18 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       lightMode: this.mdl.lightMode,
       planeYScale: this.mdl.planeYScale,
       showFootprint: this.mdl.showFootprint,
-      cameraPosition: this.vector3ToCoordinate3D(this.mdl.drawModel.renderData.camera.position),
-      cameraRotation: Coordinate4D.create({x: dir.x, y: dir.y, z: dir.z, w: dir.w})
+      cameraPosition: vector3ToCoordinate3D(this.mdl.drawModel.renderData.camera.position),
+      cameraRotation: quaternionToCoordinate4D(dir),
+      cameraZoom: this.mdl.drawModel.renderData.camera.zoom
     });
+
+    if (this.mdl.drawModel.renderData.orbitControl?.target) {
+      obj.cameraTarget = vector3ToCoordinate3D(this.mdl.drawModel.renderData.orbitControl.target);
+    }
+
+    if (this.mdl.drawModel.pointLight) {
+      obj.pointLightPosition = vector3ToCoordinate3D(this.mdl.drawModel.pointLight.position);
+    }
 
     this.onSaveWidgetData.emit(
       Scan3DViewState.create(obj)
@@ -437,7 +453,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
             1000
           );
         
-          const size = this.mdl.drawModel.bboxMesh;
+          const size = this.mdl.drawModel.bboxMeshPMCs;
           if (size === undefined) {
             console.error(`Failed to get data bounding box`);
             return;
@@ -445,23 +461,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
           const dataCenter = size.center();
 
-          const hasInitialCameraOrientation = this.mdl.initialCameraPosition && this.mdl.initialCameraRotation;
-
-          if (hasInitialCameraOrientation) {
-            renderData.camera.position.set(
-              this.mdl.initialCameraPosition?.x || 0,
-              this.mdl.initialCameraPosition?.y || 0,
-              this.mdl.initialCameraPosition?.z || 0
-            );
-
-            renderData.camera.setRotationFromQuaternion(
-              new THREE.Quaternion(
-                this.mdl.initialCameraRotation?.x || 0,
-                this.mdl.initialCameraRotation?.y || 0,
-                this.mdl.initialCameraRotation?.z || 0,
-                this.mdl.initialCameraRotation?.w || 0
-              )
-            );
+          if (this.mdl.hasInitialCameraOrientation()) {
+            renderData.camera.position.set(this.mdl.initialCameraPosition!.x, this.mdl.initialCameraPosition!.y, this.mdl.initialCameraPosition!.z);
+            renderData.camera.setRotationFromQuaternion(this.mdl.initialCameraRotation!);
+            renderData.camera.zoom = this.mdl.initialCameraZoom!;
           } else {
             renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
           }
@@ -477,10 +480,12 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
             RIGHT: THREE.MOUSE.LEFT,
           };
 
-          if (hasInitialCameraOrientation) {
+          if (this.mdl.hasInitialCameraOrientation()) {
+            renderData.orbitControl.target.set(this.mdl.initialCameraTarget!.x, this.mdl.initialCameraTarget!.y, this.mdl.initialCameraTarget!.z);
+          } else {
             renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
-            renderData.orbitControl.update();
           }
+          renderData.orbitControl.update();
 
           // Redraw if camera changes
           renderData.orbitControl.addEventListener("change", (e) => {
@@ -489,6 +494,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
           // Same for transform
           renderData.transformControl = new TransformControls(renderData.camera, this._canvasElem);
+          renderData.transformControl.setSize(0.6);
           renderData.scene.add(renderData.transformControl.getHelper());
 
           renderData.transformControl.addEventListener("change", (e) => {
@@ -505,8 +511,15 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
             if (renderData.orbitControl) {
               renderData.orbitControl.enabled = true;
             }
+
+            // Save because of light position!
+            this.saveState();
           });
         
+          // Now that we've got everything inited (mainly the transform control!) we can tell
+          // the model to set the initial state in the scene
+          this.mdl.setInitialState();
+
           this.updateSelection();
           this.mdl.needsDraw$.next();
 
