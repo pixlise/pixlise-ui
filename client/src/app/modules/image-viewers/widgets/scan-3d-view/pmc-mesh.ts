@@ -40,6 +40,7 @@ export class PMCMeshData {
   private _points: PMCMeshPoint[] = [];
   private _pmcToPoint: Map<number, number> = new Map<number, number>();
   private _rawCornerPoints: THREE.Vector3[] = [];
+  private _rawCornerUVs: THREE.Vector2[] = [];
   private _hullPoints: THREE.Vector3[] = [];
 
   constructor(
@@ -92,7 +93,7 @@ export class PMCMeshData {
   }
 
   createPoints(material: THREE.Material): THREE.Points {
-    const xyz = this.createPositionArray();
+    const xyz = this.createPositionArray(true);
 
     const pointsGeom = new THREE.BufferGeometry();
     pointsGeom.setAttribute(
@@ -104,7 +105,7 @@ export class PMCMeshData {
       material,
     );
 
-    points.position.y += 0.002;
+    //points.position.y += 0.002;
     return points;
   }
 
@@ -286,11 +287,11 @@ export class PMCMeshData {
       new THREE.Vector3(this._bboxMCC.minCorner.x, this._bboxMCC.maxCorner.y, dataCenter.z),
     ];
 
-    let uvs: Point[] = [
-      new Point(imageWidth, imageHeight),
-      new Point(0,imageHeight),
-      new Point(0, 0),
-      new Point(imageWidth, 0)
+    this._rawCornerUVs = [
+      new THREE.Vector2(imageWidth, imageHeight),
+      new THREE.Vector2(0,imageHeight),
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(imageWidth, 0)
     ];
 
     for (let c = 0; c < this._rawCornerPoints.length; c++) {
@@ -300,8 +301,8 @@ export class PMCMeshData {
         terrainPoint,
         coord,
         -1,
-        uvs[c].x,
-        uvs[c].y
+        this._rawCornerUVs[c].x,
+        this._rawCornerUVs[c].y
       ))
 
       this._bboxMeshAll.expandToFit(terrainPoint);
@@ -396,20 +397,22 @@ export class PMCMeshData {
           continue;
         }
 
-        rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], 0.1);
+        const expandScale = 0.05;
+        rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], expandScale);
+
+        let rawUV = new THREE.Vector2(this._points[idx].u, this._points[idx].v);
+        rawUV.lerp(this._rawCornerUVs[nearestCorner[0]], expandScale);
 
         const terrainCoord = this.rawToTerrainPoint(rawCoord, xyzCenter, scale); //this._points[idx].terrainPoint;
         this._hullPoints.push(terrainCoord);
 
-        // Also add them to the points array like we do for other support points
-        this._points.push(new PMCMeshPoint(
+        const pt = new PMCMeshPoint(
           terrainCoord,
           rawCoord,
           -1,
-          // Not sure why the axis flip is required here :-/
-          this._image!.width * (1 - (rawCoord.x - this._bboxMCC.minCorner.x) / this._bboxMCC.sizeX()),
-          this._image!.height * (1 - (rawCoord.y - this._bboxMCC.minCorner.y) / this._bboxMCC.sizeY())
-        ));
+          rawUV.x, rawUV.y
+        );
+        this._points.push(pt);
       }
     }
   }
@@ -456,15 +459,20 @@ export class PMCMeshData {
     return delaunay.triangles;
   }
 
-  private createPositionArray(): Float32Array {
+  private createPositionArray(onlyPMCs: boolean): Float32Array {
     const xyz = new Float32Array(this._points.length * 3);
     let uv: Float32Array | undefined;
 
     let c3 = 0;
     for (let c = 0; c < this._points.length; c++) {
-      xyz[c3] = this._points[c].terrainPoint.x;
-      xyz[c3+1] = this._points[c].terrainPoint.y;
-      xyz[c3+2] = this._points[c].terrainPoint.z;
+      const pt = this._points[c];
+      if (onlyPMCs && pt.scanEntryIndex < 0) {
+        continue;
+      }
+
+      xyz[c3] = pt.terrainPoint.x;
+      xyz[c3+1] = pt.terrainPoint.y;
+      xyz[c3+2] = pt.terrainPoint.z;
       c3 += 3;
     }
 
@@ -472,7 +480,7 @@ export class PMCMeshData {
   }
 
   private createMeshGeometry(indexes: Uint32Array, hasImage: boolean): THREE.BufferGeometry {
-    const xyz = this.createPositionArray();
+    const xyz = this.createPositionArray(false);
 
     const terrainGeom = new THREE.BufferGeometry();
     terrainGeom.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
