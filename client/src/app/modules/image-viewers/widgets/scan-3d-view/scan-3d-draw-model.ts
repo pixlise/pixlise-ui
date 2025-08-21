@@ -9,6 +9,7 @@ import { map, Observable, of } from 'rxjs';
 import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
 import { ScanEntry } from 'src/app/generated-protos/scan-entry';
 import { ContextImageScanModel } from '../context-image/context-image-model-internals';
+import { ContextImageMapLayer } from '../../models/map-layer';
 
 
 export class Scan3DDrawModel {
@@ -544,5 +545,9 @@ export class Scan3DDrawModel {
 
     this._terrainMatBasic.needsUpdate = true;
     this._terrainMatStandard.needsUpdate = true;
+  }
+
+  updateMaps(maps: ContextImageMapLayer[]) {
+    
   }
 }

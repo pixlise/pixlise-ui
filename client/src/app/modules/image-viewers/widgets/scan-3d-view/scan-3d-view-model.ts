@@ -9,10 +9,19 @@ import { coordinate3DToThreeVector3, coordinate4DToThreeQuaternion } from "src/a
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
-import { Coordinate4D, LightMode } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode, ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { Colours } from "src/app/utils/colours";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { ContextImageMapLayer } from "../../models/map-layer";
+import { ROIItem } from "src/app/generated-protos/roi";
 
+
+class ContextImageRawRegion {
+  constructor(
+    public roi: ROIItem,
+    public locIdxs: number[]
+  ) {}
+}
 
 export class Scan3DViewModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -26,6 +35,10 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   // Settings/Layers
   imageName: string = "";
   beamLocationVersionsRequested = new Map<string, number>();
+
+  expressionIds: string[] = [];
+  layerOpacity: Map<string, number> = new Map<string, number>();
+  roiIds: ROILayerVisibility[] = [];
 
   drawImage: boolean = true;
   imageSmoothing: boolean = true;
@@ -43,6 +56,8 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
 
   hidePointsForScans = new Set<string>();
   hideFootprintsForScans = new Set<string>();
+
+  private _rois = new Map<string, ContextImageRawRegion>();
 
   // Initial camera orientation - this can change, but here we store what came in the
   // model. If not set, it's ignored and a default used
@@ -247,4 +262,73 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setShowPoints(!this.hidePointsForScans.has(this._scanId));
     this.drawModel.setPlaneYScale(this._planeYScale);
   }
+
+  setMapLayer(layer: ContextImageMapLayer) {
+    // Add it to the loaded raw data. This is done separately from setData() because they can be loaded/made visible
+    // dynamically and we don't want to regenerate everything in this case, so here we update what models we have
+    // NOTE: we make sure that this is a layer we should be showing by checking the list of expressions...
+    if (this.expressionIds.indexOf(layer.expressionId) < 0) {
+      throw new Error(`Adding map layer ${layer.expressionId} to context image where this expression is not a part of the context image already`);
+    }
+
+    if (!this._raw) {
+      throw new Error(`Adding map layer ${layer.expressionId} to context image before it has model data available`);
+    }
+
+    const scanMdl = this._raw.scanModels.get(layer.scanId);
+    if (!scanMdl) {
+      throw new Error(`Adding map layer ${layer.expressionId} to context image before where scan id ${layer.scanId} doesn't exist`);
+    }
+
+    // Set opacity on it if we have it
+    const opacity = this.layerOpacity.get(layer.expressionId);
+    if (opacity !== undefined) {
+      layer.opacity = opacity;
+    }
+
+    // And set the colour for each PMC too
+    layer.mapPoints.forEach(pt => {
+      pt.drawParams.colour.a = 255 * layer.opacity;
+    });
+
+    // If already added, remove it
+    let found = false;
+    for (let c = 0; c < scanMdl.maps.length; c++) {
+      if (scanMdl.maps[c].expressionId === layer.expressionId) {
+        scanMdl.maps[c] = layer;
+        found = true;
+      }
+    }
+
+    if (!found) {
+      scanMdl.maps.push(layer);
+    }
+
+    this.drawModel.updateMaps(scanMdl.maps);
+/*
+    // If we're the "top" expression (first one in the list), we have to update the colour scale
+    if (this.expressionIds[0] === layer.expressionId) {
+      this._colourScales = [];
+      for (let c = 0; c < layer.valueRanges.length; c++) {
+        this.rebuildColourScale(this.expressionIds[0], c, layer.valueRanges.length);
+      }
+    }
+
+    this._recalcNeeded = true;
+    console.log(` *** ContextImageModel ${this._id} setMapLayer - scales: ${this.colourScales.length}`);
+*/
+  }
+
+  setRegion(roiId: string, roi: ROIItem, pmcToIndexLookup: Map<number, number>) {
+    const locIdxs: number[] = [];
+    for (const pmc of roi.scanEntryIndexesEncoded) {
+      const locIdx = pmcToIndexLookup.get(pmc);
+      if (locIdx !== undefined) {
+        locIdxs.push(locIdx);
+      }
+    }
+
+    this._rois.set(roiId, new ContextImageRawRegion(roi, locIdxs));
+  }
+
 }

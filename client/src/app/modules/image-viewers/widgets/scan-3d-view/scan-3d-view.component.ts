@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { BehaviorSubject, combineLatest, Observable, scan, Subject, Subscription } from "rxjs";
+import { BehaviorSubject, catchError, combineLatest, map, mergeMap, Observable, of, scan, Subject, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -13,7 +13,7 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions, ImageOptionsComponent, ImagePickerParams, ImagePickerResult } from "../context-image/image-options/image-options.component";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageModelLoadedData } from "../context-image/context-image-model-internals";
-import { Coordinate4D, LightMode, Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { Scan3DMouseInteraction } from "./mouse-interaction";
@@ -22,6 +22,13 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { Pane } from 'tweakpane';
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { coordinate3DToThreeVector3, quaternionToCoordinate4D, vector3ToCoordinate3D } from "src/app/models/Geometry3D";
+import { ExpressionPickerComponent, ExpressionPickerData, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { ContextImageMapLayer } from "../../models/map-layer";
+import { ContextImageLayers, RegionMap } from "../context-image/context-image.component";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { ColourRamp } from "src/app/utils/colours";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 
 @Component({
@@ -43,6 +50,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   scanId: string = "";
 
   private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
+  private _expressionPickerDialog: MatDialogRef<ExpressionPickerComponent> | null = null;
 
   private _canvasSize?: Point;
   private _canvasElem?: HTMLCanvasElement;
@@ -55,6 +63,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
     private _snackService: SnackbarService,
+    private _roiService: ROIService,
     public dialog: MatDialog,
     private _elementRef: ElementRef
   ) {
@@ -90,7 +99,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         },
       },
       bottomToolbar: [
-        /*{
+        {
           id: "layers",
           type: "button",
           title: "Layers",
@@ -98,7 +107,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           value: false,
           onClick: (value, trigger) => this.onToggleLayersView(trigger),
         },
-        {
+        /*{
           id: "regions",
           type: "button",
           title: "Regions",
@@ -143,6 +152,36 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     this._subs.add(
       this._mouseInteractionHandler.saveState$.subscribe(() => {
         this.saveState();
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result) {
+          this.mdl.expressionIds = [];
+
+          if (result.selectedGroup) {
+            this.mdl.expressionIds.push(result.selectedGroup.id);
+          }
+
+          if (result.selectedExpressions && result.selectedExpressions.length > 0) {
+            for (const expr of result.selectedExpressions) {
+              this.mdl.expressionIds.push(expr.id);
+            }
+          }
+
+          this.saveState();
+          this.reloadModel();
+        }
+
+        if (!result?.persistDialog) {
+          // Expression picker has closed, so we can stop highlighting this widget
+          this._analysisLayoutService.highlightedWidgetId$.next("");
+        }
       })
     );
 
@@ -364,6 +403,34 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     });
   }
 
+  onToggleLayersView(trigger: Element | undefined) {
+    if (this._expressionPickerDialog) {
+      // Hide it
+      this._expressionPickerDialog.close();
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
+    dialogConfig.data = {
+      widgetType: "context-image",
+      widgetId: this._widgetId,
+      scanId: this.scanId,
+      selectedIds: this.mdl.expressionIds || [],
+      draggable: true,
+      liveReload: true,
+      singleSelectionOption: true,
+      maxSelection: 1,
+    };
+
+    this._expressionPickerDialog = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    this._expressionPickerDialog.afterClosed().subscribe(() => {
+      this._analysisLayoutService.highlightedWidgetId$.next("");
+      this._expressionPickerDialog = null;
+    });
+  }
+
   protected saveState() {
     const dir = new THREE.Quaternion();
     this.mdl.drawModel.renderData.camera.getWorldQuaternion(dir);
@@ -403,6 +470,217 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     );
   }
 
+  private loadMapLayerExpressions(scanId: string, expressionIds: string[], setViewToExperiment: boolean = false): Observable<ContextImageMapLayer[]> {
+    this.scanId = scanId;
+
+    const scanMdl = this.mdl.getScanModelFor(scanId);
+    if (scanMdl) {
+      const pts = scanMdl.scanPoints;
+      const pmcToIndexLookup = new Map<number, number>();
+      for (const pt of pts) {
+        pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+      }
+
+      const quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+
+      const defaultShading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
+      const modelRequests = expressionIds.map(exprId => {
+        return this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), defaultShading, pmcToIndexLookup);
+      });
+
+      return combineLatest(modelRequests).pipe(
+        tap({
+          next: (layers: ContextImageMapLayer[]) => {
+            layers.forEach(layer => {
+              this.mdl.setMapLayer(layer);
+            });
+
+            //this.reDraw("loadMapLayerExpressions");
+
+            this.widgetErrorMessage = "";
+          },
+          error: err => {
+            if (this._analysisLayoutService.isMapsPage) {
+              // We have to wait for things to be injected on maps page, so this may be falsely called
+              console.warn("Failed to add layer", err);
+            } else {
+              this._snackService.openError("Failed to add layer", err);
+              this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
+            }
+          },
+        })
+      );
+    } else {
+      return of([]);
+    }
+  }
+
+  private loadMapLayers(setViewToExperiment: boolean = false): Observable<ContextImageLayers> {
+    let layerRequests: Observable<ContextImageMapLayer[]>[] = [];
+
+    // We need to run through expressions for every scan we have loaded, so first check if we have expressions
+    if (this.mdl.expressionIds.length > 0) {
+      layerRequests = this.mdl.scanIds.map(scanId => this.loadMapLayerExpressions(scanId, this.mdl.expressionIds, setViewToExperiment));
+    }
+
+    // Queue up region requests
+    const regionRequests = this.mdl.roiIds.map(roi => this.loadROIRegion(roi));
+
+    return combineLatest(layerRequests).pipe(
+      mergeMap(layerRequest => layerRequest),
+      toArray(),
+      mergeMap(scanLayers => {
+        const mapLayers = new Map<string, ContextImageMapLayer[]>();
+        scanLayers.forEach((layers, i) => {
+          mapLayers.set(this.mdl.scanIds[i], layers);
+        });
+
+        return combineLatest(regionRequests).pipe(
+          mergeMap(regionRequest => regionRequest),
+          toArray(),
+          map(regions => {
+            const regionsMap: RegionMap = new Map<string, ROIItem>();
+            regions.forEach(region => {
+              regionsMap.set(region.id, region);
+            });
+
+            const contextLayers: ContextImageLayers = { mapLayers, regions: regionsMap };
+            return contextLayers;
+          })
+        );
+      }),
+      catchError(err => {
+        console.error(err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  private loadROIRegion(roi: ROILayerVisibility, setROIVisible: boolean = false): Observable<ROIItem> {
+    // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
+    return this._roiService.loadROI(roi.id, true).pipe(
+      tap({
+        next: (roiLoaded: ROIItem) => {
+          // We need to be able to convert PMCs to location indexes...
+          const scanMdl = this.mdl.getScanModelFor(roi.scanId);
+          if (scanMdl) {
+            const pmcToIndexLookup = new Map<number, number>();
+            for (const pt of scanMdl.scanPoints) {
+              pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+            }
+
+            // Make sure it has up to date display settings
+            const disp = this._roiService.getRegionDisplaySettings(roi.id);
+            if (disp) {
+              roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
+            }
+
+            // We've loaded the region itself, store these so we can build a draw model when needed
+            this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
+
+            if (setROIVisible) {
+              if (!this.mdl.roiIds.find(existingROI => existingROI.id === roi.id)) {
+                this.mdl.roiIds = [roi, ...this.mdl.roiIds];
+              }
+            }
+          }
+        },
+        error: err => {
+          this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
+          this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
+        },
+      })
+    );
+  }
+
+  protected setupScene() {
+    const renderData = this.mdl.drawModel.renderData;
+    if (!renderData) {
+      console.error(`Failed to get render data for created scene`);
+      return;
+    }
+
+    renderData.camera = new THREE.PerspectiveCamera(
+      60,
+      this._canvasSize!.x / this._canvasSize!.y,
+      0.01,
+      1000
+    );
+  
+    const size = this.mdl.drawModel.bboxMeshPMCs;
+    if (size === undefined) {
+      console.error(`Failed to get data bounding box`);
+      return;
+    }
+
+    const dataCenter = size.center();
+
+    if (this.mdl.hasInitialCameraOrientation()) {
+      renderData.camera.position.set(this.mdl.initialCameraPosition!.x, this.mdl.initialCameraPosition!.y, this.mdl.initialCameraPosition!.z);
+      renderData.camera.setRotationFromQuaternion(this.mdl.initialCameraRotation!);
+      renderData.camera.zoom = this.mdl.initialCameraZoom!;
+    } else {
+      renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
+    }
+
+    //this.renderData.camera.lookAt(dataCenter);
+    renderData.scene.add(renderData.camera);
+
+    // Set up what to orbit around
+    renderData.orbitControl = new OrbitControls(renderData.camera, this._canvasElem);
+    renderData.orbitControl.mouseButtons = {
+      LEFT: THREE.MOUSE.RIGHT,
+      MIDDLE: THREE.MOUSE.MIDDLE,
+      RIGHT: THREE.MOUSE.LEFT,
+    };
+
+    if (this.mdl.hasInitialCameraOrientation()) {
+      renderData.orbitControl.target.set(this.mdl.initialCameraTarget!.x, this.mdl.initialCameraTarget!.y, this.mdl.initialCameraTarget!.z);
+    } else {
+      renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
+    }
+    renderData.orbitControl.update();
+
+    // Redraw if camera changes
+    renderData.orbitControl.addEventListener("change", (e) => {
+      this.mdl.needsDraw$.next();
+    });
+
+    // Same for transform
+    renderData.transformControl = new TransformControls(renderData.camera, this._canvasElem);
+    renderData.transformControl.setSize(0.6);
+    renderData.scene.add(renderData.transformControl.getHelper());
+
+    renderData.transformControl.addEventListener("change", (e) => {
+      this.mdl.needsDraw$.next();
+    });
+
+    // Also if user is dragging transform, disable orbit
+    renderData.transformControl.addEventListener("objectChange", (e) => {
+      if (renderData.orbitControl) {
+        renderData.orbitControl.enabled = false;
+      }
+    });
+    renderData.transformControl.addEventListener("mouseUp", (e) => {
+      if (renderData.orbitControl) {
+        renderData.orbitControl.enabled = true;
+      }
+
+      // Save because of light position!
+      this.saveState();
+    });
+  
+    // Now that we've got everything inited (mainly the transform control!) we can tell
+    // the model to set the initial state in the scene
+    this.mdl.setInitialState();
+
+    this.updateSelection();
+    this.mdl.needsDraw$.next();
+
+    // Initialize Tweakpane when canvas is ready
+    this.initialiseTweakpane();
+  }
+
   protected reloadModel() {
     if (!this._canvasSize) {
       console.error(`Canvas size unknown`);
@@ -436,95 +714,16 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         this.scanId = contextImgModel.scanModels.keys().next().value!;
       }
 
-      this.mdl.setData(scanId, contextImgModel, scanEntries, beams).subscribe(
+      this.mdl.setData(scanId, contextImgModel, scanEntries, beams).pipe(
+        switchMap(
+          () => {
+            return this.loadMapLayers()
+          }
+        )
+      ).subscribe(
         () => {
           this.isWidgetDataLoading = false;
-
-          const renderData = this.mdl.drawModel.renderData;
-          if (!renderData) {
-            console.error(`Failed to get render data for created scene`);
-            return;
-          }
-
-          renderData.camera = new THREE.PerspectiveCamera(
-            60,
-            this._canvasSize!.x / this._canvasSize!.y,
-            0.01,
-            1000
-          );
-        
-          const size = this.mdl.drawModel.bboxMeshPMCs;
-          if (size === undefined) {
-            console.error(`Failed to get data bounding box`);
-            return;
-          }
-
-          const dataCenter = size.center();
-
-          if (this.mdl.hasInitialCameraOrientation()) {
-            renderData.camera.position.set(this.mdl.initialCameraPosition!.x, this.mdl.initialCameraPosition!.y, this.mdl.initialCameraPosition!.z);
-            renderData.camera.setRotationFromQuaternion(this.mdl.initialCameraRotation!);
-            renderData.camera.zoom = this.mdl.initialCameraZoom!;
-          } else {
-            renderData.camera.position.set(dataCenter.x, size.maxCorner.y, size.minCorner.z);//size.minCorner.z - (size.maxCorner.z-size.minCorner.z) * 0.5);
-          }
-
-          //this.renderData.camera.lookAt(dataCenter);
-          renderData.scene.add(renderData.camera);
-
-          // Set up what to orbit around
-          renderData.orbitControl = new OrbitControls(renderData.camera, this._canvasElem);
-          renderData.orbitControl.mouseButtons = {
-            LEFT: THREE.MOUSE.RIGHT,
-            MIDDLE: THREE.MOUSE.MIDDLE,
-            RIGHT: THREE.MOUSE.LEFT,
-          };
-
-          if (this.mdl.hasInitialCameraOrientation()) {
-            renderData.orbitControl.target.set(this.mdl.initialCameraTarget!.x, this.mdl.initialCameraTarget!.y, this.mdl.initialCameraTarget!.z);
-          } else {
-            renderData.orbitControl.target.set(dataCenter.x, dataCenter.y, dataCenter.z);
-          }
-          renderData.orbitControl.update();
-
-          // Redraw if camera changes
-          renderData.orbitControl.addEventListener("change", (e) => {
-            this.mdl.needsDraw$.next();
-          });
-
-          // Same for transform
-          renderData.transformControl = new TransformControls(renderData.camera, this._canvasElem);
-          renderData.transformControl.setSize(0.6);
-          renderData.scene.add(renderData.transformControl.getHelper());
-
-          renderData.transformControl.addEventListener("change", (e) => {
-            this.mdl.needsDraw$.next();
-          });
-
-          // Also if user is dragging transform, disable orbit
-          renderData.transformControl.addEventListener("objectChange", (e) => {
-            if (renderData.orbitControl) {
-              renderData.orbitControl.enabled = false;
-            }
-          });
-          renderData.transformControl.addEventListener("mouseUp", (e) => {
-            if (renderData.orbitControl) {
-              renderData.orbitControl.enabled = true;
-            }
-
-            // Save because of light position!
-            this.saveState();
-          });
-        
-          // Now that we've got everything inited (mainly the transform control!) we can tell
-          // the model to set the initial state in the scene
-          this.mdl.setInitialState();
-
-          this.updateSelection();
-          this.mdl.needsDraw$.next();
-
-          // Initialize Tweakpane when canvas is ready
-          this.initialiseTweakpane();
+          this.setupScene();
         }
       );
     });
