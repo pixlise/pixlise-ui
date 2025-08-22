@@ -27,7 +27,7 @@ import { SpectrumEnergyCalibration } from "../../../models/BasicTypes";
 import { ManualDiffractionPeak } from "../../../generated-protos/diffraction-data";
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "../../../generated-protos/scan-msgs";
 import { ExpressionGetReq, ExpressionGetResp } from "../../../generated-protos/expression-msgs";
-import { QuantGetReq } from "../../../generated-protos/quantification-retrieval-msgs";
+import { QuantGetReq, QuantGetResp, QuantListReq, QuantListResp } from "../../../generated-protos/quantification-retrieval-msgs";
 import { DataExpressionId } from "../../../expression-language/expression-id";
 import { PMCDataValues } from "../../../expression-language/data-values";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
@@ -112,6 +112,7 @@ export class DataExporterService {
     beamLocations: ScanBeamLocationsResp,
     spectrumResp: SpectrumResp,
     scanMeta: ScanMetaLabelsAndTypesResp,
+    pdsABQuantData: QuantGetResp | undefined,
     dwells: boolean, // dwells or normals
     roiName: string,
     roiPMCs: Set<number> = new Set()
@@ -168,6 +169,19 @@ export class DataExporterService {
 
     table1 += "\n";
 
+    const quantData: Quantification | undefined = pdsABQuantData?.data;
+    let quantOffsetIdx = -1;
+    let quantXperChanIdx = -1;
+    const pmcToQuantIdx = new Map<number, number>();
+    if (quantData && quantData.locationSet.length > 0) {
+      quantOffsetIdx = quantData.labels.indexOf("eVstart");
+      quantXperChanIdx = quantData.labels.indexOf("eV/ch");
+      for (let idx = 0; idx < quantData.locationSet[0].location.length; idx++) {
+        const loc = quantData.locationSet[0].location[idx];
+        pmcToQuantIdx.set(loc.pmc, idx);
+      }
+    }
+
     const SpectrumTypeOrder = [dwells ? SpectrumType.SPECTRUM_DWELL : SpectrumType.SPECTRUM_NORMAL]; // Could have an array of both...
 
     for (let c = 0; c < scanEntries.entries.length; c++) {
@@ -220,7 +234,28 @@ export class DataExporterService {
 
               const vals = meta.get(detector);
               if (vals) {
-                writeField = vals[metaField];
+                let wrote = false;
+                if (quantData && pmcToQuantIdx.size > 0 && (metaField == "OFFSET" || metaField == "XPERCHAN")) {
+                  for(const quantDet of quantData.locationSet) {
+                    if(quantDet.detector == detector) {
+                      const idx = pmcToQuantIdx.get(entry.id);
+                      if (idx !== undefined) {
+                        let valIdx = quantXperChanIdx;
+                        if (metaField == "OFFSET") {
+                          valIdx = quantOffsetIdx;
+                        }
+                        writeField = `${quantDet.location[idx].values[valIdx].fvalue}`;
+                        wrote = true;
+                      }
+                      break;
+                    }
+                  }
+                }
+
+                // Fall back to writing whatever is in our spectrum data
+                if (!wrote) {
+                  writeField = vals[metaField];
+                }
               }
 
               if (line.length > 0) {
@@ -252,56 +287,85 @@ export class DataExporterService {
     };
   }
 
-  getRawSpectralDataPerPMC(scanId: string, roiIds: string[]): Observable<WidgetExportData> {
-    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>, Observable<ScanMetaLabelsAndTypesResp>] = [
-      this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
-      this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
-      this._spectrumDataService.getSpectra(scanId, null, true, true),
-      this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
-    ];
+  getRawSpectralDataPerPMC(scanId: string, roiIds: string[], userSelectedQuantId: string): Observable<WidgetExportData> {
+    // We now export the RFS file with the energy calibration from the PDS AB AutoQuant, so lets check if this is
+    // available. If it's not, we can just use the selected quant, or fall back on what's in our spectra
+    return this._apiService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).pipe(
+      switchMap((quantListResp: QuantListResp) => {
 
-    return combineLatest(requests).pipe(
-      switchMap(([beamLocations, scanEntries, spectrumResp, scanMeta]) => {
-        const csvs: WidgetExportFile[] = [];
-
-        const rawSpectraPerPMC = this.makeExportForRawSpectraPerPMC(scanId, scanEntries, beamLocations, spectrumResp, scanMeta, false, "All Points");
-        if (rawSpectraPerPMC) {
-          csvs.push(rawSpectraPerPMC);
+        // Here we see if we can find the quant we want to use, otherwise switch to user selected one or nothing
+        let quantIdForEnergyCalib = userSelectedQuantId;
+        for (const quant of quantListResp.quants) {
+          if (quant.params?.userParams?.name == "AutoQuant-PDS (AB)") {
+            quantIdForEnergyCalib = quant.id;
+            break;
+          }
         }
 
-        let roiRequests: Observable<RegionOfInterestGetResp | null>[] = roiIds.map(id =>
-          PredefinedROIID.isPredefined(id) ? of(null) : this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id }))
-        );
+        const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<SpectrumResp>, Observable<ScanMetaLabelsAndTypesResp>, Observable<QuantGetResp | undefined>] = [
+          this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
+          this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
+          this._spectrumDataService.getSpectra(scanId, null, true, true),
+          this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
+          (quantIdForEnergyCalib.length > 0)
+            ? this._cachedDataService.getQuant(QuantGetReq.create({quantId: quantIdForEnergyCalib, summaryOnly: false}))
+            : of(undefined)
+        ];
 
-        if (roiRequests.length === 0) {
-          roiRequests = [of(null)];
-        }
-        return combineLatest(roiRequests).pipe(
-          switchMap(rois => {
-            rois.forEach((roi, i) => {
-              if (!roi) {
-                return;
-              }
-
-              const pmcPoints = new Set(decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []));
-              const roiData = this.makeExportForRawSpectraPerPMC(
-                scanId,
-                scanEntries,
-                beamLocations,
-                spectrumResp,
-                scanMeta,
-                false,
-                roi.regionOfInterest?.name || roiIds[i],
-                pmcPoints
-              );
-              if (roiData) {
-                csvs.push(roiData);
-              }
-            });
-
-            return of({ csvs });
-          })
-        );
+        return combineLatest(requests).pipe(
+          switchMap(([beamLocations, scanEntries, spectrumResp, scanMeta, pdsABQuantDataResp]) => {
+          const csvs: WidgetExportFile[] = [];
+  
+          const rawSpectraPerPMC = this.makeExportForRawSpectraPerPMC(
+            scanId,
+            scanEntries,
+            beamLocations,
+            spectrumResp,
+            scanMeta,
+            pdsABQuantDataResp,
+            false,
+            "All Points"
+          );
+  
+          if (rawSpectraPerPMC) {
+            csvs.push(rawSpectraPerPMC);
+          }
+  
+          let roiRequests: Observable<RegionOfInterestGetResp | null>[] = roiIds.map(id =>
+            PredefinedROIID.isPredefined(id) ? of(null) : this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id }))
+          );
+  
+          if (roiRequests.length === 0) {
+            roiRequests = [of(null)];
+          }
+          return combineLatest(roiRequests).pipe(
+            switchMap(rois => {
+              rois.forEach((roi, i) => {
+                if (!roi) {
+                  return;
+                }
+  
+                const pmcPoints = new Set(decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || []));
+                const roiData = this.makeExportForRawSpectraPerPMC(
+                  scanId,
+                  scanEntries,
+                  beamLocations,
+                  spectrumResp,
+                  scanMeta,
+                  pdsABQuantDataResp,
+                  false,
+                  roi.regionOfInterest?.name || roiIds[i],
+                  pmcPoints
+                );
+                if (roiData) {
+                  csvs.push(roiData);
+                }
+              });
+  
+              return of({ csvs });
+            })
+          );
+        }))
       })
     );
   }
