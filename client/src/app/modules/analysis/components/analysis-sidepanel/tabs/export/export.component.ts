@@ -502,7 +502,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
 
     let exportRequests: Observable<WidgetExportData>[] = [];
     if (request.dataProducts["rawSpectralDataPerPMC"]?.selected) {
-      exportRequests.push(this._exporterService.getRawSpectralDataPerPMC(scanId, roiIds));
+      exportRequests.push(this._exporterService.getRawSpectralDataPerPMC(scanId, roiIds, quantId));
     }
 
     if (request.dataProducts["bulkSumMaxSpectra"]?.selected) {
