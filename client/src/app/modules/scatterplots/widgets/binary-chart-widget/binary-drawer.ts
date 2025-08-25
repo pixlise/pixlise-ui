@@ -91,6 +91,34 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
     // Draw x/y of point being hovered (if there is one)
     this.drawHoverPoint(screenContext, drawData, drawParams);
 
+    // Draw reference points as pink dots
+    if (drawData.referenceCoords.length > 0) {
+      const refColor = Colours.CONTEXT_PURPLE; // Pink color for reference points
+      const drawer = new PointDrawer(screenContext, (HOVER_POINT_RADIUS * 3) / 4, refColor, null, PointDrawer.ShapeCircle);
+
+      drawer.drawPoints(drawData.referenceCoords, 0.75, true);
+    }
+
+    if (this._mdl.hoverReferenceData) {
+      const refColor = Colours.CONTEXT_PURPLE; // Pink color for reference points
+      const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, refColor, null, PointDrawer.ShapeCircle);
+      // get reference coords
+      const refCoords = drawData.referenceCoords.find(coord => coord.id === this._mdl.hoverReferenceData?.id);
+      if (refCoords) {
+        drawer.drawPoints([refCoords], 1, true);
+        // Draw label in top right of the point
+        screenContext.font = BinaryChartModel.FONT_SIZE_SMALL + "px Roboto";
+        screenContext.textAlign = "left";
+        screenContext.textBaseline = "top";
+        screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+        screenContext.strokeStyle = "#000000";
+        screenContext.lineWidth = 2;
+        screenContext.strokeText(this._mdl.hoverReferenceData.mineralSampleName, refCoords.x + 10, refCoords.y - 10);
+        screenContext.fillText(this._mdl.hoverReferenceData.mineralSampleName, refCoords.x + 10, refCoords.y - 10);
+      }
+    }
+
+    // Draw a line between the reference points
     // And hover point if any
     if (this._mdl.hoverPoint !== null) {
       const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, clrHover, null, this._mdl.hoverShape);
@@ -101,13 +129,6 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
     if (this._mdl.mouseLassoPoints) {
       const drawer = new OutlineDrawer(screenContext, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
-    }
-
-    // Draw reference points as pink dots
-    if (drawData.referenceCoords.length > 0) {
-      const refColor = Colours.CONTEXT_PURPLE; // Pink color for reference points
-      const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, refColor, null, PointDrawer.ShapeCircle);
-      drawer.drawPoints(drawData.referenceCoords, 1, true);
     }
   }
 
@@ -120,9 +141,12 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       screenContext.textBaseline = "top";
       screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
 
+      const xName = this._mdl.raw?.xAxisInfo.label || "";
+      const yName = this._mdl.raw?.yAxisInfo.label || "";
+
       // Display reference name
       screenContext.fillText(
-        `Reference: ${this._mdl.hoverReferenceData.mineralSampleName}`,
+        `Reference: ${this._mdl.hoverReferenceData.mineralSampleName} (${xName}: ${this._mdl.hoverReferenceData.expressionValuePairs[0].value}, ${yName}: ${this._mdl.hoverReferenceData.expressionValuePairs[1].value})`,
         BinaryChartModel.LABEL_PADDING,
         xAxisTextY + (BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING)
       );

@@ -224,14 +224,6 @@
             <div class="selected-meta">
               <span>{{ reference.category || "No category" }} | {{ reference.group || "No group" }}</span>
             </div>
-            <div class="selected-pairs">
-              <div *ngFor="let pair of reference.expressionValuePairs" class="selected-pair">
-                <span class="pair-text">{{ pair.expressionName || "No expression" }}: {{ pair.value !== undefined ? pair.value : "-" }}</span>
-              </div>
-              <div *ngIf="reference.expressionValuePairs.length === 0" class="no-pairs-summary">
-                <span class="pair-text">No expressions</span>
-              </div>
-            </div>
           </div>
         </cdk-virtual-scroll-viewport>
       </div>

@@ -71,47 +71,42 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     for (const reference of this._referenceData) {
       // Find X and Y values for this reference
       let xValue: number | null = null;
+      let xPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
       let yValue: number | null = null;
+      let yPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
 
       // X-axis (first expression)
       const xExpressionId = this.expressionIds[0];
       if (xExpressionId && reference.expressionValuePairs) {
-        const xPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === xExpressionId);
+        xPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === xExpressionId);
         xValue = xPair?.value || null;
       }
 
       if (!xValue) {
-        // xValue = reference.expressionValuePairs[0].value;
         // If can't find an exact match, see if we can match the expression name (get x label)
         const xExpressionName = this._raw?.xAxisInfo.label || "";
         if (xExpressionName) {
           // Try exact match first
-          let xPair = reference.expressionValuePairs.find(
+          xPair = reference.expressionValuePairs.find(
             (pair: { expressionId: string; expressionName: string; value: number }) => pair.expressionName === xExpressionName
           );
-
-          if (!xPair) {
-            // If no xValue, use first
-            xPair = reference.expressionValuePairs[0];
-          }
-
-          xValue = xPair.value;
         }
+
+        xValue = xPair?.value || null;
       }
 
       // Y-axis (second expression)
       const yExpressionId = this.expressionIds[1];
       if (yExpressionId && reference.expressionValuePairs) {
-        const yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionId);
+        yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionId);
         yValue = yPair?.value || null;
       }
 
       if (!yValue) {
-        yValue = reference.expressionValuePairs[1].value;
         // If can't find an exact match, see if we can match the expression name (get y label)
         const yExpressionName = this._raw?.yAxisInfo.label || "";
         if (yExpressionName) {
-          const yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionName);
+          yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionName);
           yValue = yPair?.value || null;
         }
       }
@@ -121,7 +116,14 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
         const canvasX = this._drawModel.xAxis.valueToCanvas(xValue);
         const canvasY = this._drawModel.yAxis.valueToCanvas(yValue);
 
-        const coord = new PointWithRayLabel(canvasX, canvasY, `${reference.id} (${xValue.toLocaleString()}, ${yValue.toLocaleString()})`, canvasX, canvasY);
+        const coord = new PointWithRayLabel(
+          canvasX,
+          canvasY,
+          `${reference.id} (${xValue.toLocaleString()}, ${yValue.toLocaleString()})`,
+          canvasX,
+          canvasY,
+          reference.id
+        );
 
         coords.push(coord);
       }

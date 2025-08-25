@@ -57,13 +57,14 @@ export class PointWithRayLabel extends Point {
     y: number,
     public label: string = "",
     public endX: number | null = null,
-    public endY: number | null = null
+    public endY: number | null = null,
+    public id: string = ""
   ) {
     super(x, y);
   }
 
   public override copy(): PointWithRayLabel {
-    return new PointWithRayLabel(this.x, this.y, this.label, this.endX, this.endY);
+    return new PointWithRayLabel(this.x, this.y, this.label, this.endX, this.endY, this.id);
   }
 }
 

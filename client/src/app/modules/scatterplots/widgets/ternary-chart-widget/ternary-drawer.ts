@@ -122,7 +122,7 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
     }
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  drawData(screenContext: OffscreenCanvasRenderingContext2D): void {
     // Shut up transpiler... the null check has already actually happened...
     if (!this._mdl.raw) {
       return;
@@ -132,10 +132,38 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   }
 
   drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    const drawData = this._mdl.drawModel;
     const clrHover = Colours.CONTEXT_PURPLE;
     const clrLasso = Colours.PURPLE;
 
     this.drawHoverPointValueIfNeeded(screenContext, drawParams.drawViewport, clrHover, this._mdl.drawModel);
+
+    // Draw reference points as pink dots
+    if (drawData.referenceCoords.length > 0) {
+      const refColor = Colours.CONTEXT_PURPLE; // Pink color for reference points
+      const drawer = new PointDrawer(screenContext, (HOVER_POINT_RADIUS * 3) / 4, refColor, null, PointDrawer.ShapeCircle);
+
+      drawer.drawPoints(drawData.referenceCoords, 0.75, true);
+    }
+
+    if (this._mdl.hoverReferenceData) {
+      const refColor = Colours.CONTEXT_PURPLE; // Pink color for reference points
+      const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, refColor, null, PointDrawer.ShapeCircle);
+      // get reference coords
+      const refCoords = drawData.referenceCoords.find(coord => coord.id === this._mdl.hoverReferenceData?.id);
+      if (refCoords) {
+        drawer.drawPoints([refCoords], 1, true);
+        // Draw label in top right of the point
+        screenContext.font = TernaryChartModel.FONT_SIZE_SMALL + "px Roboto";
+        screenContext.textAlign = "left";
+        screenContext.textBaseline = "top";
+        screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+        screenContext.strokeStyle = "#000000";
+        screenContext.lineWidth = 2;
+        screenContext.strokeText(this._mdl.hoverReferenceData.mineralSampleName, refCoords.x + 10, refCoords.y - 10);
+        screenContext.fillText(this._mdl.hoverReferenceData.mineralSampleName, refCoords.x + 10, refCoords.y - 10);
+      }
+    }
 
     // And hover point if any
     if (this._mdl.hoverPoint != null) {
@@ -151,6 +179,35 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   }
 
   drawHoverPointValueIfNeeded(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, clrHover: RGBA, drawModel: TernaryDrawModel) {
+    // Check if hovering over a reference point
+    if (this._mdl.hoverReferenceData) {
+      screenContext.font = TernaryChartModel.FONT_SIZE_SMALL + "px Roboto";
+      screenContext.fillStyle = clrHover.asString();
+      screenContext.textAlign = "left";
+
+      const aName = this._mdl.raw?.cornerA.label || "A";
+      const bName = this._mdl.raw?.cornerB.label || "B";
+      const cName = this._mdl.raw?.cornerC.label || "C";
+
+      // Find the values for this reference
+      const aValue =
+        this._mdl.hoverReferenceData.expressionValuePairs.find(p => p.expressionId === this._mdl.expressionIds[0] || p.expressionName === aName)?.value || "?";
+
+      const bValue =
+        this._mdl.hoverReferenceData.expressionValuePairs.find(p => p.expressionId === this._mdl.expressionIds[1] || p.expressionName === bName)?.value || "?";
+
+      const cValue =
+        this._mdl.hoverReferenceData.expressionValuePairs.find(p => p.expressionId === this._mdl.expressionIds[2] || p.expressionName === cName)?.value || "?";
+
+      // Display reference name and values
+      screenContext.fillText(
+        `Reference: ${this._mdl.hoverReferenceData.mineralSampleName} (${aName}: ${aValue}, ${bName}: ${bValue}, ${cName}: ${cValue})`,
+        10,
+        drawModel.hoverLabelC.y + 32
+      );
+      return;
+    }
+
     // Draw hover values if we have any
     if (this._mdl.hoverPointData) {
       screenContext.fillStyle = clrHover.asString();

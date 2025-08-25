@@ -166,8 +166,8 @@ export class ReferencePickerComponent implements OnDestroy {
   }
 
   private hasAllRequiredExpressions(reference: ReferenceData): boolean {
-    const referenceExpressions = reference.expressionValuePairs.map(pair => pair.expressionName);
-    return this.requiredExpressions.every(required => referenceExpressions.includes(required));
+    const referenceExpressions = reference.expressionValuePairs.map(pair => (pair?.expressionId || "").toLowerCase());
+    return this.requiredExpressions.every(required => referenceExpressions.includes((required || "").toLowerCase()));
   }
 
   onToggleSelection(referenceId: string): void {
@@ -391,26 +391,56 @@ Expressions: ${expressionText}`;
 
           // If ends in (wt%) or (wt.%), match it to a quantified element
           // Use regex to match the expression name
-          const quantifiedElementRegex = /(wt%|wt\.%)$/;
-          // const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", detector);
+          const quantifiedElementRegex = /(?<quantElement>[a-zA-Z0-9]+)\s*(\((?<quantColumn>.+)\)){0,1}/;
+          const match = expressionName.match(quantifiedElementRegex);
+          if (match) {
+            const quantElement = match.groups?.["quantElement"] || "";
+            let quantColumn = match.groups?.["quantColumn"] || "";
+            quantColumn = quantColumn.replace(/[.\s]/g, "");
 
-          if (expressionName && !isNaN(value)) {
+            const quantColMap = {
+              wt: "%",
+              "wt%": "%",
+              weight: "%",
+              "weight%": "%",
+              weightpercent: "%",
+              weightpercentage: "%",
+              percent: "%",
+              percentage: "%",
+            };
+
+            if (quantColumn in quantColMap) {
+              quantColumn = quantColMap[quantColumn as keyof typeof quantColMap];
+            }
+
+            const detectors = DataExpressionId.getPossibleDetectors();
+            for (const detector of detectors) {
+              const id = DataExpressionId.makePredefinedQuantElementExpression(quantElement, quantColumn || "%", detector);
+              reference.expressionValuePairs.push({
+                expressionId: id,
+                expressionName: expressionName,
+                value: value,
+              });
+            }
+          } else if (expressionName && !isNaN(value)) {
             const matchingExpressions = this._allExpressions[expressionName];
             let expressionId = matchingExpressions?.[0]?.id || "";
             if (!expressionId) {
-              const closestMatches = Object.keys(this._allExpressions).sort((a, b) => {
-                const aDistance = levenshteinDistance(a, expressionName);
-                const bDistance = levenshteinDistance(b, expressionName);
-                return aDistance - bDistance;
+              // Remove parentheses from expression name for comparison
+              const cleanExpressionName = expressionName.replace(/\([^)]*\)/g, "").trim();
+
+              // Find exact match ignoring case and parentheses
+              const matchingExpression = Object.entries(this._allExpressions).find(([key, _]) => {
+                const cleanKey = key.replace(/\([^)]*\)/g, "").trim();
+                return cleanKey.toLowerCase() === cleanExpressionName.toLowerCase();
               });
 
-              const closestMatch = closestMatches[0];
-              const distanceToClosestMatch = levenshteinDistance(expressionName, closestMatch);
-              if (distanceToClosestMatch < 3) {
-                const closestExpression = this._allExpressions[closestMatch]?.[0];
-                if (closestExpression) {
-                  expressionId = closestExpression.id;
-                  expressionName = closestExpression.name;
+              if (matchingExpression) {
+                const [_, expressions] = matchingExpression;
+                const expression = expressions[0];
+                if (expression) {
+                  expressionId = expression.id;
+                  expressionName = expression.name;
                 }
               }
             }

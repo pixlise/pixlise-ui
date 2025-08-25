@@ -559,6 +559,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       widgetId: this._widgetId,
       allowEdit: true,
       requiredExpressions: this.mdl.expressionIds,
+      selectedReferences: this.mdl.references,
     };
 
     const dialogRef = this.dialog.open(ReferencePickerComponent, dialogConfig);
