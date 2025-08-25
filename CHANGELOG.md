@@ -1,4 +1,12 @@
-## 4.71.0 (LATEST)
+## 4.72.0 (LATEST)
+
+### New Features
+- Exporting spectra using the "Raw Spectral Data per PMC by ROI .csv" now replaces the energy calibration columns (offset and x-per-chan) with the calibration in the auto quant "AutoQuant-PDS (AB)", or the selected quant if the auto-quant doesn't exist. If no quants are selected at all, it will output what we currently output - the calibration that comes with the spectrum data (DataDrive RFS csv or .MSA files).
+
+### Bug Fixes
+- Fixed issues with login using newer versions of chrome or private tabs. Login errors are also better presented. We no longer use cookies so it should be more flexible in future.
+
+## 4.71.0 (2025-07-24)
 
 ### Bug Fixes
 - Fixes issue with Variogram widget where custom expressions were not returning any values
