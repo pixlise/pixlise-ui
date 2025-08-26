@@ -3,9 +3,13 @@ import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
 import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
 import { Observable } from 'rxjs';
-import { ContextImageScanModel } from '../context-image/context-image-model-internals';
+import { ContextImageScanModel, PointCluster } from '../context-image/context-image-model-internals';
 import { ScanEntry } from 'src/app/generated-protos/scan-entry';
 import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
+import { ContextImageScanModelGenerator } from '../context-image/context-image-scan-model-generator';
+import { ScanPoint } from '../../models/scan-point';
+import { HullPoint } from '../../models/footprint';
+import { r } from 'node_modules/@angular/cdk/overlay-module.d-BvvR6Y05';
 
 
 export class PMCMeshPoint {
@@ -15,6 +19,14 @@ export class PMCMeshPoint {
     public scanEntryIndex: number, // "location index" - where in the scan entry array does this come from? (-1 if not real PMC)
     public u: number, // Texture u coordinate
     public v: number, // Texture v coordinate
+  ) {}
+}
+
+export class PMCPoly {
+  constructor(
+    public scanEntryIndex: number, // "location index" - where in the scan entry array does this PMC sit?
+    public terrainPoints: THREE.Vector3[], // PMC locations (x,y,z as viewed in scene)
+    public rawPoints: THREE.Vector3[], // PMC locations in raw x,y,z units
   ) {}
 }
 
@@ -43,6 +55,8 @@ export class PMCMeshData {
   private _rawCornerUVs: THREE.Vector2[] = [];
   private _hullPoints: THREE.Vector3[] = [];
 
+  private _pmcPolygons: PMCPoly[] = [];
+
   constructor(
     private _scanEntries: ScanEntry[],
     private _beamLocations: Coordinate3D[],
@@ -65,6 +79,8 @@ export class PMCMeshData {
     this.calculateHullPoints(scale);
 
     this.processUVs();
+
+    this.calculateMeshPointPolygons(scale);
   }
 
   get points(): PMCMeshPoint[] {
@@ -86,10 +102,139 @@ export class PMCMeshData {
     return this._scanEntries[idx].id;
   }
 
+  getPointPolygonOrder(): number[] {
+    const result: number[] = [];
+    for (const poly of this._pmcPolygons) {
+      result.push(poly.scanEntryIndex);
+    }
+    return result;
+  }
+
   createMesh(material: THREE.Material): THREE.Mesh {
     const idxs = this.calculateTriangleIndexes();
     const meshGeom = this.createMeshGeometry(idxs, !!this._image);
     return new THREE.Mesh(meshGeom, material);
+  }
+
+  createPointPolygons(terrainMesh: THREE.Mesh, material: THREE.Material, polyColours: (THREE.Color | undefined)[]): THREE.Group {
+    /*if (this._pmcPolygons.length != polyColours.length) {
+      throw new Error(`createPointPolygons: Expected ${this._pmcPolygons.length} colours, got: ${polyColours.length}`);
+    }*/
+
+    const result = new THREE.Group();
+
+    for (const poly of this._pmcPolygons) {
+      if (poly.terrainPoints.length <= 0) {
+        continue;
+      }
+
+      const insertPMCPoints = true;
+
+      // Construct x,y,z array while finding the y value
+      const rayCaster = new THREE.Raycaster();
+      const rayDir = new THREE.Vector3(0,-1,0);
+
+      const extraPoints = insertPMCPoints ? 1 : 0;
+      const xyz = new Float32Array((poly.terrainPoints.length + extraPoints) * 3);
+      const colours = new Float32Array((poly.terrainPoints.length + extraPoints) * 3);
+
+      if (insertPMCPoints) {
+        // Set the first point to be the PMC location itself
+        const pmcPtIdx = this._pmcToPoint.get(this._scanEntries[poly.scanEntryIndex].id);
+        if (pmcPtIdx === undefined || pmcPtIdx < 0) {
+          console.error("createPointPolygons: Failed to look up PMC location for scan index: " + poly.scanEntryIndex)
+          continue;
+        }
+
+        xyz[0] = this._points[pmcPtIdx].terrainPoint.x;
+        xyz[1] = this._points[pmcPtIdx].terrainPoint.y;
+        xyz[2] = this._points[pmcPtIdx].terrainPoint.z;
+      }
+
+      const clr = polyColours[poly.scanEntryIndex];
+      if (clr === undefined) {
+        console.error("createPointPolygons: No colour for scan index: " + poly.scanEntryIndex)
+        continue;
+      }
+
+      if (insertPMCPoints) {
+        colours[0] = clr.r;
+        colours[1] = clr.g;
+        colours[2] = clr.b;
+      }
+
+      let c3 = insertPMCPoints ? 3 : 0;
+      for (let c = 0; c < poly.terrainPoints.length; c++) {
+        rayCaster.set(
+          new THREE.Vector3(poly.terrainPoints[c].x, this._bboxMeshPMCs.maxCorner.y, poly.terrainPoints[c].z),
+          rayDir
+        );
+
+        const intersects = rayCaster.intersectObject(terrainMesh);
+        let y = poly.terrainPoints[c].y;
+        if (intersects.length > 0) {
+          y = intersects[0].point.y;
+        }
+
+        xyz[c3] = poly.terrainPoints[c].x;
+        xyz[c3 + 1] = y;
+        xyz[c3 + 2] = poly.terrainPoints[c].z;
+
+        colours[c3] = clr.r;
+        colours[c3 + 1] = clr.g;
+        colours[c3 + 2] = clr.b;
+        c3 += 3;
+      }
+
+      const polyGeom = new THREE.BufferGeometry();
+      polyGeom.setAttribute(
+        "position",
+        new THREE.BufferAttribute(xyz, 3));
+
+      polyGeom.setAttribute(
+        "color",
+        new THREE.BufferAttribute(colours, 3));
+
+      const mat = material.clone();
+      mat.vertexColors = true;
+
+      // Draw polygon as a triangle fan
+      const indexes: number[] = [];
+      for (let c = 2; c < (poly.terrainPoints.length + extraPoints); c++) {
+        indexes.push(0);
+        indexes.push(c);
+        indexes.push(c-1);
+      }
+      if (insertPMCPoints) {
+        // Add closing triangle
+        const last = indexes[indexes.length-2];
+        indexes.push(0);
+        indexes.push(1);
+        indexes.push(last);
+      }
+
+      polyGeom.setIndex(new THREE.BufferAttribute(new Uint32Array(indexes), 1));
+
+      const polyMesh = new THREE.Mesh(
+        polyGeom,
+        mat,
+      );
+/*
+      const wireframe = new THREE.WireframeGeometry(polyGeom);
+
+      const line = new THREE.LineSegments( wireframe );
+      // line.material.depthTest = false;
+      // line.material.opacity = 0.25;
+      // line.material.transparent = true;
+
+      result.add(line);
+*/
+      result.add(polyMesh);
+
+      //break;
+    }
+
+    return result;
   }
 
   createPoints(material: THREE.Material): THREE.Points {
@@ -105,7 +250,6 @@ export class PMCMeshData {
       material,
     );
 
-    //points.position.y += 0.002;
     return points;
   }
 
@@ -358,18 +502,12 @@ export class PMCMeshData {
     }*/
   }
 
-  private calculateHullPoints(scale: number) {
-    if (!this._contextImgMdl) {
-      return;
-    }
-
-    const xyzCenter = this._bboxRawXYZ.center();
-
+  private makeHullPMCs(contextImgMdl: ContextImageScanModel): number[] {
     // Written this way to be easier to debug really... want a clear list off hull PMCs
     const visitedHullIdxs = new Set<number>();
     const hullPMCs: number[] = [];
 
-    for (const hull of this._contextImgMdl.footprint) {
+    for (const hull of contextImgMdl.footprint) {
       for (const hullPt of hull) {
         // NOTE: we may have duplicated footprint hull points due to "fattening" of the hull for the context
         //       image. We don't need this effect because we're "fattening" it in 3D so we just want the PMCs!
@@ -378,11 +516,22 @@ export class PMCMeshData {
         }
         visitedHullIdxs.add(hullPt.idx);
 
-        const footprintPMC = this._contextImgMdl.scanPoints[hullPt.idx].PMC;
+        const footprintPMC = contextImgMdl.scanPoints[hullPt.idx].PMC;
         hullPMCs.push(footprintPMC);
       }
       break; // NOTE: We only work on the first hull for now!
     }
+    
+    return hullPMCs;
+  }
+
+  private calculateHullPoints(scale: number) {
+    if (!this._contextImgMdl) {
+      return;
+    }
+
+    const hullPMCs = this.makeHullPMCs(this._contextImgMdl);
+    const xyzCenter = this._bboxRawXYZ.center();
 
     this._hullPoints = [];
     for (const footprintPMC of hullPMCs) {
@@ -438,6 +587,92 @@ export class PMCMeshData {
         pt.u /= this._image!.width;
         pt.v = 1 - pt.v / this._image!.height;
       }
+    }
+  }
+
+  protected calculateMeshPointPolygons(scale: number) {
+    if (!this._contextImgMdl) {
+      console.error("calculateMeshPointPolygons: no model available");
+      return;
+    }
+
+    // We have to recalculate the voronoi polygons for each PMC first, but using xyz coordinates not ijs
+    const scanPointsXYZ = [];
+    for (let c = 0; c < this._scanEntries.length; c++) {
+      const scanEntry = this._scanEntries[c];
+
+      const beamXYZ = this._beamLocations[c];
+
+      const scanPt = new ScanPoint(
+        scanEntry.id,
+        scanEntry.location ? new Point(beamXYZ.x, beamXYZ.y) : null,
+        c,
+        scanEntry.normalSpectra > 0,
+        scanEntry.dwellSpectra > 0,
+        scanEntry.pseudoIntensities,
+        scanEntry.pseudoIntensities && scanEntry.normalSpectra == 0
+      );
+
+      scanPointsXYZ.push(scanPt);
+    }
+
+    // We have to use xyz space footprint points
+    const footprintXYZ: HullPoint[] = [];
+    const visitedHullIdxs = new Set<number>();
+
+    for (const hull of this._contextImgMdl.footprint) {
+      for (const hullPt of hull) {
+        // NOTE: we may have duplicated footprint hull points due to "fattening" of the hull for the context
+        //       image. We don't need this effect because we're "fattening" it in 3D so we just want the PMCs!
+        if (visitedHullIdxs.has(hullPt.idx)) {
+          continue;
+        }
+        visitedHullIdxs.add(hullPt.idx);
+
+        footprintXYZ.push(new HullPoint(
+          scanPointsXYZ[hullPt.idx].coord?.x || 0,
+          scanPointsXYZ[hullPt.idx].coord?.y || 0,
+          hullPt.idx,
+          hullPt.normal
+        ));
+      }
+      break; // NOTE: We only work on the first hull for now!
+    }
+
+    // Allocate blank polygons for each...
+    const scanPointXYZPolygons: Point[][] = [];
+    for (let c = 0; c < this._scanEntries.length; c++) {
+      scanPointXYZPolygons.push([]);
+    }
+
+    for (const cluster of this._contextImgMdl.clusters) {
+      const clusterCopy = new PointCluster(
+        Array.from(cluster.locIdxs),
+        cluster.pointDistance,
+        footprintXYZ,
+        cluster.angleRadiansToContextImage,
+      )
+      ContextImageScanModelGenerator.makeScanPointPolygons(0, clusterCopy, scanPointsXYZ, scanPointXYZPolygons);
+      //wholeFootprintHullPoints.push(cluster.footprintPoints);
+    }
+
+    this._pmcPolygons = [];
+
+    const xyzCenter = this._bboxRawXYZ.center();
+
+    for (let polyIdx = 0; polyIdx < scanPointXYZPolygons.length; polyIdx++){
+      const poly = scanPointXYZPolygons[polyIdx];
+
+      const terrainVtxs = [];
+      const rawVtxs = [];
+      for (const pt of poly) {
+        const vtx = new THREE.Vector3(pt.x, pt.y, xyzCenter.z);
+        rawVtxs.push(vtx);
+        terrainVtxs.push(this.rawToTerrainPoint(vtx, xyzCenter, scale));
+      }
+
+      const newPoly = new PMCPoly(polyIdx, terrainVtxs, rawVtxs);
+      this._pmcPolygons.push(newPoly);
     }
   }
 

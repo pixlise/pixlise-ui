@@ -12,12 +12,16 @@ import { ContextImageScanModel } from '../context-image/context-image-model-inte
 import { ContextImageMapLayer } from '../../models/map-layer';
 
 
+const pushUpHeight = 0.1;
+
 export class Scan3DDrawModel {
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
   protected _meshFootprint?: THREE.Mesh;
   protected _texture?: THREE.Texture;
+
+  protected _meshPointPolygons?: THREE.Group;
 
   protected _heightExaggerationScale: number = 1;
 
@@ -77,6 +81,7 @@ export class Scan3DDrawModel {
     });
 
     this._meshPoints = this._meshData.createPoints(pointMat);
+    //this._meshPoints.position.y += pushUpHeight;
 
     this._meshFootprint = this._meshData.createFootprint(
       this._footprintSize,
@@ -548,6 +553,33 @@ export class Scan3DDrawModel {
   }
 
   updateMaps(maps: ContextImageMapLayer[]) {
-    
+    if (this._meshPointPolygons) {
+      this.renderData.scene.remove(this._meshPointPolygons);
+    }
+
+    if (maps.length > 0 && this._meshData && this._meshTerrain) {
+      const map = maps[0];
+      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1) });
+
+      const scanEntryIdxs = this._meshData.getPointPolygonOrder();
+      const colours = [];
+
+      // Build a lookup, we're supplying these in the same order as the polygons are defined
+      const colourMap = new Map<number, THREE.Color>();
+      for (const pt of map.mapPoints) {
+        colourMap.set(pt.scanEntryIndex, new THREE.Color(pt.drawParams.colour.r / 255, pt.drawParams.colour.g / 255, pt.drawParams.colour.b / 255));
+      }
+
+      for (const idx of scanEntryIdxs) {
+        colours.push(colourMap.get(idx));        
+      }
+
+      this._meshPointPolygons = this._meshData!.createPointPolygons(this._meshTerrain, mat, colours);
+
+      // Push it up slightly
+      this._meshPointPolygons.position.y += pushUpHeight;
+
+      this.renderData.scene.add(this._meshPointPolygons);
+    }
   }
 }

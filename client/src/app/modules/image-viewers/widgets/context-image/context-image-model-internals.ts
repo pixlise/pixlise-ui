@@ -18,6 +18,14 @@ import { ContextImageModel } from "src/app/modules/image-viewers/widgets/context
 import { getSchemeColours } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-interface";
 import { MapColourScaleSourceData } from "src/app/modules/image-viewers/widgets/context-image/ui-elements/map-colour-scale/map-colour-scale-model";
 
+export class PointCluster {
+  constructor(
+    public locIdxs: number[],
+    public pointDistance: number,
+    public footprintPoints: HullPoint[],
+    public angleRadiansToContextImage: number
+  ) {}
+}
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -35,6 +43,7 @@ export class ContextImageModelLoadedData {
         scanModel.scanTitle,
         scanModel.imageName,
         scanModel.beamLocVersion,
+        scanModel.clusters,
         scanModel.scanPoints,
         scanModel.scanPointPolygons,
         scanModel.footprint,
@@ -57,6 +66,7 @@ export class ContextImageScanModel {
     public scanTitle: string, // Title as displayed on dataset tile
     public imageName: string, // The image we were generated for (our points are relative to this image!)
     public beamLocVersion: number, // Versioning of the source beam ijs
+    public clusters: PointCluster[],
     public scanPoints: ScanPoint[], // The actual scan points
     public scanPointPolygons: Point[][], // Scan points can be rendered as polygons which touch neighbours
     public footprint: HullPoint[][], // Footprint of scan points relative to the image

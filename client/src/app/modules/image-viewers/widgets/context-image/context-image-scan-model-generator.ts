@@ -25,7 +25,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { radToDeg } from "src/app/utils/utils";
 import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { RGBA } from "src/app/utils/colours";
-import { ContextImageScanModel } from "./context-image-model-internals";
+import { ContextImageScanModel, PointCluster } from "./context-image-model-internals";
 import { convertLocationComponentToPixelPosition } from "./context-image-model";
 import { environment } from "src/environments/environment";
 
@@ -134,7 +134,9 @@ export class ContextImageScanModelGenerator {
     }
 
     for (const cluster of clusters) {
-      this.makeScanPointPolygons(cluster, scanPoints, scanPointPolygons);
+      // NOTE: This 50 might be redundant but we had it historically here so left it in while working on
+      //       the 3d version of this using 0, can remove the value if it has no effect
+      ContextImageScanModelGenerator.makeScanPointPolygons(50, cluster, scanPoints, scanPointPolygons);
       wholeFootprintHullPoints.push(cluster.footprintPoints);
     }
 
@@ -143,6 +145,7 @@ export class ContextImageScanModelGenerator {
       scanItem.title,
       imageName,
       beamLocVersion,
+      clusters,
       scanPoints,
       scanPointPolygons,
       wholeFootprintHullPoints,
@@ -863,7 +866,7 @@ export class ContextImageScanModelGenerator {
     return boxes;
   }
 
-  private makeScanPointPolygons(cluster: PointCluster, scanPoints: ScanPoint[], scanPointPolygons: Point[][]) {
+  static makeScanPointPolygons(bboxExpand: number, cluster: PointCluster, scanPoints: ScanPoint[], scanPointPolygons: Point[][]) {
     const voronoi = new Voronoi();
 
     // Create a larger bbox to ensure all polygons generated extend past the hull
@@ -897,7 +900,6 @@ export class ContextImageScanModelGenerator {
       return;
     }
 
-    const bboxExpand = 50;
     const bbox = { xl: clusterBBox.x - bboxExpand, xr: clusterBBox.maxX() + bboxExpand, yt: clusterBBox.y - bboxExpand, yb: clusterBBox.maxY() + bboxExpand }; // xl is x-left, xr is x-right, yt is y-top, and yb is y-bottom
 
     const hullPoly: Polygon = [[]];
@@ -1035,13 +1037,4 @@ export class ContextImageScanModelGenerator {
     }
     return [];
   }
-}
-
-class PointCluster {
-  constructor(
-    public locIdxs: number[],
-    public pointDistance: number,
-    public footprintPoints: HullPoint[],
-    public angleRadiansToContextImage: number
-  ) {}
 }
