@@ -2,17 +2,40 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Point, PointWithRayLabel, scaleVector } from "src/app/models/Geometry";
 import { degToRad } from "src/app/utils/utils";
-import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
+import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { ScanItem } from "../../../../generated-protos/scan";
+import { ReferenceData } from "../../../../generated-protos/references";
 
 export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawModel> {
+  public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
+
+  private _referenceData: ReferenceData[] = [];
+  hoverReferenceData: ReferenceData | null = null;
+
+  get references(): ReferenceData[] {
+    return this._referenceData;
+  }
+
+  set references(refs: ReferenceData[]) {
+    this._referenceData = refs;
+    this._drawModel.references = refs;
+    this.needsDraw$.next();
+  }
+
   protected regenerateDrawModel(raw: TernaryData | null, canvasParams: CanvasParams): void {
     this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
+
+    // Calculate reference coordinates after the draw model is regenerated
+    if (this._referenceData.length > 0 && raw) {
+      this._drawModel.referenceCoords = this.calculateReferenceCoordinates(raw);
+    } else {
+      this._drawModel.referenceCoords = [];
+    }
   }
 
   setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
@@ -36,6 +59,117 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
   protected axisName(axisIdx: number): string {
     return axisIdx == 0 ? "left" : axisIdx == 1 ? "right" : "top";
   }
+
+  private calculateReferenceCoordinates(raw: TernaryData): PointWithRayLabel[] {
+    const coords: PointWithRayLabel[] = [];
+
+    if (this.expressionIds.length < 3) {
+      return coords;
+    }
+
+    for (const reference of this._referenceData) {
+      // Find A, B, and C values for this reference
+      let aValue: number | null = null;
+      let aPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+      let bValue: number | null = null;
+      let bPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+      let cValue: number | null = null;
+      let cPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+
+      // A-axis (first expression - corner A)
+      const aExpressionId = this.expressionIds[0];
+      if (aExpressionId && reference.expressionValuePairs) {
+        aPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === aExpressionId);
+        aValue = aPair?.value || null;
+      }
+
+      if (!aValue) {
+        // If can't find an exact match, see if we can match the expression name
+        const aExpressionName = raw?.cornerA.label || "";
+        if (aExpressionName) {
+          aPair = reference.expressionValuePairs.find(
+            (pair: { expressionId: string; expressionName: string; value: number }) => pair.expressionName === aExpressionName
+          );
+        }
+        aValue = aPair?.value || null;
+      }
+
+      // B-axis (second expression - corner B)
+      const bExpressionId = this.expressionIds[1];
+      if (bExpressionId && reference.expressionValuePairs) {
+        bPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === bExpressionId);
+        bValue = bPair?.value || null;
+      }
+
+      if (!bValue) {
+        // If can't find an exact match, see if we can match the expression name
+        const bExpressionName = raw?.cornerB.label || "";
+        if (bExpressionName) {
+          bPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === bExpressionId);
+          bValue = bPair?.value || null;
+        }
+      }
+
+      // C-axis (third expression - corner C)
+      const cExpressionId = this.expressionIds[2];
+      if (cExpressionId && reference.expressionValuePairs) {
+        cPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === cExpressionId);
+        cValue = cPair?.value || null;
+      }
+
+      if (!cValue) {
+        // If can't find an exact match, see if we can match the expression name
+        const cExpressionName = raw?.cornerC.label || "";
+        if (cExpressionName) {
+          cPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === cExpressionId);
+          cValue = cPair?.value || null;
+        }
+      }
+
+      // Only add the point if we have all three values
+      if (aValue !== null && bValue !== null && cValue !== null) {
+        // Create a fake ternary data item to use existing coordinate calculation
+        const ternaryItem: NaryChartDataItem = {
+          values: [aValue, bValue, cValue],
+          nullMask: [false, false, false],
+          scanEntryId: -1,
+          label: reference.mineralSampleName,
+        };
+
+        // Use the existing calculation method
+        const coord = this._drawModel.calcPointForTernary(ternaryItem);
+
+        // Override the id for the reference
+        coord.id = reference.id;
+
+        // Store reference data directly in the coordinate for correct mapping
+        (coord as PointWithRayLabel & { referenceData: ReferenceData }).referenceData = reference;
+        coords.push(coord);
+      }
+    }
+
+    return coords;
+  }
+
+  getReferenceAtPoint(pt: Point): ReferenceData | null {
+    const boxSize = HOVER_POINT_RADIUS * 2;
+
+    for (let i = 0; i < this._drawModel.referenceCoords.length; i++) {
+      const coord = this._drawModel.referenceCoords[i];
+      if (Math.abs(pt.x - coord.x) < boxSize / 2 && Math.abs(pt.y - coord.y) < boxSize / 2) {
+        // Use the reference data stored in the coordinate to avoid index mismatch
+        const storedRef = (coord as PointWithRayLabel & { referenceData?: ReferenceData }).referenceData;
+        if (storedRef) {
+          return storedRef;
+        }
+        // Fallback: find by ID if no stored reference data
+        const refId = coord.id;
+        return this._referenceData.find(ref => ref.id === refId) || null;
+      }
+    }
+
+    return null;
+  }
 }
 
 export class TernaryDrawModel implements DrawModelWithPointGroup {
@@ -49,6 +183,8 @@ export class TernaryDrawModel implements DrawModelWithPointGroup {
   // Coordinates we draw the points at
   pointGroupCoords: PointWithRayLabel[][] = [];
   totalPointCount: number = 0;
+  references: ReferenceData[] = [];
+  referenceCoords: PointWithRayLabel[] = [];
 
   isNonSelectedPoint: boolean[][] = [];
   selectedPointGroupCoords: PointWithRayLabel[][] = [];
@@ -131,7 +267,7 @@ export class TernaryDrawModel implements DrawModelWithPointGroup {
 
   private _sin60 = Math.sin((60 * Math.PI) / 180);
 
-  private calcPointForTernary(ternaryPoint: NaryChartDataItem): PointWithRayLabel {
+  calcPointForTernary(ternaryPoint: NaryChartDataItem): PointWithRayLabel {
     const aLabel = ternaryPoint.nullMask[0] ? "null" : ternaryPoint.values[0];
     const bLabel = ternaryPoint.nullMask[1] ? "null" : ternaryPoint.values[1];
     const cLabel = ternaryPoint.nullMask[2] ? "null" : ternaryPoint.values[2];

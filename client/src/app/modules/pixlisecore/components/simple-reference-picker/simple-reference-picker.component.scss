@@ -1,0 +1,225 @@
+// Copyright (c) 2018-2022 California Institute of Technology ("Caltech"). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import "variables.scss";
+@import "atoms.scss";
+
+.reference-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+
+  padding: 8px 0;
+
+  .reference-title {
+    font-weight: 500;
+    font-size: 13px;
+    color: rgb(var(--clr-gray-20));
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 340px;
+
+    &.disabled {
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+  }
+
+  .reference-meta {
+    font-size: 11px;
+    color: rgb(var(--clr-gray-40));
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 340px;
+  }
+
+  .reference-expressions {
+    font-size: 10px;
+    color: rgb(var(--clr-gray-50));
+    font-style: italic;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 340px;
+  }
+}
+
+.reference-container {
+  display: flex;
+  flex-direction: column;
+
+  width: 400px;
+  height: 400px;
+
+  background-color: rgb(var(--clr-gray-90));
+
+  .reference-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgb(var(--clr-gray-85));
+    box-shadow: 0px $sz-half $sz-half rgb(0 0 0 / 25%);
+    padding: $sz-half $sz-unit;
+
+    h3 {
+      font-size: 14px;
+      color: rgb(var(--clr-gray-30));
+      margin: 0;
+      font-weight: 600;
+    }
+  }
+
+  .reference-search-container {
+    display: flex;
+    align-items: center;
+    background-color: rgb(var(--clr-gray-90));
+    box-shadow: 0px $sz-half $sz-half rgb(0 0 0 / 25%);
+    padding: $sz-half;
+
+    input {
+      flex: 1;
+      background-color: rgb(var(--clr-gray-90));
+      color: white;
+      padding: $sz-half;
+      border: none;
+      font-size: 13px;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    svg {
+      margin-right: $sz-half;
+    }
+  }
+
+  .references {
+    flex: 1;
+    overflow-y: auto;
+
+    .reference-container-section {
+      h3 {
+        font-size: 12px;
+        color: rgb(var(--clr-gray-40));
+        margin: 0;
+        font-weight: 500;
+      }
+
+      .reference {
+        cursor: pointer;
+        place-content: unset !important;
+        padding: $sz-half $sz-unit;
+        gap: $sz-unit;
+        border-bottom: 1px solid rgb(var(--clr-gray-80));
+
+        &:hover {
+          background-color: rgb(var(--clr-gray-70));
+        }
+      }
+    }
+  }
+
+  .no-references {
+    padding: $sz-unit;
+    text-align: center;
+
+    .no-results-text {
+      font-size: 12px;
+      color: rgb(var(--clr-gray-50));
+      font-style: italic;
+    }
+  }
+}
+
+.reference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 !important;
+
+  .reference-label-area {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: $sz-half;
+  }
+}
+
+.dropdown-button {
+  height: 19px;
+  width: 150px;
+  padding-top: 5px;
+  padding-bottom: 0;
+  background: #454c50 !important;
+  border-radius: 4px !important;
+  border: 2px solid rgb(var(--clr-gray-60));
+  display: flex;
+  align-items: center;
+  padding-top: 3px;
+  padding-bottom: 3px;
+
+  cursor: pointer;
+
+  h5 {
+    font-weight: bold;
+    font-size: 14px;
+    margin: 0 8px;
+  }
+
+  svg {
+    margin-left: auto;
+    fill: #a9adaf;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 8px;
+  border-top: 1px solid #454c50;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+
+  background-color: rgb(var(--clr-gray-80));
+  padding-left: 6px;
+  padding-top: $sz-half;
+  padding-bottom: $sz-half;
+  gap: 4px;
+}

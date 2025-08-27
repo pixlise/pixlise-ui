@@ -47,6 +47,9 @@ import { StatusIndicatorComponent } from "./components/atoms/status-indicator/st
 import { SectionedSelectDialogComponent } from "./components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 import { RGBUPickerDropdownComponent } from "./components/atoms/rgbupicker-dropdown/rgbupicker-dropdown.component";
 import { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
+import { ReferencePickerComponent } from "./components/reference-picker/reference-picker.component";
+import { ReferenceCSVUploadDialogComponent } from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+import { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
 
 import { QuantificationSelectorComponent } from "./components/atoms/quantification-selector/quantification-selector.component";
 import { QuantSelectorPanelComponent } from "./components/atoms/quant-selector-panel/quant-selector-panel.component";
@@ -60,6 +63,7 @@ import { ClosableListComponent } from "src/app/modules/pixlisecore/components/at
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 import { DragDropModule } from "@angular/cdk/drag-drop";
+import { ScrollingModule } from "@angular/cdk/scrolling";
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 import { TableComponent } from "./components/atoms/table/table.component";
 import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
@@ -83,6 +87,13 @@ export { SelectionService } from "./services/selection.service";
 export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
 export { SliderComponent } from "./components/atoms/slider/slider.component";
 export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
+export { ReferencePickerComponent, ReferencePickerData, ReferencePickerResponse } from "./components/reference-picker/reference-picker.component";
+export {
+  ReferenceCSVUploadDialogComponent,
+  ReferenceCSVUploadData,
+  ReferenceCSVUploadResponse,
+} from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+export { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
@@ -132,6 +143,9 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
+    ReferencePickerComponent,
+    ReferenceCSVUploadDialogComponent,
+    SimpleReferencePickerComponent,
     QuantificationSelectorComponent,
     QuantSelectorPanelComponent,
     QuantificationListComponent,
@@ -151,7 +165,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     GroupIconComponent,
     SearchableListComponent,
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule, MatMenuModule],
+  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule, ScrollingModule, MatMenuModule],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,
@@ -189,6 +203,9 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
+    ReferencePickerComponent,
+    ReferenceCSVUploadDialogComponent,
+    SimpleReferencePickerComponent,
     QuantificationSelectorComponent,
     ShareDialogComponent,
     ShareOwnershipItemButtonComponent,
@@ -204,6 +221,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     UserIconComponent,
     GroupIconComponent,
     SearchableListComponent,
+    ScrollingModule,
   ],
   providers: [
     /*APICommService, APIDataService*/

@@ -1,0 +1,251 @@
+<div class="reference-picker-container">
+  <header>
+    <div class="controls">
+      <h1 mat-dialog-title class="title">Reference Picker</h1>
+      <div class="header-actions">
+        <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onCancel()"></action-button>
+      </div>
+    </div>
+  </header>
+
+  <section class="columns">
+    <section class="column browse">
+      <div class="title">
+        <h4>References ({{ filteredReferences.length }})</h4>
+        <div class="title-actions">
+          <push-button *ngIf="allowEdit" buttonStyle="outline" title="Add Reference" (onClick)="onAddReference()"> + Add Reference </push-button>
+          <push-button *ngIf="allowEdit" buttonStyle="outline" title="Upload CSV" (onClick)="onUploadCSV()" class="upload-button">
+            <div class="upload-container">
+              <img src="assets/button-icons/upload.svg" alt="Upload icon" class="upload-icon" />
+              <span class="upload-text">Upload CSV</span>
+            </div>
+          </push-button>
+        </div>
+      </div>
+
+      <div class="search-controls">
+        <div class="search-bar">
+          <filter-box placeholder="Search references..." (onFilterChanged)="onSearchChange($event)"> </filter-box>
+        </div>
+        <div class="filter-controls">
+          <push-button
+            buttonStyle="outline"
+            [matTooltip]="'Show only references with required expressions: ' + requiredExpressions.join(', ')"
+            matTooltipShowDelay="500"
+            [active]="showMatchingExpressionsOnly"
+            (onClick)="onToggleExpressionFilter()">
+            Has required expressions
+          </push-button>
+        </div>
+      </div>
+
+      <div class="references-list {{ filteredReferences.length === 0 ? 'no-results' : '' }}">
+        <cdk-virtual-scroll-viewport [minBufferPx]="1500" [maxBufferPx]="3000" [itemSize]="65" class="references-viewport">
+          <div
+            *cdkVirtualFor="let reference of filteredReferences; trackBy: trackByReferenceId"
+            class="reference-item {{ reference.isCollapsed ? 'collapsed' : 'expanded' }}">
+            <div class="reference-header">
+              <div class="selection-checkbox">
+                <two-state-icon-button
+                  activeIcon="assets/button-icons/check-on.svg"
+                  inactiveIcon="assets/button-icons/check-off.svg"
+                  [active]="isSelected(reference.id)"
+                  (onToggle)="onToggleSelection(reference.id)">
+                </two-state-icon-button>
+              </div>
+              <div class="reference-info">
+                <div class="reference-info-header">
+                  <action-button
+                    [action]="reference.isCollapsed ? 'openAccordion' : 'closeAccordion'"
+                    color="rgb(var(--clr-gray-30))"
+                    [tooltipTitle]="reference.isCollapsed ? 'Expand details' : 'Collapse details'"
+                    (onClick)="onToggleAccordion(reference)">
+                  </action-button>
+                  <div class="reference-name-container" [class.collapsed]="reference.isCollapsed && !reference.isEditing">
+                    <div class="field-content">
+                      <input
+                        *ngIf="reference.isEditing"
+                        type="text"
+                        [(ngModel)]="reference.mineralSampleName"
+                        placeholder="Enter mineral/sample name"
+                        class="edit-input title-input" />
+                      <span
+                        *ngIf="!reference.isEditing"
+                        class="field-value"
+                        [class.collapsed-name]="reference.isCollapsed"
+                        #tooltip="matTooltip"
+                        [matTooltip]="reference.isCollapsed ? generateTooltipContent(reference) : ''"
+                        [matTooltipShowDelay]="500"
+                        [matTooltipClass]="'reference-details-tooltip'">
+                        {{ reference.mineralSampleName || "Unnamed Sample" }}
+                      </span>
+                    </div>
+                    <span *ngIf="reference.isCollapsed" class="collapsed-meta">{{ reference.category || "-" }} | {{ reference.group || "-" }}</span>
+                  </div>
+                </div>
+                <div class="reference-meta" *ngIf="!reference.isCollapsed || reference.isEditing">
+                  <div class="meta-field">
+                    <span class="field-label">Category</span>
+                    <div class="field-content">
+                      <input *ngIf="reference.isEditing" type="text" [(ngModel)]="reference.category" placeholder="Category" class="edit-input meta-input" />
+                      <span *ngIf="!reference.isEditing" class="field-value">{{ reference.category || "-" }}</span>
+                    </div>
+                  </div>
+                  <div class="meta-field">
+                    <span class="field-label">Group</span>
+                    <div class="field-content">
+                      <input *ngIf="reference.isEditing" type="text" [(ngModel)]="reference.group" placeholder="Group" class="edit-input meta-input" />
+                      <span *ngIf="!reference.isEditing" class="field-value">{{ reference.group || "-" }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="reference-actions">
+                <action-button
+                  *ngIf="allowEdit && !reference.isEditing"
+                  action="edit"
+                  color="rgb(var(--clr-gray-30))"
+                  tooltipTitle="Edit reference"
+                  (onClick)="onToggleReferenceEdit(reference)">
+                </action-button>
+                <action-button
+                  *ngIf="allowEdit && reference.isEditing"
+                  action="check"
+                  color="rgb(var(--clr-green-50))"
+                  tooltipTitle="Save changes"
+                  (onClick)="onSaveReference(reference)">
+                </action-button>
+                <action-button
+                  *ngIf="allowEdit && !reference.isEditing"
+                  action="delete"
+                  color="rgb(var(--clr-red-50))"
+                  tooltipTitle="Delete reference"
+                  (onClick)="onDeleteReference(reference.id)">
+                </action-button>
+                <action-button
+                  *ngIf="allowEdit && reference.isEditing"
+                  action="close"
+                  color="rgb(var(--clr-gray-30))"
+                  tooltipTitle="Cancel changes"
+                  (onClick)="onCancelReferenceEdit()">
+                </action-button>
+              </div>
+            </div>
+
+            <div class="reference-details" *ngIf="!reference.isCollapsed || reference.isEditing">
+              <div class="citation-info">
+                <div class="citation-field">
+                  <span class="field-label">Citation</span>
+                  <div class="field-content">
+                    <input
+                      *ngIf="reference.isEditing"
+                      type="text"
+                      [(ngModel)]="reference.sourceCitation"
+                      placeholder="Enter source citation"
+                      class="edit-input citation-input" />
+                    <span *ngIf="!reference.isEditing" class="field-value citation-text">{{ reference.sourceCitation || "No citation" }}</span>
+                  </div>
+                </div>
+                <div class="link-field">
+                  <span class="field-label">Source Link</span>
+                  <div class="field-content">
+                    <input *ngIf="reference.isEditing" type="url" [(ngModel)]="reference.sourceLink" placeholder="Enter source URL" class="edit-input link-input" />
+                    <a *ngIf="!reference.isEditing && reference.sourceLink" [href]="reference.sourceLink" target="_blank" rel="noopener noreferrer" class="link-text">
+                      {{ reference.sourceLink }}
+                    </a>
+                    <span *ngIf="!reference.isEditing && !reference.sourceLink" class="field-value no-link">No link available</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="expression-pairs">
+                <div class="pairs-header">
+                  <span class="field-label">Expressions</span>
+                  <push-button
+                    *ngIf="reference.isEditing"
+                    buttonStyle="outline"
+                    title="Add Expression"
+                    class="add-pair-btn"
+                    (onClick)="onAddExpressionPair(reference)">
+                    + Add Expression
+                  </push-button>
+                </div>
+                <div class="pairs-list">
+                  <div *ngFor="let pair of reference.expressionValuePairs; let i = index" class="expression-pair-container">
+                    <div class="expression-pair">
+                      <div class="pair-expression">
+                        <div class="pair-content">
+                          <push-button *ngIf="reference.isEditing" buttonStyle="outline" title="Select Expression" (onClick)="onSelectExpression(reference, i)">
+                            {{ pair.expressionName || "Select Expression" }}
+                          </push-button>
+                          <span *ngIf="!reference.isEditing" class="field-value expression-name">{{ pair.expressionName || "No expression" }}</span>
+                        </div>
+                      </div>
+                      <div class="pair-value {{ reference.isEditing ? 'editing' : '' }}">
+                        <div class="pair-content">
+                          <input *ngIf="reference.isEditing" type="number" [(ngModel)]="pair.value" placeholder="Value" class="edit-input value-input" step="0.01" />
+                          <span *ngIf="!reference.isEditing" class="field-value value">{{ formatExpressionValue(pair.value) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="pair-actions">
+                      <action-button
+                        *ngIf="reference.isEditing"
+                        action="delete"
+                        color="rgb(var(--clr-red-50))"
+                        tooltipTitle="Remove expression"
+                        (onClick)="onDeleteExpressionPair(reference, i)">
+                      </action-button>
+                    </div>
+                  </div>
+                  <div *ngIf="reference.expressionValuePairs.length === 0" class="no-pairs">
+                    <span class="field-value">No expression-value pairs defined</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </cdk-virtual-scroll-viewport>
+      </div>
+
+      <div *ngIf="filteredReferences.length === 0" class="no-results">
+        <div class="no-results-content">
+          <span class="no-results-text">No references found</span>
+          <span class="no-results-hint" *ngIf="searchText">Try adjusting your search terms</span>
+          <span class="no-results-hint" *ngIf="showMatchingExpressionsOnly && !searchText">No references have all required expressions</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="column selected-references">
+      <div class="title">
+        <h4>Selected References ({{ selectedReferences.size }})</h4>
+        <action-button
+          action="close"
+          color="rgb(var(--clr-gray-30))"
+          (onClick)="onClearSelection()"
+          tooltipTitle="Clear selection"
+          [disabled]="selectedReferences.size === 0"></action-button>
+      </div>
+      <div class="selected-list">
+        <cdk-virtual-scroll-viewport [itemSize]="80" class="selected-viewport">
+          <div *cdkVirtualFor="let reference of selectedReferencesArray; trackBy: trackByReferenceId" class="selected-reference-item">
+            <div class="selected-header">
+              <h6>{{ reference.mineralSampleName || "Unnamed Sample" }}</h6>
+              <action-button action="close" color="rgb(var(--clr-gray-40))" tooltipTitle="Remove from selection" (onClick)="onToggleSelection(reference.id)">
+              </action-button>
+            </div>
+            <div class="selected-meta">
+              <span>{{ reference.category || "No category" }} | {{ reference.group || "No group" }}</span>
+            </div>
+          </div>
+        </cdk-virtual-scroll-viewport>
+      </div>
+    </section>
+  </section>
+
+  <div class="button-container">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onSave()">Select References</push-button>
+  </div>
+</div>

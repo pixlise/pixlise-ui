@@ -170,7 +170,7 @@ export class DataExpressionId {
   }
 
   // Instead of hard-coding it in multiple places...
-  private static getPossibleDetectors(): string[] {
+  public static getPossibleDetectors(): string[] {
     return ["A", "B", "Combined"];
   }
 
