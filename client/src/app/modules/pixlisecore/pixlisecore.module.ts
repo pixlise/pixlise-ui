@@ -49,6 +49,7 @@ import { RGBUPickerDropdownComponent } from "./components/atoms/rgbupicker-dropd
 import { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 import { ReferencePickerComponent } from "./components/reference-picker/reference-picker.component";
 import { ReferenceCSVUploadDialogComponent } from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+import { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
 
 import { QuantificationSelectorComponent } from "./components/atoms/quantification-selector/quantification-selector.component";
 import { QuantSelectorPanelComponent } from "./components/atoms/quant-selector-panel/quant-selector-panel.component";
@@ -92,6 +93,7 @@ export {
   ReferenceCSVUploadData,
   ReferenceCSVUploadResponse,
 } from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+export { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
@@ -143,6 +145,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     PickerDialogComponent,
     ReferencePickerComponent,
     ReferenceCSVUploadDialogComponent,
+    SimpleReferencePickerComponent,
     QuantificationSelectorComponent,
     QuantSelectorPanelComponent,
     QuantificationListComponent,
@@ -202,6 +205,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     PickerDialogComponent,
     ReferencePickerComponent,
     ReferenceCSVUploadDialogComponent,
+    SimpleReferencePickerComponent,
     QuantificationSelectorComponent,
     ShareDialogComponent,
     ShareOwnershipItemButtonComponent,

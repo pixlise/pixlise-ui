@@ -7,7 +7,7 @@ import {
   ExpressionPickerData,
   ExpressionPickerResponse,
 } from "../../../expressions/components/expression-picker/expression-picker.component";
-import { ReferenceData, ExpressionValuePair } from "src/app/generated-protos/references";
+import { ReferenceData } from "src/app/generated-protos/references";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   ReferenceDataListReq,
@@ -19,7 +19,6 @@ import {
 } from "../../../../generated-protos/references-msgs";
 import { DataExpression } from "../../../../generated-protos/expressions";
 import { ExpressionsService } from "../../../expressions/services/expressions.service";
-import { levenshteinDistance } from "../../../../utils/search";
 import {
   ReferenceCSVUploadDialogComponent,
   ReferenceCSVUploadData,
@@ -62,6 +61,8 @@ export class ReferencePickerComponent implements OnDestroy {
   showMatchingExpressionsOnly: boolean = false;
   requiredExpressions: string[] = [];
   _allExpressions: Record<string, DataExpression[]> = {};
+
+  currentEditingReference: ReferenceData | null = null;
 
   private _currentExpressionSelection: { reference: ReferenceData; pairIndex: number } | null = null;
 
@@ -183,7 +184,30 @@ export class ReferencePickerComponent implements OnDestroy {
   }
 
   onToggleReferenceEdit(reference: ReferenceDataItem): void {
+    if (!reference.isEditing) {
+      this.currentEditingReference = ReferenceData.create(reference as ReferenceData);
+    }
     reference.isEditing = !reference.isEditing;
+    if (!reference.isEditing) {
+      this.currentEditingReference = null;
+    }
+  }
+
+  onCancelReferenceEdit(): void {
+    console.log("onCancelReferenceEdit", this.currentEditingReference);
+    if (this.currentEditingReference) {
+      const refIndex = this.references.findIndex(ref => ref.id === this.currentEditingReference?.id);
+      console.log("refIndex", refIndex);
+      if (refIndex !== -1) {
+        this.references[refIndex] = {
+          ...this.currentEditingReference,
+          isEditing: false,
+          isCollapsed: !!this.references[refIndex]?.isCollapsed,
+        };
+      }
+      this.currentEditingReference = null;
+      this.applyFilters();
+    }
   }
 
   onAddReference(): void {
@@ -215,7 +239,6 @@ export class ReferencePickerComponent implements OnDestroy {
     });
     this._apiDataService.sendReferenceDataWriteRequest(ReferenceDataWriteReq.create({ referenceData })).subscribe({
       next: (response: ReferenceDataWriteResp) => {
-        console.log(response);
         this.references = this.references.map(ref => (ref.id === reference.id && response?.referenceData ? response.referenceData : ref));
         this.applyFilters();
       },
@@ -312,6 +335,11 @@ export class ReferencePickerComponent implements OnDestroy {
 
   onToggleAccordion(reference: ReferenceDataItem): void {
     reference.isCollapsed = !reference.isCollapsed;
+
+    if (reference.isEditing) {
+      reference.isEditing = false;
+      this.onCancelReferenceEdit();
+    }
   }
 
   generateTooltipContent(reference: ReferenceDataItem): string {
@@ -467,6 +495,11 @@ Expressions: ${expressionText}`;
     } catch (error) {
       this._snackBarService.openError("Failed to parse CSV file", error instanceof Error ? error.message : "Unknown error");
     }
+  }
+
+  onClearSelection(): void {
+    this.selectedReferences.clear();
+    this.applyFilters();
   }
 
   private showCsvUploadPreview(referenceDataList: ReferenceData[]): void {

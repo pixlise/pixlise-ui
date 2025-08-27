@@ -80,6 +80,7 @@
                         {{ reference.mineralSampleName || "Unnamed Sample" }}
                       </span>
                     </div>
+                    <span *ngIf="reference.isCollapsed" class="collapsed-meta">{{ reference.category || "-" }} | {{ reference.group || "-" }}</span>
                   </div>
                 </div>
                 <div class="reference-meta" *ngIf="!reference.isCollapsed || reference.isEditing">
@@ -115,11 +116,18 @@
                   (onClick)="onSaveReference(reference)">
                 </action-button>
                 <action-button
-                  *ngIf="allowEdit"
+                  *ngIf="allowEdit && !reference.isEditing"
                   action="delete"
                   color="rgb(var(--clr-red-50))"
                   tooltipTitle="Delete reference"
                   (onClick)="onDeleteReference(reference.id)">
+                </action-button>
+                <action-button
+                  *ngIf="allowEdit && reference.isEditing"
+                  action="close"
+                  color="rgb(var(--clr-gray-30))"
+                  tooltipTitle="Cancel changes"
+                  (onClick)="onCancelReferenceEdit()">
                 </action-button>
               </div>
             </div>
@@ -212,6 +220,12 @@
     <section class="column selected-references">
       <div class="title">
         <h4>Selected References ({{ selectedReferences.size }})</h4>
+        <action-button
+          action="close"
+          color="rgb(var(--clr-gray-30))"
+          (onClick)="onClearSelection()"
+          tooltipTitle="Clear selection"
+          [disabled]="selectedReferences.size === 0"></action-button>
       </div>
       <div class="selected-list">
         <cdk-virtual-scroll-viewport [itemSize]="80" class="selected-viewport">

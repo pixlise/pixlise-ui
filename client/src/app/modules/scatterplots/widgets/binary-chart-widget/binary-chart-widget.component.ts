@@ -5,11 +5,12 @@ import {
   DataUnit,
   RegionDataResults,
   SelectionService,
+  SimpleReferencePickerComponent,
   SnackbarService,
   WidgetDataService,
   WidgetKeyItem,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { catchError, first, map, Observable, Subscription, tap } from "rxjs";
+import { catchError, first, Observable, Subscription, tap } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { BinaryChartDrawer } from "./binary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -29,7 +30,7 @@ import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analy
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { ReferencePickerComponent, ReferencePickerData, ReferencePickerResponse } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, ReferencePickerData, ReferencePickerResponse } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { BinaryChartExporter } from "src/app/modules/scatterplots/widgets/binary-chart-widget/binary-chart-exporter";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { NaryChartModel } from "../../base/model";
@@ -39,6 +40,8 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
+import { ReferenceDataListReq, ReferenceDataListResp } from "../../../../generated-protos/references-msgs";
+import { ReferenceData } from "src/app/generated-protos/references";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -105,6 +108,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   private _objChangeMonitor = new ObjectChangeMonitor();
 
+  private _allReferences: ReferenceData[] = [];
+  private _referenceIds: string[] = [];
+
   axisLabelFontSize = 14;
 
   constructor(
@@ -114,7 +120,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService,
-    private _objChangeService: ObjectChangeMonitorService
+    private _objChangeService: ObjectChangeMonitorService,
+    private _apiDataService: APIDataService
   ) {
     super();
 
@@ -345,6 +352,18 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       })
     );
 
+    this._apiDataService.sendReferenceDataListRequest(ReferenceDataListReq.create({})).subscribe({
+      next: (response: ReferenceDataListResp) => {
+        if (response?.referenceData) {
+          this._allReferences = response.referenceData;
+          if (this._referenceIds.length > 0) {
+            this.mdl.references = this._referenceIds.map(id => this._allReferences.find(ref => ref.id === id)).filter(ref => ref !== undefined) as ReferenceData[];
+            this.update();
+          }
+        }
+      },
+    });
+
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const binaryData: BinaryState = data as BinaryState;
@@ -355,6 +374,13 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           }
 
           this.mdl.showMmol = binaryData.showMmol;
+
+          if (binaryData.referenceIds) {
+            this._referenceIds = binaryData.referenceIds;
+            if (this._allReferences.length > 0) {
+              this.mdl.references = this._referenceIds.map(id => this._allReferences.find(ref => ref.id === id)).filter(ref => ref !== undefined) as ReferenceData[];
+            }
+          }
 
           if (binaryData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
@@ -562,12 +588,12 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       selectedReferences: this.mdl.references,
     };
 
-    const dialogRef = this.dialog.open(ReferencePickerComponent, dialogConfig);
+    const dialogRef = this.dialog.open(SimpleReferencePickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ReferencePickerResponse) => {
       if (result) {
-        console.log("Selected references:", result.selectedReferences);
         this.mdl.references = result.selectedReferences;
         this.update();
+        this.saveState();
       }
     });
   }
@@ -591,6 +617,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         expressionIDs: this.mdl.expressionIds,
         visibleROIs: visibleROIs,
         showMmol: this.mdl.showMmol,
+        referenceIds: this.mdl.references.map(ref => ref.id),
       })
     );
   }

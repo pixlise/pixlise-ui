@@ -15,9 +15,10 @@ import {
   RegionDataResults,
   SnackbarService,
   WidgetKeyItem,
-  ReferencePickerComponent,
   ReferencePickerData,
   ReferencePickerResponse,
+  SimpleReferencePickerComponent,
+  APIDataService,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
@@ -48,6 +49,8 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
+import { ReferenceDataListReq, ReferenceDataListResp } from "../../../../generated-protos/references-msgs";
+import { ReferenceData } from "src/app/generated-protos/references";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -114,6 +117,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   private _objChangeMonitor = new ObjectChangeMonitor();
 
+  private _allReferences: ReferenceData[] = [];
+  private _referenceIds: string[] = [];
+
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
@@ -128,7 +134,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
     private _snackService: SnackbarService,
-    private _objChangeService: ObjectChangeMonitorService
+    private _objChangeService: ObjectChangeMonitorService,
+    private _apiDataService: APIDataService
   ) {
     super();
 
@@ -439,6 +446,18 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       })
     );
 
+    this._apiDataService.sendReferenceDataListRequest(ReferenceDataListReq.create({})).subscribe({
+      next: (response: ReferenceDataListResp) => {
+        if (response?.referenceData) {
+          this._allReferences = response.referenceData;
+          if (this._referenceIds.length > 0) {
+            this.mdl.references = this._referenceIds.map(id => this._allReferences.find(ref => ref.id === id)).filter(ref => ref !== undefined) as ReferenceData[];
+            this.update();
+          }
+        }
+      },
+    });
+
     this._subs.add(
       this.widgetData$.subscribe((data: unknown) => {
         const ternaryData: TernaryState = data as TernaryState;
@@ -449,6 +468,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           }
 
           this.mdl.showMmol = ternaryData.showMmol;
+
+          if (ternaryData.referenceIds) {
+            this._referenceIds = ternaryData.referenceIds;
+            if (this._allReferences.length > 0) {
+              this.mdl.references = this._referenceIds.map(id => this._allReferences.find(ref => ref.id === id)).filter(ref => ref !== undefined) as ReferenceData[];
+            }
+          }
 
           if (ternaryData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
@@ -675,12 +701,12 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       selectedReferences: this.mdl.references,
     };
 
-    const dialogRef = this.dialog.open(ReferencePickerComponent, dialogConfig);
+    const dialogRef = this.dialog.open(SimpleReferencePickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ReferencePickerResponse) => {
       if (result) {
-        console.log("Selected references:", result.selectedReferences);
         this.mdl.references = result.selectedReferences;
         this.update();
+        this.saveState();
       }
     });
   }
@@ -702,6 +728,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         expressionIDs: this.mdl.expressionIds,
         visibleROIs: visibleROIs,
         showMmol: this.mdl.showMmol,
+        referenceIds: this.mdl.references.map(ref => ref.id),
       })
     );
   }

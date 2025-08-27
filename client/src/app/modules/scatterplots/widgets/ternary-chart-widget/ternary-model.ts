@@ -142,6 +142,8 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
         // Override the id for the reference
         coord.id = reference.id;
 
+        // Store reference data directly in the coordinate for correct mapping
+        (coord as PointWithRayLabel & { referenceData: ReferenceData }).referenceData = reference;
         coords.push(coord);
       }
     }
@@ -155,7 +157,14 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
     for (let i = 0; i < this._drawModel.referenceCoords.length; i++) {
       const coord = this._drawModel.referenceCoords[i];
       if (Math.abs(pt.x - coord.x) < boxSize / 2 && Math.abs(pt.y - coord.y) < boxSize / 2) {
-        return this._referenceData[i];
+        // Use the reference data stored in the coordinate to avoid index mismatch
+        const storedRef = (coord as PointWithRayLabel & { referenceData?: ReferenceData }).referenceData;
+        if (storedRef) {
+          return storedRef;
+        }
+        // Fallback: find by ID if no stored reference data
+        const refId = coord.id;
+        return this._referenceData.find(ref => ref.id === refId) || null;
       }
     }
 
