@@ -13,7 +13,7 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions, ImageOptionsComponent, ImagePickerParams, ImagePickerResult } from "../context-image/image-options/image-options.component";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageModelLoadedData } from "../context-image/context-image-model-internals";
-import { Coordinate4D, LightMode, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode, MapLayerVisibility, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { Scan3DMouseInteraction } from "./mouse-interaction";
@@ -29,6 +29,7 @@ import { ContextImageLayers, RegionMap } from "../context-image/context-image.co
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ColourRamp } from "src/app/utils/colours";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 
 @Component({
@@ -56,6 +57,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   private _canvasElem?: HTMLCanvasElement;
 
   private _canvas$: Subject<CanvasSizeNotification> = new Subject<CanvasSizeNotification>();
+
+  // Map layers that were hidden in past - if we re-open the visibility dialog we
+  // don't want to lose them because they're time consuming to find and enable
+  private _hiddenMapLayers: Map<string, ContextImageMapLayer> = new Map<string, ContextImageMapLayer>();
 
   constructor(
     private _cacheDataService: APICachedDataService,
@@ -156,6 +161,18 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     );
 
     this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        if (screenConfiguration) {
+          this.configuredScanIds = Object.keys(screenConfiguration.scanConfigurations).map(scanId => scanId);
+
+          // Also, in this case, we forget any hidden layers we had. They're likely no longer
+          // relevant, user may have switched quants or something
+          this._hiddenMapLayers.clear();
+        }
+      })
+    );
+
+    this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
         if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
           return;
@@ -226,6 +243,22 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         this.mdl.lightMode = scan3DState.lightMode;
         this.mdl.planeYScale = scan3DState.planeYScale;
         this.mdl.showFootprint = scan3DState.showFootprint;
+
+        const validMapLayers = scan3DState.mapLayers.filter(layer => layer?.expressionID && layer.expressionID.length > 0);
+        //this.mdl.expressionIds = validMapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+
+        this.mdl.layerOpacity.clear();
+        for (const l of validMapLayers) {
+          this.mdl.layerOpacity.set(l.expressionID, l.opacity);
+        }
+
+        // For some reason we're getting empty ROIs so filter those out here
+        this.mdl.roiIds = [];
+        for (const roi of scan3DState.roiLayers) {
+          if (roi.id.length > 0) {
+            this.mdl.roiIds.push(roi);
+          }
+        }
         
         if (scan3DState.cameraPosition && scan3DState.cameraRotation && scan3DState.cameraTarget && scan3DState.cameraZoom) {
           this.mdl.setInitialCameraOrientation(scan3DState.cameraPosition, scan3DState.cameraRotation, scan3DState.cameraTarget, scan3DState.cameraZoom);
@@ -435,6 +468,15 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     const dir = new THREE.Quaternion();
     this.mdl.drawModel.renderData.camera.getWorldQuaternion(dir);
 
+    // TODO: Find better way of storing layer visbility settings
+    // For now, we make a map of opacity so we can write something valid
+    const opacityLookup = new Map<string, number>();
+    // for (const scanMdl of this.mdl.expressionIds.raw?.scanModels.values() || []) {
+    //   for (const m of scanMdl.maps) {
+    //     opacityLookup.set(m.expressionId, m.opacity);
+    //   }
+    // }
+
     const obj = Scan3DViewState.create({
       contextImage: this.mdl.imageName,
       contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
@@ -454,7 +496,18 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       showFootprint: this.mdl.showFootprint,
       cameraPosition: vector3ToCoordinate3D(this.mdl.drawModel.renderData.camera.position),
       cameraRotation: quaternionToCoordinate4D(dir),
-      cameraZoom: this.mdl.drawModel.renderData.camera.zoom
+      cameraZoom: this.mdl.drawModel.renderData.camera.zoom,
+
+      roiLayers: this.mdl.roiIds.filter(roi => roi.id.length > 0),
+      mapLayers: this.mdl.expressionIds
+      .filter(id => !DataExpressionId.isUnsavedExpressionId(id))
+      .map(id =>
+        MapLayerVisibility.create({
+          expressionID: id,
+          visible: !this._hiddenMapLayers.has(id),
+          opacity: opacityLookup.get(id) ?? 1,
+        })
+      ),
     });
 
     if (this.mdl.drawModel.renderData.orbitControl?.target) {
@@ -717,7 +770,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       this.mdl.setData(scanId, contextImgModel, scanEntries, beams).pipe(
         switchMap(
           () => {
-            return this.loadMapLayers()
+            return this.loadMapLayers();
           }
         )
       ).subscribe(

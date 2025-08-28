@@ -786,7 +786,7 @@ export class ContextImageScanModelGenerator {
     }
   }
 
-  private static fattenFootprint(footprintHullPoints: HullPoint[], enlargeBy: number, angleRad: number): HullPoint[] {
+  public static fattenFootprint(footprintHullPoints: HullPoint[], enlargeBy: number, angleRad: number): HullPoint[] {
     if (footprintHullPoints.length <= 0) {
       console.warn("  Footprint hull not widened, no points exist");
       return [];

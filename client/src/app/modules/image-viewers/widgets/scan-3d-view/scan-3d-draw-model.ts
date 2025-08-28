@@ -12,7 +12,7 @@ import { ContextImageScanModel } from '../context-image/context-image-model-inte
 import { ContextImageMapLayer } from '../../models/map-layer';
 
 
-const pushUpHeight = 0.1;
+const pushUpHeight = 0.01;
 
 export class Scan3DDrawModel {
   protected _meshData?: PMCMeshData;

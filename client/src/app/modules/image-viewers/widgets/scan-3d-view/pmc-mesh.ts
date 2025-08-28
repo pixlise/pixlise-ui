@@ -10,6 +10,7 @@ import { ContextImageScanModelGenerator } from '../context-image/context-image-s
 import { ScanPoint } from '../../models/scan-point';
 import { HullPoint } from '../../models/footprint';
 import { r } from 'node_modules/@angular/cdk/overlay-module.d-BvvR6Y05';
+import { E } from 'node_modules/@angular/material/error-options.d-CGdTZUYk';
 
 
 export class PMCMeshPoint {
@@ -54,6 +55,8 @@ export class PMCMeshData {
   private _rawCornerPoints: THREE.Vector3[] = [];
   private _rawCornerUVs: THREE.Vector2[] = [];
   private _hullPoints: THREE.Vector3[] = [];
+  private _averagePointDistanceRaw: number = 0;
+  private _averagePointDistanceTerrain: number = 0;
 
   private _pmcPolygons: PMCPoly[] = [];
 
@@ -70,6 +73,7 @@ export class PMCMeshData {
 
     let scale = this.calculateDisplayScaleFactor(this._image ? this._bboxMCC : this._bboxRawXYZ);
     this.calculateScanRelatedPoints(scale, this._scanEntries, this._beamLocations, this._contextImgMdl);
+    this.calculateAveragePointDistance();
     this.makePMCMap();
 
     if (this._image) {
@@ -413,6 +417,43 @@ export class PMCMeshData {
     }
   }
 
+  private calculateAveragePointDistance() {
+    if (this._points.length <= 0) {
+      throw new Error("calculateAveragePointDistance called without points created");
+    }
+      
+      // The average distance is just checked between the first N PMC xyz coordinates and we assume that's a good enough estimate
+    // for the whole scan
+    let checked = 0;
+    let totalDistRaw = 0;
+    let totalDistTerrain = 0;
+    for (let c = 0; c < this._points.length; c++) {
+      const pt = this._points[c];
+      if (pt.scanEntryIndex >= 0 && this._scanEntries[pt.scanEntryIndex].normalSpectra || this._scanEntries[pt.scanEntryIndex].pseudoIntensities) {
+        if (checked > 0) {
+          const last = this._points[c-1];
+          let dist = pt.rawPoint.distanceTo(last.rawPoint);
+          totalDistRaw += dist;
+
+          dist = pt.terrainPoint.distanceTo(last.terrainPoint);
+          totalDistTerrain += dist;
+
+          if (checked > 10) {
+            break;
+          }
+        }
+      }
+      checked++;
+    }
+
+    if (checked <= 0) {
+      throw new Error("calculateAveragePointDistance failed to find any points to check")
+    }
+
+    this._averagePointDistanceRaw = totalDistRaw / checked;
+    this._averagePointDistanceTerrain = totalDistTerrain / checked;
+  }
+
   private calculateSupportPoints(
     scale: number,
     imageWidth: number,
@@ -546,7 +587,7 @@ export class PMCMeshData {
           continue;
         }
 
-        const expandScale = 0.05;
+        const expandScale = 0.03;
         rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], expandScale);
 
         let rawUV = new THREE.Vector2(this._points[idx].u, this._points[idx].v);
@@ -648,11 +689,18 @@ export class PMCMeshData {
     for (const cluster of this._contextImgMdl.clusters) {
       const clusterCopy = new PointCluster(
         Array.from(cluster.locIdxs),
-        cluster.pointDistance,
+        this._averagePointDistanceRaw,
         footprintXYZ,
         cluster.angleRadiansToContextImage,
-      )
-      ContextImageScanModelGenerator.makeScanPointPolygons(0, clusterCopy, scanPointsXYZ, scanPointXYZPolygons);
+      );
+
+      clusterCopy.footprintPoints = ContextImageScanModelGenerator.fattenFootprint(
+        clusterCopy.footprintPoints,
+        clusterCopy.pointDistance / 2,
+        clusterCopy.angleRadiansToContextImage
+      );
+
+      ContextImageScanModelGenerator.makeScanPointPolygons(50, clusterCopy, scanPointsXYZ, scanPointXYZPolygons);
       //wholeFootprintHullPoints.push(cluster.footprintPoints);
     }
 
