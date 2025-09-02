@@ -15,6 +15,8 @@ import { ContextImageMapLayer } from '../../models/map-layer';
 const pushUpHeight = 0.01;
 
 export class Scan3DDrawModel {
+  protected _sceneAttachment?: THREE.Object3D;
+
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
@@ -58,6 +60,19 @@ export class Scan3DDrawModel {
       return;
     }
 
+    // Firstly, add our attachment point
+    if (this._sceneAttachment) {
+      this.renderData.scene.remove(this._sceneAttachment);
+    }
+
+    // To make things work nicer with three js default "right handed" coordinate space (where Z+ comes out of the screen)
+    // we have to rotate any triangle mesh data that comes from PIXL data to have it's Z values point up on the screen.
+    // This way things like the orbit tool work with default settings, else we'd always be encountering issues where
+    // up vectors aren't as expected. Hence we attach all scene data to this attachment point from here on!
+    this._sceneAttachment = new THREE.Object3D();
+    this._sceneAttachment.rotation.x = -Math.PI/2;
+    this.renderData.scene.add(this._sceneAttachment);
+
     this._meshData = meshData;
     this._texture = texture;
 
@@ -66,7 +81,7 @@ export class Scan3DDrawModel {
       this._terrainMatStandard.map = texture;
     }
 
-    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic);
+    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic, true);
 
     const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
     sprite.colorSpace = THREE.SRGBColorSpace;
@@ -101,10 +116,18 @@ export class Scan3DDrawModel {
     );
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
 
-    this.renderData.scene.add(this._meshTerrain);
+    this._sceneAttachment.add(this._meshTerrain);
+
+    // DEBUGGING: Add wireframe of terrain triangles too
+    const wireframe = new THREE.WireframeGeometry(this._meshTerrain.geometry);
+    const line = new THREE.LineSegments( wireframe );
+    // line.material.depthTest = false;
+    // line.material.opacity = 0.25;
+    // line.material.transparent = true;
+    this._sceneAttachment.add(line);
 
     if (this._meshFootprint) {
-      this.renderData.scene.add(this._meshFootprint);
+      this._sceneAttachment.add(this._meshFootprint);
     }
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
@@ -354,8 +377,8 @@ export class Scan3DDrawModel {
   }
 */
   updateSelection(selectionService: SelectionService) {
-    if (this._selection) {
-      this.renderData.scene.remove(this._selection);
+    if (this._selection && this._sceneAttachment) {
+      this._sceneAttachment.remove(this._selection);
     }
 
     this._selection = new THREE.Object3D();
@@ -414,7 +437,7 @@ export class Scan3DDrawModel {
       }
     }
 
-    this.renderData.scene.add(this._selection);
+    this._sceneAttachment?.add(this._selection);
   }
 
   setLightMode(mode: LightMode) {
@@ -448,28 +471,28 @@ export class Scan3DDrawModel {
   }
 
   setShowPoints(show: boolean) {
-    if (!this._meshPoints) {
+    if (!this._meshPoints || !this._sceneAttachment) {
       console.error("setShowPoints: Points not set up yet");
       return;
     }
 
     if (!show) {
-      this.renderData.scene.remove(this._meshPoints);
+      this._sceneAttachment.remove(this._meshPoints);
     } else {
-      this.renderData.scene.add(this._meshPoints);
+      this._sceneAttachment.add(this._meshPoints);
     }
   }
 
   setShowFootprint(show: boolean) {
-    if (!this._meshFootprint) {
+    if (!this._meshFootprint || !this._sceneAttachment) {
       console.error("setShowFootprint: Footprint not set up yet");
       return;
     }
 
     if (!show) {
-      this.renderData.scene.remove(this._meshFootprint);
+      this._sceneAttachment.remove(this._meshFootprint);
     } else {
-      this.renderData.scene.add(this._meshFootprint);
+      this._sceneAttachment.add(this._meshFootprint);
     }
   }
 
@@ -502,14 +525,14 @@ export class Scan3DDrawModel {
   }
 
   setPlaneYScale(scale: number) {
-    if (!this._plane) {
+    if (!this._plane || !this._sceneAttachment) {
       console.error("setPlaneHeight: Plane not set up yet");
       return;
     }
 
-    this.renderData.scene.remove(this._plane);
+    this._sceneAttachment.remove(this._plane);
     for (const box of this._planeDragBoxes) {
-      this.renderData.scene.remove(box);
+      this._sceneAttachment.remove(box);
     }
 
     if (scale > 0 && scale <= 1) {
@@ -518,11 +541,11 @@ export class Scan3DDrawModel {
       //this._plane.scale.setY(2);
       this._plane.scale.setY(scale);
 
-      this.renderData.scene.add(this._plane);
+      this._sceneAttachment.add(this._plane);
 
       for (const box of this._planeDragBoxes) {
         box.position.setY(this.getPlaneY(this._meshData!.bboxMeshPMCs));
-        this.renderData.scene.add(box);
+        this._sceneAttachment.add(box);
       }
     }
   }
@@ -553,8 +576,13 @@ export class Scan3DDrawModel {
   }
 
   updateMaps(maps: ContextImageMapLayer[]) {
+    if (!this._sceneAttachment) {
+      console.error("updateMaps: called without inited scene");
+      return;
+    }
+
     if (this._meshPointPolygons) {
-      this.renderData.scene.remove(this._meshPointPolygons);
+      this._sceneAttachment.remove(this._meshPointPolygons);
     }
 
     if (maps.length > 0 && this._meshData && this._meshTerrain) {
@@ -577,9 +605,9 @@ export class Scan3DDrawModel {
       this._meshPointPolygons = this._meshData!.createPointPolygons(this._meshTerrain, mat, colours);
 
       // Push it up slightly
-      this._meshPointPolygons.position.y += pushUpHeight;
+      //this._meshPointPolygons.position.y += pushUpHeight;
 
-      this.renderData.scene.add(this._meshPointPolygons);
+      this._sceneAttachment.add(this._meshPointPolygons);
     }
   }
 }
