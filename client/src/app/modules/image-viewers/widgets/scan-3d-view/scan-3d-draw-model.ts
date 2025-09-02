@@ -413,7 +413,7 @@ export class Scan3DDrawModel {
 
           if (pt) {
             const m = new THREE.Mesh(sphere, matSelect);
-            m.position.set(pt.x, pt.y * this._heightExaggerationScale, pt.z);
+            m.position.set(pt.x, pt.y, pt.z * this._heightExaggerationScale);
             m.renderOrder = 1;
 
             this._selection.add(m);
@@ -428,7 +428,7 @@ export class Scan3DDrawModel {
 
           if (pt) {
             const m = new THREE.Mesh(sphere, matHover);
-            m.position.set(pt.x, pt.y * this._heightExaggerationScale, pt.z);
+            m.position.set(pt.x, pt.y, pt.z * this._heightExaggerationScale);
             m.renderOrder = 10;
 
             this._selection.add(m);
@@ -499,16 +499,16 @@ export class Scan3DDrawModel {
   setHeightExaggerationScale(s: number) {
     this._heightExaggerationScale = s;
     if (this._meshPoints) {
-      this._meshPoints.scale.y = s;
+      this._meshPoints.scale.z = s;
     }
     if (this._meshTerrain) {
-      this._meshTerrain.scale.y = s;
+      this._meshTerrain.scale.z = s;
     }
     if (this._meshFootprint) {
-      this._meshFootprint.scale.y = s;
+      this._meshFootprint.scale.z = s;
     }
     if (this._plane) {
-      this._plane.scale.y = s;
+      this._plane.scale.z = s;
     }
   }
 
