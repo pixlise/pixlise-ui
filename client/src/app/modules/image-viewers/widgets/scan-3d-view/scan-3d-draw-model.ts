@@ -14,6 +14,10 @@ import { ContextImageMapLayer } from '../../models/map-layer';
 
 const pushUpHeight = 0.01;
 
+const renderOrderSelectedPoint = 1;
+const renderOrderHoverPoint = 10;
+const renderOrderComparePlane = 100;
+
 export class Scan3DDrawModel {
   protected _sceneAttachment?: THREE.Object3D;
 
@@ -131,7 +135,7 @@ export class Scan3DDrawModel {
     }
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
-    this.initPlane(meshData.bboxMeshAll, dataCenter);
+    this.initPlane(meshData.bboxMeshAll);
 
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._meshPoints);
   }
@@ -256,10 +260,12 @@ export class Scan3DDrawModel {
     return group;
   }
 
-  protected initPlane(meshBBox: AxisAlignedBBox, dataCenter: THREE.Vector3) {
-    const planeXSize = meshBBox.maxCorner.x-meshBBox.minCorner.x;
-    const planeYSize = meshBBox.maxCorner.y-meshBBox.minCorner.y;
-    const planeZSize = meshBBox.maxCorner.z-meshBBox.minCorner.z;
+  protected initPlane(meshBBox: AxisAlignedBBox) {
+    const dataCenter = meshBBox.center();
+    const planeXSize = meshBBox.sizeX();
+    const planeYSize = meshBBox.sizeY();
+    const planeZSize = meshBBox.sizeZ();
+
     const planeMesh = new THREE.Mesh(
       new THREE.BoxGeometry(
         planeXSize,
@@ -276,11 +282,11 @@ export class Scan3DDrawModel {
 
     // Box comes centered around 0,0,0, so we re-center it to be at 0,bottom,0
     this._plane = new THREE.Object3D();
-    planeMesh.position.setY(planeYSize/2);
+    planeMesh.position.setZ(planeZSize/2);
 
     this._plane.add(planeMesh);
-    this._plane.position.set(dataCenter.x, meshBBox.minCorner.y, dataCenter.z);
-    this._plane.renderOrder = 100;
+    this._plane.position.set(dataCenter.x, dataCenter.y, meshBBox.minCorner.z);
+    this._plane.renderOrder = renderOrderComparePlane;
 
     // And a box to adjust the plane height
     let dragBoxSize = Math.sqrt(planeXSize * planeXSize + planeZSize * planeZSize) / 200;
@@ -294,10 +300,10 @@ export class Scan3DDrawModel {
 
     // Place boxes on each side of the plane so it can be easily moved
     const positions = [
-      new THREE.Vector3(meshBBox.minCorner.x, this.getPlaneY(meshBBox), dataCenter.z),
-      new THREE.Vector3(meshBBox.maxCorner.x, this.getPlaneY(meshBBox), dataCenter.z),
-      new THREE.Vector3(dataCenter.x, this.getPlaneY(meshBBox), meshBBox.minCorner.z),
-      new THREE.Vector3(dataCenter.x, this.getPlaneY(meshBBox), meshBBox.maxCorner.z),
+      new THREE.Vector3(meshBBox.minCorner.x, dataCenter.y, this.getPlaneZ(meshBBox)),
+      new THREE.Vector3(meshBBox.maxCorner.x, dataCenter.y, this.getPlaneZ(meshBBox)),
+      new THREE.Vector3(dataCenter.x, meshBBox.minCorner.y, this.getPlaneZ(meshBBox)),
+      new THREE.Vector3(dataCenter.x, meshBBox.maxCorner.y, this.getPlaneZ(meshBBox)),
     ]
     for (let c = 0; c < 4; c++) {
       const boxMesh = new THREE.Mesh(
@@ -309,9 +315,9 @@ export class Scan3DDrawModel {
     }
   }
 
-  protected getPlaneY(meshBBox: AxisAlignedBBox): number {
-    const planeYSize = meshBBox.maxCorner.y-meshBBox.minCorner.y;
-    return meshBBox.minCorner.y + planeYSize * this._planeScaleY;
+  protected getPlaneZ(meshBBox: AxisAlignedBBox): number {
+    const planeZSize = meshBBox.maxCorner.z-meshBBox.minCorner.z;
+    return meshBBox.minCorner.z + planeZSize * this._planeScaleY;
   }
 
   get bboxMeshPMCs(): AxisAlignedBBox | undefined {
@@ -414,7 +420,7 @@ export class Scan3DDrawModel {
           if (pt) {
             const m = new THREE.Mesh(sphere, matSelect);
             m.position.set(pt.x, pt.y, pt.z * this._heightExaggerationScale);
-            m.renderOrder = 1;
+            m.renderOrder = renderOrderSelectedPoint;
 
             this._selection.add(m);
           }
@@ -429,7 +435,7 @@ export class Scan3DDrawModel {
           if (pt) {
             const m = new THREE.Mesh(sphere, matHover);
             m.position.set(pt.x, pt.y, pt.z * this._heightExaggerationScale);
-            m.renderOrder = 10;
+            m.renderOrder = renderOrderHoverPoint;
 
             this._selection.add(m);
           }
@@ -539,12 +545,12 @@ export class Scan3DDrawModel {
       this._planeScaleY = scale;
       //this._plane.position.y = this._bboxMCC.center().y;// + height;
       //this._plane.scale.setY(2);
-      this._plane.scale.setY(scale);
+      this._plane.scale.setZ(scale);
 
       this._sceneAttachment.add(this._plane);
 
       for (const box of this._planeDragBoxes) {
-        box.position.setY(this.getPlaneY(this._meshData!.bboxMeshPMCs));
+        box.position.setZ(this.getPlaneZ(this._meshData!.bboxMeshPMCs));
         this._sceneAttachment.add(box);
       }
     }
