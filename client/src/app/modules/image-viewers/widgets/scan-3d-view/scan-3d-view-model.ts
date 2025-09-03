@@ -184,6 +184,16 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setDrawTexture(draw);
   }
 
+  private _drawWireframe = true;
+  get drawWireframe(): boolean {
+    return this._drawWireframe;
+  }
+
+  set drawWireframe(draw: boolean) {
+    this._drawWireframe = draw;
+    this.drawModel.setWireframe(draw);
+  }
+
   private _lightIntensity = 1;
   get lightIntensity(): number {
     return this._lightIntensity;

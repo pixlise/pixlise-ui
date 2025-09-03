@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 
-export class ThreeRenderData {
+export class RenderData {
   constructor(
     public scene: THREE.Scene,
     public camera: THREE.PerspectiveCamera,
@@ -35,7 +35,7 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
 
   @Output() canvasSize = new EventEmitter();
 
-  @Input() renderData?: ThreeRenderData;
+  @Input() renderData?: RenderData;
   protected _renderer?: THREE.WebGLRenderer;
 
   get drawNotifier(): CanvasDrawNotifier | null {

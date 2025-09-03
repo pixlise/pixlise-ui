@@ -1,6 +1,6 @@
 import { Colours } from 'src/app/utils/colours';
 import * as THREE from 'three';
-import { ThreeRenderData } from './interactive-canvas-3d.component';
+import { RenderData } from './interactive-canvas-3d.component';
 import { SelectionService } from 'src/app/modules/pixlisecore/pixlisecore.module';
 import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
 import { LightMode } from 'src/app/generated-protos/widget-data';
@@ -12,7 +12,7 @@ import { ContextImageScanModel } from '../context-image/context-image-model-inte
 import { ContextImageMapLayer } from '../../models/map-layer';
 
 
-const pushUpHeight = 0.01;
+//const pushUpHeight = 0.01;
 
 const renderOrderSelectedPoint = 1;
 const renderOrderHoverPoint = 10;
@@ -24,7 +24,8 @@ export class Scan3DDrawModel {
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
-  protected _meshFootprint?: THREE.Mesh;
+  protected _meshFootprint?: THREE.Object3D;
+  protected _meshWireframe?: THREE.LineSegments;
   protected _texture?: THREE.Texture;
 
   protected _meshPointPolygons?: THREE.Group;
@@ -104,7 +105,8 @@ export class Scan3DDrawModel {
 
     this._meshFootprint = this._meshData.createFootprint(
       this._footprintSize,
-      new THREE.MeshPhongMaterial({ color: this._hoverColour })
+      new THREE.MeshPhongMaterial({ color: this._hoverColour }),
+      this._meshTerrain
     );
 
     const meshBBox = meshData.bboxMeshPMCs;
@@ -121,14 +123,6 @@ export class Scan3DDrawModel {
     // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
 
     this._sceneAttachment.add(this._meshTerrain);
-
-    // DEBUGGING: Add wireframe of terrain triangles too
-    const wireframe = new THREE.WireframeGeometry(this._meshTerrain.geometry);
-    const line = new THREE.LineSegments( wireframe );
-    // line.material.depthTest = false;
-    // line.material.opacity = 0.25;
-    // line.material.transparent = true;
-    this._sceneAttachment.add(line);
 
     if (this._meshFootprint) {
       this._sceneAttachment.add(this._meshFootprint);
@@ -324,10 +318,10 @@ export class Scan3DDrawModel {
     return this._meshData?.bboxMeshPMCs;
   }
 
-  renderData: ThreeRenderData;
+  renderData: RenderData;
 
   constructor() {
-    this.renderData = new ThreeRenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
+    this.renderData = new RenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
   }
 
   // The "Draw Model"...
@@ -579,6 +573,25 @@ export class Scan3DDrawModel {
 
     this._terrainMatBasic.needsUpdate = true;
     this._terrainMatStandard.needsUpdate = true;
+  }
+
+  setWireframe(enabled: boolean) {
+    if (enabled && !this._meshWireframe && this._meshTerrain) {
+      // DEBUGGING: Add wireframe of terrain triangles too
+      const wireframe = new THREE.WireframeGeometry(this._meshTerrain.geometry);
+      this._meshWireframe = new THREE.LineSegments(wireframe);
+      // line.material.depthTest = false;
+      // line.material.opacity = 0.25;
+      // line.material.transparent = true;
+    }
+
+    if(this._sceneAttachment && this._meshWireframe) {
+      this._sceneAttachment.remove(this._meshWireframe);
+
+      if (enabled) {
+        this._sceneAttachment?.add(this._meshWireframe);
+      }
+    }
   }
 
   updateMaps(maps: ContextImageMapLayer[]) {

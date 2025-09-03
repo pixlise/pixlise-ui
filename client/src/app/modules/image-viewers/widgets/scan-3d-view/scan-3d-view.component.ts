@@ -832,6 +832,13 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       this.saveState();
     });
 
+    viewFolder.addBinding(this.mdl, 'drawWireframe', {
+      label: 'Draw Wireframe'
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
     viewFolder.addBinding(this.mdl, 'heightExaggerationScale', {
       label: 'Height Exaggeration',
       min: 0.1,
