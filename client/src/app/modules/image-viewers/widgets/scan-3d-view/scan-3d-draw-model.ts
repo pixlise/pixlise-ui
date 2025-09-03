@@ -10,9 +10,10 @@ import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
 import { ScanEntry } from 'src/app/generated-protos/scan-entry';
 import { ContextImageScanModel } from '../context-image/context-image-model-internals';
 import { ContextImageMapLayer } from '../../models/map-layer';
+import { MapColourScale } from '../context-image/ui-elements/map-colour-scale/map-colour-scale';
 
 
-//const pushUpHeight = 0.01;
+const pushUpHeight = 0.01;
 
 const renderOrderSelectedPoint = 1;
 const renderOrderHoverPoint = 10;
@@ -44,9 +45,10 @@ export class Scan3DDrawModel {
   ): Observable<void> {
     const meshData = new PMCMeshData(scanEntries, beamLocations, contextImgMdl, image);
 
-    this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
     this._pointSizeSelected = meshData.maxWorldMeshSize / 1500;
-    this._footprintSize = meshData.maxWorldMeshSize / 1000;
+    this._footprintSize = this._pointSizeSelected * 1.2;//meshData.maxWorldMeshSize / 1000;
+    this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
+    this._pointSizeAttenuated = this._pointSizeSelected;
 
     if (image) {
       return loadTexture(image).pipe(
@@ -86,22 +88,26 @@ export class Scan3DDrawModel {
       this._terrainMatStandard.map = texture;
     }
 
-    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic, true);
+    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic, true, []);
 
     const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
     sprite.colorSpace = THREE.SRGBColorSpace;
 
     const pointMat = new THREE.PointsMaterial({
       color: this._selectionColour,
-      size: this._pointSize,
-      sizeAttenuation: false,
+
+      // size: this._pointSize,
+      // sizeAttenuation: false,
+      size: this._pointSizeAttenuated,
+      sizeAttenuation: true,
+
       map: sprite,
       alphaTest: 0.5,
       transparent: true
     });
 
     this._meshPoints = this._meshData.createPoints(pointMat);
-    //this._meshPoints.position.y += pushUpHeight;
+    //this._meshPoints.position.z += pushUpHeight;
 
     this._meshFootprint = this._meshData.createFootprint(
       this._footprintSize,
@@ -349,6 +355,7 @@ export class Scan3DDrawModel {
   private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
   private _marsDirtColour = new THREE.Color(.37, .17, .08);
   private _pointSize: number = 3;
+  private _pointSizeAttenuated: number = 3;
   private _pointSizeSelected: number = 0.5;
   private _footprintSize: number = 0.05;
 
@@ -599,34 +606,102 @@ export class Scan3DDrawModel {
       console.error("updateMaps: called without inited scene");
       return;
     }
+    // if (!this._meshData) {
+    //   console.error("updateMaps: called without inited meshData");
+    //   return;
+    // }
 
-    if (this._meshPointPolygons) {
-      this._sceneAttachment.remove(this._meshPointPolygons);
+    const tintTerrain = false;
+
+    if (!tintTerrain) {
+      if (this._meshPointPolygons) {
+        this._sceneAttachment.remove(this._meshPointPolygons);
+      }
+    } else {
+      this.tintPointPolygons([]);
     }
 
     if (maps.length > 0 && this._meshData && this._meshTerrain) {
       const map = maps[0];
-      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1) });
+      const colourDebug = false;
+      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1), transparent: !colourDebug, opacity: 0.75  });
 
       const scanEntryIdxs = this._meshData.getPointPolygonOrder();
       const colours = [];
 
       // Build a lookup, we're supplying these in the same order as the polygons are defined
       const colourMap = new Map<number, THREE.Color>();
-      for (const pt of map.mapPoints) {
-        colourMap.set(pt.scanEntryIndex, new THREE.Color(pt.drawParams.colour.r / 255, pt.drawParams.colour.g / 255, pt.drawParams.colour.b / 255));
+      if (colourDebug) {
+        const colourChoices = [
+          new THREE.Color(1, 0, 0),
+          new THREE.Color(0, 1, 0),
+          new THREE.Color(0, 0, 1),
+          new THREE.Color(1, 1, 0),
+          new THREE.Color(1, 0, 1),
+          new THREE.Color(0, 1, 1),
+          new THREE.Color(1, 1, 1),
+          new THREE.Color(70/255, 9/255, 93/255),
+          new THREE.Color(143/255, 53/255, 163/255),
+          new THREE.Color(0.1, 0, 0),
+          new THREE.Color(0.25, 0, 0),
+          new THREE.Color(0.5, 0, 0),
+          new THREE.Color(1, 0, 0),
+        ];
+        for (let c = 0; c < map.mapPoints.length; c++) {
+          colourMap.set(map.mapPoints[c].scanEntryIndex, colourChoices[c % colourChoices.length]);
+        }
+      } else {
+        for (const pt of map.mapPoints) {
+          colourMap.set(pt.scanEntryIndex, new THREE.Color(pt.drawParams.colour.r / 255, pt.drawParams.colour.g / 255, pt.drawParams.colour.b / 255));
+        }
       }
 
       for (const idx of scanEntryIdxs) {
         colours.push(colourMap.get(idx));        
       }
 
-      this._meshPointPolygons = this._meshData!.createPointPolygons(this._meshTerrain, mat, colours);
+      if (!tintTerrain) {
+        this._meshPointPolygons = this._meshData.createPointPolygons(this._meshTerrain, mat, colours);
 
-      // Push it up slightly
-      //this._meshPointPolygons.position.y += pushUpHeight;
+        // Push it up slightly
+        this._meshPointPolygons.position.z += pushUpHeight;
 
-      this._sceneAttachment.add(this._meshPointPolygons);
+        this._sceneAttachment.add(this._meshPointPolygons);
+      } else {
+        this.tintPointPolygons(colours);
+      }
     }
+  }
+
+  private tintPointPolygons(scanEntryColours: (THREE.Color | undefined)[]) {
+    if (!this._meshTerrain) {
+      console.error("tintPointPolygons without meshTerrain");
+      return;
+    }
+    if (!this._sceneAttachment) {
+      console.error("tintPointPolygons without sceneAttachment");
+      return;
+    }
+
+    // Clear if no tints...
+    if (scanEntryColours.length <= 0) {
+      // Why didn't this work? this._meshTerrain?.geometry.deleteAttribute("color");
+
+      this._sceneAttachment?.remove(this._meshTerrain);
+      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, []);
+      this._sceneAttachment?.add(this._meshTerrain);
+
+      this._terrainMatBasic.vertexColors = false;
+      this._terrainMatStandard.vertexColors = false;
+    } else {
+      this._terrainMatBasic.vertexColors = true;
+      this._terrainMatStandard.vertexColors = true;
+
+      this._sceneAttachment?.remove(this._meshTerrain);
+      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, scanEntryColours);
+      this._sceneAttachment?.add(this._meshTerrain);
+    }
+    this._terrainMatBasic.needsUpdate = true;
+    this._terrainMatStandard.needsUpdate = true;
   }
 }

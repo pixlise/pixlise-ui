@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
 import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
-import { Observable } from 'rxjs';
+import { Observable, scan } from 'rxjs';
 import { ContextImageScanModel, PointCluster } from '../context-image/context-image-model-internals';
 import { ScanEntry } from 'src/app/generated-protos/scan-entry';
 import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
@@ -44,8 +44,9 @@ export function loadTexture(image: HTMLImageElement): Observable<THREE.Texture> 
   });
 }
 
+// TODO: is this redundant?? Just use THREE's own thing??
 class GeometryAttributes {
-  constructor(public xyz: Float32Array, public uv: Float32Array, public pointScanEntryIdx?: Int32Array) {}
+  constructor(public xyz: Float32Array, public uv: Float32Array, public pointScanEntryIdx?: Int32Array, public colours?: Float32Array) {}
 }
 
 const downDir = new THREE.Vector3(0, 0, -1);
@@ -131,7 +132,7 @@ export class PMCMeshData {
     return result;
   }
 
-  createMesh(material: THREE.Material, usePMCPolys: boolean): THREE.Mesh {
+  createMesh(material: THREE.Material, usePMCPolys: boolean, scanEntryColours: (THREE.Color | undefined)[]): THREE.Mesh {
     if (!this._simpleTerrainMesh) {
       throw new Error("createMesh called when internals not yet calculated");
     }
@@ -143,7 +144,7 @@ export class PMCMeshData {
     }
 
     // Calculate a mesh that includes PMC locations (xyz), surrounding polygons and image corners
-    let geom = this.createPositionPolysArray();
+    let geom = this.createPositionPolysArray(scanEntryColours);
     let idxs = this.calculateTriangleIndexes(geom);
 
     idxs = this.removePMCPolyTriangles(idxs, geom);
@@ -271,6 +272,9 @@ export class PMCMeshData {
       return undefined;
     }
 
+    // How far we "expand" the footprint from the actual footprint points for display purposes. Context image view also does this!
+    const expandSize = radius * 5;
+
     // Create a mesh to show the footprint. Note we use the same footprint as the context image, but to represent it we
     // have to break it into short line segments so it follows the terrain contours
     const curvePath = new THREE.CurvePath<THREE.Vector3>();
@@ -278,16 +282,22 @@ export class PMCMeshData {
     const normals = this.makeHullPointNormals();
 
     const lastC = this._hullPoints.length-1;
-    let ptLast = new THREE.Vector3().addVectors(this._hullPoints[lastC], normals[lastC]);
+    //let ptLast = new THREE.Vector3().addVectors(this._hullPoints[lastC], normals[lastC]);
+    let ptLast = new THREE.Vector3(this._hullPoints[lastC].x, this._hullPoints[lastC].y, this._hullPoints[lastC].z)
+      .addScaledVector(normals[lastC], expandSize);
+
+    let totalSegments = 0;
 
     for (let c = 0; c < this._hullPoints.length; c++) {
-      const ptStart = this.dropOnMesh(new THREE.Vector3().addVectors(this._hullPoints[c], normals[c]), terrainMesh);
+      //let ptStart = new THREE.Vector3().addVectors(this._hullPoints[c], normals[c]);
+      let ptStart = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z).addScaledVector(normals[c], expandSize);
+      ptStart = this.dropOnMesh(ptStart, terrainMesh);
 
-      this.makeHullSegment(ptLast, ptStart, curvePath, terrainMesh);
+      totalSegments += this.makeHullSegment(ptLast, ptStart, curvePath, terrainMesh);
       ptLast = ptStart;
     }
 
-    const geom = new THREE.TubeGeometry(curvePath, 500, radius, 8, false);
+    const geom = new THREE.TubeGeometry(curvePath, totalSegments * 2, radius, 8, false);
     /*const width = radius;
     const length = radius;
     const shape = new THREE.Shape();
@@ -305,10 +315,10 @@ export class PMCMeshData {
 
     geom.computeVertexNormals();
 
-    //const mesh = new THREE.Mesh(geom, material);
+    const mesh = new THREE.Mesh(geom, material);
 
-    const wireframe = new THREE.WireframeGeometry(geom);
-    const mesh = new THREE.LineSegments(wireframe);
+    // const wireframe = new THREE.WireframeGeometry(geom);
+    // const mesh = new THREE.LineSegments(wireframe);
 
     return mesh;
   }
@@ -344,7 +354,7 @@ export class PMCMeshData {
     ptStart: THREE.Vector3,
     ptEnd: THREE.Vector3,
     addTo: THREE.CurvePath<THREE.Vector3>,
-    terrainMesh: THREE.Mesh) {
+    terrainMesh: THREE.Mesh): number {
 
     const segLength = ptEnd.distanceTo(ptStart);
 
@@ -358,14 +368,16 @@ export class PMCMeshData {
     dir.multiplyScalar(segT);
 
     for (let c = 0; c < segments; c++) {
-      const segEnd = new THREE.Vector3().addVectors(ptStart, dir);
+      let segEnd = new THREE.Vector3().addVectors(ptStart, dir);
 
       // Find terrain height at this point
-      this.dropOnMesh(segEnd, terrainMesh);
+      segEnd = this.dropOnMesh(segEnd, terrainMesh);
 
       addTo.add(new THREE.LineCurve3(ptStart, segEnd));
       ptStart = segEnd;
     }
+
+    return segments;
   }
 
   private dropOnMesh(pt: THREE.Vector3, mesh: THREE.Mesh): THREE.Vector3 {
@@ -1085,7 +1097,7 @@ export class PMCMeshData {
     return new GeometryAttributes(xyz, uv);
   }
 
-  private createPositionPolysArray(): GeometryAttributes {
+  private createPositionPolysArray(scanEntryColours: (THREE.Color | undefined)[]): GeometryAttributes {
     let count = 0;
     for (const poly of this._pmcPolygons) {
       count += poly.terrainPoints.length;
@@ -1096,11 +1108,17 @@ export class PMCMeshData {
       }
     }
 
+    const scanEntryIdxs = new Int32Array(count);
     const xyz = new Float32Array(count * 3);
     const uv = new Float32Array(count * 3);
-    const scanEntryIdxs = new Int32Array(count);
+    let colours: Float32Array | undefined;
+    if (scanEntryColours.length > 0) {
+      // Yes we are setting colours!
+      colours = new Float32Array(count * 3);
+    }
 
     let posIdx = 0;
+    let clrIdx = 0;
     let uvIdx = 0;
     let idxIdx = 0;
     for (const poly of this._pmcPolygons) {
@@ -1122,6 +1140,21 @@ export class PMCMeshData {
         scanEntryIdxs[idxIdx] = c == 0 ? poly.scanEntryIndex : -1;
         //scanEntryIdxs[idxIdx] = poly.scanEntryIndex;
         idxIdx++;
+
+        if (colours) {
+          if (c == 0) {
+            const clr = scanEntryColours[poly.scanEntryIndex];
+            colours[clrIdx] = clr?.r || 1;
+            colours[clrIdx + 1] = clr?.g || 1;
+            colours[clrIdx + 2] = clr?.b || 1;
+            clrIdx += 3;
+          } else {
+            colours[clrIdx] = 1;
+            colours[clrIdx + 1] = 1;
+            colours[clrIdx + 2] = 1;
+            clrIdx += 3;
+          }
+        }
       }
     }
 
@@ -1139,10 +1172,18 @@ export class PMCMeshData {
 
         scanEntryIdxs[idxIdx] = -1;
         idxIdx++;
+
+
+        if (colours) {
+          colours[clrIdx] = 1;
+          colours[clrIdx + 1] = 1;
+          colours[clrIdx + 2] = 1;
+          clrIdx += 3;
+        }
       }
     }
 
-    return new GeometryAttributes(xyz, uv, scanEntryIdxs);
+    return new GeometryAttributes(xyz, uv, scanEntryIdxs, colours);
   }
 
   private createMeshGeometry(geomAttributes: GeometryAttributes, indexes: Uint32Array, hasImage: boolean): THREE.BufferGeometry {
@@ -1154,6 +1195,10 @@ export class PMCMeshData {
 
     if (hasImage) {
       terrainGeom.setAttribute('uv', new THREE.BufferAttribute(geomAttributes.uv, 2));
+    }
+
+    if (geomAttributes.colours) {
+      terrainGeom.setAttribute("color", new THREE.BufferAttribute(geomAttributes.colours, 3));
     }
 
     // Reverse triangle handedness
