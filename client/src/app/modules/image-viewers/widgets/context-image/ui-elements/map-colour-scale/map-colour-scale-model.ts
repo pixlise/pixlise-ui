@@ -59,6 +59,12 @@ export class MapColourScaleModel {
   // Signalling that we need recalculation
   private _needsRecalc: boolean = false;
 
+  // Callback for when display value range changes
+  private _onDisplayValueRangeChanged?: (id: string, expressionId: string, scaleNumber: number, range: MinMax) => void;
+
+  // Callback for when user completes a display value range change (should trigger save)
+  private _onDisplayValueRangeChangeComplete?: () => void;
+
   constructor(
     // Raw data
     public scanIds: string[],
@@ -73,8 +79,17 @@ export class MapColourScaleModel {
     public displayScalingAllowed: boolean, // Do we allow the drawing/movement of little tags?
     public scaleNumber: number, // Which scale are we of...
     public scaleTotalCount: number, // how many total scales
-    public scaleColourRamp: ColourRamp
-  ) {}
+    public scaleColourRamp: ColourRamp,
+
+    // Optional callback for display value range changes
+    onDisplayValueRangeChanged?: (id: string, expressionId: string, scaleNumber: number, range: MinMax) => void,
+
+    // Optional callback for when user completes a display value range change
+    onDisplayValueRangeChangeComplete?: () => void
+  ) {
+    this._onDisplayValueRangeChanged = onDisplayValueRangeChanged;
+    this._onDisplayValueRangeChangeComplete = onDisplayValueRangeChangeComplete;
+  }
 
   get id(): string {
     return this._id;
@@ -149,6 +164,11 @@ export class MapColourScaleModel {
 
     if (!prevRange.equals(this._displayValueRange)) {
       this._needsRecalc = true;
+
+      // Notify callback if display value range has changed
+      if (this._onDisplayValueRangeChanged) {
+        this._onDisplayValueRangeChanged(this._id, this.expressionId, this.scaleNumber, new MinMax(this._displayValueRange.min, this._displayValueRange.max));
+      }
     }
   }
 
@@ -165,6 +185,12 @@ export class MapColourScaleModel {
   recalcDisplayData(canvasParams: CanvasParams): void {
     this._drawModel.regenerate(canvasParams, this, this._mapData);
     this._needsRecalc = false;
+  }
+
+  notifyDisplayValueRangeChangeComplete(): void {
+    if (this._onDisplayValueRangeChangeComplete) {
+      this._onDisplayValueRangeChangeComplete();
+    }
   }
 }
 
