@@ -368,7 +368,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         true, // We always allow scale tags to be moved on layer colour scales
         totalScales - forValuesIdx - 1, // Scale number, but flipped so first one (R) is on top
         totalScales, // Total scales we're drawing TODO: figure out a way to add RGB mixes
-        layerShading
+        layerShading,
+        this.onDisplayValueRangeChanged, // Callback for display value range changes
+        this.onDisplayValueRangeChangeComplete // Callback for when display value range change is complete
       )
     );
   }
@@ -396,7 +398,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
           false, // Scale tags not movable
           0, // Scale number, but flipped so first one (R) is on top
           1, // Total scales we're drawing TODO: figure out a way to add RGB mixes
-          layerShading
+          layerShading,
+          this.onDisplayValueRangeChanged, // Callback for display value range changes
+          this.onDisplayValueRangeChangeComplete // Callback for when display value range change is complete
         )
       );
     }
@@ -450,6 +454,28 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   get colourScaleDisplayValueRanges(): Map<string, MinMax> {
     return this._colourScaleDisplayValueRanges;
   }
+
+  private onDisplayValueRangeChanged = (scaleId: string, expressionId: string, scaleNumber: number, range: MinMax) => {
+    // Update the stored display value range for this scale
+    const colourScaleRangeId = expressionId + "-" + scaleNumber;
+    this._colourScaleDisplayValueRanges.set(colourScaleRangeId, range);
+
+    // Trigger a draw update since display ranges have changed
+    this.needsDraw$.next();
+  };
+
+  // Callback to trigger when display value range change is complete
+  private _onDisplayValueRangeChangeComplete?: () => void;
+
+  setDisplayValueRangeChangeCompleteCallback(callback: () => void) {
+    this._onDisplayValueRangeChangeComplete = callback;
+  }
+
+  private onDisplayValueRangeChangeComplete = () => {
+    if (this._onDisplayValueRangeChangeComplete) {
+      this._onDisplayValueRangeChangeComplete();
+    }
+  };
 
   get currentPixelSelection(): PixelSelection | null {
     return this._currentPixelSelection;

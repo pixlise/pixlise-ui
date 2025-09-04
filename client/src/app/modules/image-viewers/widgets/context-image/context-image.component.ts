@@ -6,12 +6,13 @@ import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/b
 import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
-import { ContextImageState, MapLayerVisibility, ROILayerVisibility } from "src/app/generated-protos/widget-data";
+import { ContextImageState, MapLayerGroupDisplayRange, MapLayerVisibility, ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
 import { Point, Rect } from "src/app/models/Geometry";
+import { MinMax } from "src/app/models/BasicTypes";
 import { ContextImageDataService, SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -106,7 +107,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     super();
 
     this.mdl = new ContextImageModel();
-
     this.scanId = this._analysisLayoutService.defaultScanId;
 
     const showLineDrawTool = true;
@@ -248,6 +248,11 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     if (this.showBottomToolbar) {
       this.loadBottomToolbar();
     }
+
+    // Set up callback to save state when display value ranges change
+    this.mdl.setDisplayValueRangeChangeCompleteCallback(() => {
+      this.saveState();
+    });
   }
 
   get showBottomToolbar(): boolean {
@@ -384,6 +389,22 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.layerOpacity.clear();
           for (const l of validMapLayers) {
             this.mdl.layerOpacity.set(l.expressionID, l.opacity);
+
+            // Restore display value ranges if they exist
+            if (l.displayValueRangeMin !== undefined && l.displayValueRangeMax !== undefined) {
+              let colourScaleRangeId = l.expressionID;
+              if (!DataExpressionId.isExpressionGroupId(l.expressionID)) {
+                const displayRange = new MinMax(l.displayValueRangeMin, l.displayValueRangeMax);
+                this.mdl.colourScaleDisplayValueRanges.set(colourScaleRangeId, displayRange);
+              } else {
+                const lastIndex = l.displayValueRanges.length - 1;
+                for (let j = lastIndex; j >= 0; j--) {
+                  colourScaleRangeId = `${l.expressionID}-${lastIndex - j}`;
+                  const displayRange = new MinMax(l.displayValueRanges[j].displayValueRangeMin, l.displayValueRanges[j].displayValueRangeMax);
+                  this.mdl.colourScaleDisplayValueRanges.set(colourScaleRangeId, displayRange);
+                }
+              }
+            }
           }
 
           // For some reason we're getting empty ROIs so filter those out here
@@ -1531,13 +1552,35 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
         mapLayers: this.mdl.expressionIds
           .filter(id => !DataExpressionId.isUnsavedExpressionId(id))
-          .map(id =>
-            MapLayerVisibility.create({
+          .map((id, i) => {
+            // Get display value range for the first scale (index 0) of this expression
+            const displayRange = this.mdl.colourScaleDisplayValueRanges.get(id);
+
+            const groupDisplayRanges = [];
+            if (DataExpressionId.isExpressionGroupId(id)) {
+              for (let j = 0; j < 3; j++) {
+                const colourScaleValueRange = this.mdl.colourScaleDisplayValueRanges.get(`${id}-${j}`);
+                if (colourScaleValueRange) {
+                  groupDisplayRanges.push(colourScaleValueRange);
+                }
+              }
+            }
+
+            return MapLayerVisibility.create({
               expressionID: id,
               visible: !this._hiddenMapLayers.has(id),
               opacity: opacityLookup.get(id) ?? 1,
-            })
-          ),
+              displayValueRangeMin: displayRange?.min ?? undefined,
+              displayValueRangeMax: displayRange?.max ?? undefined,
+              displayValueRanges: groupDisplayRanges.map(range => {
+                return MapLayerGroupDisplayRange.create({
+                  expressionID: id,
+                  displayValueRangeMin: range?.min ?? undefined,
+                  displayValueRangeMax: range?.max ?? undefined,
+                });
+              }),
+            });
+          }),
         hideFootprintsForScans: Array.from(this.mdl.hideFootprintsForScans),
         hidePointsForScans: Array.from(this.mdl.hidePointsForScans),
         hideImage: !this.mdl.drawImage,

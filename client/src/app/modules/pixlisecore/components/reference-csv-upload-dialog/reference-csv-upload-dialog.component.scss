@@ -1,0 +1,120 @@
+.reference-csv-upload {
+  display: flex;
+  flex-direction: column;
+  min-width: 600px;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-toolbar.header {
+    margin-bottom: 8px;
+  }
+
+  .upload-options {
+    margin: 8px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+
+    .upload-info {
+      margin: 8px;
+      margin-bottom: 16px;
+
+      h5 {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .selection-info {
+        margin: 0;
+        font-size: 14px;
+        color: rgb(var(--clr-gray-50));
+      }
+    }
+  }
+
+  .upload-summary {
+    display: flex;
+    flex-direction: column;
+
+    h5 {
+      margin: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .summary-header {
+      display: flex;
+      background: #222829;
+      padding: 8px;
+      font-weight: 600;
+      color: rgb(var(--clr-gray-20));
+    }
+
+    .cell {
+      display: flex;
+      align-items: center;
+
+      &.upload {
+        flex: 0 0 40px;
+        justify-content: center;
+      }
+
+      &.name {
+        flex: 2;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      &.category {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      &.expressions {
+        flex: 0 0 80px;
+        justify-content: center;
+      }
+    }
+
+    .summary-rows {
+      display: flex;
+      flex-direction: column;
+      max-height: 300px;
+      overflow-y: auto;
+
+      .summary-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 8px;
+
+        &:nth-child(odd) {
+          background-color: rgb(var(--clr-gray-90));
+        }
+
+        .cell.name,
+        .cell.category {
+          padding-right: 8px;
+        }
+      }
+    }
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+}

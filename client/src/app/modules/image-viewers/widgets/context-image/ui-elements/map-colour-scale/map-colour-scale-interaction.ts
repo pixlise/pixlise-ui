@@ -90,7 +90,7 @@ export class MapColourScaleInteraction {
       if (this._mdl.mouseMode === MouseMode.DRAG_TOP_TAG) {
         isClickEvent = true;
 
-        let roundedTagRawValue = Math.round(this._mdl.tagRawValue * 100) / 100;
+        const roundedTagRawValue = Math.round(this._mdl.tagRawValue * 100) / 100;
         const newMax = prompt("Enter new max value", roundedTagRawValue.toString());
         if (newMax !== null) {
           const newMaxNum = parseFloat(newMax);
@@ -108,7 +108,7 @@ export class MapColourScaleInteraction {
       } else if (this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
         isClickEvent = true;
 
-        let roundedTagRawValue = Math.round(this._mdl.tagRawValue * 100) / 100;
+        const roundedTagRawValue = Math.round(this._mdl.tagRawValue * 100) / 100;
         const newMin = prompt("Enter new min value", roundedTagRawValue.toString());
         if (newMin !== null) {
           const newMinNum = parseFloat(newMin);
@@ -127,6 +127,9 @@ export class MapColourScaleInteraction {
 
       // Set it back on the model
       this._mdl.setDisplayValueRange(displayValueRange, allowUnclampedMin, allowUnclampedMax);
+
+      // Notify that display value range change is complete
+      this._mdl.notifyDisplayValueRangeChangeComplete();
     }
 
     return isClickEvent;
@@ -195,7 +198,8 @@ export class MapColourScaleInteraction {
         this._mdl.mouseMode = MouseMode.HOVER_BOTTOM_TAG;
       }
 
-      //this._ctx.saveState("layer scale tab");
+      // Notify that display value range change is complete
+      this._mdl.notifyDisplayValueRangeChangeComplete();
       result = true;
     } else {
       this._mdl.mouseMode = MouseMode.NONE;

@@ -81,7 +81,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div
               class="subsection {{ activeBrowseGroup === section.name && activeBrowseSection === subSection ? 'active' : '' }}"
               *ngFor="let subSection of section.subSections">
-              <h6 (click)="onSubSectionSelect(section.name, subSection)">
+              <h6 (click)="onSubSectionSelect(section.name, subSection)" (keydown.enter)="onSubSectionSelect(section.name, subSection)" tabindex="0">
                 {{ subSection }}
               </h6>
             </div>
