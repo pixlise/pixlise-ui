@@ -5,6 +5,9 @@
   - References can be created and edited by clicking the edit button in the top corner of the simplified picker.
   - References can also be bulk imported from a CSV
 
+### Bug Fixes
+- Fixes issue with context image where display value ranges were not being saved correctly for expression groups (like RGB Mix)
+
 
 ## 4.72.0 (2025-08-21)
 
