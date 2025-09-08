@@ -859,6 +859,41 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       this.saveState();
     });
 
+    const terrainTiltFolder = this._tweakPane.addFolder({
+      title: 'Terrain Tilt',
+      expanded: true
+    });
+
+    terrainTiltFolder.addButton({
+      title: "X -5deg",
+    }).on("click", () => {
+      this.mdl.alignFootprint("x-")
+    });
+
+    terrainTiltFolder.addButton({
+      title: "X +5deg",
+    }).on("click", () => {
+      this.mdl.alignFootprint("x+")
+    });
+
+    terrainTiltFolder.addButton({
+      title: "Y -5deg",
+    }).on("click", () => {
+      this.mdl.alignFootprint("y-")
+    });
+
+    terrainTiltFolder.addButton({
+      title: "Y +5deg",
+    }).on("click", () => {
+      this.mdl.alignFootprint("y+")
+    });
+
+    terrainTiltFolder.addButton({
+      title: "Default",
+    }).on("click", () => {
+      this.mdl.alignFootprint("default")
+    });
+
     const lightingFolder = this._tweakPane.addFolder({
       title: 'Lighting',
       expanded: true

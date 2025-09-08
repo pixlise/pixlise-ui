@@ -23,6 +23,7 @@ const clrMarsDirtColour = new THREE.Color(.37, .17, .08);
 
 export class Scan3DDrawModel {
   protected _sceneAttachment?: THREE.Object3D;
+  protected _sceneMeshAttachment?: THREE.Object3D;
 
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
@@ -82,6 +83,11 @@ export class Scan3DDrawModel {
     // up vectors aren't as expected. Hence we attach all scene data to this attachment point from here on!
     this._sceneAttachment = new THREE.Object3D();
     this._sceneAttachment.rotation.x = -Math.PI/2;
+
+    // Add the point where we attach the actual scene meshes
+    this._sceneMeshAttachment = new THREE.Object3D();
+    this._sceneAttachment.add(this._sceneMeshAttachment);
+
     this.renderData.scene.add(this._sceneAttachment);
 
     this._meshData = meshData;
@@ -133,10 +139,10 @@ export class Scan3DDrawModel {
     );
     // NOTE: We now just create the object, don't add it to the scene just yet
 
-    this._sceneAttachment.add(this._meshTerrain);
+    this._sceneMeshAttachment.add(this._meshTerrain);
 
     if (this._meshFootprint) {
-      this._sceneAttachment.add(this._meshFootprint);
+      this._sceneMeshAttachment.add(this._meshFootprint);
     }
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
@@ -385,8 +391,8 @@ export class Scan3DDrawModel {
   }
 */
   updateSelection(selectionService: SelectionService) {
-    if (this._selection && this._sceneAttachment) {
-      this._sceneAttachment.remove(this._selection);
+    if (this._selection && this._sceneMeshAttachment) {
+      this._sceneMeshAttachment.remove(this._selection);
     }
 
     this._selection = new THREE.Object3D();
@@ -445,7 +451,7 @@ export class Scan3DDrawModel {
       }
     }
 
-    this._sceneAttachment?.add(this._selection);
+    this._sceneMeshAttachment?.add(this._selection);
   }
 
   setLightMode(mode: LightMode) {
@@ -482,34 +488,37 @@ export class Scan3DDrawModel {
   }
 
   setShowPoints(show: boolean) {
-    if (!this._meshPoints || !this._sceneAttachment) {
+    if (!this._meshPoints || !this._sceneMeshAttachment) {
       console.error("setShowPoints: Points not set up yet");
       return;
     }
 
     if (!show) {
-      this._sceneAttachment.remove(this._meshPoints);
+      this._sceneMeshAttachment.remove(this._meshPoints);
     } else {
-      this._sceneAttachment.add(this._meshPoints);
+      this._sceneMeshAttachment.add(this._meshPoints);
     }
   }
 
   setShowFootprint(show: boolean) {
-    if (!this._meshFootprint || !this._sceneAttachment) {
+    if (!this._meshFootprint || !this._sceneMeshAttachment) {
       console.error("setShowFootprint: Footprint not set up yet");
       return;
     }
 
     if (!show) {
-      this._sceneAttachment.remove(this._meshFootprint);
+      this._sceneMeshAttachment.remove(this._meshFootprint);
     } else {
-      this._sceneAttachment.add(this._meshFootprint);
+      this._sceneMeshAttachment.add(this._meshFootprint);
     }
   }
 
   setHeightExaggerationScale(s: number) {
     this._heightExaggerationScale = s;
-    if (this._meshPoints) {
+    if(this._sceneMeshAttachment) {
+      this._sceneMeshAttachment.scale.z = s;
+    }
+    /*if (this._meshPoints) {
       this._meshPoints.scale.z = s;
     }
     if (this._meshTerrain) {
@@ -520,7 +529,7 @@ export class Scan3DDrawModel {
     }
     if (this._plane) {
       this._plane.scale.z = s;
-    }
+    }*/
   }
 
   setLightIntensity(i: number) {
@@ -596,11 +605,11 @@ export class Scan3DDrawModel {
       // line.material.transparent = true;
     }
 
-    if(this._sceneAttachment && this._meshWireframe) {
-      this._sceneAttachment.remove(this._meshWireframe);
+    if(this._sceneMeshAttachment && this._meshWireframe) {
+      this._sceneMeshAttachment.remove(this._meshWireframe);
 
       if (enabled) {
-        this._sceneAttachment?.add(this._meshWireframe);
+        this._sceneMeshAttachment?.add(this._meshWireframe);
       }
     }
   }
@@ -622,7 +631,7 @@ export class Scan3DDrawModel {
   }
 
   updateMaps(maps: ContextImageMapLayer[]) {
-    if (!this._sceneAttachment) {
+    if (!this._sceneMeshAttachment) {
       console.error("updateMaps: called without inited scene");
       return;
     }
@@ -638,7 +647,7 @@ export class Scan3DDrawModel {
 
     // Remove the previous "other" option
     if (this._meshPointPolygons) {
-      this._sceneAttachment.remove(this._meshPointPolygons);
+      this._sceneMeshAttachment.remove(this._meshPointPolygons);
     }
 
     if (!tintTerrain) {
@@ -708,7 +717,7 @@ export class Scan3DDrawModel {
         // Push it up slightly
         this._meshPointPolygons.position.z += pushUpHeight;
 
-        this._sceneAttachment.add(this._meshPointPolygons);
+        this._sceneMeshAttachment.add(this._meshPointPolygons);
       } else {
         this.tintPointPolygons(colours);
       }
@@ -720,7 +729,7 @@ export class Scan3DDrawModel {
       console.error("tintPointPolygons without meshTerrain");
       return;
     }
-    if (!this._sceneAttachment) {
+    if (!this._sceneMeshAttachment) {
       console.error("tintPointPolygons without sceneAttachment");
       return;
     }
@@ -732,9 +741,9 @@ export class Scan3DDrawModel {
     if (scanEntryColours.length <= 0) {
       // Why didn't this work? this._meshTerrain?.geometry.deleteAttribute("color");
 
-      this._sceneAttachment?.remove(this._meshTerrain);
+      this._sceneMeshAttachment?.remove(this._meshTerrain);
       this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, []);
-      this._sceneAttachment?.add(this._meshTerrain);
+      this._sceneMeshAttachment?.add(this._meshTerrain);
 
       //this._terrainMatBasic.vertexColors = false;
       this._terrainMatStandard.vertexColors = false;
@@ -742,12 +751,33 @@ export class Scan3DDrawModel {
       //this._terrainMatBasic.vertexColors = true;
       this._terrainMatStandard.vertexColors = true;
 
-      this._sceneAttachment?.remove(this._meshTerrain);
+      this._sceneMeshAttachment?.remove(this._meshTerrain);
       this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, scanEntryColours);
-      this._sceneAttachment?.add(this._meshTerrain);
+      this._sceneMeshAttachment?.add(this._meshTerrain);
     }
     //this._terrainMatBasic.needsUpdate = true;
     this._terrainMatStandard.needsUpdate = true;
+  }
+
+  alignFootprint(alignment: string) {
+    if (!this._sceneMeshAttachment) {
+      console.error("alignFootprint called with no scene attachment");
+      return;
+    }
+
+    const rad = 5 * Math.PI / 180;
+    if (alignment == "x+") {
+      this._sceneMeshAttachment.rotateX(rad);
+    } else if (alignment == "x-") {
+      this._sceneMeshAttachment.rotateX(-rad);
+    } else if (alignment == "y+") {
+      this._sceneMeshAttachment.rotateY(rad);
+    } else if (alignment == "y-") {
+      this._sceneMeshAttachment.rotateY(-rad);
+    } else {
+      this._sceneMeshAttachment.rotation.x = 0;
+      this._sceneMeshAttachment.rotation.y = 0;
+    }
   }
 }
 

@@ -276,6 +276,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
         if (this._initialPointLightPosition && this.drawModel.pointLight) {
           this.drawModel.pointLight.position.set(this._initialPointLightPosition.x, this._initialPointLightPosition.y, this._initialPointLightPosition.z);
         }
+        this.needsDraw$.next();
       })
     );
   }
@@ -329,6 +330,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     }
 
     this.drawModel.updateMaps(scanMdl.maps);
+    this.needsDraw$.next();
 /*
     // If we're the "top" expression (first one in the list), we have to update the colour scale
     if (this.expressionIds[0] === layer.expressionId) {
@@ -355,4 +357,12 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this._rois.set(roiId, new ContextImageRawRegion(roi, locIdxs));
   }
 
+  alignFootprint(alignment: string) {
+    if (["x+", "x-", "y+", "y-", "default"].indexOf(alignment) != -1) {
+      this.drawModel.alignFootprint(alignment);
+      this.needsDraw$.next();
+    } else {
+      console.error("Unknown alignment option: " + alignment);
+    }
+  }
 }
