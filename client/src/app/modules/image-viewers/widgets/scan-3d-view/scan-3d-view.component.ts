@@ -896,11 +896,12 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       label: "Map Drawing Mode",
       options: {
         "Raised Polygons": "",
-        "Raised Polygons (Colour Debugging)": "colourDebug",
+        "Cones": "cylinders",
         "Tinted Terrain PMCs": "tint,colourOnlyPMC",
-        "Tinted Terrain (Colour Debugging)": "tint,colourOnlyPMC,colourDebug",
         "Tinted Terrain Polygons (Leaks)": "tint",
         "Tinted Terrain Polygons (No Leaks)": "tint,duplicatePoints",
+        "Raised Polygons (Colour Debugging)": "colourDebug",
+        "Tinted Terrain (Colour Debugging)": "tint,colourOnlyPMC,colourDebug",
       }
     }).on('change', () => {
       this.mdl.needsDraw$.next();

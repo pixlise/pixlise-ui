@@ -35,6 +35,8 @@ export class Scan3DDrawModel {
 
   protected _heightExaggerationScale: number = 1;
 
+  protected _lastMaps: ContextImageMapLayer[] = [];
+
   get meshPoints(): THREE.Points | undefined {
     return this._meshPoints;
   }
@@ -48,7 +50,7 @@ export class Scan3DDrawModel {
     const meshData = new PMCMeshData(scanEntries, beamLocations, contextImgMdl, image);
 
     this._pointSizeSelected = meshData.maxWorldMeshSize / 1500;
-    this._footprintSize = this._pointSizeSelected * 1.2;//meshData.maxWorldMeshSize / 1000;
+    this._footprintSize = this._pointSizeSelected * 0.5;//meshData.maxWorldMeshSize / 1000;
     //this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
     this._pointSizeAttenuated = this._pointSizeSelected;
 
@@ -86,11 +88,11 @@ export class Scan3DDrawModel {
     this._texture = texture;
 
     if (texture) {
-      this._terrainMatBasic.map = texture;
+      //this._terrainMatBasic.map = texture;
       this._terrainMatStandard.map = texture;
     }
 
-    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic, true, false, false, []);
+    this._meshTerrain = this._meshData!.createMesh(this._terrainMatStandard, true, false, false, []);
 
     const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
     sprite.colorSpace = THREE.SRGBColorSpace;
@@ -113,9 +115,9 @@ export class Scan3DDrawModel {
 
     this._meshFootprint = this._meshData.createFootprint(
       this._footprintSize,
-      new THREE.MeshBasicMaterial({ color: this._hoverColour }),
-      new THREE.MeshBasicMaterial({ color: this._selectionColour }),
-      //this._meshTerrain
+      new THREE.MeshLambertMaterial({ color: this._hoverColour }),
+      new THREE.MeshLambertMaterial({ color: this._selectionColour }),
+      false
     );
 
     const meshBBox = meshData.bboxMeshPMCs;
@@ -125,7 +127,7 @@ export class Scan3DDrawModel {
     this._pointLight = this.makeLight(
       new THREE.Vector3(
         dataCenter.x,
-        meshBBox.maxCorner.y + (meshBBox.maxCorner.y-meshBBox.minCorner.y) * 5,
+        meshBBox.maxCorner.y + (meshBBox.maxCorner.y-meshBBox.minCorner.y) * 1.1,
         dataCenter.z
       )
     );
@@ -342,17 +344,15 @@ export class Scan3DDrawModel {
 
   // The lights we can use
   private _pointLight?: THREE.PointLight;
-  private _ambientLight = new THREE.AmbientLight(clrWhite, 0.2);
+  private _ambientLightFullBright = new THREE.AmbientLight(clrWhite, Math.PI); // NOTE: Ambient light "100%" level is Pi!
+  private _ambientLight = new THREE.AmbientLight(clrWhite, 0.1);
   private _hemisphereLight = new THREE.HemisphereLight(new THREE.Color(.63, .48, .41), new THREE.Color(.37, .17, .08), 1)
 
-  private _terrainMatStandard = new THREE.MeshStandardMaterial({
+  private _terrainMatStandard = new THREE.MeshPhongMaterial({color: clrWhite, shininess: 50}); /*= new THREE.MeshStandardMaterial({
     color: clrWhite,
     roughness: 0.5,
     metalness: 0.5
-  });
-  private _terrainMatBasic = new THREE.MeshBasicMaterial({
-    color: clrWhite
-  });
+  });*/
 
   private _selectionColour = RGBAtoTHREEColour(Colours.CONTEXT_BLUE);
   private _hoverColour = RGBAtoTHREEColour(Colours.CONTEXT_PURPLE);
@@ -454,6 +454,7 @@ export class Scan3DDrawModel {
       return;
     }
 
+    this.renderData.scene.remove(this._ambientLightFullBright);
     this.renderData.scene.remove(this._ambientLight);
     this.renderData.scene.remove(this._pointLight);
     this.renderData.scene.remove(this._hemisphereLight);
@@ -463,18 +464,20 @@ export class Scan3DDrawModel {
     }
 
     if (mode == LightMode.LM_UNKNOWN) {
-      this.renderData.scene.add(this._ambientLight);
-      this._meshTerrain!.material = this._terrainMatBasic;
+      this.renderData.scene.add(this._ambientLightFullBright);
+      //this._meshTerrain!.material = this._terrainMatBasic;
     } else if (mode == LightMode.LM_POINT) {
       this.renderData.scene.add(this._pointLight);
-      this._meshTerrain!.material = this._terrainMatStandard;
+      this.renderData.scene.add(this._ambientLight);
+      //this._meshTerrain!.material = this._terrainMatStandard;
 
       if (this.renderData.transformControl) {
         this.renderData.transformControl.attach(this._pointLight);
       }
     } else {
       this.renderData.scene.add(this._hemisphereLight);
-      this._meshTerrain!.material = this._terrainMatStandard;
+      this.renderData.scene.add(this._ambientLight);
+      //this._meshTerrain!.material = this._terrainMatStandard;
     }
   }
 
@@ -527,8 +530,8 @@ export class Scan3DDrawModel {
     if (this._hemisphereLight) {
       this._hemisphereLight.intensity = i;
     }
-    if (this._ambientLight) {
-      this._ambientLight.intensity = i;
+    if (this._ambientLightFullBright) {
+      this._ambientLightFullBright.intensity = i;
     }
   }
 
@@ -576,10 +579,10 @@ export class Scan3DDrawModel {
       texture = this._texture || null;
     }
 
-    this._terrainMatBasic.map = texture;
+    //this._terrainMatBasic.map = texture;
     this._terrainMatStandard.map = texture;
 
-    this._terrainMatBasic.needsUpdate = true;
+    //this._terrainMatBasic.needsUpdate = true;
     this._terrainMatStandard.needsUpdate = true;
   }
 
@@ -605,11 +608,17 @@ export class Scan3DDrawModel {
   private _layerDrawMode = "";
   setLayerDrawMode(mode: string) {
     this._layerDrawMode = mode;
+
+    // Force-rebuild the maps
+    this.updateMaps(this._lastMaps);
   }
 
   private _layerOpacity: number = 1;
   setLayerOpacity(opacity: number) {
     this._layerOpacity = opacity;
+
+    // Force-rebuild the maps
+    this.updateMaps(this._lastMaps);
   }
 
   updateMaps(maps: ContextImageMapLayer[]) {
@@ -617,19 +626,22 @@ export class Scan3DDrawModel {
       console.error("updateMaps: called without inited scene");
       return;
     }
+
     // if (!this._meshData) {
     //   console.error("updateMaps: called without inited meshData");
     //   return;
     // }
 
+    this._lastMaps = maps;
+    
     const tintTerrain = this._layerDrawMode.indexOf("tint") > -1;
 
     // Remove the previous "other" option
-    if (tintTerrain) {
-      if (this._meshPointPolygons) {
-        this._sceneAttachment.remove(this._meshPointPolygons);
-      }
-    } else {
+    if (this._meshPointPolygons) {
+      this._sceneAttachment.remove(this._meshPointPolygons);
+    }
+
+    if (!tintTerrain) {
       this.tintPointPolygons([]);
     }
 
@@ -686,7 +698,12 @@ export class Scan3DDrawModel {
       }
 
       if (!tintTerrain) {
-        this._meshPointPolygons = this._meshData.createPointPolygons(this._meshTerrain, mat, colours);
+        const drawCylinders = this._layerDrawMode.indexOf("cylinders") > -1;
+        if (drawCylinders) {
+          this._meshPointPolygons = this._meshData.createPointCylinders(this._meshTerrain, mat, colours);
+        } else {
+          this._meshPointPolygons = this._meshData.createPointPolygons(this._meshTerrain, mat, colours);
+        }
 
         // Push it up slightly
         this._meshPointPolygons.position.z += pushUpHeight;
@@ -719,22 +736,23 @@ export class Scan3DDrawModel {
       this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, []);
       this._sceneAttachment?.add(this._meshTerrain);
 
-      this._terrainMatBasic.vertexColors = false;
+      //this._terrainMatBasic.vertexColors = false;
       this._terrainMatStandard.vertexColors = false;
     } else {
-      this._terrainMatBasic.vertexColors = true;
+      //this._terrainMatBasic.vertexColors = true;
       this._terrainMatStandard.vertexColors = true;
 
       this._sceneAttachment?.remove(this._meshTerrain);
       this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, scanEntryColours);
       this._sceneAttachment?.add(this._meshTerrain);
     }
-    this._terrainMatBasic.needsUpdate = true;
+    //this._terrainMatBasic.needsUpdate = true;
     this._terrainMatStandard.needsUpdate = true;
   }
 }
 
 export function RGBAtoTHREEColour(colour: RGBA): THREE.Color {
   return new THREE.Color(`rgb(${Math.round(colour.r)}, ${Math.round(colour.g)}, ${Math.round(colour.b)})`);
+  // NOTE: This is not gamma corrected or whatever... doesn't come out with what we're expecting!
   //return new THREE.Color(colour.r / 255, colour.g / 255, colour.b / 255);
 }

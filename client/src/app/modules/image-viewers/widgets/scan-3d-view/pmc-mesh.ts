@@ -195,7 +195,8 @@ export class PMCMeshData {
 
       const clr = polyColours[poly.scanEntryIndex];
       if (clr === undefined) {
-        console.error("createPointPolygons: No colour for scan index: " + poly.scanEntryIndex)
+        // If map has a hole in it we get this... it's not an error!
+        //console.error("createPointPolygons: No colour for scan index: " + poly.scanEntryIndex)
         continue;
       }
 
@@ -259,6 +260,30 @@ export class PMCMeshData {
     return result;
   }
 
+  createPointCylinders(terrainMesh: THREE.Mesh, material: THREE.Material, polyColours: (THREE.Color | undefined)[]): THREE.Group {
+    const shape = new THREE.CylinderGeometry(0, this._averagePointDistanceTerrain / 2, this._averagePointDistanceTerrain/3, 16, 1, true);
+    const result = new THREE.Group();
+
+    for (const pt of this._points) {
+
+      const clr = polyColours[pt.scanEntryIndex];
+      if (clr === undefined) {
+        // If map has a hole in it we get this... it's not an error!
+        //console.error("createPointCylinders: No colour for scan index: " + pt.scanEntryIndex)
+        continue;
+      }
+
+      const shapeMat = new THREE.MeshBasicMaterial({color: clr, opacity: material.opacity, transparent: material.transparent});
+      const ptShape = new THREE.Mesh(shape, shapeMat);
+      ptShape.rotateX(Math.PI/2);
+      ptShape.position.set(pt.terrainPoint.x, pt.terrainPoint.y, pt.terrainPoint.z + this._averagePointDistanceTerrain/6);
+
+      result.add(ptShape);
+    }
+
+    return result;
+  }
+
   createPoints(material: THREE.Material): THREE.Points {
     const geom = this.createPositionArray(true);
 
@@ -275,7 +300,7 @@ export class PMCMeshData {
     return points;
   }
 
-  createFootprint(radius: number, material1: THREE.Material, material2: THREE.Material): THREE.Object3D | undefined {
+  createFootprint(radius: number, material1: THREE.Material, material2: THREE.Material, drawDebug: boolean): THREE.Object3D | undefined {
     if (this._hullPoints.length <= 0) {
       return undefined;
     }
@@ -283,135 +308,110 @@ export class PMCMeshData {
     // We have calculated hull points intended for display (they are expaned outside the footprint area and follow the terrain)
     // Now we take these to form polygons showing the footprint area. This will be formed of 2 colours to conform to the context
     // image
-    let poly1Verts: number[] = [];
-    let poly2Verts: number[] = [];
+    let strip1Verts: number[] = [];
+    let strip2Verts: number[] = [];
 
-    let poly1Idxs: number[] = [];
-    let poly2Idxs: number[] = [];
+    let strip1Idxs: number[] = [];
+    let strip2Idxs: number[] = [];
 
-    const thickness = 0.1;
-    const lipHeight = 0.1;
+    const thickness = radius;
+    const lipHeight = radius;
 
     for (let c = 0; c < this._displayHullPoints.length; c++) {
       // Draw a polygon on either side of the line
       const thisPt = new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight);
-      poly1Verts.push(thisPt.x);
-      poly1Verts.push(thisPt.y);
-      poly1Verts.push(thisPt.z);
+      strip1Verts.push(thisPt.x);
+      strip1Verts.push(thisPt.y);
+      strip1Verts.push(thisPt.z);
 
-      poly2Verts.push(thisPt.x);
-      poly2Verts.push(thisPt.y);
-      poly2Verts.push(thisPt.z);
+      strip2Verts.push(thisPt.x);
+      strip2Verts.push(thisPt.y);
+      strip2Verts.push(thisPt.z);
 
       const norm = this._displayHullNormals[c];
-      poly1Verts.push(...new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight).addScaledVector(norm, thickness).toArray());
-      poly2Verts.push(...new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight).addScaledVector(norm, -thickness).toArray());
+      strip1Verts.push(...new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight).addScaledVector(norm, thickness).toArray());
+      strip2Verts.push(...new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight).addScaledVector(norm, -thickness).toArray());
+
+      const lastIdx = strip1Verts.length-1;
+      // Now do the sides too
+      strip1Verts.push(strip1Verts[lastIdx-2]);
+      strip1Verts.push(strip1Verts[lastIdx-1]);
+      //strip1Verts.push(strip1Verts[lastIdx]);
+      strip1Verts.push(this._bboxMeshAll.minCorner.z);
+
+      strip2Verts.push(strip2Verts[lastIdx-2]);
+      strip2Verts.push(strip2Verts[lastIdx-1]);
+      //strip2Verts.push(strip2Verts[lastIdx]);
+      strip2Verts.push(this._bboxMeshAll.minCorner.z);
 
       if (c > 0) {
-        const latestIdx = poly1Verts.length / 3 - 1;
+        const latestIdx = strip1Verts.length / 3 - 1;
         //
-        //  Poly 1       Poly 2
+        //     Strip 1            Strip 2
+        //   (4 triangles)    (4 triangles)
+        //  3 ----- 4 ----- 5 ----- 4 ----- 3
+        //  |    /  |  \    |    /  |  \    |
+        //  |   /   |   \   |   /   |   \   |
+        //  |  /    |    \  |  /    |    \  |
+        //  0 ----- 1 ----- 2 ----- 1 ----- 0
         //
-        //  3 ------2------ 3
-        //  |    /  |  \    |
-        //  |   /   |   \   |
-        //  |  /    |    \  |
-        //  1 ------0------ 1
-        //
-        // At this point:
-        // [0] = latestIdx-3
-        // [1] = latestIdx-2
-        // [2] = latestIdx-1
-        // [3] = latestIdx
 
-        // Add poly 1: 0, 2, 1
-        poly1Idxs.push(latestIdx-3);
-        poly1Idxs.push(latestIdx-1);
-        poly1Idxs.push(latestIdx-2);
-        
-        // Add poly 1: 1, 2, 3
-        poly1Idxs.push(latestIdx-2);
-        poly1Idxs.push(latestIdx-1);
-        poly1Idxs.push(latestIdx);
+        // Top surface 2 triangles for each side
+        strip1Idxs.push(latestIdx-2);
+        strip1Idxs.push(latestIdx-1);
+        strip1Idxs.push(latestIdx-4);
 
-        // Add poly 2: 0, 1, 2
-        poly2Idxs.push(latestIdx-3);
-        poly2Idxs.push(latestIdx-2);
-        poly2Idxs.push(latestIdx-1);
+        strip1Idxs.push(latestIdx-2);
+        strip1Idxs.push(latestIdx-4);
+        strip1Idxs.push(latestIdx-5);
 
-        // Add poly 2: 1, 3, 2
-        poly2Idxs.push(latestIdx-2);
-        poly2Idxs.push(latestIdx);
-        poly2Idxs.push(latestIdx-1);
+        strip2Idxs.push(latestIdx-2);
+        strip2Idxs.push(latestIdx-4);
+        strip2Idxs.push(latestIdx-1);
+
+        strip2Idxs.push(latestIdx-2);
+        strip2Idxs.push(latestIdx-5);
+        strip2Idxs.push(latestIdx-4);
+
+        // Side walls of each strip
+        strip1Idxs.push(latestIdx);
+        strip1Idxs.push(latestIdx-3);
+        strip1Idxs.push(latestIdx-4);
+
+        strip1Idxs.push(latestIdx);
+        strip1Idxs.push(latestIdx-4);
+        strip1Idxs.push(latestIdx-1);
+
+        strip2Idxs.push(latestIdx);
+        strip2Idxs.push(latestIdx-4);
+        strip2Idxs.push(latestIdx-3);
+
+        strip2Idxs.push(latestIdx);
+        strip2Idxs.push(latestIdx-1);
+        strip2Idxs.push(latestIdx-4);
       }
     }
 
     const result = new THREE.Object3D();
 
-    const footprintPoly1 = new THREE.BufferGeometry();
-    footprintPoly1.setAttribute("position", new THREE.BufferAttribute(new Float32Array(poly1Verts), 3));
-    footprintPoly1.setIndex(new THREE.BufferAttribute(new Uint32Array(poly1Idxs), 1));
-    //footprintPoly1.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 1,2,3]), 1));
-    footprintPoly1.computeVertexNormals();
+    const footprintstrip1 = new THREE.BufferGeometry();
+    footprintstrip1.setAttribute("position", new THREE.BufferAttribute(new Float32Array(strip1Verts), 3));
+    footprintstrip1.setIndex(new THREE.BufferAttribute(new Uint32Array(strip1Idxs), 1));
+    //footprintstrip1.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 1,2,3]), 1));
+    footprintstrip1.computeVertexNormals();
 
-    const poly1Mesh = new THREE.Mesh(footprintPoly1, material1);
-    result.add(poly1Mesh);
+    const strip1Mesh = new THREE.Mesh(footprintstrip1, material1);
+    result.add(strip1Mesh);
 
-    const footprintPoly2 = new THREE.BufferGeometry();
-    footprintPoly2.setAttribute("position", new THREE.BufferAttribute(new Float32Array(poly2Verts), 3));
-    footprintPoly2.setIndex(new THREE.BufferAttribute(new Uint32Array(poly2Idxs), 1));
-    footprintPoly2.computeVertexNormals();
+    const footprintstrip2 = new THREE.BufferGeometry();
+    footprintstrip2.setAttribute("position", new THREE.BufferAttribute(new Float32Array(strip2Verts), 3));
+    footprintstrip2.setIndex(new THREE.BufferAttribute(new Uint32Array(strip2Idxs), 1));
+    footprintstrip2.computeVertexNormals();
 
-    const poly2Mesh = new THREE.Mesh(footprintPoly2, material2);
-    result.add(poly2Mesh);
+    const strip2Mesh = new THREE.Mesh(footprintstrip2, material2);
+    result.add(strip2Mesh);
 
-/*
-    // How far we "expand" the footprint from the actual footprint points for display purposes. Context image view also does this!
-    const expandSize = radius * 5;
-
-    // Create a mesh to show the footprint. Note we use the same footprint as the context image, but to represent it we
-    // have to break it into short line segments so it follows the terrain contours
-
-    const lastC = this._hullPoints.length-1;
-    //let ptLast = new THREE.Vector3().addVectors(this._hullPoints[lastC], normals[lastC]);
-    let ptLast = new THREE.Vector3(this._hullPoints[lastC].x, this._hullPoints[lastC].y, this._hullPoints[lastC].z)
-      .addScaledVector(this._hullPointNormals[lastC], expandSize);
-
-    let lines = new Float32Array(this._hullPoints.length * 6);
-    let lineSegments: THREE.Vector3[] = [];
-    for (let c = 0; c < 8/*this._hullPoints.length* /; c++) {
-      //let ptStart = new THREE.Vector3().addVectors(this._hullPoints[c], normals[c]);
-      let ptStart = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z).addScaledVector(this._hullPointNormals[c], expandSize);
-      //ptLast = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z);
-      ptStart = this.dropOnMesh(ptStart, terrainMesh);
-
-      this.makeHullSegment(ptLast, ptStart, terrainMesh, lineSegments);
-
-      const c6 = c * 6;
-      lines[c6] = ptLast.x;
-      lines[c6+1] = ptLast.y;
-      lines[c6+2] = ptLast.z;
-      lines[c6+3] = ptStart.x;
-      lines[c6+4] = ptStart.y;
-      lines[c6+5] = ptStart.z;
-      ptLast = ptStart;
-    }
-*/
-    let lines = new Float32Array(this._displayHullPoints.length * 6);
-    let writeIdx = 0;
-    for (let c = 1; c < this._displayHullPoints.length; c++) {
-      lines[writeIdx] = this._displayHullPoints[c-1].x;
-      lines[writeIdx+1] = this._displayHullPoints[c-1].y;
-      lines[writeIdx+2] = this._displayHullPoints[c-1].z/*-0.05*/;
-      writeIdx += 3;
-
-      lines[writeIdx] = this._displayHullPoints[c].x;
-      lines[writeIdx+1] = this._displayHullPoints[c].y;
-      lines[writeIdx+2] = this._displayHullPoints[c].z;
-      writeIdx += 3;
-    }
-
-/*
+/* NOTE: we first tried drawing this with tube geometry... but of course having 2 different colours side-by-side didn't work
     const curvePath = new THREE.CurvePath<THREE.Vector3>();
     for (let c = 0; c < lineSegments.length; c += 2) {
       curvePath.add(new THREE.LineCurve3(lineSegments[c], lineSegments[c+1]));
@@ -437,43 +437,46 @@ export class PMCMeshData {
     // const mesh = new THREE.Mesh(geom, material);
 
     //const wireframe = new THREE.WireframeGeometry(geom);
-    // Just make it out of lines
 
-    const linesGeom = new THREE.BufferGeometry();
-    linesGeom.setAttribute("position", new THREE.BufferAttribute(lines, 3));
-    const mesh = new THREE.LineSegments(linesGeom, new THREE.LineBasicMaterial({color: new THREE.Color("orange")}));
-    result.add(mesh);
-/*
-    const lineSegGeom = new THREE.BufferGeometry();
-    const lineSegArr = new Float32Array(lineSegments.length * 3);
-    let c3 = 0;
-    for (let c = 0; c < lineSegments.length; c++) {
-      lineSegArr[c3] = lineSegments[c].x;
-      lineSegArr[c3+1] = lineSegments[c].y;
-      lineSegArr[c3+2] = lineSegments[c].z;
-      c3 += 3;
+    if (drawDebug) {
+      // Drawing the raw hull points as orange lines
+      let lines = new Float32Array(this._displayHullPoints.length * 6);
+      let writeIdx = 0;
+      for (let c = 1; c < this._displayHullPoints.length; c++) {
+        lines[writeIdx] = this._displayHullPoints[c-1].x;
+        lines[writeIdx+1] = this._displayHullPoints[c-1].y;
+        lines[writeIdx+2] = this._displayHullPoints[c-1].z/*-0.05*/;
+        writeIdx += 3;
+
+        lines[writeIdx] = this._displayHullPoints[c].x;
+        lines[writeIdx+1] = this._displayHullPoints[c].y;
+        lines[writeIdx+2] = this._displayHullPoints[c].z;
+        writeIdx += 3;
+      }
+
+      const linesGeom = new THREE.BufferGeometry();
+      linesGeom.setAttribute("position", new THREE.BufferAttribute(lines, 3));
+      const mesh = new THREE.LineSegments(linesGeom, new THREE.LineBasicMaterial({color: new THREE.Color("orange")}));
+      result.add(mesh);
+
+      // Drawing raw hull point normals as green lines
+      const normalGeom = new THREE.BufferGeometry();
+      const normalPoints = new Float32Array(this._hullPointNormals.length * 6);
+      for (let c = 0; c < this._hullPoints.length; c++) {
+        const c6 = c * 6;
+        normalPoints[c6] = this._hullPoints[c].x;
+        normalPoints[c6+1] = this._hullPoints[c].y;
+        normalPoints[c6+2] = this._hullPoints[c].z;
+
+        normalPoints[c6+3] = this._hullPoints[c].x + this._hullPointNormals[c].x;
+        normalPoints[c6+4] = this._hullPoints[c].y + this._hullPointNormals[c].y;
+        normalPoints[c6+5] = this._hullPoints[c].z + this._hullPointNormals[c].z;
+      }
+
+      normalGeom.setAttribute("position", new THREE.BufferAttribute(normalPoints, 3));
+      const normalLines = new THREE.LineSegments(normalGeom, new THREE.LineBasicMaterial({color: new THREE.Color("green")}));
+      result.add(normalLines);
     }
-    lineSegGeom.setAttribute("position", new THREE.BufferAttribute(lineSegArr, 3));
-    mesh.add(new THREE.LineSegments(lineSegGeom, new THREE.LineBasicMaterial({color: new THREE.Color("purple")})));
-*/
-    // Make a bunch of vertex normals to display
-    const normalGeom = new THREE.BufferGeometry();
-    const normalPoints = new Float32Array(this._hullPointNormals.length * 6);
-    for (let c = 0; c < this._hullPoints.length; c++) {
-      const c6 = c * 6;
-      normalPoints[c6] = this._hullPoints[c].x;
-      normalPoints[c6+1] = this._hullPoints[c].y;
-      normalPoints[c6+2] = this._hullPoints[c].z;
-
-      normalPoints[c6+3] = this._hullPoints[c].x + this._hullPointNormals[c].x;
-      normalPoints[c6+4] = this._hullPoints[c].y + this._hullPointNormals[c].y;
-      normalPoints[c6+5] = this._hullPoints[c].z + this._hullPointNormals[c].z;
-    }
-
-    normalGeom.setAttribute("position", new THREE.BufferAttribute(normalPoints, 3));
-    const normalLines = new THREE.LineSegments(normalGeom, new THREE.LineBasicMaterial({color: new THREE.Color("green")}));
-    result.add(normalLines);
-
     return result;
   }
 
@@ -860,7 +863,7 @@ export class PMCMeshData {
     this._displayHullPoints = [];
 
     // How far we "expand" the footprint from the actual footprint points for display purposes. Context image view also does this!
-    const expandSize = this._averagePointDistanceTerrain * 3;
+    const expandSize = this._averagePointDistanceTerrain;
 
     // Create a mesh to show the footprint. Note we use the same footprint as the context image, but to represent it we
     // have to break it into short line segments so it follows the terrain contours
