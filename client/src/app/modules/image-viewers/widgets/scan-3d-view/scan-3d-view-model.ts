@@ -184,6 +184,25 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setDrawTexture(draw);
   }
 
+  private _layerDrawMode = "";
+  get layerDrawMode(): string {
+    return this._layerDrawMode;
+  }
+
+  set layerDrawMode(mode: string) {
+    this._layerDrawMode = mode;
+    this.drawModel.setLayerDrawMode(mode);
+  }
+
+  get currentLayerOpacity(): number {
+    return this.layerOpacity?.get(this._scanId) || 1;
+  }
+
+  set currentLayerOpacity(opacity: number) {
+    this.layerOpacity.set(this._scanId, opacity);
+    this.drawModel.setLayerOpacity(opacity);
+  }
+
   private _drawWireframe = true;
   get drawWireframe(): boolean {
     return this._drawWireframe;
@@ -220,11 +239,6 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   private _raw?: ContextImageModelLoadedData;
   private _scanEntries?: ScanEntryResp;
   private _beams?: ScanBeamLocationsResp;
-
-  private _selectionColour = new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255);
-  // private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
-  // private _marsDirtColour = new THREE.Color(.37, .17, .08);
-  private _pointSize: number = 0.02;
 
   drawModel = new Scan3DDrawModel();
   

@@ -1,4 +1,4 @@
-import { Colours } from 'src/app/utils/colours';
+import { Colours, RGBA } from 'src/app/utils/colours';
 import * as THREE from 'three';
 import { RenderData } from './interactive-canvas-3d.component';
 import { SelectionService } from 'src/app/modules/pixlisecore/pixlisecore.module';
@@ -10,7 +10,6 @@ import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
 import { ScanEntry } from 'src/app/generated-protos/scan-entry';
 import { ContextImageScanModel } from '../context-image/context-image-model-internals';
 import { ContextImageMapLayer } from '../../models/map-layer';
-import { MapColourScale } from '../context-image/ui-elements/map-colour-scale/map-colour-scale';
 
 
 const pushUpHeight = 0.01;
@@ -18,6 +17,9 @@ const pushUpHeight = 0.01;
 const renderOrderSelectedPoint = 1;
 const renderOrderHoverPoint = 10;
 const renderOrderComparePlane = 100;
+
+const clrWhite = new THREE.Color(1,1,1);
+const clrMarsDirtColour = new THREE.Color(.37, .17, .08);
 
 export class Scan3DDrawModel {
   protected _sceneAttachment?: THREE.Object3D;
@@ -47,7 +49,7 @@ export class Scan3DDrawModel {
 
     this._pointSizeSelected = meshData.maxWorldMeshSize / 1500;
     this._footprintSize = this._pointSizeSelected * 1.2;//meshData.maxWorldMeshSize / 1000;
-    this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
+    //this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
     this._pointSizeAttenuated = this._pointSizeSelected;
 
     if (image) {
@@ -88,7 +90,7 @@ export class Scan3DDrawModel {
       this._terrainMatStandard.map = texture;
     }
 
-    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic, true, []);
+    this._meshTerrain = this._meshData!.createMesh(this._terrainMatBasic, true, false, false, []);
 
     const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
     sprite.colorSpace = THREE.SRGBColorSpace;
@@ -111,8 +113,9 @@ export class Scan3DDrawModel {
 
     this._meshFootprint = this._meshData.createFootprint(
       this._footprintSize,
-      new THREE.MeshPhongMaterial({ color: this._hoverColour }),
-      this._meshTerrain
+      new THREE.MeshBasicMaterial({ color: this._hoverColour }),
+      new THREE.MeshBasicMaterial({ color: this._selectionColour }),
+      //this._meshTerrain
     );
 
     const meshBBox = meshData.bboxMeshPMCs;
@@ -126,7 +129,7 @@ export class Scan3DDrawModel {
         dataCenter.z
       )
     );
-    // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._light);
+    // NOTE: We now just create the object, don't add it to the scene just yet
 
     this._sceneAttachment.add(this._meshTerrain);
 
@@ -137,11 +140,11 @@ export class Scan3DDrawModel {
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
     this.initPlane(meshData.bboxMeshAll);
 
-    // NOTE: We now just create the object, don't add it... this.renderData.scene.add(this._meshPoints);
+    // NOTE: We now just create the object, don't add it to the scene just yet
   }
 
   protected makeLight(lightPos: THREE.Vector3) {
-    const pointLight = new THREE.PointLight(new THREE.Color(1,1,1), 100);
+    const pointLight = new THREE.PointLight(clrWhite, 100);
     pointLight.position.set(lightPos.x, lightPos.y, lightPos.z);
   
     const lightGeom = this.makeLightGeom();
@@ -273,7 +276,7 @@ export class Scan3DDrawModel {
         planeZSize,
         1, 1, 1),
       new THREE.MeshPhongMaterial({
-        color: this._marsDirtColour,
+        color: clrMarsDirtColour,
         opacity: 0.7,
         transparent: true,
         depthWrite: false
@@ -308,7 +311,7 @@ export class Scan3DDrawModel {
     for (let c = 0; c < 4; c++) {
       const boxMesh = new THREE.Mesh(
         boxGeom,
-        new THREE.MeshBasicMaterial({ color: this._marsDirtColour })
+        new THREE.MeshBasicMaterial({ color: clrMarsDirtColour })
       );
       boxMesh.position.set(positions[c].x, positions[c].y, positions[c].z);
       this._planeDragBoxes.push(boxMesh);
@@ -339,22 +342,20 @@ export class Scan3DDrawModel {
 
   // The lights we can use
   private _pointLight?: THREE.PointLight;
-  private _ambientLight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
+  private _ambientLight = new THREE.AmbientLight(clrWhite, 0.2);
   private _hemisphereLight = new THREE.HemisphereLight(new THREE.Color(.63, .48, .41), new THREE.Color(.37, .17, .08), 1)
 
   private _terrainMatStandard = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(1, 1, 1),
+    color: clrWhite,
     roughness: 0.5,
     metalness: 0.5
   });
   private _terrainMatBasic = new THREE.MeshBasicMaterial({
-    color: new THREE.Color(1, 1, 1)
+    color: clrWhite
   });
 
-  private _selectionColour = new THREE.Color(Colours.CONTEXT_BLUE.r/255, Colours.CONTEXT_BLUE.g/255, Colours.CONTEXT_BLUE.b/255);
-  private _hoverColour = new THREE.Color(Colours.CONTEXT_PURPLE.r/255, Colours.CONTEXT_PURPLE.g/255, Colours.CONTEXT_PURPLE.b/255);
-  private _marsDirtColour = new THREE.Color(.37, .17, .08);
-  private _pointSize: number = 3;
+  private _selectionColour = RGBAtoTHREEColour(Colours.CONTEXT_BLUE);
+  private _hoverColour = RGBAtoTHREEColour(Colours.CONTEXT_PURPLE);
   private _pointSizeAttenuated: number = 3;
   private _pointSizeSelected: number = 0.5;
   private _footprintSize: number = 0.05;
@@ -559,7 +560,7 @@ export class Scan3DDrawModel {
 
   setPlaneDragBoxHover(hover: boolean) {
     // If they're hovered, change colour
-    let clr = this._marsDirtColour;
+    let clr = clrMarsDirtColour;
     if (hover) {
       clr = new THREE.Color(1,1,0);
     }
@@ -601,6 +602,16 @@ export class Scan3DDrawModel {
     }
   }
 
+  private _layerDrawMode = "";
+  setLayerDrawMode(mode: string) {
+    this._layerDrawMode = mode;
+  }
+
+  private _layerOpacity: number = 1;
+  setLayerOpacity(opacity: number) {
+    this._layerOpacity = opacity;
+  }
+
   updateMaps(maps: ContextImageMapLayer[]) {
     if (!this._sceneAttachment) {
       console.error("updateMaps: called without inited scene");
@@ -611,9 +622,10 @@ export class Scan3DDrawModel {
     //   return;
     // }
 
-    const tintTerrain = false;
+    const tintTerrain = this._layerDrawMode.indexOf("tint") > -1;
 
-    if (!tintTerrain) {
+    // Remove the previous "other" option
+    if (tintTerrain) {
       if (this._meshPointPolygons) {
         this._sceneAttachment.remove(this._meshPointPolygons);
       }
@@ -623,8 +635,8 @@ export class Scan3DDrawModel {
 
     if (maps.length > 0 && this._meshData && this._meshTerrain) {
       const map = maps[0];
-      const colourDebug = false;
-      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1), transparent: !colourDebug, opacity: 0.75  });
+      const colourDebug = this._layerDrawMode.indexOf("colourDebug") > -1;
+      const mat = new THREE.MeshBasicMaterial({ color: clrWhite, transparent: !colourDebug && this._layerOpacity < 1, opacity: this._layerOpacity });
 
       const scanEntryIdxs = this._meshData.getPointPolygonOrder();
       const colours = [];
@@ -639,20 +651,33 @@ export class Scan3DDrawModel {
           new THREE.Color(1, 1, 0),
           new THREE.Color(1, 0, 1),
           new THREE.Color(0, 1, 1),
-          new THREE.Color(1, 1, 1),
           new THREE.Color(70/255, 9/255, 93/255),
           new THREE.Color(143/255, 53/255, 163/255),
           new THREE.Color(0.1, 0, 0),
           new THREE.Color(0.25, 0, 0),
           new THREE.Color(0.5, 0, 0),
           new THREE.Color(1, 0, 0),
+          clrMarsDirtColour,
+          clrWhite,
+          new THREE.Color(0, 0, 0),
+          new THREE.Color(0.003921569, 0.003921569, 0.003921569),
+          new THREE.Color(0.019607843, 0.019607843, 0.019607843),
+          new THREE.Color(0.03921569, 0.03921569, 0.03921569),
+          new THREE.Color(0.1, 0.1, 0.1),
+          new THREE.Color(0.25, 0.25, 0.25),
+          new THREE.Color(0.5, 0.5, 0.5),
+          clrWhite,
+          new THREE.Color("rgb(10%, 10%, 10%)"),
+          new THREE.Color("rgb(25%, 25%, 25%)"),
+          new THREE.Color("rgb(50%, 50%, 50%)"),
+          clrWhite,
         ];
         for (let c = 0; c < map.mapPoints.length; c++) {
           colourMap.set(map.mapPoints[c].scanEntryIndex, colourChoices[c % colourChoices.length]);
         }
       } else {
         for (const pt of map.mapPoints) {
-          colourMap.set(pt.scanEntryIndex, new THREE.Color(pt.drawParams.colour.r / 255, pt.drawParams.colour.g / 255, pt.drawParams.colour.b / 255));
+          colourMap.set(pt.scanEntryIndex, RGBAtoTHREEColour(pt.drawParams.colour));
         }
       }
 
@@ -683,12 +708,15 @@ export class Scan3DDrawModel {
       return;
     }
 
+    const colourOnlyPMC = this._layerDrawMode.indexOf("colourOnlyPMC") > -1;
+    const duplicatePolyPoints = this._layerDrawMode.indexOf("duplicatePoints") > -1;
+
     // Clear if no tints...
     if (scanEntryColours.length <= 0) {
       // Why didn't this work? this._meshTerrain?.geometry.deleteAttribute("color");
 
       this._sceneAttachment?.remove(this._meshTerrain);
-      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, []);
+      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, []);
       this._sceneAttachment?.add(this._meshTerrain);
 
       this._terrainMatBasic.vertexColors = false;
@@ -698,10 +726,15 @@ export class Scan3DDrawModel {
       this._terrainMatStandard.vertexColors = true;
 
       this._sceneAttachment?.remove(this._meshTerrain);
-      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, scanEntryColours);
+      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, scanEntryColours);
       this._sceneAttachment?.add(this._meshTerrain);
     }
     this._terrainMatBasic.needsUpdate = true;
     this._terrainMatStandard.needsUpdate = true;
   }
+}
+
+export function RGBAtoTHREEColour(colour: RGBA): THREE.Color {
+  return new THREE.Color(`rgb(${Math.round(colour.r)}, ${Math.round(colour.g)}, ${Math.round(colour.b)})`);
+  //return new THREE.Color(colour.r / 255, colour.g / 255, colour.b / 255);
 }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
 import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
-import { Observable, scan } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ContextImageScanModel, PointCluster } from '../context-image/context-image-model-internals';
 import { ScanEntry } from 'src/app/generated-protos/scan-entry';
 import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
@@ -62,6 +62,9 @@ export class PMCMeshData {
   private _rawCornerPoints: THREE.Vector3[] = [];
   private _rawCornerUVs: THREE.Vector2[] = [];
   private _hullPoints: THREE.Vector3[] = [];
+  private _hullPointNormals: THREE.Vector3[] = [];
+  private _displayHullPoints: THREE.Vector3[] = [];
+  private _displayHullNormals: THREE.Vector3[] = [];
   private _averagePointDistanceRaw: number = 0;
   private _averagePointDistanceTerrain: number = 0;
 
@@ -91,6 +94,8 @@ export class PMCMeshData {
       this.calculateSupportPoints(scale, this._image.width, this._image.height/*, this._scanEntries, this._beamLocations*/);
     }
 
+    //const concaveHullPMCs = this.calculateConcaveHullPMCs();
+
     this.calculateHullPoints(scale);
 
     this.processUVs();
@@ -103,6 +108,8 @@ export class PMCMeshData {
     const meshGeom = this.createMeshGeometry(geom, idxs, !!this._image);
     this._simpleTerrainMesh = new THREE.Mesh(meshGeom);
     this.updateMeshPointPolygonZs(this._simpleTerrainMesh);
+
+    this.calcDisplayHullPoints(this._simpleTerrainMesh);
   }
 
   get points(): PMCMeshPoint[] {
@@ -132,7 +139,7 @@ export class PMCMeshData {
     return result;
   }
 
-  createMesh(material: THREE.Material, usePMCPolys: boolean, scanEntryColours: (THREE.Color | undefined)[]): THREE.Mesh {
+  createMesh(material: THREE.Material, usePMCPolys: boolean, duplicatePolyPoints: boolean, colourOnlyPMC: boolean, scanEntryColours: (THREE.Color | undefined)[]): THREE.Mesh {
     if (!this._simpleTerrainMesh) {
       throw new Error("createMesh called when internals not yet calculated");
     }
@@ -144,10 +151,11 @@ export class PMCMeshData {
     }
 
     // Calculate a mesh that includes PMC locations (xyz), surrounding polygons and image corners
-    let geom = this.createPositionPolysArray(scanEntryColours);
+    let geom = this.createPositionPolysArray(colourOnlyPMC, scanEntryColours);
     let idxs = this.calculateTriangleIndexes(geom);
 
     idxs = this.removePMCPolyTriangles(idxs, geom);
+    
     const meshGeom = this.createMeshGeometry(geom, idxs, !!this._image);
 
     return new THREE.Mesh(meshGeom, material);
@@ -267,37 +275,148 @@ export class PMCMeshData {
     return points;
   }
 
-  createFootprint(radius: number, material: THREE.Material, terrainMesh: THREE.Mesh): THREE.Object3D | undefined {
+  createFootprint(radius: number, material1: THREE.Material, material2: THREE.Material): THREE.Object3D | undefined {
     if (this._hullPoints.length <= 0) {
       return undefined;
     }
 
+    // We have calculated hull points intended for display (they are expaned outside the footprint area and follow the terrain)
+    // Now we take these to form polygons showing the footprint area. This will be formed of 2 colours to conform to the context
+    // image
+    let poly1Verts: number[] = [];
+    let poly2Verts: number[] = [];
+
+    let poly1Idxs: number[] = [];
+    let poly2Idxs: number[] = [];
+
+    const thickness = 0.1;
+    const lipHeight = 0.1;
+
+    for (let c = 0; c < this._displayHullPoints.length; c++) {
+      // Draw a polygon on either side of the line
+      const thisPt = new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight);
+      poly1Verts.push(thisPt.x);
+      poly1Verts.push(thisPt.y);
+      poly1Verts.push(thisPt.z);
+
+      poly2Verts.push(thisPt.x);
+      poly2Verts.push(thisPt.y);
+      poly2Verts.push(thisPt.z);
+
+      const norm = this._displayHullNormals[c];
+      poly1Verts.push(...new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight).addScaledVector(norm, thickness).toArray());
+      poly2Verts.push(...new THREE.Vector3(this._displayHullPoints[c].x, this._displayHullPoints[c].y, this._displayHullPoints[c].z + lipHeight).addScaledVector(norm, -thickness).toArray());
+
+      if (c > 0) {
+        const latestIdx = poly1Verts.length / 3 - 1;
+        //
+        //  Poly 1       Poly 2
+        //
+        //  3 ------2------ 3
+        //  |    /  |  \    |
+        //  |   /   |   \   |
+        //  |  /    |    \  |
+        //  1 ------0------ 1
+        //
+        // At this point:
+        // [0] = latestIdx-3
+        // [1] = latestIdx-2
+        // [2] = latestIdx-1
+        // [3] = latestIdx
+
+        // Add poly 1: 0, 2, 1
+        poly1Idxs.push(latestIdx-3);
+        poly1Idxs.push(latestIdx-1);
+        poly1Idxs.push(latestIdx-2);
+        
+        // Add poly 1: 1, 2, 3
+        poly1Idxs.push(latestIdx-2);
+        poly1Idxs.push(latestIdx-1);
+        poly1Idxs.push(latestIdx);
+
+        // Add poly 2: 0, 1, 2
+        poly2Idxs.push(latestIdx-3);
+        poly2Idxs.push(latestIdx-2);
+        poly2Idxs.push(latestIdx-1);
+
+        // Add poly 2: 1, 3, 2
+        poly2Idxs.push(latestIdx-2);
+        poly2Idxs.push(latestIdx);
+        poly2Idxs.push(latestIdx-1);
+      }
+    }
+
+    const result = new THREE.Object3D();
+
+    const footprintPoly1 = new THREE.BufferGeometry();
+    footprintPoly1.setAttribute("position", new THREE.BufferAttribute(new Float32Array(poly1Verts), 3));
+    footprintPoly1.setIndex(new THREE.BufferAttribute(new Uint32Array(poly1Idxs), 1));
+    //footprintPoly1.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 1,2,3]), 1));
+    footprintPoly1.computeVertexNormals();
+
+    const poly1Mesh = new THREE.Mesh(footprintPoly1, material1);
+    result.add(poly1Mesh);
+
+    const footprintPoly2 = new THREE.BufferGeometry();
+    footprintPoly2.setAttribute("position", new THREE.BufferAttribute(new Float32Array(poly2Verts), 3));
+    footprintPoly2.setIndex(new THREE.BufferAttribute(new Uint32Array(poly2Idxs), 1));
+    footprintPoly2.computeVertexNormals();
+
+    const poly2Mesh = new THREE.Mesh(footprintPoly2, material2);
+    result.add(poly2Mesh);
+
+/*
     // How far we "expand" the footprint from the actual footprint points for display purposes. Context image view also does this!
     const expandSize = radius * 5;
 
     // Create a mesh to show the footprint. Note we use the same footprint as the context image, but to represent it we
     // have to break it into short line segments so it follows the terrain contours
-    const curvePath = new THREE.CurvePath<THREE.Vector3>();
-
-    const normals = this.makeHullPointNormals();
 
     const lastC = this._hullPoints.length-1;
     //let ptLast = new THREE.Vector3().addVectors(this._hullPoints[lastC], normals[lastC]);
     let ptLast = new THREE.Vector3(this._hullPoints[lastC].x, this._hullPoints[lastC].y, this._hullPoints[lastC].z)
-      .addScaledVector(normals[lastC], expandSize);
+      .addScaledVector(this._hullPointNormals[lastC], expandSize);
 
-    let totalSegments = 0;
-
-    for (let c = 0; c < this._hullPoints.length; c++) {
+    let lines = new Float32Array(this._hullPoints.length * 6);
+    let lineSegments: THREE.Vector3[] = [];
+    for (let c = 0; c < 8/*this._hullPoints.length* /; c++) {
       //let ptStart = new THREE.Vector3().addVectors(this._hullPoints[c], normals[c]);
-      let ptStart = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z).addScaledVector(normals[c], expandSize);
+      let ptStart = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z).addScaledVector(this._hullPointNormals[c], expandSize);
+      //ptLast = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z);
       ptStart = this.dropOnMesh(ptStart, terrainMesh);
 
-      totalSegments += this.makeHullSegment(ptLast, ptStart, curvePath, terrainMesh);
+      this.makeHullSegment(ptLast, ptStart, terrainMesh, lineSegments);
+
+      const c6 = c * 6;
+      lines[c6] = ptLast.x;
+      lines[c6+1] = ptLast.y;
+      lines[c6+2] = ptLast.z;
+      lines[c6+3] = ptStart.x;
+      lines[c6+4] = ptStart.y;
+      lines[c6+5] = ptStart.z;
       ptLast = ptStart;
     }
+*/
+    let lines = new Float32Array(this._displayHullPoints.length * 6);
+    let writeIdx = 0;
+    for (let c = 1; c < this._displayHullPoints.length; c++) {
+      lines[writeIdx] = this._displayHullPoints[c-1].x;
+      lines[writeIdx+1] = this._displayHullPoints[c-1].y;
+      lines[writeIdx+2] = this._displayHullPoints[c-1].z/*-0.05*/;
+      writeIdx += 3;
 
-    const geom = new THREE.TubeGeometry(curvePath, totalSegments * 2, radius, 8, false);
+      lines[writeIdx] = this._displayHullPoints[c].x;
+      lines[writeIdx+1] = this._displayHullPoints[c].y;
+      lines[writeIdx+2] = this._displayHullPoints[c].z;
+      writeIdx += 3;
+    }
+
+/*
+    const curvePath = new THREE.CurvePath<THREE.Vector3>();
+    for (let c = 0; c < lineSegments.length; c += 2) {
+      curvePath.add(new THREE.LineCurve3(lineSegments[c], lineSegments[c+1]));
+    }
+    const geom = new THREE.TubeGeometry(curvePath, lineSegments.length, radius, 8, false);*/
     /*const width = radius;
     const length = radius;
     const shape = new THREE.Shape();
@@ -313,71 +432,49 @@ export class PMCMeshData {
       extrudePath: curvePath
     });*/
 
-    geom.computeVertexNormals();
+    //geom.computeVertexNormals();
 
-    const mesh = new THREE.Mesh(geom, material);
+    // const mesh = new THREE.Mesh(geom, material);
 
-    // const wireframe = new THREE.WireframeGeometry(geom);
-    // const mesh = new THREE.LineSegments(wireframe);
+    //const wireframe = new THREE.WireframeGeometry(geom);
+    // Just make it out of lines
 
-    return mesh;
-  }
-
-  private makeHullPointNormals(): THREE.Vector3[] {
-    if (!this._hullPoints || this._hullPoints.length <= 2) {
-      throw new Error("makeHullPointNormals called when no hull points exist");
+    const linesGeom = new THREE.BufferGeometry();
+    linesGeom.setAttribute("position", new THREE.BufferAttribute(lines, 3));
+    const mesh = new THREE.LineSegments(linesGeom, new THREE.LineBasicMaterial({color: new THREE.Color("orange")}));
+    result.add(mesh);
+/*
+    const lineSegGeom = new THREE.BufferGeometry();
+    const lineSegArr = new Float32Array(lineSegments.length * 3);
+    let c3 = 0;
+    for (let c = 0; c < lineSegments.length; c++) {
+      lineSegArr[c3] = lineSegments[c].x;
+      lineSegArr[c3+1] = lineSegments[c].y;
+      lineSegArr[c3+2] = lineSegments[c].z;
+      c3 += 3;
     }
-
-    const result: THREE.Vector3[] = [];
-    let lastPt = this._hullPoints[this._hullPoints.length-1];
-    let lastNormal = new THREE.Vector3().subVectors(this._hullPoints[0], lastPt).normalize();
-    lastNormal.cross(downDir);
-    lastNormal.normalize();
-
+    lineSegGeom.setAttribute("position", new THREE.BufferAttribute(lineSegArr, 3));
+    mesh.add(new THREE.LineSegments(lineSegGeom, new THREE.LineBasicMaterial({color: new THREE.Color("purple")})));
+*/
+    // Make a bunch of vertex normals to display
+    const normalGeom = new THREE.BufferGeometry();
+    const normalPoints = new Float32Array(this._hullPointNormals.length * 6);
     for (let c = 0; c < this._hullPoints.length; c++) {
-      // Find the normal of the line from this point to the next one. Using the normal from last point to this point, we can find a vertex normal
-      let normal = new THREE.Vector3().subVectors(this._hullPoints[c == this._hullPoints.length-1 ? 0 : c + 1], this._hullPoints[c]).normalize();
-      normal.cross(downDir);
-      normal.normalize();
+      const c6 = c * 6;
+      normalPoints[c6] = this._hullPoints[c].x;
+      normalPoints[c6+1] = this._hullPoints[c].y;
+      normalPoints[c6+2] = this._hullPoints[c].z;
 
-      let vtxNormal = new THREE.Vector3().addVectors(lastNormal, normal).normalize();
-      result.push(vtxNormal);
-
-      lastPt = this._hullPoints[c];
-      lastNormal = normal;
+      normalPoints[c6+3] = this._hullPoints[c].x + this._hullPointNormals[c].x;
+      normalPoints[c6+4] = this._hullPoints[c].y + this._hullPointNormals[c].y;
+      normalPoints[c6+5] = this._hullPoints[c].z + this._hullPointNormals[c].z;
     }
+
+    normalGeom.setAttribute("position", new THREE.BufferAttribute(normalPoints, 3));
+    const normalLines = new THREE.LineSegments(normalGeom, new THREE.LineBasicMaterial({color: new THREE.Color("green")}));
+    result.add(normalLines);
 
     return result;
-  }
-
-  private makeHullSegment(
-    ptStart: THREE.Vector3,
-    ptEnd: THREE.Vector3,
-    addTo: THREE.CurvePath<THREE.Vector3>,
-    terrainMesh: THREE.Mesh): number {
-
-    const segLength = ptEnd.distanceTo(ptStart);
-
-    // We break it up into smaller segments
-    const segments = Math.ceil(segLength / this._averagePointDistanceTerrain);
-    const segT = segLength / segments;
-
-    const dir = new THREE.Vector3().subVectors(ptEnd, ptStart);
-    dir.setZ(0);
-    dir.normalize();
-    dir.multiplyScalar(segT);
-
-    for (let c = 0; c < segments; c++) {
-      let segEnd = new THREE.Vector3().addVectors(ptStart, dir);
-
-      // Find terrain height at this point
-      segEnd = this.dropOnMesh(segEnd, terrainMesh);
-
-      addTo.add(new THREE.LineCurve3(ptStart, segEnd));
-      ptStart = segEnd;
-    }
-
-    return segments;
   }
 
   private dropOnMesh(pt: THREE.Vector3, mesh: THREE.Mesh): THREE.Vector3 {
@@ -656,6 +753,12 @@ export class PMCMeshData {
         visitedHullIdxs.add(hullPt.idx);
 
         const footprintPMC = contextImgMdl.scanPoints[hullPt.idx].PMC;
+
+        // Ensure we have a point stored for this
+        if (this._pmcToPoint.get(footprintPMC) === undefined) {
+          throw new Error(`makeHullPMCs: PMC ${footprintPMC} does not have a PMC lookup stored`);
+        }
+
         hullPMCs.push(footprintPMC);
       }
       break; // NOTE: We only work on the first hull for now!
@@ -663,63 +766,212 @@ export class PMCMeshData {
     
     return hullPMCs;
   }
+/*
+  private calculateConcaveHullPMCs() {
+    if (!this._contextImgMdl) {
+      return;
+    }
 
+    // Calculate triangulation of only the PMC points. Then find the outer edges to form the hull
+    let geom = this.createPositionArray(true);
+    const idxs = this.calculateTriangleIndexes(geom);
+
+    const edges = new Map<number, number>();
+    for (let triIdx = 0; triIdx < idxs.length; triIdx+=3) {
+      for (let c = 0; c < 3; c++) {
+        // Find if we've stored this edge already. We store edges with the smaller index first
+        let edge = [idxs[triIdx+c], idxs[triIdx+(c+1)%3]].sort((a, b) => a - b);
+
+        if (edges[edge[0]])
+      }
+    }
+  }
+*/
   private calculateHullPoints(scale: number) {
     if (!this._contextImgMdl) {
       return;
     }
 
-    const hullPMCs = this.makeHullPMCs(this._contextImgMdl);
+    let hullPMCs = this.makeHullPMCs(this._contextImgMdl);
+
     const xyzCenter = this._bboxRawXYZ.center();
 
     this._hullPoints = [];
+    this._hullPointNormals = [];
+
+    // Get all the coordinates we're going to be dealing with so we can calculate normals
+    let coords: THREE.Vector3[] = [];
     for (const footprintPMC of hullPMCs) {
-      const idx = this._pmcToPoint.get(footprintPMC);
-      if (idx !== undefined) {
-        let rawCoord = this._points[idx].rawPoint;
-        
-        // Move this point out towards a corner point - find the nearest one then use that vector
-        // let nearestCorner = this.findNearestPoint(rawCoord, this._rawCornerPoints);
-        // if (nearestCorner[0] < 0) {
-        //   console.error("Failed to find nearest corner point for hull PMC " + footprintPMC);
-        //   continue;
-        // }
+      const idx = this._pmcToPoint.get(footprintPMC)!;
+      coords.push(this._points[idx].terrainPoint);
+    }
 
-        // const expandScale = 0.03;
-        // rawCoord.lerp(this._rawCornerPoints[nearestCorner[0]], expandScale);
+    let lastPt = coords[coords.length-1];
+    let lastNormal = new THREE.Vector3().subVectors(coords[0], lastPt).normalize();
+    lastNormal.cross(downDir);
+    lastNormal.normalize();
 
-        let rawUV = new THREE.Vector2(this._points[idx].u, this._points[idx].v);
-        // rawUV.lerp(this._rawCornerUVs[nearestCorner[0]], expandScale);
+    for (let c = 0; c < coords.length; c++) {
+      // Find the normal of the line from this point to the next one. Using the normal from last point to this point, we can find a vertex normal
+      const nextIdx = c == coords.length-1 ? 0 : c + 1;
+      let normal = new THREE.Vector3().subVectors(coords[nextIdx], coords[c]).normalize();
+      normal.cross(downDir);
+      normal.normalize();
 
-        const terrainCoord = this.rawToTerrainPoint(rawCoord, xyzCenter, scale); //this._points[idx].terrainPoint;
-        this._hullPoints.push(terrainCoord);
+      let vtxNormal = new THREE.Vector3().addVectors(lastNormal, normal).normalize();
+      this._hullPointNormals.push(vtxNormal);
 
-        const pt = new PMCMeshPoint(
-          terrainCoord,
-          rawCoord,
-          -1,
-          rawUV.x, rawUV.y
-        );
-        this._points.push(pt);
-      }
+      lastPt = coords[c];
+      lastNormal = normal;
+    }
+
+    // Loop again and create the footprint coordinates, their normal, and add them to the mesh
+    // expanded outwards
+    for (let c = 0; c < hullPMCs.length; c++) {
+      const footprintPMC = hullPMCs[c];
+      const idx = this._pmcToPoint.get(footprintPMC)!;
+      let rawCoord = this._points[idx].rawPoint;
+
+      let terrainCoord = this.rawToTerrainPoint(rawCoord, xyzCenter, scale);
+     //const normal = this._hullPointNormals[c];
+
+      // Move it out
+      //terrainCoord = terrainCoord.addScaledVector(normal, hullExpandDist);
+
+      // Save it
+      this._hullPoints.push(terrainCoord);
+/*
+      // Add a point so mesh generation takes this into account
+      //const rawUV = new THREE.Vector2(this._points[idx].u, this._points[idx].v);
+      const movedUV = this.calcUV(idx, [terrainCoord]);
+
+      const pt = new PMCMeshPoint(
+        terrainCoord,
+        rawCoord,
+        -1,
+        movedUV[0].x, movedUV[0].y
+      );
+      this._points.push(pt);*/
     }
   }
 
-  // Returns the index, and the distance
-  private findNearestPoint(pt: THREE.Vector3, ptList: THREE.Vector3[]): number[] {
-    let dist = Infinity;
-    let idx = -1;
-    for (let c = 0; c < ptList.length; c++) {
-      const len = pt.distanceTo(ptList[c]);
-      if (len < dist) {
-        dist = len;
-        idx = c;
+  private calcDisplayHullPoints(terrainMesh: THREE.Mesh) {
+    // The hull points we display are expanded out past the hull, and broken into short segments, and draped on the terrain!
+    this._displayHullPoints = [];
+
+    // How far we "expand" the footprint from the actual footprint points for display purposes. Context image view also does this!
+    const expandSize = this._averagePointDistanceTerrain * 3;
+
+    // Create a mesh to show the footprint. Note we use the same footprint as the context image, but to represent it we
+    // have to break it into short line segments so it follows the terrain contours
+    const lastC = this._hullPoints.length-1;
+    let ptLast = new THREE.Vector3(this._hullPoints[lastC].x, this._hullPoints[lastC].y, this._hullPoints[lastC].z).addScaledVector(this._hullPointNormals[lastC], expandSize);
+    this._displayHullPoints.push(ptLast);
+    this._displayHullNormals.push(this._hullPointNormals[lastC]);
+
+    for (let c = 0; c < this._hullPoints.length; c++) {
+      // Draw from current point to the next one
+      let ptCurr = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z).addScaledVector(this._hullPointNormals[c], expandSize);
+      //this._displayHullPoints.push(ptCurr);
+      
+      const pts = this.makeLineSegments(ptLast, ptCurr);
+      this._displayHullPoints.push(...pts);
+
+      // Store normals for each point (these are just doubling up the hull point normals, no smoothing or anything applied)
+      for (let i = 0; i < pts.length; i++) {
+        this._displayHullNormals.push(this._hullPointNormals[c]);
+      }
+
+      ptLast = ptCurr;
+    }
+
+    // Lay everything onto the terrain mesh
+    for (let c = 0; c < this._displayHullPoints.length; c++) {
+      this._displayHullPoints[c] = this.dropOnMesh(this._displayHullPoints[c], terrainMesh);
+    }
+  }
+
+  // We take the start, and return 1 or more points that form the rest of the line
+  private makeLineSegments(
+    ptStart: THREE.Vector3,
+    ptEnd: THREE.Vector3,
+  ): THREE.Vector3[] {
+    const result: THREE.Vector3[] = [];
+ 
+    const segLength = ptEnd.distanceTo(ptStart);
+
+    // We break it up into smaller segments
+    const segments = Math.ceil(segLength / (this._averagePointDistanceTerrain));
+    if (segments <= 1) {
+      result.push(ptEnd);
+    } else {
+      const segT = segLength / segments;
+
+      const dir = new THREE.Vector3().subVectors(ptEnd, ptStart);
+      dir.setZ(0);
+      dir.normalize();
+      dir.multiplyScalar(segT);
+
+      for (let c = 0; c < segments; c++) {
+        let segEnd = new THREE.Vector3().addVectors(ptStart, dir);
+
+        result.push(segEnd);
+        ptStart = segEnd;
       }
     }
 
-    return [idx, dist];
+    return result;
   }
 
+/*
+  private makeHullPointNormals(): THREE.Vector3[] {
+    if (!this._hullPoints || this._hullPoints.length <= 2) {
+      throw new Error("makeHullPointNormals called when no hull points exist");
+    }
+
+    const result: THREE.Vector3[] = [];
+    let lastPt = this._hullPoints[this._hullPoints.length-1];
+    let lastNormal = new THREE.Vector3().subVectors(this._hullPoints[0], lastPt).normalize();
+    lastNormal.cross(downDir);
+    lastNormal.normalize();
+
+    for (let c = 0; c < this._hullPoints.length; c++) {
+      // Find the normal of the line from this point to the next one. Using the normal from last point to this point, we can find a vertex normal
+      let normal = new THREE.Vector3().subVectors(this._hullPoints[c == this._hullPoints.length-1 ? 0 : c + 1], this._hullPoints[c]).normalize();
+      normal.cross(downDir);
+      normal.normalize();
+
+      let vtxNormal = new THREE.Vector3().addVectors(lastNormal, normal).normalize();
+      result.push(vtxNormal);
+
+      lastPt = this._hullPoints[c];
+      lastNormal = normal;
+    }
+
+    return result;
+  }
+
+  private expandHull(expandDist: number) {
+    // Make the hull a bit larger
+    const normals = this.makeHullPointNormals();
+
+    for (let c = 0; c < this._hullPoints.length; c++) {
+      this._hullPoints[c].addScaledVector(normals[c], expandDist);
+    }
+  }
+
+  private embedHullPointsInMesh() {
+    for (let c = 0; c < this._hullPoints.length; c++) {
+      const pt = new PMCMeshPoint(
+        terrainCoord,
+        rawCoord,
+        -1,
+        rawUV.x, rawUV.y
+      );
+      this._points.push(pt);
+    }
+  }
+*/
   private processUVs() {
     if (this._image) {
       for (const pt of this._points) {
@@ -824,11 +1076,6 @@ export class PMCMeshData {
         u.push(this._points[pmcPtIdx].u);
         v.push(this._points[pmcPtIdx].v);
 
-        const pmcTerrainPct = new Point(
-          (this._points[pmcPtIdx].terrainPoint.x - this._bboxMeshAll.minCorner.x) / this._bboxMeshAll.sizeX(),
-          (this._points[pmcPtIdx].terrainPoint.y - this._bboxMeshAll.minCorner.y) / this._bboxMeshAll.sizeY()
-        );
-
         // Eg PMC is at 65% of the terrain width
         // One of its polygon points is at 64% of the terrain
         // PMC happens to have a U coordinate of 0.4
@@ -839,18 +1086,38 @@ export class PMCMeshData {
           rawVtxs.push(vtx);
           const terrainVtx = this.rawToTerrainPoint(vtx, xyzCenter, scale);
           terrainVtxs.push(terrainVtx);
+        }
 
-          let pct = ((terrainVtx.x - this._bboxMeshAll.minCorner.x) / this._bboxMeshAll.sizeX());
-          u.push(pct / pmcTerrainPct.x * this._points[pmcPtIdx].u);
-
-          pct = ((terrainVtx.y - this._bboxMeshAll.minCorner.y) / this._bboxMeshAll.sizeY());
-          v.push(pct / pmcTerrainPct.y * this._points[pmcPtIdx].v);
+        const uvs = this.calcUVAroundPMC(pmcPtIdx, terrainVtxs.slice(1));
+        for(const uv of uvs) {
+          u.push(uv.x);
+          v.push(uv.y);
         }
       }
 
       const newPoly = new PMCPoly(polyIdx, terrainVtxs, rawVtxs, u, v);
       this._pmcPolygons.push(newPoly);
     }
+  }
+
+  private calcUVAroundPMC(pmcPtIdx: number, calculatedTerrainPoints: THREE.Vector3[]): THREE.Vector2[] {
+    const pmcTerrainPct = new Point(
+      (this._points[pmcPtIdx].terrainPoint.x - this._bboxMeshAll.minCorner.x) / this._bboxMeshAll.sizeX(),
+      (this._points[pmcPtIdx].terrainPoint.y - this._bboxMeshAll.minCorner.y) / this._bboxMeshAll.sizeY()
+    );
+
+    const result: THREE.Vector2[] = [];
+    for (const terrainVtx of calculatedTerrainPoints) {
+      const pctX = ((terrainVtx.x - this._bboxMeshAll.minCorner.x) / this._bboxMeshAll.sizeX());
+      const pctY = ((terrainVtx.y - this._bboxMeshAll.minCorner.y) / this._bboxMeshAll.sizeY());
+
+      result.push(new THREE.Vector2(
+        pctX / pmcTerrainPct.x * this._points[pmcPtIdx].u,
+        pctY / pmcTerrainPct.y * this._points[pmcPtIdx].v
+      ));
+    }
+
+    return result;
   }
 
   private updateMeshPointPolygonZs(terrainMesh: THREE.Mesh) {
@@ -893,62 +1160,6 @@ export class PMCMeshData {
     
     const outIdxs: number[] = [];
 
-  /*
-    // If this triangle is associated with a pre-existing PMC polygon, remove it
-
-    for (let triIdx = 2; triIdx < idxs.length; triIdx += 3) {
-      // If any of the indexes in this triangle refer to a PMC polygon related point, we don't include it
-      if (geom.pointScanEntryIdx[idxs[triIdx-2]] < 0 ||
-          geom.pointScanEntryIdx[idxs[triIdx-1]] < 0 ||
-          geom.pointScanEntryIdx[idxs[triIdx]] < 0
-      ) {
-        continue;
-      }
-
-      outIdxs.push(idxs[triIdx-2]);
-      outIdxs.push(idxs[triIdx-1]);
-      outIdxs.push(idxs[triIdx]);
-    }
-*/
-    // Remove any triangles that extend between 2 PMCs
-/*
-    for (let triIdx = 2; triIdx < idxs.length; triIdx += 3) {
-      // If any of the indexes in this triangle refer to a PMC polygon related point, we don't include it
-      let pmcCount = 0;
-      let hasDifferingPMC = false;
-      let lastIdx = Infinity;
-      let skip = false;
-      for (let c = -2; c < 0; c++) {
-        let i = triIdx + c;
-        const scanEntryIdx = geom.pointScanEntryIdx[idxs[i]];
-        if (scanEntryIdx == 6) {
-          skip = true;
-          break;
-        }
-        // If we have a PMC on a corner, and we've already seen another PMC on a corner...
-        // if (scanEntryIdx < 0 && lastIdx != Infinity && lastIdx != scanEntryIdx) {
-        //   hasDifferingPMC = true;
-        //   break;
-        // }
-
-        // // Save if negative!
-        // if (scanEntryIdx < 0) {
-        //   lastIdx = scanEntryIdx;
-        // }
-        // pmcCount += (scanEntryIdx < 0 ? 1 : 0);
-      }
-
-      if (!skip) { //(!hasDifferingPMC) { //pmcCount < 2) {
-        outIdxs.push(idxs[triIdx-2]);
-        outIdxs.push(idxs[triIdx-1]);
-        outIdxs.push(idxs[triIdx]);
-      } else if (pmcCount == 2) {
-        // We span 2 PMCs, split down the middle
-      } else {
-
-      }
-    }
-*/
     let pmcSpanningTriangles = new Map<number, Map<number, number[][]>>();
     let scanEntryIdxList = new Set<number>();
 
@@ -1097,7 +1308,7 @@ export class PMCMeshData {
     return new GeometryAttributes(xyz, uv);
   }
 
-  private createPositionPolysArray(scanEntryColours: (THREE.Color | undefined)[]): GeometryAttributes {
+  private createPositionPolysArray(colourOnlyPMC: boolean, scanEntryColours: (THREE.Color | undefined)[]): GeometryAttributes {
     let count = 0;
     for (const poly of this._pmcPolygons) {
       count += poly.terrainPoints.length;
@@ -1142,13 +1353,14 @@ export class PMCMeshData {
         idxIdx++;
 
         if (colours) {
-          if (c == 0) {
+          if (c == 0 || !colourOnlyPMC) {
             const clr = scanEntryColours[poly.scanEntryIndex];
             colours[clrIdx] = clr?.r || 1;
             colours[clrIdx + 1] = clr?.g || 1;
             colours[clrIdx + 2] = clr?.b || 1;
             clrIdx += 3;
           } else {
+            // Apply white
             colours[clrIdx] = 1;
             colours[clrIdx + 1] = 1;
             colours[clrIdx + 2] = 1;
@@ -1175,6 +1387,7 @@ export class PMCMeshData {
 
 
         if (colours) {
+          // Apply white
           colours[clrIdx] = 1;
           colours[clrIdx + 1] = 1;
           colours[clrIdx + 2] = 1;

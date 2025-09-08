@@ -886,5 +886,35 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       this.mdl.needsDraw$.next();
       this.saveState();
     });
+
+    const debugFolder = this._tweakPane.addFolder({
+      title: 'Experimental',
+      expanded: true
+    });
+
+    debugFolder.addBinding(this.mdl, 'layerDrawMode', {
+      label: "Map Drawing Mode",
+      options: {
+        "Raised Polygons": "",
+        "Raised Polygons (Colour Debugging)": "colourDebug",
+        "Tinted Terrain PMCs": "tint,colourOnlyPMC",
+        "Tinted Terrain (Colour Debugging)": "tint,colourOnlyPMC,colourDebug",
+        "Tinted Terrain Polygons (Leaks)": "tint",
+        "Tinted Terrain Polygons (No Leaks)": "tint,duplicatePoints",
+      }
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
+
+    debugFolder.addBinding(this.mdl, 'currentLayerOpacity', {
+      label: 'Layer Opacity',
+      min: 0,
+      max: 1,
+      step: 0.01
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
+    });
   }
 }
