@@ -36,6 +36,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig, MatDialogRef } from "@angu
 import { ReferenceDataItem, ReferencePickerComponent, ReferencePickerData, ReferencePickerResponse } from "../reference-picker/reference-picker.component";
 
 @Component({
+  standalone: false,
   selector: "simple-reference-picker",
   templateUrl: "./simple-reference-picker.component.html",
   styleUrls: ["./simple-reference-picker.component.scss"],
