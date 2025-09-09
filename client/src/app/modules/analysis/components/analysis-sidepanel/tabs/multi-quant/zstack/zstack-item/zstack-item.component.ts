@@ -28,8 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-import { QuantCombineItem } from "src/app/generated-protos/quantification-multi";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { QuantCombineItem } from "src/app/generated-protos/quantification-multi";
+
 
 export class ZStackItemForDisplay {
   constructor(
@@ -42,6 +43,7 @@ export class ZStackItemForDisplay {
 }
 
 @Component({
+  standalone: false,
   selector: "zstack-item",
   templateUrl: "./zstack-item.component.html",
   styleUrls: ["./zstack-item.component.scss"],

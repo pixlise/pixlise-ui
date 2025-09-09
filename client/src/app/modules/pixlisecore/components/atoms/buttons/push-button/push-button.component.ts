@@ -50,6 +50,7 @@ export type PushButtonStyle =
   | "changelog-viewed";
 
 @Component({
+  standalone: false,
   selector: "push-button",
   templateUrl: "./push-button.component.html",
   styleUrls: ["./push-button.component.scss"],

@@ -3,20 +3,12 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { SnackBarPopupComponent } from "../components/atoms/snackbar-popup/snackbar-popup.component";
 import { LocalStorageService } from "./local-storage.service";
 import { WSError } from "./wsMessageHandler";
-import { WidgetError } from "./widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { httpErrorToString } from "src/app/utils/utils";
 import { Subscription } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
+import { SnackbarDataItem, SnackbarType } from "../models/snackbar-data";
 
-export type SnackbarType = "warning" | "error" | "info" | "success";
-
-export type SnackbarDataItem = {
-  message: string;
-  details: string;
-  action: string;
-  type: SnackbarType;
-  timestamp: number;
-};
 
 @Injectable({
   providedIn: "root",

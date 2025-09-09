@@ -186,7 +186,8 @@ describe("LuaDataQuerier runQuery()", () => {
       null,
       // Error handler
       err => {
-        expect(err.message).toEqual("Runtime error on line 7: attempt to call a nil value (global 'nonExistantFunc')");
+        expect(err.message).toEqual(`[string "local scanId <const> = "scan123"..."]:7: attempt to call a nil value (global 'nonExistantFunc')`);
+        //expect(err.message).toEqual("Runtime error on line 7: attempt to call a nil value (global 'nonExistantFunc')");
         done();
       }
     );

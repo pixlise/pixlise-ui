@@ -4,9 +4,9 @@ import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxj
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
-import { AnalysisLayoutService, DataExporterService } from "src/app/modules/analysis/analysis.module";
+import { DataExporterService } from "src/app/modules/analysis/analysis.module";
 import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import {
   WidgetExportData,
@@ -14,13 +14,13 @@ import {
   WidgetExportDialogData,
   WidgetExportOption,
   WidgetExportRequest,
-  WidgetExportFile,
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-export",
-  templateUrl: "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.html",
-  styleUrls: ["./export.component.scss", "/src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component.scss"],
+  templateUrl: "../../../../../widget/components/widget-export-dialog/widget-export-dialog.component.html",
+  styleUrls: ["./export.component.scss", "../../../../../widget/components/widget-export-dialog/widget-export-dialog.component.scss"],
 })
 export class ExportTabComponent extends WidgetExportDialogComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();

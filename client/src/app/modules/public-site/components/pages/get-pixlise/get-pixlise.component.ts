@@ -42,6 +42,7 @@ class Tile {
 }
 
 @Component({
+  standalone: false,
   selector: "app-get-pixlise",
   templateUrl: "./get-pixlise.component.html",
   styleUrls: ["./get-pixlise.component.scss"],

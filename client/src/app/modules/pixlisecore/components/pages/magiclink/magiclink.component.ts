@@ -28,11 +28,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { Subscription } from "rxjs";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
 import { ActivatedRoute } from "@angular/router";
 
+import { Subscription } from "rxjs";
+
+import { AnalysisLayoutService } from "../../../services/analysis-layout.service";
+
+
 @Component({
+  standalone: false,
   selector: "app-magic-link",
   templateUrl: "./magiclink.component.html",
   styleUrls: ["./magiclink.component.scss"],

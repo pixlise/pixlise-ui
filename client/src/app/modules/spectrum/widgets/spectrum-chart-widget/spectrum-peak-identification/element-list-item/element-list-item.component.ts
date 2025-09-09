@@ -49,6 +49,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 
 @Component({
+  standalone: false,
   selector: "peak-id-element-list-item",
   templateUrl: "./element-list-item.component.html",
   styleUrls: ["./element-list-item.component.scss"],

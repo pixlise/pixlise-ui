@@ -1,13 +1,11 @@
-import { floor } from "mathjs";
-import { combineLatest, forkJoin, Observable, of, tap } from "rxjs";
+import { forkJoin, Observable, of } from "rxjs";
 import { ContextImageModel } from "src/app/modules/image-viewers/image-viewers.module";
-import { ContextImageDrawModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model";
-import { SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ContextImageDrawModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
+import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { CanvasDrawer, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import {
-  exportPlotImage,
   WidgetExportData,
   WidgetExportDialogData,
   WidgetExportFile,

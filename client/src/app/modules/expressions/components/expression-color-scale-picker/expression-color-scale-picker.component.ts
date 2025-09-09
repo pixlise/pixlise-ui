@@ -42,6 +42,7 @@ export type ColourRampSelection = {
 };
 
 @Component({
+  standalone: false,
   selector: "expression-color-scale-picker",
   templateUrl: "./expression-color-scale-picker.component.html",
   styleUrls: ["./expression-color-scale-picker.component.scss"],

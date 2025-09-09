@@ -39,18 +39,21 @@ import { invalidPMC, encodeIndexList, httpErrorToString, decodeIndexList, getPat
 import { APIDataService } from "./apidata.service";
 import { SelectedScanEntriesReq, SelectedScanEntriesResp, SelectedScanEntriesWriteReq } from "src/app/generated-protos/selection-entry-msgs";
 import { SelectedImagePixelsReq, SelectedImagePixelsResp, SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
-import { ScanEntryRange } from "src/app/generated-protos/scan";
-import { PMCConversionResult, ScanIdConverterService } from "./scan-id-converter.service";
-import { ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { APICachedDataService } from "./apicacheddata.service";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
-import { NewROIDialogData, NewROIDialogComponent } from "../../roi/components/new-roi-dialog/new-roi-dialog.component";
-import { PMCSelectorDialogComponent } from "../components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
-import { PixelPoint } from "../../analysis/components/analysis-sidepanel/tabs/selection/model";
-import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "../../image-viewers/image-viewers.module";
+import { ScanEntryRange } from "src/app/generated-protos/scan";
+
+import { PMCConversionResult, ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
+import { ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { NewROIDialogData, NewROIDialogComponent } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
+import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
+import { PixelPoint } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/selection/model";
+
+import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
+import { ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
 import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 

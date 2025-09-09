@@ -1,10 +1,15 @@
 import { Component, ComponentRef, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
-import { AnalysisLayoutService } from "../../services/analysis-layout.service";
-import { SidebarTabItem, SidebarViewShortcut } from "../../models/sidebar.model";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+
 import { Subscription } from "rxjs";
 
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+
+import { SidebarTabItem, SidebarViewShortcut } from "src/app/modules/analysis/models/sidebar.model";
+
+
 @Component({
+  standalone: false,
   selector: "analysis-sidepanel",
   templateUrl: "./analysis-sidepanel.component.html",
   styleUrls: ["./analysis-sidepanel.component.scss"],

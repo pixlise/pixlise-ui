@@ -40,7 +40,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { DataExporterService } from "../../../analysis/analysis.module";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportFile, WidgetExportRequest } from "../../../widget/components/widget-export-dialog/widget-export-model";
 import { WidgetExportDialogComponent } from "../../../widget/components/widget-export-dialog/widget-export-dialog.component";
-import { WidgetError } from "../../../pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 export interface DataCell {
   pmc: number;
@@ -49,6 +49,7 @@ export interface DataCell {
 }
 
 @Component({
+  standalone: false,
   selector: "expression-console",
   templateUrl: "./expression-console.component.html",
   styleUrls: ["./expression-console.component.scss"],

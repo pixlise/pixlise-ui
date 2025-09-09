@@ -49,6 +49,7 @@ class SliderHistogramBar {
 }
 
 @Component({
+  standalone: false,
   selector: "slider",
   templateUrl: "./slider.component.html",
   styleUrls: ["./slider.component.scss"],

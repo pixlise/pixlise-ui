@@ -1,15 +1,14 @@
-import { CdkDrag, CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
-import { Component, ElementRef, EventEmitter, Inject, OnInit, Output, ViewChild } from "@angular/core";
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
+import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { DataExpressionId } from "../../../../../expression-language/expression-id";
 import { ExpressionsService } from "../../../../expressions/services/expressions.service";
 import { combineLatest, Subscription } from "rxjs";
 import { ColourRamp, Colours } from "../../../../../utils/colours";
 import { ExpressionGroup, ExpressionGroupItem } from "../../../../../generated-protos/expression-group";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../../services/analysis-layout.service";
 import { SliderValue } from "../slider/slider.component";
-import { SnackbarService } from "../../../pixlisecore.module";
-import { ActionButtonComponent } from "../buttons/action-button/action-button.component";
+import { SnackbarService } from "../../../services/snackbar.service";
 
 export class LayerVisiblilityData {
   sections: LayerVisibilitySection[] = [];
@@ -60,6 +59,7 @@ export type LayerOpacityChange = {
 };
 
 @Component({
+  standalone: false,
   selector: "layer-visibility-dialog",
   templateUrl: "./layer-visibility-dialog.component.html",
   styleUrls: ["./layer-visibility-dialog.component.scss"],

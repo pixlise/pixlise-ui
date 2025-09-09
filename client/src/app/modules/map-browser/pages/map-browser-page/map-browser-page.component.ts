@@ -12,12 +12,13 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ContextImageState, MapLayerVisibility, WidgetData } from "src/app/generated-protos/widget-data";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { MatSelectChange } from "@angular/material/select";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 
 @Component({
+  standalone: false,
   selector: "app-map-browser-page",
   templateUrl: "./map-browser-page.component.html",
   styleUrls: ["./map-browser-page.component.scss"],
@@ -267,7 +268,7 @@ export class MapBrowserPageComponent implements OnInit, OnDestroy {
     this.layout = layout;
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

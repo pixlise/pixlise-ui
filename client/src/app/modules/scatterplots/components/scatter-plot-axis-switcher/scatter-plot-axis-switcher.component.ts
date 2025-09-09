@@ -13,6 +13,7 @@ export class ScatterPlotAxisInfo {
 }
 
 @Component({
+  standalone: false,
   selector: "scatter-plot-axis-switcher",
   templateUrl: "./scatter-plot-axis-switcher.component.html",
   styleUrls: ["./scatter-plot-axis-switcher.component.scss"],

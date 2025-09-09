@@ -30,6 +30,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "filter-box",
   templateUrl: "./filter-box.component.html",
   styleUrls: ["./filter-box.component.scss"],

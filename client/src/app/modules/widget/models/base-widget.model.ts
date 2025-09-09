@@ -14,6 +14,7 @@ export type LiveExpression = {
 };
 
 @Component({
+  standalone: false,
   selector: "base-widget",
   template: "",
 })

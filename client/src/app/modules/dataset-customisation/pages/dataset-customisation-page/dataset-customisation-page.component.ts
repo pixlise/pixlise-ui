@@ -2,7 +2,7 @@ import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
 import { Observable, of, Subscription, throwError } from "rxjs";
@@ -17,7 +17,6 @@ import {
   ImageSetMatchTransformResp,
   ImageUploadHttpRequest,
 } from "src/app/generated-protos/image-msgs";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanGetReq, ScanTriggerJobReq } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
@@ -44,6 +43,7 @@ import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { ElementRef, ViewChild } from "@angular/core";
 @Component({
+  standalone: false,
   selector: "app-dataset-customisation-page",
   templateUrl: "./dataset-customisation-page.component.html",
   styleUrls: ["./dataset-customisation-page.component.scss"],
@@ -197,7 +197,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

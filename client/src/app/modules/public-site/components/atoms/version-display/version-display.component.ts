@@ -35,6 +35,7 @@ import { httpErrorToString } from "src/app/utils/utils";
 import { VERSION } from "src/environments/version";
 
 @Component({
+  standalone: false,
   selector: "version-display",
   templateUrl: "./version-display.component.html",
   styleUrls: ["./version-display.component.scss"],

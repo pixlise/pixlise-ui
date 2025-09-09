@@ -61,6 +61,7 @@ export class AddCustomImageResult {
 }
 
 @Component({
+  standalone: false,
   selector: "app-add-custom-image",
   templateUrl: "./add-custom-image.component.html",
   styleUrls: ["./add-custom-image.component.scss"],

@@ -39,6 +39,7 @@ import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-prot
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
 @Component({
+  standalone: false,
   selector: "app-add-dataset-dialog",
   templateUrl: "./add-dataset-dialog.component.html",
   styleUrls: ["./add-dataset-dialog.component.scss"],

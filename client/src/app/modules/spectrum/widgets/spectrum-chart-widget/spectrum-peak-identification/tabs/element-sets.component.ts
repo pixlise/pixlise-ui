@@ -48,6 +48,7 @@ import {
 } from "src/app/generated-protos/element-set-msgs";
 
 @Component({
+  standalone: false,
   selector: TabSelectors.tabElementSets,
   templateUrl: "./element-sets.component.html",
   styleUrls: ["./element-sets.component.scss"],

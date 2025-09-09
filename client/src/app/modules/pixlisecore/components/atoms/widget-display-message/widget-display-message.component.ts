@@ -30,6 +30,7 @@
 import { Component, Input, OnInit } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "app-widget-display-message",
   templateUrl: "./widget-display-message.component.html",
   styleUrls: ["./widget-display-message.component.scss"],

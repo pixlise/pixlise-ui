@@ -25,6 +25,9 @@ module.exports = function (config) {
     jasmineHtmlReporter: {
       suppressAll: true // removes the duplicated traces
     },
+    browserDisconnectTimeout: 59999, // Default 2000
+    //browserNoActivityTimeout: 59999, // Default 30000
+    //captureTimeout: 59999, // Default 60000
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage/pixlise'),
       subdir: '.',

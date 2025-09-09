@@ -1,6 +1,6 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { ColorPickerModule } from "ngx-color-picker";
+import { ColorPickerDirective } from "ngx-color-picker";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ROIItemComponent } from "./components/roi-item/roi-item.component";
@@ -13,7 +13,7 @@ import { NewROIDialogComponent } from "src/app/modules/roi/components/new-roi-di
 
 @NgModule({
   declarations: [ROIItemComponent, ROISearchControlsComponent, ROIPickerComponent, ROIShapeComponent, NewROIDialogComponent],
-  imports: [CommonModule, PIXLISECoreModule, TagsModule, ScrollingModule, DragDropModule, ColorPickerModule],
+  imports: [CommonModule, PIXLISECoreModule, TagsModule, ScrollingModule, DragDropModule, ColorPickerDirective],
   exports: [ROIItemComponent, ROISearchControlsComponent, ROIPickerComponent, ROIShapeComponent, NewROIDialogComponent],
   providers: [],
 })

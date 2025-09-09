@@ -39,6 +39,7 @@ interface SnackBarPopupData {
 }
 
 @Component({
+  standalone: false,
   selector: "snackbar-popup",
   templateUrl: "./snackbar-popup.component.html",
   styleUrls: ["./snackbar-popup.component.scss"],

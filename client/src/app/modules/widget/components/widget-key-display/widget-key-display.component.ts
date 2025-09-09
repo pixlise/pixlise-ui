@@ -91,6 +91,7 @@ export class WidgetKeyGroup {
 }
 
 @Component({
+  standalone: false,
   selector: "widget-key-display",
   templateUrl: "./widget-key-display.component.html",
   styleUrls: ["./widget-key-display.component.scss"],

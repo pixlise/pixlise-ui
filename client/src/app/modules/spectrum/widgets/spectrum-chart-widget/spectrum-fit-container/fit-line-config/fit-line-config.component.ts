@@ -33,6 +33,7 @@ import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.serv
 import { SpectrumChartModel, SpectrumLineChoice, SpectrumSource } from "../../spectrum-model";
 
 @Component({
+  standalone: false,
   selector: "fit-line-config",
   templateUrl: "./fit-line-config.component.html",
   styleUrls: ["./fit-line-config.component.scss", "../spectrum-fit-container.component.scss"],

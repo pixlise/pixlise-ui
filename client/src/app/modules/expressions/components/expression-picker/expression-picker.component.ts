@@ -29,12 +29,11 @@
 
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { combineLatest, filter, map, of, Subscription, switchMap } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
@@ -86,6 +85,7 @@ export type ExpressionPickerData = {
 };
 
 @Component({
+  standalone: false,
   selector: "expression-picker",
   templateUrl: "./expression-picker.component.html",
   styleUrls: ["./expression-picker.component.scss"],
@@ -1032,7 +1032,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onChangeWidgetPosition(expression: DataExpression, widgetPosition: number): void {
+  onChangeWidgetPosition(expression: DataExpression | ExpressionGroup, widgetPosition: number): void {
     const existingOrder = Array.from(this.selectedExpressionIdOrder);
     const idInRequestedPosition = existingOrder[widgetPosition];
     if (idInRequestedPosition) {

@@ -1,6 +1,6 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { ColorPickerModule } from "ngx-color-picker";
+import { ColorPickerDirective } from "ngx-color-picker";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { WidgetComponent } from "../widget/components/widget/widget.component";
 import { BaseWidgetModel } from "../widget/models/base-widget.model";
@@ -30,7 +30,7 @@ import { MarkdownModule } from "ngx-markdown";
     WidgetSwitcherComponent,
     WidgetSwitcherOverlayComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, ScrollingModule, ColorPickerModule, ROIModule, FormsModule, OverlayModule, MarkdownModule],
+  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, ScrollingModule, ColorPickerDirective, ROIModule, FormsModule, OverlayModule, MarkdownModule],
   exports: [
     WidgetComponent,
     BaseWidgetModel,

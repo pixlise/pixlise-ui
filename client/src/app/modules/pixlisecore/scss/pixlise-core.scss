@@ -47,6 +47,7 @@
   --clr-purple: 158, 63, 255; // #9e3fff
   --clr-context-purple: 255, 0, 246; // #ff00f6
   --clr-pink: 204, 121, 167; // #cc79a7
+  --clr-green: 102, 187, 106; // #66bb6a
 }
 
 // Grid system sizes
@@ -76,3 +77,4 @@ $clr-blue: rgb(var(--clr-blue));
 $clr-purple: rgb(var(--clr-purple));
 $clr-context-purple: rgb(var(--clr-context-purple));
 $clr-pink: rgb(var(--clr-pink));
+$clr-green: rgb(var(--clr-green));

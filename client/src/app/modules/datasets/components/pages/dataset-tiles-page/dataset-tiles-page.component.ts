@@ -54,7 +54,7 @@ import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiend
 import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
 import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
 import { ScanInstrument } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { TagService } from "../../../../tags/services/tag.service";
 import { Tag } from "../../../../../generated-protos/tags";
 import { ScanConfiguration, ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
@@ -72,7 +72,7 @@ import {
 import { filterScans, sortScans } from "src/app/utils/search";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { DatasetsService } from "../../../services/datasets.service";
-import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { GroupsService } from "src/app/modules/settings/settings.module";
 import { UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 
@@ -84,6 +84,7 @@ class SummaryItem {
 }
 
 @Component({
+  standalone: false,
   selector: "dataset-tiles-page",
   templateUrl: "./dataset-tiles-page.component.html",
   styleUrls: ["./dataset-tiles-page.component.scss"],

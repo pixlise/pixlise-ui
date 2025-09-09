@@ -32,6 +32,7 @@ import { Component, Input } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
 @Component({
+  standalone: false,
   selector: "two-state-push-button",
   templateUrl: "./two-state-push-button.component.html",
   styleUrls: ["./two-state-push-button.component.scss"],

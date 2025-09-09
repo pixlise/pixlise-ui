@@ -1,5 +1,14 @@
 import { Injectable, OnDestroy } from "@angular/core";
-import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+
+import { BehaviorSubject, EMPTY, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
+
+// Ideally: import { AnalysisLayoutService, APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+// But because of import cycle, we import them directly
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
+import { APIDataService } from "src/app/modules/pixlisecore/services/apidata.service";
+import { SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
+import { SnackbarService } from "src/app/modules/pixlisecore/services/snackbar.service";
+
 import {
   RegionOfInterestBulkDuplicateReq,
   RegionOfInterestBulkWriteReq,
@@ -13,8 +22,13 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, EMPTY, Observable, Subscription, combineLatest, map, mergeMap, of, shareReplay, switchMap } from "rxjs";
-import { decodeIndexList, encodeIndexList, SentryHelper } from "src/app/utils/utils";
+import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
+import { UserGroupList } from "../../../generated-protos/ownership-access";
+import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
+import { NotificationType } from "src/app/generated-protos/notification";
+
+import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
 import { COLOURS, ColourOption } from "../models/roi-colors";
@@ -31,12 +45,6 @@ import {
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SelectionHistoryItem } from "../../pixlisecore/services/selection.service";
-import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
-import { ScanItem } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "../../analysis/analysis.module";
-import { UserGroupList } from "../../../generated-protos/ownership-access";
-import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
-import { NotificationType } from "src/app/generated-protos/notification";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 

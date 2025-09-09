@@ -1,20 +1,22 @@
+import { from, map, Observable } from "rxjs";
+
 import { WidgetData } from "src/app/generated-protos/widget-data";
-import { ContextImageComponent, MultiChannelViewerComponent } from "src/app/modules/image-viewers/image-viewers.module";
-import {
-  BinaryChartWidgetComponent,
-  TernaryChartWidgetComponent,
-  HistogramWidgetComponent,
-  ChordDiagramWidgetComponent,
-  RGBUPlotWidgetComponent,
-  SingleAxisRGBUComponent,
-  ParallelCoordinatesPlotWidgetComponent,
-} from "src/app/modules/scatterplots/scatterplots.module";
-import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
-import { QuantificationTableComponent } from "../../table-views/table-views.module";
-import { VariogramWidgetComponent } from "../../scatterplots/widgets/variogram-widget/variogram-widget.component";
-import { WidgetKeyItem } from "../../pixlisecore/pixlisecore.module";
-import { MarkdownTextViewComponent } from "../../text-views/text-views.module";
-import { SelectionChangerImageInfo } from "../../pixlisecore/components/atoms/selection-changer/selection-changer.component";
+
+import { WidgetKeyItem } from "src/app/modules/pixlisecore/models/widget-key-item";
+import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
+
+
+export function getWidgetComponent(widgetType: WidgetType): Observable<any> {
+  return from(readWidgets()).pipe(
+    map(widgetMap => {
+      const w = widgetMap.get(widgetType);
+      if (!w) {
+        throw new Error(`Widget type ${widgetType} not found`);
+      }
+      return w;
+    })
+  );
+}
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -90,7 +92,7 @@ export type WidgetConfiguration = {
   showRGBMixExpressionPickerMode?: boolean;
 
   // Projected component
-  component: any;
+  widgetComponent: any;
 
   // Toolbar and settings options - define this in the component
   controlConfiguration: WidgetControlConfiguration;
@@ -102,7 +104,8 @@ export const WIDGETS = {
   "spectrum-chart": {
     name: "Spectrum",
     description: "Spectrum chart",
-    component: SpectrumChartWidgetComponent,
+    widgetComponent: null,
+    //component: SpectrumChartWidgetComponent,
     dataKey: "spectrum",
     controlConfiguration: {},
   },
@@ -111,7 +114,8 @@ export const WIDGETS = {
     description: "Binary plot",
     hasExpressions: true,
     maxExpressions: 2,
-    component: BinaryChartWidgetComponent,
+    widgetComponent: null,
+    //component: BinaryChartWidgetComponent,
     dataKey: "binary",
     controlConfiguration: {},
   },
@@ -120,7 +124,8 @@ export const WIDGETS = {
     description: "Ternary plot",
     hasExpressions: true,
     maxExpressions: 3,
-    component: TernaryChartWidgetComponent,
+    widgetComponent: null,
+    //component: TernaryChartWidgetComponent,
     dataKey: "ternary",
     controlConfiguration: {},
   },
@@ -128,7 +133,8 @@ export const WIDGETS = {
     name: "Histogram",
     description: "Histogram",
     hasExpressions: true,
-    component: HistogramWidgetComponent,
+    widgetComponent: null,
+    //component: HistogramWidgetComponent,
     dataKey: "histogram",
     controlConfiguration: {},
   },
@@ -136,7 +142,8 @@ export const WIDGETS = {
     name: "Chord Diagram",
     description: "Chord Diagram",
     hasExpressions: true,
-    component: ChordDiagramWidgetComponent,
+    widgetComponent: null,
+    //component: ChordDiagramWidgetComponent,
     dataKey: "chord",
     controlConfiguration: {},
   },
@@ -144,60 +151,117 @@ export const WIDGETS = {
     name: "Context Image",
     description: "Context Image",
     hasExpressions: true,
-    component: ContextImageComponent,
+    widgetComponent: null,
+    //component: ContextImageComponent,
     dataKey: "contextImage",
+    showRGBMixExpressionPickerMode: true,
+    controlConfiguration: {},
+  },
+  "scan-3d-view": {
+    name: "3D View (EXPERIMENTAL)",
+    description: "3D View",
+    hasExpressions: true,
+    widgetComponent: null,
+    //component: Scan3DViewComponent,
+    dataKey: "scan3DView",
     showRGBMixExpressionPickerMode: true,
     controlConfiguration: {},
   },
   "multi-channel-image": {
     name: "RGBU Viewer",
     description: "RGBU Viewer",
-    component: MultiChannelViewerComponent,
+    widgetComponent: null,
+    //component: MultiChannelViewerComponent,
     dataKey: "rgbuImage",
     controlConfiguration: {},
   },
   "rgbu-plot": {
     name: "RGBU Plot",
     description: "RGBU Plot",
-    component: RGBUPlotWidgetComponent,
+    widgetComponent: null,
+    //component: RGBUPlotWidgetComponent,
     dataKey: "rgbuPlot",
     controlConfiguration: {},
   },
   "single-axis-rgbu-plot": {
     name: "Single Axis RGBU",
     description: "Single Axis RGBU Plot",
-    component: SingleAxisRGBUComponent,
+    widgetComponent: null,
+    //component: SingleAxisRGBUComponent,
     dataKey: "singleAxisRGBU",
     controlConfiguration: {},
   },
   "parallel-coordinates-plot": {
     name: "Parallel Coordinates Plot",
     description: "Parallel Coordinates Plot",
-    component: ParallelCoordinatesPlotWidgetComponent,
+    widgetComponent: null,
+    //component: ParallelCoordinatesPlotWidgetComponent,
     dataKey: "parallelogram",
     controlConfiguration: {},
   },
   "quant-table": {
     name: "Quantification Table",
     description: "Quantification Table",
-    component: QuantificationTableComponent,
+    widgetComponent: null,
+    //component: QuantificationTableComponent,
     dataKey: "table",
     controlConfiguration: {},
   },
   "text-view": {
     name: "Text View",
     description: "Write freeform text using markdown",
-    component: MarkdownTextViewComponent,
+    widgetComponent: null,
+    //component: MarkdownTextViewComponent,
     dataKey: "markdownView",
     controlConfiguration: {},
   },
   variogram: {
     name: "Variogram",
     description: "Variogram",
-    component: VariogramWidgetComponent,
+    widgetComponent: null,
+    //component: VariogramWidgetComponent,
     dataKey: "variogram",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;
 
 export type WidgetType = keyof typeof WIDGETS;
+//export type WidgetType = string;
+
+const loadedWidgets = new Map<WidgetType, any>();
+
+const readWidgets = async () => {
+  if (loadedWidgets.size <= 0) {
+    const { SpectrumChartWidgetComponent } = await import("src/app/modules/spectrum/spectrum.module");
+    const {
+      BinaryChartWidgetComponent,
+      TernaryChartWidgetComponent,
+      HistogramWidgetComponent,
+      ChordDiagramWidgetComponent,
+      RGBUPlotWidgetComponent,
+      SingleAxisRGBUComponent,
+      ParallelCoordinatesPlotWidgetComponent,
+    } = await import("src/app/modules/scatterplots/scatterplots.module");
+    const { ContextImageComponent, MultiChannelViewerComponent } = await import("src/app/modules/image-viewers/image-viewers.module");
+    const { QuantificationTableComponent } = await import("src/app/modules/table-views/table-views.module");
+    const { MarkdownTextViewComponent } = await import("src/app/modules/text-views/text-views.module");
+    const { VariogramWidgetComponent } = await import("src/app/modules/scatterplots/widgets/variogram-widget/variogram-widget.component");
+    const { Scan3DViewComponent } = await import("src/app/modules/image-viewers/widgets/scan-3d-view/scan-3d-view.component");
+
+    loadedWidgets.set("spectrum-chart", SpectrumChartWidgetComponent);
+    loadedWidgets.set("binary-plot", BinaryChartWidgetComponent);
+    loadedWidgets.set("ternary-plot", TernaryChartWidgetComponent);
+    loadedWidgets.set("histogram", HistogramWidgetComponent);
+    loadedWidgets.set("chord-diagram", ChordDiagramWidgetComponent);
+    loadedWidgets.set("context-image", ContextImageComponent);
+    loadedWidgets.set("multi-channel-image", MultiChannelViewerComponent);
+    loadedWidgets.set("rgbu-plot", RGBUPlotWidgetComponent);
+    loadedWidgets.set("single-axis-rgbu-plot", SingleAxisRGBUComponent);
+    loadedWidgets.set("parallel-coordinates-plot", ParallelCoordinatesPlotWidgetComponent);
+    loadedWidgets.set("quant-table", QuantificationTableComponent);
+    loadedWidgets.set("text-view", MarkdownTextViewComponent);
+    loadedWidgets.set("variogram", VariogramWidgetComponent);
+    loadedWidgets.set("scan-3d-view", Scan3DViewComponent);
+  }
+  return loadedWidgets;
+};

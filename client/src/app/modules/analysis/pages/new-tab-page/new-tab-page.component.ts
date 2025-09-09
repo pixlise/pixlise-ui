@@ -1,11 +1,13 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { AnalysisLayoutService } from "../../services/analysis-layout.service";
-import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
-import { Subscription } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
-import { TabLinks } from "../../../../models/TabLinks";
+import { Subscription } from "rxjs";
+
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
+import { TabLinks } from "src/app/models/TabLinks";
 
 @Component({
+  standalone: false,
   selector: "app-new-tab-page",
   templateUrl: "./new-tab-page.component.html",
   styleUrls: ["./new-tab-page.component.scss"],
@@ -110,7 +112,7 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
     this._keyPresses.delete(event.key);
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

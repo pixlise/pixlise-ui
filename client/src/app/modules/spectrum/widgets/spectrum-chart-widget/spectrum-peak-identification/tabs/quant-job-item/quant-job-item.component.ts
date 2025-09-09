@@ -1,9 +1,10 @@
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { Subscription, interval } from "rxjs";
 import { JobStatus, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
-import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 @Component({
+  standalone: false,
   selector: "quant-job-item",
   templateUrl: "./quant-job-item.component.html",
   styleUrls: ["./quant-job-item.component.scss"],

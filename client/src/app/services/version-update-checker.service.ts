@@ -53,17 +53,17 @@ export class VersionUpdateCheckerService implements OnDestroy {
     private _snackService: SnackbarService,
     private http: HttpClient
   ) {
-    if (EnvConfigurationInitService.appConfig.versionPollUrl.length <= 0) {
+    if (EnvConfigurationInitService.getConfig$.value!.versionPollUrl.length <= 0) {
       console.log("Version update checking is disabled, will not be performed");
       return;
     }
 
-    console.log("Version update checking will run every " + EnvConfigurationInitService.appConfig.versionPollInterval_ms + "ms");
+    console.log("Version update checking will run every " + EnvConfigurationInitService.getConfig$.value!.versionPollInterval_ms + "ms");
 
     // Start timer in a little while, don't want it rushing straight away
     const timerStartMs = 5000;
     this._subs.add(
-      timer(timerStartMs, EnvConfigurationInitService.appConfig.versionPollInterval_ms).subscribe((counter: number) => {
+      timer(timerStartMs, EnvConfigurationInitService.getConfig$.value!.versionPollInterval_ms).subscribe((counter: number) => {
         this.pollServerVersion();
       })
     );
@@ -75,7 +75,7 @@ export class VersionUpdateCheckerService implements OnDestroy {
 
   protected pollServerVersion(): void {
     // Request with a different URL so doesn't get cached
-    this.http.get<DeployedVersion>(EnvConfigurationInitService.appConfig.versionPollUrl + "?checktime=" + Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
+    this.http.get<DeployedVersion>(EnvConfigurationInitService.getConfig$.value!.versionPollUrl + "?checktime=" + Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
       (version: DeployedVersion) => {
         const thisBuildVersion = (VERSION as any)?.raw || "(Local build)";
         const recvVersion = version.version;

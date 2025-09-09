@@ -1,6 +1,10 @@
 import { Injectable } from "@angular/core";
 import { Observable, shareReplay, map, of, catchError } from "rxjs";
+
 import { APIDataService } from "./apidata.service";
+import { ObjectChangeMonitorService } from "./object-change-monitor.service";
+import { MemoisationService } from "./memoisation.service";
+
 import {
   QuantGetReq,
   QuantGetResp,
@@ -19,8 +23,6 @@ import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionListResp } from "src/app/generated-protos/expression-msgs";
 import { DataModuleGetReq, DataModuleGetResp, DataModuleListReq, DataModuleListResp } from "src/app/generated-protos/module-msgs";
-
-import { decodeIndexList } from "src/app/utils/utils";
 import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
@@ -29,10 +31,9 @@ import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/gene
 import { NotificationType } from "src/app/generated-protos/notification";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
-import { VariogramPoint } from "../../scatterplots/widgets/variogram-widget/vario-data";
-import { MemoisationService } from "./memoisation.service";
-import { ObjectChangeMonitorService } from "./object-change-monitor.service";
-import { ROIService } from "../../roi/services/roi.service";
+
+import { decodeIndexList } from "src/app/utils/utils";
+import { VariogramPoint } from "src/app/modules/scatterplots/widgets/variogram-widget/vario-data";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.

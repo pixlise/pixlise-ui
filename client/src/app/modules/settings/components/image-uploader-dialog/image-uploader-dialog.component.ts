@@ -3,9 +3,10 @@ import { MatDialogRef } from "@angular/material/dialog";
 import { UserDetails } from "src/app/generated-protos/user";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import Compressor from "compressorjs";
-import { UserOptionsService } from "../../settings.module";
+import { UserOptionsService } from "../../services/user-options.service";
 
 @Component({
+  standalone: false,
   selector: "app-image-uploader-dialog",
   templateUrl: "./image-uploader-dialog.component.html",
   styleUrls: ["./image-uploader-dialog.component.scss"],

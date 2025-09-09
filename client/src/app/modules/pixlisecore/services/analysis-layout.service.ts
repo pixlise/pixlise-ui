@@ -1,39 +1,52 @@
 import { Injectable, OnDestroy } from "@angular/core";
-import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, catchError, forkJoin, map, of, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
-import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
+import { HttpClient } from "@angular/common/http";
+
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, forkJoin, map, of } from "rxjs";
+
+import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../../analysis/models/sidebar.model";
+
+import { APICachedDataService } from "./apicacheddata.service";
+import { APIDataService } from "./apidata.service";
+import { SelectionService } from "./selection.service";
+import { SnackbarService } from "./snackbar.service";
+import { APIEndpointsService } from "./apiendpoints.service";
+import { MemoisationService } from "./memoisation.service";
+
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { createDefaultScreenConfiguration, WidgetReference } from "../models/screen-configuration.model";
 import { MapLayerVisibility, ROILayerVisibility, SpectrumLines, VisibleROI, WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq, WidgetMetadataGetReq, WidgetMetadataGetResp, WidgetMetadataWriteReq } from "src/app/generated-protos/widget-data-msgs";
-import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
-import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
-import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
-import EditorConfig from "src/app/modules/code-editor/models/editor-config";
-import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
-import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
+import { QuantDeleteReq } from "src/app/generated-protos/quantification-management-msgs";
+import { ScanImage } from "src/app/generated-protos/image";
+import { ReviewerMagicLinkLoginReq } from "src/app/generated-protos/user-management-msgs";
+import { MemoiseDeleteByRegexReq } from "src/app/generated-protos/memoisation-msgs";
+
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
-import { QuantDeleteReq } from "../../../generated-protos/quantification-management-msgs";
-import { TabLinks } from "../../../models/TabLinks";
-import { PredefinedROIID } from "../../../models/RegionOfInterest";
-import { ScanImage } from "../../../generated-protos/image";
-import { EnvConfigurationInitService } from "../../../services/env-configuration-init.service";
-import { ReviewerMagicLinkLoginReq } from "../../../generated-protos/user-management-msgs";
-import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
-import { HttpClient } from "@angular/common/http";
-import { UserOptionsService } from "../../settings/settings.module";
-import { MemoiseDeleteByRegexReq } from "../../../generated-protos/memoisation-msgs";
-import { MemoisationService } from "../../pixlisecore/services/memoisation.service";
+import { TabLinks } from "src/app/models/TabLinks";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+
+import { ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { createDefaultScreenConfiguration, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
+import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+
+import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
+
+import { WSError } from "./wsMessageHandler";
+
 
 export class DefaultExpressions {
   constructor(
@@ -1126,28 +1139,28 @@ export class AnalysisLayoutService implements OnDestroy {
 
   loginWithMagicLink(magicLink: string) {
     let decodedWorkspaceId = decodeUrlSafeBase64(magicLink);
-    let appConfig = EnvConfigurationInitService.appConfig;
+    let appConfig = EnvConfigurationInitService.getConfig$.value;
     this._apiEndpointsService
       .magicLinkLogin(
         ReviewerMagicLinkLoginReq.create({
           magicLink: decodedWorkspaceId,
-          clientId: appConfig.auth0_client,
-          domain: appConfig.auth0_domain,
-          audience: appConfig.auth0_audience,
+          clientId: appConfig!.auth0_client,
+          domain: appConfig!.auth0_domain,
+          audience: appConfig!.auth0_audience,
           redirectURI: `${window.location.origin}/authenticate`,
         })
       )
       .subscribe({
         next: res => {
-          const loginUrl = `https://${appConfig.auth0_domain}/oauth/token`;
+          const loginUrl = `https://${appConfig!.auth0_domain}/oauth/token`;
 
           this.http
             .post(loginUrl, {
               grant_type: "password",
               username: res.email,
               password: res.nonSecretPassword,
-              client_id: appConfig.auth0_client,
-              audience: appConfig.auth0_audience,
+              client_id: appConfig!.auth0_client,
+              audience: appConfig!.auth0_audience,
               scope: "openid profile email",
             })
             .subscribe({

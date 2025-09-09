@@ -49,6 +49,7 @@ export class SectionImageTilesInputs {
 }
 
 @Component({
+  standalone: false,
   selector: "section-image-tiles-text",
   templateUrl: "./section-image-tiles-text.component.html",
   styleUrls: ["./section-image-tiles-text.component.scss"],

@@ -38,6 +38,7 @@ class StateInfo {
 }
 
 @Component({
+  standalone: false,
   selector: "multi-state-button",
   templateUrl: "./multi-state-button.component.html",
   styleUrls: ["./multi-state-button.component.scss"],

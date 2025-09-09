@@ -36,6 +36,7 @@ import { GroupsService } from "../../services/groups.service";
 import { UserGroupJoinSummaryInfo } from "src/app/generated-protos/user-group";
 
 @Component({
+  standalone: false,
   selector: "app-request-group-dialog",
   templateUrl: "./request-group-dialog.component.html",
   styleUrls: ["./request-group-dialog.component.scss"],

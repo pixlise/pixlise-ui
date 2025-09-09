@@ -30,8 +30,7 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription, combineLatest } from "rxjs";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
@@ -65,6 +64,7 @@ import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "s
 import { getScanIdFromImagePath } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "single-axis-rgbu",
   templateUrl: "./single-axis-rgbu.component.html",
   styleUrls: ["./single-axis-rgbu.component.scss"],

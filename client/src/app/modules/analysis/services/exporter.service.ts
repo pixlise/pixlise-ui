@@ -17,7 +17,7 @@ import {
 import { SpectrumResp } from "../../../generated-protos/spectrum-msgs";
 import { Spectrum, SpectrumType } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
-import { decodeIndexList, getPathBase, SDSFields } from "../../../utils/utils";
+import { decodeIndexList, getPathBase } from "src/app/utils/utils";
 import { DiffractionExporter } from "../components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
 import { DiffractionService } from "../../spectrum/services/diffraction.service";
 import { EnergyCalibrationService } from "../../pixlisecore/services/energy-calibration.service";
@@ -36,10 +36,8 @@ import { Quantification } from "src/app/generated-protos/quantification";
 import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
 import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ScanMetaDataItem } from "src/app/generated-protos/scan";
-import { ImageMatchTransform, ScanImage } from "src/app/generated-protos/image";
+import { ImageMatchTransform } from "src/app/generated-protos/image";
 import { ExpressionExporter } from "src/app/expression-language/expression-export";
-import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
-import { LoadedSources } from "../../pixlisecore/services/widget-data.service";
 import { DataExpression } from "src/app/generated-protos/expressions";
 
 @Injectable({

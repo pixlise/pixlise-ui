@@ -68,6 +68,7 @@ export type ROIPickerData = {
 };
 
 @Component({
+  standalone: false,
   selector: "roi-picker",
   templateUrl: "./roi-picker.component.html",
   styleUrls: ["./roi-picker.component.scss"],

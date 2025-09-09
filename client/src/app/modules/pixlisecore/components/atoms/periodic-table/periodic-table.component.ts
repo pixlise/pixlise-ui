@@ -35,6 +35,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { MinMax } from "src/app/models/BasicTypes";
 
 @Component({
+  standalone: false,
   selector: "periodic-table",
   templateUrl: "./periodic-table.component.html",
   styleUrls: ["./periodic-table.component.scss"],

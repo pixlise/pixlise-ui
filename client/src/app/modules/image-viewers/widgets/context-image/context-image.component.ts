@@ -3,12 +3,12 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { catchError, combineLatest, map, mergeMap, Observable, of, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
+import { ContextImageModel } from "./context-image-model";
+import { ContextImageModelLoadedData } from "./context-image-model-internals";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
+import { AnalysisLayoutService, APICachedDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ContextImageState, MapLayerGroupDisplayRange, MapLayerVisibility, ROILayerVisibility } from "src/app/generated-protos/widget-data";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
 import { Point, Rect } from "src/app/models/Geometry";
@@ -46,7 +46,7 @@ import {
   LayerVisibilitySection,
   LayerVisiblilityData,
 } from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { isValidNumber, SentryHelper } from "src/app/utils/utils";
@@ -56,6 +56,7 @@ export type MapLayers = Map<string, ContextImageMapLayer[]>;
 export type ContextImageLayers = { mapLayers: MapLayers; regions: RegionMap };
 
 @Component({
+  standalone: false,
   selector: "app-context-image",
   templateUrl: "./context-image.component.html",
   styleUrls: ["./context-image.component.scss"],

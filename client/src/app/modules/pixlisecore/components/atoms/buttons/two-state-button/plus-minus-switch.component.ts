@@ -32,6 +32,7 @@ import { Component } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
 @Component({
+  standalone: false,
   selector: "plus-minus-switch",
   templateUrl: "./plus-minus-switch.component.html",
   styleUrls: ["./two-state-button.component.scss", "./plus-minus-switch.component.scss"],

@@ -33,7 +33,11 @@ import { Router } from "@angular/router";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
+//import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
+
+
 @Component({
+  standalone: false,
   selector: "app-root",
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],

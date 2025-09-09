@@ -30,6 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "two-state-button",
   templateUrl: "./two-state-button.component.html",
   styleUrls: ["./two-state-button.component.scss"],

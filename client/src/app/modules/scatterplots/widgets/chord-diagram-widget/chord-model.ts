@@ -11,7 +11,7 @@ import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.modul
 import { getPearsonCorrelation, httpErrorToString } from "src/app/utils/utils";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 export class ChordDiagramModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();

@@ -30,6 +30,7 @@
 import { Component, OnInit, Input } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "button-nav-down",
   templateUrl: "./button-nav-down.component.html",
   styleUrls: ["./button-nav-down.component.scss"],

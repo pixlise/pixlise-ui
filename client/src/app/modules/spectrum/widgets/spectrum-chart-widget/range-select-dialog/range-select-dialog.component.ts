@@ -2,7 +2,7 @@ import { Component, EventEmitter, Inject, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { MinMax } from "../../../../../models/BasicTypes";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../../../pixlisecore/pixlisecore.module";
 import { WIDGETS, WidgetType } from "../../../../widget/models/widgets.model";
 
 export type RangeSelectData = {
@@ -12,6 +12,7 @@ export type RangeSelectData = {
 };
 
 @Component({
+  standalone: false,
   selector: "range-select-dialog",
   templateUrl: "./range-select-dialog.component.html",
   styleUrls: ["./range-select-dialog.component.scss"],

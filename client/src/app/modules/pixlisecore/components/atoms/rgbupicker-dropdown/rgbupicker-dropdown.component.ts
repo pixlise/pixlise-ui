@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { MatSelectChange } from "@angular/material/select";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { APICachedDataService } from "../../../services/apicacheddata.service";
 
 class ImageChoice {
@@ -13,6 +13,7 @@ class ImageChoice {
 }
 
 @Component({
+  standalone: false,
   selector: "rgbupicker-dropdown",
   templateUrl: "./rgbupicker-dropdown.component.html",
   styleUrls: ["./rgbupicker-dropdown.component.scss"],

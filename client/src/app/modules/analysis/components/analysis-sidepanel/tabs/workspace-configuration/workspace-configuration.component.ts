@@ -29,31 +29,39 @@
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
-import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
-import { FullScreenLayout, ScreenConfiguration } from "../../../../../../generated-protos/screen-configuration";
-import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "../../../../../../utils/utils";
-import { ObjectType, OwnershipSummary, UserGroupList } from "../../../../../../generated-protos/ownership-access";
-import { APIDataService, SnackbarService } from "../../../../../pixlisecore/pixlisecore.module";
-import { NavigationTab } from "../../../../services/analysis-layout.service";
-import { TabLinks } from "../../../../../../models/TabLinks";
 import { ActivatedRoute } from "@angular/router";
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
+
+import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
+
+import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ObjectType, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
+import { GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
+import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
+
 import {
+  NavigationTab,
+  AnalysisLayoutService,
+  APIDataService,
+  APICachedDataService,
+  SnackbarService,
   ShareDialogComponent,
   ShareDialogData,
   ShareDialogResponse,
   SharingSubItem,
-} from "../../../../../pixlisecore/components/atoms/share-ownership-item/share-dialog/share-dialog.component";
-import { GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "../../../../../../generated-protos/ownership-access-msgs";
-import { APICachedDataService } from "../../../../../pixlisecore/services/apicacheddata.service";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../../../../generated-protos/roi-msgs";
-import { ExpressionGetReq, ExpressionGetResp } from "../../../../../../generated-protos/expression-msgs";
-import { QuantGetReq, QuantGetResp } from "../../../../../../generated-protos/quantification-retrieval-msgs";
-import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
-import { ExpressionGroupGetResp } from "../../../../../../generated-protos/expression-group-msgs";
-import { WorkspaceService } from "../../../../services/workspaces.service";
+} from "src/app/modules/pixlisecore/pixlisecore.module";
+
+import { WorkspaceService } from "src/app/modules/analysis/services/workspaces.service";
+
+import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "src/app/utils/utils";
+import { TabLinks } from "src/app/models/TabLinks";
+
 
 @Component({
+  standalone: false,
   selector: "workspace-configuration",
   templateUrl: "./workspace-configuration.component.html",
   styleUrls: ["./workspace-configuration.component.scss"],

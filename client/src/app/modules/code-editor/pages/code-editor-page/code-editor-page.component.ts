@@ -34,7 +34,7 @@ import { combineLatest, Subscription } from "rxjs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   ExpressionPickerComponent,
   ExpressionPickerData,
@@ -60,6 +60,7 @@ import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-confi
 import { environment } from "src/environments/environment";
 
 @Component({
+  standalone: false,
   selector: "code-editor",
   templateUrl: "./code-editor-page.component.html",
   styleUrls: ["./code-editor-page.component.scss"],
@@ -1464,7 +1465,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   onClose() {}
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

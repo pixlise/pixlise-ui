@@ -33,11 +33,12 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 import { UserGroupInfo } from "../../../../generated-protos/user-group";
 import { Auth0UserRole } from "../../../../generated-protos/user";
 import { Subscription } from "rxjs";
-import { UsersService } from "../../services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 import { UserOptionsService } from "../../services/user-options.service";
 
 @Component({
+  standalone: false,
   selector: "app-new-group-dialog",
   templateUrl: "./new-group-dialog.component.html",
   styleUrls: ["./new-group-dialog.component.scss"],
@@ -102,6 +103,6 @@ export class NewGroupDialogComponent implements OnInit {
   }
 
   get appDomain(): string {
-    return EnvConfigurationInitService.appConfig.appDomain;
+    return EnvConfigurationInitService.getConfig$.value!.appDomain;
   }
 }

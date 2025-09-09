@@ -31,21 +31,24 @@ import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from
 import { Component, ElementRef, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
 import { ActivatedRoute, NavigationEnd, ResolveEnd, Router } from "@angular/router";
+import { CommonModule } from "@angular/common";
+
 import { Subscription } from "rxjs";
+import { MarkdownModule } from "ngx-markdown";
+
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
 import { APIDataService, PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { CommonModule } from "@angular/common";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
-import { AnalysisLayoutService, NavigationTab } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService, NavigationTab } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { VERSION } from "src/environments/version";
 import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
-import { MarkdownModule } from "ngx-markdown";
-import { TabLinks } from "../../models/TabLinks";
+
+import { TabLinks } from "src/app/models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
 
 class TabNav {
@@ -68,10 +71,10 @@ class TabNav {
 }
 
 @Component({
+  standalone: true,
   selector: "app-toolbar",
   templateUrl: "./toolbar.component.html",
   styleUrls: ["./toolbar.component.scss"],
-  standalone: true,
   imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule, MarkdownModule, DragDropModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
@@ -712,7 +715,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   // }
 
   get discussLink(): string {
-    return "https://discuss." + EnvConfigurationInitService.appConfig.appDomain;
+    return "https://discuss." + EnvConfigurationInitService.getConfig$.value!.appDomain;
   }
 
   closeChangeLogDialog(): void {

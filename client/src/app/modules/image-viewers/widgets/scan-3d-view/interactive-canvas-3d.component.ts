@@ -1,0 +1,156 @@
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
+import { BehaviorSubject } from "rxjs";
+import { Point } from "src/app/models/Geometry";
+import { CanvasDrawNotifier, CanvasParams, ResizingCanvasComponent } from "src/app/modules/widget/components/interactive-canvas/resizing-canvas.component";
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+
+export class RenderData {
+  constructor(
+    public scene: THREE.Scene,
+    public camera: THREE.PerspectiveCamera,
+    public orbitControl?: OrbitControls,
+    public transformControl?: TransformControls
+  ) {}
+}
+
+export class CanvasSizeNotification {
+  constructor(
+    public size: Point,
+    public canvasElement: ElementRef
+  ) {}
+}
+
+@Component({
+  standalone: false,
+  selector: "interactive-canvas-3d",
+  templateUrl: "./interactive-canvas-3d.component.html",
+  styleUrls: ["./interactive-canvas-3d.component.scss"],
+})
+export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
+  @ViewChild("InteractiveCanvas3D") _imgCanvas?: ElementRef;
+
+  @Output() canvasSize = new EventEmitter();
+
+  @Input() renderData?: RenderData;
+  protected _renderer?: THREE.WebGLRenderer;
+
+  get drawNotifier(): CanvasDrawNotifier | null {
+    return this._drawNotifier;
+  }
+
+  @Input() set drawNotifier(notifier: CanvasDrawNotifier | null) {
+    this.setDrawNotifier(notifier);
+  }
+
+  protected override setDrawerBorderWidth(width: number): void {
+    //this.drawer!.borderWidth = width;
+  }
+
+  protected override getCanvasElement(): ElementRef | undefined {
+    return this._imgCanvas;
+  }
+
+  override triggerRedraw(): void {
+    if (this._renderer && this.renderData) {
+      window.requestAnimationFrame(() => {
+        if (this._renderer && this.renderData) {
+          //this._controls?.update();
+          this._renderer.render(this.renderData.scene, this.renderData.camera);
+        }
+      });
+    }
+  }
+
+  protected override setTransformCanvasParams(params: CanvasParams, canvas: ElementRef<any>): void {
+    if (!this._renderer) {
+      this.create3(params, canvas);
+
+      if (!this._renderer) {
+        console.error("No renderer for setTransformCanvasParams");
+        return;
+      }
+    } else { 
+      this._renderer.setSize(params.width, params.height);
+    }
+
+    if (!this.renderData) {
+      console.warn("No renderData for setTransformCanvasParams");
+      return;
+    }
+
+    this.canvasSize.emit(
+      new CanvasSizeNotification(
+        new Point(params.width, params.height),
+        canvas
+      )
+    );
+
+    this.renderData.camera.aspect = params.width / params.height;
+    this.renderData.camera.updateProjectionMatrix();
+
+    this.triggerRedraw();
+  }
+
+  protected override refreshContext(): void {
+    // We don't need a context
+  }
+
+  create3(params: CanvasParams, canvas: ElementRef<any>): void {
+    //const canvasContainer = document.getElementsByClassName("canvas-container").item(0);
+    if (!canvas.nativeElement) {
+      console.error("create 3d failed, no nativeElement defined");
+      return;
+    }
+
+    this._renderer = new THREE.WebGLRenderer({
+      canvas: canvas.nativeElement,
+    });
+
+    this._renderer.setClearColor(new THREE.Color(0, 0, 0), 1);
+    this._renderer.setSize(params.width, params.height);
+
+/*
+  window.addEventListener('resize', () =>
+{
+    //const theCanvas = document.getElementById('canvas-box');
+    canvasSizes.width = canvasContainer!.clientWidth * window.devicePixelRatio; //window.innerWidth;
+    canvasSizes.height = canvasContainer!.clientHeight * window.devicePixelRatio; //window.innerHeight;
+
+    camera.aspect = canvasSizes.width / canvasSizes.height;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(canvasSizes.width, canvasSizes.height);
+    renderer.render(scene, camera);
+  });
+*/
+/*
+    const clock = new THREE.Clock();
+
+    const animateGeometry = () => {
+      const elapsedTime = clock.getElapsedTime();
+
+      // Update animation objects
+      box.rotation.x = elapsedTime;
+      box.rotation.y = elapsedTime;
+      box.rotation.z = elapsedTime;
+
+      torus.rotation.x = -elapsedTime;
+      torus.rotation.y = -elapsedTime;
+      torus.rotation.z = -elapsedTime;
+
+      // Render
+      if (this._renderer && this._scene && this._sceneCamera) {
+        this._renderer.render(this._scene, this._sceneCamera);
+      }
+
+      // Call animateGeometry again on the next frame
+      window.requestAnimationFrame(animateGeometry);
+    };
+
+    animateGeometry();*/
+  }
+}

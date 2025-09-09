@@ -31,6 +31,7 @@ import { Component, EventEmitter, Output } from "@angular/core";
 import { HOTKEYS } from "./hotkeys.model";
 
 @Component({
+  standalone: false,
   selector: "app-hotkeys-menu-panel",
   templateUrl: "./hotkeys-menu-panel.component.html",
   styleUrls: ["./hotkeys-menu-panel.component.scss"],

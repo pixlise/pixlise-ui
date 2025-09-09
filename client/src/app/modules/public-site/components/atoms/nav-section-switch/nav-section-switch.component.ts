@@ -31,6 +31,7 @@ import { Component, OnInit, Input } from "@angular/core";
 import { Router } from "@angular/router";
 
 @Component({
+  standalone: false,
   selector: "nav-section-switch",
   templateUrl: "./nav-section-switch.component.html",
   styleUrls: ["./nav-section-switch.component.scss"],

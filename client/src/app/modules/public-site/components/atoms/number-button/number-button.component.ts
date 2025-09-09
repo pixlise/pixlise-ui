@@ -65,6 +65,7 @@ export class NumberButtonParams {
 }
 
 @Component({
+  standalone: false,
   selector: "number-button",
   templateUrl: "./number-button.component.html",
   styleUrls: ["./number-button.component.scss"],

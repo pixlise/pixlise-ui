@@ -49,6 +49,7 @@ import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/men
 // often crashes at this point with no stack trace/reason you can look at
 
 @Component({
+  standalone: false,
   selector: "widget-settings-menu",
   templateUrl: "./widget-settings-menu.component.html",
   styleUrls: ["./widget-settings-menu.component.scss"],

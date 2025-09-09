@@ -29,20 +29,26 @@
 
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+
 import { Subscription } from "rxjs";
+
 import { UNICODE_CARET_DOWN } from "src/app/utils/utils";
-import { ContextImageDataService, SelectionService, SnackbarService } from "../../../pixlisecore.module";
-import { SelectionHistoryItem } from "../../../services/selection.service";
+
 import {
   SelectionOptionsDialogData,
   SelectionOptionsComponent,
   SelectionOptionsDialogResult,
   SelectionOption,
 } from "./selection-options/selection-options.component";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { APICachedDataService } from "../../../services/apicacheddata.service";
+
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { ContextImageDataService } from "src/app/modules/pixlisecore/services/context-image-data.service";
+import { SnackbarService } from "src/app/modules/pixlisecore/services/snackbar.service";
+import { SelectionHistoryItem, SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 
 export class SelectionChangerImageInfo {
   constructor(
@@ -53,6 +59,7 @@ export class SelectionChangerImageInfo {
 }
 
 @Component({
+  standalone: false,
   selector: "selection-changer",
   templateUrl: "./selection-changer.component.html",
   styleUrls: ["./selection-changer.component.scss"],
