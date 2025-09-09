@@ -29,7 +29,8 @@
 
 import { DetectorConfig } from "../generated-protos/detector-config";
 import { PeriodicTableDB, periodicTableDB } from "./periodic-table-db";
-import { ElementLine, XRFLineDatabase } from "./xrf-line-database";
+import { ElementLine } from "./xrf-line-data";
+import { XRFLineDatabase } from "./xrf-line-database";
 
 describe("combineCloseXRFLines()", () => {
   const p = periodicTableDB;
