@@ -440,17 +440,18 @@ export class PMCMeshData {
 
     if (drawDebug) {
       // Drawing the raw hull points as orange lines
-      let lines = new Float32Array(this._displayHullPoints.length * 6);
+      const pts = this._displayHullPoints;
+      let lines = new Float32Array(pts.length * 6);
       let writeIdx = 0;
-      for (let c = 1; c < this._displayHullPoints.length; c++) {
-        lines[writeIdx] = this._displayHullPoints[c-1].x;
-        lines[writeIdx+1] = this._displayHullPoints[c-1].y;
-        lines[writeIdx+2] = this._displayHullPoints[c-1].z/*-0.05*/;
+      for (let c = 1; c < pts.length; c++) {
+        lines[writeIdx] = pts[c-1].x;
+        lines[writeIdx+1] = pts[c-1].y;
+        lines[writeIdx+2] = pts[c-1].z;//-0.05;
         writeIdx += 3;
 
-        lines[writeIdx] = this._displayHullPoints[c].x;
-        lines[writeIdx+1] = this._displayHullPoints[c].y;
-        lines[writeIdx+2] = this._displayHullPoints[c].z;
+        lines[writeIdx] = pts[c].x;
+        lines[writeIdx+1] = pts[c].y;
+        lines[writeIdx+2] = pts[c].z;
         writeIdx += 3;
       }
 
@@ -876,7 +877,7 @@ export class PMCMeshData {
       // Draw from current point to the next one
       let ptCurr = new THREE.Vector3(this._hullPoints[c].x, this._hullPoints[c].y, this._hullPoints[c].z).addScaledVector(this._hullPointNormals[c], expandSize);
       //this._displayHullPoints.push(ptCurr);
-      
+
       const pts = this.makeLineSegments(ptLast, ptCurr);
       this._displayHullPoints.push(...pts);
 
@@ -904,14 +905,14 @@ export class PMCMeshData {
     const segLength = ptEnd.distanceTo(ptStart);
 
     // We break it up into smaller segments
-    const segments = Math.ceil(segLength / (this._averagePointDistanceTerrain));
+    let segments = Math.ceil(segLength / (this._averagePointDistanceTerrain));
     if (segments <= 1) {
       result.push(ptEnd);
     } else {
       const segT = segLength / segments;
 
       const dir = new THREE.Vector3().subVectors(ptEnd, ptStart);
-      dir.setZ(0);
+      //dir.setZ(0);
       dir.normalize();
       dir.multiplyScalar(segT);
 
@@ -926,55 +927,6 @@ export class PMCMeshData {
     return result;
   }
 
-/*
-  private makeHullPointNormals(): THREE.Vector3[] {
-    if (!this._hullPoints || this._hullPoints.length <= 2) {
-      throw new Error("makeHullPointNormals called when no hull points exist");
-    }
-
-    const result: THREE.Vector3[] = [];
-    let lastPt = this._hullPoints[this._hullPoints.length-1];
-    let lastNormal = new THREE.Vector3().subVectors(this._hullPoints[0], lastPt).normalize();
-    lastNormal.cross(downDir);
-    lastNormal.normalize();
-
-    for (let c = 0; c < this._hullPoints.length; c++) {
-      // Find the normal of the line from this point to the next one. Using the normal from last point to this point, we can find a vertex normal
-      let normal = new THREE.Vector3().subVectors(this._hullPoints[c == this._hullPoints.length-1 ? 0 : c + 1], this._hullPoints[c]).normalize();
-      normal.cross(downDir);
-      normal.normalize();
-
-      let vtxNormal = new THREE.Vector3().addVectors(lastNormal, normal).normalize();
-      result.push(vtxNormal);
-
-      lastPt = this._hullPoints[c];
-      lastNormal = normal;
-    }
-
-    return result;
-  }
-
-  private expandHull(expandDist: number) {
-    // Make the hull a bit larger
-    const normals = this.makeHullPointNormals();
-
-    for (let c = 0; c < this._hullPoints.length; c++) {
-      this._hullPoints[c].addScaledVector(normals[c], expandDist);
-    }
-  }
-
-  private embedHullPointsInMesh() {
-    for (let c = 0; c < this._hullPoints.length; c++) {
-      const pt = new PMCMeshPoint(
-        terrainCoord,
-        rawCoord,
-        -1,
-        rawUV.x, rawUV.y
-      );
-      this._points.push(pt);
-    }
-  }
-*/
   private processUVs() {
     if (this._image) {
       for (const pt of this._points) {
