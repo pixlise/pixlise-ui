@@ -1,4 +1,13 @@
-## 4.73.0 (LATEST)
+## 4.74.0 (LATEST)
+
+### New Features
+- **3D View**: A new widget to view our scans in 3D. **NOTE: This is experimental, be careful drawing any conclusions from this view for now**. It uses the beam location x,y,z coordinates provided by spectrum data to build a terrain-like view of the PMCs and extrapolates out to the corners of the MCC image. Supports a lot of the features the context image does:
+  - Shows context image (or other selected image)
+  - Shows PMCs, footprint
+  - Viewing maps with various options
+  - Various draw options/settings/lighting modes. It is hoped users fiddle with it and provide feedback and feature requests to guide the development team to a final working design.
+
+## 4.73.0 (2025-09-05)
 
 ### New Features
 - **Reference Picker**: Adds a reference picker to the binary and ternary charts. This allows you to select a reference from a list of references and apply it to the chart.
@@ -7,7 +16,6 @@
 
 ### Bug Fixes
 - Fixes issue with context image where display value ranges were not being saved correctly for expression groups (like RGB Mix)
-
 
 ## 4.72.0 (2025-08-21)
 
