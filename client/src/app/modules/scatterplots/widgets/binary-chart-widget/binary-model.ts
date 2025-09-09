@@ -1,7 +1,7 @@
 import { MinMax } from "src/app/models/BasicTypes";
 import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
-import { PointWithRayLabel, Rect } from "src/app/models/Geometry";
+import { Point, PointWithRayLabel, Rect } from "src/app/models/Geometry";
 import { Colours } from "src/app/utils/colours";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
@@ -11,12 +11,33 @@ import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryCha
 import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { ScanItem } from "../../../../generated-protos/scan";
+import { ReferenceData } from "../../../../generated-protos/references";
 
 export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
 
+  private _referenceData: ReferenceData[] = [];
+  hoverReferenceData: ReferenceData | null = null;
+
+  get references(): ReferenceData[] {
+    return this._referenceData;
+  }
+
+  set references(refs: ReferenceData[]) {
+    this._referenceData = refs;
+    this._drawModel.references = refs;
+    this.needsDraw$.next();
+  }
+
   protected regenerateDrawModel(raw: BinaryData | null, canvasParams: CanvasParams): void {
     this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
+
+    // Calculate reference coordinates after the draw model is regenerated
+    if (this._referenceData.length > 0 && raw && this._drawModel.xAxis && this._drawModel.yAxis) {
+      this._drawModel.referenceCoords = this.calculateReferenceCoordinates(raw);
+    } else {
+      this._drawModel.referenceCoords = [];
+    }
   }
 
   setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
@@ -39,6 +60,99 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
   protected axisName(axisIdx: number): string {
     return axisIdx == 0 ? "x" : "y";
   }
+
+  private calculateReferenceCoordinates(_raw: BinaryData): PointWithRayLabel[] {
+    const coords: PointWithRayLabel[] = [];
+
+    if (this.expressionIds.length < 2) {
+      return coords;
+    }
+
+    for (const reference of this._referenceData) {
+      // Find X and Y values for this reference
+      let xValue: number | null = null;
+      let xPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+      let yValue: number | null = null;
+      let yPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+
+      // X-axis (first expression)
+      const xExpressionId = this.expressionIds[0];
+      if (xExpressionId && reference.expressionValuePairs) {
+        xPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === xExpressionId);
+        xValue = xPair?.value || null;
+      }
+
+      if (!xValue) {
+        // If can't find an exact match, see if we can match the expression name (get x label)
+        const xExpressionName = this._raw?.xAxisInfo.label || "";
+        if (xExpressionName) {
+          // Try exact match first
+          xPair = reference.expressionValuePairs.find(
+            (pair: { expressionId: string; expressionName: string; value: number }) => pair.expressionName === xExpressionName
+          );
+        }
+
+        xValue = xPair?.value || null;
+      }
+
+      // Y-axis (second expression)
+      const yExpressionId = this.expressionIds[1];
+      if (yExpressionId && reference.expressionValuePairs) {
+        yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionId);
+        yValue = yPair?.value || null;
+      }
+
+      if (!yValue) {
+        // If can't find an exact match, see if we can match the expression name (get y label)
+        const yExpressionName = this._raw?.yAxisInfo.label || "";
+        if (yExpressionName) {
+          yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionName);
+          yValue = yPair?.value || null;
+        }
+      }
+
+      // Only add the point if we have both X and Y values
+      if (xValue !== null && yValue !== null && this._drawModel.xAxis && this._drawModel.yAxis) {
+        const canvasX = this._drawModel.xAxis.valueToCanvas(xValue);
+        const canvasY = this._drawModel.yAxis.valueToCanvas(yValue);
+
+        const coord = new PointWithRayLabel(
+          canvasX,
+          canvasY,
+          `${reference.id} (${xValue.toLocaleString()}, ${yValue.toLocaleString()})`,
+          canvasX,
+          canvasY,
+          reference.id
+        );
+
+        // Store reference data directly in the coordinate for correct mapping
+        (coord as PointWithRayLabel & { referenceData: ReferenceData }).referenceData = reference;
+        coords.push(coord);
+      }
+    }
+
+    return coords;
+  }
+
+  getReferenceAtPoint(pt: Point): ReferenceData | null {
+    const boxSize = HOVER_POINT_RADIUS * 2;
+
+    for (let i = 0; i < this._drawModel.referenceCoords.length; i++) {
+      const coord = this._drawModel.referenceCoords[i];
+      if (Math.abs(pt.x - coord.x) < boxSize / 2 && Math.abs(pt.y - coord.y) < boxSize / 2) {
+        // Use the reference data stored in the coordinate to avoid index mismatch
+        const storedRef = (coord as PointWithRayLabel & { referenceData?: ReferenceData }).referenceData;
+        if (storedRef) {
+          return storedRef;
+        }
+        // Fallback: find by ID if no stored reference data
+        const refId = coord.id;
+        return this._referenceData.find(ref => ref.id === refId) || null;
+      }
+    }
+
+    return null;
+  }
 }
 
 export class BinaryDrawModel implements DrawModelWithPointGroup {
@@ -58,6 +172,8 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   // Coordinates we draw the points at
   pointGroupCoords: PointWithRayLabel[][] = [];
   totalPointCount: number = 0;
+  references: ReferenceData[] = [];
+  referenceCoords: PointWithRayLabel[] = [];
 
   isNonSelectedPoint: boolean[][] = [];
   selectedPointGroupCoords: PointWithRayLabel[][] = [];

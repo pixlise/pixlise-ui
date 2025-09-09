@@ -1,4 +1,15 @@
-## 4.72.0 (LATEST)
+## 4.73.0 (LATEST)
+
+### New Features
+- **Reference Picker**: Adds a reference picker to the binary and ternary charts. This allows you to select a reference from a list of references and apply it to the chart.
+  - References can be created and edited by clicking the edit button in the top corner of the simplified picker.
+  - References can also be bulk imported from a CSV
+
+### Bug Fixes
+- Fixes issue with context image where display value ranges were not being saved correctly for expression groups (like RGB Mix)
+
+
+## 4.72.0 (2025-08-21)
 
 ### New Features
 - Exporting spectra using the "Raw Spectral Data per PMC by ROI .csv" now replaces the energy calibration columns (offset and x-per-chan) with the calibration in the auto quant "AutoQuant-PDS (AB)", or the selected quant if the auto-quant doesn't exist. If no quants are selected at all, it will output what we currently output - the calibration that comes with the spectrum data (DataDrive RFS csv or .MSA files).

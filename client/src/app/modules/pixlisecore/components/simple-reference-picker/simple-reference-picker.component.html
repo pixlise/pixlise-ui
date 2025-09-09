@@ -1,0 +1,114 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology ("Caltech"). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="reference-container">
+  <div class="reference-header">
+    <h3>Reference Picker</h3>
+    <action-button action="edit" color="rgb(var(--clr-gray-30))" tooltipTitle="Open advanced reference picker" (onClick)="onOpenAdvancedPicker()"> </action-button>
+  </div>
+
+  <div class="reference-search-container" *ngIf="data.allowEdit">
+    <input autofocus="true" maxlength="100" type="text" placeholder="Search references" (keydown.enter)="onReferenceEnter()" [(ngModel)]="referenceSearchValue" />
+  </div>
+
+  <div class="references">
+    <div class="reference-container-section" *ngIf="selectedReferencesArray.length > 0">
+      <div class="section-header">
+        <action-button
+          [action]="allCurrentReferencesSelected ? 'checkOn' : 'checkOff'"
+          color="rgb(var(--clr-gray-30))"
+          [tooltipTitle]="allCurrentReferencesSelected ? 'Deselect all current references' : 'Select all current references'"
+          (onClick)="onToggleAllCurrentReferences()">
+        </action-button>
+        <h3>Current References ({{ filteredCurrentReferences.length }})</h3>
+      </div>
+      <div
+        class="reference"
+        *ngFor="let reference of filteredCurrentReferences"
+        (click)="onToggleReference(reference.id)"
+        tabindex="0"
+        (keydown.enter)="onToggleReference(reference.id)">
+        <div class="reference-label-area">
+          <two-state-icon-button
+            *ngIf="data.allowEdit"
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="checkReferenceActive(reference.id)">
+          </two-state-icon-button>
+          <div class="reference-info">
+            <div class="reference-title {{ data.allowEdit ? '' : 'disabled' }}">{{ reference.mineralSampleName || "Unnamed Sample" }}</div>
+            <div class="reference-meta">{{ reference.category || "No category" }} | {{ reference.group || "No group" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="data.allowEdit">
+      <div class="reference-container-section">
+        <div class="section-header">
+          <action-button
+            [action]="allAvailableReferencesSelected ? 'checkOn' : 'checkOff'"
+            color="rgb(var(--clr-gray-30))"
+            [tooltipTitle]="allAvailableReferencesSelected ? 'Deselect all available references' : 'Select all available references'"
+            (onClick)="onToggleAllAvailableReferences()">
+          </action-button>
+          <h3>Available References ({{ filteredReferences.length }})</h3>
+        </div>
+        <div
+          class="reference"
+          *ngFor="let reference of filteredReferences"
+          #tooltip="matTooltip"
+          [matTooltip]="generateTooltipContent(reference)"
+          matTooltipShowDelay="500">
+          <div class="reference-label-area" (click)="onToggleReference(reference.id)" tabindex="0" (keydown.enter)="onToggleReference(reference.id)">
+            <two-state-icon-button
+              activeIcon="assets/button-icons/check-on.svg"
+              inactiveIcon="assets/button-icons/check-off.svg"
+              [active]="checkReferenceActive(reference.id)">
+            </two-state-icon-button>
+            <div class="reference-info">
+              <div class="reference-title">{{ reference.mineralSampleName || "Unnamed Sample" }}</div>
+              <div class="reference-meta">{{ reference.category || "No category" }} | {{ reference.group || "No group" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="no-references" *ngIf="data.allowEdit && filteredReferences.length === 0 && referenceSearchValue.trim().length > 0">
+      <div class="no-results-text">No references found matching "{{ referenceSearchValue.trim() }}"</div>
+    </div>
+  </div>
+  <div class="action-buttons">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onSave()">Save</push-button>
+  </div>
+</div>

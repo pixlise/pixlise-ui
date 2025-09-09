@@ -4,6 +4,7 @@ import { OverlayModule } from "@angular/cdk/overlay";
 import { FormsModule } from "@angular/forms";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { DragDropModule } from "@angular/cdk/drag-drop";
+import { ScrollingModule } from "@angular/cdk/scrolling";
 import { MatMenuModule } from "@angular/material/menu";
 
 import { MaterialModule } from "../material.module";
@@ -50,6 +51,9 @@ import { StatusIndicatorComponent } from "./components/atoms/status-indicator/st
 import { SectionedSelectDialogComponent } from "./components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 import { RGBUPickerDropdownComponent } from "./components/atoms/rgbupicker-dropdown/rgbupicker-dropdown.component";
 import { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
+import { ReferencePickerComponent } from "./components/reference-picker/reference-picker.component";
+import { ReferenceCSVUploadDialogComponent } from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+import { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
 
 import { QuantificationSelectorComponent } from "./components/atoms/quantification-selector/quantification-selector.component";
 import { QuantSelectorPanelComponent } from "./components/atoms/quant-selector-panel/quant-selector-panel.component";
@@ -62,7 +66,6 @@ import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/componen
 import { ClosableListComponent } from "src/app/modules/pixlisecore/components/atoms/closable-list/closable-list.component";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
-
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 import { TableComponent } from "./components/atoms/table/table.component";
 import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
@@ -90,6 +93,13 @@ export { SelectionService } from "./services/selection.service";
 export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
 export { SliderComponent } from "./components/atoms/slider/slider.component";
 export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
+export { ReferencePickerComponent, ReferencePickerData, ReferencePickerResponse } from "./components/reference-picker/reference-picker.component";
+export {
+  ReferenceCSVUploadDialogComponent,
+  ReferenceCSVUploadData,
+  ReferenceCSVUploadResponse,
+} from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
+export { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
 export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
@@ -143,6 +153,9 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
+    ReferencePickerComponent,
+    ReferenceCSVUploadDialogComponent,
+    SimpleReferencePickerComponent,
     QuantificationSelectorComponent,
     QuantSelectorPanelComponent,
     QuantificationListComponent,
@@ -169,8 +182,7 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     FormsModule,
     MatAutocompleteModule,
     DragDropModule,
-    MatMenuModule,
-    DragDropModule,
+    ScrollingModule,
     MatMenuModule
   ],
   exports: [
@@ -210,6 +222,9 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
+    ReferencePickerComponent,
+    ReferenceCSVUploadDialogComponent,
+    SimpleReferencePickerComponent,
     QuantificationSelectorComponent,
     ShareDialogComponent,
     ShareOwnershipItemButtonComponent,
@@ -225,6 +240,7 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     UserIconComponent,
     GroupIconComponent,
     SearchableListComponent,
+    ScrollingModule,
   ],
   providers: [
     /*APICommService, APIDataService*/

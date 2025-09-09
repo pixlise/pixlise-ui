@@ -17,12 +17,17 @@ import {
   RegionDataResults,
   SnackbarService,
   WidgetKeyItem,
+  ReferencePickerData,
+  ReferencePickerResponse,
+  SimpleReferencePickerComponent,
+  APIDataService,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point, Rect, ptWithinPolygon } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
+import { CanvasMouseEventId, CanvasInteractionResult, CanvasMouseEvent } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import {
   ExpressionPickerComponent,
   ExpressionPickerData,
@@ -45,6 +50,8 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBA } from "../../../../utils/colours";
 import { ObjectChangeMonitor } from "src/app/modules/pixlisecore/models/object-change-monitor";
 import { ObjectChange, ObjectChangeMonitorService } from "src/app/modules/pixlisecore/services/object-change-monitor.service";
+import { ReferenceDataListReq, ReferenceDataListResp } from "../../../../generated-protos/references-msgs";
+import { ReferenceData } from "src/app/generated-protos/references";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -57,6 +64,7 @@ class TernaryChartToolHost extends InteractionWithLassoHover {
   protected resetHover(): void {
     this._terMdl.hoverPoint = null;
     this._terMdl.hoverPointData = null;
+    this._terMdl.hoverReferenceData = null;
     this._terMdl.mouseLassoPoints = [];
   }
 
@@ -67,6 +75,27 @@ class TernaryChartToolHost extends InteractionWithLassoHover {
     triBox.expandToFitPoints(triPts);
 
     return ptWithinPolygon(canvasPt, triPts, triBox);
+  }
+
+  override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
+    if (event.eventId === CanvasMouseEventId.MOUSE_MOVE) {
+      // Check for reference hover first
+      const ref = this._terMdl.getReferenceAtPoint(event.canvasPoint);
+      if (ref) {
+        this._terMdl.hoverReferenceData = ref;
+        this._terMdl.needsDraw$.next();
+        return CanvasInteractionResult.redrawAndCatch;
+      } else {
+        // Clear reference hover if we had one
+        if (this._terMdl.hoverReferenceData) {
+          this._terMdl.hoverReferenceData = null;
+          this._terMdl.needsDraw$.next();
+        }
+      }
+    }
+
+    // Call parent implementation for normal point handling
+    return super.mouseEvent(event);
   }
 }
 
@@ -90,6 +119,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   private _objChangeMonitor = new ObjectChangeMonitor();
 
+  private _allReferences: ReferenceData[] = [];
+  private _referenceIds: string[] = [];
+
   private _selectionModes: string[] = [NaryChartModel.SELECT_SUBTRACT, NaryChartModel.SELECT_RESET, NaryChartModel.SELECT_ADD];
   private _selectionMode: string = NaryChartModel.SELECT_RESET;
 
@@ -104,7 +136,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
     private _snackService: SnackbarService,
-    private _objChangeService: ObjectChangeMonitorService
+    private _objChangeService: ObjectChangeMonitorService,
+    private _apiDataService: APIDataService
   ) {
     super();
 
@@ -114,13 +147,15 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        // {
-        //   id: "refs",
-        //   type: "button",
-        //   title: "Refs",
-        //   tooltip: "Choose reference areas to display",
-        //   onClick: () => this.onReferences(),
-        // },
+        {
+          id: "refs",
+          type: "button",
+          title: "Refs",
+          tooltip: "Choose reference areas to display",
+          onClick: () => this.onReferences(),
+          settingTitle: "References",
+          settingGroupTitle: "Data",
+        },
         {
           id: "regions",
           type: "button",
@@ -160,7 +195,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         type: "selection-changer",
         tooltip: "Selection changer",
         //style: { "margin-top": "24px" },
-        onClick: () => {},
+        onClick: () => {
+          // Empty implementation
+        },
       },
       topRightInsetButton: {
         id: "key",
@@ -411,8 +448,20 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       })
     );
 
+    this._apiDataService.sendReferenceDataListRequest(ReferenceDataListReq.create({})).subscribe({
+      next: (response: ReferenceDataListResp) => {
+        if (response?.referenceData) {
+          this._allReferences = response.referenceData;
+          if (this._referenceIds.length > 0) {
+            this.mdl.references = this._referenceIds.map(id => this._allReferences.find(ref => ref.id === id)).filter(ref => ref !== undefined) as ReferenceData[];
+            this.update();
+          }
+        }
+      },
+    });
+
     this._subs.add(
-      this.widgetData$.subscribe((data: any) => {
+      this.widgetData$.subscribe((data: unknown) => {
         const ternaryData: TernaryState = data as TernaryState;
 
         if (ternaryData) {
@@ -421,6 +470,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           }
 
           this.mdl.showMmol = ternaryData.showMmol;
+
+          if (ternaryData.referenceIds) {
+            this._referenceIds = ternaryData.referenceIds;
+            if (this._allReferences.length > 0) {
+              this.mdl.references = this._referenceIds.map(id => this._allReferences.find(ref => ref.id === id)).filter(ref => ref !== undefined) as ReferenceData[];
+            }
+          }
 
           if (ternaryData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
@@ -431,8 +487,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
               if (this.mdl.dataSourceIds.has(roi.scanId)) {
                 const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
-                dataSource!.roiIds.push(roi.id);
-                this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
+                if (dataSource) {
+                  dataSource.roiIds.push(roi.id);
+                  this.mdl.dataSourceIds.set(roi.scanId, dataSource);
+                }
               } else {
                 const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
@@ -463,10 +521,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           for (let i = 0; i < last; i++) {
             this.mdl.expressionIds[i] = result.selectedExpressions[i].id;
           }
-        } else if (result.selectedGroup?.groupItems?.length || 0 > 0) {
-          const last = Math.min(3, result!.selectedGroup!.groupItems.length);
+        } else if (result.selectedGroup?.groupItems && result.selectedGroup.groupItems.length > 0) {
+          const last = Math.min(3, result.selectedGroup.groupItems.length);
           for (let i = 0; i < last; i++) {
-            this.mdl.expressionIds[i] = result!.selectedGroup!.groupItems[i].expressionId;
+            this.mdl.expressionIds[i] = result.selectedGroup.groupItems[i].expressionId;
           }
         } else {
           this._snackService.openError("No expressions to apply");
@@ -482,7 +540,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     );
 
     this._subs.add(
-      this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+      this._roiService.displaySettingsMap$.subscribe(() => {
         // Only update if we have the right expression count otherwise this will just trigger an error
         if (this.mdl.expressionIds.length == 3) {
           this.update();
@@ -538,7 +596,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   get scanConfigurations(): Record<string, ScanConfiguration> {
-    return this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations || {};
+    return this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations ?? {};
   }
 
   get transform() {
@@ -586,7 +644,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 
-    let selectedIds: string[] = [];
+    const selectedIds: string[] = [];
     this.mdl.dataSourceIds.forEach(rois => {
       selectedIds.push(...rois.roiIds);
     });
@@ -617,7 +675,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+          const quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
 
           // // If we already have a data source for this scan, keep the quant id
           // const existingSource = this.mdl.dataSourceIds.get(scanId);
@@ -635,8 +693,28 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       }
     });
   }
-  onReferences() {}
-  onToggleKey() {}
+  onReferences() {
+    const dialogConfig = new MatDialogConfig<ReferencePickerData>();
+    dialogConfig.data = {
+      widgetType: "ternary-plot",
+      widgetId: this._widgetId,
+      allowEdit: true,
+      requiredExpressions: this.mdl.expressionIds,
+      selectedReferences: this.mdl.references,
+    };
+
+    const dialogRef = this.dialog.open(SimpleReferencePickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ReferencePickerResponse) => {
+      if (result) {
+        this.mdl.references = result.selectedReferences;
+        this.update();
+        this.saveState();
+      }
+    });
+  }
+  onToggleKey() {
+    // Empty implementation
+  }
 
   private saveState(): void {
     const visibleROIs: VisibleROI[] = [];
@@ -652,6 +730,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         expressionIDs: this.mdl.expressionIds,
         visibleROIs: visibleROIs,
         showMmol: this.mdl.showMmol,
+        referenceIds: this.mdl.references.map(ref => ref.id),
       })
     );
   }
