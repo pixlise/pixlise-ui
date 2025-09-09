@@ -1,9 +1,3 @@
-import { DetectorConfig } from "../generated-protos/detector-config";
-import { XRFLine } from "./XRFLine";
-import { XrayMaterial, calcEscapeLines } from "./escape-line-calc";
-import { PeriodicTableDB, PeriodicTableItem } from "./periodic-table-db";
-import { rawPeriodicTable } from "./rawPeriodicTable";
-
 export class ElementLine {
   constructor(
     public IUPAC: string,
