@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { EscapeLine, ElementLine } from "./xrf-line-database";
+import { EscapeLine, ElementLine } from "./xrf-line-data";
 
 
 export enum XRFLineType {
