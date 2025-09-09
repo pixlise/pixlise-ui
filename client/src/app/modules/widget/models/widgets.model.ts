@@ -158,7 +158,7 @@ export const WIDGETS = {
     controlConfiguration: {},
   },
   "scan-3d-view": {
-    name: "3D View",
+    name: "3D View (EXPERIMENTAL)",
     description: "3D View",
     hasExpressions: true,
     widgetComponent: null,

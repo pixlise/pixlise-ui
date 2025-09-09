@@ -203,7 +203,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setLayerOpacity(opacity);
   }
 
-  private _drawWireframe = true;
+  private _drawWireframe = false;
   get drawWireframe(): boolean {
     return this._drawWireframe;
   }

@@ -4,3 +4,15 @@
   height: 100%;
   width: 100%;
 }
+.overlay {
+  display: block;
+  position: absolute;
+  left: 40%;
+  bottom: 4px;
+
+  background-color: darkred;
+  color: black;
+  
+  padding: 8px;
+  border-radius: 8px;
+}

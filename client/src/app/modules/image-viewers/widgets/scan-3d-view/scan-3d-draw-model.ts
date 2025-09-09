@@ -50,8 +50,8 @@ export class Scan3DDrawModel {
   ): Observable<void> {
     const meshData = new PMCMeshData(scanEntries, beamLocations, contextImgMdl, image);
 
-    this._pointSizeSelected = meshData.maxWorldMeshSize / 1500;
-    this._footprintSize = this._pointSizeSelected * 0.5;//meshData.maxWorldMeshSize / 1000;
+    this._pointSizeSelected = meshData.maxWorldMeshSize / 1000;
+    this._footprintSize = this._pointSizeSelected;//meshData.maxWorldMeshSize / 1000;
     //this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
     this._pointSizeAttenuated = this._pointSizeSelected;
 
