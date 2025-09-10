@@ -150,8 +150,7 @@
               ],
               "outputHashing": "all",
               "sourceMap": true,
-              "optimization": true,
-              "aot": false
+              "optimization": true
             },
             "development": {
               "optimization": false,
