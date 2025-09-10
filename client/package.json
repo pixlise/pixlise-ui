@@ -13,7 +13,7 @@
     "lint": "ng lint",
     "assets:backup": "mkdir -p /tmp/pixlise-assets/assets/ && mv ./dist/pixlise/browser/assets /tmp/pixlise-assets/assets/ && ls -al /tmp/pixlise-assets/assets/",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise/browser/ && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise/browser",
-    "assets:replace": "mv /tmp/pixlise-assets/assets ./dist/pixlise/browser/ && ls -al ./dist/pixlise/browser/assets/"
+    "assets:replace": "mv /tmp/pixlise-assets/assets/assets ./dist/pixlise/browser/assets/ && ls -al ./dist/pixlise/browser/assets/"
   },
   "prettier": {
     "overrides": [
