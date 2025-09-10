@@ -144,11 +144,11 @@ jobs:
             export SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
             #export SENTRY_LOG_LEVEL=debug
             npm run build
-            ls -al ./dist
-            ls -al ./dist/pixlise
-            ls -al ./dist/pixlise/browser
-            ls -al ./dist/pixlise/browser/assets
-            ls -al ./dist/pixlise/browser/assets/assets
+            # ls -al ./dist
+            # ls -al ./dist/pixlise
+            # ls -al ./dist/pixlise/browser
+            # ls -al ./dist/pixlise/browser/assets
+            # ls -al ./dist/pixlise/browser/assets/assets
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
