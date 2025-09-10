@@ -1,12 +1,16 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { AuthService, User } from "@auth0/auth0-angular";
+
 import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
+
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
-import { DataExporterService } from "src/app/modules/analysis/analysis.module";
-import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
+
+import { DataExporterService } from "src/app/modules/analysis/services/exporter.service";
 import { AnalysisLayoutService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
+import { WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 import {
   WidgetExportData,
