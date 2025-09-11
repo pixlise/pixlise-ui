@@ -270,9 +270,9 @@
       border-bottom: 1px solid rgb(var(--clr-gray-60));
 
       cursor: pointer;
-      &:hover {
-        background-color: #454c50;
-      }
+      // &:hover {
+      //   background-color: #454c50;
+      // }
 
       .entry-idx {
         display: flex;
@@ -284,6 +284,15 @@
       action-button {
         margin-right: 16px;
       }
+    }
+
+    .pmc-highlight {
+      //background-color: rgb(var(--clr-gray-80));
+      background-color: #454c50;
+    }
+
+    .pmc-selected {
+      background-color: rgb(var(--clr-gray-80));
     }
   }
 }
