@@ -210,12 +210,12 @@ export class LinearChartAxis extends ChartAxis {
     const valueStart = this.canvasToValue(startPx);
     let valueEnd = this.canvasToValue(endPx);
 
-    if (valueEnd > this.maxValue * 2) {
+    if (valueEnd > 0 && valueEnd > this.maxValue * 2) {
       valueEnd = this.maxValue * 2;
     }
 
     const maxNumSpaces = Math.abs(endPx - startPx) / this._minPixelsBetweenTicks; // dont need them more than this many px apart
-    const spacing = niceNum((valueEnd - valueStart) / maxNumSpaces);
+    const spacing = Math.abs(niceNum((valueEnd - valueStart) / maxNumSpaces));
 
     let roundedValueStart = Math.ceil(valueStart / spacing) * spacing;
     let roundedValueEnd = Math.ceil(valueEnd / spacing) * spacing;
