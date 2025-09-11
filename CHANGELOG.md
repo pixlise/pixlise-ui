@@ -1,4 +1,8 @@
-## 4.73.0 (LATEST)
+## 4.74.0 (LATEST)
+
+- Forced rebuild of PIXLISE due to https://news.ycombinator.com/item?id=45169794
+
+## 4.73.0 (2025-09-05)
 
 ### New Features
 - **Reference Picker**: Adds a reference picker to the binary and ternary charts. This allows you to select a reference from a list of references and apply it to the chart.
@@ -7,7 +11,6 @@
 
 ### Bug Fixes
 - Fixes issue with context image where display value ranges were not being saved correctly for expression groups (like RGB Mix)
-
 
 ## 4.72.0 (2025-08-21)
 
