@@ -27,7 +27,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { combineLatest, Observable, Subscription } from "rxjs";
@@ -35,21 +41,45 @@ import { combineLatest, Observable, Subscription } from "rxjs";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
-import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ScanListReq, ScanListResp, ScanListUpd, ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
-import { ScanDataType, scanInstrumentFromJSON, scanInstrumentToJSON, ScanItem } from "src/app/generated-protos/scan";
+import {
+  APIDataService,
+  PickerDialogComponent,
+  SnackbarService,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  ScanListReq,
+  ScanListResp,
+  ScanListUpd,
+  ScanMetaWriteReq,
+  ScanMetaWriteResp,
+} from "src/app/generated-protos/scan-msgs";
+import {
+  ScanDataType,
+  scanInstrumentFromJSON,
+  scanInstrumentToJSON,
+  ScanItem,
+} from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
-import { FilterDialogComponent, FilterDialogData } from "../../atoms/filter-dialog/filter-dialog.component";
+import {
+  FilterDialogComponent,
+  FilterDialogData,
+} from "../../atoms/filter-dialog/filter-dialog.component";
 
 import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { HelpMessage } from "src/app/utils/help-message";
 import { httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
-import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
+import {
+  PickerDialogItem,
+  PickerDialogData,
+} from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
+import {
+  ImageGetDefaultReq,
+  ImageGetDefaultResp,
+} from "src/app/generated-protos/image-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
 import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
@@ -57,9 +87,18 @@ import { ScanInstrument } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { TagService } from "../../../../tags/services/tag.service";
 import { Tag } from "../../../../../generated-protos/tags";
-import { ScanConfiguration, ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
-import { ScreenConfigurationListReq, ScreenConfigurationListResp } from "../../../../../generated-protos/screen-configuration-msgs";
-import { generateTemplateConfiguration, ScreenTemplate } from "../../../../analysis/models/screen-configuration.model";
+import {
+  ScanConfiguration,
+  ScreenConfiguration,
+} from "../../../../../generated-protos/screen-configuration";
+import {
+  ScreenConfigurationListReq,
+  ScreenConfigurationListResp,
+} from "../../../../../generated-protos/screen-configuration-msgs";
+import {
+  generateTemplateConfiguration,
+  ScreenTemplate,
+} from "../../../../analysis/models/screen-configuration.model";
 import { TabLinks } from "../../../../../models/TabLinks";
 import EditorConfig from "../../../../code-editor/models/editor-config";
 import { PushButtonComponent } from "../../../../pixlisecore/components/atoms/buttons/push-button/push-button.component";
@@ -77,10 +116,7 @@ import { UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 
 class SummaryItem {
-  constructor(
-    public label: string,
-    public value: string
-  ) {}
+  constructor(public label: string, public value: string) {}
 }
 
 @Component({
@@ -95,7 +131,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
   @ViewChild("newWorkspaceButton") newWorkspaceButton: ElementRef | undefined;
-  @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton: ElementRef | undefined;
+  @ViewChild("openWorkspaceOptionsButton") openWorkspaceOptionsButton:
+    | ElementRef
+    | undefined;
   @ViewChild("descriptionEditMode") descriptionEditMode!: ElementRef;
   @ViewChild("manageCacheBtn") manageCacheBtn!: ElementRef;
 
@@ -106,7 +144,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   public workspaces: ScreenConfiguration[] = [];
   public filteredWorkspaces: ScreenConfiguration[] = [];
-  public snapshots: Map<string, ScreenConfiguration[]> = new Map<string, ScreenConfiguration[]>();
+  public snapshots: Map<string, ScreenConfiguration[]> = new Map<
+    string,
+    ScreenConfiguration[]
+  >();
 
   selectedWorkspace: ScreenConfiguration | null = null;
   selectedWorkspaceName: string = "";
@@ -144,7 +185,19 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   private _userCanEdit: boolean = false;
 
-  private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
+  private _filter: DatasetFilter = new DatasetFilter(
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  );
   filterTags: string[] = [];
 
   private _tags: Map<string, Tag> = new Map<string, Tag>();
@@ -155,7 +208,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   selectedScanDescription: string = "";
   selectedScanTags: string[] = [];
 
-  selectedTab: "description" | "details" | "workspaces" | "snapshots" = "description";
+  selectedTab: "description" | "details" | "workspaces" | "snapshots" =
+    "description";
   descriptionModes: string[] = ["View", "Edit"];
   descriptionMode: "View" | "Edit" = "View";
   expandTags: boolean = false;
@@ -175,7 +229,15 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   public newWorkspaceScans: string[] = [];
   public newWorkspaceSelectedScans: Set<string> = new Set<string>();
 
-  public workspaceListingColumns = ["Creator", "Name", "Description", "Datasets", "Last Updated", "Tags", "Snapshots"];
+  public workspaceListingColumns = [
+    "Creator",
+    "Name",
+    "Description",
+    "Datasets",
+    "Last Updated",
+    "Tags",
+    "Snapshots",
+  ];
   public sortWorkspacesBy: string = "Last Updated";
   public sortWorkspacesAsc: boolean = false;
 
@@ -203,18 +265,21 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._authService.idTokenClaims$.subscribe({
-        next: claims => {
+        next: (claims) => {
           if (claims) {
             // This all went unused during public user feature additions
             if (Permissions.permissionCount(claims) <= 0) {
               // User has no permissions at all, admins would've set them this way!
               // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
             } else {
-              this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
+              this._userCanEdit = Permissions.hasPermissionSet(
+                claims,
+                Permissions.permissionEditDataset
+              );
             }
           }
         },
-        error: err => {
+        error: (err) => {
           this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
         },
       })
@@ -223,7 +288,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._groupsService.groupsChanged$.subscribe(() => {
         // Check how many groups the user has joined, so we can show the group management button if needed
-        const groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
+        const groupsWithAccess = this._groupsService.groups.filter(
+          (group) =>
+            group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN
+        );
         this.publicOnlyUser = groupsWithAccess.length <= 1;
       })
     );
@@ -235,13 +303,13 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     );
 
     this._subs.add(
-      this._taggingService.tags$.subscribe(async tags => {
+      this._taggingService.tags$.subscribe(async (tags) => {
         this._tags = tags;
       })
     );
 
     this._subs.add(
-      this._analysisLayoutService.availableScans$.subscribe(scans => {
+      this._analysisLayoutService.availableScans$.subscribe((scans) => {
         this.allScans = scans;
 
         // Get unique instrument list
@@ -251,11 +319,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         }
         this.possibleInstruments = Array.from(instruments)
           .sort()
-          .map(x => scanInstrumentToJSON(x));
+          .map((x) => scanInstrumentToJSON(x));
 
         this.onSearchAddScanList(this._newWorkspaceScanSearchText);
         this.idToScan = {};
-        scans.forEach(scan => {
+        scans.forEach((scan) => {
           this.idToScan[scan.id] = scan;
         });
       })
@@ -283,7 +351,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   checkListingMode(): void {
     let workspacesMode = localStorage?.getItem("workspacesListingMode");
     if (workspacesMode) {
-      this._searchType = workspacesMode === "workspaces" ? "workspaces" : "datasets";
+      this._searchType =
+        workspacesMode === "workspaces" ? "workspaces" : "datasets";
     }
   }
 
@@ -343,7 +412,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   get hasWorkspaceDescriptionChanged(): boolean {
-    return this.selectedWorkspaceDescription !== this.selectedWorkspace?.description;
+    return (
+      this.selectedWorkspaceDescription !== this.selectedWorkspace?.description
+    );
   }
 
   get hasWorkspaceTitleChanged(): boolean {
@@ -351,7 +422,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onWorkspaceTitleEditToggle(disableToggleOff: boolean = false): void {
-    if ((disableToggleOff && this.workspaceTitleEditMode) || (!this.selectedWorkspace?.owner?.canEdit && !this.workspaceTitleEditMode)) {
+    if (
+      (disableToggleOff && this.workspaceTitleEditMode) ||
+      (!this.selectedWorkspace?.owner?.canEdit && !this.workspaceTitleEditMode)
+    ) {
       return;
     }
 
@@ -362,7 +436,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onTitleEditToggle(disableToggleOff: boolean = false): void {
-    if ((disableToggleOff && this.scanTitleEditMode) || (!this.userCanEdit && !this.scanTitleEditMode)) {
+    if (
+      (disableToggleOff && this.scanTitleEditMode) ||
+      (!this.userCanEdit && !this.scanTitleEditMode)
+    ) {
       return;
     }
 
@@ -387,7 +464,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     this.selectedScanTags = tags;
-    this.saveMetadata(this.selectedScan.id, this.selectedScan.title, this.selectedScan.description, this.selectedScanTags);
+    this.saveMetadata(
+      this.selectedScan.id,
+      this.selectedScan.title,
+      this.selectedScan.description,
+      this.selectedScanTags
+    );
   }
 
   onWorkspaceTagChange(tags: string[]): void {
@@ -400,7 +482,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   get selectedScanTagsDisplay(): Tag[] {
-    return this.selectedScanTags.map(tag => this._tags.get(tag) || Tag.create({ id: tag, name: tag }));
+    return this.selectedScanTags.map(
+      (tag) => this._tags.get(tag) || Tag.create({ id: tag, name: tag })
+    );
   }
 
   onSaveWorkspaceTitle(): void {
@@ -411,9 +495,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.workspaceTitleEditMode = false;
     this.selectedWorkspace.name = this.selectedWorkspaceName;
 
-    this._analysisLayoutService.writeScreenConfiguration(this.selectedWorkspace, undefined, false, () => {
-      this.onSearchWorkspaces();
-    });
+    this._analysisLayoutService.writeScreenConfiguration(
+      this.selectedWorkspace,
+      undefined,
+      false,
+      () => {
+        this.onSearchWorkspaces();
+      }
+    );
   }
 
   onSaveWorkspaceMetadata(): void {
@@ -432,9 +521,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     workspace.description = this.selectedWorkspaceDescription;
     workspace.tags = this.selectedWorkspaceTags;
 
-    this._analysisLayoutService.writeScreenConfiguration(workspace, undefined, false, () => {
-      this.onSearchWorkspaces();
-    });
+    this._analysisLayoutService.writeScreenConfiguration(
+      workspace,
+      undefined,
+      false,
+      () => {
+        this.onSearchWorkspaces();
+      }
+    );
   }
 
   onSaveMetadata(): void {
@@ -444,7 +538,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     this.descriptionMode = "View";
     this.scanTitleEditMode = false;
-    this.saveMetadata(this.selectedScan.id, this.selectedScanTitle, this.selectedScanDescription, this.selectedScanTags);
+    this.saveMetadata(
+      this.selectedScan.id,
+      this.selectedScanTitle,
+      this.selectedScanDescription,
+      this.selectedScanTags
+    );
   }
 
   onDeleteWorkspace(): void {
@@ -452,47 +551,61 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._analysisLayoutService.deleteScreenConfiguration(this.selectedWorkspace.id, () => {
-      this.onSearchWorkspaces();
-    });
+    this._analysisLayoutService.deleteScreenConfiguration(
+      this.selectedWorkspace.id,
+      () => {
+        this.onSearchWorkspaces();
+      }
+    );
     this.clearSelection();
   }
 
-  saveMetadata(scanId: string, title: string, description: string, tags: string[]): void {
-    this._dataService.sendScanMetaWriteRequest(ScanMetaWriteReq.create({ scanId, title, description, tags })).subscribe({
-      next: (resp: ScanMetaWriteResp) => {
-        this._snackService.openSuccess("Metadata updated for scan");
-        let selectedScan = this.scans.find(scan => scan.id === this.selectedScan?.id);
-        let titleChanged = selectedScan?.title !== title;
-        if (selectedScan) {
-          selectedScan.title = title;
-          selectedScan.description = description;
-          selectedScan.tags = tags;
+  saveMetadata(
+    scanId: string,
+    title: string,
+    description: string,
+    tags: string[]
+  ): void {
+    this._dataService
+      .sendScanMetaWriteRequest(
+        ScanMetaWriteReq.create({ scanId, title, description, tags })
+      )
+      .subscribe({
+        next: (resp: ScanMetaWriteResp) => {
+          this._snackService.openSuccess("Metadata updated for scan");
+          let selectedScan = this.scans.find(
+            (scan) => scan.id === this.selectedScan?.id
+          );
+          let titleChanged = selectedScan?.title !== title;
+          if (selectedScan) {
+            selectedScan.title = title;
+            selectedScan.description = description;
+            selectedScan.tags = tags;
 
-          let allScans = this._analysisLayoutService.availableScans$.value;
-          allScans = allScans.map(scan => {
-            if (scan.id === selectedScan.id) {
-              scan.title = title;
-              scan.description = description;
-              scan.tags = tags;
+            let allScans = this._analysisLayoutService.availableScans$.value;
+            allScans = allScans.map((scan) => {
+              if (scan.id === selectedScan.id) {
+                scan.title = title;
+                scan.description = description;
+                scan.tags = tags;
+              }
+              return scan;
+            });
+
+            this._analysisLayoutService.availableScans$.next(allScans);
+
+            this.filterScans();
+            if (titleChanged) {
+              this.onSearch();
             }
-            return scan;
-          });
 
-          this._analysisLayoutService.availableScans$.next(allScans);
-
-          this.filterScans();
-          if (titleChanged) {
-            this.onSearch();
+            this.updateEditFields(selectedScan);
           }
-
-          this.updateEditFields(selectedScan);
-        }
-      },
-      error: err => {
-        this._snackService.openError(err);
-      },
-    });
+        },
+        error: (err) => {
+          this._snackService.openError(err);
+        },
+      });
   }
 
   onCloseNewWorkspaceDialog(): void {
@@ -501,7 +614,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.newWorkspaceTags = [];
     this.newWorkspaceScans = [];
 
-    if (this.newWorkspaceButton && this.newWorkspaceButton instanceof PushButtonComponent) {
+    if (
+      this.newWorkspaceButton &&
+      this.newWorkspaceButton instanceof PushButtonComponent
+    ) {
       (this.newWorkspaceButton as PushButtonComponent).closeDialog();
     }
   }
@@ -520,7 +636,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onRemoveScanFromNewWorkspace(scanId: string): void {
-    this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scanId);
+    this.newWorkspaceScans = this.newWorkspaceScans.filter(
+      (id) => id !== scanId
+    );
     this.newWorkspaceSelectedScans.delete(scanId);
   }
 
@@ -532,7 +650,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onSearchAddScanList(text: string) {
-    this.newWorkspaceAddScanList = sortScans(this.allScans.filter(scan => !text || scan.title.toLowerCase().includes(text.toLowerCase())));
+    this.newWorkspaceAddScanList = sortScans(
+      this.allScans.filter(
+        (scan) => !text || scan.title.toLowerCase().includes(text.toLowerCase())
+      )
+    );
   }
 
   onAddScanSearchClick(evt: any) {
@@ -557,14 +679,18 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let defaultQuantReqs: Observable<QuantificationSummary | null>[] = this.newWorkspaceScans.map(scanId => {
-      return this._analysisLayoutService.getDefaultQuantForScan(scanId);
-    });
+    let defaultQuantReqs: Observable<QuantificationSummary | null>[] =
+      this.newWorkspaceScans.map((scanId) => {
+        return this._analysisLayoutService.getDefaultQuantForScan(scanId);
+      });
 
-    combineLatest(defaultQuantReqs).subscribe(defaultQuants => {
+    combineLatest(defaultQuantReqs).subscribe((defaultQuants) => {
       let scanConfigs: Record<string, ScanConfiguration> = {};
       this.newWorkspaceScans.forEach((scanId, index) => {
-        scanConfigs[scanId] = ScanConfiguration.create({ id: scanId, quantId: defaultQuants[index]?.id });
+        scanConfigs[scanId] = ScanConfiguration.create({
+          id: scanId,
+          quantId: defaultQuants[index]?.id,
+        });
       });
 
       let defaultScreenConfig = ScreenConfiguration.create({
@@ -574,10 +700,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         scanConfigurations: scanConfigs,
       });
 
-      this._analysisLayoutService.createNewScreenConfiguration(undefined, defaultScreenConfig, screenConfig => {
-        this.onSearchWorkspaces();
-        this.navigateToWorkspace(screenConfig.id);
-      });
+      this._analysisLayoutService.createNewScreenConfiguration(
+        undefined,
+        defaultScreenConfig,
+        (screenConfig) => {
+          this.onSearchWorkspaces();
+          this.navigateToWorkspace(screenConfig.id);
+        }
+      );
 
       this.onCloseNewWorkspaceDialog();
     });
@@ -588,10 +718,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._analysisLayoutService.createNewScreenConfiguration(this.selectedScan.id, null, screenConfig => {
-      this.onSearchWorkspaces();
-      this.navigateToWorkspace(screenConfig.id);
-    });
+    this._analysisLayoutService.createNewScreenConfiguration(
+      this.selectedScan.id,
+      null,
+      (screenConfig) => {
+        this.onSearchWorkspaces();
+        this.navigateToWorkspace(screenConfig.id);
+      }
+    );
   }
 
   updateEditFields(newScan: ScanItem): void {
@@ -624,7 +758,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._snackService.openError(this.errorString);
   }
 
-  onOpenWorkspace(workspace: ScreenConfiguration | null = this.selectedWorkspace): void {
+  onOpenWorkspace(
+    workspace: ScreenConfiguration | null = this.selectedWorkspace
+  ): void {
     if (!workspace) {
       return;
     }
@@ -639,7 +775,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     let isDefaultScan = scanId.match(/.+-[0-9]{9,9}/);
     if (isDefaultScan) {
       scanId = scanId.split("-")[1];
-      this._router.navigate([TabLinks.analysis], { queryParams: { [EditorConfig.scanIdParam]: scanId } });
+      this._router.navigate([TabLinks.analysis], {
+        queryParams: { [EditorConfig.scanIdParam]: scanId },
+      });
     } else {
       this._router.navigate([TabLinks.analysis], { queryParams: { id } });
     }
@@ -662,15 +800,23 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     if (this.selectedScan) {
       // If we've got ctrl (or cmd on mac) down, we open in new tab, otherwise open directly here
       if (forceOpenNewTab || (event && (event.ctrlKey || event.metaKey))) {
-        const url = window.location.origin + "/datasets/analysis?scan_id=" + this.selectedScan.id; // window.location.protocol + "://" window.location.host
+        const url =
+          window.location.origin +
+          "/datasets/analysis?scan_id=" +
+          this.selectedScan.id; // window.location.protocol + "://" window.location.host
         window.open(url, "_blank");
       } else {
         // Load the appropriate screen config - this is required if not running for first time (where scan id is picked up from URL - here we've called
         // clearScreenConfigurationCache() above and ended up with no screen configs loaded)
-        this._analysisLayoutService.loadScreenConfigurationFromScan(this.selectedScan.id);
+        this._analysisLayoutService.loadScreenConfigurationFromScan(
+          this.selectedScan.id
+        );
 
         // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
-        this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
+        this._router.navigate(["analysis"], {
+          relativeTo: this._route,
+          queryParams: { scan_id: this.selectedScan.id },
+        });
       }
     }
   }
@@ -680,7 +826,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Switch to the editing tab
     if (this.selectedScan) {
-      this._router.navigate(["edit-scan"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
+      this._router.navigate(["edit-scan"], {
+        relativeTo: this._route,
+        queryParams: { scan_id: this.selectedScan.id },
+      });
     }
   }
 
@@ -688,17 +837,28 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.closeOpenOptionsMenu();
 
     if (this.selectedScan) {
-      const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`);
+      const scanTitle = prompt(
+        `Enter the scan title to verify you're deleting the right one`
+      );
       if (scanTitle) {
-        this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({ scanId: this.selectedScan.id, scanNameForVerification: scanTitle })).subscribe({
-          next: (resp: ScanDeleteResp) => {
-            this._snackService.openSuccess(`Scan "${scanTitle}" deleted successfully`);
-            this.clearSelection();
-          },
-          error: err => {
-            this._snackService.openError(err);
-          },
-        });
+        this._dataService
+          .sendScanDeleteRequest(
+            ScanDeleteReq.create({
+              scanId: this.selectedScan.id,
+              scanNameForVerification: scanTitle,
+            })
+          )
+          .subscribe({
+            next: (resp: ScanDeleteResp) => {
+              this._snackService.openSuccess(
+                `Scan "${scanTitle}" deleted successfully`
+              );
+              this.clearSelection();
+            },
+            error: (err) => {
+              this._snackService.openError(err);
+            },
+          });
       }
     }
   }
@@ -727,7 +887,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       instr.push(scanInstrumentFromJSON(selInstr));
     }
 
-    this.filteredScans = filterScans(this._searchString, instr, this.filterTags, this.scans);
+    this.filteredScans = filterScans(
+      this._searchString,
+      instr,
+      this.filterTags,
+      this.scans
+    );
     this.filteredScans = sortScans(this.filteredScans);
 
     this.searchResultSummary = this.filteredScans.length + " items";
@@ -739,7 +904,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
     const id = workspace.snapshotParentId || workspace.id;
-    return this.snapshots.get(id)?.map(snapshot => snapshot.name) || [];
+    return this.snapshots.get(id)?.map((snapshot) => snapshot.name) || [];
   }
 
   getWorkspaceSearchFields(workspace: ScreenConfiguration): string[] {
@@ -747,37 +912,68 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       workspace?.name || "",
       workspace?.owner?.creatorUser?.name || "",
       workspace?.description || "",
-      workspace.scanConfigurations ? this.getScanNamesForWorkspace(workspace).join(", ") : "",
-      workspace.scanConfigurations ? Object.keys(workspace.scanConfigurations).join(", ") : "",
+      workspace.scanConfigurations
+        ? this.getScanNamesForWorkspace(workspace).join(", ")
+        : "",
+      workspace.scanConfigurations
+        ? Object.keys(workspace.scanConfigurations).join(", ")
+        : "",
       this.getWorkspaceSnapshotNames(workspace).join(", "),
     ];
   }
 
-  workspaceSort(workspaceA: ScreenConfiguration, workspaceB: ScreenConfiguration): number {
+  workspaceSort(
+    workspaceA: ScreenConfiguration,
+    workspaceB: ScreenConfiguration
+  ): number {
     if (this.sortWorkspacesBy === "Name") {
-      return this.sortWorkspacesAsc ? workspaceA.name.localeCompare(workspaceB.name) : workspaceB.name.localeCompare(workspaceA.name);
+      return this.sortWorkspacesAsc
+        ? workspaceA.name.localeCompare(workspaceB.name)
+        : workspaceB.name.localeCompare(workspaceA.name);
     } else if (this.sortWorkspacesBy === "Creator") {
       return this.sortWorkspacesAsc
-        ? (workspaceA.owner?.creatorUser?.name || "").localeCompare(workspaceB.owner?.creatorUser?.name || "")
-        : (workspaceB.owner?.creatorUser?.name || "").localeCompare(workspaceA.owner?.creatorUser?.name || "");
+        ? (workspaceA.owner?.creatorUser?.name || "").localeCompare(
+            workspaceB.owner?.creatorUser?.name || ""
+          )
+        : (workspaceB.owner?.creatorUser?.name || "").localeCompare(
+            workspaceA.owner?.creatorUser?.name || ""
+          );
     } else if (this.sortWorkspacesBy === "Description") {
       return this.sortWorkspacesAsc
-        ? (workspaceA.description || "").localeCompare(workspaceB.description || "")
-        : (workspaceB.description || "").localeCompare(workspaceA.description || "");
+        ? (workspaceA.description || "").localeCompare(
+            workspaceB.description || ""
+          )
+        : (workspaceB.description || "").localeCompare(
+            workspaceA.description || ""
+          );
     } else if (this.sortWorkspacesBy === "Datasets") {
       return this.sortWorkspacesAsc
-        ? this.getScanNamesForWorkspace(workspaceA).join(", ").localeCompare(this.getScanNamesForWorkspace(workspaceB).join(", "))
-        : this.getScanNamesForWorkspace(workspaceB).join(", ").localeCompare(this.getScanNamesForWorkspace(workspaceA).join(", "));
+        ? this.getScanNamesForWorkspace(workspaceA)
+            .join(", ")
+            .localeCompare(this.getScanNamesForWorkspace(workspaceB).join(", "))
+        : this.getScanNamesForWorkspace(workspaceB)
+            .join(", ")
+            .localeCompare(
+              this.getScanNamesForWorkspace(workspaceA).join(", ")
+            );
     } else if (this.sortWorkspacesBy === "Last Updated") {
-      return this.sortWorkspacesAsc ? workspaceA.modifiedUnixSec - workspaceB.modifiedUnixSec : workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
+      return this.sortWorkspacesAsc
+        ? workspaceA.modifiedUnixSec - workspaceB.modifiedUnixSec
+        : workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
     } else if (this.sortWorkspacesBy === "Tags") {
       return this.sortWorkspacesAsc
-        ? (workspaceA.tags || []).join(", ").localeCompare((workspaceB.tags || []).join(", "))
-        : (workspaceB.tags || []).join(", ").localeCompare((workspaceA.tags || []).join(", "));
+        ? (workspaceA.tags || [])
+            .join(", ")
+            .localeCompare((workspaceB.tags || []).join(", "))
+        : (workspaceB.tags || [])
+            .join(", ")
+            .localeCompare((workspaceA.tags || []).join(", "));
     } else if (this.sortWorkspacesBy === "Snapshots") {
       return this.sortWorkspacesAsc
-        ? this.getWorkspaceSnapshotNames(workspaceA).length - this.getWorkspaceSnapshotNames(workspaceB).length
-        : this.getWorkspaceSnapshotNames(workspaceB).length - this.getWorkspaceSnapshotNames(workspaceA).length;
+        ? this.getWorkspaceSnapshotNames(workspaceA).length -
+            this.getWorkspaceSnapshotNames(workspaceB).length
+        : this.getWorkspaceSnapshotNames(workspaceB).length -
+            this.getWorkspaceSnapshotNames(workspaceA).length;
     } else {
       return workspaceB.modifiedUnixSec - workspaceA.modifiedUnixSec;
     }
@@ -795,21 +991,30 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Filter by title, description
     this.filteredWorkspaces = this.workspaces
-      .filter(workspace => {
-        if (this.filterTags.length > 0 && !this.filterTags.some(tag => workspace.tags?.includes(tag))) {
+      .filter((workspace) => {
+        if (
+          this.filterTags.length > 0 &&
+          !this.filterTags.some((tag) => workspace.tags?.includes(tag))
+        ) {
           return false;
         }
 
         let searchFields = this.getWorkspaceSearchFields(workspace);
-        return searchFields.some(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
+        return searchFields.some((field) =>
+          field.toLowerCase().includes(this._searchString.toLowerCase())
+        );
       })
       .sort((workspaceA, workspaceB) => {
         let workspaceASearchFields = this.getWorkspaceSearchFields(workspaceA);
         let workspaceBSearchFields = this.getWorkspaceSearchFields(workspaceB);
 
         // Sort by matching order and then by timestamp
-        let aMatch = workspaceASearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
-        let bMatch = workspaceBSearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
+        let aMatch = workspaceASearchFields.findIndex((field) =>
+          field.toLowerCase().includes(this._searchString.toLowerCase())
+        );
+        let bMatch = workspaceBSearchFields.findIndex((field) =>
+          field.toLowerCase().includes(this._searchString.toLowerCase())
+        );
 
         if (aMatch == bMatch) {
           return this.workspaceSort(workspaceA, workspaceB);
@@ -820,12 +1025,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   getTagsForWorkspace(workspace: ScreenConfiguration): Tag[] {
-    return workspace.tags.map(tag => this._tags.get(tag) || Tag.create({ id: tag, name: tag }));
+    return workspace.tags.map(
+      (tag) => this._tags.get(tag) || Tag.create({ id: tag, name: tag })
+    );
   }
 
   getScanNamesForWorkspace(workspace: ScreenConfiguration): string[] {
-    return Object.keys(workspace.scanConfigurations).map(scanId => {
-      let scan = this.allScans.find(scan => scan.id === scanId);
+    return Object.keys(workspace.scanConfigurations).map((scanId) => {
+      let scan = this.allScans.find((scan) => scan.id === scanId);
       return scan?.title || scanId;
     });
   }
@@ -850,7 +1057,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
       if (match) {
         let copyCount = parseInt(match.groups?.["copyCount"] || "1");
-        newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+        newWorkspace.name = newWorkspace.name.replace(
+          matchRegex,
+          `(Copy ${copyCount + 1})`
+        );
       } else {
         newWorkspace.name += " (Copy)";
       }
@@ -861,25 +1071,48 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       workspaceId: this.selectedWorkspace.id,
     } as DuplicateWorkspaceDialogData;
 
-    const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
+    const dialogRef = this.dialog.open(
+      DuplicateWorkspaceDialogComponent,
+      dialogConfig
+    );
 
-    dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspaces();
-      if (response.shouldOpen) {
-        this.onOpenWorkspace(response.workspace);
-      }
-    });
+    dialogRef
+      .afterClosed()
+      .subscribe((response: DuplicateWorkspaceDialogResult) => {
+        this.onSearchWorkspaces();
+        if (response?.shouldOpen) {
+          this.onOpenWorkspace(response.workspace);
+        }
+      });
   }
 
-  onDuplicateClick(workspace: ScreenConfiguration, response: { value: string; middleButtonClicked: boolean }): void {
-    this.onDuplicateSnapshot(workspace, response?.value, !response?.middleButtonClicked);
+  onDuplicateClick(
+    workspace: ScreenConfiguration,
+    response: { value: string; middleButtonClicked: boolean }
+  ): void {
+    this.onDuplicateSnapshot(
+      workspace,
+      response?.value,
+      !response?.middleButtonClicked
+    );
   }
 
-  onDuplicateLatestClick(parentId: string, response: { value: string; middleButtonClicked: boolean }): void {
-    this.onDuplicateLatestSnapshot(parentId, response?.value, !response?.middleButtonClicked);
+  onDuplicateLatestClick(
+    parentId: string,
+    response: { value: string; middleButtonClicked: boolean }
+  ): void {
+    this.onDuplicateLatestSnapshot(
+      parentId,
+      response?.value,
+      !response?.middleButtonClicked
+    );
   }
 
-  onDuplicateSnapshot(workspace: ScreenConfiguration | null, workspaceName: string = "", openWorkspace: boolean = true): void {
+  onDuplicateSnapshot(
+    workspace: ScreenConfiguration | null,
+    workspaceName: string = "",
+    openWorkspace: boolean = true
+  ): void {
     if (!workspace) {
       return;
     }
@@ -897,7 +1130,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
       if (match) {
         let copyCount = parseInt(match.groups?.["copyCount"] || "1");
-        newWorkspace.name = newWorkspace.name.replace(matchRegex, `(Copy ${copyCount + 1})`);
+        newWorkspace.name = newWorkspace.name.replace(
+          matchRegex,
+          `(Copy ${copyCount + 1})`
+        );
       } else {
         newWorkspace.name += " (Copy)";
       }
@@ -909,69 +1145,94 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       workspaceId: workspace.id,
     } as DuplicateWorkspaceDialogData;
 
-    const dialogRef = this.dialog.open(DuplicateWorkspaceDialogComponent, dialogConfig);
+    const dialogRef = this.dialog.open(
+      DuplicateWorkspaceDialogComponent,
+      dialogConfig
+    );
 
-    dialogRef.afterClosed().subscribe((response: DuplicateWorkspaceDialogResult) => {
-      this.onSearchWorkspaces();
-      if (response.shouldOpen) {
-        this.onOpenWorkspace(response.workspace);
-      }
-    });
+    dialogRef
+      .afterClosed()
+      .subscribe((response: DuplicateWorkspaceDialogResult) => {
+        this.onSearchWorkspaces();
+        if (response?.shouldOpen) {
+          this.onOpenWorkspace(response.workspace);
+        }
+      });
   }
 
-  onDuplicateLatestSnapshot(parentId: string, workspaceName: string = "", openWorkspace: boolean = true): void {
-    let workspace = this.snapshots.get(parentId)?.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec)[0];
+  onDuplicateLatestSnapshot(
+    parentId: string,
+    workspaceName: string = "",
+    openWorkspace: boolean = true
+  ): void {
+    let workspace = this.snapshots
+      .get(parentId)
+      ?.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec)[0];
     if (workspace) {
       this.onDuplicateSnapshot(workspace, workspaceName, openWorkspace);
     }
   }
 
   onSearchWorkspaces(): void {
-    this._dataService.sendScreenConfigurationListRequest(ScreenConfigurationListReq.create()).subscribe({
-      next: (resp: ScreenConfigurationListResp) => {
-        let workspaces = resp.screenConfigurations;
-        let snapshots: Map<string, ScreenConfiguration[]> = new Map<string, ScreenConfiguration[]>();
-        workspaces.forEach(workspace => {
-          if (workspace.snapshotParentId) {
-            snapshots.set(workspace.snapshotParentId, snapshots.get(workspace.snapshotParentId) || []);
-            snapshots.get(workspace.snapshotParentId)?.push(workspace);
-          } else {
-            if (!snapshots.has(workspace.id)) {
-              snapshots.set(workspace.id, [workspace]);
+    this._dataService
+      .sendScreenConfigurationListRequest(ScreenConfigurationListReq.create())
+      .subscribe({
+        next: (resp: ScreenConfigurationListResp) => {
+          let workspaces = resp.screenConfigurations;
+          let snapshots: Map<string, ScreenConfiguration[]> = new Map<
+            string,
+            ScreenConfiguration[]
+          >();
+          workspaces.forEach((workspace) => {
+            if (workspace.snapshotParentId) {
+              snapshots.set(
+                workspace.snapshotParentId,
+                snapshots.get(workspace.snapshotParentId) || []
+              );
+              snapshots.get(workspace.snapshotParentId)?.push(workspace);
             } else {
-              snapshots.get(workspace.id)?.push(workspace);
+              if (!snapshots.has(workspace.id)) {
+                snapshots.set(workspace.id, [workspace]);
+              } else {
+                snapshots.get(workspace.id)?.push(workspace);
+              }
             }
-          }
-        });
+          });
 
-        this.snapshots = snapshots;
+          this.snapshots = snapshots;
 
-        let latestSnapshots: ScreenConfiguration[] = [];
-        this.snapshots.forEach((snapshots, parentId) => {
-          if (!snapshots || snapshots.length === 0) {
-            return;
-          }
+          let latestSnapshots: ScreenConfiguration[] = [];
+          this.snapshots.forEach((snapshots, parentId) => {
+            if (!snapshots || snapshots.length === 0) {
+              return;
+            }
 
-          snapshots.sort((a, b) => (b.owner?.createdUnixSec || b.modifiedUnixSec) - (a.owner?.createdUnixSec || a.modifiedUnixSec));
+            snapshots.sort(
+              (a, b) =>
+                (b.owner?.createdUnixSec || b.modifiedUnixSec) -
+                (a.owner?.createdUnixSec || a.modifiedUnixSec)
+            );
 
-          // Try to find the parent workspace, if can't find, then use latest snapshot
-          let parentWorkspace = snapshots.find(snapshot => snapshot.id === parentId);
-          if (parentWorkspace) {
-            latestSnapshots.push(parentWorkspace);
-          } else {
-            latestSnapshots.push(snapshots[0]);
-          }
-        });
+            // Try to find the parent workspace, if can't find, then use latest snapshot
+            let parentWorkspace = snapshots.find(
+              (snapshot) => snapshot.id === parentId
+            );
+            if (parentWorkspace) {
+              latestSnapshots.push(parentWorkspace);
+            } else {
+              latestSnapshots.push(snapshots[0]);
+            }
+          });
 
-        latestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
+          latestSnapshots.sort((a, b) => b.modifiedUnixSec - a.modifiedUnixSec);
 
-        this.workspaces = latestSnapshots;
-        this.filterWorkspaces();
-      },
-      error: err => {
-        console.error(err);
-      },
-    });
+          this.workspaces = latestSnapshots;
+          this.filterWorkspaces();
+        },
+        error: (err) => {
+          console.error(err);
+        },
+      });
   }
 
   get selectedWorkspaceSnapshots(): ScreenConfiguration[] {
@@ -1029,10 +1290,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
         }
 
-        const scanIds = this.scans.map(item => item.id);
+        const scanIds = this.scans.map((item) => item.id);
         this.getDefaultImages(scanIds);
       },
-      error: err => {
+      error: (err) => {
         this.loading = false;
         console.error(err);
 
@@ -1046,19 +1307,24 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   private getDefaultImages(scanIds: string[]) {
-    this._cachedDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: scanIds })).subscribe((resp: ImageGetDefaultResp) => {
-      this.scanDefaultImages.clear();
-      for (const id of Object.keys(resp.defaultImagesPerScanId)) {
-        this.scanDefaultImages.set(id, resp.defaultImagesPerScanId[id]);
-      }
-    });
+    this._cachedDataService
+      .getDefaultImage(ImageGetDefaultReq.create({ scanIds: scanIds }))
+      .subscribe((resp: ImageGetDefaultResp) => {
+        this.scanDefaultImages.clear();
+        for (const id of Object.keys(resp.defaultImagesPerScanId)) {
+          this.scanDefaultImages.set(id, resp.defaultImagesPerScanId[id]);
+        }
+      });
   }
 
   onFilters(event: MouseEvent): void {
     const dialogConfig = new MatDialogConfig();
 
     const filter = this._filter.copy();
-    dialogConfig.data = new FilterDialogData(filter, new ElementRef(event.currentTarget));
+    dialogConfig.data = new FilterDialogData(
+      filter,
+      new ElementRef(event.currentTarget)
+    );
 
     const dialogRef = this.dialog.open(FilterDialogComponent, dialogConfig);
 
@@ -1081,15 +1347,26 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       items.push(new PickerDialogItem(instr, instr, "", true));
     }
 
-    dialogConfig.data = new PickerDialogData(true, true, false, false, items, this._tilesService.selectedInstruments, "", new ElementRef(event.currentTarget));
+    dialogConfig.data = new PickerDialogData(
+      true,
+      true,
+      false,
+      false,
+      items,
+      this._tilesService.selectedInstruments,
+      "",
+      new ElementRef(event.currentTarget)
+    );
 
     const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
-    dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
-      if (ids) {
-        this._tilesService.selectedInstruments = ids;
-        this.onSearch();
+    dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
+      (ids: string[]) => {
+        if (ids) {
+          this._tilesService.selectedInstruments = ids;
+          this.onSearch();
+        }
       }
-    });
+    );
   }
 
   onSelectWorkspace(workspace: ScreenConfiguration): void {
@@ -1098,14 +1375,24 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.selectedWorkspaceDescription = workspace.description || "";
     this.selectedWorkspaceTags = workspace.tags || [];
 
-    const lastModifiedTimeStr = new Date(workspace.modifiedUnixSec * 1000).toLocaleString();
+    const lastModifiedTimeStr = new Date(
+      workspace.modifiedUnixSec * 1000
+    ).toLocaleString();
 
     this.selectedWorkspaceSummaryItems = [
       new SummaryItem("Creator:", workspace.owner?.creatorUser?.name || ""),
       new SummaryItem("Last Modified:", lastModifiedTimeStr),
       new SummaryItem("Number of Tabs:", workspace.layouts.length.toString()),
-      new SummaryItem("Total Chart Count:", workspace.layouts.reduce((acc, layout) => acc + layout.widgets.length, 0).toString()),
-      new SummaryItem("Datasets:", this.getScanNamesForWorkspace(workspace).join(", ")),
+      new SummaryItem(
+        "Total Chart Count:",
+        workspace.layouts
+          .reduce((acc, layout) => acc + layout.widgets.length, 0)
+          .toString()
+      ),
+      new SummaryItem(
+        "Datasets:",
+        this.getScanNamesForWorkspace(workspace).join(", ")
+      ),
     ];
 
     if (workspace.layouts.length > 0) {
@@ -1114,7 +1401,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         templateName: workspace.layouts[0].tabName,
         templateIcon: "assets/tab-icons/analysis.svg",
         layout: workspace.layouts[0],
-        screenConfiguration: generateTemplateConfiguration(workspace.layouts[0]),
+        screenConfiguration: generateTemplateConfiguration(
+          workspace.layouts[0]
+        ),
       };
     } else {
       this.selectedWorkspaceTemplate = null;
@@ -1125,11 +1414,14 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // Add to new workspace
     if (this.newWorkspaceSelectedScans.has(scan.id)) {
       this.newWorkspaceSelectedScans.delete(scan.id);
-      this.newWorkspaceScans = this.newWorkspaceScans.filter(id => id !== scan.id);
+      this.newWorkspaceScans = this.newWorkspaceScans.filter(
+        (id) => id !== scan.id
+      );
       // If we're removing the last one, set the last one as the selected one
       if (this.newWorkspaceScans.length > 0) {
-        let lastScanId = this.newWorkspaceScans[this.newWorkspaceScans.length - 1];
-        let lastScan = this.allScans.find(scan => scan.id === lastScanId);
+        let lastScanId =
+          this.newWorkspaceScans[this.newWorkspaceScans.length - 1];
+        let lastScan = this.allScans.find((scan) => scan.id === lastScanId);
         if (lastScan) {
           this.onSelect(lastScan, false);
         } else {
@@ -1160,22 +1452,46 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Fill these so they display
     this.selectedScanSummaryItems = [
-      new SummaryItem("Instrument:", scanInstrumentToJSON(this.selectedScan.instrument)),
+      new SummaryItem(
+        "Instrument:",
+        scanInstrumentToJSON(this.selectedScan.instrument)
+      ),
       new SummaryItem("Detector Config:", this.selectedScan.instrumentConfig),
-      new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])),
-      new SummaryItem("Max Value:", this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])),
-      new SummaryItem("Normal Spectra:", this.spectraCount(this.selectedScan.contentCounts["NormalSpectra"])),
-      new SummaryItem("Dwell Spectra:", this.spectraCount(this.selectedScan.contentCounts["DwellSpectra"])),
-      new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"])),
+      new SummaryItem(
+        "Bulk Sum:",
+        this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])
+      ),
+      new SummaryItem(
+        "Max Value:",
+        this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])
+      ),
+      new SummaryItem(
+        "Normal Spectra:",
+        this.spectraCount(this.selectedScan.contentCounts["NormalSpectra"])
+      ),
+      new SummaryItem(
+        "Dwell Spectra:",
+        this.spectraCount(this.selectedScan.contentCounts["DwellSpectra"])
+      ),
+      new SummaryItem(
+        "Pseudo intensities:",
+        this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"])
+      ),
     ];
 
     for (const sdt of this.selectedScan.dataTypes.sort()) {
       if (sdt.dataType == ScanDataType.SD_IMAGE) {
-        this.selectedScanSummaryItems.push(new SummaryItem("MCC Images:", sdt.count.toString()));
+        this.selectedScanSummaryItems.push(
+          new SummaryItem("MCC Images:", sdt.count.toString())
+        );
       } else if (sdt.dataType == ScanDataType.SD_XRF) {
-        this.selectedScanSummaryItems.push(new SummaryItem("PMCs:", sdt.count.toString()));
+        this.selectedScanSummaryItems.push(
+          new SummaryItem("PMCs:", sdt.count.toString())
+        );
       } else if (sdt.dataType == ScanDataType.SD_RGBU) {
-        this.selectedScanSummaryItems.push(new SummaryItem("RGBU Images:", sdt.count.toString()));
+        this.selectedScanSummaryItems.push(
+          new SummaryItem("RGBU Images:", sdt.count.toString())
+        );
       }
     }
 
@@ -1193,24 +1509,44 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         solLabel = "Test Date:";
         testSOLAsDate += " (" + sol + ")";
       }
-      this.selectedScanTrackingItems.push(new SummaryItem(solLabel, testSOLAsDate));
+      this.selectedScanTrackingItems.push(
+        new SummaryItem(solLabel, testSOLAsDate)
+      );
 
-      this.selectedScanTrackingItems.push(new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""));
+      this.selectedScanTrackingItems.push(
+        new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || "")
+      );
     }
 
-    if (this.selectedScan.instrument == ScanInstrument.PIXL_FM || this.selectedScan.instrument == ScanInstrument.PIXL_EM) {
-      this.selectedScanTrackingItems.push(new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""));
+    if (
+      this.selectedScan.instrument == ScanInstrument.PIXL_FM ||
+      this.selectedScan.instrument == ScanInstrument.PIXL_EM
+    ) {
+      this.selectedScanTrackingItems.push(
+        new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || "")
+      );
     }
 
     if (this.selectedScan.instrument == ScanInstrument.PIXL_FM) {
-      this.selectedScanTrackingItems.push(new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""));
+      this.selectedScanTrackingItems.push(
+        new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || "")
+      );
     }
 
-    this.selectedScanTrackingItems.push(new SummaryItem("PIXLISE ID:", this.selectedScan.id));
+    this.selectedScanTrackingItems.push(
+      new SummaryItem("PIXLISE ID:", this.selectedScan.id)
+    );
 
     this.selectedScanAccess = [];
-    this.selectedScanAccess.push(new SummaryItem("Edit access", event.owner?.canEdit ? "Yes" : "No"));
-    this.selectedScanAccess.push(new SummaryItem("Is Scan Shared", event.owner?.sharedWithOthers ? "Yes" : "No"));
+    this.selectedScanAccess.push(
+      new SummaryItem("Edit access", event.owner?.canEdit ? "Yes" : "No")
+    );
+    this.selectedScanAccess.push(
+      new SummaryItem(
+        "Is Scan Shared",
+        event.owner?.sharedWithOthers ? "Yes" : "No"
+      )
+    );
     /*this.selectedScanAccess.push(new SummaryItem("Editing Groups", `${event.owner?.editorGroupCount || 0}`));
     this.selectedScanAccess.push(new SummaryItem("Editing Users", `${event.owner?.editorUserCount || 0}`));
     this.selectedScanAccess.push(new SummaryItem("Viewing Groups", `${event.owner?.viewerGroupCount || 0}`));
@@ -1232,15 +1568,29 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     let createTime = "Unknown";
     if (this.selectedScan.timestampUnixSec) {
-      createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
+      createTime = dtFormat.format(
+        new Date(this.selectedScan.timestampUnixSec * 1000)
+      );
     }
 
-    this.selectedScanUpdates.push(new SummaryItem("Latest Updated Time:", createTime));
+    this.selectedScanUpdates.push(
+      new SummaryItem("Latest Updated Time:", createTime)
+    );
 
-    if (this.selectedScan.previousImportTimesUnixSec && this.selectedScan.previousImportTimesUnixSec.length > 0) {
-      for (let c = 0; c < this.selectedScan.previousImportTimesUnixSec.length; c++) {
+    if (
+      this.selectedScan.previousImportTimesUnixSec &&
+      this.selectedScan.previousImportTimesUnixSec.length > 0
+    ) {
+      for (
+        let c = 0;
+        c < this.selectedScan.previousImportTimesUnixSec.length;
+        c++
+      ) {
         const updTime = this.selectedScan.previousImportTimesUnixSec[c];
-        const item = new SummaryItem(c == 0 ? "Previous Updates:" : "", dtFormat.format(new Date(updTime * 1000)));
+        const item = new SummaryItem(
+          c == 0 ? "Previous Updates:" : "",
+          dtFormat.format(new Date(updTime * 1000))
+        );
 
         if (c < 5) {
           this.selectedScanUpdates.push(item);
@@ -1255,7 +1605,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // TODO:
     const missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
-    this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: " + Array.from(missing).join(",") : "";
+    this.selectedMissingData =
+      missing.length > 0
+        ? "Dataset likely missing: " + Array.from(missing).join(",")
+        : "";
 
     // Load full-sized context image
     if (this.selectedScan) {
@@ -1264,9 +1617,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         // Load the image
         this.selectedScanContextImage = "?"; // Set to 1 so we show spinner
 
-        this._endpointsService.loadImageForPath(img).subscribe((img: HTMLImageElement) => {
-          this.selectedScanContextImage = img.src;
-        });
+        this._endpointsService
+          .loadImageForPath(img)
+          .subscribe((img: HTMLImageElement) => {
+            this.selectedScanContextImage = img.src;
+          });
       }
     }
   }
@@ -1317,19 +1672,28 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   private closeOpenOptionsMenu(): void {
-    if (this.openOptionsButton && this.openOptionsButton instanceof WidgetSettingsMenuComponent) {
+    if (
+      this.openOptionsButton &&
+      this.openOptionsButton instanceof WidgetSettingsMenuComponent
+    ) {
       (this.openOptionsButton as WidgetSettingsMenuComponent).close();
     }
   }
 
   private closeWorkspaceOpenOptionsMenu(): void {
-    if (this.openWorkspaceOptionsButton && this.openWorkspaceOptionsButton instanceof WidgetSettingsMenuComponent) {
+    if (
+      this.openWorkspaceOptionsButton &&
+      this.openWorkspaceOptionsButton instanceof WidgetSettingsMenuComponent
+    ) {
       (this.openWorkspaceOptionsButton as WidgetSettingsMenuComponent).close();
     }
   }
 
   private closeManageCacheMenu(): void {
-    if (this.manageCacheBtn && this.manageCacheBtn instanceof WidgetSettingsMenuComponent) {
+    if (
+      this.manageCacheBtn &&
+      this.manageCacheBtn instanceof WidgetSettingsMenuComponent
+    ) {
       (this.manageCacheBtn as WidgetSettingsMenuComponent).close();
     }
   }
