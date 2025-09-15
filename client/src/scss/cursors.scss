@@ -28,85 +28,93 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 .defaultPointer {
-    cursor: auto;
+  cursor: auto;
 }
 
 .pointerCursor {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .crosshairCursor {
-    cursor: crosshair;
+  cursor: crosshair;
 }
 
 .panCursor {
-    cursor: url(/assets/cursors/pan.svg) 9 9, auto;
+  cursor: url(/assets/cursors/pan.svg) 9 9, auto;
 }
 
 .zoomCursor {
-    cursor: url(/assets/cursors/zoom.svg), auto;
+  cursor: url(/assets/cursors/zoom.svg), auto;
 }
 
 .rotateCursor {
-    cursor: url(/assets/cursors/rotate.svg), auto;
+  cursor: url(/assets/cursors/rotate.svg), auto;
 }
 
 .lassoCursorAdd {
-    cursor: url(/assets/cursors/lasso-add.svg), auto;
+  cursor: url(/assets/cursors/lasso-add.svg), auto;
 }
 
 .lassoCursorDel {
-    cursor: url(/assets/cursors/lasso-del.svg), auto;
+  cursor: url(/assets/cursors/lasso-del.svg), auto;
 }
 
 .lassoCursor {
-    cursor: url(/assets/cursors/lasso.svg), auto;
+  cursor: url(/assets/cursors/lasso.svg), auto;
 }
 
 .colourCursorAdd {
-    cursor: url(/assets/cursors/colour-select-add.svg), auto;
+  cursor: url(/assets/cursors/colour-select-add.svg), auto;
 }
 
 .colourCursorDel {
-    cursor: url(/assets/cursors/colour-select-del.svg), auto;
+  cursor: url(/assets/cursors/colour-select-del.svg), auto;
 }
 
 .pointCursorAdd {
-    cursor: url(/assets/cursors/paint-brush-add.svg), auto;
+  cursor: url(/assets/cursors/paint-brush-add.svg), auto;
 }
 
 .pointCursorDel {
-    cursor: url(/assets/cursors/paint-brush-del.svg), auto;
+  cursor: url(/assets/cursors/paint-brush-del.svg), auto;
 }
 
 .pointCursorSingle {
-    cursor: url(/assets/cursors/point-select.svg), auto;
+  cursor: url(/assets/cursors/point-select.svg), auto;
 }
 
 .lineDraw {
-    cursor: url(/assets/cursors/line-draw.svg), auto;
+  cursor: url(/assets/cursors/line-draw.svg), auto;
 }
 
 .lineCursorAdd {
-    cursor: url(/assets/cursors/line-select-add.svg), auto;
+  cursor: url(/assets/cursors/line-select-add.svg), auto;
 }
 
 .lineCursorDel {
-    cursor: url(/assets/cursors/line-select-del.svg), auto;
+  cursor: url(/assets/cursors/line-select-del.svg), auto;
 }
 
 .pmcInspectorCursor {
-    cursor: help;
+  cursor: help;
 }
 
 .histogramBarPickCursor {
-    cursor: url(/assets/cursors/histogram-pick-cursor.svg) 8 4, auto;
+  cursor: url(/assets/cursors/histogram-pick-cursor.svg) 8 4, auto;
 }
 
 .histogramBarPickAddCursor {
-    cursor: url(/assets/cursors/histogram-pick-cursor-add.svg) 8 4, auto;
+  cursor: url(/assets/cursors/histogram-pick-cursor-add.svg) 8 4, auto;
 }
 
 .histogramBarPickDelCursor {
-    cursor: url(/assets/cursors/histogram-pick-cursor-del.svg) 8 4, auto;
+  cursor: url(/assets/cursors/histogram-pick-cursor-del.svg) 8 4, auto;
+}
+
+.resizeHorizontalCursor {
+  cursor: ew-resize;
+}
+
+.resizeVerticalCursor {
+  cursor: ns-resize;
 }

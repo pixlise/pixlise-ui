@@ -33,6 +33,7 @@ import {
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import {
   ExpressionPickerData,
   ExpressionPickerComponent,
@@ -94,7 +95,7 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
       return this.handleScrollZoom(event);
     }
 
-    // Handle mouse move events to check for reference hover
+    // Handle mouse move events to check for reference hover and set cursor
     if (event.eventId === 2) {
       // CanvasMouseEventId.MOUSE_MOVE
       // First check if we're hovering over a reference point
@@ -115,8 +116,16 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
       }
     }
 
-    // For all events, use the base class behavior
-    return super.mouseEvent(event);
+    // For all events, use the base class behavior first
+    const result = super.mouseEvent(event);
+
+    // Set cursor based on mouse position AFTER base class to prevent override
+    if (event.eventId === 2) {
+      // CanvasMouseEventId.MOUSE_MOVE
+      this.updateCursorForPosition(event.canvasPoint);
+    }
+
+    return result;
   }
 
   private handleScrollZoom(event: any): number {
@@ -203,6 +212,36 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
 
     this._binMdl.recalculate();
     this._binMdl.needsCanvasResize$.next();
+  }
+
+  private updateCursorForPosition(mousePoint: Point): void {
+    if (!this._binMdl.drawModel.xAxis || !this._binMdl.drawModel.yAxis) {
+      this._binMdl.cursorShown = CursorId.defaultPointer;
+      return;
+    }
+
+    const axisBorder = this._binMdl.drawModel.axisBorder;
+
+    const yAxisZone =
+      mousePoint.x >= 0 &&
+      mousePoint.x < axisBorder.x &&
+      mousePoint.y >= axisBorder.y &&
+      mousePoint.y <= axisBorder.y + axisBorder.h;
+
+    const xAxisZone =
+      mousePoint.y > axisBorder.y + axisBorder.h &&
+      mousePoint.x >= axisBorder.x &&
+      mousePoint.x <= axisBorder.x + axisBorder.w;
+
+    if (yAxisZone) {
+      this._binMdl.cursorShown = CursorId.resizeVerticalCursor;
+    } else if (xAxisZone) {
+      this._binMdl.cursorShown = CursorId.resizeHorizontalCursor;
+    } else if (this.isOverDataArea(mousePoint)) {
+      this._binMdl.cursorShown = CursorId.lassoCursor;
+    } else {
+      this._binMdl.cursorShown = CursorId.defaultPointer;
+    }
   }
 }
 
@@ -957,8 +996,7 @@ export class BinaryChartWidgetComponent
       this.mdl.selectedMinYValue !== null &&
       this.mdl.selectedMaxYValue !== null
     ) {
-      // Return inverted values for slider display
-      return this.yRangeMax - (this.mdl.selectedMaxYValue - this.yRangeMin);
+      return this.mdl.selectedMinYValue;
     }
     return this.yRangeMin;
   }
@@ -968,8 +1006,7 @@ export class BinaryChartWidgetComponent
       this.mdl.selectedMinYValue !== null &&
       this.mdl.selectedMaxYValue !== null
     ) {
-      // Return inverted values for slider display
-      return this.yRangeMax - (this.mdl.selectedMinYValue - this.yRangeMin);
+      return this.mdl.selectedMaxYValue;
     }
     return this.yRangeMax;
   }
@@ -984,10 +1021,12 @@ export class BinaryChartWidgetComponent
 
   onChangeYAxis(event: any): void {
     // Invert Y axis values since chart Y axis increases upwards but slider works in screen coordinates
-    this.mdl.selectedMinYValue =
-      this.yRangeMax - (event.maxValue - this.yRangeMin);
-    this.mdl.selectedMaxYValue =
-      this.yRangeMax - (event.minValue - this.yRangeMin);
+    // this.mdl.selectedMinYValue =
+    //   this.yRangeMax - (event.maxValue - this.yRangeMin);
+    // this.mdl.selectedMaxYValue =
+    //   this.yRangeMax - (event.minValue - this.yRangeMin);
+    this.mdl.selectedMinYValue = event.minValue;
+    this.mdl.selectedMaxYValue = event.maxValue;
     this.mdl.recalculate();
     this.mdl.needsCanvasResize$.next();
     this.saveState();

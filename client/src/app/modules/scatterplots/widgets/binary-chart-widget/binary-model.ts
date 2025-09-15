@@ -1,31 +1,31 @@
-import { MinMax } from 'src/app/models/BasicTypes';
-import { CanvasParams } from 'src/app/modules/widget/components/interactive-canvas/interactive-canvas.component';
-import { PanZoom } from 'src/app/modules/widget/components/interactive-canvas/pan-zoom';
-import { Point, PointWithRayLabel, Rect } from 'src/app/models/Geometry';
-import { Colours } from 'src/app/utils/colours';
-import { RegionDataResults } from 'src/app/modules/pixlisecore/pixlisecore.module';
+import { MinMax } from "src/app/models/BasicTypes";
+import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+import { Point, PointWithRayLabel, Rect } from "src/app/models/Geometry";
+import { Colours } from "src/app/utils/colours";
+import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   ChartAxis,
   ChartAxisDrawer,
   LinearChartAxis,
-} from 'src/app/modules/widget/components/interactive-canvas/chart-axis';
+} from "src/app/modules/widget/components/interactive-canvas/chart-axis";
 import {
   PLOT_POINTS_SIZE,
   HOVER_POINT_RADIUS,
   CANVAS_FONT_SIZE_TITLE,
-} from 'src/app/utils/drawing';
-import { ScatterPlotAxisInfo } from '../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component';
+} from "src/app/utils/drawing";
+import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import {
   DrawModelWithPointGroup,
   NaryChartDataGroup,
   NaryChartDataItem,
   NaryChartModel,
   makeDrawablePointGroups,
-} from '../../base/model';
-import { WidgetError } from 'src/app/modules/pixlisecore/models/widget-data-source';
-import { BeamSelection } from 'src/app/modules/pixlisecore/models/beam-selection';
-import { ScanItem } from '../../../../generated-protos/scan';
-import { ReferenceData } from '../../../../generated-protos/references';
+} from "../../base/model";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { ScanItem } from "../../../../generated-protos/scan";
+import { ReferenceData } from "../../../../generated-protos/references";
 
 export class BinaryChartModel extends NaryChartModel<
   BinaryData,
@@ -115,11 +115,11 @@ export class BinaryChartModel extends NaryChartModel<
 
   setData(data: RegionDataResults, scanItems: ScanItem[] = []): WidgetError[] {
     const axes: ScatterPlotAxisInfo[] = [
-      new ScatterPlotAxisInfo('', false, '', '', new MinMax()), // X
-      new ScatterPlotAxisInfo('', true, '', '', new MinMax()), // Y
+      new ScatterPlotAxisInfo("", false, "", "", new MinMax()), // X
+      new ScatterPlotAxisInfo("", true, "", "", new MinMax()), // Y
     ];
 
-    return this.processQueryResult('Binary', data, axes, scanItems);
+    return this.processQueryResult("Binary", data, axes, scanItems);
   }
 
   protected makeData(
@@ -134,7 +134,7 @@ export class BinaryChartModel extends NaryChartModel<
   }
 
   protected axisName(axisIdx: number): string {
-    return axisIdx == 0 ? 'x' : 'y';
+    return axisIdx == 0 ? "x" : "y";
   }
 
   private calculateReferenceCoordinates(_raw: BinaryData): PointWithRayLabel[] {
@@ -167,7 +167,7 @@ export class BinaryChartModel extends NaryChartModel<
 
       if (!xValue) {
         // If can't find an exact match, see if we can match the expression name (get x label)
-        const xExpressionName = this._raw?.xAxisInfo.label || '';
+        const xExpressionName = this._raw?.xAxisInfo.label || "";
         if (xExpressionName) {
           // Try exact match first
           xPair = reference.expressionValuePairs.find(
@@ -194,7 +194,7 @@ export class BinaryChartModel extends NaryChartModel<
 
       if (!yValue) {
         // If can't find an exact match, see if we can match the expression name (get y label)
-        const yExpressionName = this._raw?.yAxisInfo.label || '';
+        const yExpressionName = this._raw?.yAxisInfo.label || "";
         if (yExpressionName) {
           yPair = reference.expressionValuePairs.find(
             (pair: { expressionId: string; value: number }) =>
@@ -271,7 +271,7 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   yAxis: ChartAxis | null = null;
 
   fontSize: number = BinaryChartModel.FONT_SIZE_SMALL;
-  fontFamily: string = 'Roboto';
+  fontFamily: string = "Roboto";
   axisLineColour: string = Colours.GRAY_70.asString();
   axisTextColour: string = Colours.GRAY_30.asString();
   axisLineWidth: number = 1;
@@ -380,7 +380,7 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
     // thing about this code is that it needs to calculate the pixel length of a string, so we create an off-screen canvas
     // here for now and hope that its config matches the screen one!
     const cnv = new OffscreenCanvas(canvasParams.width, canvasParams.height);
-    const offscreenContext = cnv.getContext('2d');
+    const offscreenContext = cnv.getContext("2d");
 
     let longestYTickLabelPx = 100;
     if (offscreenContext) {
@@ -413,12 +413,12 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   }
 
   private makeBinaryPoint(value: NaryChartDataItem): PointWithRayLabel {
-    const pointXValue = value.nullMask[0] ? 'null' : value.values[0];
+    const pointXValue = value.nullMask[0] ? "null" : value.values[0];
     const canvasX = this.xAxis!.valueToCanvas(
       value.nullMask[0] ? 0 : value.values[0]
     );
 
-    const pointYValue = value.nullMask[1] ? 'null' : value.values[1];
+    const pointYValue = value.nullMask[1] ? "null" : value.values[1];
     const canvasY = this.yAxis!.valueToCanvas(
       value.nullMask[0] ? 0 : value.values[1]
     );
@@ -426,7 +426,7 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
     const coord = new PointWithRayLabel(
       value.nullMask[0] ? this.xAxis!.pctToCanvas(1) : canvasX,
       value.nullMask[1] ? this.yAxis!.pctToCanvas(1) : canvasY,
-      value.label ? `${value.label} (${pointXValue}, ${pointYValue})` : '',
+      value.label ? `${value.label} (${pointXValue}, ${pointYValue})` : "",
       value.nullMask[0] ? this.xAxis!.pctToCanvas(0) : canvasX,
       value.nullMask[1] ? this.yAxis!.pctToCanvas(0) : canvasY
     );
@@ -514,7 +514,7 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
 
   makeChartAxisDrawer(): ChartAxisDrawer {
     return new ChartAxisDrawer(
-      this.fontSize + 'px ' + this.fontFamily,
+      this.fontSize + "px " + this.fontFamily,
       this.axisLineColour,
       this.axisTextColour,
       4,
