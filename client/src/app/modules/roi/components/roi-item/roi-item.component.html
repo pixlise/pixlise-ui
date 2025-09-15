@@ -294,14 +294,20 @@
             <span class="entry-count">{{ scanEntryIndicesByDataset[scanId]?.length || "" }} PMCs</span>
             <action-button [action]="openScanIdxs.has(scanId) ? 'closeAccordion' : 'openAccordion'" (click)="onToggleScanMenu(scanId)"></action-button>
           </span>
-          <div *ngIf="openScanIdxs.has(scanId)" class="scan-entries-container">
+          <div
+            *ngIf="openScanIdxs.has(scanId)"
+            class="scan-entries-container" 
+            tabindex="0"
+            (keyup.arrowdown)="onKeyboardArrow(scanId, false, $event)"
+            (keyup.arrowup)="onKeyboardArrow(scanId, true, $event)">
             <cdk-virtual-scroll-viewport [itemSize]="29" class="scan-entries-viewport">
               <div
                 *cdkVirtualFor="let entryIdx of scanEntryIndicesByDataset[scanId]"
                 class="entry-idx-container"
-                [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx === hoverIndex }"
+                [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx === hoverIndex, 'pmc-selected': entryIdx >= 0 && entryIdx === singleSelectionIndex }"
                 (mouseenter)="onScanEntryIdxEnter(scanId, entryIdx)"
-                (mouseleave)="onScanEntryIdxLeave(scanId)">
+                (mouseleave)="onScanEntryIdxLeave(scanId)"
+                (click)="onScanEntryIdxClick(scanId, entryIdx)">
                 <div class="entry-idx">{{ entryIdx }}</div>
                 <action-button
                   *ngIf="entryIdx >= 0"

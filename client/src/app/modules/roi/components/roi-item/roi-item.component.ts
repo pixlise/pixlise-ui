@@ -13,6 +13,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { UserInfo } from "src/app/generated-protos/user";
 import { PredefinedROIID } from "../../../../models/RegionOfInterest";
 import { RGBA } from "../../../../utils/colours";
+import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 
 export type SubItemOptionSection = {
   title: string;
@@ -64,6 +65,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild("settingsButton") settingsButton!: ElementRef;
   @ViewChild("editROIButton") editROIButton!: ElementRef;
   @ViewChild("deleteROIConfirmButton") deleteROIConfirmButton!: ElementRef;
+  @ViewChild(CdkVirtualScrollViewport) pmcViewport!: CdkVirtualScrollViewport;
 
   private _subs = new Subscription();
 
@@ -71,6 +73,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   showScanEntryPoints = false;
 
   hoverIndex = -1;
+  singleSelectionIndex = -1;
   pmcPagePosition = 0;
   displaySelectedPMCs: any[] = [];
 
@@ -107,6 +110,17 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
           this.hoverIndex = this._selectionService.hoverEntryIdx;
         } else {
           this.hoverIndex = -1;
+        }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe((sel) => {
+        const selIdxs = sel.beamSelection.getSelectedScanEntryIndexes(this.summary?.scanId || "");
+        if (selIdxs.size == 1) {
+          this.singleSelectionIndex = selIdxs.values().next().value || -1;
+        } else {
+          this.singleSelectionIndex = -1;
         }
       })
     );
@@ -399,16 +413,45 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     this.onVisibilityChange.emit(!this.isVisible);
   }
 
-  onScanEntryIdxPagePrev() {}
-
-  onScanEntryIdxPageNext() {}
-
   onScanEntryIdxEnter(scanId: string, scanEntryIdx: number) {
     this._selectionService.setHoverEntryIndex(scanId, scanEntryIdx);
   }
 
   onScanEntryIdxLeave(scanId: string) {
     this._selectionService.clearHoverEntry();
+  }
+
+  onScanEntryIdxClick(scanId: string, scanEntryIdx: number) {
+    let pmcSelection = new Map<string, Set<number>>();
+    pmcSelection.set(scanId, new Set([scanEntryIdx]));
+    this._selectionService.setSelection(new BeamSelection(pmcSelection), PixelSelection.makeEmptySelection());
+  }
+
+  onKeyboardArrow(scanId: string, up: boolean, event: Event) {
+    // See what the next or previous PMC is to select
+    if (this.singleSelectionIndex == -1) {
+      console.log("Selection is not a single PMC, ignoring arrow key on roi pmc list");
+      return;
+    }
+
+    const entries = this.scanEntryIndicesByDataset[scanId];
+    const idx = entries.indexOf(this.singleSelectionIndex);
+    if (idx == -1) {
+      console.log("Unknown current index, ignoring arrow key on roi pmc list");
+      return;
+    }
+
+    let toSelIdx = up ? idx - 1 : idx + 1;
+    if (toSelIdx >= 0 && toSelIdx < entries.length) {
+      // Select it!
+      let pmcSelection = new Map<string, Set<number>>();
+      pmcSelection.set(scanId, new Set([entries[toSelIdx]]));
+      this._selectionService.setSelection(new BeamSelection(pmcSelection), PixelSelection.makeEmptySelection());
+
+      this.pmcViewport.scrollToIndex(toSelIdx);
+    }
+
+    event.preventDefault();
   }
 
   onDeleteScanEntryIdx(scanEntryIdx: number) {
