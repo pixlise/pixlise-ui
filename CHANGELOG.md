@@ -1,18 +1,4 @@
-<<<<<<< HEAD
 ## 4.76.0 (LATEST)
-=======
-## 4.75.0 (LATEST)
-
-### New Features
-- Clicking on a PMC in an ROI now selects it. Also added keyboard up/down key listeners so we can go through the ROI PMCs one by one. Because they're selected, they show on the spectrum chart!
-- Supports importing EM data where the SDF file didn't contain the scan termination tokens - it detects this scenrio by seeing if the scan log has less PMCs than the planned count. Also fixed an unusual case where SDF gv line blocks were not separated by something else so the parser failed when reading the next gv block.
-
-### Bug Fixes
-- Fixed UI hanging if binary chart x or y axis was to show negative values.
-- Removed some pointless stdout printing that the client library (including Python lib) was writing
-
-## 4.74.0 (2025-09-11)
->>>>>>> a7e8dd64 (Added feature requested by Mike Jones for browsing ROI PMCs with mouse click selection and arrow keys)
 
 ### New Features
 - **3D View**: A new widget to view our scans in 3D. **NOTE: This is experimental, be careful drawing any conclusions from this view for now**. It uses the beam location x,y,z coordinates provided by spectrum data to build a terrain-like view of the PMCs and extrapolates out to the corners of the MCC image. Supports a lot of the features the context image does:
