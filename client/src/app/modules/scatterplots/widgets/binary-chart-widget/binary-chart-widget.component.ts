@@ -34,6 +34,7 @@ import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher
 import { Point } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
+import { CanvasMouseEventId } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import {
   ExpressionPickerData,
   ExpressionPickerComponent,
@@ -70,11 +71,23 @@ import {
 import { ReferenceData } from "src/app/generated-protos/references";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
+  private _activeTool: string = "lasso";
+  private _temporaryTool: string | null = null;
+  private _lastPanPoint: Point | null = null;
+
   constructor(
     private _binMdl: BinaryChartModel,
     selectionService: SelectionService
   ) {
     super(_binMdl, selectionService);
+  }
+
+  setActiveTool(tool: string): void {
+    this._activeTool = tool;
+  }
+
+  getCurrentTool(): string {
+    return this._temporaryTool || this._activeTool;
   }
 
   protected resetHover(): void {
@@ -88,16 +101,39 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
     return this._binMdl.drawModel.axisBorder.containsPoint(canvasPt);
   }
 
+  override keyEvent(event: any): any {
+    // Handle Shift key for temporary pan activation
+    if (event.key === "Shift") {
+      if (event.down) {
+        this._temporaryTool = "pan";
+      } else {
+        this._temporaryTool = null;
+      }
+      return 1; // CanvasInteractionResult.redrawAndCatch
+    }
+
+    return super.keyEvent(event);
+  }
+
   override mouseEvent(event: any): any {
+    const currentTool = this.getCurrentTool();
+
     // Handle scroll wheel zoom
-    if (event.eventId === 4) {
-      // CanvasMouseEventId.MOUSE_WHEEL
+    if (event.eventId == CanvasMouseEventId.MOUSE_WHEEL) {
       return this.handleScrollZoom(event);
     }
 
+    // Handle panning for pan tool
+    if (currentTool === "pan" && this.isOverDataArea(event.canvasPoint)) {
+      const panResult = this.handlePanning(event);
+      if (panResult !== 0) {
+        // If panning handled the event
+        return panResult;
+      }
+    }
+
     // Handle mouse move events to check for reference hover and set cursor
-    if (event.eventId === 2) {
-      // CanvasMouseEventId.MOUSE_MOVE
+    if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
       // First check if we're hovering over a reference point
       const hoverReference = this._binMdl.getReferenceAtPoint(
         event.canvasPoint
@@ -116,12 +152,16 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
       }
     }
 
-    // For all events, use the base class behavior first
-    const result = super.mouseEvent(event);
+    // For non-pan tools, use the base class behavior first
+    let result;
+    if (currentTool !== "pan") {
+      result = super.mouseEvent(event);
+    } else {
+      result = 0; // CanvasInteractionResult.neither for pan tool
+    }
 
     // Set cursor based on mouse position AFTER base class to prevent override
-    if (event.eventId === 2) {
-      // CanvasMouseEventId.MOUSE_MOVE
+    if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
       this.updateCursorForPosition(event.canvasPoint);
     }
 
@@ -214,12 +254,101 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
     this._binMdl.needsCanvasResize$.next();
   }
 
+  private handlePanning(event: any): number {
+    // Start tracking on mouse down
+    if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
+      this._lastPanPoint = new Point(event.canvasPoint.x, event.canvasPoint.y);
+      return 1; // CanvasInteractionResult.redrawAndCatch
+    }
+
+    // Handle dragging - adjust zoom ranges directly
+    if (event.eventId == CanvasMouseEventId.MOUSE_DRAG && this._lastPanPoint) {
+      const currentPoint = new Point(event.canvasPoint.x, event.canvasPoint.y);
+      const dragX = currentPoint.x - this._lastPanPoint.x;
+      const dragY = currentPoint.y - this._lastPanPoint.y;
+
+      this.panByPixels(dragX, dragY);
+
+      // Update our tracking point
+      this._lastPanPoint = currentPoint;
+      return 1; // CanvasInteractionResult.redrawAndCatch
+    }
+
+    // Finish panning on mouse up
+    if (event.eventId == CanvasMouseEventId.MOUSE_UP && this._lastPanPoint) {
+      this._lastPanPoint = null;
+      return 1; // CanvasInteractionResult.redrawAndCatch
+    }
+
+    return 0; // CanvasInteractionResult.neither
+  }
+
+  private panByPixels(dragX: number, dragY: number): void {
+    const xAxis = this._binMdl.drawModel.xAxis;
+    const yAxis = this._binMdl.drawModel.yAxis;
+    if (!xAxis || !yAxis) return;
+
+    // Convert pixel drag to value changes
+    const xValueDrag = xAxis.canvasToValue(dragX) - xAxis.canvasToValue(0);
+    const yValueDrag = yAxis.canvasToValue(dragY) - yAxis.canvasToValue(0);
+
+    // Get current zoom ranges
+    const currentXRange = this._binMdl.xAxisZoomRange;
+    const currentYRange = this._binMdl.yAxisZoomRange;
+
+    // Calculate new ranges by shifting by the drag amount
+    const newMinX = (currentXRange.min || 0) - xValueDrag;
+    const newMaxX = (currentXRange.max || 1) - xValueDrag;
+    const newMinY = (currentYRange.min || 0) - yValueDrag;
+    const newMaxY = (currentYRange.max || 1) - yValueDrag;
+
+    // Clamp to original data bounds
+    const dataMinX = this._binMdl.xAxisMinMax.min || 0;
+    const dataMaxX = this._binMdl.xAxisMinMax.max || 1;
+    const dataMinY = this._binMdl.yAxisMinMax.min || 0;
+    const dataMaxY = this._binMdl.yAxisMinMax.max || 1;
+
+    // Apply clamping while maintaining range size
+    const xRangeSize = newMaxX - newMinX;
+    const yRangeSize = newMaxY - newMinY;
+
+    let clampedMinX = Math.max(newMinX, dataMinX);
+    let clampedMaxX = Math.min(newMaxX, dataMaxX);
+    if (clampedMaxX - clampedMinX < xRangeSize) {
+      if (clampedMinX === dataMinX) {
+        clampedMaxX = Math.min(clampedMinX + xRangeSize, dataMaxX);
+      } else {
+        clampedMinX = Math.max(clampedMaxX - xRangeSize, dataMinX);
+      }
+    }
+
+    let clampedMinY = Math.max(newMinY, dataMinY);
+    let clampedMaxY = Math.min(newMaxY, dataMaxY);
+    if (clampedMaxY - clampedMinY < yRangeSize) {
+      if (clampedMinY === dataMinY) {
+        clampedMaxY = Math.min(clampedMinY + yRangeSize, dataMaxY);
+      } else {
+        clampedMinY = Math.max(clampedMaxY - yRangeSize, dataMinY);
+      }
+    }
+
+    // Update the zoom ranges
+    this._binMdl.selectedMinXValue = clampedMinX;
+    this._binMdl.selectedMaxXValue = clampedMaxX;
+    this._binMdl.selectedMinYValue = clampedMinY;
+    this._binMdl.selectedMaxYValue = clampedMaxY;
+
+    this._binMdl.recalculate();
+    this._binMdl.needsCanvasResize$.next();
+  }
+
   private updateCursorForPosition(mousePoint: Point): void {
     if (!this._binMdl.drawModel.xAxis || !this._binMdl.drawModel.yAxis) {
       this._binMdl.cursorShown = CursorId.defaultPointer;
       return;
     }
 
+    const currentTool = this.getCurrentTool();
     const axisBorder = this._binMdl.drawModel.axisBorder;
 
     const yAxisZone =
@@ -233,11 +362,18 @@ class BinaryChartToolHost extends InteractionWithLassoHover {
       mousePoint.x >= axisBorder.x &&
       mousePoint.x <= axisBorder.x + axisBorder.w;
 
-    if (yAxisZone) {
+    // If pan tool is active and we're over data area, show pan cursor
+    if (currentTool === "pan" && this.isOverDataArea(mousePoint)) {
+      this._binMdl.cursorShown = CursorId.panCursor;
+    }
+    // Show axis scaling cursors over axis areas
+    else if (yAxisZone) {
       this._binMdl.cursorShown = CursorId.resizeVerticalCursor;
     } else if (xAxisZone) {
       this._binMdl.cursorShown = CursorId.resizeHorizontalCursor;
-    } else if (this.isOverDataArea(mousePoint)) {
+    }
+    // Show lasso cursor over data area for lasso tool
+    else if (this.isOverDataArea(mousePoint)) {
       this._binMdl.cursorShown = CursorId.lassoCursor;
     } else {
       this._binMdl.cursorShown = CursorId.defaultPointer;
@@ -262,6 +398,7 @@ export class BinaryChartWidgetComponent
 
   scanId: string = "";
   quantId: string = "";
+  activeTool: string = "lasso"; // Default tool is lasso selection
 
   private _subs = new Subscription();
 
@@ -759,6 +896,9 @@ export class BinaryChartWidgetComponent
       )
     );
 
+    // Set default tool to lasso selection
+    this.onToolSelected("lasso");
+
     this.reDraw();
   }
 
@@ -1035,6 +1175,22 @@ export class BinaryChartWidgetComponent
   onResetZoom(): void {
     this.mdl.resetZoom();
     this.saveState();
+  }
+
+  onToolSelected(tool: string): void {
+    this.activeTool = tool;
+
+    // Update toolbar button states
+    if (this._widgetControlConfiguration.topToolbar) {
+      this._widgetControlConfiguration.topToolbar.forEach((button) => {
+        if (button.id === "pan") {
+          button.value = button.id === tool;
+        }
+      });
+    }
+
+    // Update the tool host with the new active tool
+    (this.toolhost as BinaryChartToolHost).setActiveTool(tool);
   }
 
   updateExportOptions(
