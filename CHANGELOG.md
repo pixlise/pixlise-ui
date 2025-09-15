@@ -1,4 +1,14 @@
-## 4.74.0 (LATEST)
+## 4.75.0 (LATEST)
+
+### New Features
+- Clicking on a PMC in an ROI now selects it. Also added keyboard up/down key listeners so we can go through the ROI PMCs one by one. Because they're selected, they show on the spectrum chart!
+- Supports importing EM data where the SDF file didn't contain the scan termination tokens - it detects this scenrio by seeing if the scan log has less PMCs than the planned count. Also fixed an unusual case where SDF gv line blocks were not separated by something else so the parser failed when reading the next gv block.
+
+### Bug Fixes
+- Fixed UI hanging if binary chart x or y axis was to show negative values.
+- Removed some pointless stdout printing that the client library (including Python lib) was writing
+
+## 4.74.0 (2025-09-11)
 
 - Forced rebuild of PIXLISE due to https://news.ycombinator.com/item?id=45169794
 

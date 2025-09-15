@@ -210,7 +210,10 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
         this.xValueRange = new MinMax(Math.floor(raw.xAxisInfo.valueRange.min), this.getAxisMax(raw.xAxisInfo.valueRange.max));
       }
       if (raw.yAxisInfo.valueRange.min !== null && raw.yAxisInfo.valueRange.max !== null) {
-        this.yValueRange = new MinMax(Math.floor(raw.yAxisInfo.valueRange.min), this.getAxisMax(raw.yAxisInfo.valueRange.max * 1.1)); // make it show a little more in Y due to selection and key buttons
+        // Make it show a little more in Y due to selection and key buttons
+        // NOTE: to work with negative values, it's not simply a max*1.1!
+        let vMax = raw.yAxisInfo.valueRange.min + raw.yAxisInfo.valueRange.getRange() * 1.1; 
+        this.yValueRange = new MinMax(Math.floor(raw.yAxisInfo.valueRange.min), this.getAxisMax(vMax));
       }
     }
 
