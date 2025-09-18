@@ -24,7 +24,7 @@ import {
   getWidgetComponent,
 } from "src/app/modules/widget/models/widgets.model";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
-import { WidgetExportData, WidgetExportDialogData, WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import {  WidgetExportData, WidgetExportDialogData, WidgetExportOption } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
 
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
@@ -127,27 +127,30 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   ) {}
 
   ngOnInit(): void {
-    this._subs.add(
-      this._analysisLayoutService.resizeCanvas$.subscribe(() => {
-        this.hideOverflowedButtons();
-      })
-    );
+    // Skip service subscriptions for preview widgets in export mode
+    if (!this.exportMode) {
+      this._subs.add(
+        this._analysisLayoutService.resizeCanvas$.subscribe(() => {
+          this.hideOverflowedButtons();
+        })
+      );
 
-    this._subs.add(
-      this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
-        if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
-          this.isWidgetHighlighted = true;
-        } else if (this.isWidgetHighlighted) {
-          this.isWidgetHighlighted = false;
-        }
-      })
-    );
+      this._subs.add(
+        this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
+          if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
+            this.isWidgetHighlighted = true;
+          } else if (this.isWidgetHighlighted) {
+            this.isWidgetHighlighted = false;
+          }
+        })
+      );
 
-    this._subs.add(
-      this._analysisLayoutService.targetWidgetIds$.subscribe(targetWidgetIds => {
-        this.isWidgetTargeted = targetWidgetIds.has(this.widgetLayoutConfig.id);
-      })
-    );
+      this._subs.add(
+        this._analysisLayoutService.targetWidgetIds$.subscribe(targetWidgetIds => {
+          this.isWidgetTargeted = targetWidgetIds.has(this.widgetLayoutConfig.id);
+        })
+      );
+    }
   }
 
   ngOnDestroy() {
@@ -258,7 +261,10 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
   set activeWidget(widget: WidgetType) {
     this._activeWidget = widget;
-    this._analysisLayoutService.updateActiveLayoutWidgetType(this.widgetLayoutConfig.id, this.layoutIndex, widget);
+    // Don't update layout service if this is a preview widget (export mode)
+    if (!this.exportMode) {
+      this._analysisLayoutService.updateActiveLayoutWidgetType(this.widgetLayoutConfig.id, this.layoutIndex, widget);
+    }
     this.loadWidget();
   }
 
@@ -448,6 +454,9 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
     dialogRef.afterClosed().subscribe(() => {
       this._exportDialogOpen = false;
+      setTimeout(() => {
+        this.loadWidget();
+      }, 0);
     });
   }
 
@@ -466,6 +475,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
     return [];
   }
+  
 
   loadWidget() {
     if (this._currentWidgetRef) {
@@ -535,7 +545,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
           this._currentWidgetRef.instance.widgetData$.next(this.widgetLayoutConfig.data?.[this.widgetConfiguration.dataKey]);
         }
 
-        if (this._currentWidgetRef.instance.onSaveWidgetData) {
+        if (this._currentWidgetRef.instance.onSaveWidgetData && !this.exportMode) {
           this._subs.add(
             this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
               if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId || this.exportMode) {

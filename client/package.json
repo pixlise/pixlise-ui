@@ -63,6 +63,7 @@
     "papaparse": "^5.4.1",
     "pixlise-wasmoon": "^1.15.3",
     "polygon-clipping": "^0.15.3",
+    "prettier": "^3.6.2",
     "prismjs": "^1.29.0",
     "protobufjs": "^7.5.3",
     "quickhull": "^1.0.3",

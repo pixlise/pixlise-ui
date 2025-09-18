@@ -4,20 +4,85 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { Point, PointWithRayLabel, Rect } from "src/app/models/Geometry";
 import { Colours } from "src/app/utils/colours";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
-import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
+import {
+  ChartAxis,
+  ChartAxisDrawer,
+  LinearChartAxis,
+} from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import {
+  PLOT_POINTS_SIZE,
+  HOVER_POINT_RADIUS,
+  CANVAS_FONT_SIZE_TITLE,
+} from "src/app/utils/drawing";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
-import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
+import {
+  DrawModelWithPointGroup,
+  NaryChartDataGroup,
+  NaryChartDataItem,
+  NaryChartModel,
+  makeDrawablePointGroups,
+} from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { ScanItem } from "../../../../generated-protos/scan";
 import { ReferenceData } from "../../../../generated-protos/references";
 
-export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
+export class BinaryChartModel extends NaryChartModel<
+  BinaryData,
+  BinaryDrawModel
+> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
 
   private _referenceData: ReferenceData[] = [];
   hoverReferenceData: ReferenceData | null = null;
+
+  // Zoom ranges for X and Y axes
+  selectedMinXValue: number | null = null;
+  selectedMaxXValue: number | null = null;
+  selectedMinYValue: number | null = null;
+  selectedMaxYValue: number | null = null;
+
+  // Get axis ranges for zoom functionality
+  get xAxisMinMax(): MinMax {
+    return this._drawModel.xValueRange;
+  }
+
+  get yAxisMinMax(): MinMax {
+    return this._drawModel.yValueRange;
+  }
+
+  get xAxisZoomRange(): MinMax {
+    const min =
+      this.selectedMinXValue !== null
+        ? this.selectedMinXValue
+        : this._drawModel.xValueRange.min;
+    const max =
+      this.selectedMaxXValue !== null
+        ? this.selectedMaxXValue
+        : this._drawModel.xValueRange.max;
+    return new MinMax(min, max);
+  }
+
+  get yAxisZoomRange(): MinMax {
+    const min =
+      this.selectedMinYValue !== null
+        ? this.selectedMinYValue
+        : this._drawModel.yValueRange.min;
+    const max =
+      this.selectedMaxYValue !== null
+        ? this.selectedMaxYValue
+        : this._drawModel.yValueRange.max;
+    return new MinMax(min, max);
+  }
+
+  resetZoom(): void {
+    this.selectedMinXValue = null;
+    this.selectedMaxXValue = null;
+    this.selectedMinYValue = null;
+    this.selectedMaxYValue = null;
+    this.recalculate();
+    this.needsCanvasResize$.next();
+  }
 
   get references(): ReferenceData[] {
     return this._referenceData;
@@ -29,11 +94,19 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     this.needsDraw$.next();
   }
 
-  protected regenerateDrawModel(raw: BinaryData | null, canvasParams: CanvasParams): void {
-    this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
+  protected regenerateDrawModel(
+    raw: BinaryData | null,
+    canvasParams: CanvasParams
+  ): void {
+    this._drawModel.regenerate(raw, this._beamSelection, canvasParams, this);
 
     // Calculate reference coordinates after the draw model is regenerated
-    if (this._referenceData.length > 0 && raw && this._drawModel.xAxis && this._drawModel.yAxis) {
+    if (
+      this._referenceData.length > 0 &&
+      raw &&
+      this._drawModel.xAxis &&
+      this._drawModel.yAxis
+    ) {
       this._drawModel.referenceCoords = this.calculateReferenceCoordinates(raw);
     } else {
       this._drawModel.referenceCoords = [];
@@ -49,7 +122,10 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     return this.processQueryResult("Binary", data, axes, scanItems);
   }
 
-  protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): BinaryData {
+  protected makeData(
+    axes: ScatterPlotAxisInfo[],
+    pointGroups: NaryChartDataGroup[]
+  ): BinaryData {
     if (axes.length != 2) {
       throw new Error(`Invalid axis count for binary: ${axes.length}`);
     }
@@ -71,14 +147,21 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     for (const reference of this._referenceData) {
       // Find X and Y values for this reference
       let xValue: number | null = null;
-      let xPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+      let xPair:
+        | { expressionId: string; expressionName: string; value: number }
+        | undefined = undefined;
       let yValue: number | null = null;
-      let yPair: { expressionId: string; expressionName: string; value: number } | undefined = undefined;
+      let yPair:
+        | { expressionId: string; expressionName: string; value: number }
+        | undefined = undefined;
 
       // X-axis (first expression)
       const xExpressionId = this.expressionIds[0];
       if (xExpressionId && reference.expressionValuePairs) {
-        xPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === xExpressionId);
+        xPair = reference.expressionValuePairs.find(
+          (pair: { expressionId: string; value: number }) =>
+            pair.expressionId === xExpressionId
+        );
         xValue = xPair?.value || null;
       }
 
@@ -88,7 +171,11 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
         if (xExpressionName) {
           // Try exact match first
           xPair = reference.expressionValuePairs.find(
-            (pair: { expressionId: string; expressionName: string; value: number }) => pair.expressionName === xExpressionName
+            (pair: {
+              expressionId: string;
+              expressionName: string;
+              value: number;
+            }) => pair.expressionName === xExpressionName
           );
         }
 
@@ -98,7 +185,10 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
       // Y-axis (second expression)
       const yExpressionId = this.expressionIds[1];
       if (yExpressionId && reference.expressionValuePairs) {
-        yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionId);
+        yPair = reference.expressionValuePairs.find(
+          (pair: { expressionId: string; value: number }) =>
+            pair.expressionId === yExpressionId
+        );
         yValue = yPair?.value || null;
       }
 
@@ -106,27 +196,39 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
         // If can't find an exact match, see if we can match the expression name (get y label)
         const yExpressionName = this._raw?.yAxisInfo.label || "";
         if (yExpressionName) {
-          yPair = reference.expressionValuePairs.find((pair: { expressionId: string; value: number }) => pair.expressionId === yExpressionName);
+          yPair = reference.expressionValuePairs.find(
+            (pair: { expressionId: string; value: number }) =>
+              pair.expressionId === yExpressionName
+          );
           yValue = yPair?.value || null;
         }
       }
 
       // Only add the point if we have both X and Y values
-      if (xValue !== null && yValue !== null && this._drawModel.xAxis && this._drawModel.yAxis) {
+      if (
+        xValue !== null &&
+        yValue !== null &&
+        this._drawModel.xAxis &&
+        this._drawModel.yAxis
+      ) {
         const canvasX = this._drawModel.xAxis.valueToCanvas(xValue);
         const canvasY = this._drawModel.yAxis.valueToCanvas(yValue);
 
         const coord = new PointWithRayLabel(
           canvasX,
           canvasY,
-          `${reference.id} (${xValue.toLocaleString()}, ${yValue.toLocaleString()})`,
+          `${
+            reference.id
+          } (${xValue.toLocaleString()}, ${yValue.toLocaleString()})`,
           canvasX,
           canvasY,
           reference.id
         );
 
         // Store reference data directly in the coordinate for correct mapping
-        (coord as PointWithRayLabel & { referenceData: ReferenceData }).referenceData = reference;
+        (
+          coord as PointWithRayLabel & { referenceData: ReferenceData }
+        ).referenceData = reference;
         coords.push(coord);
       }
     }
@@ -139,15 +241,20 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
 
     for (let i = 0; i < this._drawModel.referenceCoords.length; i++) {
       const coord = this._drawModel.referenceCoords[i];
-      if (Math.abs(pt.x - coord.x) < boxSize / 2 && Math.abs(pt.y - coord.y) < boxSize / 2) {
+      if (
+        Math.abs(pt.x - coord.x) < boxSize / 2 &&
+        Math.abs(pt.y - coord.y) < boxSize / 2
+      ) {
         // Use the reference data stored in the coordinate to avoid index mismatch
-        const storedRef = (coord as PointWithRayLabel & { referenceData?: ReferenceData }).referenceData;
+        const storedRef = (
+          coord as PointWithRayLabel & { referenceData?: ReferenceData }
+        ).referenceData;
         if (storedRef) {
           return storedRef;
         }
         // Fallback: find by ID if no stored reference data
         const refId = coord.id;
-        return this._referenceData.find(ref => ref.id === refId) || null;
+        return this._referenceData.find((ref) => ref.id === refId) || null;
       }
     }
 
@@ -191,7 +298,12 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   xValueRange: MinMax = new MinMax();
   yValueRange: MinMax = new MinMax();
 
-  regenerate(raw: BinaryData | null, beamSelection: BeamSelection, canvasParams: CanvasParams): void {
+  regenerate(
+    raw: BinaryData | null,
+    beamSelection: BeamSelection,
+    canvasParams: CanvasParams,
+    model?: BinaryChartModel
+  ): void {
     this.totalPointCount = 0;
     this.drawnData = null; // Force regen
 
@@ -206,8 +318,14 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
     if (raw) {
       // Axis endpoint values - these should be round numbers larger than the max values we're drawing to. This way it's a little neater
       // to draw, has a bit of margin, and is probably easier for users to think about these numbers
-      if (raw.xAxisInfo.valueRange.min !== null && raw.xAxisInfo.valueRange.max !== null) {
-        this.xValueRange = new MinMax(Math.floor(raw.xAxisInfo.valueRange.min), this.getAxisMax(raw.xAxisInfo.valueRange.max));
+      if (
+        raw.xAxisInfo.valueRange.min !== null &&
+        raw.xAxisInfo.valueRange.max !== null
+      ) {
+        this.xValueRange = new MinMax(
+          Math.floor(raw.xAxisInfo.valueRange.min),
+          this.getAxisMax(raw.xAxisInfo.valueRange.max)
+        );
       }
       if (raw.yAxisInfo.valueRange.min !== null && raw.yAxisInfo.valueRange.max !== null) {
         // Make it show a little more in Y due to selection and key buttons
@@ -219,16 +337,32 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
 
     // Calculate the axis border (between outerBoarder and axisBorder we can draw axis labels)
     // Left side: leave padding, space for the vertical Y axis title, small-font sized space for hover label, padding, finally tick label width
-    const leftAxisSpace = BinaryChartModel.FONT_SIZE + BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING;
-    const bottomAxisSpace = (BinaryChartModel.LABEL_PADDING + BinaryChartModel.FONT_SIZE) * 2;
+    const leftAxisSpace =
+      BinaryChartModel.FONT_SIZE +
+      BinaryChartModel.FONT_SIZE_SMALL +
+      BinaryChartModel.LABEL_PADDING;
+    const bottomAxisSpace =
+      (BinaryChartModel.LABEL_PADDING + BinaryChartModel.FONT_SIZE) * 2;
 
-    this.axisBorder = new Rect(outerBorder.x + leftAxisSpace, outerBorder.y, outerBorder.w - leftAxisSpace, outerBorder.h - bottomAxisSpace);
+    this.axisBorder = new Rect(
+      outerBorder.x + leftAxisSpace,
+      outerBorder.y,
+      outerBorder.w - leftAxisSpace,
+      outerBorder.h - bottomAxisSpace
+    );
 
     // We don't pan/zoom axis so just create a default one for now
     const panZoom = new PanZoom();
 
     // Setup both axes once
-    this.initAxes(canvasParams, panZoom, outerBorder, leftAxisSpace, bottomAxisSpace);
+    this.initAxes(
+      canvasParams,
+      panZoom,
+      outerBorder,
+      leftAxisSpace,
+      bottomAxisSpace,
+      model
+    );
 
     // Shut up transpiler
     if (!this.xAxis || !this.yAxis) {
@@ -247,25 +381,44 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
 
     let longestYTickLabelPx = 100;
     if (offscreenContext) {
-      longestYTickLabelPx = drawer.getLongestTickLabelPx(offscreenContext, this.yAxis);
+      longestYTickLabelPx = drawer.getLongestTickLabelPx(
+        offscreenContext,
+        this.yAxis
+      );
     }
 
     // Now we feed that back into BOTH xAxis and yAxis (recreating them is the easiest option for now)
-    this.initAxes(canvasParams, panZoom, outerBorder, leftAxisSpace + longestYTickLabelPx, bottomAxisSpace);
+    this.initAxes(
+      canvasParams,
+      panZoom,
+      outerBorder,
+      leftAxisSpace + longestYTickLabelPx,
+      bottomAxisSpace,
+      model
+    );
 
     // Calculate data coordinates
     // Loop through and calculate x/y coordinates for each point
-    makeDrawablePointGroups(raw?.pointGroups, this, beamSelection, (value: NaryChartDataItem) => {
-      return this.makeBinaryPoint(value);
-    });
+    makeDrawablePointGroups(
+      raw?.pointGroups,
+      this,
+      beamSelection,
+      (value: NaryChartDataItem) => {
+        return this.makeBinaryPoint(value);
+      }
+    );
   }
 
   private makeBinaryPoint(value: NaryChartDataItem): PointWithRayLabel {
     const pointXValue = value.nullMask[0] ? "null" : value.values[0];
-    const canvasX = this.xAxis!.valueToCanvas(value.nullMask[0] ? 0 : value.values[0]);
+    const canvasX = this.xAxis!.valueToCanvas(
+      value.nullMask[0] ? 0 : value.values[0]
+    );
 
     const pointYValue = value.nullMask[1] ? "null" : value.values[1];
-    const canvasY = this.yAxis!.valueToCanvas(value.nullMask[0] ? 0 : value.values[1]);
+    const canvasY = this.yAxis!.valueToCanvas(
+      value.nullMask[0] ? 0 : value.values[1]
+    );
 
     const coord = new PointWithRayLabel(
       value.nullMask[0] ? this.xAxis!.pctToCanvas(1) : canvasX,
@@ -278,18 +431,38 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
     return coord;
   }
 
-  private initAxes(canvasParams: CanvasParams, transform: PanZoom, outerBorder: Rect, leftAxisSpace: number, bottomAxisSpace: number): void {
+  private initAxes(
+    canvasParams: CanvasParams,
+    transform: PanZoom,
+    outerBorder: Rect,
+    leftAxisSpace: number,
+    bottomAxisSpace: number,
+    model?: BinaryChartModel
+  ): void {
     // The data has to be drawn a bit in from the axis border due to point size
-    const dataPadding = (Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) + 1) * 0.5;
+    const dataPadding =
+      (Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) + 1) * 0.5;
 
     if (this.xValueRange.min !== null && this.xValueRange.max !== null) {
+      // Use zoom range if available, otherwise use full range
+      let xMin = this.xValueRange.min;
+      let xMax = this.xValueRange.max;
+
+      if (model) {
+        const zoomRange = model.xAxisZoomRange;
+        if (zoomRange.min !== null && zoomRange.max !== null) {
+          xMin = zoomRange.min;
+          xMax = zoomRange.max;
+        }
+      }
+
       // Setup x-axis:
       const xAxis = new LinearChartAxis(
         true,
         outerBorder.x + leftAxisSpace + dataPadding,
         outerBorder.w - leftAxisSpace - dataPadding * 2,
-        this.xValueRange.min,
-        this.xValueRange.max,
+        xMin,
+        xMax,
         dataPadding
       );
       xAxis.setMinPixelsBetweenTicks(30);
@@ -298,13 +471,25 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
     }
 
     if (this.yValueRange.min !== null && this.yValueRange.max !== null) {
+      // Use zoom range if available, otherwise use full range
+      let yMin = this.yValueRange.min;
+      let yMax = this.yValueRange.max;
+
+      if (model) {
+        const zoomRange = model.yAxisZoomRange;
+        if (zoomRange.min !== null && zoomRange.max !== null) {
+          yMin = zoomRange.min;
+          yMax = zoomRange.max;
+        }
+      }
+
       // Setup y-axis:
       const yAxis = new LinearChartAxis(
         false,
         outerBorder.y + bottomAxisSpace + dataPadding,
         outerBorder.h - bottomAxisSpace - dataPadding * 2,
-        this.yValueRange.min,
-        this.yValueRange.max,
+        yMin,
+        yMax,
         dataPadding
       );
       yAxis.setMinPixelsBetweenTicks(30);
@@ -325,7 +510,15 @@ export class BinaryDrawModel implements DrawModelWithPointGroup {
   }
 
   makeChartAxisDrawer(): ChartAxisDrawer {
-    return new ChartAxisDrawer(this.fontSize + "px " + this.fontFamily, this.axisLineColour, this.axisTextColour, 4, 4, false, this.axisLineWidth);
+    return new ChartAxisDrawer(
+      this.fontSize + "px " + this.fontFamily,
+      this.axisLineColour,
+      this.axisTextColour,
+      4,
+      4,
+      false,
+      this.axisLineWidth
+    );
   }
 }
 

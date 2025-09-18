@@ -51,6 +51,7 @@ import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { setsEqual } from "src/app/utils/utils";
+import { EXPORT_PREVIEW_ID_PREFIX } from "../../../widget/components/widget-export-dialog/widget-export-model";
 
 export type ExpressionPickerResponse = {
   selectedGroup?: ExpressionGroup;
@@ -243,11 +244,23 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             });
           });
 
-          // Filter out widgets that don't store expressions
+          // Filter out widgets that don't store expressions and export preview widgets
           this.layoutWidgets = widgetReferences.filter(widget => {
             let spec: WidgetConfiguration = WIDGETS?.[widget.type as WidgetType];
-            return spec.hasExpressions || false;
+            const isExportPreview = widget.widget.id.startsWith(EXPORT_PREVIEW_ID_PREFIX);
+            return (spec.hasExpressions || false) && !isExportPreview;
           });
+
+          // If the current active widget ID is an export preview widget, reset it to the original widget
+          if (this._activeWidgetId.startsWith(EXPORT_PREVIEW_ID_PREFIX)) {
+            const originalWidgetId = this._activeWidgetId.replace(EXPORT_PREVIEW_ID_PREFIX, "");
+            const validWidget = this.layoutWidgets.find(widget => widget.widget.id === originalWidgetId);
+            if (validWidget) {
+              this._activeWidgetId = originalWidgetId;
+              // Also update the highlighted widget ID to match
+              this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+            }
+          }
         }
       })
     );
@@ -1133,7 +1146,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     const rgbMixExpressions: DataExpression[] = this._selectedRGBMixExpressionIdOrder
       .map(id => this._selectedRGBMixExpressions.find(expression => expression?.id === id))
-      .filter(group => group) as DataExpression[];
+      .filter(group => group) as DataExpression[];  
 
     if (rgbMixExpressions.length >= 3) {
       // If the selected group alredy has an id, and it has the same RGB mix entries in the same order as the one we're
@@ -1159,6 +1172,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       }
       const selectedGroup = ExpressionGroup.create(this.selectedGroup);
       selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
+
+        if (this._activeWidgetId.startsWith(EXPORT_PREVIEW_ID_PREFIX)) {
+          this._activeWidgetId = this._activeWidgetId.replace(EXPORT_PREVIEW_ID_PREFIX, "");
+          // Also update the highlighted widget ID to match
+          this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+        }
 
       let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
       if (activeWidgetRef) {
