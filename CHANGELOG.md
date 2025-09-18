@@ -6,6 +6,14 @@
   - Shows PMCs, footprint
   - Viewing maps with various options
   - Various draw options/settings/lighting modes. It is hoped users fiddle with it and provide feedback and feature requests to guide the development team to a final working design.
+- **Binary Chart Zoom**: Adds zoom functionality to the binary chart.
+  - Zoom using sliders or with the scroll wheel. Scroll over an axis to just zoom that axis.
+  - Hold down shift to pan the chart.
+- **RGBU Plot Zooming** Scroll wheel zooming support was added to the RGBU plot as well.
+
+### Bug Fixes
+- Fixes with interactive exporting where RGB mix color scales were showing blank
+- Fixes issue where if you clicked the export button once, clicking it again would not open the dialog
 
 ## 4.75.0 (2025-09-15)
 
