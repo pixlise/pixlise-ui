@@ -528,6 +528,7 @@ export class ContextImageComponent
                   l.displayValueRangeMin,
                   l.displayValueRangeMax
                 );
+
                 this.mdl.colourScaleDisplayValueRanges.set(
                   colourScaleRangeId,
                   displayRange
@@ -1986,8 +1987,12 @@ export class ContextImageComponent
               for (let j = 0; j < 3; j++) {
                 const colourScaleValueRange =
                   this.mdl.colourScaleDisplayValueRanges.get(`${id}-${j}`);
-                if (colourScaleValueRange) {
-                  groupDisplayRanges.push(colourScaleValueRange);
+                if (colourScaleValueRange && (colourScaleValueRange.min !== undefined || colourScaleValueRange.max !== undefined)) {
+                  groupDisplayRanges.push({
+                    id: `${id}-${j}`,
+                    min: colourScaleValueRange.min,
+                    max: colourScaleValueRange.max,
+                  });
                 }
               }
             }
@@ -2000,7 +2005,7 @@ export class ContextImageComponent
               displayValueRangeMax: displayRange?.max ?? undefined,
               displayValueRanges: groupDisplayRanges.map((range) => {
                 return MapLayerGroupDisplayRange.create({
-                  expressionID: id,
+                  expressionID: range?.id ?? undefined,
                   displayValueRangeMin: range?.min ?? undefined,
                   displayValueRangeMax: range?.max ?? undefined,
                 });
