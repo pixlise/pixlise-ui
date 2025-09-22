@@ -56,6 +56,7 @@ const GeneratingFitMessage = "Generating fit lines";
 const LoadingLastFitMessage = "Loading last fit";
 
 @Component({
+  standalone: false,
   selector: "spectrum-fit",
   templateUrl: "./spectrum-fit-container.component.html",
   styleUrls: ["./spectrum-fit-container.component.scss"],

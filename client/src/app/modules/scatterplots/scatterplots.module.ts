@@ -2,7 +2,7 @@ import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
-import { AnalysisModule } from "../analysis/analysis.module";
+//import { AnalysisModule } from "../analysis/analysis.module";
 
 import { BinaryChartWidgetComponent } from "./widgets/binary-chart-widget/binary-chart-widget.component";
 import { TernaryChartWidgetComponent } from "./widgets/ternary-chart-widget/ternary-chart-widget.component";
@@ -37,7 +37,7 @@ export { ParallelCoordinatesPlotWidgetComponent } from "./widgets/parallel-coord
     ParallelCoordinatesPlotWidgetComponent,
     VariogramWidgetComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, WidgetModule],
+  imports: [CommonModule, PIXLISECoreModule, /*AnalysisModule,*/ WidgetModule],
   exports: [
     BinaryChartWidgetComponent,
     TernaryChartWidgetComponent,

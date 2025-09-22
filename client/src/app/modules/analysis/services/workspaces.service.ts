@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { Router } from "@angular/router";
-import { catchError, combineLatest, forkJoin, map, mergeAll, mergeMap, Observable, of, Subscription, switchMap } from "rxjs";
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { catchError, combineLatest, forkJoin, map, Observable, of, Subscription, switchMap } from "rxjs";
+import { AnalysisLayoutService, APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanConfiguration, ScreenConfiguration } from "../../../generated-protos/screen-configuration";
 import { ScreenConfigurationGetReq, ScreenConfigurationListReq } from "../../../generated-protos/screen-configuration-msgs";
@@ -15,10 +15,9 @@ import { ScanItem } from "../../../generated-protos/scan";
 import { ScanListReq } from "../../../generated-protos/scan-msgs";
 import { SearchParams } from "../../../generated-protos/search-params";
 import { ROIService } from "../../roi/services/roi.service";
-import { AnalysisLayoutService } from "./analysis-layout.service";
 import { SearchableListItem } from "../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
-import { levenshteinDistance } from "../../../utils/search";
-import { SDSFields } from "../../../utils/utils";
+import { levenshteinDistance } from "src/app/utils/search";
+import { SDSFields } from "src/app/utils/utils";
 
 export type DatasetProducts = {
   workspaceROIs: ROIItem[];

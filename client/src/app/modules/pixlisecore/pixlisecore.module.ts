@@ -1,9 +1,13 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { OverlayModule } from "@angular/cdk/overlay";
-
 import { FormsModule } from "@angular/forms";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
+import { DragDropModule } from "@angular/cdk/drag-drop";
+import { ScrollingModule } from "@angular/cdk/scrolling";
+import { MatMenuModule } from "@angular/material/menu";
+
+import { MaterialModule } from "../material.module";
 
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
 import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
@@ -24,7 +28,7 @@ import { SelectionOptionsComponent } from "./components/atoms/selection-changer/
 
 import { WidgetDisplayMessageComponent } from "./components/atoms/widget-display-message/widget-display-message.component";
 import { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
-import { MaterialModule } from "../material.module";
+
 import { BadgeComponent } from "./components/atoms/badge/badge.component";
 import { AuthenticateComponent } from "./components/pages/authenticate/authenticate.component";
 
@@ -62,8 +66,6 @@ import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/componen
 import { ClosableListComponent } from "src/app/modules/pixlisecore/components/atoms/closable-list/closable-list.component";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
-import { DragDropModule } from "@angular/cdk/drag-drop";
-import { ScrollingModule } from "@angular/cdk/scrolling";
 import { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 import { TableComponent } from "./components/atoms/table/table.component";
 import { TextFileViewingDialogComponent } from "./components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
@@ -72,16 +74,20 @@ import { UserIconComponent } from "./components/atoms/user-icon/user-icon.compon
 import { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 import { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
-import { MatMenuModule } from "@angular/material/menu";
+
 import { MagicLinkComponent } from "./components/pages/magiclink/magiclink.component";
+//import { AnalysisLayoutService } from "./services/analysis-layout.service";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
+export { APICachedDataService } from "./services/apicacheddata.service";
 export { SnackbarService } from "./services/snackbar.service";
+export { UsersService } from "./services/users.service";
 export { ContextImageDataService } from "./services/context-image-data.service";
-export { WidgetDataService, DataSourceParams, RegionDataResults, RegionDataResultItem, DataUnit } from "./services/widget-data.service";
+export { WidgetDataService } from "./services/widget-data.service";
+export { DataSourceParams, RegionDataResults, RegionDataResultItem, DataUnit } from "./models/widget-data-source";
 export { WidgetKeyItem } from "./models/widget-key-item";
 export { SelectionService } from "./services/selection.service";
 export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
@@ -102,6 +108,10 @@ export { UserIconComponent } from "./components/atoms/user-icon/user-icon.compon
 export { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 export { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 export { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
+export { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
+export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
+export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./services/analysis-layout.service";
+
 
 @NgModule({
   declarations: [
@@ -163,9 +173,18 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
     LayoutPreviewBoxComponent,
     UserIconComponent,
     GroupIconComponent,
-    SearchableListComponent,
+    SearchableListComponent
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule, MatAutocompleteModule, DragDropModule, ScrollingModule, MatMenuModule],
+  imports: [
+    CommonModule,
+    OverlayModule,
+    MaterialModule,
+    FormsModule,
+    MatAutocompleteModule,
+    DragDropModule,
+    ScrollingModule,
+    MatMenuModule
+  ],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,

@@ -31,7 +31,7 @@ import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { SingleScanEnergyCalibration } from "./single-scan-energy-calibration/single-scan-energy-calibration.component";
 
@@ -50,6 +50,7 @@ export class SpectrumEnergyCalibrationResult {
 }
 
 @Component({
+  standalone: false,
   selector: "spectrum-energy-calibration",
   templateUrl: "./spectrum-energy-calibration.component.html",
   styleUrls: ["./spectrum-energy-calibration.component.scss"],

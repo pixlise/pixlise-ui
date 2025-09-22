@@ -37,8 +37,7 @@ import { DataModuleVersion } from "src/app/generated-protos/modules";
 import { PushButtonStyle } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { TagType } from "src/app/modules/tags/models/tag.model";
-import { AnalysisLayoutService } from "../../../analysis/analysis.module";
-import { SnackbarService } from "../../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SnackbarService } from "../../../pixlisecore/pixlisecore.module";
 
 type MajorGroupedRelease = {
   majorVersion: DataModuleVersion | null;
@@ -53,6 +52,7 @@ export type DiffVersions = {
 };
 
 @Component({
+  standalone: false,
   selector: "expression-metadata-editor",
   templateUrl: "./expression-metadata-editor.component.html",
   styleUrls: ["./expression-metadata-editor.component.scss"],

@@ -37,10 +37,8 @@ import { httpErrorToString, SentryHelper } from "src/app/utils/utils";
 import { APIDataService } from "./apidata.service";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionWriteExecStatReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { DataModuleVersion } from "src/app/generated-protos/modules";
-import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataQuerier } from "src/app/expression-language/expression-language";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { APICachedDataService } from "./apicacheddata.service";
@@ -51,7 +49,7 @@ import { EnergyCalibrationService } from "./energy-calibration.service";
 import { MemoisationService } from "./memoisation.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { MemDataQueryResult, MemPMCDataValue, MemPMCDataValues, MemRegionSettings } from "src/app/generated-protos/memoisation";
-import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
@@ -63,92 +61,9 @@ import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { loadCodeForExpression } from "src/app/expression-language/expression-code-load";
 import { ExpressionMemoisationService } from "./expression-memoisation.service";
 import { AuthService, User } from "@auth0/auth0-angular";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-export type DataModuleVersionWithRef = {
-  id: string;
-  name: string;
-  moduleVersion: DataModuleVersion;
-};
+import { AnalysisLayoutService } from "../services/analysis-layout.service";
+import { DataModuleVersionWithRef, DataSourceParams, DataUnit, LoadedSources, RegionDataResultItem, RegionDataResults, WidgetError } from "../models/widget-data-source";
 
-export enum DataUnit {
-  //UNIT_WEIGHT_PCT,
-  UNIT_DEFAULT, // Was ^ but realised we don't know what the underlying unit is... the following only work if possible...
-  UNIT_MMOL,
-  UNIT_PPM,
-}
-
-export class DataSourceParams {
-  constructor(
-    public scanId: string,
-    public exprId: string,
-    public quantId: string,
-    public roiId: string,
-    public units: DataUnit = DataUnit.UNIT_DEFAULT,
-    public injectedFunctions: Map<string, any> | null = null
-  ) {}
-}
-
-export class WidgetError extends Error {
-  constructor(
-    message: string,
-    public description: string
-  ) {
-    super(message);
-    this.name = "WidgetError";
-  }
-}
-
-export class RegionDataResultItem {
-  constructor(
-    public exprResult: DataQueryResult,
-    public error: WidgetError | null,
-    public warning: string,
-    public expression: DataExpression | null,
-    public region: RegionSettings | null,
-    public query: DataSourceParams,
-    public isPMCTable: boolean = true
-  ) {}
-
-  get values(): PMCDataValues {
-    return this.exprResult?.resultValues;
-  }
-
-  // Returns a human-readable identity string that allows working out which query is which. For example
-  // in case of an error message on a widget where multiple queries have run, we call this to say
-  // this is the query that the error was generated for
-  public identity(): string {
-    return `scan: "${this.query.scanId}", expr: "${this.expression?.name || ""}" (${this.query.exprId}, ${this.expression?.sourceLanguage || ""}), roi: "${
-      this.query.roiId
-    }", quant: "${this.query.quantId}"`;
-  }
-}
-
-export class RegionDataResults {
-  private _hasQueryErrors: boolean = false;
-
-  constructor(
-    public queryResults: RegionDataResultItem[],
-    public error: string
-  ) {
-    for (const item of queryResults) {
-      if (item.error) {
-        this._hasQueryErrors = true;
-        break;
-      }
-    }
-  }
-
-  hasQueryErrors(): boolean {
-    return this._hasQueryErrors;
-  }
-}
-
-export class LoadedSources {
-  constructor(
-    public expressionSrc: string,
-    public modules: DataModuleVersionWithRef[]
-  ) {}
-}
 
 @Injectable({
   providedIn: "root",

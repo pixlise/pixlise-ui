@@ -1,10 +1,10 @@
 import { Injectable } from "@angular/core";
 import { XRFLineDatabase } from "../periodic-table/xrf-line-database";
 import { Observable, concatMap, map, shareReplay } from "rxjs";
-import { APICachedDataService } from "../modules/pixlisecore/services/apicacheddata.service";
-import { ScanListReq, ScanListResp } from "../generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "../generated-protos/detector-config-msgs";
 import { periodicTableDB } from "../periodic-table/periodic-table-db";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 
 @Injectable({
   providedIn: "root",

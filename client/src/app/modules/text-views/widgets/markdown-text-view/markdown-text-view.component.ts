@@ -4,7 +4,7 @@ import { Observable } from "rxjs";
 import { Subscription } from "rxjs";
 import { MarkdownViewState } from "src/app/generated-protos/widget-data";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   WidgetExportData,
   WidgetExportDialogData,
@@ -13,6 +13,7 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-markdown-text-view",
   templateUrl: "./markdown-text-view.component.html",
   styleUrls: ["./markdown-text-view.component.scss"],

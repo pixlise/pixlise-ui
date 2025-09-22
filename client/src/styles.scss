@@ -35,13 +35,16 @@
 @include inter-ui.weight-400;
 @include inter-ui.weight-700;
 */
+
+@use '@angular/material' as mat;
+
+
 :root {
   --top-toolbar-height: 37px;
   --widget-drop-below-title: 42px; // 38px title bar + standard padding
   //--title-height-and-padding: 53px; // 37px title bar + top & bottom unit height
 }
 
-@import "material-theme.scss";
 @import "variables.scss";
 @import "atoms.scss";
 @import "cursors.scss";
@@ -61,12 +64,80 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #bec0c2;
+  background: $clr-gray-30;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #f8f8f8;
 }
+
+/*
+html {
+  color-scheme: dark;
+  @include mat.theme((
+    color: (
+      primary: mat.$violet-palette,
+      tertiary: mat.$orange-palette,
+      theme-type: dark,
+    ),
+    //typography: Roboto,
+    typography: (
+      plain-family: Roboto,
+      brand-family: Roboto,
+      bold-weight: 700,
+      medium-weight: 500,
+      //regular-weight: 300,
+    ),
+    density: 0
+  ));
+}
+*/
+/*
+ $font-family: "Roboto, monospace",
+  $body-1: mat.define-typography-level(14px, 14px, 400),
+  $button: mat.define-typography-level(12px, 12px, 400),
+  $headline-1: mat.define-typography-level(18px, 24px, 700),
+  $headline-2: mat.define-typography-level(16px, 24px, 700),
+  $headline-3: mat.define-typography-level(14px, 24px, 700),
+  $subtitle-1: mat.define-typography-level(16px, 24px, 700),
+  $caption: mat.define-typography-level(4px, 12px, 400),
+  $body-2: mat.define-typography-level(14px, 1.25, 400),
+  */
+@include mat.core();
+
+// https://material.angular.io/guide/typography
+// Define a custom typography config that overrides the font-family and specific items
+$pixlise-typography: mat.m2-define-typography-config(
+  $font-family: "Roboto, monospace",
+  $body-1: mat.m2-define-typography-level(14px, 14px, 400),
+  $button: mat.m2-define-typography-level(12px, 12px, 400),
+  $headline-1: mat.m2-define-typography-level(18px, 24px, 700),
+  $headline-2: mat.m2-define-typography-level(16px, 24px, 700),
+  $headline-3: mat.m2-define-typography-level(14px, 24px, 700),
+  $subtitle-1: mat.m2-define-typography-level(16px, 24px, 700),
+  $caption: mat.m2-define-typography-level(4px, 12px, 400),
+  $body-2: mat.m2-define-typography-level(14px, 1.25, 400),
+);
+
+// Create the theme object (a Sass map containing all of the palettes).
+$pixlise-app-theme: mat.m2-define-dark-theme(
+  (
+    color: (
+      primary: mat.m2-define-palette(mat.$m2-grey-palette, 900, 900, 900),
+      accent: mat.m2-define-palette(mat.$m2-yellow-palette, A100),
+      warn: mat.m2-define-palette(mat.$m2-red-palette),
+    ),
+    typography: $pixlise-typography,
+  )
+);
+
+@include mat.all-component-themes($pixlise-app-theme);
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+//@include mat.m2-angular-material-theme($pixlise-app-theme);
+@include mat.typography-hierarchy($pixlise-typography);
 
 html,
 body {
@@ -75,7 +146,6 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color: #1b1d1e;
 }
 
 :root {
@@ -90,9 +160,7 @@ body {
   }
 }
 
-/* TODO: There has to be a better way than !important with overriding angular things! */
 body {
-  //   background-color: $ui-color-background !important;
   font-family: Roboto, "Helvetica Neue", sans-serif;
 
   &::-webkit-scrollbar {
@@ -146,7 +214,8 @@ textarea {
 }
 
 .mat-app-background {
-  background-color: #1b1d1e;
+  background-color: $clr-gray-100;
+  color: white;
 }
 
 .mat-flat-button {
@@ -195,6 +264,11 @@ small {
   color: $clr-gray-70;
 }
 
+@include mat.dialog-overrides((
+  container-color: $ui-panel-title-colour,
+  content-padding: 0px,
+));
+/* Replaces:
 .mat-dialog-container,
 .mat-mdc-dialog-container {
   .mdc-dialog__container {
@@ -204,6 +278,7 @@ small {
     border-radius: $sz-unit !important;
   }
 }
+*/
 
 .panel {
   background-color: $ui-panel-title-colour;
@@ -338,9 +413,21 @@ h3 {
   /* Deliberately empty: we don't want to tint the screen when a backdrop is showing */
 }
 
+// This colour didn't come from our defined variables but it's a little brighter than clr-gray-80
+$clr-gray-80-plus: #2b3135;
+
+:root {
+  @include mat.tooltip-overrides((
+    container-color: $clr-gray-80-plus,
+    container-shape: red,
+    supporting-text-color: $clr-gray-10,
+    supporting-text-size: 10px,
+  ));
+}
+/* Replaces:
 .mat-mdc-tooltip {
   --mdc-plain-tooltip-supporting-text-size: 10px;
-  --mdc-plain-tooltip-container-color: #2b3135;
+  --mdc-plain-tooltip-container-color: $clr-gray-80-plus;
   --mdc-plain-tooltip-supporting-text-color: rgb(var(--clr-gray-10));
   white-space: pre;
 }
@@ -349,6 +436,7 @@ h3 {
   max-width: fit-content !important;
   box-shadow: 0px 0px 8px 0px rgb(0 0 0 / 50%);
 }
+*/
 
 .role-option {
   .mdc-label {
@@ -362,9 +450,16 @@ h3 {
   }
 }
 
-.mat-mdc-autocomplete-panel {
-  --mat-autocomplete-background-color: #2b3135;
+:root {
+  @include mat.autocomplete-overrides((
+    background-color: $clr-gray-80-plus,
+  ));
 }
+/* Replaces:
+.mat-mdc-autocomplete-panel {
+  --mat-autocomplete-background-color: $clr-gray-80-plus;
+}
+*/
 
 .mdc-text-field--filled:not(.mdc-text-field--disabled) {
   background-color: #474c50 !important;
@@ -383,14 +478,35 @@ h3 {
   border-bottom-color: white;
 }
 
+:root {
+  @include mat.select-overrides((
+    panel-background-color: $clr-gray-80-plus,
+    /*enabled-trigger-text-color: red,
+    disabled-trigger-text-color: blue,
+    placeholder-text-color: blue,*/
+  ));
+}
+
+mat-option {
+  .mdc-list-item__primary-text {
+    color: white !important;
+  }
+/* Checkbox is black :(
+  .mdc-pseudo-checkbox {
+    color: white !important;
+  }*/
+}
+
+/* Replaces:
 .mdc-menu-surface {
-  --mdc-theme-surface: #2b3135;
+  --mdc-theme-surface: $clr-gray-80-plus;
 
   &.scan-menu,
   &.search-menu {
     max-height: 500px !important;
   }
 }
+*/
 
 .mat-mdc-menu-content {
   padding-top: 0 !important;
@@ -480,33 +596,72 @@ h3 {
   color: white;
 }
 
+// Customising snack bar. Idea for these these came from:
+// https://stackoverflow.com/questions/47763799/angular-material-overriding-default-style-of-snackbar-component
+// Angular material post angular 16 changed it so the --mdc-* variables don't work any more and !important
+// was needed again. There must be a "better" way to do this, but the token method only seems to apply
+// globally and we set these styles as panelClass fields on openWithComponent() depending on the kind of
+// snack we're displaying
 .pixlise-message {
-  --mdc-snackbar-container-color: #2b3135;
+  .mdc-snackbar__surface { background-color: $clr-gray-80-plus !important; }
+  .mdc-snackbar__label { color: $clr-gray-10 !important; }
+  button { color: $clr-yellow !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: #2b3135 !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));
   --mat-snack-bar-button-color: rgb(var(--clr-yellow));
   --mdc-typography-button-font-weight: 800;
+  */
 }
 
 .pixlise-warn {
-  --mdc-snackbar-container-color: rgb(var(--clr-orange));
+  .mdc-snackbar__surface { background-color: $clr-orange !important; }
+  .mdc-snackbar__label { color: $clr-gray-90 !important; }
+  button { color: $clr-gray-90 !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: rgb(var(--clr-orange)) !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
   --mdc-typography-button-font-weight: 800;
+  */
 }
 
 .pixlise-error {
-  --mdc-snackbar-container-color: rgb(var(--clr-red));
+  .mdc-snackbar__surface { background-color: $clr-red !important; }
+  .mdc-snackbar__label { color: $clr-gray-10 !important; }
+  button { color: $clr-gray-10 !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: rgb(var(--clr-red)) !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-10));
   --mdc-typography-button-font-weight: 800;
+  */
 }
 
 .pixlise-success {
-  --mdc-snackbar-container-color: #66bb6a;
+  .mdc-snackbar__surface { background-color: $clr-green !important; }
+  .mdc-snackbar__label { color: $clr-gray-90 !important; }
+  button { color: $clr-gray-90 !important; }
+
+  /* Replaces:
+  --mdc-snackbar-container-color: #66bb6a !important;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
   --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
   --mdc-typography-button-font-weight: 800;
+  */
 }
+
+/*
+:root {
+  @include mat.snack-bar-overrides((
+    button-color: orange,
+    container-color: red,
+  ));
+}
+*/
 
 color-picker {
   .color-picker {
@@ -515,7 +670,7 @@ color-picker {
     .box {
       input {
         background: #454c50;
-        color: rgb(var(--clr-gray-30));
+        color: $clr-gray-30;
       }
     }
 
@@ -541,7 +696,7 @@ color-picker {
     h4,
     h5,
     h6 {
-      color: rgb(var(--clr-gray-10));
+      color: $clr-gray-10;
       margin-top: 0;
       margin-bottom: 8px;
     }
@@ -560,13 +715,13 @@ color-picker {
     }
 
     code {
-      background: rgb(var(--clr-gray-70));
+      background: $clr-gray-70;
       padding: 2px 4px;
       border-radius: 3px;
     }
 
     pre {
-      background: rgb(var(--clr-gray-70));
+      background: $clr-gray-70;
       padding: 8px;
       border-radius: 4px;
       margin: 8px 0;
@@ -619,7 +774,7 @@ color-picker {
 
     &:not(.active) {
       .row-title {
-        color: rgb(var(--clr-gray-50));
+        color: $clr-gray-50;
         opacity: 0.5;
       }
     }

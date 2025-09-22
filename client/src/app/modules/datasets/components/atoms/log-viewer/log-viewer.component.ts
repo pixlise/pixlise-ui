@@ -39,6 +39,7 @@ import { httpErrorToString } from "src/app/utils/utils";
 const logAutoRetrieveLimit = 80; // Send this many refresh requests to the log to see progress. This is also stopped by seeing the "end" message
 
 @Component({
+  standalone: false,
   selector: "log-viewer",
   templateUrl: "./log-viewer.component.html",
   styleUrls: ["./log-viewer.component.scss"],

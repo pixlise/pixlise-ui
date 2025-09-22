@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
   [ngClass]="{ 'dataset-selected': isSelected || isMultiSelected }"
   (click)="onClickTileArea($event)"
   [attr.aria-label]="'DatasetTile:' + title">
-  <ng-container [ngSwitch]="tileImage">
+  <ng-container [ngSwitch]="tileImage.length">
     <ng-container *ngSwitchCase="0">
       <div class="fx-space-around-center fx-flex">
         <div class="no-image">No Context Image</div>

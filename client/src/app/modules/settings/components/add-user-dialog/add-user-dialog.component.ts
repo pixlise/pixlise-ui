@@ -29,7 +29,7 @@
 
 import { Component, Inject, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { UsersService } from "../../services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { UserInfo } from "src/app/generated-protos/user";
 import { MatSort } from "@angular/material/sort";
 import { SelectionModel } from "@angular/cdk/collections";
@@ -42,6 +42,7 @@ export interface AddUserDialogData {
 export type Role = "viewer" | "editor" | "admin";
 
 @Component({
+  standalone: false,
   selector: "app-add-user-dialog",
   templateUrl: "./add-user-dialog.component.html",
   styleUrls: ["./add-user-dialog.component.scss"],

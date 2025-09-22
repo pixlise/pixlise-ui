@@ -16,6 +16,7 @@ export interface ConfirmInputDialogResult {
 }
 
 @Component({
+  standalone: false,
   selector: "confirm-input-dialog",
   templateUrl: "./confirm-input-dialog.component.html",
   styleUrls: ["./confirm-input-dialog.component.scss"],

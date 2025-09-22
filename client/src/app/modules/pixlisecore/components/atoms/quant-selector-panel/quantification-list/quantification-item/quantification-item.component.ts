@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { QuantModes, getQuantifiedElements } from "src/app/models/Quantification";
 import { ObjectType } from "../../../../../../../generated-protos/ownership-access";
-import { AnalysisLayoutService } from "../../../../../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../../../../services/analysis-layout.service";
 
 export class QuantificationItemInfo {
   quantifiedAtomicNumbers: number[] = [];
@@ -54,6 +54,7 @@ export class QuantificationItemInfo {
 }
 
 @Component({
+  standalone: false,
   selector: "quantification-item",
   templateUrl: "./quantification-item.component.html",
   styleUrls: ["./quantification-item.component.scss"],

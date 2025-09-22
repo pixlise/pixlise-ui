@@ -36,6 +36,7 @@ import { DefaultLoggedInLink } from "../../navigation";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
 @Component({
+  standalone: false,
   selector: "footer",
   templateUrl: "./footer.component.html",
   styleUrls: ["./footer.component.scss"],

@@ -55,6 +55,7 @@ export enum ElementTileState {
 }
 
 @Component({
+  standalone: false,
   selector: "element-tile",
   templateUrl: "./element-tile.component.html",
   styleUrls: ["./element-tile.component.scss"],

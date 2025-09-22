@@ -47,30 +47,30 @@ export class Permissions {
   public static hasPermissionSet(claims: IdToken, permissionToCheck: string): boolean {
     if (
       !claims ||
-      !claims[EnvConfigurationInitService.appConfig.auth0_namespace] ||
-      !claims[EnvConfigurationInitService.appConfig.auth0_namespace][Permissions.authPermissions]
+      !claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace] ||
+      !claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace][Permissions.authPermissions]
     ) {
       // nothing to look in!
       return false;
     }
 
     // Look for the permission item
-    const permissions = claims[EnvConfigurationInitService.appConfig.auth0_namespace][Permissions.authPermissions];
+    const permissions = claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace][Permissions.authPermissions];
     return permissions.indexOf(permissionToCheck) != -1;
   }
 
   public static permissionCount(claims: IdToken): number {
     if (
       !claims ||
-      !claims[EnvConfigurationInitService.appConfig.auth0_namespace] ||
-      !claims[EnvConfigurationInitService.appConfig.auth0_namespace][Permissions.authPermissions]
+      !claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace] ||
+      !claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace][Permissions.authPermissions]
     ) {
       // nothing to look in!
       return -1;
     }
 
     // Look for the permission item
-    const permissions = claims[EnvConfigurationInitService.appConfig.auth0_namespace][Permissions.authPermissions];
+    const permissions = claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace][Permissions.authPermissions];
     return permissions.length;
   }
 
@@ -80,10 +80,10 @@ export class Permissions {
 
   //   if (
   //     claims &&
-  //     claims[EnvConfigurationInitService.appConfig.auth0_namespace] &&
-  //     claims[EnvConfigurationInitService.appConfig.auth0_namespace][Permissions.authPermissions]
+  //     claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace] &&
+  //     claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace][Permissions.authPermissions]
   //   ) {
-  //     let permissions = claims[EnvConfigurationInitService.appConfig.auth0_namespace][Permissions.authPermissions];
+  //     let permissions = claims[EnvConfigurationInitService.getConfig$.value!.auth0_namespace][Permissions.authPermissions];
   //     for (let perm of permissions) {
   //       if (perm.startsWith(Permissions.permissionAccessPrefix)) {
   //         let justGroup = perm.substring(Permissions.permissionAccessPrefix.length);

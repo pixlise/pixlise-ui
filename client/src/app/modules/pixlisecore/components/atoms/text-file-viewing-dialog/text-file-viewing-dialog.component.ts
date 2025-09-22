@@ -12,6 +12,7 @@ export class TextFileViewingDialogData {
 }
 
 @Component({
+  standalone: false,
   selector: "app-text-file-viewing-dialog",
   templateUrl: "./text-file-viewing-dialog.component.html",
   styleUrls: ["./text-file-viewing-dialog.component.scss"],

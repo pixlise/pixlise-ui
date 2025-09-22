@@ -49,4 +49,6 @@ export enum CursorId {
   histogramBarPickCursor = "histogramBarPickCursor",
   histogramBarPickAddCursor = "histogramBarPickAddCursor",
   histogramBarPickDelCursor = "histogramBarPickDelCursor",
+  resizeHorizontalCursor = "resizeHorizontalCursor", // horizontal resize for X-axis scaling
+  resizeVerticalCursor = "resizeVerticalCursor", // vertical resize for Y-axis scaling
 }

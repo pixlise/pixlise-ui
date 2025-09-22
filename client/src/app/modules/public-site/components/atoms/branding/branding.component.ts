@@ -30,6 +30,7 @@
 import { Component, OnInit } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "branding-logos",
   templateUrl: "./branding.component.html",
   styleUrls: ["./branding.component.scss"],

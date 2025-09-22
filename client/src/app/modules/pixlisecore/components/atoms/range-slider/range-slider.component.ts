@@ -44,6 +44,7 @@ export class RangeSliderValue {
 const ThumbRadius = 6;
 
 @Component({
+  standalone: false,
   selector: "range-slider",
   templateUrl: "./range-slider.component.html",
   styleUrls: ["./range-slider.component.scss"],

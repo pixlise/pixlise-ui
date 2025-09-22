@@ -30,6 +30,7 @@
 import { Component, OnInit, Input } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "quote-viewer",
   templateUrl: "./quote-viewer.component.html",
   styleUrls: ["./quote-viewer.component.scss"],

@@ -1,9 +1,9 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { AnalysisLayoutService } from "../../services/analysis-layout.service";
+import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { combineLatest, distinctUntilChanged, map, of, Subscription, switchMap } from "rxjs";
-import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActivatedRoute } from "@angular/router";
 
 export type ScreenConfigurationCSS = {
@@ -12,6 +12,7 @@ export type ScreenConfigurationCSS = {
 };
 
 @Component({
+  standalone: false,
   selector: "app-analysis-page",
   templateUrl: "./analysis-page.component.html",
   styleUrls: ["./analysis-page.component.scss"],
@@ -162,7 +163,7 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
     this._keyPresses.clear();
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     // Window resized, notify all canvases
     this._analysisLayoutService.notifyWindowResize();

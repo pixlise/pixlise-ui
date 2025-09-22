@@ -1,7 +1,7 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
+import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { AnalysisModule } from "../analysis/analysis.module";
 import { WidgetModule } from "../widget/widget.module";
 

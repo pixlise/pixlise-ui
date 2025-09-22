@@ -22,6 +22,7 @@ export interface ReferenceCSVUploadResponse {
 }
 
 @Component({
+  standalone: false,
   selector: "reference-csv-upload-dialog",
   templateUrl: "./reference-csv-upload-dialog.component.html",
   styleUrls: ["./reference-csv-upload-dialog.component.scss"],

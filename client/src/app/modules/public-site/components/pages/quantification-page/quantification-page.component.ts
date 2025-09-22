@@ -34,6 +34,7 @@ import { NumberButtonParams } from "../../atoms/number-button/number-button.comp
 import { MetaTagService } from "../../../services/meta-tag.service";
 
 @Component({
+  standalone: false,
   selector: "app-quantification-page",
   templateUrl: "./quantification-page.component.html",
   styleUrls: ["./quantification-page.component.scss"],

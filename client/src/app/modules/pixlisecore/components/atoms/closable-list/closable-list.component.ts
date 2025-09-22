@@ -30,6 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "closable-list",
   templateUrl: "./closable-list.component.html",
   styleUrls: ["./closable-list.component.scss"],

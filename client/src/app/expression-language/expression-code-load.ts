@@ -1,7 +1,7 @@
 import { Observable, of, map, combineLatest } from "rxjs";
 import { DataExpression } from "../generated-protos/expressions";
 import { DataModuleGetReq, DataModuleGetResp } from "../generated-protos/module-msgs";
-import { LoadedSources, DataModuleVersionWithRef } from "../modules/pixlisecore/services/widget-data.service";
+import { LoadedSources, DataModuleVersionWithRef } from "../modules/pixlisecore/models/widget-data-source";
 import { EXPR_LANGUAGE_LUA } from "./expression-language";
 import { APICachedDataService } from "../modules/pixlisecore/services/apicacheddata.service";
 

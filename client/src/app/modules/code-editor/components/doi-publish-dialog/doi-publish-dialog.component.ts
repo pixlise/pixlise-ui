@@ -197,6 +197,7 @@ export class DOIMetadata {
 }
 
 @Component({
+  standalone: false,
   selector: "doi-publish-dialog",
   templateUrl: "./doi-publish-dialog.component.html",
   styleUrls: ["./doi-publish-dialog.component.scss"],

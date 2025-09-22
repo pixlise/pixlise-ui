@@ -35,6 +35,7 @@ import { SpectrumChartModel, SpectrumLineChoice, SpectrumSource } from "../../sp
 import { Colours } from "src/app/utils/colours";
 
 @Component({
+  standalone: false,
   selector: "fit-elements",
   templateUrl: "./fit-elements.component.html",
   styleUrls: ["./fit-elements.component.scss", "../spectrum-fit-container.component.scss"],

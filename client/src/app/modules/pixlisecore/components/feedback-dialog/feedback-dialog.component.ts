@@ -1,13 +1,14 @@
 import { Component, HostListener, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { SentryHelper } from "../../../../utils/utils";
-import { SnackbarService } from "../../pixlisecore.module";
+import { SentryHelper } from "src/app/utils/utils";
+import { SnackbarService } from "../../services/snackbar.service";
 
 export interface FeedbackTextDialogData {
   description: string;
 }
 
 @Component({
+  standalone: false,
   selector: "feedback-dialog",
   templateUrl: "./feedback-dialog.component.html",
   styleUrls: ["./feedback-dialog.component.scss"],

@@ -27,16 +27,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// import { DataSetService } from "src/app/services/data-set.service";
-// import { SelectionService } from "src/app/services/selection.service";
-// import { CanvasInteractionHandler, CanvasInteractionResult, CanvasKeyEvent, CanvasMouseEvent } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
-import { SelectionService } from "../../../pixlisecore/pixlisecore.module";
+import { SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
 import {
   CanvasInteractionHandler,
   CanvasInteractionResult,
   CanvasKeyEvent,
   CanvasMouseEvent,
-} from "../../../widget/components/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { VariogramModel } from "./model";
 
 export class VariogramInteraction implements CanvasInteractionHandler {

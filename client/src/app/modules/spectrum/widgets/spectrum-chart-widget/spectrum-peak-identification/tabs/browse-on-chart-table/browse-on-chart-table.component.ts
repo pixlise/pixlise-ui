@@ -37,6 +37,7 @@ import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { ISpectrumChartModel } from "../../../spectrum-model-interface";
 
 @Component({
+  standalone: false,
   selector: "browse-on-chart-table",
   templateUrl: "./browse-on-chart-table.component.html",
   styleUrls: ["./browse-on-chart-table.component.scss"],

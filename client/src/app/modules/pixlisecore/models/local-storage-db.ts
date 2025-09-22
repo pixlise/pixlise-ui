@@ -1,8 +1,7 @@
 import Dexie, { Table } from "dexie";
-import { SnackbarDataItem } from "../services/snackbar.service";
+import { SnackbarDataItem } from "./snackbar-data";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { UINotification } from "src/app/modules/settings/services/notifications.service";
-import { ScanSpectrumData } from "../services/spectrum-data.service";
 
 export type CachedImageItem = {
   data: string;

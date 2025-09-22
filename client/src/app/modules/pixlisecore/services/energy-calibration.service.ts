@@ -7,7 +7,7 @@ import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/g
 import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { AnalysisLayoutService } from "../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../services/analysis-layout.service";
 import { SpectrumDataService } from "./spectrum-data.service";
 import { SentryHelper } from "src/app/utils/utils";
 

@@ -34,6 +34,7 @@ import { Subscription } from "rxjs";
 // Primarily exists so we can remove the use of these services from the main toolbar, and they are only used when the toolbar
 // needs these items shown. For example, this way we don't instantiate a view state service before loading a dataset
 @Component({
+  standalone: false,
   selector: "screen-capture-button",
   templateUrl: "./screen-capture-button.component.html",
   styleUrls: ["./screen-capture-button.component.scss"],

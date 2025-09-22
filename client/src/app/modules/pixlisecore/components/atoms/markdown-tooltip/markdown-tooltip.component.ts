@@ -3,8 +3,8 @@ import { CommonModule } from "@angular/common";
 import { MarkdownModule } from "ngx-markdown";
 
 @Component({
-  selector: "markdown-tooltip",
   standalone: true,
+  selector: "markdown-tooltip",
   imports: [CommonModule, MarkdownModule],
   templateUrl: "./markdown-tooltip.component.html",
   styleUrls: ["./markdown-tooltip.component.scss"],

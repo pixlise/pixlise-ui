@@ -30,6 +30,7 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "multi-switch-button",
   templateUrl: "./multi-switch-button.component.html",
   styleUrls: ["./multi-switch-button.component.scss"],

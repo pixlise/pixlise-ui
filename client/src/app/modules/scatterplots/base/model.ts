@@ -13,7 +13,7 @@ import { WidgetDataIds, ScanDataIds } from "../../pixlisecore/models/widget-data
 import { WidgetKeyItem, RegionDataResults, ExpressionReferences } from "../../pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDataItem, BaseChartDataValueItem, BaseChartDrawModel, BaseChartModel } from "./model-interfaces";
-import { WidgetError } from "../../pixlisecore/services/widget-data.service";
+import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BeamSelection } from "../../pixlisecore/models/beam-selection";
 import { invalidPMC } from "src/app/utils/utils";
 import { ScanItem } from "../../../generated-protos/scan";

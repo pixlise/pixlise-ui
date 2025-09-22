@@ -114,6 +114,7 @@ export class PickerDialogData {
 }
 
 @Component({
+  standalone: false,
   selector: "picker-dialog",
   templateUrl: "./picker-dialog.component.html",
   styleUrls: ["./picker-dialog.component.scss"],
@@ -163,7 +164,7 @@ export class PickerDialogComponent implements OnInit, AfterViewInit {
   }
 
   // On resize, update the position
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     this.updateDialogPosition();
   }

@@ -2,13 +2,14 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { parseNumberRangeString } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "pmc-selector-dialog",
   templateUrl: "./pmc-selector-dialog.component.html",
   styleUrls: ["./pmc-selector-dialog.component.scss"],

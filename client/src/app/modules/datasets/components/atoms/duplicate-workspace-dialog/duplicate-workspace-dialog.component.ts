@@ -1,12 +1,10 @@
 import { Component, HostListener, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
 import { Subscription } from "rxjs";
-import { APICachedDataService } from "../../../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "../../../../../generated-protos/scan-msgs";
 import { ScanItem } from "../../../../../generated-protos/scan";
-import { APIDataService, SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APICachedDataService, APIDataService, SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
 import { ROIService } from "../../../../roi/services/roi.service";
 import { SearchableListItem } from "../../../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
 import { sortScans } from "../../../../../utils/search";
@@ -24,6 +22,7 @@ export interface DuplicateWorkspaceDialogResult {
 }
 
 @Component({
+  standalone: false,
   selector: "duplicate-workspace-dialog",
   templateUrl: "./duplicate-workspace-dialog.component.html",
   styleUrls: ["./duplicate-workspace-dialog.component.scss"],

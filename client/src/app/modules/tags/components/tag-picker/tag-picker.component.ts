@@ -36,6 +36,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { UserDetails } from "src/app/generated-protos/user";
 
 @Component({
+  standalone: false,
   selector: "tag-picker",
   templateUrl: "./tag-picker.component.html",
   styleUrls: ["./tag-picker.component.scss"],

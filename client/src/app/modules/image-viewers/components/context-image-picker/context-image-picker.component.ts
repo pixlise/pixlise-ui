@@ -155,6 +155,7 @@ export type ImageSelection = {
 };
 
 @Component({
+  standalone: false,
   selector: "image-picker",
   templateUrl: "./context-image-picker.component.html",
   styleUrls: ["./context-image-picker.component.scss"],

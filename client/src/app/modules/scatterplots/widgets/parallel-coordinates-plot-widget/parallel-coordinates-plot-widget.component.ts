@@ -32,16 +32,14 @@ import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxj
 import { RGBUImage } from "src/app/models/RGBUImage";
 
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APICachedDataService, SelectionService, SnackbarService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUMineralRatios } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-data";
 import { selectMinerals } from "src/app/modules/scatterplots/base/mineral-selection";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
@@ -67,6 +65,7 @@ import {
 } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
 
 @Component({
+  standalone: false,
   selector: "app-parallel-coordinates-plot-widget",
   templateUrl: "./parallel-coordinates-plot-widget.component.html",
   styleUrls: ["./parallel-coordinates-plot-widget.component.scss"],
@@ -1119,7 +1118,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
     });
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize", [])
   onResize() {
     this.recalculateLines();
   }

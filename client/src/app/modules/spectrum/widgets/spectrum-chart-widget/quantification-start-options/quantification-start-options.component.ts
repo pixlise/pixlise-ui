@@ -63,6 +63,7 @@ class QuantModeItem {
 }
 
 @Component({
+  standalone: false,
   selector: "app-quantification-start-options",
   templateUrl: "./quantification-start-options.component.html",
   styleUrls: ["./quantification-start-options.component.scss"],

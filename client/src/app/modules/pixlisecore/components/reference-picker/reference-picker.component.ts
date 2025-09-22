@@ -24,7 +24,7 @@ import {
   ReferenceCSVUploadData,
   ReferenceCSVUploadResponse,
 } from "../reference-csv-upload-dialog/reference-csv-upload-dialog.component";
-import { AnalysisLayoutService } from "../../../analysis/analysis.module";
+import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 
 export interface ReferenceDataItem extends ReferenceData {
@@ -45,6 +45,7 @@ export interface ReferencePickerResponse {
 }
 
 @Component({
+  standalone: false,
   selector: "reference-picker",
   templateUrl: "./reference-picker.component.html",
   styleUrls: ["./reference-picker.component.scss"],

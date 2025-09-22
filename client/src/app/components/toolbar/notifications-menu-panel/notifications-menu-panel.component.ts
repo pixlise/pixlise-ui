@@ -35,6 +35,7 @@ export const hotkeysPanelNotificationID = "hotkeys-panel";
 export const versionUpdateNotificationID = "version-update";
 
 @Component({
+  standalone: false,
   selector: "app-notifications-menu-panel",
   templateUrl: "./notifications-menu-panel.component.html",
   styleUrls: ["./notifications-menu-panel.component.scss"],

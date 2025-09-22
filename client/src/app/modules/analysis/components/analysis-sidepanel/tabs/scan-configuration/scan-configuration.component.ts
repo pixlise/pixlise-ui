@@ -29,7 +29,7 @@
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { combineLatest, Subscription } from "rxjs";
 import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -39,6 +39,7 @@ import { filterScans, sortScans } from "src/app/utils/search";
 import { getScanTitle, SentryHelper } from "src/app/utils/utils";
 
 @Component({
+  standalone: false,
   selector: "scan-configuration",
   templateUrl: "./scan-configuration.component.html",
   styleUrls: ["./scan-configuration.component.scss"],

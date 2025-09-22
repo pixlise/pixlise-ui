@@ -52,6 +52,7 @@ export class SectionImageListTextInputs {
 }
 
 @Component({
+  standalone: false,
   selector: "section-image-list-text",
   templateUrl: "./section-image-list-text.component.html",
   styleUrls: ["./section-image-list-text.component.scss"],

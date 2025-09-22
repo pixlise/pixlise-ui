@@ -30,6 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
 @Component({
+  standalone: false,
   selector: "switch-button",
   templateUrl: "./switch-button.component.html",
   styleUrls: ["./switch-button.component.scss"],

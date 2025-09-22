@@ -38,6 +38,7 @@ import { UserInfo } from "src/app/generated-protos/user";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 @Component({
+  standalone: false,
   selector: "app-user-group-membership-dialog",
   templateUrl: "./user-group-membership-dialog.component.html",
   styleUrls: ["./user-group-membership-dialog.component.scss"],

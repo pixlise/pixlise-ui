@@ -29,13 +29,11 @@
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
 //import { Router } from "@angular/router";
-import { first, pipe, Subscription } from "rxjs";
+import { first, Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
-import { AnalysisLayoutService } from "../../../../analysis/analysis.module";
-import { ActivatedRoute, Router } from "@angular/router";
-import { httpErrorToString } from "src/app/utils/utils";
+import { Router } from "@angular/router";
 
 // The purpose of this page is to process the auth0 code/state that comes in. This is why we have an auth service
 // injected here - if the application is brought to this page and it has the code/state the auth service will see
@@ -48,6 +46,7 @@ import { httpErrorToString } from "src/app/utils/utils";
 // state=dnpfeC1Gc1ZVWi1PYmw2ODE4dE5qZkxIR190Sl82dElRaHIyUGxwSlJHNQ%3D%3D
 
 @Component({
+  standalone: false,
   selector: "app-authenticate",
   templateUrl: "./authenticate.component.html",
   styleUrls: ["./authenticate.component.scss"],

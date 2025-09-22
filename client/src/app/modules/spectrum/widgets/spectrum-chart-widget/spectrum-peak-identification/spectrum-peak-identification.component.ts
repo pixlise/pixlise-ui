@@ -54,6 +54,7 @@ export class SpectrumPeakIdentificationData {
 export class PeakIdentificationData {}
 
 @Component({
+  standalone: false,
   selector: "spectrum-peak-identification",
   templateUrl: "./spectrum-peak-identification.component.html",
   styleUrls: ["./spectrum-peak-identification.component.scss"],

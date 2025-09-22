@@ -54,6 +54,7 @@ export type ModuleReleaseDialogResponse = {
 };
 
 @Component({
+  standalone: false,
   selector: "app-module-release-dialog",
   templateUrl: "./module-release-dialog.component.html",
   styleUrls: ["./module-release-dialog.component.scss"],

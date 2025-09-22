@@ -7,24 +7,106 @@
         [options]="['Weight%', 'Mmol']"
         [value]="showMmol ? 'Mmol' : 'Weight%'"
         (onChange)="setShowMmol()"
-        [darkMode]="true"></multi-switch-button>
+        [darkMode]="true"
+      ></multi-switch-button>
     </div>
     <div class="row selection-mode-btn above-title">
       <div class="row-title">Selection Mode</div>
       <multi-switch-button
         [options]="selectionModes"
-        [optionIcons]="['assets/button-icons/minus.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus.svg']"
+        [optionIcons]="[
+          'assets/button-icons/minus.svg',
+          'assets/button-icons/reset.svg',
+          'assets/button-icons/plus.svg'
+        ]"
         [value]="currentSelectionMode"
         [showLabels]="false"
         (onChange)="onChangeSelectionMode($event)"
         [colorizeActiveIcon]="true"
-        [darkMode]="true"></multi-switch-button>
+        [darkMode]="true"
+      ></multi-switch-button>
     </div>
   </div>
 </ng-template>
 
-<interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
-</interactive-canvas>
+<div class="axis-container">
+  <div *ngIf="mdl.raw && !_exportMode" class="axis y-axis">
+    <h5
+      class="axis-label"
+      (click)="onAxisClick('Y')"
+      (keyup)="onAxisClick('Y')"
+      (keydown)="onAxisClick('Y')"
+      (keypress)="onAxisClick('Y')"
+      tabindex="0"
+    >
+      <span class="clickable-axis-btn"
+        ><img alt="Y Axis Options" src="assets/icons/clickable.svg"
+      /></span>
+      {{ yAxisSwitcher?.label || "Y" }}
+    </h5>
+    <span>
+      <range-slider
+        [minValue]="yRangeMin"
+        [selectedMinValue]="yRangeSelectedMin"
+        [maxValue]="yRangeMax"
+        [selectedMaxValue]="yRangeSelectedMax"
+        [pxLength]="yAxisSliderLength"
+        [orientVertical]="true"
+        (onChange)="onChangeYAxis($event)"
+      >
+      </range-slider>
+    </span>
+  </div>
+  <div class="canvas-container">
+    <interactive-canvas
+      [ngClass]="mdl.cursorShown"
+      [drawer]="drawer"
+      [drawNotifier]="mdl"
+      [interactionHandler]="interactionHandler"
+      [transform]="transform"
+    >
+    </interactive-canvas>
 
-<scatter-plot-axis-switcher *ngIf="!_exportMode" class="x-switcher" [info]="xAxisSwitcher" (click)="onAxisClick('X')"> </scatter-plot-axis-switcher>
-<scatter-plot-axis-switcher *ngIf="!_exportMode" class="y-switcher" [info]="yAxisSwitcher" (click)="onAxisClick('Y')"> </scatter-plot-axis-switcher>
+    <div *ngIf="mdl.raw && !_exportMode" class="axis x-axis">
+      <h5
+        class="axis-label"
+        (click)="onAxisClick('X')"
+        (keyup)="onAxisClick('X')"
+        (keydown)="onAxisClick('X')"
+        (keypress)="onAxisClick('X')"
+        tabindex="0"
+      >
+        <span class="clickable-axis-btn"
+          ><img alt="X Axis Options" src="assets/icons/clickable.svg"
+        /></span>
+        {{ xAxisSwitcher?.label || "X" }}
+      </h5>
+      <span>
+        <range-slider
+          [minValue]="xRangeMin"
+          [selectedMinValue]="xRangeSelectedMin"
+          [maxValue]="xRangeMax"
+          [selectedMaxValue]="xRangeSelectedMax"
+          [pxLength]="xAxisSliderLength"
+          (onChange)="onChangeXAxis($event)"
+        >
+        </range-slider>
+      </span>
+    </div>
+  </div>
+</div>
+
+<scatter-plot-axis-switcher
+  *ngIf="!_exportMode && !mdl.raw"
+  class="x-switcher"
+  [info]="xAxisSwitcher"
+  (click)="onAxisClick('X')"
+>
+</scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher
+  *ngIf="!_exportMode && !mdl.raw"
+  class="y-switcher"
+  [info]="yAxisSwitcher"
+  (click)="onAxisClick('Y')"
+>
+</scatter-plot-axis-switcher>

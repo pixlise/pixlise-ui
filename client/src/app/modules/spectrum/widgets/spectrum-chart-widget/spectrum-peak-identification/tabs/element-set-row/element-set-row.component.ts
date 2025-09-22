@@ -34,6 +34,7 @@ import { ObjectType } from "src/app/generated-protos/ownership-access";
 export const SPECIAL_QUANT_ID = "loaded_quantification";
 
 @Component({
+  standalone: false,
   selector: "element-set-row",
   templateUrl: "./element-set-row.component.html",
   styleUrls: ["./element-set-row.component.scss"],

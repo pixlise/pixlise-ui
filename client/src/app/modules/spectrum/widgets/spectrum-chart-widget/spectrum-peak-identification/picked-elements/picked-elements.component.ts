@@ -43,6 +43,7 @@ import { QuantCreateParams } from "src/app/generated-protos/quantification-meta"
 import { jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 
 @Component({
+  standalone: false,
   selector: "peak-id-picked-elements",
   templateUrl: "./picked-elements.component.html",
   styleUrls: ["./picked-elements.component.scss", "../spectrum-peak-identification.component.scss"],

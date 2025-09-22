@@ -21,6 +21,7 @@ import { UserGroupMembershipDialogComponent } from "./components/user-group-memb
 import { AddSubGroupDialogComponent } from "./components/add-subgroup-dialog/add-subgroup-dialog.component";
 
 export { UserOptionsService } from "./services/user-options.service";
+export { GroupsService } from "./services/groups.service";
 
 const APP_ROUTES: Routes = [
   {
