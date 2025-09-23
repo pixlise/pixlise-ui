@@ -26,6 +26,8 @@
 - Removed some pointless stdout printing that the client library (including Python lib) was writing
 
 ## 4.74.0 (2025-09-11)
+
+### Bug Fixes
 - Forced rebuild of PIXLISE due to https://news.ycombinator.com/item?id=45169794
 
 ## 4.73.0 (2025-09-05)
