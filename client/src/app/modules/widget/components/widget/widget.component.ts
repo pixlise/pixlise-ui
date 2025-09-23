@@ -422,7 +422,11 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
   private copyConfiguration(): Observable<WidgetConfiguration> {
     return getWidgetComponent(this.activeWidget).pipe(
       map(widgetComp => {
-        const widgetCfg = WIDGETS[this.activeWidget as WidgetType];
+        const widgetOptions = getWidgetOptions();
+        const widgetCfg = widgetOptions.find(option => option.id === this.activeWidget);
+        if (!widgetCfg) {
+          throw new Error(`Widget configuration not found for ${this.activeWidget}`);
+        }
         widgetCfg.widgetComponent = widgetComp;
         return widgetCfg;
       })
@@ -488,7 +492,6 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       this.widgetConfiguration = widgetConfig;
 
       if (!this.widgetConfiguration!.widgetComponent || !this.currentWidget) {
-        console.warn("Widget component or container not found");
         this._copyConfigActive = false;
         return;
       }
