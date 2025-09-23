@@ -27,6 +27,7 @@ export class Scan3DDrawModel {
 
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
+  protected _imageTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
   protected _meshFootprint?: THREE.Object3D;
   protected _meshWireframe?: THREE.LineSegments;
@@ -45,10 +46,12 @@ export class Scan3DDrawModel {
   create(
     scanEntries: ScanEntry[],
     beamLocations: Coordinate3D[],
+    image3DPoints: Coordinate3D[],
+    usePMCModel: boolean,
     contextImgMdl?: ContextImageScanModel,
     image?: HTMLImageElement
   ): Observable<void> {
-    const meshData = new PMCMeshData(scanEntries, beamLocations, contextImgMdl, image);
+    const meshData = new PMCMeshData(scanEntries, beamLocations, image3DPoints, usePMCModel, contextImgMdl, image);
 
     this._pointSizeSelected = meshData.maxWorldMeshSize / 1000;
     this._footprintSize = this._pointSizeSelected;//meshData.maxWorldMeshSize / 1000;
@@ -99,6 +102,7 @@ export class Scan3DDrawModel {
     }
 
     this._meshTerrain = this._meshData!.createMesh(this._terrainMatStandard, true, false, false, []);
+    this._imageTerrain = this._meshData!.createImage3DPointModel(this._terrainMatStandard);
 
     const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
     sprite.colorSpace = THREE.SRGBColorSpace;
@@ -140,6 +144,9 @@ export class Scan3DDrawModel {
     // NOTE: We now just create the object, don't add it to the scene just yet
 
     this._sceneMeshAttachment.add(this._meshTerrain);
+    if (this._imageTerrain) {
+      this._sceneMeshAttachment.add(this._imageTerrain);
+    }
 
     if (this._meshFootprint) {
       this._sceneMeshAttachment.add(this._meshFootprint);

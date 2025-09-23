@@ -14,6 +14,7 @@ import { Colours } from "src/app/utils/colours";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ContextImageMapLayer } from "../../models/map-layer";
 import { ROIItem } from "src/app/generated-protos/roi";
+import { Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
 
 
 class ContextImageRawRegion {
@@ -239,6 +240,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   private _raw?: ContextImageModelLoadedData;
   private _scanEntries?: ScanEntryResp;
   private _beams?: ScanBeamLocationsResp;
+  private _imageModel?: Image3DModelPointsResp;
 
   drawModel = new Scan3DDrawModel();
   
@@ -260,17 +262,32 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     return null;
   }
 
-  setData(scanId: string, loadedData: ContextImageModelLoadedData, scanEntries: ScanEntryResp, beams: ScanBeamLocationsResp): Observable<void> {
+  setData(
+    scanId: string,
+    loadedData: ContextImageModelLoadedData,
+    scanEntries: ScanEntryResp,
+    beams: ScanBeamLocationsResp,
+    imageModel: Image3DModelPointsResp | undefined,
+    usePMCModel: boolean
+  ): Observable<void> {
     this._scanId = scanId;
 
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
     this._scanEntries = scanEntries;
     this._beams = beams;
+    this._imageModel = imageModel;
     const scanMdl = loadedData.scanModels.get(scanId);
 
     const img = this._raw.image ? this._raw.image : undefined;
-    return this.drawModel.create(this._scanEntries.entries, this._beams.beamLocations, scanMdl, img).pipe(
+    return this.drawModel.create(
+      this._scanEntries.entries,
+      this._beams.beamLocations,
+      this._imageModel?.points?.points || [],
+      usePMCModel,
+      scanMdl,
+      img
+    ).pipe(
       tap(() => {
         // Set light position if we had one saved
         if (this._initialPointLightPosition && this.drawModel.pointLight) {

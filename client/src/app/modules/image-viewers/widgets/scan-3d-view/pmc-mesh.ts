@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
+import { AxisAlignedBBox, coordinate3DToThreeVector3 } from 'src/app/models/Geometry3D';
 import Delaunator from "delaunator";
 import { Point } from 'src/app/models/Geometry';
 import { Observable } from 'rxjs';
@@ -53,6 +53,8 @@ const downDir = new THREE.Vector3(0, 0, -1);
 
 export class PMCMeshData {
   private _bboxRawXYZ = new AxisAlignedBBox();
+  private _bboxRawImageModel = new AxisAlignedBBox();
+  private _bboxImageModelMesh = new AxisAlignedBBox();
   private _bboxRawUV = new AxisAlignedBBox();
   private _bboxMCC = new AxisAlignedBBox();
   private _bboxMeshPMCs = new AxisAlignedBBox();
@@ -69,6 +71,8 @@ export class PMCMeshData {
   private _averagePointDistanceTerrain: number = 0;
 
   private _simpleTerrainMesh?: THREE.Mesh;
+  private _image3DModel?: THREE.Mesh;
+  private _pmcHeightToImageModelHeightOffset = 0;
 
   private _pmcPolygons: PMCPoly[] = [];
 
@@ -77,21 +81,55 @@ export class PMCMeshData {
   constructor(
     private _scanEntries: ScanEntry[],
     private _beamLocations: Coordinate3D[],
+    private _image3DPoints: Coordinate3D[],
+    usePMCModel: boolean,
     private _contextImgMdl?: ContextImageScanModel,
     private _image?: HTMLImageElement)
   {
-    this.createRawBBoxes(this._scanEntries, this._beamLocations, this._contextImgMdl);
+    this.createRawBBoxes(this._scanEntries, this._beamLocations, this._image3DPoints, this._contextImgMdl);
+
     if (this._image) {
       this.calculateImageBBox(this._image.width, this._image.height);
     }
 
-    let scale = this.calculateDisplayScaleFactor(this._image ? this._bboxMCC : this._bboxRawXYZ);
-    this.calculateScanRelatedPoints(scale, this._scanEntries, this._beamLocations, this._contextImgMdl);
+    // Find the bbox of all the stuff we'll be scaling to fit the visible area
+    const allBBox = this._image ? this._bboxMCC : this._bboxRawXYZ;
+    // if (!usePMCModel && this._image3DPoints.length > 0) {
+    //   allBBox.expandToFit(this._bboxRawImageModel.minCorner);
+    //   allBBox.expandToFit(this._bboxRawImageModel.maxCorner);
+    // }
+
+    const scale = this.calculateDisplayScaleFactor(allBBox);
+
+    if (/*!usePMCModel &&*/ this._image3DPoints.length > 0 && this._image) {
+      // We're basing our model on the images 3d points, and we'll sprinkle the PMCs on the mesh this generates
+      // NOTE: Here we calculate a scale factor for just the 3d model points. This is because we want to display it
+      // the same way as we do the rest, x/y is the size of the image
+      const modelScale = this._image.width > this._image.height ?
+        this.maxWorldMeshSize / this._image.width :
+        this.maxWorldMeshSize / this._image.height;
+
+      this._image3DModel = this.calculateImagePoint3DModel(modelScale, 0.01, this._image3DPoints);
+    } //else {
+      // We're basing the model on PMC xyz locations and the rest of the model is just going to be flat-ish
+      // heading towards the corners
+      this.calculateScanRelatedPoints(scale, this._scanEntries, this._beamLocations, this._contextImgMdl);
+    //}
+
     this.calculateAveragePointDistance();
     this.makePMCMap();
 
     if (this._image) {
-      this.calculateSupportPoints(scale, this._image.width, this._image.height/*, this._scanEntries, this._beamLocations*/);
+      this.calculateImageSupportPoints(scale, this._image.width, this._image.height);
+    }
+
+    // Check if we have an image model and are being asked to use it - if so, we move the PMCs so their terrain points are
+    if (this._image3DModel && !usePMCModel) {
+      this._pmcHeightToImageModelHeightOffset = this.movePMCTerrainPointsOntoModel(this._image3DModel, this._bboxImageModelMesh);
+      this.applyOffsetToPoints(this._pmcHeightToImageModelHeightOffset);
+
+      // Add the image model points to our terrain support points
+      this.calculateImage3DModelSupportPoints();
     }
 
     //const concaveHullPMCs = this.calculateConcaveHullPMCs();
@@ -107,7 +145,13 @@ export class PMCMeshData {
     const idxs = this.calculateTriangleIndexes(geom);
     const meshGeom = this.createMeshGeometry(geom, idxs, !!this._image);
     this._simpleTerrainMesh = new THREE.Mesh(meshGeom);
-    this.updateMeshPointPolygonZs(this._simpleTerrainMesh);
+
+    // Make the polygon Z's sit on the terrain... if we have an image model, also give them the offset so they line up with PMCs
+    this.updateMeshPointPolygonZs(this._simpleTerrainMesh, this._bboxMeshPMCs, this._pmcHeightToImageModelHeightOffset);
+    /*if (this._image3DModel && !usePMCModel) {
+      this.updateMeshPointPolygonZs(this._image3DModel, this._bboxImageModelMesh);
+    } else {
+    }*/
 
     this.calcDisplayHullPoints(this._simpleTerrainMesh);
   }
@@ -159,6 +203,14 @@ export class PMCMeshData {
     const meshGeom = this.createMeshGeometry(geom, idxs, !!this._image);
 
     return new THREE.Mesh(meshGeom, material);
+  }
+
+  createImage3DPointModel(material: THREE.Material): THREE.Mesh | undefined {
+    if (this._image3DModel) {
+      this._image3DModel.material = material;
+      this._image3DModel.material.needsUpdate = true;
+    }
+    return this._image3DModel;
   }
 
   createPointPolygons(terrainMesh: THREE.Mesh, material: THREE.Material, polyColours: (THREE.Color | undefined)[]): THREE.Group {
@@ -481,8 +533,50 @@ export class PMCMeshData {
     return result;
   }
 
-  private dropOnMesh(pt: THREE.Vector3, mesh: THREE.Mesh): THREE.Vector3 {
-    this._raycaster.set(new THREE.Vector3(pt.x, pt.y, this._bboxMeshPMCs.maxCorner.z), downDir);
+  private movePMCTerrainPointsOntoModel(mesh: THREE.Mesh, meshBBox: AxisAlignedBBox): number {
+    // We don't want to warp the PMC xyz locations but we want them to sit "on" the terrain. This means we find the average
+    // height of the points, and the terrain where the points are, and we bring the two together
+    let averageMeshHeightAtFootprint = 0;
+    let averagePMCTerrainHeight = 0;
+    let pointCount = 0;
+
+    for (let c = 0; c < this._points.length; c++) {
+      const pt = this._points[c];
+      if (pt.scanEntryIndex >= 0) {
+        averagePMCTerrainHeight += pt.terrainPoint.z;
+        const pmcOnMesh = this.dropOnMesh(pt.terrainPoint, mesh, meshBBox);
+        averageMeshHeightAtFootprint += pmcOnMesh.z;
+        pointCount++;
+      }
+    }
+
+    if (pointCount <= 0) {
+      console.warn("movePMCTerrainPointsOntoModel: No points found, noop");
+      return 0;
+    }
+
+    averagePMCTerrainHeight /= pointCount;
+    averageMeshHeightAtFootprint /= pointCount;
+
+    // Now do the move
+    return averageMeshHeightAtFootprint - averagePMCTerrainHeight;
+  }
+
+  private applyOffsetToPoints(offset: number) {
+    for (let c = 0; c < this._points.length; c++) {
+      const pt = this._points[c];
+      if (pt.scanEntryIndex >= 0) {
+        pt.terrainPoint.z += offset;
+      }
+    }
+  }
+
+  private calculateImage3DModelSupportPoints() {
+    //for (this._image3DPoints)
+  }
+
+  private dropOnMesh(pt: THREE.Vector3, mesh: THREE.Mesh, meshBBox: AxisAlignedBBox): THREE.Vector3 {
+    this._raycaster.set(new THREE.Vector3(pt.x, pt.y, meshBBox.maxCorner.z * 100 /* to be sure! Maybe we could do away with the bbox and just use a big number*/), downDir);
 
     const intersects = this._raycaster.intersectObject(mesh);
     if (intersects.length > 0) {
@@ -510,20 +604,67 @@ export class PMCMeshData {
     }
   }
 
+  private calculateImagePoint3DModel(scale: number, heightScale: number, image3DPoints: Coordinate3D[]): THREE.Mesh {
+    // Take the points, form delaunay triangulation only considering the x,y axis, add the z values in
+    // and generate a mesh which can be displayed
+    let geom = this.createImage3DPointArray(scale, heightScale, 1/this._image!.width, 1/this._image!.height, image3DPoints, this._bboxRawImageModel, this._bboxImageModelMesh);
+    const idxs = this.calculateTriangleIndexes(geom);
+    const meshGeom = this.createMeshGeometry(geom, idxs, !!this._image);
+    const mesh = new THREE.Mesh(meshGeom);
+    return mesh;
+  }
+
+  private createImage3DPointArray(scale: number, heightScale: number, uScale: number, vScale: number, image3DPoints: Coordinate3D[], image3dPointsBBox: AxisAlignedBBox, image3dPointsMeshBBox: AxisAlignedBBox): GeometryAttributes {
+    const xyz = new Float32Array(image3DPoints.length * 3);
+    const uv = new Float32Array(image3DPoints.length * 2);
+
+    let posIdx = 0;
+    let uvIdx = 0;
+
+    const xyzCenter = image3dPointsBBox.center();
+
+    for (let c = 0; c < image3DPoints.length; c++) {
+      const pt = image3DPoints[c];
+
+      let terrainPt = this.rawToTerrainPoint(pt, xyzCenter, scale);
+
+      terrainPt.z *= heightScale;
+      //terrainPt.z += 45;
+
+      image3dPointsMeshBBox.expandToFit(terrainPt);
+
+      xyz[posIdx] = terrainPt.x;
+      xyz[posIdx+1] = terrainPt.y;
+      xyz[posIdx+2] = terrainPt.z;
+      posIdx += 3;
+
+      uv[uvIdx] = 1 - image3DPoints[c].x * uScale;
+      uv[uvIdx+1] = /*1 -*/ image3DPoints[c].y * vScale;
+      uvIdx += 2;
+    }
+
+    return new GeometryAttributes(xyz, uv);
+  }
+
   private createRawBBoxes(
     scanEntries: ScanEntry[],
     beamLocations: Coordinate3D[],
+    imagePoints: Coordinate3D[],
     contextImgMdl?: ContextImageScanModel
   ) {
     // Find the physical PMCs bounding box first
     for (let c = 0; c < scanEntries.length; c++) {
       const scanEntry = scanEntries[c];
       if(scanEntry.location && scanEntry.normalSpectra) {
-        this._bboxRawXYZ.expandToFit(new THREE.Vector3(beamLocations[c].x, beamLocations[c].y, beamLocations[c].z));
+        this._bboxRawXYZ.expandToFit(coordinate3DToThreeVector3(beamLocations[c]));
         if (contextImgMdl && contextImgMdl.scanPoints[c] && contextImgMdl.scanPoints[c].coord) {
           this._bboxRawUV.expandToFit(new THREE.Vector3(contextImgMdl.scanPoints[c].coord!.x, 0, contextImgMdl.scanPoints[c].coord!.y));
         }
       }
+    }
+
+    for (let pt of imagePoints) {
+      this._bboxRawImageModel.expandToFit(coordinate3DToThreeVector3(pt));
     }
   }
 
@@ -628,7 +769,7 @@ export class PMCMeshData {
     let totalDistTerrain = 0;
     for (let c = 0; c < this._points.length; c++) {
       const pt = this._points[c];
-      if (pt.scanEntryIndex >= 0 && this._scanEntries[pt.scanEntryIndex].normalSpectra || this._scanEntries[pt.scanEntryIndex].pseudoIntensities) {
+      if (pt.scanEntryIndex >= 0 && (this._scanEntries[pt.scanEntryIndex].normalSpectra || this._scanEntries[pt.scanEntryIndex].pseudoIntensities)) {
         if (checked > 0) {
           const last = this._points[c-1];
           let dist = pt.rawPoint.distanceTo(last.rawPoint);
@@ -653,7 +794,7 @@ export class PMCMeshData {
     this._averagePointDistanceTerrain = totalDistTerrain / checked;
   }
 
-  private calculateSupportPoints(
+  private calculateImageSupportPoints(
     scale: number,
     imageWidth: number,
     imageHeight: number
@@ -891,7 +1032,7 @@ export class PMCMeshData {
 
     // Lay everything onto the terrain mesh
     for (let c = 0; c < this._displayHullPoints.length; c++) {
-      this._displayHullPoints[c] = this.dropOnMesh(this._displayHullPoints[c], terrainMesh);
+      this._displayHullPoints[c] = this.dropOnMesh(this._displayHullPoints[c], terrainMesh, this._bboxMeshPMCs);
     }
   }
 
@@ -1075,7 +1216,7 @@ export class PMCMeshData {
     return result;
   }
 
-  private updateMeshPointPolygonZs(terrainMesh: THREE.Mesh) {
+  private updateMeshPointPolygonZs(terrainMesh: THREE.Mesh, meshBBox: AxisAlignedBBox, heightOffset: number) {
     // Construct x,y,z array while finding the y value
     for (const poly of this._pmcPolygons) {
       if (poly.terrainPoints.length <= 0) {
@@ -1084,7 +1225,8 @@ export class PMCMeshData {
 
       // NOTE: we loop from 1 because point 0 is the PMC original location so should be set already
       for (let c = 1; c < poly.terrainPoints.length; c++) {
-        poly.terrainPoints[c] = this.dropOnMesh(poly.terrainPoints[c], terrainMesh);
+        poly.terrainPoints[c] = this.dropOnMesh(poly.terrainPoints[c], terrainMesh, meshBBox);
+        //poly.terrainPoints[c].z += heightOffset;
       }
     }
   }
