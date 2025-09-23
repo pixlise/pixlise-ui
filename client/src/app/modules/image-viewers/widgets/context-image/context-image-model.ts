@@ -322,6 +322,21 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       this._colourScaleDisplayValueRanges.set(colourScaleRangeId, displayValueRange);
     }
 
+    const displayValueMin = displayValueRange.min || 0;
+    const displayValueMax = displayValueRange.max || 0;
+
+    const scaleDataValueMin = scaleData.valueRange.min || 0;
+    const scaleDataValueMax = scaleData.valueRange.max || 0;
+
+    if (displayValueMin < scaleDataValueMin || displayValueMin >= displayValueMax || displayValueMin >= scaleDataValueMax) {
+      displayValueRange.setMin(scaleDataValueMin);
+      this._colourScaleDisplayValueRanges.set(colourScaleRangeId, displayValueRange);
+    }
+    if (displayValueMax > scaleDataValueMax || displayValueMax <= displayValueMin || displayValueMax <= scaleDataValueMin) {
+      displayValueRange.setMax(scaleDataValueMax);
+      this._colourScaleDisplayValueRanges.set(colourScaleRangeId, displayValueRange);
+    }
+
     // Generate colour scale
     this._colourScales.push(
       new MapColourScaleModel(
