@@ -13,7 +13,7 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions, ImageOptionsComponent, ImagePickerParams, ImagePickerResult } from "../context-image/image-options/image-options.component";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageModelLoadedData } from "../context-image/context-image-model-internals";
-import { LightMode, MapLayerVisibility, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { LightMode, MapLayerVisibility, ModelStyle, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { Scan3DMouseInteraction } from "./mouse-interaction";
@@ -49,7 +49,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
   configuredScanIds: string[] = [];
   scanId: string = "";
-  usePMCModel: boolean = true;
 
   private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
   private _expressionPickerDialog: MatDialogRef<ExpressionPickerComponent> | null = null;
@@ -129,15 +128,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           tooltip: "Manage images drawn",
           value: false,
           onClick: (value, trigger) => this.onToggleImageOptionsView(trigger),
-        },
-        {
-          id: "toggle-model",
-          type: "button",
-          title: "Toggle Model",
-          margin: "0 auto 0 0",
-          tooltip: "Toggle between PMC location model vs MCC photogrammetry model",
-          value: false,
-          onClick: (value, trigger) => this.onToggle3DModel(trigger),
         }
       ],
     };
@@ -474,13 +464,6 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     });
   }
 
-  onToggle3DModel(trigger) {
-    this.usePMCModel = !this.usePMCModel;
-    this._snackService.openSuccess(`Regenerating using ${this.usePMCModel ? "PMC" : "MCC Photogrammetry"} model`);
-
-    this.reloadModel();
-  }
-
   protected saveState() {
     const dir = new THREE.Quaternion();
     this.mdl.drawModel.renderData.camera.getWorldQuaternion(dir);
@@ -798,10 +781,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         this.scanId = contextImgModel.scanModels.keys().next().value!;
       }
 
-      if (imageModel) {
-        this.usePMCModel = false;
-      }
-      this.mdl.setData(scanId, contextImgModel, scanEntries, beams, imageModel, this.usePMCModel).pipe(
+      this.mdl.setData(scanId, contextImgModel, scanEntries, beams, imageModel).pipe(
         switchMap(
           () => {
             return this.loadMapLayers();
@@ -843,6 +823,21 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     const viewFolder = this._tweakPane.addFolder({
       title: 'Objects',
       expanded: true
+    });
+
+    viewFolder.addBinding(this.mdl, 'modelStyle', {
+      label: "Model Draw Style",
+      options: {
+        //"Unknown": ModelStyle.MS_UNKNOWN,
+        "PMC positions over flat plane": ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE,
+        "PMC positions extending to ground plane": ModelStyle.MS_MID_GROUND_PLANE,
+        "MCC model ONLY": ModelStyle.MS_MCC_MODEL_ONLY,
+        "MCC model with PMCs dropped on": ModelStyle.MS_MCC_MODEL_PMCS_DROPPED,
+        "MCC model combined with PMC positions": ModelStyle.MS_MCC_MODEL_PMCS_POKING_THROUGH
+      }
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
     });
 
     viewFolder.addBinding(this.mdl, 'showPoints', {

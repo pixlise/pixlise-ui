@@ -9,7 +9,7 @@ import { coordinate3DToThreeVector3, coordinate4DToThreeQuaternion } from "src/a
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
-import { Coordinate4D, LightMode, ROILayerVisibility } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode, ModelStyle, ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { Colours } from "src/app/utils/colours";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ContextImageMapLayer } from "../../models/map-layer";
@@ -107,7 +107,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this._initialPointLightPosition = pos;
   }
 
-  protected _planeYScale: number = 0.5;
+  protected _planeYScale: number = 0;
   get planeYScale(): number {
     return this._planeYScale;
   }
@@ -115,7 +115,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   // Only valid values for display are between 0 and 1, others are treated as "not enabled"
   set planeYScale(s: number) {
     if (s <= 0 || s > 1) {
-      this._planeYScale = -1;
+      this._planeYScale = 0;
     } else {
       this._planeYScale = s;
     }
@@ -133,6 +133,18 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setLightMode(mode);
   }
 
+  protected _modelStyle: ModelStyle = ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE;
+  get modelStyle(): ModelStyle {
+    return this._modelStyle;
+  }
+
+  set modelStyle(style: ModelStyle) {
+    this._modelStyle = style;
+
+    this.drawModel.setModelStyle(style);
+    this.setInitialState();
+  }
+  
   get showPoints(): boolean {
     return !this.hidePointsForScans.has(this._scanId);
   }
@@ -267,8 +279,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     loadedData: ContextImageModelLoadedData,
     scanEntries: ScanEntryResp,
     beams: ScanBeamLocationsResp,
-    imageModel: Image3DModelPointsResp | undefined,
-    usePMCModel: boolean
+    imageModel: Image3DModelPointsResp | undefined
   ): Observable<void> {
     this._scanId = scanId;
 
@@ -284,7 +295,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
       this._scanEntries.entries,
       this._beams.beamLocations,
       this._imageModel?.points?.points || [],
-      usePMCModel,
+      this._modelStyle,
       scanMdl,
       img
     ).pipe(
