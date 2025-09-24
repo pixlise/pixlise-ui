@@ -1,4 +1,9 @@
-## 4.76.0 (LATEST)
+## 4.77.0 (LATEST)
+
+### Bug Fixes
+- Fixes critical issue where configuration for widgets of the same type were not being separated correctly, causing unexpected control behavior
+
+## 4.76.0 (2025-09-22)
 
 ### New Features
 - **3D View**: A new widget to view our scans in 3D. **NOTE: This is experimental, be careful drawing any conclusions from this view for now**. It uses the beam location x,y,z coordinates provided by spectrum data to build a terrain-like view of the PMCs and extrapolates out to the corners of the MCC image. Supports a lot of the features the context image does:
