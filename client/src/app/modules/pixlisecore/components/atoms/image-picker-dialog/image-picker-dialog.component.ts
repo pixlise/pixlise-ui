@@ -34,7 +34,7 @@ import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { makeImageTooltip } from "src/app/utils/image-details";
@@ -115,7 +115,8 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     private _cachedDataService: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _endpointsService: APIEndpointsService,
-    private _dataService: APIDataService
+    private _dataService: APIDataService,
+    private _snackService: SnackbarService
   ) {}
 
   ngOnInit() {
@@ -482,5 +483,11 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     this.dialogRef.close();
+  }
+
+  onCopyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      this._snackService.openSuccess("Copied to clipboard!");
+    });
   }
 }

@@ -42,6 +42,9 @@ import { rgbBytesToImage } from "src/app/utils/drawing";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { ElementRef, ViewChild } from "@angular/core";
+import { Image3DModelPointUploadReq, Image3DModelPointUploadResp } from "src/app/generated-protos/image-3d-model-point-msgs";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { Image3DPoints } from "src/app/generated-protos/image-3d-model-points";
 @Component({
   standalone: false,
   selector: "app-dataset-customisation-page",
@@ -470,6 +473,82 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
             },
           });
       });
+    });
+  }
+
+  onAdd3DPoints() {
+    // if (!this.selectedImage || !this.selectedImage.imagePath) {
+    //   this._snackService.openError("No image selected", "Select or upload an image first");
+    //   return;
+    // }
+    const imageName = prompt("Paste image name to upload points for");
+    if (!imageName || imageName.length <= 0) {
+      this._snackService.openError("No image name pasted", "Paste name of image to upload points for");
+      return;
+    }
+
+    const csv = prompt("Paste CSV data here");
+    if (!csv || csv.length <= 0) {
+      this._snackService.openError("No data pasted", "Paste CSV data of points, no column headers, just x, y, z values per line");
+      return;
+    }
+
+    const lines = csv.split("\n");
+    if (lines.length <= 0) {
+      this._snackService.openError("One or less lines in CSV", "Paste valid CSV data of points, no column headers, just x, y, z values per line");
+      return;
+    }
+
+    const pts: Coordinate3D[] = [];
+    let seenHeader = false;
+    for (let c = 0; c < lines.length; c++) {
+      const line = lines[c];
+      const xyz = line.split(",");
+      if (xyz.length != 0 && xyz.length != 3) {
+        this._snackService.openError(`CSV line ${c+1} didn't have 3 values`);
+        return;
+      }
+
+      for (let i = 0; i < 3; i++) {
+        xyz[i] = xyz[i].trim();
+      }
+
+      // Check if this is the header line, if so, skip it (once)
+      if (xyz[0] == "X_px" && xyz[1] == "Y_px" && xyz[2] == "Z_um") {
+        if (seenHeader) {
+          this._snackService.openError(`CSV line ${c+1} contains a second header line`);
+          return;
+        }
+        seenHeader = true;
+        continue;
+      }
+
+      const vals: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        const v = Number.parseFloat(xyz[i]);
+        if (v === undefined) {
+          this._snackService.openError(`CSV line ${c+1}, value ${i+1} couldn't be read: "${xyz[i]}"`);
+          return;
+        }
+        vals.push(v);
+      }
+      const coord = Coordinate3D.create({x: vals[0], y: vals[1], z: vals[2]});
+      pts.push(coord);
+    }
+
+    this._dataService.sendImage3DModelPointUploadRequest(Image3DModelPointUploadReq.create({
+        points: Image3DPoints.create({
+          imageName: imageName,
+          points: pts
+        })
+      })).subscribe({
+      next: (resp: Image3DModelPointUploadResp) => {
+        this._snackService.openSuccess("Points Uploaded");
+      },
+      error: err => {
+        this._snackService.openError(`Error uploading points for image: ${imageName}`, err);
+        this.setWait(this.waitDeleteImage, false);
+      },
     });
   }
 

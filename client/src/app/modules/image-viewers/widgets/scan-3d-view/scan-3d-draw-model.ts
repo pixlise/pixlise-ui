@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { RenderData } from './interactive-canvas-3d.component';
 import { SelectionService } from 'src/app/modules/pixlisecore/pixlisecore.module';
 import { AxisAlignedBBox } from 'src/app/models/Geometry3D';
-import { LightMode } from 'src/app/generated-protos/widget-data';
+import { LightMode, ModelStyle } from 'src/app/generated-protos/widget-data';
 import { loadTexture, PMCMeshData, PMCMeshPoint } from "./pmc-mesh";
 import { map, Observable, of } from 'rxjs';
 import { Coordinate3D } from 'src/app/generated-protos/scan-beam-location';
@@ -27,6 +27,7 @@ export class Scan3DDrawModel {
 
   protected _meshData?: PMCMeshData;
   protected _meshTerrain?: THREE.Mesh;
+  //protected _imageTerrain?: THREE.Mesh;
   protected _meshPoints?: THREE.Points;
   protected _meshFootprint?: THREE.Object3D;
   protected _meshWireframe?: THREE.LineSegments;
@@ -37,6 +38,7 @@ export class Scan3DDrawModel {
   protected _heightExaggerationScale: number = 1;
 
   protected _lastMaps: ContextImageMapLayer[] = [];
+  protected _modelStyle: ModelStyle = ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE;
 
   get meshPoints(): THREE.Points | undefined {
     return this._meshPoints;
@@ -45,15 +47,19 @@ export class Scan3DDrawModel {
   create(
     scanEntries: ScanEntry[],
     beamLocations: Coordinate3D[],
+    image3DPoints: Coordinate3D[],
+    modelStyle: ModelStyle,
     contextImgMdl?: ContextImageScanModel,
     image?: HTMLImageElement
   ): Observable<void> {
-    const meshData = new PMCMeshData(scanEntries, beamLocations, contextImgMdl, image);
+    this._modelStyle = modelStyle;
 
-    this._pointSizeSelected = meshData.maxWorldMeshSize / 1000;
+    this._pointSizeSelected = PMCMeshData.maxWorldMeshSize / 1000;
     this._footprintSize = this._pointSizeSelected;//meshData.maxWorldMeshSize / 1000;
     //this._pointSize = 2 * (contextImgMdl?.scanPointDisplayRadius || 1.5);
     this._pointSizeAttenuated = this._pointSizeSelected;
+
+    const meshData = new PMCMeshData(scanEntries, beamLocations, image3DPoints, contextImgMdl, image);
 
     if (image) {
       return loadTexture(image).pipe(
@@ -72,10 +78,38 @@ export class Scan3DDrawModel {
       return;
     }
 
-    // Firstly, add our attachment point
+    this._meshData = meshData;
+    this._texture = texture;
+
+    if (texture) {
+      //this._terrainMatBasic.map = texture;
+      this._terrainMatStandard.map = texture;
+    }
+
+    this.setModelStyle(this._modelStyle);
+  }
+
+  setModelStyle(style: ModelStyle) {
+    this._modelStyle = style;
+    if (!this._meshData) {
+      console.error("setModelStyle: initScene was not yet called");
+      return;
+    }
+
+    // Firstly, add our attachment point, effectively clears mesh data from scene
     if (this._sceneAttachment) {
       this.renderData.scene.remove(this._sceneAttachment);
     }
+
+    // Clear our own references
+    this._meshPoints = undefined;
+    this._meshFootprint = undefined;
+    this._meshTerrain = undefined;
+    this._pointLight = undefined;
+    const wasWireframe = this._meshWireframe != undefined;
+    this._meshWireframe = undefined;
+
+    this._meshData.regenerate(this._modelStyle);
 
     // To make things work nicer with three js default "right handed" coordinate space (where Z+ comes out of the screen)
     // we have to rotate any triangle mesh data that comes from PIXL data to have it's Z values point up on the screen.
@@ -89,20 +123,22 @@ export class Scan3DDrawModel {
     this._sceneAttachment.add(this._sceneMeshAttachment);
 
     this.renderData.scene.add(this._sceneAttachment);
+    
+    // Init mesh display
+    this._meshTerrain = this._meshData!.createMesh(
+      this._terrainMatStandard,
+      this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY && this._modelStyle != ModelStyle.MS_MCC_MODEL_PMCS_DROPPED,
+      this._modelStyle == ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE,
+      false,
+      false,
+      []
+    );
 
-    this._meshData = meshData;
-    this._texture = texture;
+    //this._imageTerrain = this._meshData!.createImage3DPointModel(this._terrainMatStandard);
 
-    if (texture) {
-      //this._terrainMatBasic.map = texture;
-      this._terrainMatStandard.map = texture;
-    }
-
-    this._meshTerrain = this._meshData!.createMesh(this._terrainMatStandard, true, false, false, []);
-
+    // Init points display
     const sprite = new THREE.TextureLoader().load("assets/shapes/disc.png");
     sprite.colorSpace = THREE.SRGBColorSpace;
-
     const pointMat = new THREE.PointsMaterial({
       color: this._selectionColour,
 
@@ -116,9 +152,15 @@ export class Scan3DDrawModel {
       transparent: true
     });
 
-    this._meshPoints = this._meshData.createPoints(pointMat);
-    //this._meshPoints.position.z += pushUpHeight;
+    if (this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY) {
+      this._meshPoints = this._meshData.createPoints(
+        pointMat,
+        this._modelStyle == ModelStyle.MS_MCC_MODEL_PMCS_DROPPED ? this._meshTerrain : undefined
+      );
+      //this._meshPoints.position.z += pushUpHeight;
+    }
 
+    // Init footprint display
     this._meshFootprint = this._meshData.createFootprint(
       this._footprintSize,
       new THREE.MeshLambertMaterial({ color: this._hoverColour }),
@@ -126,9 +168,10 @@ export class Scan3DDrawModel {
       false
     );
 
-    const meshBBox = meshData.bboxMeshPMCs;
+    const meshBBox = this._meshData.bboxMeshPMCs;
     const dataCenter = meshBBox.center();
   
+    // Init lighting
     // Add all the stuff to the scene with references separately so we can remove them if toggled 
     this._pointLight = this.makeLight(
       new THREE.Vector3(
@@ -140,15 +183,22 @@ export class Scan3DDrawModel {
     // NOTE: We now just create the object, don't add it to the scene just yet
 
     this._sceneMeshAttachment.add(this._meshTerrain);
+    // if (this._imageTerrain) {
+    //   this._sceneMeshAttachment.add(this._imageTerrain);
+    // }
 
     if (this._meshFootprint) {
       this._sceneMeshAttachment.add(this._meshFootprint);
     }
 
     // Create (but don't add) a plane that we can move up and down to compare peaks on the terrain
-    this.initPlane(meshData.bboxMeshAll);
+    this.initPlane(this._meshData.bboxMeshAll);
 
     // NOTE: We now just create the object, don't add it to the scene just yet
+
+    if (wasWireframe) {
+      this.setWireframe(true);
+    }
   }
 
   protected makeLight(lightPos: THREE.Vector3) {
@@ -742,7 +792,15 @@ export class Scan3DDrawModel {
       // Why didn't this work? this._meshTerrain?.geometry.deleteAttribute("color");
 
       this._sceneMeshAttachment?.remove(this._meshTerrain);
-      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, []);
+      this._meshTerrain = this._meshData!.createMesh(
+        this._meshTerrain.material as THREE.Material,
+        this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY,
+        this._modelStyle == ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE,
+        duplicatePolyPoints,
+        colourOnlyPMC,
+        []
+      );
+
       this._sceneMeshAttachment?.add(this._meshTerrain);
 
       //this._terrainMatBasic.vertexColors = false;
@@ -752,7 +810,15 @@ export class Scan3DDrawModel {
       this._terrainMatStandard.vertexColors = true;
 
       this._sceneMeshAttachment?.remove(this._meshTerrain);
-      this._meshTerrain = this._meshData!.createMesh(this._meshTerrain.material as THREE.Material, true, duplicatePolyPoints, colourOnlyPMC, scanEntryColours);
+      this._meshTerrain = this._meshData!.createMesh(
+        this._meshTerrain.material as THREE.Material,
+        this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY,
+        this._modelStyle == ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE,
+        duplicatePolyPoints,
+        colourOnlyPMC,
+        scanEntryColours
+      );
+
       this._sceneMeshAttachment?.add(this._meshTerrain);
     }
     //this._terrainMatBasic.needsUpdate = true;

@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { BehaviorSubject, catchError, combineLatest, map, mergeMap, Observable, of, scan, Subject, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
+import { catchError, combineLatest, map, mergeMap, Observable, of, scan, Subject, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
 import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -13,14 +13,13 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions, ImageOptionsComponent, ImagePickerParams, ImagePickerResult } from "../context-image/image-options/image-options.component";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageModelLoadedData } from "../context-image/context-image-model-internals";
-import { Coordinate4D, LightMode, MapLayerVisibility, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
+import { LightMode, MapLayerVisibility, ModelStyle, ROILayerVisibility, Scan3DViewState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { Scan3DMouseInteraction } from "./mouse-interaction";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { Pane } from 'tweakpane';
-import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { coordinate3DToThreeVector3, quaternionToCoordinate4D, vector3ToCoordinate3D } from "src/app/models/Geometry3D";
 import { ExpressionPickerComponent, ExpressionPickerData, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
@@ -30,6 +29,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ColourRamp } from "src/app/utils/colours";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { Image3DModelPointsReq, Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
 
 
 @Component({
@@ -128,7 +128,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
           tooltip: "Manage images drawn",
           value: false,
           onClick: (value, trigger) => this.onToggleImageOptionsView(trigger),
-        },
+        }
       ],
     };
   }
@@ -656,7 +656,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     renderData.camera = new THREE.PerspectiveCamera(
       60,
       this._canvasSize!.x / this._canvasSize!.y,
-      0.01,
+      0.1,
       1000
     );
   
@@ -746,12 +746,26 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     }
 
     this.isWidgetDataLoading = true;
+
+    this._cacheDataService.getImage3DPoints(Image3DModelPointsReq.create({imageName: this.mdl.imageName})).subscribe(
+      (resp: Image3DModelPointsResp) => {
+        this.continueReloadModel(resp);
+      },
+      err => {
+        // We ignore errors, just act like there is no model (the most likely scenario)
+        this.continueReloadModel(undefined);
+      }
+    );
+  }
+
+  protected continueReloadModel(imageModel: Image3DModelPointsResp | undefined) {
     const scanId = this._analysisLayoutService.defaultScanId;
 
     const obs: Observable<ContextImageModelLoadedData> =
       this.mdl.imageName.length <= 0 && this.scanId.length > 0
         ? this._contextDataService.getWithoutImage(this.scanId)
         : this._contextDataService.getModelData(this.mdl.imageName, this.mdl.beamLocationVersionsRequested, this._widgetId);
+
 
     combineLatest([
       obs,
@@ -767,7 +781,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
         this.scanId = contextImgModel.scanModels.keys().next().value!;
       }
 
-      this.mdl.setData(scanId, contextImgModel, scanEntries, beams).pipe(
+      this.mdl.setData(scanId, contextImgModel, scanEntries, beams, imageModel).pipe(
         switchMap(
           () => {
             return this.loadMapLayers();
@@ -809,6 +823,21 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     const viewFolder = this._tweakPane.addFolder({
       title: 'Objects',
       expanded: true
+    });
+
+    viewFolder.addBinding(this.mdl, 'modelStyle', {
+      label: "Model Draw Style",
+      options: {
+        //"Unknown": ModelStyle.MS_UNKNOWN,
+        "PMC positions over flat plane": ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE,
+        "PMC positions extending to ground plane": ModelStyle.MS_MID_GROUND_PLANE,
+        "MCC model ONLY": ModelStyle.MS_MCC_MODEL_ONLY,
+        "MCC model with PMCs dropped on": ModelStyle.MS_MCC_MODEL_PMCS_DROPPED,
+        "MCC model combined with PMC positions": ModelStyle.MS_MCC_MODEL_PMCS_POKING_THROUGH
+      }
+    }).on('change', () => {
+      this.mdl.needsDraw$.next();
+      this.saveState();
     });
 
     viewFolder.addBinding(this.mdl, 'showPoints', {

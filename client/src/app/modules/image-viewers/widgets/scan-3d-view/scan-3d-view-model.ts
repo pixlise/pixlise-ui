@@ -9,11 +9,12 @@ import { coordinate3DToThreeVector3, coordinate4DToThreeQuaternion } from "src/a
 
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
-import { Coordinate4D, LightMode, ROILayerVisibility } from "src/app/generated-protos/widget-data";
+import { Coordinate4D, LightMode, ModelStyle, ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { Colours } from "src/app/utils/colours";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ContextImageMapLayer } from "../../models/map-layer";
 import { ROIItem } from "src/app/generated-protos/roi";
+import { Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
 
 
 class ContextImageRawRegion {
@@ -106,7 +107,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this._initialPointLightPosition = pos;
   }
 
-  protected _planeYScale: number = 0.5;
+  protected _planeYScale: number = 0;
   get planeYScale(): number {
     return this._planeYScale;
   }
@@ -114,7 +115,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   // Only valid values for display are between 0 and 1, others are treated as "not enabled"
   set planeYScale(s: number) {
     if (s <= 0 || s > 1) {
-      this._planeYScale = -1;
+      this._planeYScale = 0;
     } else {
       this._planeYScale = s;
     }
@@ -132,6 +133,18 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setLightMode(mode);
   }
 
+  protected _modelStyle: ModelStyle = ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE;
+  get modelStyle(): ModelStyle {
+    return this._modelStyle;
+  }
+
+  set modelStyle(style: ModelStyle) {
+    this._modelStyle = style;
+
+    this.drawModel.setModelStyle(style);
+    this.setInitialState();
+  }
+  
   get showPoints(): boolean {
     return !this.hidePointsForScans.has(this._scanId);
   }
@@ -239,6 +252,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
   private _raw?: ContextImageModelLoadedData;
   private _scanEntries?: ScanEntryResp;
   private _beams?: ScanBeamLocationsResp;
+  private _imageModel?: Image3DModelPointsResp;
 
   drawModel = new Scan3DDrawModel();
   
@@ -260,17 +274,31 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     return null;
   }
 
-  setData(scanId: string, loadedData: ContextImageModelLoadedData, scanEntries: ScanEntryResp, beams: ScanBeamLocationsResp): Observable<void> {
+  setData(
+    scanId: string,
+    loadedData: ContextImageModelLoadedData,
+    scanEntries: ScanEntryResp,
+    beams: ScanBeamLocationsResp,
+    imageModel: Image3DModelPointsResp | undefined
+  ): Observable<void> {
     this._scanId = scanId;
 
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
     this._scanEntries = scanEntries;
     this._beams = beams;
+    this._imageModel = imageModel;
     const scanMdl = loadedData.scanModels.get(scanId);
 
     const img = this._raw.image ? this._raw.image : undefined;
-    return this.drawModel.create(this._scanEntries.entries, this._beams.beamLocations, scanMdl, img).pipe(
+    return this.drawModel.create(
+      this._scanEntries.entries,
+      this._beams.beamLocations,
+      this._imageModel?.points?.points || [],
+      this._modelStyle,
+      scanMdl,
+      img
+    ).pipe(
       tap(() => {
         // Set light position if we had one saved
         if (this._initialPointLightPosition && this.drawModel.pointLight) {
@@ -286,6 +314,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setLightMode(this.lightMode);
     this.drawModel.setShowPoints(!this.hidePointsForScans.has(this._scanId));
     this.drawModel.setPlaneYScale(this._planeYScale);
+    this.drawModel.setWireframe(this._drawWireframe);
   }
 
   setMapLayer(layer: ContextImageMapLayer) {
