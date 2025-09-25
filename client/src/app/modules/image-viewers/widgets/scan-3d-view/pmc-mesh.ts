@@ -137,14 +137,12 @@ export class PMCMeshData {
 
     // Check if we have an image model and are being asked to use it - if so, we move the PMCs so their terrain points are
     if (this._image3DModel && this.isMCCModelEnabled(modelStyle)) {
-      this._pmcHeightToImageModelHeightOffset = this.movePMCTerrainPointsOntoModel(this._image3DModel, this._bboxImageModelMesh);
+      this._pmcHeightToImageModelHeightOffset = this.movePMCTerrainPointsOntoModel(this._image3DModel);
       this.applyOffsetToPoints(this._pmcHeightToImageModelHeightOffset);
 
       // Add the image model points to our terrain support points
       this.calculateImage3DModelSupportPoints(true);//modelStyle != ModelStyle.MS_MCC_MODEL_ONLY);
     }
-
-    //const concaveHullPMCs = this.calculateConcaveHullPMCs();
 
     this.calculateHullPoints(scale);
 
@@ -159,7 +157,7 @@ export class PMCMeshData {
     this._simpleTerrainMesh = new THREE.Mesh(meshGeom);
 
     // Make the polygon Z's sit on the terrain... if we have an image model, also give them the offset so they line up with PMCs
-    this.updateMeshPointPolygonZs(this._simpleTerrainMesh, this._bboxMeshPMCs, this._pmcHeightToImageModelHeightOffset);
+    this.updateMeshPointPolygonZs(this._simpleTerrainMesh, this._pmcHeightToImageModelHeightOffset);
     /*if (this._image3DModel && !usePMCModel) {
       this.updateMeshPointPolygonZs(this._image3DModel, this._bboxImageModelMesh);
     } else {
@@ -365,8 +363,17 @@ export class PMCMeshData {
     return result;
   }
 
-  createPoints(material: THREE.Material): THREE.Points {
+  createPoints(material: THREE.Material, dropOnMesh: THREE.Mesh | undefined): THREE.Points {
     const geom = this.createPositionArray(true, false);
+
+    // Drop the points if needed
+    if (dropOnMesh != undefined) {
+      for (let c3 = 0; c3 < geom.xyz.length; c3 += 3) {
+        const pt = new THREE.Vector3(geom.xyz[c3], geom.xyz[c3+1], geom.xyz[c3+2]);
+        const storedPoint = this.dropOnMesh(pt, dropOnMesh);
+        geom.xyz[c3+2] = storedPoint.z;
+      }
+    }
 
     const pointsGeom = new THREE.BufferGeometry();
     pointsGeom.setAttribute(
@@ -562,7 +569,7 @@ export class PMCMeshData {
     return result;
   }
 
-  private movePMCTerrainPointsOntoModel(mesh: THREE.Mesh, meshBBox: AxisAlignedBBox): number {
+  private movePMCTerrainPointsOntoModel(mesh: THREE.Mesh): number {
     // We don't want to warp the PMC xyz locations but we want them to sit "on" the terrain. This means we find the average
     // height of the points, and the terrain where the points are, and we bring the two together
     let averageMeshHeightAtFootprint = 0;
@@ -573,7 +580,7 @@ export class PMCMeshData {
       const pt = this._points[c];
       if (pt.scanEntryIndex >= 0) {
         averagePMCTerrainHeight += pt.terrainPoint.z;
-        const pmcOnMesh = this.dropOnMesh(pt.terrainPoint, mesh, meshBBox);
+        const pmcOnMesh = this.dropOnMesh(pt.terrainPoint, mesh);
         averageMeshHeightAtFootprint += pmcOnMesh.z;
         pointCount++;
       }
@@ -666,8 +673,8 @@ export class PMCMeshData {
     }
   }
 
-  private dropOnMesh(pt: THREE.Vector3, mesh: THREE.Mesh, meshBBox: AxisAlignedBBox): THREE.Vector3 {
-    this._raycaster.set(new THREE.Vector3(pt.x, pt.y, meshBBox.maxCorner.z * 100 /* to be sure! Maybe we could do away with the bbox and just use a big number*/), downDir);
+  private dropOnMesh(pt: THREE.Vector3, mesh: THREE.Mesh): THREE.Vector3 {
+    this._raycaster.set(new THREE.Vector3(pt.x, pt.y, 1000000000 /* just use a big number*/), downDir);
 
     const intersects = this._raycaster.intersectObject(mesh);
     if (intersects.length > 0) {
@@ -1002,27 +1009,7 @@ export class PMCMeshData {
     
     return hullPMCs;
   }
-/*
-  private calculateConcaveHullPMCs() {
-    if (!this._contextImgMdl) {
-      return;
-    }
 
-    // Calculate triangulation of only the PMC points. Then find the outer edges to form the hull
-    let geom = this.createPositionArray(true);
-    const idxs = this.calculateTriangleIndexes(geom);
-
-    const edges = new Map<number, number>();
-    for (let triIdx = 0; triIdx < idxs.length; triIdx+=3) {
-      for (let c = 0; c < 3; c++) {
-        // Find if we've stored this edge already. We store edges with the smaller index first
-        let edge = [idxs[triIdx+c], idxs[triIdx+(c+1)%3]].sort((a, b) => a - b);
-
-        if (edges[edge[0]])
-      }
-    }
-  }
-*/
   private calculateHullPoints(scale: number) {
     if (!this._contextImgMdl) {
       return;
@@ -1123,7 +1110,7 @@ export class PMCMeshData {
 
     // Lay everything onto the terrain mesh
     for (let c = 0; c < this._displayHullPoints.length; c++) {
-      this._displayHullPoints[c] = this.dropOnMesh(this._displayHullPoints[c], terrainMesh, this._bboxMeshPMCs);
+      this._displayHullPoints[c] = this.dropOnMesh(this._displayHullPoints[c], terrainMesh);
     }
   }
 
@@ -1307,7 +1294,7 @@ export class PMCMeshData {
     return result;
   }
 
-  private updateMeshPointPolygonZs(terrainMesh: THREE.Mesh, meshBBox: AxisAlignedBBox, heightOffset: number) {
+  private updateMeshPointPolygonZs(terrainMesh: THREE.Mesh, heightOffset: number) {
     // Construct x,y,z array while finding the y value
     for (const poly of this._pmcPolygons) {
       if (poly.terrainPoints.length <= 0) {
@@ -1316,7 +1303,7 @@ export class PMCMeshData {
 
       // NOTE: we loop from 1 because point 0 is the PMC original location so should be set already
       for (let c = 1; c < poly.terrainPoints.length; c++) {
-        poly.terrainPoints[c] = this.dropOnMesh(poly.terrainPoints[c], terrainMesh, meshBBox);
+        poly.terrainPoints[c] = this.dropOnMesh(poly.terrainPoints[c], terrainMesh);
         //poly.terrainPoints[c].z += heightOffset;
       }
     }

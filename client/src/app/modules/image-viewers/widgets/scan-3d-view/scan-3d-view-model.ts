@@ -314,6 +314,7 @@ export class Scan3DViewModel implements CanvasDrawNotifier {
     this.drawModel.setLightMode(this.lightMode);
     this.drawModel.setShowPoints(!this.hidePointsForScans.has(this._scanId));
     this.drawModel.setPlaneYScale(this._planeYScale);
+    this.drawModel.setWireframe(this._drawWireframe);
   }
 
   setMapLayer(layer: ContextImageMapLayer) {

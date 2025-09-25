@@ -106,6 +106,8 @@ export class Scan3DDrawModel {
     this._meshFootprint = undefined;
     this._meshTerrain = undefined;
     this._pointLight = undefined;
+    const wasWireframe = this._meshWireframe != undefined;
+    this._meshWireframe = undefined;
 
     this._meshData.regenerate(this._modelStyle);
 
@@ -125,7 +127,7 @@ export class Scan3DDrawModel {
     // Init mesh display
     this._meshTerrain = this._meshData!.createMesh(
       this._terrainMatStandard,
-      this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY,
+      this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY && this._modelStyle != ModelStyle.MS_MCC_MODEL_PMCS_DROPPED,
       this._modelStyle == ModelStyle.MS_FLAT_BOTTOM_GROUND_PLANE,
       false,
       false,
@@ -151,7 +153,10 @@ export class Scan3DDrawModel {
     });
 
     if (this._modelStyle != ModelStyle.MS_MCC_MODEL_ONLY) {
-      this._meshPoints = this._meshData.createPoints(pointMat);
+      this._meshPoints = this._meshData.createPoints(
+        pointMat,
+        this._modelStyle == ModelStyle.MS_MCC_MODEL_PMCS_DROPPED ? this._meshTerrain : undefined
+      );
       //this._meshPoints.position.z += pushUpHeight;
     }
 
@@ -190,6 +195,10 @@ export class Scan3DDrawModel {
     this.initPlane(this._meshData.bboxMeshAll);
 
     // NOTE: We now just create the object, don't add it to the scene just yet
+
+    if (wasWireframe) {
+      this.setWireframe(true);
+    }
   }
 
   protected makeLight(lightPos: THREE.Vector3) {
