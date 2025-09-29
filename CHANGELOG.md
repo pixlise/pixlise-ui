@@ -4,6 +4,9 @@
 - 3D View updated to support displaying in multiple styles. These are selectable using the "View Controls" button. 3 of styles involve showing a DTU-generated 3D model for the context image area and the optiosn control how PMCs are displayed on the model or over a flat or undulating context image as before.
 - Added "Upload 3D Points" button on Dataset Edit page where the CSV of image 3D points can be uploaded.
 
+### Bug Fixes
+- Fixing EM importer - ignores duplicate scan log entries so beam location files generate without errors.
+
 ## 4.77.0 (2025-09-24)
 
 ### Bug Fixes
