@@ -92,9 +92,11 @@ export class Scan3DMouseInteraction {
       if (scale > 1) {
         scale = 1;
       }
-      if (scale > 0) {
-        this._mdl.planeYScale = scale;
+      if (scale < 0) {
+        scale = 0;
       }
+
+      this._mdl.planeYScale = scale;
 
       this._planeDragStartY = Infinity;
       if (this._mdl.drawModel.renderData.orbitControl) {

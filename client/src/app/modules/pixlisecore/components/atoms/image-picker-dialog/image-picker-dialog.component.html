@@ -96,9 +96,10 @@ POSSIBILITY OF SUCH DAMAGE.
         </h5> -->
         <h5 class="mars-viewer" *ngIf="selectedChoice.marsViewerURL">
           <b>Mars Viewer: </b
-          ><a [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"
+          ><a title="Open in MarsViewer" [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"
             ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
           /></a>
+          <img src="assets/button-icons/copy.svg" (click)="onCopyToClipboard(selectedChoice.path)" title="Copy file name">
         </h5>
       </div>
       <div class="details-container">
