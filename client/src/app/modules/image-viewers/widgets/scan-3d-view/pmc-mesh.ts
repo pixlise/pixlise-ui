@@ -705,14 +705,14 @@ export class PMCMeshData {
   private calculateImagePoint3DModel(scale: number, heightScale: number, image3DPoints: Coordinate3D[]): THREE.Mesh {
     // Take the points, form delaunay triangulation only considering the x,y axis, add the z values in
     // and generate a mesh which can be displayed
-    let geom = this.createImage3DPointArray(scale, heightScale, 1/this._image!.width, 1/this._image!.height, image3DPoints, this._bboxRawImageModel, this._bboxImageModelMesh);
+    let geom = this.createImage3DPointArray(scale, heightScale, this._image!.width, this._image!.height, image3DPoints, this._bboxRawImageModel, this._bboxImageModelMesh);
     const idxs = this.calculateTriangleIndexes(geom);
     const meshGeom = this.createMeshGeometry(geom, idxs, !!this._image);
     const mesh = new THREE.Mesh(meshGeom);
     return mesh;
   }
 
-  private createImage3DPointArray(scale: number, heightScale: number, uScale: number, vScale: number, image3DPoints: Coordinate3D[], image3dPointsBBox: AxisAlignedBBox, image3dPointsMeshBBox: AxisAlignedBBox): GeometryAttributes {
+  private createImage3DPointArray(scale: number, heightScale: number, modelXSize: number, modelYSize: number, image3DPoints: Coordinate3D[], image3dPointsBBox: AxisAlignedBBox, image3dPointsMeshBBox: AxisAlignedBBox): GeometryAttributes {
     const xyz = new Float32Array(image3DPoints.length * 3);
     const uv = new Float32Array(image3DPoints.length * 2);
 
@@ -722,7 +722,12 @@ export class PMCMeshData {
     const xyzCenter = image3dPointsBBox.center();
 
     for (let c = 0; c < image3DPoints.length; c++) {
-      const pt = image3DPoints[c];
+      const pt = coordinate3DToThreeVector3(image3DPoints[c]);
+
+      // Need to do some transformations first
+      pt.x = modelXSize - pt.x;
+      pt.y = modelYSize - pt.y;
+      pt.z = image3dPointsBBox.maxCorner.z - (pt.z - image3dPointsBBox.minCorner.z);
 
       let terrainPt = this.rawToTerrainPoint(pt, xyzCenter, scale);
 
@@ -736,8 +741,8 @@ export class PMCMeshData {
       xyz[posIdx+2] = terrainPt.z;
       posIdx += 3;
 
-      uv[uvIdx] = 1 - image3DPoints[c].x * uScale;
-      uv[uvIdx+1] = /*1 -*/ image3DPoints[c].y * vScale;
+      uv[uvIdx] = 1 - image3DPoints[c].x / modelXSize;
+      uv[uvIdx+1] = 1 - image3DPoints[c].y / modelYSize;
       uvIdx += 2;
     }
 
