@@ -632,5 +632,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  onNewColour(): void {}
+  onBreakROIApart(): void {
+    this._roiService.breakROI(this.summary.id);
+  }
 }

@@ -1,6 +1,7 @@
 ## 4.79.0 (LATEST)
 
 ### New Features
+- Added ability to break ROIs apart. This can be found on the side-bar ROI tab by clicking the "gear" icon on an ROI, then clicking on the last button - it has the tooltip: "Break ROI Apart". New ROIs will be created which contain the PMCs that are contiguous in the original ROI. A maximum of 10 ROIs will be created, the rest of the PMCs ending up in a "remainder" ROI. This is to prevent sparse ROIs exploding into an unmanageable bunch of 1-2 PMC ROIs. Note that when deleting any of the new ROIs created, you have the option to delete just that one, or all of the ROIs that came from the original one, again to reduce the need to click too many times to undo the results of the ROI breakup operation.
 
 ### Bug Fixes
 - DTU 3D models render better after flipping the coordinates around x, y and z axis.
