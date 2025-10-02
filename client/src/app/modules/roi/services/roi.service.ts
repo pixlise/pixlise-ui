@@ -985,6 +985,10 @@ export class ROIService implements OnDestroy {
           throw new Error("Failed to retrieve ROI when breaking up: " + roiId);
         }
 
+        // NOTE: we didn't end up using the ScanIDConverterService because we're doing other stuff with ScanEntries.
+        // Leaving this comment here in case we're searching for stuff that uses this algorithm!
+        // Code would look like: this._scanIdConverterService.convertScanEntryPMCToIndex(
+
         // Break ROI up into separate contiguous ROIs - if not possible, we show an error snack
         return combineLatest([
           this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({scanId: roi.regionOfInterest.scanId})),
@@ -1022,73 +1026,9 @@ export class ROIService implements OnDestroy {
                 return;
               }
 
-              let patches = [];
-              for (let pmc of roi.regionOfInterest!.scanEntryIndexesEncoded) {
-                const pmcIdx = pmcToIdx.get(pmc);
-                if (pmcIdx === undefined) {
-                  continue; // This PMC is not in our index list, so it probably doesn't have normal spectra, can ignore it!
-                }
+              let patches = this.makeROIBreakupPatches(roi.regionOfInterest!.scanEntryIndexesEncoded, pmcToIdx, beamLocations, avgDistSq);
 
-                if (patches.length <= 0) {
-                  // Startup...
-                  patches.push([pmc]);
-                } else {
-                  // Check if this joins any of the PMCs
-                  const thisPt = beamLocations[pmcIdx];
-                  let attached = false;
-                  for (const patch of patches) {
-                    for (const patchPMC of patch) {
-                      const patchPMCIdx = pmcToIdx.get(patchPMC);
-                      if (patchPMCIdx === undefined) {
-                        continue; // This PMC is not in our index list, so it probably doesn't have normal spectra, can ignore it!
-                      }
-
-                      const patchPt = beamLocations[patchPMCIdx];
-                      const manhattan = new Point(thisPt.x-patchPt.x, thisPt.y-patchPt.y);
-                      const distSq = manhattan.x * manhattan.x + manhattan.y * manhattan.y;
-
-                      if (distSq < avgDistSq) {
-                        // It's attached to this patch, so do that
-                        patch.push(pmc);
-                        attached = true;
-                        break;
-                      }
-                    }
-
-                    if (attached) {
-                      break;
-                    }
-                  }
-
-                  if (!attached) {
-                    // If we're not attached to any of the patches, start off a new patch
-                    patches.push([pmc]);
-                  }
-                }
-              }
-
-              // Sort to get the largest patches first
-              patches.sort((a: number[], b: number[]) => { return b.length - a.length });
-
-              // Use the first few patches, then combine the rest into a "remainder"
-              // this way there aren't too many to delete if that needs to happen
-              const remnantPatch = [];
-              const newPatches = [];
-
-              for (let i = 0; i < patches.length; i++) {
-                const patch = patches[i];
-
-                if (i < 10 && patch.length > 1) {
-                  newPatches.push(patch);
-                } else {
-                  remnantPatch.push(...patch);
-                }
-              }
-
-              patches = [...newPatches];
-              if (remnantPatch.length > 0) {
-                patches.push(remnantPatch);
-              }
+              patches = this.trimROIBreakupPatches(patches);
 
               // If there's only one patch, stop here!
               if (patches.length <= 1) {
@@ -1116,6 +1056,81 @@ export class ROIService implements OnDestroy {
         )
       })
     ).subscribe(); 
+  }
+
+  private makeROIBreakupPatches(roiPMCs: number[], pmcToIdx: Map<number, number>, beamLocations: Coordinate3D[], avgDistSq: number): number[][] {
+    const patches = [];
+    for (let pmc of roiPMCs) {
+      const pmcIdx = pmcToIdx.get(pmc);
+      if (pmcIdx === undefined) {
+        continue; // This PMC is not in our index list, so it probably doesn't have normal spectra, can ignore it!
+      }
+
+      if (patches.length <= 0) {
+        // Startup...
+        patches.push([pmc]);
+      } else {
+        // Check if this joins any of the PMCs
+        const thisPt = beamLocations[pmcIdx];
+        let attached = false;
+        for (const patch of patches) {
+          for (const patchPMC of patch) {
+            const patchPMCIdx = pmcToIdx.get(patchPMC);
+            if (patchPMCIdx === undefined) {
+              continue; // This PMC is not in our index list, so it probably doesn't have normal spectra, can ignore it!
+            }
+
+            const patchPt = beamLocations[patchPMCIdx];
+            const manhattan = new Point(thisPt.x-patchPt.x, thisPt.y-patchPt.y);
+            const distSq = manhattan.x * manhattan.x + manhattan.y * manhattan.y;
+
+            if (distSq < avgDistSq) {
+              // It's attached to this patch, so do that
+              patch.push(pmc);
+              attached = true;
+              break;
+            }
+          }
+
+          if (attached) {
+            break;
+          }
+        }
+
+        if (!attached) {
+          // If we're not attached to any of the patches, start off a new patch
+          patches.push([pmc]);
+        }
+      }
+    }
+
+    // Sort to get the largest patches first
+    patches.sort((a: number[], b: number[]) => { return b.length - a.length });
+    return patches
+  }
+
+  private trimROIBreakupPatches(patches: number[][]): number[][] {
+    // Use the first few patches, then combine the rest into a "remainder"
+    // this way there aren't too many to delete if that needs to happen
+    const remnantPatch = [];
+    const newPatches = [];
+
+    for (let i = 0; i < patches.length; i++) {
+      const patch = patches[i];
+
+      if (i < 10 && patch.length > 1) {
+        newPatches.push(patch);
+      } else {
+        remnantPatch.push(...patch);
+      }
+    }
+
+    patches = [...newPatches];
+    if (remnantPatch.length > 0) {
+      patches.push(remnantPatch);
+    }
+
+    return patches;
   }
 
   private getClusterDistanceSq(beamLocations: Coordinate3D[], firstNormalIdx: number) {
