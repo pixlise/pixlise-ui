@@ -212,8 +212,8 @@ export class ColourSelection extends BaseContextImageTool {
     // Mouse down & we don't have a snapshot of the selection, so take one now
     this.backupSelectedPMCs = new Map<string, Set<number>>();
     for (const scanId of sel.getScanIds()) {
-      const idxs = sel.getSelectedScanEntryPMCs(scanId);
-      this.backupSelectedPMCs.set(scanId, idxs);
+      const pmcs = sel.getSelectedScanEntryPMCs(scanId);
+      this.backupSelectedPMCs.set(scanId, pmcs);
     }
     /*
         // Listen to slider and selection changes

@@ -526,6 +526,8 @@ msa += `#XPOSITION   : 0.000
               const spectraMap = new Map<string, SpectrumValues>();
 
               for (const e of specExprs) {
+                // NOTE that getSpectrumValues requires location indexes not PMCs, but
+                // ROIs deliver PMCs in the badly named field
                 const spectrumVals = parser.getSpectrumValues(
                   dataSrc,
                   roiResp.regionOfInterest.scanEntryIndexesEncoded,

@@ -152,7 +152,13 @@ export class SelectionService {
     const conversions = [];
 
     for (const scanId of scanIds) {
-      conversions.push(this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, Array.from(beams.getSelectedScanEntryPMCs(scanId)), ignoreInvalidPMCs));
+      conversions.push(
+        this._scanIdConverterService.convertScanEntryPMCToIndex(
+          scanId,
+          Array.from(beams.getSelectedScanEntryPMCs(scanId)),
+          ignoreInvalidPMCs
+        )
+      );
     }
 
     // If we don't have anything to subscribe for (because we have no beams), stop here
@@ -258,8 +264,8 @@ export class SelectionService {
     let hasBeams = false;
 
     for (const id of beams.getScanIds()) {
-      const idxs = encodeIndexList(Array.from(beams.getSelectedScanEntryPMCs(id)));
-      entries[id] = ScanEntryRange.create({ indexes: idxs });
+      const pmcs = encodeIndexList(Array.from(beams.getSelectedScanEntryPMCs(id)));
+      entries[id] = ScanEntryRange.create({ indexes: pmcs });
       hasBeams = true;
     }
 
