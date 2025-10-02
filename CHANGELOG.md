@@ -5,6 +5,7 @@
 
 ### Bug Fixes
 - DTU 3D models render better after flipping the coordinates around x, y and z axis.
+- Histogram and Spectrum Chart were not showing data for the selected PMC or region in case of "odd" scans that don't start their PMC count from 0. 
 
 ## 4.78.0 (2025-09-29)
 
