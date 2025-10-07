@@ -226,7 +226,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
             // Restrict the data down to just what's selected
             const selValues = WidgetDataService.filterForPMCs(
               colData.exprResult.resultValues,
-              new Set<number>(beamSelection.getSelectedScanEntryIndexes(colData.query.scanId))
+              new Set<number>(beamSelection.getSelectedScanEntryPMCs(colData.query.scanId))
             );
 
             bar = this.calcColumnConcentrations(colData.region.region.name + " Selection", selColour, barErrorMsg, selValues, errorCol);

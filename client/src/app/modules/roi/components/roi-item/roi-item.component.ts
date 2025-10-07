@@ -63,6 +63,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @Output() onFilterAuthor = new EventEmitter();
 
   @ViewChild("settingsButton") settingsButton!: ElementRef;
+  @ViewChild("detailsButton") detailsButton!: ElementRef;
   @ViewChild("editROIButton") editROIButton!: ElementRef;
   @ViewChild("deleteROIConfirmButton") deleteROIConfirmButton!: ElementRef;
   @ViewChild(CdkVirtualScrollViewport) pmcViewport!: CdkVirtualScrollViewport;
@@ -70,10 +71,9 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   private _subs = new Subscription();
 
   showDetails = false;
-  showScanEntryPoints = false;
 
   hoverIndex = -1;
-  singleSelectionIndex = -1;
+  singleSelectedPMC = -1;
   pmcPagePosition = 0;
   displaySelectedPMCs: any[] = [];
 
@@ -91,7 +91,6 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   private _shapeDefined: boolean = false;
   private _colourDefined: boolean = false;
 
-  openScanIdxs: Set<string> = new Set<string>();
   scanEntryIndicesByDataset: Record<string, number[]> = {};
 
   constructor(
@@ -116,11 +115,11 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
     this._subs.add(
       this._selectionService.selection$.subscribe((sel) => {
-        const selIdxs = sel.beamSelection.getSelectedScanEntryIndexes(this.summary?.scanId || "");
-        if (selIdxs.size == 1) {
-          this.singleSelectionIndex = selIdxs.values().next().value || -1;
+        const selPMCs = sel.beamSelection.getSelectedScanEntryPMCs(this.summary?.scanId || "");
+        if (selPMCs.size == 1) {
+          this.singleSelectedPMC = selPMCs.values().next().value || -1;
         } else {
-          this.singleSelectionIndex = -1;
+          this.singleSelectedPMC = -1;
         }
       })
     );
@@ -147,7 +146,6 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     if ("summary" in changes) {
       if (changes["summary"].previousValue?.id !== changes["summary"].currentValue?.id) {
         this._detailedInfo = null;
-        this.openScanIdxs = new Set<string>();
         this.scanEntryIndicesByDataset = {};
 
         // Clear display settings if not in changes
@@ -428,67 +426,71 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onKeyboardArrow(scanId: string, up: boolean, event: Event) {
+    event.preventDefault();
+
     // See what the next or previous PMC is to select
-    if (this.singleSelectionIndex == -1) {
+    if (this.singleSelectedPMC == -1) {
       console.log("Selection is not a single PMC, ignoring arrow key on roi pmc list");
       return;
     }
 
-    const entries = this.scanEntryIndicesByDataset[scanId];
-    const idx = entries.indexOf(this.singleSelectionIndex);
+    // Find the PMC in the ROIs list, and walk up or down the list there
+    const pmcs = this.scanEntryIndicesByDataset[scanId];
+    const idx = pmcs.indexOf(this.singleSelectedPMC);
     if (idx == -1) {
-      console.log("Unknown current index, ignoring arrow key on roi pmc list");
+      console.log(`Selected PMC: ${this.singleSelectedPMC} is not a member of ROI ${this.detailedInfo?.id}, ignoring arrow key on roi pmc list`);
       return;
     }
 
     let toSelIdx = up ? idx - 1 : idx + 1;
-    if (toSelIdx >= 0 && toSelIdx < entries.length) {
+    if (toSelIdx >= 0 && toSelIdx < pmcs.length) {
       // Select it!
+      const newSelectedPMC = pmcs[toSelIdx];
       let pmcSelection = new Map<string, Set<number>>();
-      pmcSelection.set(scanId, new Set([entries[toSelIdx]]));
+      pmcSelection.set(scanId, new Set([newSelectedPMC]));
       this._selectionService.setSelection(new BeamSelection(pmcSelection), PixelSelection.makeEmptySelection());
 
       this.pmcViewport.scrollToIndex(toSelIdx);
+
+      // In case the round trip is too slow, we save the new PMC here
+      this.singleSelectedPMC = newSelectedPMC;
+    } else {
+      console.log(`Current index ${toSelIdx} is outside ROI list range, ignoring arrow key`);
+      //this.singleSelectedPMC = -1;
     }
 
-    event.preventDefault();
+    //event.preventDefault();
   }
 
-  onDeleteScanEntryIdx(scanEntryIdx: number) {
+  onDeleteScanPMC(scanPMC: number) {
     if (!this.detailedInfo) {
       this._snackBarService.openError(`ROI ${this.name} (${this.summary?.id}) not found`);
       return;
     }
 
     let newROI = this.detailedInfo;
-    newROI.scanEntryIndexesEncoded = newROI.scanEntryIndexesEncoded.filter(idx => idx !== scanEntryIdx);
+    newROI.scanEntryIndexesEncoded = newROI.scanEntryIndexesEncoded.filter(idx => idx !== scanPMC);
 
     // We don't need to update summaries for changes to scan entry points
     this._roiService.editROI(newROI, false);
   }
 
-  onToggleDetails() {
+  onShowDetails() {
     this.showDetails = !this.showDetails;
     if (this.showDetails) {
       this._roiService.fetchROI(this.summary.id);
     }
   }
 
-  onToggleScanMenu(scanId: string) {
-    if (this.openScanIdxs.has(scanId)) {
-      this.openScanIdxs.delete(scanId);
-    } else {
-      this.openScanIdxs.add(scanId);
-    }
-  }
-
-  onToggleScanEntryPoints() {
-    this.showScanEntryPoints = !this.showScanEntryPoints;
-  }
-
   private closeSettingsMenu(): void {
     if (this.settingsButton && this.settingsButton instanceof WidgetSettingsMenuComponent) {
       (this.settingsButton as WidgetSettingsMenuComponent).close();
+    }
+  }
+
+  private closeDetailsMenu(): void {
+    if (this.detailsButton && this.detailsButton instanceof WidgetSettingsMenuComponent) {
+      (this.detailsButton as WidgetSettingsMenuComponent).close();
     }
   }
 
@@ -632,5 +634,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  onNewColour(): void {}
+  onBreakROIApart(): void {
+    this._roiService.breakROI(this.summary.id);
+  }
 }

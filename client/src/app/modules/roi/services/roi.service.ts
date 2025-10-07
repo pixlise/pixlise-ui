@@ -22,7 +22,7 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { UserGroupList } from "../../../generated-protos/ownership-access";
 import { NotificationUpd } from "src/app/generated-protos/notification-msgs";
@@ -45,6 +45,9 @@ import {
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SelectionHistoryItem } from "../../pixlisecore/services/selection.service";
+import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
+import { Point } from "src/app/models/Geometry";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -973,5 +976,201 @@ export class ROIService implements OnDestroy {
         this._snackBarService.openError(err);
       },
     });
+  }
+
+  breakROI(roiId: string) {
+    this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({id: roiId})).pipe(
+      switchMap((roi: RegionOfInterestGetResp) => {
+        if (!roi.regionOfInterest) {
+          throw new Error("Failed to retrieve ROI when breaking up: " + roiId);
+        }
+
+        // NOTE: we didn't end up using the ScanIDConverterService because we're doing other stuff with ScanEntries.
+        // Leaving this comment here in case we're searching for stuff that uses this algorithm!
+        // Code would look like: this._scanIdConverterService.convertScanEntryPMCToIndex(
+
+        // Break ROI up into separate contiguous ROIs - if not possible, we show an error snack
+        return combineLatest([
+          this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({scanId: roi.regionOfInterest.scanId})),
+          this._cachedDataService.getScanEntry(ScanEntryReq.create({scanId: roi.regionOfInterest.scanId}))
+        ]).pipe(
+          map(
+            (resp) => {
+              const beamLocations = (resp[0] as ScanBeamLocationsResp).beamLocations;
+              const entryResp = resp[1] as ScanEntryResp;
+
+              if (!beamLocations) {
+                throw new Error("Failed to retrieve beam locations for ROI: " + roiId);
+              }
+
+              if (!entryResp.entries) {
+                throw new Error("Failed to retrieve scan entries for ROI: " + roiId);
+              }
+
+              // Make a PMC->index lookup so we read the right beam location
+              const pmcToIdx = new Map<number, number>();
+              let firstNormalIdx = -1;
+              for (let c = 0; c < entryResp.entries.length; c++) {
+                const entry = entryResp.entries[c];
+                if (entry.normalSpectra) {
+                  pmcToIdx.set(entry.id, c); 
+
+                  if (firstNormalIdx < 0) {
+                    firstNormalIdx = c;
+                  }
+                }
+              }
+
+              const avgDistSq = this.getClusterDistanceSq(beamLocations, firstNormalIdx) * 1.5;
+              if (avgDistSq < 0) {
+                return;
+              }
+
+              let patches = this.makeROIBreakupPatches(roi.regionOfInterest!.scanEntryIndexesEncoded, pmcToIdx, beamLocations, avgDistSq);
+
+              patches = this.trimROIBreakupPatches(patches);
+
+              // If there's only one patch, stop here!
+              if (patches.length <= 1) {
+                this._snackBarService.openError("ROI wasn't able to be broken up, no new ROIs created");
+                return;
+              }
+
+              // Create an ROI from each
+              let part = 1;
+              for (let c = 0; c < patches.length; c++) {
+                const patch = patches[c];
+                this.createROI(ROIItem.create({
+                  name: `${roi.regionOfInterest!.name} - ${(c == patches.length-1) ? "remainder" : ("part " + part)}`,
+                  description: `${roi.regionOfInterest!.description} - ${c == patches.length-1 ? "remaining" : patch.length} points`,
+                  tags: roi.regionOfInterest!.tags,
+                  scanId: roi.regionOfInterest!.scanId,
+                  scanEntryIndexesEncoded: patch,
+                  associatedROIId: roi.regionOfInterest!.id
+                }));
+
+                part++;
+              }
+            }
+          )
+        )
+      })
+    ).subscribe(); 
+  }
+
+  private makeROIBreakupPatches(roiPMCs: number[], pmcToIdx: Map<number, number>, beamLocations: Coordinate3D[], avgDistSq: number): number[][] {
+    const patches = [];
+    for (let pmc of roiPMCs) {
+      const pmcIdx = pmcToIdx.get(pmc);
+      if (pmcIdx === undefined) {
+        continue; // This PMC is not in our index list, so it probably doesn't have normal spectra, can ignore it!
+      }
+
+      if (patches.length <= 0) {
+        // Startup...
+        patches.push([pmc]);
+      } else {
+        // Check if this joins any of the PMCs
+        const thisPt = beamLocations[pmcIdx];
+        let attached = false;
+        for (const patch of patches) {
+          for (const patchPMC of patch) {
+            const patchPMCIdx = pmcToIdx.get(patchPMC);
+            if (patchPMCIdx === undefined) {
+              continue; // This PMC is not in our index list, so it probably doesn't have normal spectra, can ignore it!
+            }
+
+            const patchPt = beamLocations[patchPMCIdx];
+            const manhattan = new Point(thisPt.x-patchPt.x, thisPt.y-patchPt.y);
+            const distSq = manhattan.x * manhattan.x + manhattan.y * manhattan.y;
+
+            if (distSq < avgDistSq) {
+              // It's attached to this patch, so do that
+              patch.push(pmc);
+              attached = true;
+              break;
+            }
+          }
+
+          if (attached) {
+            break;
+          }
+        }
+
+        if (!attached) {
+          // If we're not attached to any of the patches, start off a new patch
+          patches.push([pmc]);
+        }
+      }
+    }
+
+    // Sort to get the largest patches first
+    patches.sort((a: number[], b: number[]) => { return b.length - a.length });
+    return patches
+  }
+
+  private trimROIBreakupPatches(patches: number[][]): number[][] {
+    // Use the first few patches, then combine the rest into a "remainder"
+    // this way there aren't too many to delete if that needs to happen
+    const remnantPatch = [];
+    const newPatches = [];
+
+    for (let i = 0; i < patches.length; i++) {
+      const patch = patches[i];
+
+      if (i < 10 && patch.length > 1) {
+        newPatches.push(patch);
+      } else {
+        remnantPatch.push(...patch);
+      }
+    }
+
+    patches = [...newPatches];
+    if (remnantPatch.length > 0) {
+      patches.push(remnantPatch);
+    }
+
+    return patches;
+  }
+
+  private getClusterDistanceSq(beamLocations: Coordinate3D[], firstNormalIdx: number) {
+    // Loop through all PMCs, if current one is not attached to previously seen ones, start a new patch
+    // Get the average distance between the first 10 PMCs
+    let totalDist = 0;
+    let totalCount = 0;
+
+    // Don't start right at the very first index!
+    const firstIdx = firstNormalIdx < 0 ? 5 : firstNormalIdx;
+
+    let lastIdx = firstIdx;
+    for (let c = firstIdx; c < beamLocations.length; c++) {
+      const loc = beamLocations[c];
+      if (loc) {
+        if (c > lastIdx) {
+          // NOTE: we might have nulls/invalid coordinates between subsequent ones, so we are a bit extra careful here...
+          const lastLoc = beamLocations[lastIdx];
+          const manhattan = new Point(loc.x-lastLoc.x, loc.y-lastLoc.y);
+          const dist = Math.sqrt(manhattan.x * manhattan.x + manhattan.y * manhattan.y);
+
+          totalDist += dist;
+          totalCount++;
+        }
+
+        lastIdx = c;
+      }
+
+      if (totalCount >= 10) {
+        break;
+      }
+    }
+
+    if (totalCount <= 0) {
+      throw new Error("Failed to find PMC clusters, no ROIs created");
+    }
+
+    const avgDist = totalDist / totalCount;
+    const avgDistSq = avgDist * avgDist;
+
+    return avgDistSq;
   }
 }

@@ -246,6 +246,8 @@ export class ROITabComponent implements OnInit, OnDestroy {
           scanId,
           pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
           imageName: selection.pixelSelection.imageName,
+          // NOTE: this field changed over time so it's badly named, but we store
+          // PMCs in ROIs, not location indexes!!!
           scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId)),
         })
       );
