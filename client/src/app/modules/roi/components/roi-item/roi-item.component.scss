@@ -102,60 +102,69 @@
       margin-left: 8px;
     }
   }
+}
 
-  .details {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 300px;
 
-    .details-container {
-      width: 100%;
+  .details-container {
+    width: 100%;
 
-      .overview {
-        padding: 8px;
+    .header {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      padding: 8px;
+      border-bottom: 1px solid rgb(var(--clr-gray-70));
+    }
+
+    .overview {
+      padding: 8px;
+      color: rgb(var(--clr-gray-10));
+      border-bottom: 1px solid rgb(var(--clr-gray-80));
+      background-color: rgb(var(--clr-gray-90));
+      display: flex;
+      align-items: center;
+
+      h5 {
+        margin: 0;
+        margin-right: auto;
         color: rgb(var(--clr-gray-10));
-        border-bottom: 1px solid rgb(var(--clr-gray-80));
-        background-color: rgb(var(--clr-gray-90));
+      }
+
+      .right-btns {
         display: flex;
         align-items: center;
 
-        h5 {
-          margin: 0;
-          margin-right: auto;
-          color: rgb(var(--clr-gray-10));
-        }
-
-        .right-btns {
-          display: flex;
-          align-items: center;
-
-          :first-child {
-            margin-right: 4px;
-          }
+        :first-child {
+          margin-right: 4px;
         }
       }
+    }
 
-      .pixel-list {
-        .header-details {
-          padding: 8px;
-        }
+    .pixel-list {
+      .header-details {
+        padding: 8px;
+      }
 
-        h5 {
-          margin: 0;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          overflow: hidden;
-          color: rgb(var(--clr-gray-30));
-        }
+      h5 {
+        margin: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        color: rgb(var(--clr-gray-30));
+      }
 
-        .selection-btns {
-          display: flex;
-          flex-direction: column;
+      .selection-btns {
+        display: flex;
+        flex-direction: column;
 
-          push-button {
-            margin-top: 8px;
-          }
+        push-button {
+          margin-top: 8px;
         }
       }
     }

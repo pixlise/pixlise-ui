@@ -94,28 +94,95 @@
   </div>
 </ng-template>
 
-<ng-template #roiSettingsMenu>
-  <div class="roi-settings">
-    <div class="settings-buttons">
-      <action-button
-        [disabled]="!canEdit"
-        title="Delete ROI"
-        action="delete"
-        [customDialog]="deleteROIConfirm"
-        #deleteROIConfirmButton>
-      </action-button>
-      <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
-      </share-ownership-item-button>
-      <widget-settings-menu *ngIf="!isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
-        <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
-      </widget-settings-menu>
-      <widget-settings-menu [settingsDialog]="roiColorPicker" #roiColorPickerButton>
-        <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg"></icon-button>
-      </widget-settings-menu>
-      <icon-button title="Break ROI Apart" icon="assets/button-icons/bless.svg" (click)="onBreakROIApart()"></icon-button>
+<ng-template #roiDetails>
+  <div class="details">
+    <div *ngIf="detailedInfo" class="details-container">
+      <div class="header">
+        <div>{{detailedInfo.name}}</div>
+        <action-button
+            [disabled]="!canEdit"
+            title="Delete ROI"
+            action="delete"
+            [customDialog]="deleteROIConfirm"
+            #deleteROIConfirmButton>
+          </action-button>
+          <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
+          </share-ownership-item-button>
+          <widget-settings-menu *ngIf="!isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
+            <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
+          </widget-settings-menu>
+          <widget-settings-menu [settingsDialog]="roiColorPicker" #roiColorPickerButton>
+            <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg"></icon-button>
+          </widget-settings-menu>
+      </div>
+      <div class="overview">
+        <h5>{{ scanEntryCount }} PMCs, {{ pixelCount }} pixels</h5>
+        <div class="right-btns">
+          <push-button (onClick)="onSelect()">Select</push-button>
+          <action-button [disabled]="!canEdit" title="Edit ROI name/description" action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
+        </div>
+      </div>
+      <div class="pixel-list">
+        <div class="header-details">
+          <h5
+            #tooltip="matTooltip"
+            matTooltip="ROI pixels were selected from image: {{ detailedInfo.imageName || 'N/A' }}"
+            [matTooltipDisabled]="!detailedInfo.imageName">
+            Image: {{ detailedInfo.imageName || "N/A" }}
+          </h5>
+          <div class="selection-btns">
+            <push-button
+              [disabled]="!canEdit"
+              (onClick)="onSaveSelectionToROI()"
+              buttonStyle="outline"
+              title="Saves the selected points into this ROI, overwriting previous list"
+              >Save Selection to ROI</push-button>
+            <push-button
+              [disabled]="!canEdit"
+              (onClick)="onAddRGBUPixelsToROI()"
+              buttonStyle="outline"
+              title="Adds pixels within bounding polygons of points to ROI"
+              >Add RGBU Pixels to ROI</push-button>
+            <push-button
+              [disabled]="!canEdit"
+              title="Break ROI Apart into contiguous regions"
+              buttonStyle="outline"
+              icon="assets/button-icons/bless.svg"
+              (click)="onBreakROIApart()">Break ROI Apart</push-button>
+          </div>
+        </div>
+        <div class="scan-entries" *ngFor="let scanId of scanIds">
+          <span class="header">
+            <span class="rtt-label">RTT: {{ scanId }}</span>
+            <span class="entry-count">{{ scanEntryIndicesByDataset[scanId]?.length || "" }} PMCs</span>
+          </span>
+          <div
+            class="scan-entries-container" 
+            tabindex="0"
+            (keyup.arrowdown)="onKeyboardArrow(scanId, false, $event)"
+            (keyup.arrowup)="onKeyboardArrow(scanId, true, $event)">
+            <cdk-virtual-scroll-viewport [itemSize]="29" class="scan-entries-viewport">
+              <div
+                *cdkVirtualFor="let pmc of scanEntryIndicesByDataset[scanId]"
+                class="entry-idx-container"
+                [ngClass]="{ 'pmc-highlight': pmc >= 0 && pmc === hoverIndex, 'pmc-selected': pmc >= 0 && pmc === singleSelectedPMC }"
+                (mouseenter)="onScanEntryIdxEnter(scanId, pmc)"
+                (mouseleave)="onScanEntryIdxLeave(scanId)"
+                (click)="onScanEntryIdxClick(scanId, pmc)">
+                <div class="entry-idx">{{ pmc }}</div>
+                <action-button
+                  *ngIf="pmc >= 0"
+                  action="close"
+                  color="rgb(188, 188, 188)"
+                  (onClick)="onDeleteScanPMC(pmc)"
+                  [disabled]="!canEdit || scanEntryIndicesByDataset[scanId]?.length === 1"
+                  [tooltipTitle]="scanEntryIndicesByDataset[scanId]?.length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC from ROI'"></action-button>
+              </div>
+            </cdk-virtual-scroll-viewport>
+          </div>
+        </div>
+      </div>
     </div>
-    <!-- <slider title="Opacity" [value]="opacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOpacity($event)"> -->
-    <!-- </slider> -->
   </div>
 </ng-template>
 
@@ -205,9 +272,6 @@
     <div class="buttons {{ displayConfigured ? '' : 'unconfigured-display' }}">
       <share-ownership-item-button *ngIf="canEdit && colorChangeOnly" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
-      <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton>
-        <icon-button title="Show Settings Menu" [hasBackground]="false" icon="assets/button-icons/settings-gray.svg"> </icon-button>
-      </widget-settings-menu>
       <tag-picker
         type="roi"
         placeholderText="Search ROI Tags ..."
@@ -229,13 +293,17 @@
         inactiveIcon="assets/button-icons/visible-off.svg"
         [active]="isVisible"
         (onToggle)="onVisibility($event)"></two-state-icon-button>
-      <icon-button
-        class="show-details-btn"
+      <widget-settings-menu
         *ngIf="showDetailsButton"
-        [icon]="showDetails ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
-        [hasBackground]="false"
-        (click)="onToggleDetails()"
-        title="Toggle showing ROI details"></icon-button>
+        [settingsDialog]="roiDetails"
+        [openDirDown]="false"
+        #detailsButton>
+        <icon-button
+          (click)="onShowDetails()"
+          [hasBackground]="false"
+          icon="assets/button-icons/settings-gray.svg"
+          title="Shows ROI details"></icon-button>
+      </widget-settings-menu>
     </div>
     <two-state-icon-button
       *ngIf="isSelectable && rightSelection && !isSubItemSelectionEnabled"
@@ -247,81 +315,5 @@
       (onToggle)="onCheckboxClick($event)">
     </two-state-icon-button>
     <push-button *ngIf="selectionLabel && isSubItemSelectionEnabled" class="selection-button" [customDialog]="customSelectDialog">{{ selectionLabel }}</push-button>
-  </div>
-  <div *ngIf="showDetails" class="details">
-    <wait-spinner *ngIf="!showDetails"></wait-spinner>
-    <div *ngIf="detailedInfo" class="details-container">
-      <div class="overview">
-        <h5>{{ scanEntryCount }} PMCs, {{ pixelCount }} pixels</h5>
-
-        <div class="right-btns">
-          <push-button (onClick)="onSelect()">Select</push-button>
-          <action-button [disabled]="!canEdit" title="Edit ROI name/description" action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
-          <icon-button
-            [icon]="showScanEntryPoints ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
-            [hasBackground]="false"
-            (click)="onToggleScanEntryPoints()"
-            title="Toggle showing ROI details"></icon-button>
-        </div>
-      </div>
-      <div *ngIf="showScanEntryPoints" class="pixel-list">
-        <div class="header-details">
-          <h5
-            #tooltip="matTooltip"
-            matTooltip="ROI pixels were selected from image: {{ detailedInfo.imageName || 'N/A' }}"
-            [matTooltipDisabled]="!detailedInfo.imageName">
-            Image: {{ detailedInfo.imageName || "N/A" }}
-          </h5>
-          <div class="selection-btns">
-            <push-button
-              [disabled]="!canEdit"
-              (onClick)="onSaveSelectionToROI()"
-              buttonStyle="outline"
-              title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
-              >Save Selection to ROI</push-button
-            >
-            <push-button
-              [disabled]="!canEdit"
-              (onClick)="onAddRGBUPixelsToROI()"
-              buttonStyle="outline"
-              title="Adds pixels within bounding polygons of Scan Entry points to ROI"
-              >Add RGBU Pixels to ROI</push-button
-            >
-          </div>
-        </div>
-        <div class="scan-entries" *ngFor="let scanId of scanIds">
-          <span class="header">
-            <span class="rtt-label">RTT: {{ scanId }}</span>
-            <span class="entry-count">{{ scanEntryIndicesByDataset[scanId]?.length || "" }} PMCs</span>
-            <action-button [action]="openScanIdxs.has(scanId) ? 'closeAccordion' : 'openAccordion'" (click)="onToggleScanMenu(scanId)"></action-button>
-          </span>
-          <div
-            *ngIf="openScanIdxs.has(scanId)"
-            class="scan-entries-container" 
-            tabindex="0"
-            (keyup.arrowdown)="onKeyboardArrow(scanId, false, $event)"
-            (keyup.arrowup)="onKeyboardArrow(scanId, true, $event)">
-            <cdk-virtual-scroll-viewport [itemSize]="29" class="scan-entries-viewport">
-              <div
-                *cdkVirtualFor="let entryIdx of scanEntryIndicesByDataset[scanId]"
-                class="entry-idx-container"
-                [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx === hoverIndex, 'pmc-selected': entryIdx >= 0 && entryIdx === singleSelectionIndex }"
-                (mouseenter)="onScanEntryIdxEnter(scanId, entryIdx)"
-                (mouseleave)="onScanEntryIdxLeave(scanId)"
-                (click)="onScanEntryIdxClick(scanId, entryIdx)">
-                <div class="entry-idx">{{ entryIdx }}</div>
-                <action-button
-                  *ngIf="entryIdx >= 0"
-                  action="close"
-                  color="rgb(188, 188, 188)"
-                  (onClick)="onDeleteScanEntryIdx(entryIdx)"
-                  [disabled]="!canEdit || scanEntryIndicesByDataset[scanId]?.length === 1"
-                  [tooltipTitle]="scanEntryIndicesByDataset[scanId]?.length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC'"></action-button>
-              </div>
-            </cdk-virtual-scroll-viewport>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>

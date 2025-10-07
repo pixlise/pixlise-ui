@@ -60,6 +60,7 @@ export class WidgetSettingsMenuComponent implements OnDestroy {
   @Input() settingsDialog: TemplateRef<any> | null = null;
   @Input() overflowSection: TemplateRef<any> | null = null;
   @Input() openDirDown: boolean = true;
+  //@Input() pushUpIfAtBottom: boolean = true;
   @Input() startRight: boolean = false;
   @Input() noPadding: boolean = false;
   @Input() xOffset: number = 0;
