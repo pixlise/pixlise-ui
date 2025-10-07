@@ -1,11 +1,14 @@
 ## 4.79.0 (LATEST)
 
 ### New Features
-- Added ability to break ROIs apart. This can be found on the side-bar ROI tab by clicking the "gear" icon on an ROI, then clicking on the last button - it has the tooltip: "Break ROI Apart". New ROIs will be created which contain the PMCs that are contiguous in the original ROI. A maximum of 10 ROIs will be created, the rest of the PMCs ending up in a "remainder" ROI. This is to prevent sparse ROIs exploding into an unmanageable bunch of 1-2 PMC ROIs. Note that when deleting any of the new ROIs created, you have the option to delete just that one, or all of the ROIs that came from the original one, again to reduce the need to click too many times to undo the results of the ROI breakup operation.
+- Added ability to break ROIs apart. This can be found on the side-bar ROI tab by clicking the "gear" icon on an ROI, then clicking "Break ROI Apart". New ROIs will be created which contain the PMCs that are contiguous in the original ROI. A maximum of 10 ROIs will be created, the rest of the PMCs ending up in a "remainder" ROI. This is to prevent sparse ROIs exploding into an unmanageable bunch of 1-2 PMC ROIs. Note that when deleting any of the new ROIs created, you have the option to delete just that one, or all of the ROIs that came from the original one, again to reduce the need to click too many times to undo the results of the ROI breakup operation.
+- Added new reversed layout 2, allows putting smaller widgets on the lefft with large widgets on the right, so side-bar won't over-draw.
 
 ### Bug Fixes
 - DTU 3D models render better after flipping the coordinates around x, y and z axis.
-- Histogram and Spectrum Chart were not showing data for the selected PMC or region in case of "odd" scans that don't start their PMC count from 0. 
+- Histogram and Spectrum Chart were not showing data for the selected PMC or region in case of "odd" scans that don't start their PMC count from 0.
+- Fixed ROI PMC browsing by arrow keys. ROI is now displayed as a popup over the side-bar ROI list to prevent scrolling and arrow keys clashing.
+- Fixed side-bar overdraw issue with new zoomable binary/single RGBU chart axis.
 
 ## 4.78.0 (2025-09-29)
 
