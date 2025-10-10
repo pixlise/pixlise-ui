@@ -64,7 +64,6 @@ export class ROITabComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   @ViewChild("newROIButton") newROIButton!: ElementRef;
-  @ViewChild(CdkVirtualScrollViewport) roiListViewport!: CdkVirtualScrollViewport;
 
   allPointsColour = Colours.GRAY_10.asString();
 
@@ -93,8 +92,6 @@ export class ROITabComponent implements OnInit, OnDestroy {
   private _selectedContextImage: string = "";
 
   showDetailsForROIId = "";
-
-  private _savedScrollPosition?: ListRange;
 
   constructor(
     private _roiService: ROIService,
@@ -282,15 +279,9 @@ export class ROITabComponent implements OnInit, OnDestroy {
 
   onROIDetails(roiId: string) {
     this.showDetailsForROIId = roiId;
-
-    // Save the index we're scrolled to
-    this._savedScrollPosition = this.roiListViewport.getRenderedRange();
   }
 
   onCloseROIDetails() {
     this.showDetailsForROIId = "";
-    if(this._savedScrollPosition) {
-      this.roiListViewport.setRenderedRange(this._savedScrollPosition);
-    }
   }
 }

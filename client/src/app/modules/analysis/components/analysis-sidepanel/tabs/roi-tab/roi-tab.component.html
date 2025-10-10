@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <header>
     <h5>Regions of Interest</h5>
   </header>
-  <ng-container *ngIf="!showDetailsForROIId">
+  <div class="roi-list-container" [ngClass]="{'list-hidden': showDetailsForROIId }">
     <div class="panel-row">
       <push-button
         #tooltip="matTooltip"
@@ -89,7 +89,7 @@ POSSIBILITY OF SUCH DAMAGE.
           (onROIDetails)="onROIDetails($event)"></roi-item>
       </cdk-virtual-scroll-viewport>
     </section>
-  </ng-container>
+  </div>
 
   <ng-container *ngIf="showDetailsForROIId">
     <roi-item-details

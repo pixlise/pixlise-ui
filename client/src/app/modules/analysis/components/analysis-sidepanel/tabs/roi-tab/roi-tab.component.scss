@@ -35,19 +35,28 @@
     }
   }
 
-  .panel-row {
-    margin: 8px;
-  }
-
-  .widget-selectors {
+  .roi-list-container {
     display: flex;
-    width: 100%;
+    flex-direction: column;
 
-    mat-select {
-      flex: 1;
-      margin: 0 8px;
+    .panel-row {
+      margin: 8px;
+    }
+  
+    .widget-selectors {
+      display: flex;
+      width: 100%;
+  
+      mat-select {
+        flex: 1;
+        margin: 0 8px;
+      }
     }
   }
+}
+
+.list-hidden {
+  display: none !important;
 }
 
 .new-roi {

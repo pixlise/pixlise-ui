@@ -7,7 +7,7 @@
 ### Bug Fixes
 - DTU 3D models render better after flipping the coordinates around x, y and z axis.
 - Histogram and Spectrum Chart were not showing data for the selected PMC or region in case of "odd" scans that don't start their PMC count from 0.
-- Fixed ROI PMC browsing by arrow keys. ROI is now displayed as a popup over the side-bar ROI list to prevent scrolling and arrow keys clashing.
+- Fixed ROI PMC browsing by arrow keys. ROI is now displayed as a popup over the side-bar ROI list to prevent scrolling and arrow keys clashing. Hovering over an ROIs PMC in the list vs selecting an ROIs PMC his better highlighted using the blue/purple colour familiar on widgets.
 - Fixed side-bar overdraw issue with new zoomable binary/single RGBU chart axis.
 
 ## 4.78.0 (2025-09-29)
