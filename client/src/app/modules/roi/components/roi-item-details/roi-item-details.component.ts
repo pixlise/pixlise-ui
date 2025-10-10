@@ -144,17 +144,12 @@ export class ROIItemDetails {
 
       // If it's off-screen at top or bottom, keep it visible
       const range = this.pmcViewport.getRenderedRange();
-      const offset = 10;
+      const offset = 7;
       if (toSelIdx < (range.start+offset)) {
-        // It's above the list, scroll it into view...
         this.pmcViewport.scrollToIndex(toSelIdx);
-        console.log(`scrollToIndex TOP: ${toSelIdx}, range was (${range.start}, ${range.end}), idx was ${idx}`);
-      } /*else if(toSelIdx > range.end-offset) {
-        // It's off the bottom, scroll down to it
-        const newIdx = range.start + (toSelIdx-(range.end-offset));
-        this.pmcViewport.scrollToIndex(newIdx);
-        console.log(`scrollToIndex BOTTOM: ${newIdx}, range was (${range.start}, ${range.end}), idx was ${idx}`);
-      }*/
+      } else if(toSelIdx > (range.end-offset)) {
+        this.pmcViewport.scrollToIndex(toSelIdx);
+      }
 
       // In case the round trip is too slow, we save the new PMC here
       this.singleSelectedPMC = newSelectedPMC;
