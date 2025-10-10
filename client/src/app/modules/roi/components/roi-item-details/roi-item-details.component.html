@@ -1,0 +1,126 @@
+
+<ng-template #deleteROIConfirm>
+  <div class="dlg-border-with-backdrop custom-roi-delete">
+    <h1>Confirm</h1>
+    <h5>Are you sure you want to delete ROI: {{ name }}?</h5>
+    <div class="button-container">
+      <push-button buttonStyle="outline" (onClick)="onCloseDelete()">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onConfirmDelete(false)">Delete This One</push-button>
+      <push-button *ngIf="roi.associatedROIId" buttonStyle="yellow" (onClick)="onConfirmDelete(true)">Delete All In Group</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #editROIMenu>
+  <div class="roi-edit">
+    <header>
+      <h1 class="title">Edit ROI</h1>
+      <tag-picker
+        type="roi"
+        placeholderText="Search ROI Tags ..."
+        [selectedTagIDs]="selectedTagIDs"
+        [showCurrentTagsSection]="true"
+        [editable]="canEditROIDetails"
+        (onTagSelectionChanged)="onTagSelectionChanged($event)">
+      </tag-picker>
+    </header>
+
+    <input type="text" class="name" [(ngModel)]="name" placeholder="ROI Name" />
+    <textarea class="description" [(ngModel)]="description" placeholder="ROI Description" rows="4"></textarea>
+
+    <div class="buttons">
+      <push-button buttonStyle="outline" (onClick)="onCancelEdit()" title="Cancel editing this ROI">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onSaveEdit()" title="Save changes to this ROI">Save</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<div class="details">
+  <div class="details-container" *ngIf="roi">
+    <div class="header">
+      <div class="roiName">{{roi.name}}</div>
+      <img class="clickable" src="assets/button-icons/close-cross.svg" alt="Close ROI" (click)="onCloseROIDetails()" />
+    </div>
+    <div class="overview">
+      <h5>{{ scanEntryCount }} PMCs, {{ pixelCount }} pixels</h5>
+      <div class="right-btns">
+        <roi-item-display-settings
+          [roiId]="roiId"
+          [displaySettings]="displaySettings">
+        </roi-item-display-settings>
+        <share-ownership-item-button *ngIf="canEditROIDetails" [id]="roiId" [type]="objectType" [ownershipSummary]="roi.owner || null">
+        </share-ownership-item-button>
+        <action-button [disabled]="!canEditROIDetails" title="Edit ROI name/description" action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
+        <action-button
+          [disabled]="!canEditROIDetails"
+          title="Delete ROI"
+          action="delete"
+          [customDialog]="deleteROIConfirm"
+          #deleteROIConfirmButton>
+        </action-button>
+      </div>
+    </div>
+    <div class="pixel-list">
+      <div class="header-details">
+        <h5
+          #tooltip="matTooltip"
+          matTooltip="ROI pixels were selected from image: {{ roi.imageName || 'N/A' }}"
+          [matTooltipDisabled]="!roi.imageName">
+          Image: {{ roi.imageName || "N/A" }}
+        </h5>
+        <div class="selection-btns">
+          <push-button buttonStyle="gray" (onClick)="onSelect()">Select PMCs in ROI</push-button>
+          <push-button
+            [disabled]="!canEditROIDetails"
+            (onClick)="onSaveSelectionToROI()"
+            buttonStyle="gray"
+            title="Saves the selected points into this ROI, overwriting previous list"
+            >Save Selection to ROI</push-button>
+          <push-button
+            [disabled]="!canEditROIDetails"
+            (onClick)="onAddRGBUPixelsToROI()"
+            buttonStyle="gray"
+            title="Adds pixels within bounding polygons of points to ROI"
+            >Add RGBU Pixels to ROI</push-button>
+          <push-button
+            [disabled]="!canEditROIDetails"
+            title="Break ROI Apart into contiguous regions"
+            buttonStyle="gray"
+            icon="assets/button-icons/bless.svg"
+            (click)="onBreakROIApart(roiId)">Break ROI Apart</push-button>
+        </div>
+      </div>
+      <div class="scan-entries">
+        <div class="header">
+          <!-- <span class="rtt-label">RTT: {{ roi.scanId }}</span> -->
+          <span class="entry-count">{{ roi.scanEntryIndexesEncoded.length }} PMC Points</span>
+        </div>
+        <!-- Without tabindex the arrow key events don't get captured -->
+        <div
+          class="scan-entries-container" 
+          tabindex="0"
+          (keyup.arrowdown)="onKeyboardArrow(roi.scanId, false, $event)"
+          (keyup.arrowup)="onKeyboardArrow(roi.scanId, true, $event)">
+          <cdk-virtual-scroll-viewport [itemSize]="29" class="scan-entries-viewport">
+            <div
+              *cdkVirtualFor="let pmc of roi.scanEntryIndexesEncoded"
+              class="entry-idx-container"
+              [ngClass]="{ 'pmc-highlight': pmc >= 0 && pmc === hoverIndex, 'pmc-selected': pmc >= 0 && pmc === singleSelectedPMC }"
+              (mouseenter)="onScanEntryIdxEnter(roi.scanId, pmc)"
+              (mouseleave)="onScanEntryIdxLeave(roi.scanId)"
+              (click)="onScanEntryIdxClick(roi.scanId, pmc)">
+              <div class="entry-idx">{{ pmc }}</div>
+              <action-button
+                *ngIf="pmc >= 0"
+                action="close"
+                color="rgb(188, 188, 188)"
+                (onClick)="onDeleteScanPMC(pmc)"
+                [disabled]="!canEditROIDetails || roi.scanEntryIndexesEncoded?.length === 1"
+                [tooltipTitle]="roi.scanEntryIndexesEncoded?.length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC from ROI'"></action-button>
+            </div>
+          </cdk-virtual-scroll-viewport>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

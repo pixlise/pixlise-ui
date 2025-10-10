@@ -29,61 +29,74 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+
 <section class="roi-container">
   <header>
     <h5>Regions of Interest</h5>
   </header>
-  <div class="panel-row">
-    <push-button
-      #tooltip="matTooltip"
-      matTooltip="You don't have permission to create ROIs"
-      [matTooltipDisabled]="canCreateROIs"
-      buttonStyle="yellow"
-      [disabled]="selectionEmpty || !canCreateROIs"
-      fxFlex="100%"
-      (onClick)="onNewROI()"
-      #newROIButton
-      >New ROI from Selection</push-button
-    >
-  </div>
-  <div class="widget-selectors">
-    <mat-select
-      [(ngModel)]="selectedContextImage"
-      class="scan-filter"
-      placeholder="Open a Context Image ..."
-      #tooltip="matTooltip"
-      matTooltip="Choose a context image to display the ROIs on"
-      [matTooltipShowDelay]="500">
-      <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
-    </mat-select>
-  </div>
+  <ng-container *ngIf="!showDetailsForROIId">
+    <div class="panel-row">
+      <push-button
+        #tooltip="matTooltip"
+        matTooltip="You don't have permission to create ROIs"
+        [matTooltipDisabled]="canCreateROIs"
+        buttonStyle="yellow"
+        [disabled]="selectionEmpty || !canCreateROIs"
+        fxFlex="100%"
+        (onClick)="onNewROI()"
+        #newROIButton
+        >New ROI from Selection</push-button
+      >
+    </div>
+    <div class="widget-selectors">
+      <mat-select
+        [(ngModel)]="selectedContextImage"
+        class="scan-filter"
+        placeholder="Open a Context Image ..."
+        #tooltip="matTooltip"
+        matTooltip="Choose a context image to display the ROIs on"
+        [matTooltipShowDelay]="500">
+        <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      </mat-select>
+    </div>
 
-  <roi-search-controls
-    class="{{ showSearch ? 'visible' : '' }}"
-    [summaries]="summaries"
-    (onFilterChanged)="onFilterChanged($event)"
-    [showBuiltin]="false"
-    [manualFilters]="manualFilters"></roi-search-controls>
-  <section class="bulk-controls">
-    <span class="count">{{ highlightedROIIds.length }} ROIs highlighted</span>
-    <action-button
-      class="visible-toggle"
-      [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
-      #tooltip="matTooltip"
-      [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'"
-      (onClick)="onToggleAllVisible()">
-    </action-button>
-  </section>
-  <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
-    <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
-      <roi-item
-        *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
-        [summary]="item"
-        [selectAuthorToFilter]="showSearch"
-        (onFilterAuthor)="onFilterAuthor($event)"
-        [displaySettings]="displaySettingsMap[item.id]"
-        [isVisible]="highlightedROIIds.includes(item.id)"
-        (onVisibilityChange)="onROIVisibleToggle(item)"></roi-item>
-    </cdk-virtual-scroll-viewport>
-  </section>
+    <roi-search-controls
+      class="{{ showSearch ? 'visible' : '' }}"
+      [summaries]="summaries"
+      (onFilterChanged)="onFilterChanged($event)"
+      [showBuiltin]="false"
+      [manualFilters]="manualFilters"></roi-search-controls>
+    <section class="bulk-controls">
+      <span class="count">{{ highlightedROIIds.length }} ROIs highlighted</span>
+      <action-button
+        class="visible-toggle"
+        [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
+        #tooltip="matTooltip"
+        [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'"
+        (onClick)="onToggleAllVisible()">
+      </action-button>
+    </section>
+    <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
+      <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
+        <roi-item
+          *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
+          [summary]="item"
+          [selectAuthorToFilter]="showSearch"
+          (onFilterAuthor)="onFilterAuthor($event)"
+          [displaySettings]="displaySettingsMap[item.id]"
+          [isVisible]="highlightedROIIds.includes(item.id)"
+          (onVisibilityChange)="onROIVisibleToggle(item)"
+          (onROIDetails)="onROIDetails($event)"></roi-item>
+      </cdk-virtual-scroll-viewport>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="showDetailsForROIId">
+    <roi-item-details
+      [roiId]="showDetailsForROIId"
+      [displaySettings]="displaySettingsMap[showDetailsForROIId]"
+      (closeROIDetails)="onCloseROIDetails()">
+    </roi-item-details>
+  </ng-container>
+
 </section>

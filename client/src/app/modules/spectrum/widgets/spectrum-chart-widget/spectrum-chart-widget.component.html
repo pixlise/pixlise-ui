@@ -45,3 +45,8 @@
 
 <interactive-canvas [ngClass]="toolhost.cursor" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
+<div
+  *ngIf="selectedPMC > -1"
+  class="single-select-pmc-display"
+  title="If there is only one PMC selected, it is displayed here to assist browsing individual spectra"
+  >Selected PMC: {{selectedPMC}}</div>

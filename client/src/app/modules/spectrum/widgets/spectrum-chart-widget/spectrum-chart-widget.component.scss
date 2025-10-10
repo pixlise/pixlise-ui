@@ -1,3 +1,5 @@
+@import 'variables.scss';
+
 :host {
   display: flex;
   height: 100%;
@@ -33,4 +35,12 @@ interactive-canvas {
 }
 
 .no-backdrop {
+}
+
+.single-select-pmc-display {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  color: $clr-context-blue;
 }

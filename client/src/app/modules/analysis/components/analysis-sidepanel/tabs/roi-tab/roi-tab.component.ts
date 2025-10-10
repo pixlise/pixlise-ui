@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { ListRange } from "@angular/cdk/collections";
+import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 
@@ -37,7 +39,9 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
-import { AnalysisLayoutService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
+import { AnalysisLayoutService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -60,6 +64,7 @@ export class ROITabComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   @ViewChild("newROIButton") newROIButton!: ElementRef;
+  @ViewChild(CdkVirtualScrollViewport) roiListViewport!: CdkVirtualScrollViewport;
 
   allPointsColour = Colours.GRAY_10.asString();
 
@@ -87,11 +92,16 @@ export class ROITabComponent implements OnInit, OnDestroy {
   allContextImages: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
   private _selectedContextImage: string = "";
 
+  showDetailsForROIId = "";
+
+  private _savedScrollPosition?: ListRange;
+
   constructor(
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
     private _userOptionsService: UserOptionsService,
+    private _snackBarService: SnackbarService,
     public dialog: MatDialog
   ) {}
 
@@ -267,6 +277,20 @@ export class ROITabComponent implements OnInit, OnDestroy {
       this.newROIName = "";
       this.newROIDescription = "";
       this.newROITags = [];
+    }
+  }
+
+  onROIDetails(roiId: string) {
+    this.showDetailsForROIId = roiId;
+
+    // Save the index we're scrolled to
+    this._savedScrollPosition = this.roiListViewport.getRenderedRange();
+  }
+
+  onCloseROIDetails() {
+    this.showDetailsForROIId = "";
+    if(this._savedScrollPosition) {
+      this.roiListViewport.setRenderedRange(this._savedScrollPosition);
     }
   }
 }
