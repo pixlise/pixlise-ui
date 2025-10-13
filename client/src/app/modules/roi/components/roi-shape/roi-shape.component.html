@@ -1,5 +1,5 @@
 <div class="shape-container" [ngStyle]="{ 'min-width': 12 * scale + 'px', 'min-height': 12 * scale + 'px' }">
-  <svg *ngIf="!shape || shape === 'circle'" [attr.width]="8 * scale" [attr.height]="8 * scale" viewBox="-1 -1 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg *ngIf="!shape || shape === 'circle'" [attr.width]="12 * scale" [attr.height]="12 * scale" viewBox="-1 -1 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="4" cy="4" r="4" attr.fill="{{ color }}" attr.stroke="{{ borderColor }}" />
   </svg>
   <svg
