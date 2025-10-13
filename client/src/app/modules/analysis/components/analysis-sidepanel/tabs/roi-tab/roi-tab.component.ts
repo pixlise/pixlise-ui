@@ -37,7 +37,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
-import { AnalysisLayoutService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -87,11 +87,14 @@ export class ROITabComponent implements OnInit, OnDestroy {
   allContextImages: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
   private _selectedContextImage: string = "";
 
+  showDetailsForROIId = "";
+
   constructor(
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
     private _userOptionsService: UserOptionsService,
+    private _snackBarService: SnackbarService,
     public dialog: MatDialog
   ) {}
 
@@ -268,5 +271,13 @@ export class ROITabComponent implements OnInit, OnDestroy {
       this.newROIDescription = "";
       this.newROITags = [];
     }
+  }
+
+  onROIDetails(roiId: string) {
+    this.showDetailsForROIId = roiId;
+  }
+
+  onCloseROIDetails() {
+    this.showDetailsForROIId = "";
   }
 }

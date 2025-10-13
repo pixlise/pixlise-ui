@@ -46,6 +46,7 @@
   --clr-blue: 145, 191, 219; // #91bfdb
   --clr-purple: 158, 63, 255; // #9e3fff
   --clr-context-purple: 255, 0, 246; // #ff00f6
+  --clr-context-blue: 0, 240, 255; // #00f0ff
   --clr-pink: 204, 121, 167; // #cc79a7
   --clr-green: 102, 187, 106; // #66bb6a
 }
@@ -76,5 +77,6 @@ $clr-yellow: rgb(var(--clr-yellow));
 $clr-blue: rgb(var(--clr-blue));
 $clr-purple: rgb(var(--clr-purple));
 $clr-context-purple: rgb(var(--clr-context-purple));
+$clr-context-blue: rgb(var(--clr-context-blue));
 $clr-pink: rgb(var(--clr-pink));
 $clr-green: rgb(var(--clr-green));

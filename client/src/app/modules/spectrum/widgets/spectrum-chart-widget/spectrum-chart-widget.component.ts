@@ -62,6 +62,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   scanId: string = "";
 
   selection: SelectionHistoryItem | null = null;
+  selectedPMC = -1;
 
   private _subs = new Subscription();
 
@@ -378,6 +379,15 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._selectionService.selection$.subscribe(selection => {
         const hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
         this.selection = selection;
+
+        // Assume we're not displaying... only display if needed
+        this.selectedPMC = -1;
+        if (selection.beamSelection.getSelectedEntryCount() == 1) {
+          const selPMCs = selection.beamSelection.getSelectedScanEntryPMCs(selection.beamSelection.getScanIds()[0]);
+          if (selPMCs.size == 1) {
+            this.selectedPMC = selPMCs.values().next().value || -1;
+          }
+        }
 
         // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
         // updateLines will grab the actual selection data and update the display

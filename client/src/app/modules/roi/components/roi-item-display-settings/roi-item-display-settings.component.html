@@ -1,0 +1,72 @@
+
+<ng-template #roiShapePicker>
+  <div class="roi-shape-picker">
+    <h2>Shapes</h2>
+    <mat-radio-group class="shape-group" [(ngModel)]="shape">
+      <mat-radio-button *ngFor="let option of shapeOptions" [value]="option" class="shape-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="colour.colour || '#fff'" [shape]="option"></roi-shape>
+      </mat-radio-button>
+    </mat-radio-group>
+    <div class="bottom-buttons">
+      <push-button buttonStyle="outline" title="Clear Shape" (onClick)="clearShape()">Clear</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #roiColorPicker>
+  <div class="roi-color-picker">
+    <h2>Colour Blind Safe</h2>
+    <div class="color-container">
+      <div
+        class="color-option {{ selectedColour === option.colour ? 'selected' : '' }}"
+        *ngFor="let option of colourBlindSafeOptions"
+        [ngStyle]="{ 'background-color': selectedColour === option.colour ? semiTransparentSelectedColour : '' }"
+        (click)="onSelectColour(option)">
+        <roi-shape [scale]="4" [color]="option.colour" [borderColor]="selectedColour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
+        <div *ngIf="selectedColour === option.colour" class="active-color"></div>
+      </div>
+    </div>
+    <h2 class="additional-colors">Additional Colours</h2>
+    <div class="color-container">
+      <div
+        class="color-option {{ selectedColour === option.colour ? 'selected' : '' }}"
+        *ngFor="let option of additionalColorOptions"
+        [ngStyle]="{ 'background-color': selectedColour === option.colour ? semiTransparentSelectedColour : '' }"
+        (click)="onSelectColour(option)">
+        <roi-shape [scale]="4" [color]="option.colour" [borderColor]="selectedColour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
+        <div *ngIf="selectedColour === option.colour" class="active-color"></div>
+      </div>
+      <div
+        class="new-color"
+        [(colorPicker)]="customSelectedColour"
+        [cpEyeDropper]="true"
+        cpPosition="auto"
+        [cpAlphaChannel]="'disabled'"
+        (colorPickerSelect)="onSelectCustomColour()">
+        <div class="custom-color-container">
+          <div class="color-option {{ isCustomColour ? 'selected' : '' }}">
+            <img class="color-wheel" src="assets/button-icons/colour-wheel.svg" />
+            <roi-shape
+              [scale]="3"
+              [color]="isCustomColour ? rawSelectedColour : 'transparent'"
+              [borderColor]="isCustomColour ? 'rgb(var(--clr-gray-80))' : ''"
+              shape="circle"></roi-shape>
+            <div *ngIf="isCustomColour" class="active-color"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-buttons">
+      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColour()">Clear</push-button>
+    </div>
+  </div>
+</ng-template>
+  
+<div class="row">
+  <widget-settings-menu *ngIf="!isAllPointsROI" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
+    <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
+  </widget-settings-menu>
+  <widget-settings-menu [settingsDialog]="roiColorPicker" #roiColorPickerButton>
+    <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg"> </icon-button>
+  </widget-settings-menu>
+</div>
