@@ -38,7 +38,7 @@
 <div class="details">
   <div class="details-container" *ngIf="roi">
     <div class="header">
-      <div class="roiName">{{roi.name}}</div>
+      <div class="roiName">{{roi.name}} <roi-shape *ngIf="displaySettings" [color]="displaySettings.colour.asString() || '#fff'" [shape]="displaySettings.shape || 'circle'"></roi-shape></div>
       <img class="clickable" src="assets/button-icons/close-cross.svg" alt="Close ROI" (click)="onCloseROIDetails()" />
     </div>
     <div class="overview">
