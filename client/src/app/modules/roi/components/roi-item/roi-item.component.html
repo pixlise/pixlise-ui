@@ -98,6 +98,7 @@
         [active]="isVisible"
         (onToggle)="onVisibility($event)"></two-state-icon-button>
       <icon-button
+        *ngIf="showDetailsButton"
         (click)="onShowDetails()"
         [hasBackground]="false"
         icon="assets/button-icons/settings-gray.svg"

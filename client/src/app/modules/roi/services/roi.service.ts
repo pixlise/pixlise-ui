@@ -1041,7 +1041,7 @@ export class ROIService implements OnDestroy {
               for (let c = 0; c < patches.length; c++) {
                 const patch = patches[c];
                 this.createROI(ROIItem.create({
-                  name: `${roi.regionOfInterest!.name} - ${(c == patches.length-1) ? "remainder" : ("part " + part)}`,
+                  name: `${roi.regionOfInterest!.name} - ${(c == patches.length-1) ? "remainder" : part}`,
                   description: `${roi.regionOfInterest!.description} - ${c == patches.length-1 ? "remaining" : patch.length} points`,
                   tags: roi.regionOfInterest!.tags,
                   scanId: roi.regionOfInterest!.scanId,
