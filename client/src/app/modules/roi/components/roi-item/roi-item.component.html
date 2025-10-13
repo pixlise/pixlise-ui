@@ -89,7 +89,11 @@
         [editable]="summary.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
-      <roi-item-display-settings *ngIf="colorChangeOnly && summary" [roiId]="summary.id"></roi-item-display-settings>
+      <roi-item-display-settings
+        *ngIf="colorChangeOnly && summary"
+        [roiId]="summary.id"
+        [displaySettings]="displaySettings">
+      </roi-item-display-settings>
       <two-state-icon-button
         *ngIf="showVisibilityButton"
         toolTip="Toggle visibility on Context Image"

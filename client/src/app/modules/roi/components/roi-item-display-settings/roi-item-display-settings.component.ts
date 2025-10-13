@@ -23,11 +23,9 @@ export class ROIItemDisplaySettings {
 
   private _colour: ColourOption = generateDefaultColour();
   private _shape: ROIShape = DEFAULT_ROI_SHAPE;
+
   private _selectedColour: string = "";
   private _displaySettings: ROIDisplaySettings = createDefaultROIDisplaySettings();
-  
-  private _shapeDefined: boolean = false;
-  private _colourDefined: boolean = false;
 
   customSelectedColour: string = "";
 
@@ -42,29 +40,19 @@ export class ROIItemDisplaySettings {
     if (!this.roiId) {
       throw new Error("roiId not set on roi-item-display-settings");
     }
-
-    this._subs.add(
-      this._roiService.loadROI(this.roiId, true).subscribe(
-        (roiItem: ROIItem) => {
-          this.roi = roiItem;
-      })
-    );
   }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
   }
 
-
   clearColour() {
     this.colour = generateDefaultColour();
-    // this._selectedColour = "";
-    // this._colourDefined = false;
+    this._selectedColour = "";
   }
 
   clearShape() {
     this.shape = DEFAULT_ROI_SHAPE;
-    //this._shapeDefined = false;
   }
 
   get colour(): ColourOption {
@@ -73,11 +61,7 @@ export class ROIItemDisplaySettings {
 
   set colour(value: ColourOption) {
     this._colour = value;
-    //this._colourDefined = value && value.colour.length > 0;
-    this._roiService.updateRegionDisplaySettings(this.roi!.id, this._colour.rgba, this.shape || DEFAULT_ROI_SHAPE);
-    // if (!this.selected) {
-    //   this.onCheckboxClick(true);
-    // }
+    this._roiService.updateRegionDisplaySettings(this.roiId, this.colour.rgba, this.shape || DEFAULT_ROI_SHAPE);
   }
 
   get shape(): ROIShape {
@@ -86,13 +70,8 @@ export class ROIItemDisplaySettings {
 
   set shape(value: ROIShape) {
     this._shape = value;
-    //this._shapeDefined = !!value;
-    this._roiService.updateRegionDisplaySettings(this.roi!.id, this.colour.rgba, this._shape || DEFAULT_ROI_SHAPE);
-    // if (!this.selected) {
-    //   this.onCheckboxClick(true);
-    // }
+    this._roiService.updateRegionDisplaySettings(this.roiId, this.colour.rgba, this.shape || DEFAULT_ROI_SHAPE);
   }
-
 
   onSelectColour(colour: ColourOption) {
     this.selectedColour = colour.colour;
@@ -145,11 +124,11 @@ export class ROIItemDisplaySettings {
   }
 
   get isAllPointsROI(): boolean {
-    if (!this.roi) {
+    if (!this.roiId) {
       return false;
     }
 
-    return PredefinedROIID.isAllPointsROI(this.roi.id);
+    return PredefinedROIID.isAllPointsROI(this.roiId);
   }
 
   get colourBlindSafeOptions(): ColourOption[] {
@@ -168,16 +147,10 @@ export class ROIItemDisplaySettings {
     if (value) {
       this._displaySettings = value;
       this._colour = findColourOption(value.colour);
-      this._selectedColour = this._colour.colour;
+      this._selectedColour = this.colour.colour;
       this._shape = value.shape;
-
-      this._shapeDefined = true;
-      this._colourDefined = true;
     } else {
       this._displaySettings = createDefaultROIDisplaySettings();
-
-      this._shapeDefined = false;
-      this._colourDefined = false;
     }
   }
 }
