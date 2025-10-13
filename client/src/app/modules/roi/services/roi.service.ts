@@ -665,6 +665,9 @@ export class ROIService implements OnDestroy {
     };
   }
 
+  /* Commented because it's not called by anything and looks confusing in the code. We haven't forgotten to request these - they
+     come for free in the ROI listing request!
+
   getROIDisplaySettings(id: string) {
     this._dataService.sendRegionOfInterestDisplaySettingsGetRequest(RegionOfInterestDisplaySettingsGetReq.create({ id })).subscribe({
       next: res => {
@@ -679,7 +682,7 @@ export class ROIService implements OnDestroy {
         this._snackBarService.openError(err);
       },
     });
-  }
+  }*/
 
   writeROIDisplaySettings(id: string, displaySettings: ROIItemDisplaySettings) {
     this._dataService.sendRegionOfInterestDisplaySettingsWriteRequest(RegionOfInterestDisplaySettingsWriteReq.create({ id, displaySettings })).subscribe({

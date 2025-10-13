@@ -1,19 +1,13 @@
-import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
-import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
+import { ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROIService } from "../../services/roi.service";
-import { SelectionService, SnackbarService, WidgetSettingsMenuComponent, UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
+import { SelectionService, SnackbarService, UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
-import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.component";
-import { COLOURS, COLOUR_MAP, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
+import { DEFAULT_ROI_SHAPE, ROIShape } from "../roi-shape/roi-shape.component";
+import { ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
-import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { UserInfo } from "src/app/generated-protos/user";
-import { PredefinedROIID } from "../../../../models/RegionOfInterest";
-import { RGBA } from "../../../../utils/colours";
-import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 
 export type SubItemOptionSection = {
   title: string;
