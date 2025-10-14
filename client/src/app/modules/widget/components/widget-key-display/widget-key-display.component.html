@@ -88,7 +88,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [style]="{ color: item.colour, 'font-size': fontSize + 'px', padding: fontPadding + 'px 8px' }"
             (click)="onClickLabel(item, $event)"
             [title]="item.id.length > 0 ? 'Bring to front' : ''">
-            <roi-shape [scale]="1.5" [color]="item.colour" [shape]="item.shape"></roi-shape>
+            <roi-shape [scale]="1" [color]="item.colour" [shape]="item.shape"></roi-shape>
             <span
               class="key-label"
               [ngStyle]="{
@@ -118,7 +118,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <push-button class="trigger-btn" *ngIf="!exportMode && !keyShowing && items.length > 0" (onClick)="onToggleShowKey()">
   <div class="trigger-contents">
     <div class="key-icons">
-      <roi-shape class="key-item-icon" [scale]="1.5" [color]="item.colour" shape="circle" borderColor="#1e2021" *ngFor="let item of previewItems"></roi-shape>
+      <roi-shape class="key-item-icon" [scale]="1" [color]="item.colour" shape="circle" borderColor="#1e2021" *ngFor="let item of previewItems"></roi-shape>
     </div>
     <span class="key-label">Key</span>
   </div>

@@ -88,7 +88,7 @@ export function makeDrawablePointGroups(
       for (let c = 0; c < group.valuesPerScanEntry.length; c++) {
         const value = group.valuesPerScanEntry[c];
         const coord = makePointFunc(value);
-        const isSelected = selectedPMCs.has(value.scanEntryId);
+        const isSelected = selectedPMCs.has(value.scanEntryId); // scanEntryId AKA PMC!
         notSelected.push(!isSelected);
 
         if (isSelected) {

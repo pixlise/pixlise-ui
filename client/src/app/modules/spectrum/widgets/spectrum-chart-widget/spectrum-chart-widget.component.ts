@@ -38,6 +38,7 @@ import {
   WidgetExportOption,
 } from "../../../widget/components/widget-export-dialog/widget-export-model";
 import { SpectrumChartExporter } from "./spectrum-chart-exporter";
+import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
 
 @Component({
   standalone: false,
@@ -61,6 +62,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   scanId: string = "";
 
   selection: SelectionHistoryItem | null = null;
+  selectedPMC = -1;
 
   private _subs = new Subscription();
 
@@ -76,6 +78,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _energyCalibrationService: EnergyCalibrationService,
     private _selectionService: SelectionService,
     public _widgetDataService: WidgetDataService,
+    private _scanIdConverterService: ScanIdConverterService,
     public dialog: MatDialog,
     public clipboard: Clipboard
   ) {
@@ -376,6 +379,15 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._selectionService.selection$.subscribe(selection => {
         const hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
         this.selection = selection;
+
+        // Assume we're not displaying... only display if needed
+        this.selectedPMC = -1;
+        if (selection.beamSelection.getSelectedEntryCount() == 1) {
+          const selPMCs = selection.beamSelection.getSelectedScanEntryPMCs(selection.beamSelection.getScanIds()[0]);
+          if (selPMCs.size == 1) {
+            this.selectedPMC = selPMCs.values().next().value || -1;
+          }
+        }
 
         // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
         // updateLines will grab the actual selection data and update the display
@@ -998,6 +1010,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this._subs.add(
         this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
           if (roi.region.id === PredefinedROIID.getSelectedPointsForScan(roi.region.scanId)) {
+            // Get the latest selected PMCs - the item we retrieved from roi service may not be up to date
             roi.region.scanEntryIndexesEncoded = Array.from(this.selection?.beamSelection.getSelectedScanEntryPMCs(roi.region.scanId) || []) || [];
           }
 
@@ -1020,10 +1033,17 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             this._cachedDataService.getScanList(
               ScanListReq.create({
                 searchFilters: { scanId: roi.region.scanId },
-              })
+              }),
             ),
+            // NOTE that getSpectrumValues requires location indexes not PMCs, but
+            // ROIs deliver PMCs in the badly named field
+            this._scanIdConverterService.convertScanEntryPMCToIndex(roi.region.scanId, roi.region.scanEntryIndexesEncoded)
           ]).subscribe({
-            next: ([spectrumResp, scanListResp]) => {
+            next: ([spectrumResp, scanListResp, pmcToIdxResult]) => {
+              if (pmcToIdxResult.failedPMCs.length > 0) {
+                throw new Error(`Spectrum generateLines failed due to bad PMC in ROI - couldn't look up PMCs: ${pmcToIdxResult.failedPMCs}`);
+              }
+
               let scanName = roi.region.scanId;
               if (scanListResp.scans.length > 0) {
                 scanName = scanListResp.scans[0].title;
@@ -1042,8 +1062,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
                 // Normal line data retrieval
                 values = parser.getSpectrumValues(
                   dataSrc,
-                  // TODO: Convert from PMC to location indexes???
-                  roi.region.scanEntryIndexesEncoded,
+                  pmcToIdxResult.result,
                   lineExpr,
                   title,
                   readType,
