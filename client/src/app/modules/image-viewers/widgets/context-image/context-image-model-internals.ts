@@ -318,16 +318,19 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       // If we have any regions turned on, we need to generate their region polygons so they get drawn
       const toWait$ = [];
 
-      for (const roi of from.roiIds) {
-        const mdl = this.scanDrawModels.get(roi.scanId);
-        if (mdl) {
-          toWait$.push(
-            this.makeRegion(roi.scanId, roi.id, from, roi.opacity).pipe(
-              tap((roiLayer: ContextImageRegionLayer) => {
-                mdl.regions.push(roiLayer);
-              })
-            )
-          );
+      // Only do this if we have regions, they may not have loaded yet so we just write a bunch of errors out
+      if (from.getRegions().length > 0) {
+        for (const roi of from.roiIds) {
+          const mdl = this.scanDrawModels.get(roi.scanId);
+          if (mdl) {
+            toWait$.push(
+              this.makeRegion(roi.scanId, roi.id, from, roi.opacity).pipe(
+                tap((roiLayer: ContextImageRegionLayer) => {
+                  mdl.regions.push(roiLayer);
+                })
+              )
+            );
+          }
         }
       }
 
