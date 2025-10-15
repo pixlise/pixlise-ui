@@ -770,9 +770,8 @@ export class ContextImageComponent
             });
           } else {
             this.mdl.roiIds = this.cachedROIs.slice();
+            this.reloadModel();
           }
-
-          this.reloadModel();
         }
       )
     );
@@ -1198,6 +1197,10 @@ export class ContextImageComponent
   }
 
   private reloadModel(setViewToExperiment: boolean = false) {
+    if (this.isWidgetDataLoading) {
+      return; // Already loading, let it happen
+    }
+
     this.isWidgetDataLoading = true;
 
     const obs: Observable<ContextImageModelLoadedData> =
@@ -1229,18 +1232,12 @@ export class ContextImageComponent
           this.isWidgetDataLoading = false;
 
           this.reDraw("reloadModel");
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value =
-              this.mdl.keyItems;
-          }
+          this.updateKey();
         },
         error: (err) => {
           this.isWidgetDataLoading = false;
           this.reDraw("reloadModel error");
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value =
-              this.mdl.keyItems;
-          }
+          this.updateKey();
 
           if (err instanceof WidgetError) {
             this._snackService.openError(
@@ -1260,6 +1257,15 @@ export class ContextImageComponent
           }
         },
       });
+  }
+
+  private updateKey() {
+    this.mdl.updateKey();
+
+    if (this.widgetControlConfiguration.topRightInsetButton) {
+      this.widgetControlConfiguration.topRightInsetButton.value =
+        this.mdl.keyItems;
+    }
   }
 
   reDraw(reason: string) {

@@ -529,34 +529,36 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
           this.drawModel.drawnData = null;
           //this.needsDraw$.next();
-
-          this.keyItems = [];
-          this._rois.forEach((roi, roiId) => {
-            const scanMdl = this._raw?.scanModels.get(roi.roi.scanId);
-            if (!scanMdl) {
-              return;
-            }
-
-            const keyItem = new WidgetKeyItem(
-              roiId,
-              roi.roi.name,
-              roi.roi.displaySettings?.colour || Colours.WHITE,
-              null,
-              roi.roi.displaySettings?.shape,
-              scanMdl.scanTitle,
-              true,
-              false,
-              true
-            );
-            this.keyItems.push(keyItem);
-          });
         })
       );
-    } /*else {
-      console.warn("SKIPPED drawModel.regenerate...");
-    }*/
+    } else {
+      //console.warn("SKIPPED drawModel.regenerate...");
+    }
 
     return of(void 0);
+  }
+
+  updateKey() {
+    this.keyItems = [];
+    this._rois.forEach((roi, roiId) => {
+      const scanMdl = this._raw?.scanModels.get(roi.roi.scanId);
+      if (!scanMdl) {
+        return;
+      }
+
+      const keyItem = new WidgetKeyItem(
+        roiId,
+        roi.roi.name,
+        roi.roi.displaySettings?.colour || Colours.WHITE,
+        null,
+        roi.roi.displaySettings?.shape,
+        scanMdl.scanTitle,
+        true,
+        false,
+        true
+      );
+      this.keyItems.push(keyItem);
+    });
   }
 
   getClosestLocationIdxToPoint(worldPt: Point): ClosestPoint {
