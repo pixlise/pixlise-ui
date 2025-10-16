@@ -515,7 +515,7 @@ export class BinaryChartWidgetComponent
       this._analysisLayoutService.getQuantIdForScan(this.scanId) ||
       "";
 
-    if (this.scanId.length > 0 && this.quantId.length > 0) {
+    if (this.scanId.length > 0 /*&& this.quantId.length > 0*/) {
       this._analysisLayoutService
         .makeExpressionList(this.scanId, 2)
         .subscribe((exprs: DefaultExpressions) => {
