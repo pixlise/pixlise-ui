@@ -129,11 +129,20 @@ export class ExpressionDataSource
           }
 
           const idxs = [];
+          const pseudoIdxs = [];
           for (let c = 0; c < resp.entries.length; c++) {
             const entry = resp.entries[c];
             if (entry.normalSpectra || entry.dwellSpectra || entry.bulkSpectra || entry.maxSpectra) {
               idxs.push(c);
             }
+            if (entry.pseudoIntensities) {
+              pseudoIdxs.push(c);
+            }
+          }
+
+          // If we didn't find ANY, we might be looking at a pseudo-intensity only dataset, so scan for those
+          if (idxs.length <= 0) {
+            return pseudoIdxs;
           }
           return idxs;
         })
