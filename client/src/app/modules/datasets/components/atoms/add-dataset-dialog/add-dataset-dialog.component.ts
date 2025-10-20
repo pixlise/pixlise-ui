@@ -65,6 +65,10 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   detector: string = "";
   detectors = ["jpl-breadboard", "sbu-breadboard", "pixl-em", "bruker", "wds"];
 
+  skipRows = 0;
+  skipColumns = 0;
+  maxMapPoints = 0;
+
   constructor(
     //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
     public dialogRef: MatDialogRef<boolean>,
@@ -150,6 +154,9 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
                   id: uploadId,
                   format: this.detector,
                   zipFileName: zipName,
+                  skipRows: this.skipRows,
+                  skipColumns: this.skipColumns,
+                  maxMapPoints: this.maxMapPoints
                 })
               )
               .subscribe({
