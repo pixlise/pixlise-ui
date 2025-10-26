@@ -522,7 +522,7 @@ export class ContextImageComponent
               l.displayValueRangeMin !== undefined &&
               l.displayValueRangeMax !== undefined
             ) {
-              let colourScaleRangeId = l.expressionID;
+              let colourScaleRangeId = l.expressionID + "-0";
               if (!DataExpressionId.isExpressionGroupId(l.expressionID)) {
                 const displayRange = new MinMax(
                   l.displayValueRangeMin,
@@ -1986,7 +1986,7 @@ export class ContextImageComponent
           .filter((id) => !DataExpressionId.isUnsavedExpressionId(id))
           .map((id, i) => {
             // Get display value range for the first scale (index 0) of this expression
-            const displayRange = this.mdl.colourScaleDisplayValueRanges.get(id);
+            const displayRange = this.mdl.colourScaleDisplayValueRanges.get(id + "-0");
 
             const groupDisplayRanges = [];
             if (DataExpressionId.isExpressionGroupId(id)) {
