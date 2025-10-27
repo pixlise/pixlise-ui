@@ -122,7 +122,7 @@ export class ContextImageScanModelGenerator {
 
     this.findMinPointDistances(scanPoints, scanEntries, beamXYZs);
 
-    const clusters = ContextImageScanModelGenerator.makePointClusters(scanPoints);
+    const clusters = ContextImageScanModelGenerator.makePointClusters(scanPoints, scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT);
 
     // Clear footprints, get from clusters as we process them
     const wholeFootprintHullPoints = [];
@@ -149,7 +149,7 @@ export class ContextImageScanModelGenerator {
       scanPoints,
       scanPointPolygons,
       wholeFootprintHullPoints,
-      contextPixelsTommConversion,
+      scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT ? -1 : contextPixelsTommConversion,
       beamRadius_pixels,
       this._locationDisplayPointRadius,
       this._locationPointBBox,
@@ -611,12 +611,81 @@ export class ContextImageScanModelGenerator {
     return experimentAngleRad;
   }
 
+  private static isClusterScanPoint(pt: ScanPoint) {
+    if (!pt.coord || (!pt.hasNormalSpectra && !pt.hasPseudoIntensities)) {
+      // No coord, won't have spectra either... ignore
+      return false;
+    }
+    return true;
+  }
+
   // Finds points that are clustered nearby and returns their location indexes
   // Currently the only place this really happens is the cal target scans where we
   // take several lines and grids with large jumps between them.
   // Because PIXL goes sequentially through PMCs, we just need to find when there
   // is a large gap between scan points
-  private static makePointClusters(scanPoints: ScanPoint[]): PointCluster[] {
+  private static makePointClusters(scanPoints: ScanPoint[], treateAsSingleCluster: boolean): PointCluster[] {
+    // Loop through locations, if distance jump is significantly larger than last size, we
+    // assume a new cluster of points has started
+    let clusters: PointCluster[] = [new PointCluster([], 0, [], 0)];
+
+    if (treateAsSingleCluster) {
+      // Create a single cluster and find an average point distance to use
+      let ptDistance = 0;
+      let ptDistCount = 0;
+
+      let lastIdx = -1;
+      for (let locIdx = 0; locIdx < scanPoints.length; locIdx++) {
+        if (ContextImageScanModelGenerator.isClusterScanPoint(scanPoints[locIdx])) {
+          clusters[0].locIdxs.push(locIdx);
+
+          if (lastIdx > -1 && ptDistCount < 20) {
+
+            const vec = subtractVectors(scanPoints[lastIdx].coord!, scanPoints[locIdx].coord!);
+            const dst = getVectorLength(vec);
+
+            ptDistance += dst;
+            ptDistCount++;
+          }
+
+          lastIdx = locIdx;
+        }
+      }
+
+      clusters[0].pointDistance = ptDistCount > 0 ? ptDistance / ptDistCount : 1;
+    } else {
+      clusters = ContextImageScanModelGenerator.breakIntoClustersPIXLStyle(scanPoints);
+    }
+
+    // If we only have the 1 default cluster we added...
+    if (clusters.length == 1 && clusters[0].locIdxs.length <= 0) {
+      clusters = [];
+    }
+
+    // Calculate footprints for all clusters
+    let c = 0;
+    for (const cluster of clusters) {
+      cluster.footprintPoints = ContextImageScanModelGenerator.makeConvexHull(cluster.locIdxs, scanPoints);
+      cluster.angleRadiansToContextImage = ContextImageScanModelGenerator.findExperimentAngle(cluster.footprintPoints);
+
+      cluster.footprintPoints = ContextImageScanModelGenerator.fattenFootprint(
+        cluster.footprintPoints,
+        cluster.pointDistance / 2,
+        cluster.angleRadiansToContextImage
+      );
+
+      console.debug(
+        `  Point cluster ${c + 1} contains ${cluster.locIdxs.length} PMCs, ${cluster.footprintPoints.length} footprint points, ${radToDeg(
+          cluster.angleRadiansToContextImage
+        ).toFixed(3)} degrees rotated`
+      );
+      c++;
+    }
+
+    return clusters;
+  }
+
+  private static breakIntoClustersPIXLStyle(scanPoints: ScanPoint[]) {
     // Loop through locations, if distance jump is significantly larger than last size, we
     // assume a new cluster of points has started
     let clusters: PointCluster[] = [new PointCluster([], 0, [], 0)];
@@ -633,7 +702,7 @@ export class ContextImageScanModelGenerator {
     const clusterBreakAngleCosines: number[] = [];
 
     for (let locIdx = 0; locIdx < scanPoints.length; locIdx++) {
-      if (!scanPoints[locIdx].coord || (!scanPoints[locIdx].hasNormalSpectra && !scanPoints[locIdx].hasPseudoIntensities)) {
+      if (!ContextImageScanModelGenerator.isClusterScanPoint(scanPoints[locIdx])) {
         // No coord, won't have spectra either... ignore
         continue;
       }
@@ -706,31 +775,6 @@ export class ContextImageScanModelGenerator {
 
         clusters = [singleCluster];
       }
-    }
-
-    // If we only have the 1 default cluster we added...
-    if (clusters.length == 1 && clusters[0].locIdxs.length <= 0) {
-      clusters = [];
-    }
-
-    // Calculate footprints for all clusters
-    let c = 0;
-    for (const cluster of clusters) {
-      cluster.footprintPoints = ContextImageScanModelGenerator.makeConvexHull(cluster.locIdxs, scanPoints);
-      cluster.angleRadiansToContextImage = ContextImageScanModelGenerator.findExperimentAngle(cluster.footprintPoints);
-
-      cluster.footprintPoints = ContextImageScanModelGenerator.fattenFootprint(
-        cluster.footprintPoints,
-        cluster.pointDistance / 2,
-        cluster.angleRadiansToContextImage
-      );
-
-      console.debug(
-        `  Point cluster ${c + 1} contains ${cluster.locIdxs.length} PMCs, ${cluster.footprintPoints.length} footprint points, ${radToDeg(
-          cluster.angleRadiansToContextImage
-        ).toFixed(3)} degrees rotated`
-      );
-      c++;
     }
 
     return clusters;
