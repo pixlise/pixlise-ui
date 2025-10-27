@@ -71,7 +71,7 @@ export class PhysicalScale extends BaseUIElement {
     // If the mouse is over us, we hijack any drag events
     if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
       const pos = this.getPosition(event.canvasParams, this._ctx.transform);
-      if (pos.rect.containsPoint(event.canvasPoint)) {
+      if (pos && pos.rect.containsPoint(event.canvasPoint)) {
         this._captureMouse = true;
         this._startTranslation = this._ctx.uiPhysicalScaleTranslation.copy();
         return CanvasInteractionResult.redrawAndCatch;
@@ -90,15 +90,17 @@ export class PhysicalScale extends BaseUIElement {
         this._captureMouse = false;
 
         const pos = this.getPosition(event.canvasParams, this._ctx.transform);
-        const moveTo = BaseUIElement.keepOnScreen(
-          new Rect(pos.rect.x, pos.rect.y, pos.rect.w, pos.rect.h),
-          event.canvasParams.width,
-          event.canvasParams.height,
-          0.25
-        );
+        if (pos) {
+          const moveTo = BaseUIElement.keepOnScreen(
+            new Rect(pos.rect.x, pos.rect.y, pos.rect.w, pos.rect.h),
+            event.canvasParams.width,
+            event.canvasParams.height,
+            0.25
+          );
 
-        this._ctx.uiPhysicalScaleTranslation.x += moveTo.x - pos.rect.x;
-        this._ctx.uiPhysicalScaleTranslation.y += moveTo.y - pos.rect.y;
+          this._ctx.uiPhysicalScaleTranslation.x += moveTo.x - pos.rect.x;
+          this._ctx.uiPhysicalScaleTranslation.y += moveTo.y - pos.rect.y;
+        }
 
         this._startTranslation = new Point(0, 0);
       }
@@ -117,7 +119,7 @@ export class PhysicalScale extends BaseUIElement {
     return of(void 0);
   }
 
-  protected getPosition(viewport: CanvasParams, transform: CanvasWorldTransform): scalePosition {
+  protected getPosition(viewport: CanvasParams, transform: CanvasWorldTransform): scalePosition | undefined {
     // So we have a image pixels -> mm conversion ratio, we have to find the first scan we have points for
     // and use its conversion.
     // NOTE: if there are other scans with different conversions, we show a warning
@@ -130,6 +132,10 @@ export class PhysicalScale extends BaseUIElement {
         break;
       }
       mmConversion = scanMdl.contextPixelsTommConversion;
+    }
+
+    if (mmConversion < 0) {
+      return undefined;
     }
 
     const scaleTextPadY = 7;
@@ -159,6 +165,9 @@ export class PhysicalScale extends BaseUIElement {
 
   protected drawPhysicalScale(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, transform: CanvasWorldTransform): void {
     const pos = this.getPosition(viewport, transform);
+    if (!pos) {
+      return;
+    }
 
     // Here we work out what size to make the scale bar. We want something that's a multiple of a round unit
     const scaleTextPadding = 2;

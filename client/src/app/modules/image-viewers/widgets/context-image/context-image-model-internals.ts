@@ -70,7 +70,7 @@ export class ContextImageScanModel {
     public scanPoints: ScanPoint[], // The actual scan points
     public scanPointPolygons: Point[][], // Scan points can be rendered as polygons which touch neighbours
     public footprint: HullPoint[][], // Footprint of scan points relative to the image
-    public contextPixelsTommConversion: number, // Conversion ratio of image pixels -> mm
+    public contextPixelsTommConversion: number, // Conversion ratio of image pixels -> mm, -1 if unknown
     public beamRadius_pixels: number, // Size of the beam in image pixels
     public scanPointDisplayRadius: number, // Size of the beam in image pixels
     public scanPointsBBox: Rect,
