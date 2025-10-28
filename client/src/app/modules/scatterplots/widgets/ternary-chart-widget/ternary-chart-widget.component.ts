@@ -216,7 +216,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
     this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
 
-    if (this.scanId.length > 0 && this.quantId.length > 0) {
+    if (this.scanId.length > 0 /*&& this.quantId.length > 0*/) {
       this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
         this.mdl.expressionIds = exprs.exprIds;
 

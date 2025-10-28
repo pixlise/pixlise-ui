@@ -140,6 +140,8 @@ export class ContextImageScanModelGenerator {
       wholeFootprintHullPoints.push(cluster.footprintPoints);
     }
 
+    const pointScale = scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT ? 5 : 1;
+
     const result = new ContextImageScanModel(
       scanItem.id,
       scanItem.title,
@@ -150,8 +152,8 @@ export class ContextImageScanModelGenerator {
       scanPointPolygons,
       wholeFootprintHullPoints,
       scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT ? -1 : contextPixelsTommConversion,
-      beamRadius_pixels,
-      this._locationDisplayPointRadius,
+      beamRadius_pixels * pointScale,
+      this._locationDisplayPointRadius,// * pointScale,
       this._locationPointBBox,
       new Map<number, RGBA>()
     );
