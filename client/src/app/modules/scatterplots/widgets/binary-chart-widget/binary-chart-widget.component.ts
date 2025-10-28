@@ -760,6 +760,16 @@ export class BinaryChartWidgetComponent
           this.mdl.selectedMinYValue = binaryData.selectedMinYValue ?? null;
           this.mdl.selectedMaxYValue = binaryData.selectedMaxYValue ?? null;
 
+          // If the zoom ranges are not set, set them to the full range
+          if (this.mdl.selectedMinXValue == this.mdl.selectedMaxXValue) {
+            this.mdl.selectedMinXValue = this.mdl.xAxisMinMax.min;
+            this.mdl.selectedMaxXValue = this.mdl.xAxisMinMax.max;
+          }
+          if (this.mdl.selectedMinYValue == this.mdl.selectedMaxYValue) {
+            this.mdl.selectedMinYValue = this.mdl.yAxisMinMax.min;
+            this.mdl.selectedMaxYValue = this.mdl.yAxisMinMax.max;
+          }
+
           if (binaryData.referenceIds) {
             this._referenceIds = binaryData.referenceIds;
             if (this._allReferences.length > 0) {
