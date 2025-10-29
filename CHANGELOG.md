@@ -3,6 +3,11 @@
 ### New Features
 - Experimental support for importing WDS format scans (composed of just .tif images - one per element map and an "almost" optical CP image). tif files are expected to be single channel.
 
+### Bug Fixes
+- ROI side panel now updates the context image ROIs and is synced with existing ROIs
+- Layers dialog opened on a context image on the right side of the workspace layout was appearing squished and not full width.
+- If no min/max range set for the binary chart, it was defaulting to 0/0 in some edge cases. Now, if min equals max, it defaults to the full data range.
+
 ## 4.79.0 (2025-10-14)
 
 ### New Features
