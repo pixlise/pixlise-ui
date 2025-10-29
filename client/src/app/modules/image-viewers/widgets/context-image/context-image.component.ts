@@ -76,7 +76,7 @@ import {
 } from "./image-options/image-options.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { ContextImageExporter } from "src/app/modules/image-viewers/widgets/context-image/context-image-exporter";
@@ -99,6 +99,8 @@ import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-sour
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { isValidNumber, SentryHelper } from "src/app/utils/utils";
+import { SearchParams } from "../../../../generated-protos/search-params";
+import { RegionSettings, ROIDisplaySettings } from "../../../roi/models/roi-region";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;
@@ -557,6 +559,7 @@ export class ContextImageComponent
               this.mdl.roiIds.push(roi);
             }
           }
+
           this.mdl.hideFootprintsForScans = new Set<string>(
             contextData?.hideFootprintsForScans || []
           );
@@ -752,7 +755,7 @@ export class ContextImageComponent
             return;
           }
 
-          if (highlighted.roiIds.length > 0) {
+
             this.mdl.roiIds = [];
             const highlightRequests = highlighted.roiIds.map((id) =>
               this.loadROIRegion(
@@ -761,16 +764,22 @@ export class ContextImageComponent
               )
             );
             combineLatest(highlightRequests).subscribe({
-              next: () => {
-                this.reloadModel();
-              },
-              error: (err) => {
-                this._snackService.openError("Failed to highlight region", err);
-              },
-            });
-          } else {
-            this.mdl.roiIds = this.cachedROIs.slice();
-          }
+              next: (roiItems: ROIItem[]) => {
+                this.updateROIsFromPicker({
+                  selectedROISummaries: roiItems.map((roi) => (ROIItemSummary.create({ 
+                    id: roi.id, name: roi.name, scanId: roi.scanId, description: roi.description,
+                    imageName: roi.imageName,
+                    tags: roi.tags,
+                    modifiedUnixSec: roi.modifiedUnixSec,
+                    displaySettings: roi.displaySettings,
+                    owner: roi.owner,
+                    isMIST: roi.isMIST,
+                    associatedROIId: roi.associatedROIId,
+                  }))),
+                selectedROIs: roiItems,
+              });
+            }});
+
 
           this.reloadModel();
         }
@@ -1106,6 +1115,12 @@ export class ContextImageComponent
         )
       );
     }
+
+    // First make sure we have the display settings for all the regions
+    const displaySettingsList$ = this.mdl.roiIds.map((roi) =>
+      this._roiService.getRegionSettings(roi.id)
+    );
+    combineLatest(displaySettingsList$).subscribe();
 
     // Queue up region requests
     const regionRequests = this.mdl.roiIds.map((roi) =>
@@ -1566,6 +1581,8 @@ export class ContextImageComponent
     };
 
     dialogConfig.hasBackdrop = false;
+    // Need to set a minimum width to avoid the dialog from being too narrow (defaults to min of 0)
+    dialogConfig.minWidth = "400px";
     const rect = trigger?.parentElement?.getBoundingClientRect();
     if (rect) {
       dialogConfig.position = getInitialModalPositionRelativeToTrigger(
@@ -1868,24 +1885,10 @@ export class ContextImageComponent
     });
   }
 
-  onRegions() {
-    const dialogConfig = new MatDialogConfig<ROIPickerData>();
-    // Pass data to dialog
-    const selectedROIs: string[] = [];
-    for (const roi of this.mdl.roiIds) {
-      selectedROIs.push(roi.id);
-    }
-
-    dialogConfig.data = {
-      requestFullROIs: true,
-      selectedIds: selectedROIs,
-      scanId: this.scanId,
-    };
-
-    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+  private updateROIsFromPicker(result: ROIPickerResponse) {
       if (result) {
         this.mdl.roiIds = [];
+        this.mdl.keyItems = [];
 
         // Create entries for each scan
         const roisPerScan = new Map<string, string[]>();
@@ -1901,6 +1904,9 @@ export class ContextImageComponent
           if (this.scanId !== roi.scanId) {
             this.scanId = roi.scanId;
           }
+
+          const scanName = this.mdl.getScanModelFor(roi.scanId)?.scanTitle ?? roi.scanId;
+          this.mdl.keyItems.push(new WidgetKeyItem(roi.id, roi.name, roi.displaySettings?.colour ?? "", null, roi.displaySettings?.shape ?? "", scanName, true));
         }
 
         // Now fill in the data source ids using the above
@@ -1920,6 +1926,25 @@ export class ContextImageComponent
         this.saveState();
         this.reloadModel();
       }
+  }
+
+  onRegions() {
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
+    // Pass data to dialog
+    const selectedROIs: string[] = [];
+    for (const roi of this.mdl.roiIds) {
+      selectedROIs.push(roi.id);
+    }
+
+    dialogConfig.data = {
+      requestFullROIs: true,
+      selectedIds: selectedROIs,
+      scanId: this.scanId,
+    };
+
+    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+      this.updateROIsFromPicker(result);
     });
   }
 

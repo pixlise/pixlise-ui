@@ -53,8 +53,13 @@ POSSIBILITY OF SUCH DAMAGE.
       placeholder="Open a Context Image ..."
       #tooltip="matTooltip"
       matTooltip="Choose a context image to display the ROIs on"
-      [matTooltipShowDelay]="500">
-      <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      [matTooltipShowDelay]="500"
+    >
+      <mat-option
+        *ngFor="let chart of allContextImages"
+        [value]="chart.widget.id"
+        >{{ chart.name }}
+      </mat-option>
     </mat-select>
   </div>
 
@@ -63,27 +68,35 @@ POSSIBILITY OF SUCH DAMAGE.
     [summaries]="summaries"
     (onFilterChanged)="onFilterChanged($event)"
     [showBuiltin]="false"
-    [manualFilters]="manualFilters"></roi-search-controls>
+    [manualFilters]="manualFilters"
+  ></roi-search-controls>
   <section class="bulk-controls">
-    <span class="count">{{ highlightedROIIds.length }} ROIs highlighted</span>
+    <span class="count">{{ currentROIIds.length }} ROIs highlighted</span>
     <action-button
       class="visible-toggle"
-      [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
+      [action]="currentROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
       #tooltip="matTooltip"
-      [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'"
-      (onClick)="onToggleAllVisible()">
+      [matTooltip]="
+        currentROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'
+      "
+      (onClick)="onToggleAllVisible()"
+    >
     </action-button>
   </section>
   <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
       <roi-item
-        *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
+        *cdkVirtualFor="
+          let item of filteredSummaries;
+          trackBy: trackBySummaryId
+        "
         [summary]="item"
         [selectAuthorToFilter]="showSearch"
         (onFilterAuthor)="onFilterAuthor($event)"
         [displaySettings]="displaySettingsMap[item.id]"
-        [isVisible]="highlightedROIIds.includes(item.id)"
-        (onVisibilityChange)="onROIVisibleToggle(item)"></roi-item>
+        [isVisible]="currentROIIds.includes(item.id)"
+        (onVisibilityChange)="onROIVisibleToggle(item)"
+      ></roi-item>
     </cdk-virtual-scroll-viewport>
   </section>
 </section>
