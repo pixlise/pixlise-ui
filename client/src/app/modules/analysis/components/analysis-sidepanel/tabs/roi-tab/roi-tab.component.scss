@@ -1,3 +1,6 @@
+@import "variables.scss";
+@import "cursors.scss";
+
 .roi-container {
   margin-left: 8px;
   border-left: 1px solid #000;
@@ -10,9 +13,12 @@
   header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
 
     border-bottom: 1px solid #000;
-    padding: 8px 0px;
+    padding: 8px 8px 8px 0px;
+    gap: 8px;
 
     h5 {
       font-family: Inter;
@@ -22,22 +28,35 @@
       margin-left: 8px;
 
       user-select: none;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
     }
   }
 
-  .panel-row {
-    margin: 8px;
-  }
-
-  .widget-selectors {
+  .roi-list-container {
     display: flex;
-    width: 100%;
+    flex-direction: column;
 
-    mat-select {
-      flex: 1;
-      margin: 0 8px;
+    .panel-row {
+      margin: 8px;
+    }
+  
+    .widget-selectors {
+      display: flex;
+      width: 100%;
+  
+      mat-select {
+        flex: 1;
+        margin: 0 8px;
+      }
     }
   }
+}
+
+.list-hidden {
+  display: none !important;
 }
 
 .new-roi {

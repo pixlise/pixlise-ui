@@ -34,6 +34,10 @@
   padding-bottom: $sz-half;
   border-bottom: 1px solid $clr-gray-80;
   user-select: none;
+
+  .label {
+    padding: 0px 4px;
+  }
 }
 
 .trigger-contents {

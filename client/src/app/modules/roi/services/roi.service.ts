@@ -665,6 +665,9 @@ export class ROIService implements OnDestroy {
     };
   }
 
+  /* Commented because it's not called by anything and looks confusing in the code. We haven't forgotten to request these - they
+     come for free in the ROI listing request!
+
   getROIDisplaySettings(id: string) {
     this._dataService.sendRegionOfInterestDisplaySettingsGetRequest(RegionOfInterestDisplaySettingsGetReq.create({ id })).subscribe({
       next: res => {
@@ -679,7 +682,7 @@ export class ROIService implements OnDestroy {
         this._snackBarService.openError(err);
       },
     });
-  }
+  }*/
 
   writeROIDisplaySettings(id: string, displaySettings: ROIItemDisplaySettings) {
     this._dataService.sendRegionOfInterestDisplaySettingsWriteRequest(RegionOfInterestDisplaySettingsWriteReq.create({ id, displaySettings })).subscribe({
@@ -1041,7 +1044,7 @@ export class ROIService implements OnDestroy {
               for (let c = 0; c < patches.length; c++) {
                 const patch = patches[c];
                 this.createROI(ROIItem.create({
-                  name: `${roi.regionOfInterest!.name} - ${(c == patches.length-1) ? "remainder" : ("part " + part)}`,
+                  name: `${roi.regionOfInterest!.name} - ${(c == patches.length-1) ? "remainder" : part}`,
                   description: `${roi.regionOfInterest!.description} - ${c == patches.length-1 ? "remaining" : patch.length} points`,
                   tags: roi.regionOfInterest!.tags,
                   scanId: roi.regionOfInterest!.scanId,

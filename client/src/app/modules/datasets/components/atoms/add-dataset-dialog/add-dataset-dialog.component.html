@@ -57,7 +57,25 @@ POSSIBILITY OF SUCH DAMAGE.
             <span>{{datasetIdFieldName}}</span>
             <input [(ngModel)]="nameHint" type="text" placeholder="Name of dataset">
         </div>
-        <div class="important">{{formatHelp}}</div>
+        <div class="important width-limit">{{formatHelp}}</div>
+        <ng-container *ngIf="detector == 'wds'">
+          <strong>Reducing Import Data Size</strong>
+          <span class="width-limit">PIXLISE currently struggles to handle scans with over 50,000 element map points. To be able to import large areas but reduce the data size you can tune the following parameters for importing...</span>
+          <table>
+            <tr>
+              <td>Skip Rows</td>
+              <td><input [(ngModel)]="skipRows" type="number" placeholder="Number of rows to skip while importing"></td>
+            </tr>
+            <tr>
+              <td>Skip Columns</td>
+              <td><input [(ngModel)]="skipColumns" type="number" placeholder="Number of columns to skip while importing"></td>
+            </tr>
+            <tr>
+              <td>Max Map Points</td>
+              <td><input [(ngModel)]="maxMapPoints" type="number" placeholder="Number of points to import, or 0 means import all"></td>
+            </tr>
+          </table>
+        </ng-container>
       </div>
 
       <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
