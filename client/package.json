@@ -3,7 +3,8 @@
   "scripts": {
     "ng": "ng",
     "prestart": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua && cp ../CHANGELOG.md .",
-    "start": "clear&&ng serve",
+    "start": "clear&&cp ./src/local-development-pixlise-config-PIXLISE.json ./src/local-development-pixlise-config.json&&ng serve",
+    "start-spectralise": "clear&&cp ./src/local-development-pixlise-config-SPECTRALISE.json ./src/local-development-pixlise-config.json&&ng serve",
     "prebuild": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua  && cp ../CHANGELOG.md .",
     "build": "ng build && npm run assets:backup && npm run sentry:sourcemaps && npm run assets:replace",
     "watch": "ng build --watch --configuration development",
