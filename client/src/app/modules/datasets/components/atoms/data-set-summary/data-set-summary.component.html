@@ -74,17 +74,19 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <div class="fx-column fx-start-end right-data gap-separated-vertical-elements-half">
-    <div class="fx-start-center" title="SOL: &quot;{{ displaySol }}&quot;">
-      <span class="value">{{ displaySol }}</span
-      ><img class="icon" src="assets/icons/sol.svg" />
-    </div>
+    <ng-container *ngIf="displaySol">
+      <div class="fx-start-center" title="SOL: &quot;{{ displaySol }}&quot;">
+        <span class="value">{{ displaySol }}</span
+        ><img class="icon" src="assets/icons/sol.svg" />
+      </div>
+      <div class="fx-start-center" title="Drive ID: &quot;{{ displayDriveID }}&quot;">
+        <span class="value">{{ displayDriveID }}</span
+        ><img class="icon" src="assets/icons/drive.svg" />
+      </div>
+    </ng-container>
     <div class="fx-start-center" title="Target: &quot;{{ displayTarget }}&quot; (ID: &quot;{{ displayTargetId }}&quot;)">
       <span class="value target">{{ displayTarget }}</span
       ><img class="icon" src="assets/icons/target.svg" />
-    </div>
-    <div class="fx-start-center" title="Drive ID: &quot;{{ displayDriveID }}&quot;">
-      <span class="value">{{ displayDriveID }}</span
-      ><img class="icon" src="assets/icons/drive.svg" />
     </div>
   </div>
 </div>

@@ -127,6 +127,7 @@ class SummaryItem {
 })
 export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
+  private _imageSubs = new Subscription();
 
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
@@ -338,6 +339,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.closeOpenOptionsMenu();
     this.closeWorkspaceOpenOptionsMenu();
     this._subs.unsubscribe();
+    this._imageSubs.unsubscribe();
   }
 
   trackScansBy(index: number, scan: ScanItem): string {
@@ -1316,7 +1318,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         }
       });
   }
-
+/*
   onFilters(event: MouseEvent): void {
     const dialogConfig = new MatDialogConfig();
 
@@ -1335,7 +1337,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       }
     });
   }
-
+*/
   onFilterMenu(event: MouseEvent) {
     const dialogConfig = new MatDialogConfig();
     dialogConfig.backdropClass = "empty-overlay-backdrop";
@@ -1617,11 +1619,17 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         // Load the image
         this.selectedScanContextImage = "?"; // Set to 1 so we show spinner
 
-        this._endpointsService
+        // Kill any image that might be loading, another already loaded image might flash up
+        // and one that user previously clicked on and loaded slower could overwrite it
+        this._imageSubs.unsubscribe();
+        this._imageSubs = new Subscription();
+
+        this._imageSubs.add(this._endpointsService
           .loadImageForPath(img)
           .subscribe((img: HTMLImageElement) => {
             this.selectedScanContextImage = img.src;
-          });
+          })
+        );
       }
     }
   }

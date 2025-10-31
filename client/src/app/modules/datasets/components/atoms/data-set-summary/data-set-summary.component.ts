@@ -172,7 +172,7 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   get displaySol(): string {
     const sol = this.summary?.meta["Sol"] || "";
     if (sol.length <= 0) {
-      return "pre-mission";
+      return "";//"pre-mission";
     }
     return sol;
   }
@@ -204,7 +204,13 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get displaySite(): string {
-    return this.summary?.meta["Site"] || "";
+    let  displaySite = this.summary?.meta["Site"] || "";
+
+    // If the site and title are the same, no point writing it out twice!
+    if (displaySite == this._title) {
+      displaySite = "";
+    } 
+    return displaySite;
   }
 
   get summaryId(): string {
