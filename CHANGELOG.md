@@ -7,6 +7,9 @@
 - ROI side panel now updates the context image ROIs and is synced with existing ROIs
 - Layers dialog opened on a context image on the right side of the workspace layout was appearing squished and not full width.
 - If no min/max range set for the binary chart, it was defaulting to 0/0 in some edge cases. Now, if min equals max, it defaults to the full data range.
+- Fixing min/max range on context image not being saved unless it's an RGB mix layer
+- Fixed image loading on dataset tiles page - if user clicked on tiles quickly the wrong image was displayed on top-right
+- Small tweaks to how dataset tiles are displayed for non PIXL data
 
 ## 4.79.0 (2025-10-14)
 
