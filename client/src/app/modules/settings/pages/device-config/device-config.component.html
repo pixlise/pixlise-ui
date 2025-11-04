@@ -1,77 +1,98 @@
-<div class="settings-container">
-  <div class="header">
-    <h2>Device Configurations</h2>
-    <p>View and manage detector configurations for different instruments</p>
+<div class="device-config-container">
+  <!-- Left column: Device list -->
+  <div class="device-list-column">
+    <div class="column-header">
+      <h3>Devices</h3>
+    </div>
+
+    <div class="loading-state" *ngIf="loading">
+      <wait-spinner></wait-spinner>
+    </div>
+
+    <div class="device-list" *ngIf="!loading">
+      <div
+        class="device-item"
+        *ngFor="let deviceId of deviceIds"
+        [class.selected]="selectedDeviceId === deviceId"
+        (click)="onDeviceClick(deviceId)">
+        {{ deviceId }}
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && deviceIds.length === 0">
+      <p>No devices found</p>
+    </div>
   </div>
 
-  <div class="loading-container" *ngIf="loading">
-    <wait-spinner></wait-spinner>
-    <div *ngFor="let config of configs">{{config}}</div>
-  </div>
+  <!-- Right column: Device details -->
+  <div class="device-details-column">
+    <div class="column-header">
+      <h3>Configuration Details</h3>
+    </div>
 
-  <div class="devices-grid" *ngIf="!loading">
-    <div *ngFor="let config of configs">{{config}}</div>
+    <div class="no-selection" *ngIf="!selectedDeviceId">
+      <p>Select a device to view configuration</p>
+    </div>
 
-    <div class="device-card" *ngFor="let device of devices">
-      <div class="device-header">
-        <h3>{{ device.id }}</h3>
-        <span class="loading-badge" *ngIf="device.loading">Loading...</span>
+    <div class="loading-state" *ngIf="selectedDeviceDetails?.loading">
+      <wait-spinner></wait-spinner>
+    </div>
+
+    <div class="details-content" *ngIf="selectedDeviceId && selectedDeviceDetails && !selectedDeviceDetails.loading">
+      <div class="device-title">
+        <h4>{{ selectedDeviceId }}</h4>
       </div>
 
-      <div class="device-details" *ngIf="!device.loading && device.config">
+      <div class="details-grid" *ngIf="selectedDeviceDetails.config">
         <div class="detail-row">
           <span class="label">Element Range:</span>
-          <span class="value">{{ device.config.minElement }} - {{ device.config.maxElement }}</span>
+          <span class="value">{{ selectedDeviceDetails.config.minElement }} - {{ selectedDeviceDetails.config.maxElement }}</span>
         </div>
 
         <div class="detail-row">
           <span class="label">Energy Bounds (eV):</span>
-          <span class="value">{{ device.config.xrfeVLowerBound }} - {{ device.config.xrfeVUpperBound }}</span>
+          <span class="value">{{ selectedDeviceDetails.config.xrfeVLowerBound }} - {{ selectedDeviceDetails.config.xrfeVUpperBound }}</span>
         </div>
 
         <div class="detail-row">
           <span class="label">Energy Resolution:</span>
-          <span class="value">{{ device.config.xrfeVResolution }} eV</span>
+          <span class="value">{{ selectedDeviceDetails.config.xrfeVResolution }} eV</span>
         </div>
 
         <div class="detail-row">
           <span class="label">Beam Radius:</span>
-          <span class="value">{{ device.config.mmBeamRadius }} mm</span>
+          <span class="value">{{ selectedDeviceDetails.config.mmBeamRadius }} mm</span>
         </div>
 
         <div class="detail-row">
           <span class="label">Elevation Angle:</span>
-          <span class="value">{{ device.config.elevAngle }}°</span>
+          <span class="value">{{ selectedDeviceDetails.config.elevAngle }}°</span>
         </div>
 
         <div class="detail-row">
           <span class="label">Window Element:</span>
-          <span class="value">{{ device.config.windowElement }}</span>
+          <span class="value">{{ selectedDeviceDetails.config.windowElement }}</span>
         </div>
 
         <div class="detail-row">
           <span class="label">Tube Element:</span>
-          <span class="value">{{ device.config.tubeElement }}</span>
+          <span class="value">{{ selectedDeviceDetails.config.tubeElement }}</span>
         </div>
 
-        <div class="detail-row" *ngIf="device.piquantVersions.length > 0">
+        <div class="detail-row" *ngIf="selectedDeviceDetails.piquantVersions.length > 0">
           <span class="label">Piquant Versions:</span>
-          <span class="value">{{ device.piquantVersions.join(', ') }}</span>
+          <span class="value">{{ selectedDeviceDetails.piquantVersions.join(', ') }}</span>
         </div>
 
-        <div class="detail-row" *ngIf="device.config.defaultParams">
+        <div class="detail-row" *ngIf="selectedDeviceDetails.config.defaultParams">
           <span class="label">Default Params:</span>
-          <span class="value monospace">{{ device.config.defaultParams }}</span>
+          <span class="value monospace">{{ selectedDeviceDetails.config.defaultParams }}</span>
         </div>
       </div>
 
-      <div class="no-config" *ngIf="!device.loading && !device.config">
-        <p>Configuration not available</p>
+      <div class="no-config" *ngIf="!selectedDeviceDetails.config">
+        <p>Configuration data not available</p>
       </div>
     </div>
-  </div>
-
-  <div class="empty-state" *ngIf="!loading && devices.length === 0">
-    <p>No detector configurations found</p>
   </div>
 </div>
