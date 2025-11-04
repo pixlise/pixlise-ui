@@ -23,6 +23,7 @@ const FEATURE_TO_PERMISSION_MAPPING = {
   listUserRoles: "USER_ADMIN",
   createUserRole: "USER_ADMIN",
   deleteUserRole: "USER_ADMIN",
+  editDevices: "EDIT_DEVICES",
 };
 
 export type FeatureRequest = keyof typeof FEATURE_TO_PERMISSION_MAPPING;

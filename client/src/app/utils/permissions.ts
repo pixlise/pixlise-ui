@@ -42,7 +42,8 @@ export class Permissions {
   public static readonly permissionCreateQuantification = "QUANTIFY";
   public static readonly permissionEditDataset = "EDIT_SCAN";
   public static readonly permissionEditElementSet = "EDIT_ELEMENT_SET";
-  public static readonly permissionEditROI = "EDIT_ROIN";
+  public static readonly permissionEditDevices = "EDIT_DEVICES";
+
 
   public static hasPermissionSet(claims: IdToken, permissionToCheck: string): boolean {
     if (

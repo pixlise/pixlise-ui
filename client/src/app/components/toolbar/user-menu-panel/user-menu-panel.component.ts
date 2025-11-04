@@ -71,6 +71,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
   impersonatingUserName: string | undefined;
   backupEnabled = false;
   restoreEnabled = false;
+  isDeviceAdmin = false;
 
   trigger: any;
 
@@ -97,6 +98,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._groupsService.groupsChanged$.subscribe(() => {
         this.isPIXLISEAdmin = this._userOptionsService.hasFeatureAccess("admin");
+        this.isDeviceAdmin = this._userOptionsService.hasFeatureAccess("editDevices");
         this.isAdminOfAnyGroup =
           this._userOptionsService.hasFeatureAccess("admin") ||
           !!this._groupsService.groups.find(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN);
@@ -148,6 +150,10 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
 
   onGroups(): void {
     this._router.navigate(["/groups"], { queryParams: this._route.snapshot.queryParams });
+  }
+
+  onDevices(): void {
+    this._router.navigate(["/devices"], { queryParams: this._route.snapshot.queryParams });
   }
 
   onSettings(): void {
