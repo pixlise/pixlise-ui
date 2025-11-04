@@ -350,7 +350,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         null, // hover value
         displayValueRange, // The display value range to show (top and bottom tags)
         true, // We always allow scale tags to be moved on layer colour scales
-        scaleNumber, // Scale number, but flipped so first one (R) is on top
+        scaleNumber, // Scale number counting from bottom up. This gets reversed later on draw so R shows at the top.
         totalScales, // Total scales we're drawing TODO: figure out a way to add RGB mixes
         layerShading,
         this.onDisplayValueRangeChanged, // Callback for display value range changes
