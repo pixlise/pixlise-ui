@@ -204,7 +204,10 @@ export class MapColourScaleDrawModel {
   histogram: Histogram = new Histogram();
 
   regenerate(canvasParams: CanvasParams, mdl: MapColourScaleModel, mapData: MapColourScaleSourceData) {
-    this.pos = this.getPosition(canvasParams, mdl.scaleTotalCount > 1, mdl.scaleNumber, mapData.isBinary, mdl.valueRange, mdl.displayValueRange);
+    // Need to reverse this on draw so we can start with B first at the bottom and R last at the top while still storing in R,G,B order in the model
+    // We don't want to reverse this anywhere where it will be stored though to prevent propogation of the reversal on save
+    const reversedScaleNumber = mdl.scaleTotalCount - mdl.scaleNumber - 1;
+    this.pos = this.getPosition(canvasParams, mdl.scaleTotalCount > 1, reversedScaleNumber, mapData.isBinary, mdl.valueRange, mdl.displayValueRange);
 
     this.histogram = this.generateHistogram(mapData, this.pos.stepsShown);
     this.isValid = this.histogram.values.length != 2 || this.histogram.max() != 0;

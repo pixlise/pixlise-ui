@@ -290,6 +290,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     if (!this._raw) {
       return;
     }
+    const scaleNumber = forValuesIdx;
 
     // Now find all layers for this expression (expression per scan id... so we want all copies of the expression into same id)
     const scaleData = new MapColourScaleSourceData();
@@ -315,7 +316,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     }
 
     // Ensure we have a saved min/max for this (a blank one)
-    const colourScaleRangeId = forExpressionId + "-" + forValuesIdx;
+    // const scaleNumber = totalScales - forValuesIdx - 1;
+    const colourScaleRangeId = `${forExpressionId}-${forValuesIdx}`;
     let displayValueRange = this._colourScaleDisplayValueRanges.get(colourScaleRangeId);
     if (!displayValueRange) {
       displayValueRange = new MinMax();
@@ -348,7 +350,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         null, // hover value
         displayValueRange, // The display value range to show (top and bottom tags)
         true, // We always allow scale tags to be moved on layer colour scales
-        totalScales - forValuesIdx - 1, // Scale number, but flipped so first one (R) is on top
+        scaleNumber, // Scale number counting from bottom up. This gets reversed later on draw so R shows at the top.
         totalScales, // Total scales we're drawing TODO: figure out a way to add RGB mixes
         layerShading,
         this.onDisplayValueRangeChanged, // Callback for display value range changes
@@ -439,7 +441,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   private onDisplayValueRangeChanged = (scaleId: string, expressionId: string, scaleNumber: number, range: MinMax) => {
     // Update the stored display value range for this scale
-    const colourScaleRangeId = expressionId + "-" + scaleNumber;
+    const colourScaleRangeId = `${expressionId}-${scaleNumber}`;
     this._colourScaleDisplayValueRanges.set(colourScaleRangeId, range);
 
     // Trigger a draw update since display ranges have changed
