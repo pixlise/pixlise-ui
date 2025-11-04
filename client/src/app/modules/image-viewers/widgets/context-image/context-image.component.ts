@@ -524,8 +524,8 @@ export class ContextImageComponent
               l.displayValueRangeMin !== undefined &&
               l.displayValueRangeMax !== undefined
             ) {
-              let colourScaleRangeId = l.expressionID + "-0";
               if (!DataExpressionId.isExpressionGroupId(l.expressionID)) {
+                const colourScaleRangeId = l.expressionID + "-0";
                 const displayRange = new MinMax(
                   l.displayValueRangeMin,
                   l.displayValueRangeMax
@@ -536,18 +536,29 @@ export class ContextImageComponent
                   displayRange
                 );
               } else {
-                const lastIndex = l.displayValueRanges.length - 1;
-                for (let j = lastIndex; j >= 0; j--) {
-                  colourScaleRangeId = `${l.expressionID}-${lastIndex - j}`;
+                for (let j = 0; j < l.displayValueRanges.length; j++) {
+                  const colourScaleRangeId = l.displayValueRanges[j]?.expressionID ?? `${l.expressionID}-${j}`;
                   const displayRange = new MinMax(
                     l.displayValueRanges[j].displayValueRangeMin,
                     l.displayValueRanges[j].displayValueRangeMax
                   );
-                  this.mdl.colourScaleDisplayValueRanges.set(
-                    colourScaleRangeId,
-                    displayRange
-                  );
+                  this.mdl.colourScaleDisplayValueRanges.set(colourScaleRangeId, displayRange);
                 }
+
+
+                // const lastIndex = l.displayValueRanges.length - 1;
+                // for (let j = lastIndex; j >= 0; j--) {
+                //   // This gets stored in reverse order, so we need to flip it back
+                //   colourScaleRangeId = `${l.expressionID}-${lastIndex - j}`;
+                //   const displayRange = new MinMax(
+                //     l.displayValueRanges[j].displayValueRangeMin,
+                //     l.displayValueRanges[j].displayValueRangeMax
+                //   );
+                //   this.mdl.colourScaleDisplayValueRanges.set(
+                //     colourScaleRangeId,
+                //     displayRange
+                //   );
+                // }
               }
             }
           }
@@ -2017,11 +2028,11 @@ export class ContextImageComponent
             const groupDisplayRanges = [];
             if (DataExpressionId.isExpressionGroupId(id)) {
               for (let j = 0; j < 3; j++) {
-                const colourScaleValueRange =
-                  this.mdl.colourScaleDisplayValueRanges.get(`${id}-${j}`);
+                const colourScaleRangeId = `${id}-${j}`;
+                const colourScaleValueRange = this.mdl.colourScaleDisplayValueRanges.get(colourScaleRangeId) ?? new MinMax(0,0);
                 if (colourScaleValueRange && (colourScaleValueRange.min !== undefined || colourScaleValueRange.max !== undefined)) {
                   groupDisplayRanges.push({
-                    id: `${id}-${j}`,
+                    id: colourScaleRangeId,
                     min: colourScaleValueRange.min,
                     max: colourScaleValueRange.max,
                   });
