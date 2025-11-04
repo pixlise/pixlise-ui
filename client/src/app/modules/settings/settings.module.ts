@@ -19,6 +19,7 @@ import { MatSortModule } from "@angular/material/sort";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { UserGroupMembershipDialogComponent } from "./components/user-group-membership-dialog/user-group-membership-dialog.component";
 import { AddSubGroupDialogComponent } from "./components/add-subgroup-dialog/add-subgroup-dialog.component";
+import { DeviceConfigComponent } from './pages/device-config/device-config.component';
 
 export { UserOptionsService } from "./services/user-options.service";
 export { GroupsService } from "./services/groups.service";
@@ -27,6 +28,10 @@ const APP_ROUTES: Routes = [
   {
     path: "groups",
     component: GroupsPageComponent,
+  },
+  {
+    path: "devices",
+    component: DeviceConfigComponent,
   },
 ];
 
@@ -40,6 +45,7 @@ const APP_ROUTES: Routes = [
     RequestGroupDialogComponent,
     UserGroupMembershipDialogComponent,
     ImageUploaderDialogComponent,
+    DeviceConfigComponent,
   ],
   imports: [
     CommonModule,
@@ -54,6 +60,6 @@ const APP_ROUTES: Routes = [
     MatCheckboxModule,
     RouterModule.forChild(APP_ROUTES),
   ],
-  exports: [GroupsPageComponent],
+  exports: [GroupsPageComponent, DeviceConfigComponent],
 })
 export class SettingsModule {}

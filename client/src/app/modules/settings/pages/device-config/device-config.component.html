@@ -1,0 +1,77 @@
+<div class="settings-container">
+  <div class="header">
+    <h2>Device Configurations</h2>
+    <p>View and manage detector configurations for different instruments</p>
+  </div>
+
+  <div class="loading-container" *ngIf="loading">
+    <wait-spinner></wait-spinner>
+    <div *ngFor="let config of configs">{{config}}</div>
+  </div>
+
+  <div class="devices-grid" *ngIf="!loading">
+    <div *ngFor="let config of configs">{{config}}</div>
+
+    <div class="device-card" *ngFor="let device of devices">
+      <div class="device-header">
+        <h3>{{ device.id }}</h3>
+        <span class="loading-badge" *ngIf="device.loading">Loading...</span>
+      </div>
+
+      <div class="device-details" *ngIf="!device.loading && device.config">
+        <div class="detail-row">
+          <span class="label">Element Range:</span>
+          <span class="value">{{ device.config.minElement }} - {{ device.config.maxElement }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Energy Bounds (eV):</span>
+          <span class="value">{{ device.config.xrfeVLowerBound }} - {{ device.config.xrfeVUpperBound }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Energy Resolution:</span>
+          <span class="value">{{ device.config.xrfeVResolution }} eV</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Beam Radius:</span>
+          <span class="value">{{ device.config.mmBeamRadius }} mm</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Elevation Angle:</span>
+          <span class="value">{{ device.config.elevAngle }}°</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Window Element:</span>
+          <span class="value">{{ device.config.windowElement }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="label">Tube Element:</span>
+          <span class="value">{{ device.config.tubeElement }}</span>
+        </div>
+
+        <div class="detail-row" *ngIf="device.piquantVersions.length > 0">
+          <span class="label">Piquant Versions:</span>
+          <span class="value">{{ device.piquantVersions.join(', ') }}</span>
+        </div>
+
+        <div class="detail-row" *ngIf="device.config.defaultParams">
+          <span class="label">Default Params:</span>
+          <span class="value monospace">{{ device.config.defaultParams }}</span>
+        </div>
+      </div>
+
+      <div class="no-config" *ngIf="!device.loading && !device.config">
+        <p>Configuration not available</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && devices.length === 0">
+    <p>No detector configurations found</p>
+  </div>
+</div>
