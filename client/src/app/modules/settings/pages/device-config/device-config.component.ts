@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { APICachedDataService } from 'src/app/modules/pixlisecore/services/apicacheddata.service';
 import { DetectorConfigListReq, DetectorConfigReq } from 'src/app/generated-protos/detector-config-msgs';
 import { DetectorConfig } from 'src/app/generated-protos/detector-config';
-import { PiquantConfigVersionReq } from 'src/app/generated-protos/piquant-msgs';
+import { PiquantConfigVersionReq, PiquantConfigFileReq } from 'src/app/generated-protos/piquant-msgs';
 import { PiquantConfig } from 'src/app/generated-protos/piquant-config';
 
 interface DeviceDetails {
@@ -36,6 +36,11 @@ export class DeviceConfigComponent implements OnInit {
   // Right column: details for selected config option
   piquantConfigDetails: PiquantConfig | undefined = undefined;
   loadingConfigDetails = false;
+
+  // File viewer
+  selectedFileName: string | null = null;
+  selectedFileContents: string | null = null;
+  loadingFileContents = false;
 
   constructor(private _cachedDataService: APICachedDataService) {}
 
@@ -108,6 +113,11 @@ export class DeviceConfigComponent implements OnInit {
     this.selectedConfigOption = option;
     this.piquantConfigDetails = undefined;
 
+    // Reset file viewer
+    this.selectedFileName = null;
+    this.selectedFileContents = null;
+    this.loadingFileContents = false;
+
     // If clicking "Client", no need to fetch anything (data already loaded)
     if (option.type === 'client') {
       this.loadingConfigDetails = false;
@@ -141,5 +151,32 @@ export class DeviceConfigComponent implements OnInit {
         }
       });
     }
+  }
+
+  onFileClick(filename: string): void {
+    if (!this.selectedDeviceId || !this.selectedConfigOption) {
+      return;
+    }
+
+    this.selectedFileName = filename;
+    this.loadingFileContents = true;
+    this.selectedFileContents = null;
+
+    this._cachedDataService.getPiquantConfigFile(
+      PiquantConfigFileReq.create({
+        configId: this.selectedDeviceId,
+        version: this.selectedConfigOption.id,
+        filename: filename
+      })
+    ).subscribe({
+      next: (resp) => {
+        this.selectedFileContents = resp.contents;
+        this.loadingFileContents = false;
+      },
+      error: (err) => {
+        console.error(`Failed to load file ${filename}:`, err);
+        this.loadingFileContents = false;
+      }
+    });
   }
 }

@@ -130,22 +130,47 @@
 
         <div class="detail-row" *ngIf="piquantConfigDetails.configFile">
           <span class="label">Config File:</span>
-          <span class="value monospace">{{ piquantConfigDetails.configFile }}</span>
+          <span class="value monospace clickable" (click)="onFileClick(piquantConfigDetails.configFile)">
+            {{ piquantConfigDetails.configFile }}
+          </span>
         </div>
 
         <div class="detail-row" *ngIf="piquantConfigDetails.opticEfficiencyFile">
           <span class="label">Optic Efficiency File:</span>
-          <span class="value monospace">{{ piquantConfigDetails.opticEfficiencyFile }}</span>
+          <span class="value monospace clickable" (click)="onFileClick(piquantConfigDetails.opticEfficiencyFile)">
+            {{ piquantConfigDetails.opticEfficiencyFile }}
+          </span>
         </div>
 
         <div class="detail-row" *ngIf="piquantConfigDetails.calibrationFile">
           <span class="label">Calibration File:</span>
-          <span class="value monospace">{{ piquantConfigDetails.calibrationFile }}</span>
+          <span class="value monospace clickable" (click)="onFileClick(piquantConfigDetails.calibrationFile)">
+            {{ piquantConfigDetails.calibrationFile }}
+          </span>
         </div>
 
         <div class="detail-row" *ngIf="piquantConfigDetails.standardsFile">
           <span class="label">Standards File:</span>
-          <span class="value monospace">{{ piquantConfigDetails.standardsFile }}</span>
+          <span class="value monospace clickable" (click)="onFileClick(piquantConfigDetails.standardsFile)">
+            {{ piquantConfigDetails.standardsFile }}
+          </span>
+        </div>
+      </div>
+
+      <!-- File viewer -->
+      <div class="file-viewer" *ngIf="selectedFileName">
+        <div class="file-viewer-header">
+          <h5>{{ selectedFileName }}</h5>
+        </div>
+
+        <div class="loading-state" *ngIf="loadingFileContents">
+          <wait-spinner></wait-spinner>
+        </div>
+
+        <pre class="file-contents" *ngIf="!loadingFileContents && selectedFileContents">{{ selectedFileContents }}</pre>
+
+        <div class="error-state" *ngIf="!loadingFileContents && !selectedFileContents">
+          <p>Failed to load file contents</p>
         </div>
       </div>
     </div>

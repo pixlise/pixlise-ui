@@ -146,6 +146,62 @@
               padding: 4px 8px;
               border-radius: 3px;
             }
+
+            &.clickable {
+              cursor: pointer;
+              color: var(--blue-50);
+              transition: color 0.15s ease;
+
+              &:hover {
+                color: var(--blue-40);
+                text-decoration: underline;
+              }
+            }
+          }
+        }
+      }
+
+      .file-viewer {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 2px solid var(--gray-70);
+
+        .file-viewer-header {
+          margin-bottom: 16px;
+
+          h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-30);
+          }
+        }
+
+        .file-contents {
+          background: var(--gray-95);
+          border: 1px solid var(--gray-70);
+          border-radius: 4px;
+          padding: 16px;
+          overflow-x: auto;
+          max-height: 500px;
+          overflow-y: auto;
+          font-family: 'Monaco', 'Courier New', monospace;
+          font-size: 12px;
+          line-height: 1.5;
+          color: var(--gray-10);
+          margin: 0;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+
+        .error-state {
+          color: var(--red-50);
+          font-style: italic;
+          padding: 20px;
+          text-align: center;
+
+          p {
+            margin: 0;
           }
         }
       }
