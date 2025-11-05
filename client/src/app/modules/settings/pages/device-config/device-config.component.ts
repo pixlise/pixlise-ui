@@ -83,16 +83,19 @@ export class DeviceConfigComponent implements OnInit {
     this.loadingPiquantConfig = true;
     this.piquantConfigDetails = undefined;
 
-    // Parse the version string (format is usually "configName:version")
-    const parts = version.split(':');
-    const configName = parts[0];
-    const versionStr = parts.length > 1 ? parts[1] : '';
+    // Use the selected device ID as the config ID and the version string as-is
+    // The backend returns version strings like "v2", "v3", etc.
+    if (!this.selectedDeviceId) {
+      console.error('No device selected');
+      this.loadingPiquantConfig = false;
+      return;
+    }
 
     // Fetch the piquant config details
     this._cachedDataService.getPiquantConfigVersion(
       PiquantConfigVersionReq.create({
-        configId: configName,
-        version: versionStr
+        configId: this.selectedDeviceId,
+        version: version
       })
     ).subscribe({
       next: (resp) => {
