@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { APICachedDataService } from 'src/app/modules/pixlisecore/services/apicacheddata.service';
 import { DetectorConfigListReq, DetectorConfigReq } from 'src/app/generated-protos/detector-config-msgs';
 import { DetectorConfig } from 'src/app/generated-protos/detector-config';
+import { PiquantConfigVersionReq } from 'src/app/generated-protos/piquant-msgs';
+import { PiquantConfig } from 'src/app/generated-protos/piquant-config';
 
 interface DeviceDetails {
   config?: DetectorConfig;
@@ -20,6 +22,10 @@ export class DeviceConfigComponent implements OnInit {
   selectedDeviceId: string | null = null;
   selectedDeviceDetails: DeviceDetails | null = null;
   loading = true;
+
+  selectedPiquantVersion: string | null = null;
+  piquantConfigDetails: PiquantConfig | undefined = undefined;
+  loadingPiquantConfig = false;
 
   constructor(private _cachedDataService: APICachedDataService) {}
 
@@ -41,6 +47,10 @@ export class DeviceConfigComponent implements OnInit {
   onDeviceClick(deviceId: string): void {
     // Set selected device
     this.selectedDeviceId = deviceId;
+
+    // Reset piquant version selection when changing devices
+    this.selectedPiquantVersion = null;
+    this.piquantConfigDetails = undefined;
 
     // Initialize loading state
     this.selectedDeviceDetails = {
@@ -66,5 +76,33 @@ export class DeviceConfigComponent implements OnInit {
           };
         }
       });
+  }
+
+  onPiquantVersionClick(version: string): void {
+    this.selectedPiquantVersion = version;
+    this.loadingPiquantConfig = true;
+    this.piquantConfigDetails = undefined;
+
+    // Parse the version string (format is usually "configName:version")
+    const parts = version.split(':');
+    const configName = parts[0];
+    const versionStr = parts.length > 1 ? parts[1] : '';
+
+    // Fetch the piquant config details
+    this._cachedDataService.getPiquantConfigVersion(
+      PiquantConfigVersionReq.create({
+        configId: configName,
+        version: versionStr
+      })
+    ).subscribe({
+      next: (resp) => {
+        this.piquantConfigDetails = resp.piquantConfig;
+        this.loadingPiquantConfig = false;
+      },
+      error: (err) => {
+        console.error(`Failed to load piquant config ${version}:`, err);
+        this.loadingPiquantConfig = false;
+      }
+    });
   }
 }

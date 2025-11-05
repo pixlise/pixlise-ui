@@ -141,6 +141,46 @@
               font-size: 12px;
             }
           }
+
+          &.piquant-versions-row {
+            flex-direction: column;
+            align-items: flex-start;
+
+            .label {
+              margin-bottom: 8px;
+            }
+
+            .piquant-versions-list {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+              width: 100%;
+            }
+
+            .version-chip {
+              padding: 6px 12px;
+              border: 1px solid var(--gray-60);
+              background: var(--gray-80);
+              color: var(--gray-20);
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 12px;
+              transition: all 0.15s ease;
+
+              &:hover {
+                background: var(--gray-70);
+                border-color: var(--blue-60);
+                color: var(--gray-10);
+              }
+
+              &.selected {
+                background: var(--blue-60);
+                border-color: var(--blue-50);
+                color: var(--gray-10);
+                font-weight: 500;
+              }
+            }
+          }
         }
       }
 
@@ -152,6 +192,28 @@
 
         p {
           margin: 0;
+        }
+      }
+
+      .piquant-config-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 2px solid var(--gray-70);
+
+        .section-title {
+          margin: 0 0 16px 0;
+          font-size: 16px;
+          color: var(--blue-50);
+          font-weight: 500;
+        }
+
+        .piquant-details {
+          margin-top: 16px;
+        }
+
+        .loading-state {
+          padding: 20px;
+          text-align: center;
         }
       }
     }

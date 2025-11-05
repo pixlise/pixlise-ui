@@ -79,9 +79,17 @@
           <span class="value">{{ selectedDeviceDetails.config.tubeElement }}</span>
         </div>
 
-        <div class="detail-row" *ngIf="selectedDeviceDetails.piquantVersions.length > 0">
+        <div class="detail-row piquant-versions-row" *ngIf="selectedDeviceDetails.piquantVersions.length > 0">
           <span class="label">Piquant Versions:</span>
-          <span class="value">{{ selectedDeviceDetails.piquantVersions.join(', ') }}</span>
+          <div class="piquant-versions-list">
+            <button
+              class="version-chip"
+              *ngFor="let version of selectedDeviceDetails.piquantVersions"
+              [class.selected]="selectedPiquantVersion === version"
+              (click)="onPiquantVersionClick(version)">
+              {{ version }}
+            </button>
+          </div>
         </div>
 
         <div class="detail-row" *ngIf="selectedDeviceDetails.config.defaultParams">
@@ -92,6 +100,46 @@
 
       <div class="no-config" *ngIf="!selectedDeviceDetails.config">
         <p>Configuration data not available</p>
+      </div>
+
+      <!-- Piquant Config Details Section -->
+      <div class="piquant-config-section" *ngIf="selectedPiquantVersion">
+        <h5 class="section-title">Piquant Config: {{ selectedPiquantVersion }}</h5>
+
+        <div class="loading-state" *ngIf="loadingPiquantConfig">
+          <wait-spinner></wait-spinner>
+        </div>
+
+        <div class="piquant-details" *ngIf="!loadingPiquantConfig && piquantConfigDetails">
+          <div class="detail-row" *ngIf="piquantConfigDetails.description">
+            <span class="label">Description:</span>
+            <span class="value">{{ piquantConfigDetails.description }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="piquantConfigDetails.configFile">
+            <span class="label">Config File:</span>
+            <span class="value monospace">{{ piquantConfigDetails.configFile }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="piquantConfigDetails.opticEfficiencyFile">
+            <span class="label">Optic Efficiency File:</span>
+            <span class="value monospace">{{ piquantConfigDetails.opticEfficiencyFile }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="piquantConfigDetails.calibrationFile">
+            <span class="label">Calibration File:</span>
+            <span class="value monospace">{{ piquantConfigDetails.calibrationFile }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="piquantConfigDetails.standardsFile">
+            <span class="label">Standards File:</span>
+            <span class="value monospace">{{ piquantConfigDetails.standardsFile }}</span>
+          </div>
+        </div>
+
+        <div class="no-config" *ngIf="!loadingPiquantConfig && !piquantConfigDetails">
+          <p>Failed to load piquant configuration</p>
+        </div>
       </div>
     </div>
   </div>

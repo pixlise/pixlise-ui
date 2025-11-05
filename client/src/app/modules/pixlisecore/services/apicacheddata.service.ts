@@ -31,6 +31,7 @@ import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/gene
 import { NotificationType } from "src/app/generated-protos/notification";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
+import { PiquantConfigVersionReq, PiquantConfigVersionResp } from "src/app/generated-protos/piquant-msgs";
 
 import { decodeIndexList } from "src/app/utils/utils";
 import { VariogramPoint } from "src/app/modules/scatterplots/widgets/variogram-widget/vario-data";
@@ -67,6 +68,7 @@ export class APICachedDataService {
   private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
   private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
   private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
+  private _piquantConfigVersionReqMap = new Map<string, Observable<PiquantConfigVersionResp>>();
   private _defaultImageReqMap = new Map<string, Observable<ImageGetDefaultResp>>();
   private _imageBeamLocationsReqMap = new Map<string, Observable<ImageBeamLocationsResp>>();
   private _imageReqMap = new Map<string, Observable<ImageGetResp>>();
@@ -505,6 +507,20 @@ export class APICachedDataService {
     }
 
     return this._detectorConfigListReq;
+  }
+
+  getPiquantConfigVersion(req: PiquantConfigVersionReq): Observable<PiquantConfigVersionResp> {
+    const cacheId = JSON.stringify(PiquantConfigVersionReq.toJSON(req));
+    let result = this._piquantConfigVersionReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendPiquantConfigVersionRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this.addToCache(cacheId, "piquantConfigVersionReqMap", result, this._piquantConfigVersionReqMap);
+    }
+
+    return result;
   }
 
   getDefaultImage(req: ImageGetDefaultReq): Observable<ImageGetDefaultResp> {
