@@ -28,6 +28,57 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
+
+<ng-template #widgetSelectionDialog>
+  <div class="widget-selection-dialog">
+    <div class="widget-dialog-header">
+      <div class="select-all-controls">
+        <h3>Select Widgets</h3>
+        <push-button
+          buttonStyle="outline"
+          [disabled]="currentPageWidgets.length === 0"
+          (onClick)="onToggleAllCurrentPageWidgets()"
+        >
+          {{ areAllCurrentPageWidgetsSelected ? "Deselect All" : "Select All" }}
+        </push-button>
+      </div>
+    </div>
+    <div class="widget-list">
+      <div
+        class="widget-item"
+        *ngFor="let widget of currentPageWidgets"
+        (click)="onToggleWidget(widget.widget.id)"
+      >
+        <div class="widget-label-area">
+          <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="isWidgetSelected(widget.widget.id)"
+          >
+          </two-state-icon-button>
+          <div class="widget-title">{{ widget.name }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="widget-dialog-footer" *ngIf="widgetDialogPageCount > 1">
+      <icon-button
+        class="{{ !canGoToPreviousWidgetPage() ? 'disabled' : '' }}"
+        icon="assets/button-icons/arrow-left.svg"
+        (onClick)="onPreviousWidgetPage()"
+      ></icon-button>
+      <span class="page-label">{{
+        currentPageLabel ||
+          `Tab ${currentWidgetTabIndex + 1} of ${widgetDialogPageCount}`
+      }}</span>
+      <icon-button
+        class="{{ !canGoToNextWidgetPage() ? 'disabled' : '' }}"
+        icon="assets/button-icons/arrow-right.svg"
+        (onClick)="onNextWidgetPage()"
+      ></icon-button>
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #saveExpressionGroupDialog>
   <div class="new-expression-group">
     <div class="header">
@@ -239,22 +290,13 @@ POSSIBILITY OF SUCH DAMAGE.
       }}"
     >
       <div class="title active-widget-selection">
-        <mat-select
-          *ngIf="!data.disableWidgetSwitching"
-          [ngModel]="activeWidgetIds"
-          (ngModelChange)="activeWidgetIds = $event"
-          placeholder="Active Group"
-          multiple
-          #tooltip="matTooltip"
-          [matTooltip]="activeWidgetNamesTooltip"
-          [matTooltipDisabled]="layoutWidgets.length <= 1"
-        >
-          <mat-option
-            *ngFor="let option of layoutWidgets; let i = index"
-            [value]="option.widget.id"
-            >{{ option.name }}</mat-option
-          >
-        </mat-select>
+        <widget-settings-menu [settingsDialog]="widgetSelectionDialog">
+          <push-button buttonStyle="outline" class="active-group-btn">{{
+            activeWidgetIds.length > 0
+              ? activeWidgetNamesTooltip
+              : "Select Widgets"
+          }}</push-button>
+        </widget-settings-menu>
         <push-button
           buttonStyle="gray"
           #saveExpressionGroupDialogBtn

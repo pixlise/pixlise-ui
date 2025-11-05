@@ -135,7 +135,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   widgetType: WidgetType | "" = "";
   private _activeWidgetIds: string[] = [];
-  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] = [];
+  
+  currentWidgetTabIndex: number = 0;
 
   private _selectedExpressionGroup: ExpressionGroup = ExpressionGroup.create();
   private _selectedRGBMixGroup: ExpressionGroup = ExpressionGroup.create();
@@ -227,7 +229,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         if (config) {
-          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] = [];
           config.layouts.forEach((layout, i) => {
             const widgetCounts: Record<string, number> = {};
             layout.widgets.forEach((widget, widgetIndex) => {
@@ -240,7 +242,17 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               const widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
               const widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
 
-              widgetReferences.push({ widget, name: widgetName, type: widget.type });
+              if (widget.id === this.data.widgetId) {
+                this.currentWidgetTabIndex = i;
+              }
+
+              widgetReferences.push({ 
+                widget, 
+                name: widgetName, 
+                type: widget.type,
+                pageIndex: i,
+                tabName: layout.tabName || undefined
+              });
             });
           });
 
@@ -1262,6 +1274,85 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           subId: this.data.subId,
         });
       }
+    }
+  }
+
+  get widgetDialogPageCount(): number {
+    return this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length || 0;
+  }
+
+  get currentPageWidgets(): { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] {
+    return this.layoutWidgets.filter(widget => widget.pageIndex === this.currentWidgetTabIndex);
+  }
+
+  get currentPageLabel(): string {
+    const widget = this.currentPageWidgets[0];
+    return widget.tabName || `Tab ${(widget.pageIndex || 0) + 1}`;
+  }
+
+  canGoToPreviousWidgetPage(): boolean {
+    return this.currentWidgetTabIndex > 0;
+  }
+
+  canGoToNextWidgetPage(): boolean {
+    return this.currentWidgetTabIndex < this.widgetDialogPageCount - 1;
+  }
+
+  onPreviousWidgetPage(): void {
+    if (this.canGoToPreviousWidgetPage()) {
+      this.currentWidgetTabIndex--;
+    }
+  }
+
+  onNextWidgetPage(): void {
+    if (this.canGoToNextWidgetPage()) {
+      this.currentWidgetTabIndex++;
+    }
+  }
+
+  isWidgetSelected(widgetId: string): boolean {
+    return this._activeWidgetIds.includes(widgetId);
+  }
+
+  onToggleWidget(widgetId: string): void {
+    if (this.isWidgetSelected(widgetId)) {
+      this._activeWidgetIds = this._activeWidgetIds.filter(id => id !== widgetId);
+    } else {
+      this._activeWidgetIds.push(widgetId);
+    }
+    this.activeWidgetIds = this._activeWidgetIds;
+  }
+
+  get areAllCurrentPageWidgetsSelected(): boolean {
+    const currentPageWidgets = this.currentPageWidgets;
+    if (currentPageWidgets.length === 0) {
+      return false;
+    }
+    return currentPageWidgets.every(w => this.isWidgetSelected(w.widget.id));
+  }
+
+  onSelectAllCurrentPageWidgets(): void {
+    const currentPageWidgets = this.currentPageWidgets;
+    currentPageWidgets.forEach(w => {
+      if (!this.isWidgetSelected(w.widget.id)) {
+        this._activeWidgetIds.push(w.widget.id);
+      }
+    });
+    this.activeWidgetIds = this._activeWidgetIds;
+  }
+
+  onDeselectAllCurrentPageWidgets(): void {
+    const currentPageWidgets = this.currentPageWidgets;
+    const currentPageWidgetIds = currentPageWidgets.map(w => w.widget.id);
+    this._activeWidgetIds = this._activeWidgetIds.filter(id => !currentPageWidgetIds.includes(id));
+    this.activeWidgetIds = this._activeWidgetIds;
+  }
+
+  onToggleAllCurrentPageWidgets(): void {
+    if (this.areAllCurrentPageWidgetsSelected) {
+      this.onDeselectAllCurrentPageWidgets();
+    } else {
+      this.onSelectAllCurrentPageWidgets();
     }
   }
 

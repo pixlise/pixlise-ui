@@ -127,6 +127,15 @@
         display: flex;
         align-items: center;
 
+        widget-settings-menu {
+          .active-group-btn {
+            display: flex;
+            margin-left: 8px;
+
+            max-width: 160px;
+          }
+        }
+
         mat-select {
           margin-left: 0 !important;
           width: fit-content !important;
@@ -442,5 +451,105 @@
     padding: 0;
     margin: 0;
     color: rgb(190, 192, 194);
+  }
+}
+
+.widget-selection-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  height: 400px;
+  margin: -8px;
+  background-color: rgb(var(--clr-gray-90));
+
+  .widget-dialog-header {
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(var(--clr-gray-90));
+    box-shadow: 0px $sz-half $sz-half rgb(0 0 0 / 25%);
+    padding: $sz-unit;
+
+    h1 {
+      font-size: 16px;
+      color: rgb(var(--clr-gray-30));
+      margin: 0 0 $sz-unit 0;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .select-all-controls {
+      display: flex;
+
+      h3 {
+        display: flex;
+        align-items: center;
+      }
+
+      push-button {
+        margin-left: auto;
+      }
+    }
+  }
+
+  .widget-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+
+    .widget-item {
+      cursor: pointer;
+      padding: $sz-half;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $sz-unit;
+
+      &:hover {
+        background-color: rgb(var(--clr-gray-70));
+      }
+
+      .widget-label-area {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: $sz-unit;
+      }
+
+      .widget-title {
+        white-space: pre-wrap;
+        text-overflow: ellipsis;
+        width: 210px;
+        overflow: hidden;
+        color: rgb(var(--clr-gray-30));
+        font-size: 14px;
+      }
+    }
+  }
+
+  .widget-dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $sz-unit;
+    padding: $sz-unit;
+    background-color: rgb(var(--clr-gray-90));
+    box-shadow: 0 -4px 4px rgb(0 0 0 / 25%);
+    border-top: 1px solid rgb(var(--clr-gray-70));
+
+    icon-button {
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .page-label {
+      color: rgb(var(--clr-gray-30));
+      font-size: 14px;
+      min-width: 120px;
+      text-align: center;
+      padding: 0 $sz-unit;
+    }
   }
 }
