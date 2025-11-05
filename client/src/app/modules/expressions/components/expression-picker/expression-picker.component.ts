@@ -1134,12 +1134,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.persistDialog = !this.persistDialog;
   }
 
-  onApplyAndClose(): void {
+  async onApplyAndClose(): Promise<void> {
     this.persistDialog = false;
-    this.onConfirm();
+    await this.onConfirm();
   }
 
-  onConfirm(): void {
+  async onConfirm(): Promise<void> {
     const selectedExpressions: DataExpression[] = Array.from(this._selectedExpressionIdOrder)
       .map(id => this._selectedExpressions.find(expression => expression?.id === id))
       .filter(expression => expression) as DataExpression[];
@@ -1149,13 +1149,13 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       .filter(group => group) as DataExpression[];  
 
     if (rgbMixExpressions.length >= 3) {
+      const hasGroupChanged = !this.selectedGroup.id ||
+        !setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id))) ||
+        !this.selectedGroup.groupItems.every((groupItem, i) => groupItem?.expressionId === rgbMixExpressions[i]?.id);
+
       // If the selected group alredy has an id, and it has the same RGB mix entries in the same order as the one we're
       // about to create, don't create it! it can be used as-is directly.
-      if (
-        this.selectedGroup.id.length > 0 &&
-        setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id))) &&
-        this.selectedGroup.groupItems.every((groupItem, i) => groupItem?.expressionId === rgbMixExpressions[i]?.id)
-      ) {
+      if (!hasGroupChanged) {
         this._analysisLayoutService.expressionPickerResponse$.next({
           selectedGroup: this.selectedGroup,
           selectedExpressions,
@@ -1170,6 +1170,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         }
         return;
       }
+
       const selectedGroup = ExpressionGroup.create(this.selectedGroup);
       selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
 
@@ -1181,8 +1182,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
       let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
       if (activeWidgetRef) {
-        // A group wasn't specifically selected and info wasn't entered to create a new one, so save as auto-generated
-        if ((!selectedGroup.id && !selectedGroup.name) || !selectedGroup?.owner?.canEdit) {
+        // Either a group wasn't specifically selected and info wasn't entered to create a new one or the group has changed, so save as auto-generated
           let scanName = this.scanId;
           let quantName = this.quantId;
 
@@ -1206,7 +1206,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           if (!selectedGroup.description) {
             selectedGroup.description = `Auto-generated RGB Mix group for ${scanName} on the ${activeWidgetRef.name} plot with quant: ${quantName}\n\nIf you would like to save this group for future use, rename it to prevent it from being overwritten`;
           }
-        }
 
         // Invalidate the cached data for this group since we're updating it
         this._cachedDataSerivce.invalidExpressionGroupIds.add(selectedGroup.id);

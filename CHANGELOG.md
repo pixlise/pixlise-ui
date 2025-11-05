@@ -1,4 +1,11 @@
-## 4.80.0 (LATEST)
+## 4.81.0 (LATEST)
+
+### New Features
+- Slight logic change for RGB Mixes. If an existing RGB mix is selected and either the order is changed or an expression is added/removed, the RGB mix will now be saved as the temporary auto-generated group instead of trying to edit the existing one. To edit the existing one, use the "Save As/Edit Group" button.
+
+### Bug Fixes
+
+## 4.80.0 (2025-11-05)
 
 ### New Features
 - Experimental support for importing WDS format scans (composed of just .tif images - one per element map and an "almost" optical CP image). tif files are expected to be single channel.
