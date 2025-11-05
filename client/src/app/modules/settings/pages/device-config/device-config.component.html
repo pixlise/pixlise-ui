@@ -1,6 +1,6 @@
 <div class="device-config-container">
-  <!-- Left column: Device list -->
-  <div class="device-list-column">
+  <!-- Column 1: Device list -->
+  <div class="column devices-column">
     <div class="column-header">
       <h3>Devices</h3>
     </div>
@@ -9,9 +9,9 @@
       <wait-spinner></wait-spinner>
     </div>
 
-    <div class="device-list" *ngIf="!loading">
+    <div class="item-list" *ngIf="!loading">
       <div
-        class="device-item"
+        class="list-item"
         *ngFor="let deviceId of deviceIds"
         [class.selected]="selectedDeviceId === deviceId"
         (click)="onDeviceClick(deviceId)">
@@ -24,26 +24,56 @@
     </div>
   </div>
 
-  <!-- Right column: Device details -->
-  <div class="device-details-column">
+  <!-- Column 2: Config options (Client + versions) -->
+  <div class="column config-options-column">
     <div class="column-header">
-      <h3>Configuration Details</h3>
+      <h3>Configuration</h3>
     </div>
 
     <div class="no-selection" *ngIf="!selectedDeviceId">
-      <p>Select a device to view configuration</p>
+      <p>Select a device</p>
     </div>
 
     <div class="loading-state" *ngIf="selectedDeviceDetails?.loading">
       <wait-spinner></wait-spinner>
     </div>
 
-    <div class="details-content" *ngIf="selectedDeviceId && selectedDeviceDetails && !selectedDeviceDetails.loading">
-      <div class="device-title">
-        <h4>{{ selectedDeviceId }}</h4>
+    <div class="item-list" *ngIf="selectedDeviceId && !selectedDeviceDetails?.loading && configOptions.length > 0">
+      <div
+        class="list-item"
+        *ngFor="let option of configOptions"
+        [class.selected]="selectedConfigOption?.id === option.id"
+        (click)="onConfigOptionClick(option)">
+        {{ option.label }}
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="selectedDeviceId && !selectedDeviceDetails?.loading && configOptions.length === 0">
+      <p>No configurations available</p>
+    </div>
+  </div>
+
+  <!-- Column 3: Details -->
+  <div class="column details-column">
+    <div class="column-header">
+      <h3>Details</h3>
+    </div>
+
+    <div class="no-selection" *ngIf="!selectedConfigOption">
+      <p>Select a configuration</p>
+    </div>
+
+    <div class="loading-state" *ngIf="loadingConfigDetails">
+      <wait-spinner></wait-spinner>
+    </div>
+
+    <!-- Client (Detector Config) Details -->
+    <div class="details-content" *ngIf="selectedConfigOption?.type === 'client' && selectedDeviceDetails?.config">
+      <div class="section-title">
+        <h4>{{ selectedDeviceId }} - Client Configuration</h4>
       </div>
 
-      <div class="details-grid" *ngIf="selectedDeviceDetails.config">
+      <div class="details-grid">
         <div class="detail-row">
           <span class="label">Element Range:</span>
           <span class="value">{{ selectedDeviceDetails.config.minElement }} - {{ selectedDeviceDetails.config.maxElement }}</span>
@@ -79,68 +109,50 @@
           <span class="value">{{ selectedDeviceDetails.config.tubeElement }}</span>
         </div>
 
-        <div class="detail-row piquant-versions-row" *ngIf="selectedDeviceDetails.piquantVersions.length > 0">
-          <span class="label">Piquant Versions:</span>
-          <div class="piquant-versions-list">
-            <button
-              class="version-chip"
-              *ngFor="let version of selectedDeviceDetails.piquantVersions"
-              [class.selected]="selectedPiquantVersion === version"
-              (click)="onPiquantVersionClick(version)">
-              {{ version }}
-            </button>
-          </div>
-        </div>
-
         <div class="detail-row" *ngIf="selectedDeviceDetails.config.defaultParams">
           <span class="label">Default Params:</span>
           <span class="value monospace">{{ selectedDeviceDetails.config.defaultParams }}</span>
         </div>
       </div>
+    </div>
 
-      <div class="no-config" *ngIf="!selectedDeviceDetails.config">
-        <p>Configuration data not available</p>
+    <!-- Piquant Config (Version) Details -->
+    <div class="details-content" *ngIf="selectedConfigOption?.type === 'version' && !loadingConfigDetails && piquantConfigDetails">
+      <div class="section-title">
+        <h4>{{ selectedDeviceId }} - {{ selectedConfigOption.label }}</h4>
       </div>
 
-      <!-- Piquant Config Details Section -->
-      <div class="piquant-config-section" *ngIf="selectedPiquantVersion">
-        <h5 class="section-title">Piquant Config: {{ selectedPiquantVersion }}</h5>
-
-        <div class="loading-state" *ngIf="loadingPiquantConfig">
-          <wait-spinner></wait-spinner>
+      <div class="details-grid">
+        <div class="detail-row" *ngIf="piquantConfigDetails.description">
+          <span class="label">Description:</span>
+          <span class="value">{{ piquantConfigDetails.description }}</span>
         </div>
 
-        <div class="piquant-details" *ngIf="!loadingPiquantConfig && piquantConfigDetails">
-          <div class="detail-row" *ngIf="piquantConfigDetails.description">
-            <span class="label">Description:</span>
-            <span class="value">{{ piquantConfigDetails.description }}</span>
-          </div>
-
-          <div class="detail-row" *ngIf="piquantConfigDetails.configFile">
-            <span class="label">Config File:</span>
-            <span class="value monospace">{{ piquantConfigDetails.configFile }}</span>
-          </div>
-
-          <div class="detail-row" *ngIf="piquantConfigDetails.opticEfficiencyFile">
-            <span class="label">Optic Efficiency File:</span>
-            <span class="value monospace">{{ piquantConfigDetails.opticEfficiencyFile }}</span>
-          </div>
-
-          <div class="detail-row" *ngIf="piquantConfigDetails.calibrationFile">
-            <span class="label">Calibration File:</span>
-            <span class="value monospace">{{ piquantConfigDetails.calibrationFile }}</span>
-          </div>
-
-          <div class="detail-row" *ngIf="piquantConfigDetails.standardsFile">
-            <span class="label">Standards File:</span>
-            <span class="value monospace">{{ piquantConfigDetails.standardsFile }}</span>
-          </div>
+        <div class="detail-row" *ngIf="piquantConfigDetails.configFile">
+          <span class="label">Config File:</span>
+          <span class="value monospace">{{ piquantConfigDetails.configFile }}</span>
         </div>
 
-        <div class="no-config" *ngIf="!loadingPiquantConfig && !piquantConfigDetails">
-          <p>Failed to load piquant configuration</p>
+        <div class="detail-row" *ngIf="piquantConfigDetails.opticEfficiencyFile">
+          <span class="label">Optic Efficiency File:</span>
+          <span class="value monospace">{{ piquantConfigDetails.opticEfficiencyFile }}</span>
+        </div>
+
+        <div class="detail-row" *ngIf="piquantConfigDetails.calibrationFile">
+          <span class="label">Calibration File:</span>
+          <span class="value monospace">{{ piquantConfigDetails.calibrationFile }}</span>
+        </div>
+
+        <div class="detail-row" *ngIf="piquantConfigDetails.standardsFile">
+          <span class="label">Standards File:</span>
+          <span class="value monospace">{{ piquantConfigDetails.standardsFile }}</span>
         </div>
       </div>
+    </div>
+
+    <!-- Error state for failed piquant config load -->
+    <div class="no-config" *ngIf="selectedConfigOption?.type === 'version' && !loadingConfigDetails && !piquantConfigDetails">
+      <p>Failed to load configuration details</p>
     </div>
   </div>
 </div>

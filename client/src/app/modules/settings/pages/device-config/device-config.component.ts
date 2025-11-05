@@ -11,6 +11,12 @@ interface DeviceDetails {
   loading: boolean;
 }
 
+interface ConfigOption {
+  id: string;
+  label: string;
+  type: 'client' | 'version';
+}
+
 @Component({
   selector: 'app-device-config',
   standalone: false,
@@ -23,9 +29,13 @@ export class DeviceConfigComponent implements OnInit {
   selectedDeviceDetails: DeviceDetails | null = null;
   loading = true;
 
-  selectedPiquantVersion: string | null = null;
+  // Middle column: config options (Client + versions)
+  configOptions: ConfigOption[] = [];
+  selectedConfigOption: ConfigOption | null = null;
+
+  // Right column: details for selected config option
   piquantConfigDetails: PiquantConfig | undefined = undefined;
-  loadingPiquantConfig = false;
+  loadingConfigDetails = false;
 
   constructor(private _cachedDataService: APICachedDataService) {}
 
@@ -48,8 +58,9 @@ export class DeviceConfigComponent implements OnInit {
     // Set selected device
     this.selectedDeviceId = deviceId;
 
-    // Reset piquant version selection when changing devices
-    this.selectedPiquantVersion = null;
+    // Reset middle and right columns
+    this.configOptions = [];
+    this.selectedConfigOption = null;
     this.piquantConfigDetails = undefined;
 
     // Initialize loading state
@@ -67,6 +78,20 @@ export class DeviceConfigComponent implements OnInit {
             piquantVersions: resp.piquantConfigVersions,
             loading: false
           };
+
+          // Build config options: "Client" + all piquant versions
+          this.configOptions = [
+            { id: 'client', label: 'Client', type: 'client' }
+          ];
+
+          // Add version options
+          resp.piquantConfigVersions.forEach(version => {
+            this.configOptions.push({
+              id: version,
+              label: version,
+              type: 'version'
+            });
+          });
         },
         error: (err) => {
           console.error(`Failed to load config for ${deviceId}:`, err);
@@ -74,38 +99,47 @@ export class DeviceConfigComponent implements OnInit {
             piquantVersions: [],
             loading: false
           };
+          this.configOptions = [];
         }
       });
   }
 
-  onPiquantVersionClick(version: string): void {
-    this.selectedPiquantVersion = version;
-    this.loadingPiquantConfig = true;
+  onConfigOptionClick(option: ConfigOption): void {
+    this.selectedConfigOption = option;
     this.piquantConfigDetails = undefined;
 
-    // Use the selected device ID as the config ID and the version string as-is
-    // The backend returns version strings like "v2", "v3", etc.
-    if (!this.selectedDeviceId) {
-      console.error('No device selected');
-      this.loadingPiquantConfig = false;
+    // If clicking "Client", no need to fetch anything (data already loaded)
+    if (option.type === 'client') {
+      this.loadingConfigDetails = false;
       return;
     }
 
-    // Fetch the piquant config details
-    this._cachedDataService.getPiquantConfigVersion(
-      PiquantConfigVersionReq.create({
-        configId: this.selectedDeviceId,
-        version: version
-      })
-    ).subscribe({
-      next: (resp) => {
-        this.piquantConfigDetails = resp.piquantConfig;
-        this.loadingPiquantConfig = false;
-      },
-      error: (err) => {
-        console.error(`Failed to load piquant config ${version}:`, err);
-        this.loadingPiquantConfig = false;
+    // If clicking a version, fetch the piquant config details
+    if (option.type === 'version') {
+      this.loadingConfigDetails = true;
+
+      if (!this.selectedDeviceId) {
+        console.error('No device selected');
+        this.loadingConfigDetails = false;
+        return;
       }
-    });
+
+      // Fetch the piquant config details
+      this._cachedDataService.getPiquantConfigVersion(
+        PiquantConfigVersionReq.create({
+          configId: this.selectedDeviceId,
+          version: option.id
+        })
+      ).subscribe({
+        next: (resp) => {
+          this.piquantConfigDetails = resp.piquantConfig;
+          this.loadingConfigDetails = false;
+        },
+        error: (err) => {
+          console.error(`Failed to load piquant config ${option.id}:`, err);
+          this.loadingConfigDetails = false;
+        }
+      });
+    }
   }
 }
