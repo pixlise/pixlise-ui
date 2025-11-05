@@ -37,25 +37,53 @@ POSSIBILITY OF SUCH DAMAGE.
         [additionalVisibleTagType]="['rgbmix']"
         [selectedTagIDs]="selectedGroup.tags"
         [showCurrentTagsSection]="true"
-        (onTagSelectionChanged)="onNewExpressionGroupTagSelectionChanged($event)">
+        (onTagSelectionChanged)="
+          onNewExpressionGroupTagSelectionChanged($event)
+        "
+      >
       </tag-picker>
     </div>
     <div class="fields">
-      <mat-checkbox [(ngModel)]="overwriteExistingExpressionGroup" label>Overwrite existing expression group?</mat-checkbox>
+      <mat-checkbox [(ngModel)]="overwriteExistingExpressionGroup" label
+        >Overwrite existing expression group?</mat-checkbox
+      >
 
-      <mat-select *ngIf="overwriteExistingExpressionGroup" [(ngModel)]="selectedGroup.id" placeholder="Editable Groups ...">
-        <mat-option *ngFor="let group of editableExpressionGroups" [value]="group.id">{{ group.name }}</mat-option>
+      <mat-select
+        *ngIf="overwriteExistingExpressionGroup"
+        [(ngModel)]="selectedGroup.id"
+        placeholder="Editable Groups ..."
+      >
+        <mat-option
+          *ngFor="let group of editableExpressionGroups"
+          [value]="group.id"
+          >{{ group.name }}</mat-option
+        >
       </mat-select>
 
       <span class="input-label">Expression Group Name</span>
-      <input type="text" [(ngModel)]="selectedGroup.name" placeholder="New Group Name ..." />
+      <input
+        type="text"
+        [(ngModel)]="selectedGroup.name"
+        placeholder="New Group Name ..."
+      />
 
       <span class="input-label">Group Description</span>
-      <textarea type="text" rows="7" [(ngModel)]="selectedGroup.description" placeholder="Group Description ..."></textarea>
+      <textarea
+        type="text"
+        rows="7"
+        [(ngModel)]="selectedGroup.description"
+        placeholder="Group Description ..."
+      ></textarea>
     </div>
     <div class="gap-separated-horizontal-elements button-container">
-      <push-button buttonStyle="outline" (onClick)="onCloseExpressionGroupDialog()">Cancel</push-button>
-      <push-button buttonStyle="yellow" (onClick)="onSaveNewExpressionGroup()">Confirm</push-button>
+      <push-button
+        buttonStyle="outline"
+        (onClick)="onCloseExpressionGroupDialog()"
+        >Cancel</push-button
+      >
+      <push-button buttonStyle="yellow" (onClick)="onSaveNewExpressionGroup()"
+        >Confirm</push-button
+      >
     </div>
   </div>
 </ng-template>
@@ -63,10 +91,21 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="expression-picker-container">
   <header>
     <div class="controls">
-      <h1 mat-dialog-title cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle [cdkDragDisabled]="!draggable" class="title {{ draggable ? 'drag' : '' }}">
+      <h1
+        mat-dialog-title
+        cdkDrag
+        cdkDragRootElement=".cdk-overlay-pane"
+        cdkDragHandle
+        [cdkDragDisabled]="!draggable"
+        class="title {{ draggable ? 'drag' : '' }}"
+      >
         Select Expressions
       </h1>
-      <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onCancel()"></action-button>
+      <action-button
+        action="close"
+        color="rgb(var(--clr-gray-30))"
+        (onClick)="onCancel()"
+      ></action-button>
     </div>
   </header>
   <section class="columns">
@@ -76,12 +115,24 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
       <div class="browser">
         <div *ngFor="let section of browseSections" class="browse-section">
-          <h5 class="{{ activeBrowseGroup === section.name ? 'active' : '' }}">{{ section.name }}</h5>
+          <h5 class="{{ activeBrowseGroup === section.name ? 'active' : '' }}">
+            {{ section.name }}
+          </h5>
           <div class="browse-list">
             <div
-              class="subsection {{ activeBrowseGroup === section.name && activeBrowseSection === subSection ? 'active' : '' }}"
-              *ngFor="let subSection of section.subSections">
-              <h6 (click)="onSubSectionSelect(section.name, subSection)" (keydown.enter)="onSubSectionSelect(section.name, subSection)" tabindex="0">
+              class="subsection {{
+                activeBrowseGroup === section.name &&
+                activeBrowseSection === subSection
+                  ? 'active'
+                  : ''
+              }}"
+              *ngFor="let subSection of section.subSections"
+            >
+              <h6
+                (click)="onSubSectionSelect(section.name, subSection)"
+                (keydown.enter)="onSubSectionSelect(section.name, subSection)"
+                tabindex="0"
+              >
                 {{ subSection }}
               </h6>
             </div>
@@ -91,11 +142,18 @@ POSSIBILITY OF SUCH DAMAGE.
     </section>
     <section class="column expressions-list">
       <div
-        class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }} {{ 'Quantified Elements' === activeBrowseSection ? 'quant-elements' : '' }} {{
+        class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }} {{
+          'Quantified Elements' === activeBrowseSection ? 'quant-elements' : ''
+        }} {{
           activeBrowseSection === 'Pseudo-Intensities' ? 'pseudo-elements' : ''
-        }}">
+        }}"
+      >
         <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
-        <push-button *ngIf="activeBrowseSection === 'Recent'" class="recent-btn" buttonStyle="outline" (onClick)="onClearRecent(activeBrowseGroup)"
+        <push-button
+          *ngIf="activeBrowseSection === 'Recent'"
+          class="recent-btn"
+          buttonStyle="outline"
+          (onClick)="onClearRecent(activeBrowseGroup)"
           >Clear Recent</push-button
         >
         <multi-switch-button
@@ -103,14 +161,22 @@ POSSIBILITY OF SUCH DAMAGE.
           *ngIf="activeBrowseSection === 'Quantified Elements'"
           [options]="['A', 'B', 'A&B']"
           [value]="activeQuantifiedElementDetector || 'A'"
-          (onChange)="activeQuantifiedElementDetector = $event">
+          (onChange)="activeQuantifiedElementDetector = $event"
+        >
         </multi-switch-button>
         <mat-select
           class="scan-selector"
-          *ngIf="['Quantified Elements', 'Pseudo-Intensities'].includes(activeBrowseSection)"
+          *ngIf="
+            ['Quantified Elements', 'Pseudo-Intensities'].includes(
+              activeBrowseSection
+            )
+          "
           [(ngModel)]="scanId"
-          placeholder="Choose a Scan">
-          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }}</mat-option>
+          placeholder="Choose a Scan"
+        >
+          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{
+            scan.title
+          }}</mat-option>
         </mat-select>
       </div>
       <expression-search-controls
@@ -120,12 +186,23 @@ POSSIBILITY OF SUCH DAMAGE.
         [quantId]="quantId"
         [selectedDetector]="activeQuantifiedElementDetector"
         [recentExpressions]="recentExpressions"
-        [manualFilters]="manualFilters"></expression-search-controls>
+        [manualFilters]="manualFilters"
+      ></expression-search-controls>
       <section class="expressions">
-        <div *ngIf="!quantId && filteredExpressions.length === 0 && 'Quantified Elements' === activeBrowseSection" class="empty-expressions">
+        <div
+          *ngIf="
+            !quantId &&
+            filteredExpressions.length === 0 &&
+            'Quantified Elements' === activeBrowseSection
+          "
+          class="empty-expressions"
+        >
           <h5>No quantification configured</h5>
         </div>
-        <cdk-virtual-scroll-viewport [itemSize]="48" class="expressions-viewport">
+        <cdk-virtual-scroll-viewport
+          [itemSize]="48"
+          class="expressions-viewport"
+        >
           <expression-layer
             *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
             [expression]="item"
@@ -133,19 +210,50 @@ POSSIBILITY OF SUCH DAMAGE.
             [isSingleSelect]="maxSelection === 1"
             [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
-            [monoSelectIcon]="showRGBMixMode && isRGBMixModeActive && activeBrowseGroup === 'Expression Groups'"
-            [objectType]="activeBrowseGroup === 'Expression Groups' ? expressionGroupType : expressionType"
+            [monoSelectIcon]="
+              showRGBMixMode &&
+              isRGBMixModeActive &&
+              activeBrowseGroup === 'Expression Groups'
+            "
+            [objectType]="
+              activeBrowseGroup === 'Expression Groups'
+                ? expressionGroupType
+                : expressionType
+            "
             [selected]="checkSelected(item.id)"
-            [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+            [selectionDisabledMessage]="
+              maxSelection === 1 || canSelectMore
+                ? ''
+                : 'Maximum number of expressions selected'
+            "
             (onSelect)="onSelect(item)"
-            (onCloseModal)="onCancel()"></expression-layer>
+            (onCloseModal)="onCancel()"
+          ></expression-layer>
         </cdk-virtual-scroll-viewport>
       </section>
     </section>
-    <section *ngIf="maxSelection !== 1" class="column active-expressions {{ showRGBMixMode && isRGBMixModeActive ? 'rgbmix-mode' : '' }}">
+    <section
+      *ngIf="maxSelection !== 1"
+      class="column active-expressions {{
+        showRGBMixMode && isRGBMixModeActive ? 'rgbmix-mode' : ''
+      }}"
+    >
       <div class="title active-widget-selection">
-        <mat-select *ngIf="!data.disableWidgetSwitching" [(ngModel)]="activeWidgetId" placeholder="Active Group">
-          <mat-option *ngFor="let option of layoutWidgets; let i = index" [value]="option.widget.id">{{ option.name }}</mat-option>
+        <mat-select
+          *ngIf="!data.disableWidgetSwitching"
+          [ngModel]="activeWidgetIds"
+          (ngModelChange)="activeWidgetIds = $event"
+          placeholder="Active Group"
+          multiple
+          #tooltip="matTooltip"
+          [matTooltip]="activeWidgetNamesTooltip"
+          [matTooltipDisabled]="layoutWidgets.length <= 1"
+        >
+          <mat-option
+            *ngFor="let option of layoutWidgets; let i = index"
+            [value]="option.widget.id"
+            >{{ option.name }}</mat-option
+          >
         </mat-select>
         <push-button
           buttonStyle="gray"
@@ -154,8 +262,15 @@ POSSIBILITY OF SUCH DAMAGE.
           [disabled]="selectedExpressionIds.size === 0"
           #tooltip="matTooltip"
           matTooltip="Edit Group ({{ selectedGroup?.name }})"
-          [matTooltipDisabled]="selectedGroup.id.length === 0 || !selectedGroup?.owner?.canEdit"
-          >{{ selectedGroup?.owner?.canEdit && selectedGroup.id.length > 0 ? "Edit" : "Save As" }} Group</push-button
+          [matTooltipDisabled]="
+            selectedGroup.id.length === 0 || !selectedGroup?.owner?.canEdit
+          "
+          >{{
+            selectedGroup?.owner?.canEdit && selectedGroup.id.length > 0
+              ? "Edit"
+              : "Save As"
+          }}
+          Group</push-button
         >
         <action-button
           *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup"
@@ -166,33 +281,51 @@ POSSIBILITY OF SUCH DAMAGE.
           [disabled]="!selectedGroup.id"
           action="close"
           color="rgb(var(--clr-gray-30))"
-          (onClick)="onClearRGBMix()"></action-button>
+          (onClick)="onClearRGBMix()"
+        ></action-button>
       </div>
       <div class="rgbmix-row" *ngIf="showRGBMixMode">
         <multi-switch-button
           class="rgbmix-toggle"
           [options]="rgbMixModeGroupOptions"
           [value]="activeRGBMixModeGroup"
-          (onChange)="activeRGBMixModeGroup = $event"></multi-switch-button>
+          (onChange)="activeRGBMixModeGroup = $event"
+        ></multi-switch-button>
       </div>
-      <section class="layer-container {{ showRGBMixMode ? 'rgbmix-mode' : 'expression-mode' }}">
-        <cdk-virtual-scroll-viewport [itemSize]="activeLayerHeight" class="expressions-viewport">
+      <section
+        class="layer-container {{
+          showRGBMixMode ? 'rgbmix-mode' : 'expression-mode'
+        }}"
+      >
+        <cdk-virtual-scroll-viewport
+          [itemSize]="activeLayerHeight"
+          class="expressions-viewport"
+        >
           <expression-layer
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
             [expression]="item"
             (onFilterAuthor)="onFilterAuthor($event)"
-            [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+            [selectionDisabledMessage]="
+              maxSelection === 1 || canSelectMore
+                ? ''
+                : 'Maximum number of expressions selected'
+            "
             (onSelect)="onSelect(item)"
             [isWidgetExpression]="true"
             [widgetType]="widgetType || ''"
             [showRGBMixMode]="isRGBMixModeActive"
             [showColourPicker]="!isRGBMixModeActive"
             [selectIfValidPosition]="true"
-            [isTriggerPosition]="expressionTriggerPosition > -1 && expressionTriggerPosition === selectedExpressionIdOrder.indexOf(item.id)"
+            [isTriggerPosition]="
+              expressionTriggerPosition > -1 &&
+              expressionTriggerPosition ===
+                selectedExpressionIdOrder.indexOf(item.id)
+            "
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
             [showActiveExpressionConfiguration]="true"
             (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"
-            (onCloseModal)="onCancel()"></expression-layer>
+            (onCloseModal)="onCancel()"
+          ></expression-layer>
         </cdk-virtual-scroll-viewport>
       </section>
     </section>
@@ -207,21 +340,33 @@ POSSIBILITY OF SUCH DAMAGE.
         [inactiveIcon]="'assets/button-icons/check-off.svg'"
         class="checkbox-button"
         [active]="maxSelection === 1"
-        (onToggle)="onSingleSelectionToggle()">
+        (onToggle)="onSingleSelectionToggle()"
+      >
       </two-state-icon-button>
       <span class="label">Single Layer Mode</span>
     </div>
-    <div class="toggle-trigger-position-btn" *ngIf="expressionTriggerPosition > -1">
-      <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onClearTriggerPosition()"></action-button>
+    <div
+      class="toggle-trigger-position-btn"
+      *ngIf="expressionTriggerPosition > -1"
+    >
+      <action-button
+        action="close"
+        color="rgb(var(--clr-gray-30))"
+        (onClick)="onClearTriggerPosition()"
+      ></action-button>
       <h5>Trigger Position: {{ triggerName }}</h5>
     </div>
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
+    >
     <push-button
       *ngIf="maxSelection !== 1 || !persistDialog"
       buttonStyle="yellow"
       #tooltip="matTooltip"
       [matTooltip]="applyTooltip"
-      [matTooltipDisabled]="waitingForExpressions.length === 0 && selectedExpressionIds.size === 0"
+      [matTooltipDisabled]="
+        waitingForExpressions.length === 0 && selectedExpressionIds.size === 0
+      "
       [disabled]="waitingForExpressions.length > 0"
       (onClick)="onConfirm()"
       >Apply</push-button
@@ -231,7 +376,9 @@ POSSIBILITY OF SUCH DAMAGE.
       buttonStyle="yellow"
       #tooltip="matTooltip"
       [matTooltip]="applyTooltip"
-      [matTooltipDisabled]="waitingForExpressions.length === 0 && selectedExpressionIds.size === 0"
+      [matTooltipDisabled]="
+        waitingForExpressions.length === 0 && selectedExpressionIds.size === 0
+      "
       [disabled]="waitingForExpressions.length > 0"
       (onClick)="onApplyAndClose()"
       >Apply & Close</push-button

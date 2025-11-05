@@ -818,8 +818,7 @@ export class BinaryChartWidgetComponent
         (result: ExpressionPickerResponse | null) => {
           if (
             !result ||
-            this._analysisLayoutService.highlightedWidgetId$.value !==
-              this._widgetId
+            !this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._widgetId)
           ) {
             return;
           }
@@ -845,7 +844,7 @@ export class BinaryChartWidgetComponent
           this.saveState();
 
           // Expression picker has closed, so we can stop highlighting this widget
-          this._analysisLayoutService.highlightedWidgetId$.next("");
+          this._analysisLayoutService.highlightedWidgetIds$.next([]);
         }
       )
     );

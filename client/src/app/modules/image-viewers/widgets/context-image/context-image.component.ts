@@ -802,8 +802,7 @@ export class ContextImageComponent
         (result: ExpressionPickerResponse | null) => {
           if (
             !result ||
-            this._analysisLayoutService.highlightedWidgetId$.value !==
-              this._widgetId
+            !this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._widgetId)
           ) {
             return;
           }
@@ -850,7 +849,7 @@ export class ContextImageComponent
 
           if (!result?.persistDialog) {
             // Expression picker has closed, so we can stop highlighting this widget
-            this._analysisLayoutService.highlightedWidgetId$.next("");
+            this._analysisLayoutService.highlightedWidgetIds$.next([]);
           }
         }
       )
@@ -1898,7 +1897,7 @@ export class ContextImageComponent
       dialogConfig
     );
     this._expressionPickerDialog.afterClosed().subscribe(() => {
-      this._analysisLayoutService.highlightedWidgetId$.next("");
+      this._analysisLayoutService.highlightedWidgetIds$.next([]);
       this._expressionPickerDialog = null;
     });
   }

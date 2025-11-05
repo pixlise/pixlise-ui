@@ -190,7 +190,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (result && result.selectedExpressions && this._analysisLayoutService.highlightedWidgetId$.value === this._widgetId) {
+        if (result && result.selectedExpressions && this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._widgetId)) {
           this.mdl.expressionIds = [];
 
           for (const expr of result.selectedExpressions) {
@@ -201,7 +201,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           this.saveState();
 
           // Expression picker has closed, so we can stop highlighting this widget
-          this._analysisLayoutService.highlightedWidgetId$.next("");
+          this._analysisLayoutService.highlightedWidgetIds$.next([]);
         }
       })
     );

@@ -134,7 +134,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   quantId: string = "";
 
   widgetType: WidgetType | "" = "";
-  private _activeWidgetId: string = "";
+  private _activeWidgetIds: string[] = [];
   layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
 
   private _selectedExpressionGroup: ExpressionGroup = ExpressionGroup.create();
@@ -188,9 +188,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       this.activeRGBMixModeGroup = this.data.rgbMixModeActive ? "RGB Mix" : "Expressions";
     }
 
-    this._activeWidgetId = this.data.widgetId || "";
+    this._activeWidgetIds = [this.data.widgetId || ""];
     this.expressionTriggerPosition = this.data?.expressionTriggerPosition ?? -1;
-    this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+    this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
 
     let expressionIds = (this.data.selectedIds || []).filter(id => id && !DataExpressionId.isExpressionGroupId(id));
     this._selectedExpressionIds = new Set(expressionIds);
@@ -252,13 +252,13 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           });
 
           // If the current active widget ID is an export preview widget, reset it to the original widget
-          if (this._activeWidgetId.startsWith(EXPORT_PREVIEW_ID_PREFIX)) {
-            const originalWidgetId = this._activeWidgetId.replace(EXPORT_PREVIEW_ID_PREFIX, "");
+          if (this._activeWidgetIds.some((id) => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))) {
+            const originalWidgetId = this._activeWidgetIds.find(id => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))?.replace(EXPORT_PREVIEW_ID_PREFIX, "") || "";
             const validWidget = this.layoutWidgets.find(widget => widget.widget.id === originalWidgetId);
             if (validWidget) {
-              this._activeWidgetId = originalWidgetId;
+              this._activeWidgetIds = [originalWidgetId];
               // Also update the highlighted widget ID to match
-              this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+              this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
             }
           }
         }
@@ -509,16 +509,22 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     return expressionIds;
   }
 
-  get activeWidgetId(): string {
-    return this._activeWidgetId;
+  get activeWidgetNamesTooltip(): string {
+    return this.layoutWidgets.filter(widget => this._activeWidgetIds.includes(widget.widget.id)).map(widget => widget.name).join(", ");
   }
 
-  set activeWidgetId(id: string) {
-    this._activeWidgetId = id;
-    this._analysisLayoutService.highlightedWidgetId$.next(id);
+  get activeWidgetIds(): string[] {
+    return this._activeWidgetIds;
+  }
+
+  set activeWidgetIds(ids: string[]) {
+    this._activeWidgetIds = ids;
+    this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
     this.expressionTriggerPosition = -1;
 
-    let { spec, data, type } = this._getWidgetData(id);
+    // While we can have many highlighted widgets, we only need to load the data for the first one as the others will be the same
+    const loadedId = ids[0] || "";
+    let { spec, data, type } = this._getWidgetData(loadedId);
     if (spec && data && type) {
       this.widgetType = type;
       let expressionIds = this._expressionIdsFromWidgetData(data);
@@ -1106,7 +1112,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
-    this._analysisLayoutService.highlightedWidgetId$.next("");
+    this._analysisLayoutService.highlightedWidgetIds$.next([]);
     this.dialogRef.close();
   }
 
@@ -1172,15 +1178,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       }
 
       const selectedGroup = ExpressionGroup.create(this.selectedGroup);
+      selectedGroup.id = "";
       selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
-
-        if (this._activeWidgetId.startsWith(EXPORT_PREVIEW_ID_PREFIX)) {
-          this._activeWidgetId = this._activeWidgetId.replace(EXPORT_PREVIEW_ID_PREFIX, "");
+        if (this._activeWidgetIds.some(id => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))) {
+          const originalWidgetId = this._activeWidgetIds.find(id => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))?.replace(EXPORT_PREVIEW_ID_PREFIX, "") || "";
           // Also update the highlighted widget ID to match
-          this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+          this._analysisLayoutService.highlightedWidgetIds$.next([originalWidgetId]);
         }
 
-      let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
+      let activeWidgetRef = this.layoutWidgets.find(widget => this._activeWidgetIds.includes(widget.widget.id));
       if (activeWidgetRef) {
         // Either a group wasn't specifically selected and info wasn't entered to create a new one or the group has changed, so save as auto-generated
           let scanName = this.scanId;

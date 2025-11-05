@@ -211,7 +211,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+        if (!result || !this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._widgetId)) {
           return;
         }
 
@@ -236,7 +236,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         this.saveState();
 
         // Expression picker has closed, so we can stop highlighting this widget
-        this._analysisLayoutService.highlightedWidgetId$.next("");
+        this._analysisLayoutService.highlightedWidgetIds$.next([]);
       })
     );
 

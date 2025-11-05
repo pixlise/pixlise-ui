@@ -136,8 +136,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       );
 
       this._subs.add(
-        this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
-          if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
+        this._analysisLayoutService.highlightedWidgetIds$.subscribe((highlightedWidgetIds: string[]) => {
+          if (highlightedWidgetIds.includes(this.widgetLayoutConfig.id)) {
             this.isWidgetHighlighted = true;
           } else if (this.isWidgetHighlighted) {
             this.isWidgetHighlighted = false;
