@@ -515,7 +515,7 @@ export class BinaryChartWidgetComponent
       this._analysisLayoutService.getQuantIdForScan(this.scanId) ||
       "";
 
-    if (this.scanId.length > 0 && this.quantId.length > 0) {
+    if (this.scanId.length > 0 /*&& this.quantId.length > 0*/) {
       this._analysisLayoutService
         .makeExpressionList(this.scanId, 2)
         .subscribe((exprs: DefaultExpressions) => {
@@ -759,6 +759,16 @@ export class BinaryChartWidgetComponent
           this.mdl.selectedMaxXValue = binaryData.selectedMaxXValue ?? null;
           this.mdl.selectedMinYValue = binaryData.selectedMinYValue ?? null;
           this.mdl.selectedMaxYValue = binaryData.selectedMaxYValue ?? null;
+
+          // If the zoom ranges are not set, set them to the full range
+          if (this.mdl.selectedMinXValue == this.mdl.selectedMaxXValue) {
+            this.mdl.selectedMinXValue = this.mdl.xAxisMinMax.min;
+            this.mdl.selectedMaxXValue = this.mdl.xAxisMinMax.max;
+          }
+          if (this.mdl.selectedMinYValue == this.mdl.selectedMaxYValue) {
+            this.mdl.selectedMinYValue = this.mdl.yAxisMinMax.min;
+            this.mdl.selectedMaxYValue = this.mdl.yAxisMinMax.max;
+          }
 
           if (binaryData.referenceIds) {
             this._referenceIds = binaryData.referenceIds;

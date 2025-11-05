@@ -7,6 +7,9 @@ wsMessageHandler.ts
 # Comes from wasmoon package:
 src/app/expression-language/lua/glue.wasm
 
+# Don't want to share this with source control, but needed to run local tests
+src/pixlise-config.json
+
 # Compiled output
 /dist
 /tmp
@@ -50,6 +53,6 @@ Thumbs.db
 
 /src/app/protolibs
 /src/environments/version.ts
-/src/local-development-pixlise-config.json
+/src/local-development-pixlise-config*.json
 # Sentry Config File
 .sentryclirc

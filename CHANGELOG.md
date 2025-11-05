@@ -1,4 +1,18 @@
-## 4.79.0 (LATEST)
+## 4.80.0 (LATEST)
+
+### New Features
+- Experimental support for importing WDS format scans (composed of just .tif images - one per element map and an "almost" optical CP image). tif files are expected to be single channel.
+
+### Bug Fixes
+- ROI side panel now updates the context image ROIs and is synced with existing ROIs
+- Layers dialog opened on a context image on the right side of the workspace layout was appearing squished and not full width.
+- If no min/max range set for the binary chart, it was defaulting to 0/0 in some edge cases. Now, if min equals max, it defaults to the full data range.
+- Fixing min/max range on context image not being saved unless it's an RGB mix layer
+- Fixed image loading on dataset tiles page - if user clicked on tiles quickly the wrong image was displayed on top-right
+- Small tweaks to how dataset tiles are displayed for non PIXL data
+- Fixes bug where context image colour scales were being reversed in a specific edge case after load where R and B scales were both edited and saved
+
+## 4.79.0 (2025-10-14)
 
 ### New Features
 - Added ability to break ROIs apart. This can be found on the side-bar ROI tab by clicking the "gear" icon on an ROI, then clicking "Break ROI Apart". New ROIs will be created which contain the PMCs that are contiguous in the original ROI. A maximum of 10 ROIs will be created, the rest of the PMCs ending up in a "remainder" ROI. This is to prevent sparse ROIs exploding into an unmanageable bunch of 1-2 PMC ROIs. Note that when deleting any of the new ROIs created, you have the option to delete just that one, or all of the ROIs that came from the original one, again to reduce the need to click too many times to undo the results of the ROI breakup operation.

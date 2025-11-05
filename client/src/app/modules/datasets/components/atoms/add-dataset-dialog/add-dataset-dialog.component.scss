@@ -56,8 +56,11 @@
         .important {
             color: $clr-orange;
             font-weight: bold;
-            max-width: 450px;
             white-space: pre-wrap;
+        }
+
+        .width-limit {
+            max-width: 600px;
         }
     }
 

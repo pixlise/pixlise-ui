@@ -83,6 +83,8 @@ export class ROITabComponent implements OnInit, OnDestroy {
   entryCount: number = 0;
   selectedScanIds: string[] = [];
 
+  currentROIIds: string[] = [];
+
   layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
   allContextImages: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
   private _selectedContextImage: string = "";
@@ -124,6 +126,37 @@ export class ROITabComponent implements OnInit, OnDestroy {
         this.layoutWidgets = widgetReferences;
         this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
         this.selectedContextImage = this.allContextImages?.[0]?.widget?.id || "";
+        // Update highlightedROIs if the selected context image has changed
+          const widget = this.layoutWidgets.find(widget => widget.widget.id === this.selectedContextImage);
+        if (widget) {
+          this.currentROIIds = widget?.widget.data?.contextImage?.roiLayers?.map(layer => layer.id) || [];
+          this._analysisLayoutService.highlightedROIs$.next({
+            widgetId: this.selectedContextImage,
+            roiIds: this.currentROIIds,
+            scanId: this._visibleScanId,
+          });
+        } else {
+          this._analysisLayoutService.highlightedROIs$.next(null);
+          this.currentROIIds = [];
+        }
+
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        const widget = this.findWidgetInScreenConfiguration(this.selectedContextImage);
+        if (widget) {
+          this.currentROIIds = widget.data?.contextImage?.roiLayers?.map(layer => layer.id) || [];
+          this._analysisLayoutService.highlightedROIs$.next({
+            widgetId: this.selectedContextImage,
+            roiIds: this.currentROIIds,
+            scanId: this._visibleScanId,
+          });
+        } else {
+          this._analysisLayoutService.highlightedROIs$.next(null);
+          this.currentROIIds = [];
+        }
       })
     );
   }
@@ -142,20 +175,38 @@ export class ROITabComponent implements OnInit, OnDestroy {
     this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage]));
   }
 
+  findWidgetInScreenConfiguration(widgetId: string): WidgetLayoutConfiguration | undefined {
+    const activeScreenConfiguration = this._analysisLayoutService.activeScreenConfiguration$.value;
+    let matchedWidget: WidgetLayoutConfiguration | undefined = undefined;
+    activeScreenConfiguration.layouts.forEach(layout => {
+      let widgetInLayout = layout.widgets.find(widget => widget.id === widgetId);
+      if (widgetInLayout) {
+        matchedWidget = widgetInLayout;
+      }
+    });
+    return matchedWidget;
+  }
+
   get selectedContextImage(): string {
     return this._selectedContextImage;
   }
 
   set selectedContextImage(widgetId: string) {
+    this._selectedContextImage = widgetId;
     // If the ROI is highlighted, update the widgetId
-    if (this._analysisLayoutService.highlightedROIs$.value?.widgetId === this._selectedContextImage) {
+    const widget = this.findWidgetInScreenConfiguration(widgetId);
+    if (widget) {
+      const roiIds = widget.data?.contextImage?.roiLayers?.map(layer => layer.id) || [];
       this._analysisLayoutService.highlightedROIs$.next({
         widgetId,
-        roiIds: this._analysisLayoutService.highlightedROIs$.value?.roiIds,
-        scanId: this.visibleScanId,
+        roiIds,
+        scanId: this._visibleScanId,
       });
+      this.currentROIIds = roiIds;
+    } else {
+      this._analysisLayoutService.highlightedROIs$.next(null);
+      this.currentROIIds = [];
     }
-    this._selectedContextImage = widgetId;
     this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage]));
   }
 
@@ -207,10 +258,12 @@ export class ROITabComponent implements OnInit, OnDestroy {
         roiIds: [],
         scanId: this.visibleScanId,
       });
+      this.currentROIIds = [];
     } else {
+      this.currentROIIds = this.filteredSummaries.map(summary => summary.id);
       this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiIds: this.filteredSummaries.map(summary => summary.id),
+        roiIds: this.currentROIIds,
         scanId: this.visibleScanId,
       });
     }
@@ -218,15 +271,17 @@ export class ROITabComponent implements OnInit, OnDestroy {
 
   onROIVisibleToggle(roi: ROIItemSummary) {
     if (this.highlightedROIIds.includes(roi.id) && this.selectedContextImage === this._analysisLayoutService.highlightedROIs$.value?.widgetId) {
+      this.currentROIIds = this.currentROIIds.filter(id => id !== roi.id);
       this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiIds: this.highlightedROIIds.filter(highlightedROI => highlightedROI !== roi.id),
+        roiIds: this.currentROIIds,
         scanId: this.visibleScanId,
       });
     } else {
+      this.currentROIIds = [roi.id, ...this.currentROIIds];
       this._analysisLayoutService.highlightedROIs$.next({
         widgetId: this.selectedContextImage,
-        roiIds: [roi.id, ...this.highlightedROIIds],
+        roiIds: this.currentROIIds,
         scanId: this.visibleScanId,
       });
     }

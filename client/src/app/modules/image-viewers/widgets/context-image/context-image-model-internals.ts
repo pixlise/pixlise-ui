@@ -70,7 +70,7 @@ export class ContextImageScanModel {
     public scanPoints: ScanPoint[], // The actual scan points
     public scanPointPolygons: Point[][], // Scan points can be rendered as polygons which touch neighbours
     public footprint: HullPoint[][], // Footprint of scan points relative to the image
-    public contextPixelsTommConversion: number, // Conversion ratio of image pixels -> mm
+    public contextPixelsTommConversion: number, // Conversion ratio of image pixels -> mm, -1 if unknown
     public beamRadius_pixels: number, // Size of the beam in image pixels
     public scanPointDisplayRadius: number, // Size of the beam in image pixels
     public scanPointsBBox: Rect,
@@ -276,9 +276,9 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
             const displayRanges: MinMax[] = [];
 
             for (let c = 0; c < layerMap.valueRanges.length; c++) {
-              const colourScaleRangeId = layerMap.expressionId + "-" + c;
+              const colourScaleRangeId = `${layerMap.expressionId}-${c}`;
               let range = from.colourScaleDisplayValueRanges.get(colourScaleRangeId);
-              if (!range || !range.isValid()) {
+              if (!range?.isValid()) {
                 range = layerMap.valueRanges[c];
               }
               if (!range) {
@@ -293,6 +293,18 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
                 pt.drawParams = getDrawParamsForRawValue(layerMap.shading, pt.values[0], displayRanges[0]);
                 pt.drawParams.colour.a = layerMap.opacity * 255;
               } else if (pt.values.length == 3) {
+                // BUG: points are getting flipped somehow... then once adjusted, getting marked as BELOW and thus "stuck" to the bottom of the scale?
+                // Works correct on first load, getting inverted on save
+                // pt.drawParams = new MapPointDrawParams(
+                //   new RGBA(
+                //     displayRanges[2].getAsPercentageOfRange(pt.values[0], true) * 255, 
+                //     displayRanges[1].getAsPercentageOfRange(pt.values[1], true) * 255,
+                //     displayRanges[0].getAsPercentageOfRange(pt.values[2], true) * 255,
+                //     255 * layerMap.opacity
+                //   ),
+                //   MapPointState.IN_RANGE,
+                //   MapPointShape.POLYGON
+                // );
                 pt.drawParams = new MapPointDrawParams(
                   new RGBA(
                     displayRanges[0].getAsPercentageOfRange(pt.values[0], true) * 255,
@@ -318,16 +330,19 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       // If we have any regions turned on, we need to generate their region polygons so they get drawn
       const toWait$ = [];
 
-      for (const roi of from.roiIds) {
-        const mdl = this.scanDrawModels.get(roi.scanId);
-        if (mdl) {
-          toWait$.push(
-            this.makeRegion(roi.scanId, roi.id, from, roi.opacity).pipe(
-              tap((roiLayer: ContextImageRegionLayer) => {
-                mdl.regions.push(roiLayer);
-              })
-            )
-          );
+      // Only do this if we have regions, they may not have loaded yet so we just write a bunch of errors out
+      if (from.getRegions().length > 0) {
+        for (const roi of from.roiIds) {
+          const mdl = this.scanDrawModels.get(roi.scanId);
+          if (mdl) {
+            toWait$.push(
+              this.makeRegion(roi.scanId, roi.id, from, roi.opacity).pipe(
+                tap((roiLayer: ContextImageRegionLayer) => {
+                  mdl.regions.push(roiLayer);
+                })
+              )
+            );
+          }
         }
       }
 
