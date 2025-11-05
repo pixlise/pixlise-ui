@@ -17,8 +17,8 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
-import { ScanListReq } from "src/app/generated-protos/scan-msgs";
-import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
@@ -38,7 +38,7 @@ import { TabLinks } from "src/app/models/TabLinks";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 import { ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { createDefaultScreenConfiguration, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
+import { createDefaultScreenConfiguration, DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
 import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
@@ -143,7 +143,7 @@ export class AnalysisLayoutService implements OnDestroy {
         if (params["id"]) {
           this.fetchScreenConfiguration(params["id"]);
         } else if (params["scan_id"]) {
-          this.loadScreenConfigurationFromScan(params["scan_id"]);
+          this.fetchScreenConfiguration("", params["scan_id"], true);
           this.fetchQuantsForScan(params["scan_id"]);
         } else {
           if (this.lastLoadedScreenConfigurationId) {
@@ -409,13 +409,35 @@ export class AnalysisLayoutService implements OnDestroy {
         // in this case we should write out a default one
         if (err instanceof WSError && (err as WSError).status == ResponseStatus.WS_NOT_FOUND && !id && scanId) {
           // No screen configuration found, create a new one for this scan
-          const newScreenConfiguration = createDefaultScreenConfiguration();
-          const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
-          if (scanId && matchedScan) {
-            newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
-          }
 
-          this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
+          // Load scan info to see what default screen configuration to use
+
+          this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })).subscribe({
+            next: (resp: ScanListResp) => {
+              let newScreenConfiguration: ScreenConfiguration | undefined = undefined;
+              if (resp.scans && resp.scans.length == 1) {
+                if (resp.scans[0].instrument == ScanInstrument.UNKNOWN_INSTRUMENT) {//.instrumentConfig)
+                  newScreenConfiguration = JSON.parse(JSON.stringify(DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION));
+                }
+              }
+  
+              if (!newScreenConfiguration) {
+                newScreenConfiguration = createDefaultScreenConfiguration();
+              }
+      
+              const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
+              if (scanId && matchedScan) {
+                newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
+              }
+
+              this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
+            },
+            error: err => {
+              // Don't know what to show, so just show the default config
+              const newScreenConfiguration = createDefaultScreenConfiguration();
+              this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
+            }
+          });
         } else if (showSnackOnError) {
           this._snackService.openError(err);
         }
