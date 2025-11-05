@@ -10,6 +10,7 @@
 - Fixing min/max range on context image not being saved unless it's an RGB mix layer
 - Fixed image loading on dataset tiles page - if user clicked on tiles quickly the wrong image was displayed on top-right
 - Small tweaks to how dataset tiles are displayed for non PIXL data
+- Fixes bug where context image colour scales were being reversed in a specific edge case after load where R and B scales were both edited and saved
 
 ## 4.79.0 (2025-10-14)
 
