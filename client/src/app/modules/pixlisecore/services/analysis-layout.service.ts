@@ -17,7 +17,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
@@ -411,33 +411,22 @@ export class AnalysisLayoutService implements OnDestroy {
           // No screen configuration found, create a new one for this scan
 
           // Load scan info to see what default screen configuration to use
-
-          this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })).subscribe({
-            next: (resp: ScanListResp) => {
-              let newScreenConfiguration: ScreenConfiguration | undefined = undefined;
-              if (resp.scans && resp.scans.length == 1) {
-                if (resp.scans[0].instrument == ScanInstrument.UNKNOWN_INSTRUMENT) {//.instrumentConfig)
-                  newScreenConfiguration = JSON.parse(JSON.stringify(DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION));
-                }
-              }
-  
-              if (!newScreenConfiguration) {
-                newScreenConfiguration = createDefaultScreenConfiguration();
-              }
-      
-              const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
-              if (scanId && matchedScan) {
-                newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
-              }
-
-              this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
-            },
-            error: err => {
-              // Don't know what to show, so just show the default config
-              const newScreenConfiguration = createDefaultScreenConfiguration();
-              this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
+          let newScreenConfiguration: ScreenConfiguration | undefined;
+          
+          const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
+          if (scanId && matchedScan) {
+            if (matchedScan.instrument == ScanInstrument.UNKNOWN_INSTRUMENT) {
+              newScreenConfiguration = JSON.parse(JSON.stringify(DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION));
+            } else {
+              newScreenConfiguration = createDefaultScreenConfiguration();
             }
-          });
+            
+            newScreenConfiguration!.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
+          } else {
+            newScreenConfiguration = createDefaultScreenConfiguration();
+          }
+
+          this.writeScreenConfiguration(newScreenConfiguration!, scanId, true);
         } else if (showSnackOnError) {
           this._snackService.openError(err);
         }
