@@ -165,54 +165,6 @@
           }
         }
       }
-
-      .file-viewer {
-        margin-top: 32px;
-        padding-top: 24px;
-        border-top: 1px solid var(--gray-70, #444c50);
-
-        .file-viewer-header {
-          margin-bottom: 16px;
-
-          h5 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: white;
-            font-family: "Inter", sans-serif;
-            text-transform: none;
-          }
-        }
-
-        .file-contents {
-          background: var(--gray-100, #1b1d1e);
-          border: 1px solid var(--gray-70, #444c50);
-          border-radius: 4px;
-          padding: 16px;
-          overflow-x: auto;
-          max-height: 500px;
-          overflow-y: auto;
-          font-family: 'Monaco', 'Courier New', monospace;
-          font-size: 12px;
-          line-height: 1.5;
-          color: white;
-          margin: 0;
-          white-space: pre-wrap;
-          word-break: break-all;
-        }
-
-        .error-state {
-          color: rgb(var(--clr-red));
-          font-style: italic;
-          padding: 20px;
-          text-align: center;
-          font-family: "Inter", sans-serif;
-
-          p {
-            margin: 0;
-          }
-        }
-      }
     }
 
     .no-config {

@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { APICachedDataService } from 'src/app/modules/pixlisecore/services/apicacheddata.service';
 import { DetectorConfigListReq, DetectorConfigReq } from 'src/app/generated-protos/detector-config-msgs';
 import { DetectorConfig } from 'src/app/generated-protos/detector-config';
 import { PiquantConfigVersionReq, PiquantConfigFileReq } from 'src/app/generated-protos/piquant-msgs';
 import { PiquantConfig } from 'src/app/generated-protos/piquant-config';
+import { TextFileViewingDialogComponent, TextFileViewingDialogData } from 'src/app/modules/pixlisecore/components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component';
+import { map } from 'rxjs/operators';
 
 interface DeviceDetails {
   config?: DetectorConfig;
@@ -37,12 +40,10 @@ export class DeviceConfigComponent implements OnInit {
   piquantConfigDetails: PiquantConfig | undefined = undefined;
   loadingConfigDetails = false;
 
-  // File viewer
-  selectedFileName: string | null = null;
-  selectedFileContents: string | null = null;
-  loadingFileContents = false;
-
-  constructor(private _cachedDataService: APICachedDataService) {}
+  constructor(
+    private _cachedDataService: APICachedDataService,
+    private _dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     // Only fetch the list of device IDs
@@ -113,11 +114,6 @@ export class DeviceConfigComponent implements OnInit {
     this.selectedConfigOption = option;
     this.piquantConfigDetails = undefined;
 
-    // Reset file viewer
-    this.selectedFileName = null;
-    this.selectedFileContents = null;
-    this.loadingFileContents = false;
-
     // If clicking "Client", no need to fetch anything (data already loaded)
     if (option.type === 'client') {
       this.loadingConfigDetails = false;
@@ -158,25 +154,28 @@ export class DeviceConfigComponent implements OnInit {
       return;
     }
 
-    this.selectedFileName = filename;
-    this.loadingFileContents = true;
-    this.selectedFileContents = null;
-
-    this._cachedDataService.getPiquantConfigFile(
+    // Create an observable for the file contents
+    const content$ = this._cachedDataService.getPiquantConfigFile(
       PiquantConfigFileReq.create({
         configId: this.selectedDeviceId,
         version: this.selectedConfigOption.id,
         filename: filename
       })
-    ).subscribe({
-      next: (resp) => {
-        this.selectedFileContents = resp.contents;
-        this.loadingFileContents = false;
-      },
-      error: (err) => {
-        console.error(`Failed to load file ${filename}:`, err);
-        this.loadingFileContents = false;
+    ).pipe(
+      map((resp) => resp.contents)
+    );
+
+    // Open the dialog with the file contents
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = new TextFileViewingDialogData(filename, content$, false, 0);
+
+    const dialogRef = this._dialog.open(TextFileViewingDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe(
+      () => {},
+      (err) => {
+        console.error(`Failed to display file ${filename}:`, err);
       }
-    });
+    );
   }
 }

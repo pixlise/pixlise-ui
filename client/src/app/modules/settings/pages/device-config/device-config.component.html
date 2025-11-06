@@ -156,23 +156,6 @@
           </span>
         </div>
       </div>
-
-      <!-- File viewer -->
-      <div class="file-viewer" *ngIf="selectedFileName">
-        <div class="file-viewer-header">
-          <h5>{{ selectedFileName }}</h5>
-        </div>
-
-        <div class="loading-state" *ngIf="loadingFileContents">
-          <wait-spinner></wait-spinner>
-        </div>
-
-        <pre class="file-contents" *ngIf="!loadingFileContents && selectedFileContents">{{ selectedFileContents }}</pre>
-
-        <div class="error-state" *ngIf="!loadingFileContents && !selectedFileContents">
-          <p>Failed to load file contents</p>
-        </div>
-      </div>
     </div>
 
     <!-- Error state for failed piquant config load -->
