@@ -5,6 +5,8 @@
 .markdown-tooltip {
   padding: 12px;
   max-width: 300px;
+  overflow: hidden;
+  word-wrap: break-word;
   background: rgb(var(--clr-gray-100));
   border: 1px solid rgb(var(--clr-gray-80));
   border-radius: 4px;

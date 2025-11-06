@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { combineLatest, Subscription } from "rxjs";
@@ -37,6 +37,11 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { ActivatedRoute } from "@angular/router";
 import { filterScans, sortScans } from "src/app/utils/search";
 import { getScanTitle, SentryHelper } from "src/app/utils/utils";
+import { Overlay, OverlayRef, PositionStrategy } from "@angular/cdk/overlay";
+import { ComponentPortal } from "@angular/cdk/portal";
+import { MarkdownTooltipComponent } from "src/app/modules/pixlisecore/components/atoms/markdown-tooltip/markdown-tooltip.component";
+import { Tag } from "../../../../../../generated-protos/tags";
+import { TagService } from "src/app/modules/tags/services/tag.service";
 
 @Component({
   standalone: false,
@@ -45,6 +50,7 @@ import { getScanTitle, SentryHelper } from "src/app/utils/utils";
   styleUrls: ["./scan-configuration.component.scss"],
 })
 export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
+  @ViewChild("addScanMenuButton") addScanMenuButton!: ElementRef<HTMLButtonElement>;
   private _subs: Subscription = new Subscription();
 
   scanConfigurations: ScanConfiguration[] = [];
@@ -61,10 +67,18 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
 
   hasConfigChanged: boolean = false;
 
+  private tooltipOverlayRef: OverlayRef | null = null;
+
+  filteredTagIDs: string[] = [];
+
+  private _tags: Map<string, Tag> = new Map<string, Tag>();
+
   constructor(
     public dialog: MatDialog,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _route: ActivatedRoute
+    private _route: ActivatedRoute,
+    private overlay: Overlay,
+    private _tagService: TagService
   ) {}
 
   ngOnInit(): void {
@@ -88,6 +102,12 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     );
 
     this._subs.add(
+      this._tagService.tags$.subscribe(tags => {
+        this._tags = tags;
+      })
+    );
+
+    this._subs.add(
       this._analysisLayoutService.availableScanQuants$.subscribe(quants => {
         this.scanQuants = quants;
       })
@@ -96,6 +116,7 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+    this.closeTooltip();
   }
 
   loadScreenConfiguration(screenConfig: ScreenConfiguration) {
@@ -187,8 +208,13 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     this.onSearchAddScanList(value);
   }
 
+  onTagFilterChanged(tagIDs: string[]) {
+    this.filteredTagIDs = tagIDs;
+    this.onSearchAddScanList(this._scanSearchText);
+  }
+
   onSearchAddScanList(text: string) {
-    const filtered = filterScans(text, [], [], this.allScans);
+    const filtered = filterScans(text, [], this.filteredTagIDs, this.allScans);
     this.addScanList = sortScans(filtered);
   }
 
@@ -200,7 +226,8 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       this.scanSearchText = "";
-    }, 500);
+      this.filteredTagIDs = [];
+    }, 10);
 
     this._analysisLayoutService.fetchQuantsForScan(scanId, quants => {
       this.scanQuants[scanId] = quants;
@@ -257,6 +284,14 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     });
 
     this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+
+    this.dialog.openDialogs.forEach(dialog => {
+      dialog.close();
+    });
+
+    this.closeTooltip();
+
+    (this.addScanMenuButton as any)?.close();
   }
 
   getScanTitle(scan: ScanItem): string {
@@ -266,5 +301,78 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
 
   trackByScanId(index: number, scan: ScanItem): string {
     return scan.id;
+  }
+
+  getTagTitle(tagId: string): string {
+    return this._tags.get(tagId)?.name ?? "";
+  }
+
+  getShortDescription(description: string): string {
+    if (!description) return "";
+    const maxLength = 100;
+    if (description.length <= maxLength) return description;
+    return description.substring(0, maxLength) + "...";
+  }
+
+  onScanItemHover(scan: ScanItem, event: MouseEvent) {
+    if (!scan.description) return;
+    
+    const target = event.currentTarget as HTMLElement;
+    this.openTooltip(`# ${this.getScanTitle(scan)}\n\n${scan.description}`, target);
+  }
+
+  onScanItemLeave() {
+    this.closeTooltip();
+  }
+
+  private openTooltip(content: string, origin: HTMLElement) {
+    if (this.tooltipOverlayRef) return;
+
+    const positionStrategy = this.getTooltipPositionStrategy(origin);
+    this.tooltipOverlayRef = this.overlay.create({
+      positionStrategy,
+      scrollStrategy: this.overlay.scrollStrategies.close(),
+      hasBackdrop: false,
+    });
+
+    const portal = new ComponentPortal(MarkdownTooltipComponent);
+    const componentRef = this.tooltipOverlayRef.attach(portal);
+    componentRef.instance.content = content;
+  }
+
+  private closeTooltip() {
+    if (this.tooltipOverlayRef) {
+      this.tooltipOverlayRef.dispose();
+      this.tooltipOverlayRef = null;
+    }
+  }
+
+  private getTooltipPositionStrategy(origin: HTMLElement): PositionStrategy {
+    return this.overlay
+      .position()
+      .flexibleConnectedTo(origin)
+      .withPositions([
+        {
+          originX: "end",
+          originY: "center",
+          overlayX: "start",
+          overlayY: "center",
+          offsetX: 8,
+        },
+        {
+          originX: "start",
+          originY: "center",
+          overlayX: "end",
+          overlayY: "center",
+          offsetX: -8,
+        },
+        {
+          originX: "end",
+          originY: "bottom",
+          overlayX: "start",
+          overlayY: "top",
+          offsetX: 8,
+        },
+      ]);
   }
 }

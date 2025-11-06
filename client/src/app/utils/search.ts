@@ -79,7 +79,12 @@ export function filterScans(searchString: string, instruments: ScanInstrument[],
       }
 
       const searchFields = getDatasetSearchFields(scan);
-      return searchFields.some(field => field.toLowerCase().includes(searchStringLower));
+      const searchInFields = searchFields.some(field => field.toLowerCase().includes(searchStringLower));
+      
+      // Also search in tags
+      const searchInTags = scan.tags?.some(tag => tag.toLowerCase().includes(searchStringLower)) || false;
+      
+      return searchInFields || searchInTags;
     });
   }
 
