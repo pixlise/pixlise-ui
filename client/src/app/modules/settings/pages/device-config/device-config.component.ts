@@ -20,6 +20,12 @@ interface ConfigOption {
   type: 'client' | 'version';
 }
 
+interface DetailField {
+  label: string;
+  key: keyof PiquantConfig;
+  isFile: boolean;
+}
+
 @Component({
   selector: 'app-device-config',
   standalone: false,
@@ -39,6 +45,15 @@ export class DeviceConfigComponent implements OnInit {
   // Right column: details for selected config option
   piquantConfigDetails: PiquantConfig | undefined = undefined;
   loadingConfigDetails = false;
+
+  // Define the fields to display for Piquant config
+  piquantDetailFields: DetailField[] = [
+    { label: 'Description', key: 'description', isFile: false },
+    { label: 'Config File', key: 'configFile', isFile: true },
+    { label: 'Optic Efficiency File', key: 'opticEfficiencyFile', isFile: true },
+    { label: 'Calibration File', key: 'calibrationFile', isFile: true },
+    { label: 'Standards File', key: 'standardsFile', isFile: true }
+  ];
 
   constructor(
     private _cachedDataService: APICachedDataService,
@@ -177,5 +192,12 @@ export class DeviceConfigComponent implements OnInit {
         console.error(`Failed to display file ${filename}:`, err);
       }
     );
+  }
+
+  getFieldValue(field: DetailField): string | undefined {
+    if (!this.piquantConfigDetails) {
+      return undefined;
+    }
+    return this.piquantConfigDetails[field.key] as string | undefined;
   }
 }
