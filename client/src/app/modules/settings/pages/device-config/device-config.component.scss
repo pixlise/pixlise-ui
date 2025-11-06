@@ -1,14 +1,12 @@
 .device-config-container {
   display: flex;
-  height: 100%;
-  overflow: hidden;
+  height: calc(100vh - 45px);
 
   // Shared column styles
   .column {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    border-right: 1px solid rgb(var(--clr-gray-70));
+    border-right: 1px solid var(--gray-70, #444c50);
 
     &:last-child {
       border-right: none;
@@ -16,16 +14,18 @@
   }
 
   .column-header {
+    display: flex;
     padding: 16px 20px;
-    border-bottom: 2px solid rgb(var(--clr-gray-70));
-    background: rgb(var(--clr-gray-90));
-    flex-shrink: 0;
+    border-bottom: 1px solid var(--gray-70, #444c50);
+    background: var(--gray-100, #1b1d1e);
 
     h3 {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-      color: rgb(var(--clr-gray-30));
+      color: white;
+      text-transform: none;
+      font-family: "Inter", sans-serif;
     }
   }
 
@@ -33,13 +33,13 @@
   .loading-state,
   .empty-state,
   .no-selection {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 40px 20px;
-    color: rgb(var(--clr-gray-50));
+    color: rgb(var(--clr-gray-30));
     font-style: italic;
+    font-family: "Inter", sans-serif;
 
     p {
       margin: 0;
@@ -49,66 +49,51 @@
 
   // Shared list styles
   .item-list {
-    flex: 1;
     overflow-y: auto;
+    flex: 1;
 
     .list-item {
-      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
       cursor: pointer;
-      border-bottom: 1px solid rgb(var(--clr-gray-80));
-      transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+      border-bottom: 1px solid var(--gray-80, #293137);
+      transition: background-color 0.15s ease;
       font-size: 14px;
-      color: rgb(var(--clr-gray-30));
+      color: white;
+      font-family: "Inter", sans-serif;
 
       &:hover {
-        background: rgb(var(--clr-gray-70));
-        color: rgb(var(--clr-gray-10));
-      }
-
-      &:active {
-        background: rgb(var(--clr-gray-60));
-        color: rgb(var(--clr-gray-10));
-        transform: scale(0.98);
+        background: var(--gray-80, #293137);
       }
 
       &.selected {
-        background: rgba(var(--clr-yellow), 0.2);
-        color: rgb(var(--clr-gray-10));
+        background: var(--gray-70, #444c50);
+        color: var(--yellow, #ffff8d);
         font-weight: 500;
-        border-left: 4px solid rgb(var(--clr-yellow));
-        padding-left: 16px;
-        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
-
-        &:hover {
-          background: rgba(var(--clr-yellow), 0.25);
-        }
-
-        &:active {
-          background: rgba(var(--clr-yellow), 0.3);
-          transform: scale(0.98);
-        }
       }
     }
   }
 
   // Column 1: Devices
   .devices-column {
-    width: 250px;
-    flex-shrink: 0;
-    background: rgb(var(--clr-gray-90));
+    min-width: 250px;
+    background: var(--gray-90, #222829);
+    font-family: "Inter", sans-serif;
   }
 
   // Column 2: Config options
   .config-options-column {
-    width: 200px;
-    flex-shrink: 0;
-    background: rgb(var(--clr-gray-90));
+    min-width: 220px;
+    background: var(--gray-90, #222829);
+    font-family: "Inter", sans-serif;
   }
 
   // Column 3: Details
   .details-column {
     flex: 1;
-    min-width: 0;
+    background: var(--gray-90, #222829);
+    font-family: "Inter", sans-serif;
 
     .details-content {
       overflow-y: auto;
@@ -118,13 +103,15 @@
       .section-title {
         margin-bottom: 24px;
         padding-bottom: 16px;
-        border-bottom: 2px solid rgb(var(--clr-gray-70));
+        border-bottom: 1px solid var(--gray-70, #444c50);
 
         h4 {
           margin: 0;
           font-size: 18px;
-          color: rgb(var(--clr-yellow));
+          color: var(--yellow, #ffff8d);
           font-weight: 600;
+          font-family: "Inter", sans-serif;
+          text-transform: none;
         }
       }
 
@@ -135,7 +122,8 @@
           display: flex;
           justify-content: space-between;
           padding: 12px 0;
-          border-bottom: 1px solid rgb(var(--clr-gray-80));
+          border-bottom: 1px solid var(--gray-80, #293137);
+          font-family: "Inter", sans-serif;
 
           &:last-child {
             border-bottom: none;
@@ -151,7 +139,7 @@
           }
 
           .value {
-            color: rgb(var(--clr-gray-10));
+            color: white;
             font-size: 14px;
             text-align: right;
             word-break: break-word;
@@ -159,25 +147,19 @@
             &.monospace {
               font-family: monospace;
               font-size: 12px;
-              background: rgb(var(--clr-gray-90));
+              background: var(--gray-90, #222829);
               padding: 4px 8px;
               border-radius: 3px;
             }
 
             &.clickable {
               cursor: pointer;
-              color: rgb(var(--clr-yellow));
-              transition: color 0.15s ease, background-color 0.15s ease;
+              color: var(--yellow, #ffff8d);
+              transition: background-color 0.15s ease;
 
               &:hover {
-                color: rgb(var(--clr-yellow));
-                background: rgba(var(--clr-yellow), 0.15);
+                background: var(--gray-80, #293137);
                 text-decoration: underline;
-              }
-
-              &:active {
-                color: rgb(var(--clr-yellow));
-                background: rgba(var(--clr-yellow), 0.25);
               }
             }
           }
@@ -187,7 +169,7 @@
       .file-viewer {
         margin-top: 32px;
         padding-top: 24px;
-        border-top: 2px solid rgb(var(--clr-gray-70));
+        border-top: 1px solid var(--gray-70, #444c50);
 
         .file-viewer-header {
           margin-bottom: 16px;
@@ -196,13 +178,15 @@
             margin: 0;
             font-size: 16px;
             font-weight: 600;
-            color: rgb(var(--clr-gray-30));
+            color: white;
+            font-family: "Inter", sans-serif;
+            text-transform: none;
           }
         }
 
         .file-contents {
-          background: rgb(var(--clr-gray-100));
-          border: 1px solid rgb(var(--clr-gray-70));
+          background: var(--gray-100, #1b1d1e);
+          border: 1px solid var(--gray-70, #444c50);
           border-radius: 4px;
           padding: 16px;
           overflow-x: auto;
@@ -211,7 +195,7 @@
           font-family: 'Monaco', 'Courier New', monospace;
           font-size: 12px;
           line-height: 1.5;
-          color: rgb(var(--clr-gray-10));
+          color: white;
           margin: 0;
           white-space: pre-wrap;
           word-break: break-all;
@@ -222,6 +206,7 @@
           font-style: italic;
           padding: 20px;
           text-align: center;
+          font-family: "Inter", sans-serif;
 
           p {
             margin: 0;
@@ -231,14 +216,14 @@
     }
 
     .no-config {
-      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       padding: 40px 20px;
-      color: rgb(var(--clr-gray-50));
+      color: rgb(var(--clr-gray-30));
       font-style: italic;
+      font-family: "Inter", sans-serif;
 
       p {
         margin: 0;
