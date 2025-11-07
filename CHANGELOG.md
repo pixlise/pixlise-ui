@@ -3,6 +3,7 @@
 ### New Features
 - Slight logic change for RGB Mixes. If an existing RGB mix is selected and either the order is changed or an expression is added/removed, the RGB mix will now be saved as the temporary auto-generated group instead of trying to edit the existing one. To edit the existing one, use the "Save As/Edit Group" button.
 - Allows selecting multiple widgets on the expression picker. This allows a single expression picker to apply to multiple widgets simultaneously.
+- Improves scan selection on dataset configuration tab in a workspace. Now allows filtering by name and tags and shows scan description in a tooltip on hover.
 
 ### Bug Fixes
 

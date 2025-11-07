@@ -290,7 +290,6 @@ export class ScanConfigurationTabComponent implements OnInit, OnDestroy {
     });
 
     this.closeTooltip();
-
     (this.addScanMenuButton as any)?.close();
   }
 
