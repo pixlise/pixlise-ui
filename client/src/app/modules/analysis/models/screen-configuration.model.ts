@@ -124,7 +124,7 @@ export const DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION: ScreenConfiguration = {
       widgets: [
         {
           id: "",
-          type: "context-image",
+          type: "binary-plot",
           startRow: 1,
           startColumn: 1,
           endRow: 2,
@@ -133,7 +133,7 @@ export const DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION: ScreenConfiguration = {
         },
         {
           id: "",
-          type: "text-view",
+          type: "context-image",
           startRow: 1,
           startColumn: 2,
           endRow: 2,
@@ -142,7 +142,7 @@ export const DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION: ScreenConfiguration = {
         },
         {
           id: "",
-          type: "histogram",
+          type: "ternary-plot",
           startRow: 2,
           startColumn: 1,
           endRow: 3,
@@ -151,7 +151,7 @@ export const DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION: ScreenConfiguration = {
         },
         {
           id: "",
-          type: "chord-diagram",
+          type: "ternary-plot",
           startRow: 2,
           startColumn: 2,
           endRow: 3,
@@ -169,7 +169,7 @@ export const DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION: ScreenConfiguration = {
         },
         {
           id: "",
-          type: "binary-plot",
+          type: "ternary-plot",
           startRow: 2,
           startColumn: 4,
           endRow: 3,
