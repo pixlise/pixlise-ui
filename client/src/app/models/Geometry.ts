@@ -158,6 +158,16 @@ export class Rect {
     this.h += yDir;
     this.h += yDir;
   }
+
+  intersectsRect(bbox: Rect): boolean {
+    // FROM: https://www.realtimerendering.com/intersections.html
+    // LED TO: https://web.archive.org/web/19991129002900/http://www.gamasutra.com/features/19991018/Gomez_3.htm
+    const b1Center = this.center();
+    const b2Center = bbox.center();
+
+    const vec = subtractVectors(b2Center, b1Center);
+    return Math.abs(vec.x) <= this.w+bbox.w && Math.abs(vec.y) <= this.h+bbox.h;
+  }
 }
 
 export function getTransformMatrix(scaleX: number, scaleY: number, panX: number, panY: number): math.Matrix {

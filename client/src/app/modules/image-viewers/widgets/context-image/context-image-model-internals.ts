@@ -9,7 +9,7 @@ import { CanvasParams } from "src/app/modules/widget/components/interactive-canv
 import { RGBA, Colours } from "src/app/utils/colours";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
 import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
-import { ContextImageScanDrawModel } from "src/app/modules/image-viewers/models/context-image-draw-model";
+import { ContextImageScanDrawModel, ScanPointPolygon } from "src/app/modules/image-viewers/models/context-image-draw-model";
 import { HullPoint, Footprint } from "src/app/modules/image-viewers/models/footprint";
 import { ContextImageMapLayer, getDrawParamsForRawValue, MapPointDrawParams, MapPointState, MapPointShape } from "src/app/modules/image-viewers/models/map-layer";
 import { ContextImageRegionLayer, RegionDisplayPolygon } from "src/app/modules/image-viewers/models/region";
@@ -68,7 +68,7 @@ export class ContextImageScanModel {
     public beamLocVersion: number, // Versioning of the source beam ijs
     public clusters: PointCluster[],
     public scanPoints: ScanPoint[], // The actual scan points
-    public scanPointPolygons: Point[][], // Scan points can be rendered as polygons which touch neighbours
+    public scanPointPolygons: ScanPointPolygon[], // Scan points can be rendered as polygons which touch neighbours
     public footprint: HullPoint[][], // Footprint of scan points relative to the image
     public contextPixelsTommConversion: number, // Conversion ratio of image pixels -> mm, -1 if unknown
     public beamRadius_pixels: number, // Size of the beam in image pixels
@@ -422,7 +422,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         }
       }
 
-      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], [], locOpacity));
+      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx].points, [], locOpacity));
     }
 
     if (roi.roi.displaySettings) {

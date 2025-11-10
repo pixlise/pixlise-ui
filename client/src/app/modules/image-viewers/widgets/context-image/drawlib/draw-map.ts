@@ -2,24 +2,33 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { degToRad } from "src/app/utils/utils";
 import { ContextImageMapLayer, MapPointShape } from "../../../models/map-layer";
 import { ScanPoint } from "../../../models/scan-point";
+import { CanvasWorldTransform } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { ScanPointPolygon } from "../../../models/context-image-draw-model";
+import { makeBBox } from "./culling";
 
 export function drawMapData(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  worldTransform: CanvasWorldTransform,
   mapData: ContextImageMapLayer,
   scanPoints: ScanPoint[],
-  scanPolygons: Point[][],
+  scanPolygons: ScanPointPolygon[],
   pointSize: number,
   opacity: number
 ): void {
   const ptHalfSize = pointSize * 0.5;
 
   const drawFuncs = [drawCircle, drawCrossedCircle, drawDiamond, drawX];
+  const worldBBox = makeBBox(screenContext, worldTransform);
+  let drawn = 0;
 
   for (const pt of mapData.mapPoints) {
     screenContext.fillStyle = pt.drawParams.colour.asStringWithA(opacity);
 
     if (pt.drawParams.shape === MapPointShape.POLYGON) {
-      drawPolygon(screenContext, scanPolygons[pt.scanEntryIndex]);
+      if (worldBBox.intersectsRect(scanPolygons[pt.scanEntryIndex].bbox)) {
+        drawPolygon(screenContext, scanPolygons[pt.scanEntryIndex].points);
+        drawn++;
+      }
     } else {
       const coord = scanPoints[pt.scanEntryIndex].coord;
       if (coord) {

@@ -10,6 +10,7 @@ import { ContextImageScanModelGenerator } from '../context-image/context-image-s
 import { ScanPoint } from '../../models/scan-point';
 import { HullPoint } from '../../models/footprint';
 import { ModelStyle } from 'src/app/generated-protos/widget-data';
+import { ScanPointPolygon } from '../../models/context-image-draw-model';
 
 
 export class PMCMeshPoint {
@@ -1210,9 +1211,9 @@ export class PMCMeshData {
     }
 
     // Allocate blank polygons for each...
-    const scanPointXYZPolygons: Point[][] = [];
+    const scanPointXYZPolygons: ScanPointPolygon[] = [];
     for (let c = 0; c < this._scanEntries.length; c++) {
-      scanPointXYZPolygons.push([]);
+      scanPointXYZPolygons.push(new ScanPointPolygon([]));
     }
 
     for (const cluster of this._contextImgMdl.clusters) {
@@ -1246,7 +1247,7 @@ export class PMCMeshData {
       const v = [];
 
       // Set the first point to be the PMC location itself
-      if (poly.length > 0) {
+      if (poly.points.length > 0) {
         const pmcPtIdx = this._pmcToPoint.get(this._scanEntries[polyIdx].id);
         if (pmcPtIdx === undefined || pmcPtIdx < 0) {
           throw new Error("calculateMeshPointPolygons: Failed to look up PMC location for scan index: " + polyIdx)
@@ -1260,7 +1261,7 @@ export class PMCMeshData {
         // PMC happens to have a U coordinate of 0.4
         // To calculate U for the polygon point consider 0.4 = 65% of the terrain width
 
-        for (const pt of poly) {
+        for (const pt of poly.points) {
           const vtx = new THREE.Vector3(pt.x, pt.y, xyzCenter.z);
           rawVtxs.push(vtx);
           const terrainVtx = this.rawToTerrainPoint(vtx, xyzCenter, scale);

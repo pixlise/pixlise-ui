@@ -63,17 +63,18 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
       if (!this._mdl.hideMapsForScans.has(scanId)) {
         for (let c = scanDrawMdl.maps.length - 1; c >= 0; c--) {
           const mapLayer = scanDrawMdl.maps[c];
-          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
+          drawMapData(screenContext, drawParams.worldTransform, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
         }
       }
 
       for (const region of scanDrawMdl.regions) {
-        drawRegion(screenContext, region, drawParams.worldTransform, drawMdl.imageTransform, null, false);
+        drawRegion(screenContext, drawParams.worldTransform, region, drawMdl.imageTransform, null, false);
       }
 
       if (!this._mdl.hidePointsForScans.has(scanId)) {
         drawScanPoints(
           screenContext,
+          drawParams.worldTransform,
           scanDrawMdl.scanPoints,
           scanDrawMdl.selectedPointPMCs,
           scanDrawMdl.selectedPointIndexes,
