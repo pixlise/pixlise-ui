@@ -223,6 +223,15 @@ export const WIDGETS = {
     dataKey: "variogram",
     controlConfiguration: {},
   },
+  "big-image": {
+    name: "Big Image",
+    description: "Tile-based large image viewer",
+    hasExpressions: true,
+    widgetComponent: null,
+    dataKey: "contextImage", // Using contextImage temporarily until backend adds bigImage state
+    showRGBMixExpressionPickerMode: true,
+    controlConfiguration: {},
+  },
 } satisfies Record<string, WidgetConfiguration>;
 
 export type WidgetType = keyof typeof WIDGETS;
@@ -242,7 +251,7 @@ const readWidgets = async () => {
       SingleAxisRGBUComponent,
       ParallelCoordinatesPlotWidgetComponent,
     } = await import("src/app/modules/scatterplots/scatterplots.module");
-    const { ContextImageComponent, MultiChannelViewerComponent } = await import("src/app/modules/image-viewers/image-viewers.module");
+    const { ContextImageComponent, MultiChannelViewerComponent, BigImage } = await import("src/app/modules/image-viewers/image-viewers.module");
     const { QuantificationTableComponent } = await import("src/app/modules/table-views/table-views.module");
     const { MarkdownTextViewComponent } = await import("src/app/modules/text-views/text-views.module");
     const { VariogramWidgetComponent } = await import("src/app/modules/scatterplots/widgets/variogram-widget/variogram-widget.component");
@@ -262,6 +271,7 @@ const readWidgets = async () => {
     loadedWidgets.set("text-view", MarkdownTextViewComponent);
     loadedWidgets.set("variogram", VariogramWidgetComponent);
     loadedWidgets.set("scan-3d-view", Scan3DViewComponent);
+    loadedWidgets.set("big-image", BigImage);
   }
   return loadedWidgets;
 };
