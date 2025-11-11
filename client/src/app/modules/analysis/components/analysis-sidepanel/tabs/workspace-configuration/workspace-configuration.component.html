@@ -37,14 +37,30 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="workspace-field">
       <div class="field-label">Name</div>
       <span class="name-line">
-        <input class="text-field" [(ngModel)]="workspaceName" type="text" autocomplete="off" data-lpignore="true" [placeholder]="placeholderName" />
-        <tag-picker type="workspace" [selectedTagIDs]="workspaceTags" [showCurrentTagsSection]="true" (onTagSelectionChanged)="onTagChange($event)"></tag-picker>
+        <input
+          class="text-field"
+          [(ngModel)]="workspaceName"
+          type="text"
+          autocomplete="off"
+          data-lpignore="true"
+          [placeholder]="placeholderName"
+        />
+        <tag-picker
+          type="workspace"
+          [selectedTagIDs]="workspaceTags"
+          [showCurrentTagsSection]="true"
+          (onTagSelectionChanged)="onTagChange($event)"
+        ></tag-picker>
       </span>
     </div>
     <div class="workspace-field description-field">
       <div class="field-label">
         Description
-        <multi-switch-button [options]="descriptionModes" [value]="descriptionMode" (onChange)="descriptionMode = $event"></multi-switch-button>
+        <multi-switch-button
+          [options]="descriptionModes"
+          [value]="descriptionMode"
+          (onChange)="descriptionMode = $event"
+        ></multi-switch-button>
       </div>
       <div class="markdown-container">
         <markdown
@@ -52,7 +68,8 @@ POSSIBILITY OF SUCH DAMAGE.
           (dblclick)="switchToEditMode()"
           class="text-field description-field"
           [lineOffset]="5"
-          [data]="workspaceDescription || '## Workspace Description'"></markdown>
+          [data]="workspaceDescription || '## Workspace Description'"
+        ></markdown>
       </div>
       <textarea
         *ngIf="descriptionMode === 'Edit'"
@@ -62,99 +79,181 @@ POSSIBILITY OF SUCH DAMAGE.
         type="text"
         autocomplete="off"
         data-lpignore="true"
-        placeholder="## Workspace Description"></textarea>
+        placeholder="## Workspace Description"
+      ></textarea>
     </div>
   </div>
 
   <div class="configuration-tabs">
     <h5
       (click)="activeConfigurationTab = 'workspace'"
-      class="tabs-label tab {{ activeConfigurationTab === 'workspace' ? 'active' : '' }}"
+      class="tabs-label tab {{
+        activeConfigurationTab === 'workspace' ? 'active' : ''
+      }}"
       role="button"
       tabindex="0"
-      (keydown.enter)="activeConfigurationTab = 'workspace'">
+      (keydown.enter)="activeConfigurationTab = 'workspace'"
+    >
       Tabs
     </h5>
     <h5
       (click)="activeConfigurationTab = 'snapshots'"
-      class="sharing-label tab {{ activeConfigurationTab === 'snapshots' ? 'active' : '' }}"
+      class="sharing-label tab {{
+        activeConfigurationTab === 'snapshots' ? 'active' : ''
+      }}"
       role="button"
       tabindex="0"
-      (keydown.enter)="activeConfigurationTab = 'snapshots'">
-      Sharing {{ snapshots.length > 0 ? "(" + snapshots.length + " snapshots)" : "" }}
+      (keydown.enter)="activeConfigurationTab = 'snapshots'"
+    >
+      Sharing
+      {{ snapshots.length > 0 ? "(" + snapshots.length + " snapshots)" : "" }}
     </h5>
     <h5
       (click)="activeConfigurationTab = 'review'"
-      class="sharing-label tab {{ activeConfigurationTab === 'review' ? 'active' : '' }}"
+      class="sharing-label tab {{
+        activeConfigurationTab === 'review' ? 'active' : ''
+      }}"
       role="button"
       tabindex="0"
-      (keydown.enter)="activeConfigurationTab = 'review'">
+      (keydown.enter)="activeConfigurationTab = 'review'"
+    >
       Review
     </h5>
   </div>
   <div *ngIf="activeConfigurationTab === 'workspace'" class="tabs-container">
     <div class="user-tabs" cdkDropList (cdkDropListDropped)="dropTab($event)">
       <div
-        class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }}"
+        class="tab {{ tab.active ? 'active' : '' }} {{
+          tab.label ? 'show-label' : 'no-label'
+        }}"
         *ngFor="let tab of builtInTabs; let i = index"
         #tooltip="matTooltip"
         [matTooltip]="tab.tooltip || ''"
-        [matTooltipShowDelay]="1000">
-        <div class="tab-info">
-          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" alt="Tab icon" />
+        [matTooltipShowDelay]="1000"
+      >
+        <div class="tab-info builtin">
+          <img
+            *ngIf="tab.icon"
+            class="tab-icon"
+            [src]="tab.icon"
+            alt="Tab icon"
+          />
           <div *ngIf="tab.label" class="tab-label">
-            <span *ngIf="editingTabIndex !== i" class="view-label" (dblclick)="onEditTab(tab, i)">{{ tab.label }}</span>
-            <input *ngIf="editingTabIndex === i" class="edit-label" [(ngModel)]="newTabName" type="text" autocomplete="off" data-lpignore="true" />
+            <span class="view-label" (dblclick)="onEditTab(tab, i)">{{
+              tab.label
+            }}</span>
           </div>
+          <action-button
+            *ngIf="canDeleteTab(tab)"
+            class="delete-tab"
+            action="delete"
+            color="#BCBCBC"
+            confirmText="Are you sure you want to delete this tab?"
+            (onClick)="onCloseTab(tab)"
+          ></action-button>
         </div>
-        <action-button
-          *ngIf="canDeleteTab(tab)"
-          class="delete-tab"
-          action="delete"
-          color="#BCBCBC"
-          confirmText="Are you sure you want to delete this tab?"
-          (onClick)="onCloseTab(tab)"></action-button>
       </div>
       <div
-        class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }}"
+        class="tab {{ tab.active ? 'active' : '' }} {{
+          tab.label ? 'show-label' : 'no-label'
+        }}"
         *ngFor="let tab of openTabs; let i = index"
         #tooltip="matTooltip"
         [matTooltip]="tab.tooltip || ''"
         [matTooltipShowDelay]="1000"
         cdkDrag
         [cdkDragData]="tab"
-        cdkDragLockAxis="y">
+        cdkDragLockAxis="y"
+      >
         <div class="tab-info">
-          <img cdkDragHandle class="drag-icon" src="assets/button-icons/drag-handle.svg" alt="Drag handle" />
-          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" alt="Tab icon" />
+          <img
+            cdkDragHandle
+            class="drag-icon"
+            src="assets/button-icons/drag-handle.svg"
+            alt="Drag handle"
+          />
+          <img
+            *ngIf="tab.icon"
+            class="tab-icon"
+            [src]="tab.icon"
+            alt="Tab icon"
+          />
           <div *ngIf="tab.label" class="tab-label">
-            <span *ngIf="editingTabIndex !== i" class="view-label" (dblclick)="onEditTab(tab, i)">{{ tab.label }}</span>
-            <input *ngIf="editingTabIndex === i" class="edit-label" [(ngModel)]="newTabName" type="text" autocomplete="off" data-lpignore="true" />
+            <span
+              *ngIf="editingTabIndex !== i"
+              class="view-label"
+              (dblclick)="onEditTab(tab, i)"
+              >{{ tab.label }}</span
+            >
+            <input
+              *ngIf="editingTabIndex === i"
+              class="edit-label"
+              [(ngModel)]="newTabName"
+              type="text"
+              autocomplete="off"
+              data-lpignore="true"
+            />
           </div>
 
-          <action-button *ngIf="canEditTab(tab) && editingTabIndex !== i" class="tab-edit" action="edit" (onClick)="onEditTab(tab, i)"></action-button>
-          <div class="edit-btns" *ngIf="canEditTab(tab) && editingTabIndex === i">
-            <action-button class="tab-edit" action="check" (onClick)="saveTabName(tab, i)"></action-button>
-            <action-button class="tab-delete" action="close" (onClick)="cancelEditTabName()"></action-button>
+          <action-button
+            *ngIf="canEditTab(tab) && editingTabIndex !== i"
+            class="tab-edit"
+            action="edit"
+            (onClick)="onEditTab(tab, i)"
+          ></action-button>
+          <div
+            class="edit-btns"
+            *ngIf="canEditTab(tab) && editingTabIndex === i"
+          >
+            <action-button
+              class="tab-edit"
+              action="check"
+              (onClick)="saveTabName(tab, i)"
+            ></action-button>
+            <action-button
+              class="tab-delete"
+              action="close"
+              (onClick)="cancelEditTabName()"
+            ></action-button>
           </div>
 
-          <action-button *ngIf="canEditTab(tab)" class="tab-duplicate" action="duplicate" (onClick)="onDuplicateTab(tab, i)"></action-button>
-          <action-button class="tab-toggle" [action]="checkIsTabHidden(tab) ? 'closedEye' : 'openEye'" (onClick)="onToggleTabVisibility(tab)"></action-button>
+          <action-button
+            *ngIf="canEditTab(tab)"
+            class="tab-duplicate"
+            action="duplicate"
+            (onClick)="onDuplicateTab(tab, i)"
+          ></action-button>
+          <action-button
+            class="tab-toggle"
+            [action]="checkIsTabHidden(tab) ? 'closedEye' : 'openEye'"
+            (onClick)="onToggleTabVisibility(tab)"
+          ></action-button>
+          <action-button
+            *ngIf="canDeleteTab(tab)"
+            class="delete-tab"
+            action="delete"
+            color="#BCBCBC"
+            confirmText="Are you sure you want to delete this tab?"
+            (onClick)="onCloseTab(tab)"
+          ></action-button>
         </div>
-        <action-button
-          *ngIf="canDeleteTab(tab)"
-          class="delete-tab"
-          action="delete"
-          color="#BCBCBC"
-          confirmText="Are you sure you want to delete this tab?"
-          (onClick)="onCloseTab(tab)"></action-button>
       </div>
     </div>
   </div>
-  <div *ngIf="activeConfigurationTab === 'snapshots'" class="snapshots-container">
-    <push-button class="share-btn" buttonStyle="gray-title" (onClick)="onShareSnapshot()">
+  <div
+    *ngIf="activeConfigurationTab === 'snapshots'"
+    class="snapshots-container"
+  >
+    <push-button
+      class="share-btn"
+      buttonStyle="gray-title"
+      (onClick)="onShareSnapshot()"
+    >
       <div class="share-btn-title">
-        <img src="assets/button-icons/share.svg" alt="Share workspace snapshot" />
+        <img
+          src="assets/button-icons/share.svg"
+          alt="Share workspace snapshot"
+        />
         <span class="label">Share workspace snapshot</span>
       </div>
     </push-button>
@@ -162,18 +261,32 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="snapshot" *ngFor="let snapshot of snapshots; let i = index">
         <div class="snapshot-info-container">
           <div class="snapshot-info">
-            <div class="snapshot-name" #tooltip="matTooltip" [matTooltip]="snapshot.name" [matTooltipDisabled]="!snapshot.name || snapshot.name.length < 30">
+            <div
+              class="snapshot-name"
+              #tooltip="matTooltip"
+              [matTooltip]="snapshot.name"
+              [matTooltipDisabled]="!snapshot.name || snapshot.name.length < 30"
+            >
               {{ snapshot.name ? snapshot.name : "N/A" }}
             </div>
-            <div class="snapshot-date">{{ (snapshot.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</div>
+            <div class="snapshot-date">
+              {{
+                (snapshot.owner?.createdUnixSec || 0) * 1000 | date: "medium"
+              }}
+            </div>
           </div>
-          <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot)"></action-button>
+          <action-button
+            class="existing-share-btn"
+            action="share"
+            (onClick)="onShareSnapshot(snapshot)"
+          ></action-button>
           <action-button
             class="snapshot-delete"
             action="delete"
             color="#BCBCBC"
             confirmText="Are you sure you want to delete this snapshot?"
-            (onClick)="onDeleteSnapshot(snapshot)"></action-button>
+            (onClick)="onDeleteSnapshot(snapshot)"
+          ></action-button>
         </div>
       </div>
     </div>
@@ -181,46 +294,86 @@ POSSIBILITY OF SUCH DAMAGE.
 
   <div *ngIf="activeConfigurationTab === 'review'" class="snapshots-container">
     <push-button
-      [tooltipTitle]="reviewerSnapshots.length >= 1 ? 'Delete the existing reviewer snapshot to create another' : ''"
+      [tooltipTitle]="
+        reviewerSnapshots.length >= 1
+          ? 'Delete the existing reviewer snapshot to create another'
+          : ''
+      "
       class="share-btn"
       buttonStyle="gray-title"
       (onClick)="onShareSnapshot(null, true)"
-      [disabled]="reviewerSnapshots.length >= 1">
+      [disabled]="reviewerSnapshots.length >= 1"
+    >
       <div class="share-btn-title">
-        <img src="assets/button-icons/share.svg" [ngClass]="{ disabled: reviewerSnapshots.length >= 1 }" alt="Create link for reviewers" />
+        <img
+          src="assets/button-icons/share.svg"
+          [ngClass]="{ disabled: reviewerSnapshots.length >= 1 }"
+          alt="Create link for reviewers"
+        />
         <span class="label">Create link for reviewers</span>
       </div>
     </push-button>
     <div class="existing-snapshots">
-      <div class="snapshot" *ngFor="let snapshot of reviewerSnapshots; let i = index">
+      <div
+        class="snapshot"
+        *ngFor="let snapshot of reviewerSnapshots; let i = index"
+      >
         <div class="snapshot-info-container">
           <div class="snapshot-info">
             <div
               class="snapshot-name"
               #tooltip="matTooltip"
               [matTooltip]="snapshot.snapshot.name"
-              [matTooltipDisabled]="!snapshot.snapshot.name || snapshot.snapshot.name.length < 30">
+              [matTooltipDisabled]="
+                !snapshot.snapshot.name || snapshot.snapshot.name.length < 30
+              "
+            >
               {{ snapshot.snapshot.name ? snapshot.snapshot.name : "N/A" }}
             </div>
-            <div class="snapshot-date">Created: {{ (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</div>
+            <div class="snapshot-date">
+              Created:
+              {{
+                (snapshot.snapshot.owner?.createdUnixSec || 0) * 1000
+                  | date: "medium"
+              }}
+            </div>
             <div class="snapshot-date">
               Expires:
-              {{ snapshot.snapshot.reviewerExpirationDateUnixSec ? ((snapshot.snapshot.reviewerExpirationDateUnixSec || 0) * 1000 | date: "medium") : "Never" }}
+              {{
+                snapshot.snapshot.reviewerExpirationDateUnixSec
+                  ? ((snapshot.snapshot.reviewerExpirationDateUnixSec || 0) *
+                      1000 | date: "medium")
+                  : "Never"
+              }}
             </div>
           </div>
-          <action-button class="existing-share-btn" action="share" (onClick)="onShareSnapshot(snapshot.snapshot)"></action-button>
+          <action-button
+            class="existing-share-btn"
+            action="share"
+            (onClick)="onShareSnapshot(snapshot.snapshot)"
+          ></action-button>
           <action-button
             class="snapshot-delete"
             action="delete"
             color="#BCBCBC"
             confirmText="Are you sure you want to delete this snapshot?"
-            (onClick)="onDeleteSnapshot(snapshot.snapshot)"></action-button>
+            (onClick)="onDeleteSnapshot(snapshot.snapshot)"
+          ></action-button>
         </div>
         <div class="reviewer-link-container">
-          <span *ngIf="snapshot.snapshot.reviewerId" class="reviewer-link" #tooltip="matTooltip" [matTooltip]="snapshot.link">
+          <span
+            *ngIf="snapshot.snapshot.reviewerId"
+            class="reviewer-link"
+            #tooltip="matTooltip"
+            [matTooltip]="snapshot.link"
+          >
             {{ snapshot.link ? snapshot.link : "N/A" }}
           </span>
-          <action-button class="copy-link" action="copy" (onClick)="onCopy(snapshot.link)"></action-button>
+          <action-button
+            class="copy-link"
+            action="copy"
+            (onClick)="onCopy(snapshot.link)"
+          ></action-button>
         </div>
       </div>
     </div>
@@ -229,7 +382,9 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="button-container">
     <push-button
       #tootip="matTooltip"
-      [matTooltip]="hasWorkspaceChanged ? 'Reset workspace' : 'No changes to reset'"
+      [matTooltip]="
+        hasWorkspaceChanged ? 'Reset workspace' : 'No changes to reset'
+      "
       [matTooltipShowDelay]="500"
       class="save-btn"
       buttonStyle="yellow"
@@ -239,7 +394,11 @@ POSSIBILITY OF SUCH DAMAGE.
     >
     <push-button
       #tootip="matTooltip"
-      [matTooltip]="hasWorkspaceChanged ? 'Update configured workspace' : 'No changes to save'"
+      [matTooltip]="
+        hasWorkspaceChanged
+          ? 'Update configured workspace'
+          : 'No changes to save'
+      "
       [matTooltipShowDelay]="500"
       class="save-btn"
       buttonStyle="yellow"
