@@ -22,6 +22,7 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
   @Input() widgetOptions: WidgetConfiguration[] = [];
   @Input() disableSwitch: boolean = false;
   @Input() description?: string;
+  @Input() metadataEditable: boolean = true;
 
   private _activeWidget: WidgetConfiguration | null = null;
   private _activeWidgetType: WidgetType = "ternary-plot";
@@ -46,14 +47,16 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Small request to just get the widget name and description
-    this._subs.add(
-      this._analysisLayoutService.fetchWidgetMetadataAsync(this.widgetId).subscribe((widgetMetadata: WidgetMetadataGetResp | undefined) => {
-        if (widgetMetadata) {
-          this.widgetName = widgetMetadata.widgetName || "";
-          this.widgetDescription = widgetMetadata.widgetDescription || "";
-        }
-      })
-    );
+    if (this.widgetId) {
+      this._subs.add(
+        this._analysisLayoutService.fetchWidgetMetadataAsync(this.widgetId).subscribe((widgetMetadata: WidgetMetadataGetResp | undefined) => {
+          if (widgetMetadata) {
+            this.widgetName = widgetMetadata.widgetName || "";
+            this.widgetDescription = widgetMetadata.widgetDescription || "";
+          }
+        })
+      );
+    }
 
     // If something else updates the widget data, update the widget name and description
     this._subs.add(
@@ -165,6 +168,7 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
     componentRef.instance.widgetOptions = this.widgetOptions;
     componentRef.instance.activeWidgetType = this.activeWidgetType;
     componentRef.instance.activeWidget = this.activeWidget;
+    componentRef.instance.metadataEditable = this.metadataEditable;
 
     this.subscription.add(
       componentRef.instance.widgetSelected.subscribe((widget: WidgetType) => {

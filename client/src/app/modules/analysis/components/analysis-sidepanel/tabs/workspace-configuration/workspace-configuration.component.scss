@@ -146,6 +146,11 @@
             flex: 1;
 
             .view-label {
+              white-space: pre;
+              width: 100px;
+              max-width: 100px;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
 
             .edit-label {

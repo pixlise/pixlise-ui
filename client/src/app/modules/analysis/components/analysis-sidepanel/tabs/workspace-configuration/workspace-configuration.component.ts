@@ -53,6 +53,7 @@ import {
   ShareDialogResponse,
   SharingSubItem,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { LayoutConfiguratorComponent, LayoutConfiguratorData } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/workspace-configuration/layout-configurator/layout-configurator.component";
 
 import { WorkspaceService } from "src/app/modules/analysis/services/workspaces.service";
 
@@ -303,6 +304,40 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
       }
     }
+  }
+
+  onLayoutEdit(tab: NavigationTab, index: number): void {
+    if (!this.canEditTab(tab) || index < 0 || !this.screenConfig) {
+      return;
+    }
+
+    let screenLayout = this.getLayoutFromTab(tab);
+    if (!screenLayout) {
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig<LayoutConfiguratorData>();
+    dialogConfig.data = {
+      layout: screenLayout,
+      tabName: tab.label || "",
+    };
+    dialogConfig.maxWidth = "900px";
+    dialogConfig.width = "90vw";
+
+    const dialogRef = this.dialog.open(LayoutConfiguratorComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((response) => {
+      if (response && response.layout) {
+        // Update the layout in the screen configuration
+        let tabIndex = tab?.params?.["tab"];
+        if (tabIndex !== undefined) {
+          let layoutIndex = parseInt(tabIndex);
+          if (this.screenConfig && this.screenConfig.layouts[layoutIndex]) {
+            this.screenConfig.layouts[layoutIndex] = response.layout;
+            this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+          }
+        }
+      }
+    });
   }
 
   onCloseTab(tab: NavigationTab) {

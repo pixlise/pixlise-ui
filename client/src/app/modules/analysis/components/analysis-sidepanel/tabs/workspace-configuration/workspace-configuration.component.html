@@ -219,6 +219,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
           <action-button
             *ngIf="canEditTab(tab)"
+            class="tab-layout-edit"
+            action="edit-grid"
+            (onClick)="onLayoutEdit(tab, i)"
+          ></action-button>
+          <action-button
+            *ngIf="canEditTab(tab)"
             class="tab-duplicate"
             action="duplicate"
             (onClick)="onDuplicateTab(tab, i)"
