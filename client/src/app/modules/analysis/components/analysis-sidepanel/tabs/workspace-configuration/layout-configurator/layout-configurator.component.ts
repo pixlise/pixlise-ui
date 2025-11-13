@@ -106,7 +106,7 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
 
   public numRows: number = 0;
   public numColumns: number = 0;
-  public defaultWidgetType: WidgetType = "text-view";
+  private _defaultWidgetType: WidgetType = "text-view";
 
   public allWidgetOptions: WidgetConfiguration[] = getWidgetOptions();
 
@@ -139,6 +139,7 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     this.numColumns = this.layout.columns.length;
     this.computeLayoutCSS();
     this.initializePlaceholders();
+    this.defaultWidgetType = JSON.parse(localStorage.getItem("defaultNewLayoutWidgetType") || this._defaultWidgetType);
   }
 
   computeLayoutCSS(): void {
@@ -198,6 +199,15 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
 
   getWidgetGridColumnEnd(widget: WidgetLayoutConfiguration): number {
     return widget.endColumn;
+  }
+
+  get defaultWidgetType(): WidgetType {
+    return this._defaultWidgetType;
+  }
+
+  set defaultWidgetType(value: WidgetType) {
+    this._defaultWidgetType = value;
+    localStorage.setItem("defaultNewLayoutWidgetType", JSON.stringify(value));
   }
 
   onRowsChange(newValue: number): void {
