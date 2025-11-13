@@ -1,0 +1,199 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology ("Caltech"). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="layout-configurator-container">
+  <div class="layout-configurator-header">
+    <h3>Layout Configurator</h3>
+    <div class="tab-name-input-wrapper">
+      <label for="tab-name-input">Tab Name:</label>
+      <input
+        id="tab-name-input"
+        type="text"
+        [(ngModel)]="tabName"
+        class="tab-name-input"
+        placeholder="Enter tab name"
+      />
+    </div>
+  </div>
+
+  <div class="layout-configurator-content">
+    <div class="layout-preview-section">
+      <h4>Layout Preview</h4>
+      <div
+        *ngIf="layout?.widgets && templateColumns && templateRows"
+        class="layout-preview-wrapper"
+      >
+        <div
+          #layoutPreview
+          class="layout-preview"
+          [ngStyle]="{
+            'grid-template-columns': templateColumns,
+            'grid-template-rows': templateRows,
+          }"
+        >
+          <div
+            #tooltip="matTooltip"
+            matTooltip="{{ getWidgetName(widget.type) }}"
+            matTooltipShowDelay="1000"
+            *ngFor="let widget of layout.widgets"
+            class="widget-preview"
+            [ngStyle]="{
+              'grid-column-start': getWidgetGridColumnStart(widget),
+              'grid-column-end': getWidgetGridColumnEnd(widget),
+              'grid-row-start': getWidgetGridRowStart(widget),
+              'grid-row-end': getWidgetGridRowEnd(widget),
+            }"
+          >
+            <div
+              class="resize-handle resize-handle-top"
+              (mousedown)="onResizeStart($event, widget, 'top')"
+            ></div>
+            <div
+              class="resize-handle resize-handle-bottom"
+              (mousedown)="onResizeStart($event, widget, 'bottom')"
+            ></div>
+            <div
+              class="resize-handle resize-handle-left"
+              (mousedown)="onResizeStart($event, widget, 'left')"
+            ></div>
+            <div
+              class="resize-handle resize-handle-right"
+              (mousedown)="onResizeStart($event, widget, 'right')"
+            ></div>
+            <div class="widget-controls">
+              <widget-switcher
+                [widgetOptions]="allWidgetOptions"
+                [activeWidgetType]="getWidgetType(widget.type)"
+                [metadataEditable]="false"
+                (widgetChange)="widget.type = $event"
+                [iconOnlyTrigger]="true"
+                [customStyle]="{
+                  width: '50%',
+                  'max-width': '50px',
+                  height: 'auto',
+                }"
+              >
+              </widget-switcher>
+              <action-button
+                action="delete"
+                (onClick)="onDeleteWidget(widget)"
+              ></action-button>
+            </div>
+          </div>
+          <div
+            *ngFor="let placeholder of getValidPlaceholders()"
+            class="widget-placeholder"
+            [ngStyle]="{
+              'grid-column-start': placeholder.startColumn,
+              'grid-column-end': placeholder.endColumn,
+              'grid-row-start': placeholder.startRow,
+              'grid-row-end': placeholder.endRow,
+            }"
+          >
+            <div class="placeholder-content">
+              <action-button
+                action="add"
+                (onClick)="onRestoreWidget(placeholder)"
+                tooltipTitle="Add widget back"
+              ></action-button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        *ngIf="!layout?.widgets || !templateColumns || !templateRows"
+        class="layout-preview"
+      >
+        <div class="no-layout">No layout available</div>
+      </div>
+    </div>
+
+    <div class="layout-customization-section">
+      <div class="grid-size-controls">
+        <div class="control-group">
+          <label for="num-rows">Number of Rows:</label>
+          <input
+            id="num-rows"
+            type="number"
+            min="1"
+            max="20"
+            [(ngModel)]="numRows"
+            (ngModelChange)="onRowsChange($event)"
+            class="number-input"
+          />
+        </div>
+        <div class="control-group">
+          <label for="num-columns">Number of Columns:</label>
+          <input
+            id="num-columns"
+            type="number"
+            min="1"
+            max="20"
+            [(ngModel)]="numColumns"
+            (ngModelChange)="onColumnsChange($event)"
+            class="number-input"
+          />
+        </div>
+      </div>
+      <div class="widget-type-controls">
+        <div class="control-group">
+          <label for="default-widget-type">Default Chart Type:</label>
+          <widget-switcher
+            id="default-widget-type"
+            [metadataEditable]="false"
+            [widgetOptions]="allWidgetOptions"
+            [activeWidgetType]="defaultWidgetType"
+            (widgetChange)="defaultWidgetType = $event"
+          >
+          </widget-switcher>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout-configurator-actions">
+    <push-button
+      class="cancel-btn"
+      buttonStyle="gray-title"
+      (onClick)="onCancel()"
+    >
+      Cancel
+    </push-button>
+    <push-button
+      class="save-btn"
+      buttonStyle="yellow"
+      (onClick)="onSave()"
+      [confirmText]="confirmSaveText"
+    >
+      Save
+    </push-button>
+  </div>
+</div>

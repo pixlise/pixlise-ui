@@ -30,7 +30,7 @@
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { AnalysisLayoutService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { combineLatest, filter, map, of, Subscription, switchMap } from "rxjs";
+import { combineLatest, filter, firstValueFrom, map, of, Subscription, switchMap, take } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
@@ -1229,27 +1229,25 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         this._cachedDataSerivce.invalidExpressionGroupIds.add(selectedGroup.id);
 
         selectedGroup.owner = undefined;
-        this._expressionService.writeExpressionGroupAsync(selectedGroup, true).subscribe({
-          next: group => {
-            this.selectedGroup.id = group.id;
-            this.selectedGroup.name = group.name;
-            this.selectedGroup.description = group.description;
-            this.selectedGroup.tags = group.tags;
-            this.selectedGroup.owner = group.owner;
+        const updatedGroup = await firstValueFrom(this._expressionService.writeExpressionGroupAsync(selectedGroup, true).pipe(take(1)));
+        if (updatedGroup) {
+          this.selectedGroup.id = updatedGroup.id;
+          this.selectedGroup.name = updatedGroup.name;
+          this.selectedGroup.description = updatedGroup.description;
+          this.selectedGroup.tags = updatedGroup.tags;
+          this.selectedGroup.owner = updatedGroup.owner;
 
-            this._analysisLayoutService.expressionPickerResponse$.next({
-              selectedGroup: group,
-              selectedExpressions,
-              scanId: this.scanId,
-              quantId: this.quantId,
-              persistDialog: this.persistDialog,
-              subId: this.data.subId,
-            });
-          },
-          error: err => {
-            this._snackBarService.openError("Error saving RGB Mix group", err);
-          },
-        });
+          this._analysisLayoutService.expressionPickerResponse$.next({
+            selectedGroup: updatedGroup,
+            selectedExpressions,
+            scanId: this.scanId,
+            quantId: this.quantId,
+            persistDialog: this.persistDialog,
+            subId: this.data.subId,
+          });
+        } else {
+          this._snackBarService.openError("Error saving RGB Mix group");
+        }
 
         if (!this.persistDialog) {
           this.dialogRef.close();

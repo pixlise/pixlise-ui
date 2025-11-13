@@ -1,15 +1,46 @@
-<button
-  #trigger
-  class="widget-switcher-trigger"
-  *ngIf="!disableSwitch"
-  (click)="openOverlay()"
-  (keydown.enter)="openOverlay()"
-  (keydown.space)="openOverlay()"
-  [attr.aria-label]="'Switch widget'"
-  [attr.aria-expanded]="isOpen">
-  <div class="current-widget">
-    <img [src]="getWidgetIconUrl(activeWidget?.id || '')" alt="Widget Icon" />
-    <span class="widget-name">{{ widgetName || activeWidget?.name }}</span>
-    <icon-button [size]="16" icon="assets/button-icons/arrow-{{ isOpen ? 'up' : 'down' }}.svg"></icon-button>
-  </div>
-</button>
+<ng-container>
+  @if (!iconOnlyTrigger) {
+    <button
+      #trigger
+      class="widget-switcher-trigger"
+      *ngIf="!disableSwitch"
+      (click)="openOverlay()"
+      (keydown.enter)="openOverlay()"
+      (keydown.space)="openOverlay()"
+      [attr.aria-label]="'Switch widget'"
+      [attr.aria-expanded]="isOpen"
+    >
+      <div class="current-widget">
+        <img
+          [src]="getWidgetIconUrl(activeWidget?.id || '')"
+          alt="Widget Icon"
+        />
+        <span class="widget-name">{{ widgetName || activeWidget?.name }}</span>
+        <icon-button
+          [size]="16"
+          icon="assets/button-icons/arrow-{{ isOpen ? 'up' : 'down' }}.svg"
+        ></icon-button>
+      </div>
+    </button>
+  } @else {
+    <div
+      #trigger
+      class="widget-switcher-icon-trigger"
+      (click)="openOverlay()"
+      (keydown.enter)="openOverlay()"
+      (keydown.space)="openOverlay()"
+      [attr.aria-label]="'Switch widget'"
+      [attr.aria-expanded]="isOpen"
+    >
+      <img
+        [src]="getWidgetIconUrl(activeWidget?.id || '')"
+        alt="Switch Widget Icon"
+        [ngStyle]="customStyle"
+      />
+      <icon-button
+        [size]="16"
+        icon="assets/button-icons/arrow-{{ isOpen ? 'up' : 'down' }}.svg"
+      ></icon-button>
+    </div>
+  }
+</ng-container>

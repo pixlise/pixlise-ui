@@ -39,7 +39,7 @@ import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-sour
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
 
-const getWidgetOptions = (): WidgetConfiguration[] => {
+export const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
 };
 

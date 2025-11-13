@@ -131,6 +131,11 @@
           display: flex;
           align-items: center;
 
+          &.builtin {
+            background: #293137;
+            height: 28px;
+          }
+
           background: #293137;
           flex: 1;
           padding: 8px;
@@ -141,6 +146,11 @@
             flex: 1;
 
             .view-label {
+              white-space: pre;
+              width: 90px;
+              max-width: 90px;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
 
             .edit-label {
@@ -301,11 +311,18 @@
   display: flex;
   align-items: center;
 
+  &.active {
+    .tab-info {
+      background: #454c50;
+    }
+  }
+
   .tab-info {
     display: flex;
     align-items: center;
 
     background: #293137;
+
     flex: 1;
     padding: 8px;
     gap: 8px;
