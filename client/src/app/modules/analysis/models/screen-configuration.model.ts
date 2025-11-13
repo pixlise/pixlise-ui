@@ -283,6 +283,27 @@ const ANALYSIS_LAYOUT_3: FullScreenLayout = {
   ],
 };
 
+export const DEFAULT_CUSTOM_LAYOUT: FullScreenLayout = {
+  tabId: "",
+  tabName: "",
+  tabDescription: "Custom Layout",
+  hidden: false,
+  tags: [],
+  rows: [{ height: 1 }],
+  columns: [{ width: 1 }],
+  widgets: [
+    {
+      id: "",
+      type: "context-image",
+      startRow: 1,
+      startColumn: 1,
+      endRow: 2,
+      endColumn: 2,
+      data: undefined,
+    },
+  ],
+};
+
 const ANALYSIS_LAYOUT_4: FullScreenLayout = {
   tabId: "",
   tabName: "",
