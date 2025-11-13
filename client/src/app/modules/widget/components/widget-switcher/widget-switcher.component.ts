@@ -23,7 +23,9 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
   @Input() disableSwitch: boolean = false;
   @Input() description?: string;
   @Input() metadataEditable: boolean = true;
-
+  @Input() iconOnlyTrigger: boolean = false;
+  @Input() customStyle: { [key: string]: string } = {};
+  
   private _activeWidget: WidgetConfiguration | null = null;
   private _activeWidgetType: WidgetType = "ternary-plot";
 

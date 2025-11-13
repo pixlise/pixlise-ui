@@ -78,22 +78,18 @@ POSSIBILITY OF SUCH DAMAGE.
               class="resize-handle resize-handle-right"
               (mousedown)="onResizeStart($event, widget, 'right')"
             ></div>
-
-            <img
-              *ngIf="widget.type && getWidgetIconUrl(widget.type)"
-              [src]="getWidgetIconUrl(widget.type)"
-            />
-            <span
-              class="widget-name-placeholder"
-              *ngIf="widget.type && !getWidgetIconUrl(widget.type)"
-              >{{ getWidgetNamePlaceholder(widget.type) }}</span
-            >
             <div class="widget-controls">
               <widget-switcher
                 [widgetOptions]="allWidgetOptions"
                 [activeWidgetType]="getWidgetType(widget.type)"
                 [metadataEditable]="false"
                 (widgetChange)="widget.type = $event"
+                [iconOnlyTrigger]="true"
+                [customStyle]="{
+                  width: '50px',
+                  'max-width': '50px',
+                  height: 'auto',
+                }"
               >
               </widget-switcher>
               <action-button

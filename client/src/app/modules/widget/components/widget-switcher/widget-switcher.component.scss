@@ -23,6 +23,17 @@
   }
 }
 
+.widget-switcher-icon-trigger {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+
+  icon-button {
+    opacity: 0.5;
+  }
+}
+
 .current-widget {
   display: flex;
   align-items: center;

@@ -89,6 +89,8 @@
           flex-direction: column;
           padding: 8px;
 
+          min-width: 85px;
+
           border: 1px solid #fff;
           background: rgba(68, 76, 80, 0.7);
           border-radius: 4px;
@@ -246,9 +248,13 @@
 
         .widget-controls {
           display: flex;
-          gap: 8px;
+          gap: 4px;
           justify-content: center;
           align-items: center;
+
+          action-button {
+            opacity: 0.6;
+          }
         }
 
         .no-layout {
