@@ -327,13 +327,17 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(LayoutConfiguratorComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((response) => {
       if (response && response.layout) {
-        // Update the layout in the screen configuration
         let tabIndex = tab?.params?.["tab"];
         if (tabIndex !== undefined) {
           let layoutIndex = parseInt(tabIndex);
           if (this.screenConfig && this.screenConfig.layouts[layoutIndex]) {
             this.screenConfig.layouts[layoutIndex] = response.layout;
-            this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+            if (response.layout.tabName && tab) {
+              tab.label = response.layout.tabName;
+            }
+            this._analysisLayoutService.writeScreenConfiguration(this.screenConfig, "", false, () => {
+              this._analysisLayoutService.delayNotifyCanvasResize(100);
+            });
           }
         }
       }

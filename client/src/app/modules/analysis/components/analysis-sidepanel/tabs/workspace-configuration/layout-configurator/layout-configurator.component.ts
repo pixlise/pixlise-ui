@@ -783,7 +783,12 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     this.dialogRef.close();
   }
 
+  get confirmSaveText(): string {
+    return this.layout.widgets.length > 10 ? "Are you sure you want to save this layout? This layout contains more than 10 widgets and may take a long time to load." : "";
+  }
+
   onSave(): void {
+    this.layout.tabName = this.tabName;
     this.dialogRef.close({ layout: this.layout });
   }
 

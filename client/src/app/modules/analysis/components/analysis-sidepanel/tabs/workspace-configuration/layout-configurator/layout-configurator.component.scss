@@ -39,15 +39,39 @@
     margin-bottom: 24px;
 
     h3 {
-      margin: 0 0 8px 0;
+      margin: 0 0 16px 0;
       font-size: 20px;
       font-weight: 600;
       color: #fff;
     }
 
-    .tab-name {
-      font-size: 14px;
-      color: #bcbcbc;
+    .tab-name-input-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      label {
+        font-size: 14px;
+        color: #bcbcbc;
+      }
+
+      .tab-name-input {
+        padding: 8px 12px;
+        background: #293137;
+        border: 1px solid #444c50;
+        border-radius: 4px;
+        color: #fff;
+        font-size: 14px;
+
+        &:focus {
+          outline: none;
+          border-color: #fff;
+        }
+
+        &::placeholder {
+          color: #666;
+        }
+      }
     }
   }
 
@@ -56,7 +80,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
 
     .layout-preview-section {
       h4 {

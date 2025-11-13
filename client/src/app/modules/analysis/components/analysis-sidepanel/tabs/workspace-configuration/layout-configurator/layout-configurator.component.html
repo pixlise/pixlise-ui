@@ -32,7 +32,16 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="layout-configurator-container">
   <div class="layout-configurator-header">
     <h3>Layout Configurator</h3>
-    <div class="tab-name" *ngIf="tabName">{{ tabName }}</div>
+    <div class="tab-name-input-wrapper">
+      <label for="tab-name-input">Tab Name:</label>
+      <input
+        id="tab-name-input"
+        type="text"
+        [(ngModel)]="tabName"
+        class="tab-name-input"
+        placeholder="Enter tab name"
+      />
+    </div>
   </div>
 
   <div class="layout-configurator-content">
@@ -128,7 +137,6 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <div class="layout-customization-section">
-      <h4>Customize Layout</h4>
       <div class="grid-size-controls">
         <div class="control-group">
           <label for="num-rows">Number of Rows:</label>
@@ -179,7 +187,12 @@ POSSIBILITY OF SUCH DAMAGE.
     >
       Cancel
     </push-button>
-    <push-button class="save-btn" buttonStyle="yellow" (onClick)="onSave()">
+    <push-button
+      class="save-btn"
+      buttonStyle="yellow"
+      (onClick)="onSave()"
+      [confirmText]="confirmSaveText"
+    >
       Save
     </push-button>
   </div>
