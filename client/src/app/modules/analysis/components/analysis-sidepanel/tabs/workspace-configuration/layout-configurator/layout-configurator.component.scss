@@ -67,27 +67,37 @@
       }
 
       .layout-preview-wrapper {
+        display: flex;
+        gap: 8px;
+
         position: relative;
 
         height: 350px;
         max-height: 350px;
         overflow: auto;
+
+        border-radius: 4px;
+        border: 1px solid #444c50;
+        padding: 8px;
+
+        &::-webkit-scrollbar {
+          display: none;
+        }
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
 
       .layout-preview {
         display: grid;
-        min-height: 300px;
         gap: 8px;
-        border-radius: 4px;
-        border: 1px solid #444c50;
         background: #293137;
-        padding: 16px;
         position: relative;
+        height: 100%;
+        width: 100%;
 
         .widget-preview {
           display: flex;
           flex-direction: column;
-          padding: 8px;
 
           min-width: 85px;
 
@@ -99,12 +109,6 @@
           min-height: 60px;
           position: relative;
           z-index: 1;
-
-          img {
-            width: 50%;
-            max-width: 50px;
-            height: auto;
-          }
 
           .resize-handle {
             position: absolute;

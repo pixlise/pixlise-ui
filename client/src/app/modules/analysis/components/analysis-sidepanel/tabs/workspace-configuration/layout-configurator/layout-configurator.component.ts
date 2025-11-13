@@ -349,7 +349,6 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     const totalSubdivisionColumns = this.getTotalSubdivisionColumns();
 
     if (this.resizeEdge === "top" || this.resizeEdge === "bottom") {
-      const mouseY = event.clientY - rect.top;
       const gridHeight = rect.height;
       const rowHeight = gridHeight / totalSubdivisionRows;
 
@@ -376,7 +375,6 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      const mouseX = event.clientX - rect.left;
       const gridWidth = rect.width;
       const columnWidth = gridWidth / totalSubdivisionColumns;
 
@@ -408,12 +406,214 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
   @HostListener("document:mouseup", ["$event"])
   onMouseUp(event: MouseEvent): void {
     if (this.isResizing) {
+      if (this.resizeWidget) {
+        this.adjustOverlappingWidgets(this.resizeWidget);
+      }
+
       this.isResizing = false;
       this.resizeWidget = null;
       this.resizeEdge = null;
       this.regeneratePlaceholders();
     }
   }
+
+  adjustOverlappingWidgets(draggedWidget: WidgetLayoutConfiguration): void {
+    const totalRows = this.getTotalSubdivisionRows();
+    const totalColumns = this.getTotalSubdivisionColumns();
+
+    const overlappingWidgets = this.layout.widgets.filter((widget) => {
+      if (this.checkWidgetsMatch(widget, draggedWidget)) {
+        return false;
+      }
+
+      const rowOverlap =
+        widget.startRow < draggedWidget.endRow &&
+        widget.endRow > draggedWidget.startRow;
+      const columnOverlap =
+        widget.startColumn < draggedWidget.endColumn &&
+        widget.endColumn > draggedWidget.startColumn;
+
+      return rowOverlap && columnOverlap;
+    });
+
+    const widgetsToDelete: WidgetLayoutConfiguration[] = [];
+
+    overlappingWidgets.forEach((widget) => {
+      const isCompletelyContained =
+        widget.startRow >= draggedWidget.startRow &&
+        widget.endRow <= draggedWidget.endRow &&
+        widget.startColumn >= draggedWidget.startColumn &&
+        widget.endColumn <= draggedWidget.endColumn;
+
+      if (isCompletelyContained) {
+        widgetsToDelete.push(widget);
+      } else {
+        this.adjustWidgetToAvoidOverlap(widget, draggedWidget, totalRows, totalColumns);
+        
+        const isNowCompletelyContained =
+          widget.startRow >= draggedWidget.startRow &&
+          widget.endRow <= draggedWidget.endRow &&
+          widget.startColumn >= draggedWidget.startColumn &&
+          widget.endColumn <= draggedWidget.endColumn;
+        
+        if (isNowCompletelyContained) {
+          widgetsToDelete.push(widget);
+        }
+      }
+    });
+
+    if (widgetsToDelete.length > 0) {
+      this.layout.widgets = this.layout.widgets.filter((w) => 
+        !widgetsToDelete.some((toDelete) => this.checkWidgetsMatch(w, toDelete))
+      );
+    }
+
+    this.regeneratePlaceholders();
+  }
+
+  private checkGlobalWidgetOverlap(
+    widget: WidgetLayoutConfiguration,
+    startRow: number,
+    endRow: number,
+    startColumn: number,
+    endColumn: number,
+    excludeWidgets: WidgetLayoutConfiguration[]
+  ): boolean {
+    return this.layout.widgets.some((otherWidget) => {
+      if (excludeWidgets.some((exclude) => this.checkWidgetsMatch(otherWidget, exclude))) {
+        return false;
+      }
+
+      if (this.checkWidgetsMatch(otherWidget, widget)) {
+        return false;
+      }
+
+      const rowOverlap = otherWidget.startRow < endRow && otherWidget.endRow > startRow;
+      const columnOverlap = otherWidget.startColumn < endColumn && otherWidget.endColumn > startColumn;
+
+      return rowOverlap && columnOverlap;
+    });
+  }
+
+  private adjustWidgetToAvoidOverlap(
+    widget: WidgetLayoutConfiguration,
+    draggedWidget: WidgetLayoutConfiguration,
+    totalRows: number,
+    totalColumns: number
+  ): void {
+    const overlapStartRow = Math.max(widget.startRow, draggedWidget.startRow);
+    const overlapEndRow = Math.min(widget.endRow, draggedWidget.endRow);
+    const overlapStartColumn = Math.max(widget.startColumn, draggedWidget.startColumn);
+    const overlapEndColumn = Math.min(widget.endColumn, draggedWidget.endColumn);
+
+    const overlapRowSize = overlapEndRow - overlapStartRow;
+    const overlapColumnSize = overlapEndColumn - overlapStartColumn;
+
+    if (overlapRowSize <= 0 || overlapColumnSize <= 0) {
+      return;
+    }
+
+    const widgetRowSize = widget.endRow - widget.startRow;
+    const widgetColumnSize = widget.endColumn - widget.startColumn;
+
+    const spaceToRight = totalColumns + 1 - draggedWidget.endColumn;
+    const spaceToLeft = draggedWidget.startColumn - 1;
+    const spaceToBottom = totalRows + 1 - draggedWidget.endRow;
+    const spaceToTop = draggedWidget.startRow - 1;
+
+    if (overlapColumnSize > 0) {
+      const moveRightAmount = draggedWidget.endColumn - widget.startColumn;
+      const moveLeftAmount = widget.endColumn - draggedWidget.startColumn;
+      
+      if (spaceToRight >= widgetColumnSize && moveRightAmount > 0 && moveRightAmount <= spaceToRight) {
+        const newStartColumn = draggedWidget.endColumn;
+        const newEndColumn = newStartColumn + widgetColumnSize;
+        
+        if (newEndColumn <= totalColumns + 1) {
+          if (!this.checkGlobalWidgetOverlap(widget, widget.startRow, widget.endRow, newStartColumn, newEndColumn, [draggedWidget])) {
+            widget.startColumn = newStartColumn;
+            widget.endColumn = newEndColumn;
+            const stillOverlapsRow = widget.startRow < draggedWidget.endRow && widget.endRow > draggedWidget.startRow;
+            if (!stillOverlapsRow) {
+              return;
+            }
+          }
+        }
+      } else if (spaceToLeft >= widgetColumnSize && moveLeftAmount > 0 && moveLeftAmount <= spaceToLeft) {
+        const newEndColumn = draggedWidget.startColumn;
+        const newStartColumn = newEndColumn - widgetColumnSize;
+        
+        if (newStartColumn >= 1) {
+          if (!this.checkGlobalWidgetOverlap(widget, widget.startRow, widget.endRow, newStartColumn, newEndColumn, [draggedWidget])) {
+            widget.startColumn = newStartColumn;
+            widget.endColumn = newEndColumn;
+            const stillOverlapsRow = widget.startRow < draggedWidget.endRow && widget.endRow > draggedWidget.startRow;
+            if (!stillOverlapsRow) {
+              return;
+            }
+          }
+        }
+      }
+
+      if (widget.startColumn < draggedWidget.startColumn && widget.endColumn > draggedWidget.startColumn) {
+        widget.endColumn = Math.max(widget.startColumn + 1, draggedWidget.startColumn);
+      } else if (widget.endColumn > draggedWidget.endColumn && widget.startColumn < draggedWidget.endColumn) {
+        widget.startColumn = Math.min(widget.endColumn - 1, draggedWidget.endColumn);
+      }
+    }
+
+    const stillOverlapsRow = widget.startRow < draggedWidget.endRow && widget.endRow > draggedWidget.startRow;
+    const stillOverlapsColumn = widget.startColumn < draggedWidget.endColumn && widget.endColumn > draggedWidget.startColumn;
+    
+    if (stillOverlapsRow && stillOverlapsColumn && overlapRowSize > 0) {
+      const moveDownAmount = draggedWidget.endRow - widget.startRow;
+      const moveUpAmount = widget.endRow - draggedWidget.startRow;
+      
+      if (spaceToBottom >= widgetRowSize && moveDownAmount > 0 && moveDownAmount <= spaceToBottom) {
+        const newStartRow = draggedWidget.endRow;
+        const newEndRow = newStartRow + widgetRowSize;
+        
+        if (newEndRow <= totalRows + 1) {
+          if (!this.checkGlobalWidgetOverlap(widget, newStartRow, newEndRow, widget.startColumn, widget.endColumn, [draggedWidget])) {
+            widget.startRow = newStartRow;
+            widget.endRow = newEndRow;
+            return;
+          }
+        }
+      }
+      else if (spaceToTop >= widgetRowSize && moveUpAmount > 0 && moveUpAmount <= spaceToTop) {
+        const newEndRow = draggedWidget.startRow;
+        const newStartRow = newEndRow - widgetRowSize;
+        
+        if (newStartRow >= 1) {
+          if (!this.checkGlobalWidgetOverlap(widget, newStartRow, newEndRow, widget.startColumn, widget.endColumn, [draggedWidget])) {
+            widget.startRow = newStartRow;
+            widget.endRow = newEndRow;
+            return;
+          }
+        }
+      }
+
+      if (widget.startRow < draggedWidget.startRow && widget.endRow > draggedWidget.startRow) {
+        widget.endRow = Math.max(widget.startRow + 1, draggedWidget.startRow);
+      } else if (widget.endRow > draggedWidget.endRow && widget.startRow < draggedWidget.endRow) {
+        widget.startRow = Math.min(widget.endRow - 1, draggedWidget.endRow);
+      }
+    }
+
+    if (widget.endRow <= widget.startRow) {
+      widget.endRow = widget.startRow + 1;
+    }
+    if (widget.endColumn <= widget.startColumn) {
+      widget.endColumn = widget.startColumn + 1;
+    }
+
+    widget.startRow = Math.max(1, Math.min(widget.startRow, totalRows));
+    widget.endRow = Math.max(widget.startRow + 1, Math.min(widget.endRow, totalRows + 1));
+    widget.startColumn = Math.max(1, Math.min(widget.startColumn, totalColumns));
+    widget.endColumn = Math.max(widget.startColumn + 1, Math.min(widget.endColumn, totalColumns + 1));
+  }
+
 
   isPlaceholderAtPosition(
     row: number,

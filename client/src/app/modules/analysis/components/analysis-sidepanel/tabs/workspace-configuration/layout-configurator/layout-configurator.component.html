@@ -53,6 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
           <div
             #tooltip="matTooltip"
             matTooltip="{{ getWidgetName(widget.type) }}"
+            matTooltipShowDelay="1000"
             *ngFor="let widget of layout.widgets"
             class="widget-preview"
             [ngStyle]="{
@@ -86,7 +87,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (widgetChange)="widget.type = $event"
                 [iconOnlyTrigger]="true"
                 [customStyle]="{
-                  width: '50px',
+                  width: '50%',
                   'max-width': '50px',
                   height: 'auto',
                 }"
