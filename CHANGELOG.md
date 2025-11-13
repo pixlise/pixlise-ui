@@ -4,6 +4,10 @@
 - Slight logic change for RGB Mixes. If an existing RGB mix is selected and either the order is changed or an expression is added/removed, the RGB mix will now be saved as the temporary auto-generated group instead of trying to edit the existing one. To edit the existing one, use the "Save As/Edit Group" button.
 - Allows selecting multiple widgets on the expression picker. This allows a single expression picker to apply to multiple widgets simultaneously.
 - Improves scan selection on dataset configuration tab in a workspace. Now allows filtering by name and tags and shows scan description in a tooltip on hover.
+- **Custom Layout Editing** You can now create custom workspace layouts and edit existing ones. 
+  - To edit an existing layout, open the workspace tab on the left and click on the new "edit layout" button next to the workspace tab name. This will open a dialog where you can edit the layout.
+  - To create a new layout, click the new "Custom Layout" button on the new tab page. This will open a dialog where you can create a new layout.
+  - The custom layout editor allows you to adjust the number of rows and columns in the layout, drag widgets to take up multiple cells, and change widget types before creation.
 
 ### Bug Fixes
 
