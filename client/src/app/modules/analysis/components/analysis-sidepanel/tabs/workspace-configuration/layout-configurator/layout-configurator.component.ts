@@ -34,6 +34,7 @@ import {
   OnDestroy,
   OnInit,
   ViewChild,
+  HostListener,
 } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import {
@@ -79,6 +80,14 @@ export interface LayoutConfiguratorResponse {
   layout?: FullScreenLayout;
 }
 
+interface WidgetPlaceholder {
+  startRow: number;
+  endRow: number;
+  startColumn: number;
+  endColumn: number;
+  type?: WidgetType;
+}
+
 @Component({
   standalone: false,
   selector: "layout-configurator",
@@ -99,13 +108,19 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
   public numColumns: number = 0;
   public defaultWidgetType: WidgetType = "text-view";
 
-  private isDragging: boolean = false;
-  private dragType: "column" | "row" | null = null;
-  private dragIndex: number = -1;
-  private dragStartPosition: number = 0;
-  private dragStartValue: number = 0;
-
   public allWidgetOptions: WidgetConfiguration[] = getWidgetOptions();
+
+  private isResizing: boolean = false;
+  private resizeWidget: WidgetLayoutConfiguration | null = null;
+  private resizeEdge: "top" | "bottom" | "left" | "right" | null = null;
+  private resizeStartMouseY: number = 0;
+  private resizeStartMouseX: number = 0;
+  private resizeStartRow: number = 0;
+  private resizeStartColumn: number = 0;
+  private resizeStartEndRow: number = 0;
+  private resizeStartEndColumn: number = 0;
+
+  public placeholders: WidgetPlaceholder[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<
@@ -114,7 +129,6 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     >,
     @Inject(MAT_DIALOG_DATA) public data: LayoutConfiguratorData
   ) {
-    // Clone the layout to avoid mutating the original
     this.layout = JSON.parse(JSON.stringify(data.layout));
     this.originalLayout = JSON.parse(JSON.stringify(data.layout));
     this.tabName = data.tabName;
@@ -124,6 +138,7 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     this.numRows = this.layout.rows.length;
     this.numColumns = this.layout.columns.length;
     this.computeLayoutCSS();
+    this.initializePlaceholders();
   }
 
   computeLayoutCSS(): void {
@@ -135,6 +150,56 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
       .join(" ");
   }
 
+  getTotalSubdivisionRows(): number {
+    return this.layout.rows.reduce(
+      (sum, row) => sum + row.height,
+      0
+    );
+  }
+
+  getTotalSubdivisionColumns(): number {
+    return this.layout.columns.reduce(
+      (sum, column) => sum + column.width,
+      0
+    );
+  }
+
+  getSubdivisionGridRows(): string {
+    const rows: string[] = [];
+    this.layout.rows.forEach((row) => {
+      for (let i = 0; i < row.height; i++) {
+        rows.push("1fr");
+      }
+    });
+    return rows.join(" ");
+  }
+
+  getSubdivisionGridColumns(): string {
+    const columns: string[] = [];
+    this.layout.columns.forEach((column) => {
+      for (let i = 0; i < column.width; i++) {
+        columns.push("1fr");
+      }
+    });
+    return columns.join(" ");
+  }
+
+  getWidgetGridRowStart(widget: WidgetLayoutConfiguration): number {
+    return widget.startRow;
+  }
+
+  getWidgetGridRowEnd(widget: WidgetLayoutConfiguration): number {
+    return widget.endRow;
+  }
+
+  getWidgetGridColumnStart(widget: WidgetLayoutConfiguration): number {
+    return widget.startColumn;
+  }
+
+  getWidgetGridColumnEnd(widget: WidgetLayoutConfiguration): number {
+    return widget.endColumn;
+  }
+
   onRowsChange(newValue: number): void {
     if (newValue < 1) {
       newValue = 1;
@@ -142,46 +207,36 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     this.numRows = newValue;
 
     while (this.layout.rows.length < newValue) {
+      const newRowIndex = this.layout.rows.length + 1;
       this.layout.rows.push({ height: 1 });
       this.layout.columns.forEach((column, columnIndex) => {
-        const originalWidgetIndex =
-          this.layout.widgets.length - columnIndex - 1;
-        // if (this.originalLayout.widgets.length > originalWidgetIndex) {
-        //   const newWidget = WidgetLayoutConfiguration.create(this.originalLayout.widgets[originalWidgetIndex]);
-        //   newWidget.startRow += 1;
-        //   newWidget.endRow += 1;
-        //   newWidget.startColumn = columnIndex + 1;
-        //   newWidget.endColumn = columnIndex + 1;
-        //   this.layout.widgets.push(newWidget);
-        // } else {
         const newWidget = WidgetLayoutConfiguration.create({
           id: "",
           type: this.defaultWidgetType,
-          startRow: newValue,
-          endRow: newValue + 1,
+          startRow: newRowIndex,
+          endRow: newRowIndex + 1,
           startColumn: columnIndex + 1,
-          endColumn: columnIndex + 1,
+          endColumn: columnIndex + 2,
         });
-        console.log("Creating new widget", this.defaultWidgetType, newWidget);
         this.layout.widgets.push(newWidget);
-        // }
       });
     }
     while (this.layout.rows.length > newValue) {
       this.layout.rows.pop();
     }
 
-    const maxRow = newValue;
+    const maxRow = this.getTotalSubdivisionRows() + 1;
     this.layout.widgets = this.layout.widgets.filter((widget) => {
       if (widget.endRow > maxRow) {
         widget.endRow = maxRow;
       }
-      if (widget.startRow > maxRow) {
+      if (widget.startRow > this.getTotalSubdivisionRows()) {
         return false;
       }
       return true;
     });
 
+    this.regeneratePlaceholders();
     this.computeLayoutCSS();
   }
 
@@ -191,196 +246,315 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
     }
     this.numColumns = newValue;
 
-    // Adjust columns array
     while (this.layout.columns.length < newValue) {
+      const newColumnIndex = this.layout.columns.length + 1;
       this.layout.columns.push({ width: 1 });
       this.layout.rows.forEach((row, rowIndex) => {
-        const originalWidgetIndex =
-          this.layout.widgets.length -
-          1 -
-          this.layout.columns.length * rowIndex;
-        // if (this.originalLayout.widgets.length > originalWidgetIndex) {
-        //   const newWidget = WidgetLayoutConfiguration.create(this.originalLayout.widgets[originalWidgetIndex]);
-        //   newWidget.startColumn += 1;
-        //   newWidget.endColumn += 1;
-        //   newWidget.startRow = rowIndex + 1;
-        //   newWidget.endRow = rowIndex + 1;
-        //   this.layout.widgets.push(newWidget);
-        // } else {
         const newWidget = WidgetLayoutConfiguration.create({
           id: "",
           type: this.defaultWidgetType,
-          startColumn: newValue,
-          endColumn: newValue + 1,
+          startColumn: newColumnIndex,
+          endColumn: newColumnIndex + 1,
           startRow: rowIndex + 1,
-          endRow: rowIndex + 1,
+          endRow: rowIndex + 2,
         });
-        console.log("Creating new widget", this.defaultWidgetType, newWidget);
         this.layout.widgets.push(newWidget);
-        // }
       });
     }
-    while (this.layout.columns.length > newValue) {
-      this.layout.columns.pop();
-    }
 
-    // Adjust widgets that are out of bounds
-    const maxColumn = newValue;
+    this.layout.columns = this.layout.columns.slice(0, newValue);
+
+    const maxColumn = this.getTotalSubdivisionColumns() + 1;
     this.layout.widgets = this.layout.widgets.filter((widget) => {
       if (widget.endColumn > maxColumn) {
         widget.endColumn = maxColumn;
       }
-      if (widget.startColumn > maxColumn) {
-        return false; // Remove widget if it's completely out of bounds
+      if (widget.startColumn > this.getTotalSubdivisionColumns()) {
+        return false;
       }
       return true;
     });
 
+    this.regeneratePlaceholders();
+
     this.computeLayoutCSS();
   }
 
-  startColumnDrag(event: MouseEvent, columnIndex: number): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = true;
-    this.dragType = "column";
-    this.dragIndex = columnIndex;
-    this.dragStartPosition = event.clientX;
-    // Store the widths of the two columns being resized
-    this.dragStartValue = this.layout.columns[columnIndex].width;
-    document.addEventListener("mousemove", this.onColumnDrag);
-    document.addEventListener("mouseup", this.stopDrag);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+  private checkWidgetsMatch(widget1: WidgetLayoutConfiguration, widget2: WidgetLayoutConfiguration): boolean {
+    return widget1.id === widget2.id && widget1.startRow === widget2.startRow &&
+     widget1.endRow === widget2.endRow && widget1.startColumn === widget2.startColumn &&
+     widget1.endColumn === widget2.endColumn && widget1.type === widget2.type;
   }
 
-  startRowDrag(event: MouseEvent, rowIndex: number): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = true;
-    this.dragType = "row";
-    this.dragIndex = rowIndex;
-    this.dragStartPosition = event.clientY;
-    // Store the height of the row being resized
-    this.dragStartValue = this.layout.rows[rowIndex].height;
-    document.addEventListener("mousemove", this.onRowDrag);
-    document.addEventListener("mouseup", this.stopDrag);
-    document.body.style.cursor = "row-resize";
-    document.body.style.userSelect = "none";
-  }
-
-  private onColumnDrag = (event: MouseEvent): void => {
-    if (!this.isDragging || this.dragType !== "column" || this.dragIndex < 0) {
-      return;
-    }
-
-    const delta = event.clientX - this.dragStartPosition;
-    const previewElement = this.layoutPreview?.nativeElement;
-    if (!previewElement) {
-      return;
-    }
-
-    const rect = previewElement.getBoundingClientRect();
-    const totalWidth = rect.width - 32; // Subtract padding
-    const gap = 8; // Grid gap
-
-    // Calculate total fr units
-    const totalFr = this.layout.columns.reduce(
-      (sum, col) => sum + col.width,
-      0
+  onDeleteWidget(widget: WidgetLayoutConfiguration): void {
+    const widgetType = this.getWidgetType(widget.type);
+    this.layout.widgets = this.layout.widgets.filter((w) => !this.checkWidgetsMatch(w, widget));
+    this.regeneratePlaceholders();
+    const placeholder = this.placeholders.find(
+      (p) =>
+        p.startRow === widget.startRow &&
+        p.endRow === widget.endRow &&
+        p.startColumn === widget.startColumn &&
+        p.endColumn === widget.endColumn
     );
-    const frToPixels =
-      (totalWidth - gap * (this.layout.columns.length - 1)) / totalFr;
-
-    // Calculate how many fr units the delta represents
-    const deltaFr = delta / frToPixels;
-
-    // Adjust the column widths
-    // When dragging, we're resizing the column at dragIndex and the next one
-    if (this.dragIndex < this.layout.columns.length - 1) {
-      let newWidth = this.dragStartValue + deltaFr;
-      if (newWidth < 0.5) {
-        newWidth = 0.5;
-      }
-      // Adjust the next column to maintain total
-      const nextColumnIndex = this.dragIndex + 1;
-      const nextColumnStartValue = this.layout.columns[nextColumnIndex].width;
-      const nextColumnNewWidth =
-        nextColumnStartValue - (newWidth - this.dragStartValue);
-      if (nextColumnNewWidth >= 0.5) {
-        this.layout.columns[this.dragIndex].width = newWidth;
-        this.layout.columns[nextColumnIndex].width = nextColumnNewWidth;
-        this.computeLayoutCSS();
-      }
+    if (placeholder) {
+      placeholder.type = widgetType;
     }
-  };
+  }
 
-  private onRowDrag = (event: MouseEvent): void => {
-    if (!this.isDragging || this.dragType !== "row" || this.dragIndex < 0) {
+  onRestoreWidget(placeholder: WidgetPlaceholder): void {
+    const newWidget = WidgetLayoutConfiguration.create({
+      id: "",
+      type: placeholder.type || this.defaultWidgetType,
+      startRow: placeholder.startRow,
+      endRow: placeholder.endRow,
+      startColumn: placeholder.startColumn,
+      endColumn: placeholder.endColumn,
+    });
+    this.layout.widgets.push(newWidget);
+    this.regeneratePlaceholders();
+  }
+
+  onResizeStart(
+    event: MouseEvent,
+    widget: WidgetLayoutConfiguration,
+    edge: "top" | "bottom" | "left" | "right"
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isResizing = true;
+    this.resizeWidget = widget;
+    this.resizeEdge = edge;
+    this.resizeStartMouseY = event.clientY;
+    this.resizeStartMouseX = event.clientX;
+    this.resizeStartRow = widget.startRow;
+    this.resizeStartColumn = widget.startColumn;
+    this.resizeStartEndRow = widget.endRow;
+    this.resizeStartEndColumn = widget.endColumn;
+  }
+
+  @HostListener("document:mousemove", ["$event"])
+  onMouseMove(event: MouseEvent): void {
+    if (!this.isResizing || !this.resizeWidget || !this.resizeEdge) {
       return;
     }
 
-    const delta = event.clientY - this.dragStartPosition;
-    const previewElement = this.layoutPreview?.nativeElement;
-    if (!previewElement) {
+    const gridElement = this.layoutPreview?.nativeElement;
+    if (!gridElement) {
       return;
     }
 
-    const rect = previewElement.getBoundingClientRect();
-    const totalHeight = rect.height - 32; // Subtract padding
-    const gap = 8; // Grid gap
+    const rect = gridElement.getBoundingClientRect();
+    const totalSubdivisionRows = this.getTotalSubdivisionRows();
+    const totalSubdivisionColumns = this.getTotalSubdivisionColumns();
 
-    // Calculate total fr units
-    const totalFr = this.layout.rows.reduce((sum, row) => sum + row.height, 0);
-    const frToPixels =
-      (totalHeight - gap * (this.layout.rows.length - 1)) / totalFr;
+    if (this.resizeEdge === "top" || this.resizeEdge === "bottom") {
+      const mouseY = event.clientY - rect.top;
+      const gridHeight = rect.height;
+      const rowHeight = gridHeight / totalSubdivisionRows;
 
-    // Calculate how many fr units the delta represents
-    const deltaFr = delta / frToPixels;
-
-    // Adjust the row heights
-    // When dragging, we're resizing the row at dragIndex and the next one
-    if (this.dragIndex < this.layout.rows.length - 1) {
-      let newHeight = this.dragStartValue + deltaFr;
-      if (newHeight < 0.5) {
-        newHeight = 0.5;
+      let targetSubdivision: number;
+      if (this.resizeEdge === "top") {
+        const deltaY = this.resizeStartMouseY - event.clientY;
+        const deltaSubdivisions = Math.round(deltaY / rowHeight);
+        targetSubdivision = this.resizeStartRow - deltaSubdivisions;
+      } else {
+        const deltaY = event.clientY - this.resizeStartMouseY;
+        const deltaSubdivisions = Math.round(deltaY / rowHeight);
+        targetSubdivision = this.resizeStartEndRow + deltaSubdivisions;
       }
-      // Adjust the next row to maintain total
-      const nextRowIndex = this.dragIndex + 1;
-      const nextRowStartValue = this.layout.rows[nextRowIndex].height;
-      const nextRowNewHeight =
-        nextRowStartValue - (newHeight - this.dragStartValue);
-      if (nextRowNewHeight >= 0.5) {
-        this.layout.rows[this.dragIndex].height = newHeight;
-        this.layout.rows[nextRowIndex].height = nextRowNewHeight;
-        this.computeLayoutCSS();
+
+      targetSubdivision = Math.max(1, Math.min(targetSubdivision, totalSubdivisionRows + 1));
+
+      if (this.resizeEdge === "top") {
+        if (targetSubdivision < this.resizeWidget.endRow) {
+          this.resizeWidget.startRow = targetSubdivision;
+        }
+      } else {
+        if (targetSubdivision > this.resizeWidget.startRow) {
+          this.resizeWidget.endRow = targetSubdivision;
+        }
+      }
+    } else {
+      const mouseX = event.clientX - rect.left;
+      const gridWidth = rect.width;
+      const columnWidth = gridWidth / totalSubdivisionColumns;
+
+      let targetSubdivision: number;
+      if (this.resizeEdge === "left") {
+        const deltaX = this.resizeStartMouseX - event.clientX;
+        const deltaSubdivisions = Math.round(deltaX / columnWidth);
+        targetSubdivision = this.resizeStartColumn - deltaSubdivisions;
+      } else {
+        const deltaX = event.clientX - this.resizeStartMouseX;
+        const deltaSubdivisions = Math.round(deltaX / columnWidth);
+        targetSubdivision = this.resizeStartEndColumn + deltaSubdivisions;
+      }
+
+      targetSubdivision = Math.max(1, Math.min(targetSubdivision, totalSubdivisionColumns + 1));
+
+      if (this.resizeEdge === "left") {
+        if (targetSubdivision < this.resizeWidget.endColumn) {
+          this.resizeWidget.startColumn = targetSubdivision;
+        }
+      } else {
+        if (targetSubdivision > this.resizeWidget.startColumn) {
+          this.resizeWidget.endColumn = targetSubdivision;
+        }
       }
     }
-  };
+  }
 
-  private stopDrag = (): void => {
-    this.isDragging = false;
-    this.dragType = null;
-    this.dragIndex = -1;
-    document.removeEventListener("mousemove", this.onColumnDrag);
-    document.removeEventListener("mousemove", this.onRowDrag);
-    document.removeEventListener("mouseup", this.stopDrag);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  };
+  @HostListener("document:mouseup", ["$event"])
+  onMouseUp(event: MouseEvent): void {
+    if (this.isResizing) {
+      this.isResizing = false;
+      this.resizeWidget = null;
+      this.resizeEdge = null;
+      this.regeneratePlaceholders();
+    }
+  }
+
+  isPlaceholderAtPosition(
+    row: number,
+    column: number
+  ): WidgetPlaceholder | null {
+    return (
+      this.placeholders.find(
+        (p) =>
+          p.startRow <= row &&
+          p.endRow > row &&
+          p.startColumn <= column &&
+          p.endColumn > column
+      ) || null
+    );
+  }
+
+  doesPlaceholderOverlapWithWidgets(placeholder: WidgetPlaceholder): boolean {
+    return this.layout.widgets.some((widget) => {
+      const rowOverlap =
+        widget.startRow < placeholder.endRow &&
+        widget.endRow > placeholder.startRow;
+      const columnOverlap =
+        widget.startColumn < placeholder.endColumn &&
+        widget.endColumn > placeholder.startColumn;
+      return rowOverlap && columnOverlap;
+    });
+  }
+
+  initializePlaceholders(): void {
+    this.regeneratePlaceholders();
+  }
+
+  regeneratePlaceholders(): void {
+    const totalRows = this.getTotalSubdivisionRows();
+    const totalColumns = this.getTotalSubdivisionColumns();
+    
+    const placeholderTypes = new Map<string, WidgetType | undefined>();
+    this.placeholders.forEach((p) => {
+      const key = `${p.startRow}-${p.endRow}-${p.startColumn}-${p.endColumn}`;
+      placeholderTypes.set(key, p.type);
+    });
+
+    this.placeholders = [];
+    
+    const coveredCells: boolean[][] = [];
+    for (let row = 1; row <= totalRows; row++) {
+      coveredCells[row] = [];
+      for (let col = 1; col <= totalColumns; col++) {
+        coveredCells[row][col] = false;
+      }
+    }
+
+    this.layout.widgets.forEach((widget) => {
+      for (let row = widget.startRow; row < widget.endRow; row++) {
+        for (let col = widget.startColumn; col < widget.endColumn; col++) {
+          if (row >= 1 && row <= totalRows && col >= 1 && col <= totalColumns) {
+            coveredCells[row][col] = true;
+          }
+        }
+      }
+    });
+
+    const visited: boolean[][] = [];
+    for (let row = 1; row <= totalRows; row++) {
+      visited[row] = [];
+      for (let col = 1; col <= totalColumns; col++) {
+        visited[row][col] = false;
+      }
+    }
+
+    for (let row = 1; row <= totalRows; row++) {
+      for (let col = 1; col <= totalColumns; col++) {
+        if (!coveredCells[row][col] && !visited[row][col]) {
+          let maxWidth = 0;
+          let maxHeight = 0;
+
+          for (let c = col; c <= totalColumns; c++) {
+            if (coveredCells[row][c] || visited[row][c]) {
+              break;
+            }
+            maxWidth++;
+          }
+
+          for (let r = row; r <= totalRows; r++) {
+            let canExtend = true;
+            for (let c = col; c < col + maxWidth; c++) {
+              if (coveredCells[r][c] || visited[r][c]) {
+                canExtend = false;
+                break;
+              }
+            }
+            if (!canExtend) {
+              break;
+            }
+            maxHeight++;
+          }
+
+          if (maxWidth > 0 && maxHeight > 0) {
+            const placeholder: WidgetPlaceholder = {
+              startRow: row,
+              endRow: row + maxHeight,
+              startColumn: col,
+              endColumn: col + maxWidth,
+            };
+
+            const key = `${placeholder.startRow}-${placeholder.endRow}-${placeholder.startColumn}-${placeholder.endColumn}`;
+            placeholder.type = placeholderTypes.get(key);
+
+            this.placeholders.push(placeholder);
+
+            for (let r = row; r < row + maxHeight; r++) {
+              for (let c = col; c < col + maxWidth; c++) {
+                visited[r][c] = true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  getValidPlaceholders(): WidgetPlaceholder[] {
+    const maxRow = this.getTotalSubdivisionRows() + 1;
+    const maxColumn = this.getTotalSubdivisionColumns() + 1;
+
+    return this.placeholders.filter((placeholder) => {
+      if (
+        placeholder.startRow < 1 ||
+        placeholder.startColumn < 1 ||
+        placeholder.endRow > maxRow ||
+        placeholder.endColumn > maxColumn
+      ) {
+        return false;
+      }
+
+      return !this.doesPlaceholderOverlapWithWidgets(placeholder);
+    });
+  }
 
   getWidgetType(widgetTypeString: string): WidgetType {
     return widgetTypeString as WidgetType;
-  }
-
-  getColumnHandles(): number[] {
-    // Return indices for handles between columns (0 to numColumns-2)
-    return Array.from({ length: this.numColumns - 1 }, (_, i) => i);
-  }
-
-  getRowHandles(): number[] {
-    // Return indices for handles between rows (0 to numRows-2)
-    return Array.from({ length: this.numRows - 1 }, (_, i) => i);
   }
 
   getWidgetIconUrl(widgetType: string): string {
@@ -404,7 +578,5 @@ export class LayoutConfiguratorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Clean up event listeners
-    this.stopDrag();
   }
 }

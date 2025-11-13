@@ -56,12 +56,29 @@ POSSIBILITY OF SUCH DAMAGE.
             *ngFor="let widget of layout.widgets"
             class="widget-preview"
             [ngStyle]="{
-              'grid-column-start': widget.startColumn,
-              'grid-column-end': widget.endColumn,
-              'grid-row-start': widget.startRow,
-              'grid-row-end': widget.endRow,
+              'grid-column-start': getWidgetGridColumnStart(widget),
+              'grid-column-end': getWidgetGridColumnEnd(widget),
+              'grid-row-start': getWidgetGridRowStart(widget),
+              'grid-row-end': getWidgetGridRowEnd(widget),
             }"
           >
+            <div
+              class="resize-handle resize-handle-top"
+              (mousedown)="onResizeStart($event, widget, 'top')"
+            ></div>
+            <div
+              class="resize-handle resize-handle-bottom"
+              (mousedown)="onResizeStart($event, widget, 'bottom')"
+            ></div>
+            <div
+              class="resize-handle resize-handle-left"
+              (mousedown)="onResizeStart($event, widget, 'left')"
+            ></div>
+            <div
+              class="resize-handle resize-handle-right"
+              (mousedown)="onResizeStart($event, widget, 'right')"
+            ></div>
+
             <img
               *ngIf="widget.type && getWidgetIconUrl(widget.type)"
               [src]="getWidgetIconUrl(widget.type)"
@@ -71,13 +88,37 @@ POSSIBILITY OF SUCH DAMAGE.
               *ngIf="widget.type && !getWidgetIconUrl(widget.type)"
               >{{ getWidgetNamePlaceholder(widget.type) }}</span
             >
-            <widget-switcher
-              [widgetOptions]="allWidgetOptions"
-              [activeWidgetType]="getWidgetType(widget.type)"
-              [metadataEditable]="false"
-              (widgetChange)="widget.type = $event"
-            >
-            </widget-switcher>
+            <div class="widget-controls">
+              <widget-switcher
+                [widgetOptions]="allWidgetOptions"
+                [activeWidgetType]="getWidgetType(widget.type)"
+                [metadataEditable]="false"
+                (widgetChange)="widget.type = $event"
+              >
+              </widget-switcher>
+              <action-button
+                action="delete"
+                (onClick)="onDeleteWidget(widget)"
+              ></action-button>
+            </div>
+          </div>
+          <div
+            *ngFor="let placeholder of getValidPlaceholders()"
+            class="widget-placeholder"
+            [ngStyle]="{
+              'grid-column-start': placeholder.startColumn,
+              'grid-column-end': placeholder.endColumn,
+              'grid-row-start': placeholder.startRow,
+              'grid-row-end': placeholder.endRow,
+            }"
+          >
+            <div class="placeholder-content">
+              <action-button
+                action="add"
+                (onClick)="onRestoreWidget(placeholder)"
+                tooltipTitle="Add widget back"
+              ></action-button>
+            </div>
           </div>
         </div>
       </div>
