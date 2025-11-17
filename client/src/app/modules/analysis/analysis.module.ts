@@ -33,6 +33,7 @@ import { SelectionComponent } from "./components/analysis-sidepanel/tabs/selecti
 import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
 import { ExportTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/export/export.component";
 import { WorkspaceConfigurationTabComponent } from "./components/analysis-sidepanel/tabs/workspace-configuration/workspace-configuration.component";
+import { LayoutConfiguratorComponent } from "./components/analysis-sidepanel/tabs/workspace-configuration/layout-configurator/layout-configurator.component";
 import { MarkdownModule } from "ngx-markdown";
 import { NewTabPageComponent } from "./pages/new-tab-page/new-tab-page.component";
 import { ReplaceScanDialogComponent } from "./components/analysis-sidepanel/tabs/scan-configuration/scan-configuration-item/replace-scan-dialog/replace-scan-dialog.component";
@@ -66,6 +67,7 @@ const APP_ROUTES: Routes = [
     SelectionComponent,
     ExportTabComponent,
     WorkspaceConfigurationTabComponent,
+    LayoutConfiguratorComponent,
     ReplaceScanDialogComponent,
     ROITabComponent,
     MistROIComponent,

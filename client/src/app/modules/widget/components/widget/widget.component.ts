@@ -39,7 +39,7 @@ import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-sour
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
 
-const getWidgetOptions = (): WidgetConfiguration[] => {
+export const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
 };
 
@@ -136,8 +136,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
       );
 
       this._subs.add(
-        this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
-          if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
+        this._analysisLayoutService.highlightedWidgetIds$.subscribe((highlightedWidgetIds: string[]) => {
+          if (highlightedWidgetIds.includes(this.widgetLayoutConfig.id)) {
             this.isWidgetHighlighted = true;
           } else if (this.isWidgetHighlighted) {
             this.isWidgetHighlighted = false;

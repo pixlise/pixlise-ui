@@ -96,7 +96,7 @@ export class AnalysisLayoutService implements OnDestroy {
   soloViewWidgetId$ = new BehaviorSubject<string>("");
 
   targetWidgetIds$ = new BehaviorSubject<Set<string>>(new Set());
-  highlightedWidgetId$ = new BehaviorSubject<string>("");
+  highlightedWidgetIds$ = new BehaviorSubject<string[]>([]);
   expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
 
   highlightedDiffractionWidget$ = new BehaviorSubject<HighlightedDiffraction | null>(null);

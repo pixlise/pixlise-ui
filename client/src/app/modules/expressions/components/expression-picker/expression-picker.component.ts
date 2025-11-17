@@ -30,7 +30,7 @@
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { AnalysisLayoutService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { combineLatest, filter, map, of, Subscription, switchMap } from "rxjs";
+import { combineLatest, filter, firstValueFrom, map, of, Subscription, switchMap, take } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
@@ -134,8 +134,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   quantId: string = "";
 
   widgetType: WidgetType | "" = "";
-  private _activeWidgetId: string = "";
-  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+  private _activeWidgetIds: string[] = [];
+  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] = [];
+  
+  currentWidgetTabIndex: number = 0;
 
   private _selectedExpressionGroup: ExpressionGroup = ExpressionGroup.create();
   private _selectedRGBMixGroup: ExpressionGroup = ExpressionGroup.create();
@@ -188,9 +190,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       this.activeRGBMixModeGroup = this.data.rgbMixModeActive ? "RGB Mix" : "Expressions";
     }
 
-    this._activeWidgetId = this.data.widgetId || "";
+    this._activeWidgetIds = [this.data.widgetId || ""];
     this.expressionTriggerPosition = this.data?.expressionTriggerPosition ?? -1;
-    this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+    this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
 
     let expressionIds = (this.data.selectedIds || []).filter(id => id && !DataExpressionId.isExpressionGroupId(id));
     this._selectedExpressionIds = new Set(expressionIds);
@@ -227,7 +229,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         if (config) {
-          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] = [];
           config.layouts.forEach((layout, i) => {
             const widgetCounts: Record<string, number> = {};
             layout.widgets.forEach((widget, widgetIndex) => {
@@ -240,7 +242,17 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               const widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
               const widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
 
-              widgetReferences.push({ widget, name: widgetName, type: widget.type });
+              if (widget.id === this.data.widgetId) {
+                this.currentWidgetTabIndex = i;
+              }
+
+              widgetReferences.push({ 
+                widget, 
+                name: widgetName, 
+                type: widget.type,
+                pageIndex: i,
+                tabName: layout.tabName || undefined
+              });
             });
           });
 
@@ -252,13 +264,13 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           });
 
           // If the current active widget ID is an export preview widget, reset it to the original widget
-          if (this._activeWidgetId.startsWith(EXPORT_PREVIEW_ID_PREFIX)) {
-            const originalWidgetId = this._activeWidgetId.replace(EXPORT_PREVIEW_ID_PREFIX, "");
+          if (this._activeWidgetIds.some((id) => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))) {
+            const originalWidgetId = this._activeWidgetIds.find(id => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))?.replace(EXPORT_PREVIEW_ID_PREFIX, "") || "";
             const validWidget = this.layoutWidgets.find(widget => widget.widget.id === originalWidgetId);
             if (validWidget) {
-              this._activeWidgetId = originalWidgetId;
+              this._activeWidgetIds = [originalWidgetId];
               // Also update the highlighted widget ID to match
-              this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+              this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
             }
           }
         }
@@ -509,16 +521,22 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     return expressionIds;
   }
 
-  get activeWidgetId(): string {
-    return this._activeWidgetId;
+  get activeWidgetNamesTooltip(): string {
+    return this.layoutWidgets.filter(widget => this._activeWidgetIds.includes(widget.widget.id)).map(widget => widget.name).join(", ");
   }
 
-  set activeWidgetId(id: string) {
-    this._activeWidgetId = id;
-    this._analysisLayoutService.highlightedWidgetId$.next(id);
+  get activeWidgetIds(): string[] {
+    return this._activeWidgetIds;
+  }
+
+  set activeWidgetIds(ids: string[]) {
+    this._activeWidgetIds = ids;
+    this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
     this.expressionTriggerPosition = -1;
 
-    let { spec, data, type } = this._getWidgetData(id);
+    // While we can have many highlighted widgets, we only need to load the data for the first one as the others will be the same
+    const loadedId = ids[0] || "";
+    let { spec, data, type } = this._getWidgetData(loadedId);
     if (spec && data && type) {
       this.widgetType = type;
       let expressionIds = this._expressionIdsFromWidgetData(data);
@@ -1106,7 +1124,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
-    this._analysisLayoutService.highlightedWidgetId$.next("");
+    this._analysisLayoutService.highlightedWidgetIds$.next([]);
     this.dialogRef.close();
   }
 
@@ -1134,12 +1152,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.persistDialog = !this.persistDialog;
   }
 
-  onApplyAndClose(): void {
+  async onApplyAndClose(): Promise<void> {
     this.persistDialog = false;
-    this.onConfirm();
+    await this.onConfirm();
   }
 
-  onConfirm(): void {
+  async onConfirm(): Promise<void> {
     const selectedExpressions: DataExpression[] = Array.from(this._selectedExpressionIdOrder)
       .map(id => this._selectedExpressions.find(expression => expression?.id === id))
       .filter(expression => expression) as DataExpression[];
@@ -1149,13 +1167,13 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       .filter(group => group) as DataExpression[];  
 
     if (rgbMixExpressions.length >= 3) {
+      const hasGroupChanged = !this.selectedGroup.id ||
+        !setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id))) ||
+        !this.selectedGroup.groupItems.every((groupItem, i) => groupItem?.expressionId === rgbMixExpressions[i]?.id);
+
       // If the selected group alredy has an id, and it has the same RGB mix entries in the same order as the one we're
       // about to create, don't create it! it can be used as-is directly.
-      if (
-        this.selectedGroup.id.length > 0 &&
-        setsEqual(new Set<string>(this.selectedGroup.groupItems.map(v => v.expressionId)), new Set<string>(rgbMixExpressions.map(v => v.id))) &&
-        this.selectedGroup.groupItems.every((groupItem, i) => groupItem?.expressionId === rgbMixExpressions[i]?.id)
-      ) {
+      if (!hasGroupChanged) {
         this._analysisLayoutService.expressionPickerResponse$.next({
           selectedGroup: this.selectedGroup,
           selectedExpressions,
@@ -1170,19 +1188,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         }
         return;
       }
-      const selectedGroup = ExpressionGroup.create(this.selectedGroup);
-      selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
 
-        if (this._activeWidgetId.startsWith(EXPORT_PREVIEW_ID_PREFIX)) {
-          this._activeWidgetId = this._activeWidgetId.replace(EXPORT_PREVIEW_ID_PREFIX, "");
+      const selectedGroup = ExpressionGroup.create(this.selectedGroup);
+      selectedGroup.id = "";
+      selectedGroup.groupItems = rgbMixExpressions.slice(0, 3).map(expression => ExpressionGroupItem.create({ expressionId: expression.id }));
+        if (this._activeWidgetIds.some(id => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))) {
+          const originalWidgetId = this._activeWidgetIds.find(id => id.startsWith(EXPORT_PREVIEW_ID_PREFIX))?.replace(EXPORT_PREVIEW_ID_PREFIX, "") || "";
           // Also update the highlighted widget ID to match
-          this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+          this._analysisLayoutService.highlightedWidgetIds$.next([originalWidgetId]);
         }
 
-      let activeWidgetRef = this.layoutWidgets.find(widget => widget.widget.id === this._activeWidgetId);
+      let activeWidgetRef = this.layoutWidgets.find(widget => this._activeWidgetIds.includes(widget.widget.id));
       if (activeWidgetRef) {
-        // A group wasn't specifically selected and info wasn't entered to create a new one, so save as auto-generated
-        if ((!selectedGroup.id && !selectedGroup.name) || !selectedGroup?.owner?.canEdit) {
+        // Either a group wasn't specifically selected and info wasn't entered to create a new one or the group has changed, so save as auto-generated
           let scanName = this.scanId;
           let quantName = this.quantId;
 
@@ -1206,33 +1224,30 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           if (!selectedGroup.description) {
             selectedGroup.description = `Auto-generated RGB Mix group for ${scanName} on the ${activeWidgetRef.name} plot with quant: ${quantName}\n\nIf you would like to save this group for future use, rename it to prevent it from being overwritten`;
           }
-        }
 
         // Invalidate the cached data for this group since we're updating it
         this._cachedDataSerivce.invalidExpressionGroupIds.add(selectedGroup.id);
 
         selectedGroup.owner = undefined;
-        this._expressionService.writeExpressionGroupAsync(selectedGroup, true).subscribe({
-          next: group => {
-            this.selectedGroup.id = group.id;
-            this.selectedGroup.name = group.name;
-            this.selectedGroup.description = group.description;
-            this.selectedGroup.tags = group.tags;
-            this.selectedGroup.owner = group.owner;
+        const updatedGroup = await firstValueFrom(this._expressionService.writeExpressionGroupAsync(selectedGroup, true).pipe(take(1)));
+        if (updatedGroup) {
+          this.selectedGroup.id = updatedGroup.id;
+          this.selectedGroup.name = updatedGroup.name;
+          this.selectedGroup.description = updatedGroup.description;
+          this.selectedGroup.tags = updatedGroup.tags;
+          this.selectedGroup.owner = updatedGroup.owner;
 
-            this._analysisLayoutService.expressionPickerResponse$.next({
-              selectedGroup: group,
-              selectedExpressions,
-              scanId: this.scanId,
-              quantId: this.quantId,
-              persistDialog: this.persistDialog,
-              subId: this.data.subId,
-            });
-          },
-          error: err => {
-            this._snackBarService.openError("Error saving RGB Mix group", err);
-          },
-        });
+          this._analysisLayoutService.expressionPickerResponse$.next({
+            selectedGroup: updatedGroup,
+            selectedExpressions,
+            scanId: this.scanId,
+            quantId: this.quantId,
+            persistDialog: this.persistDialog,
+            subId: this.data.subId,
+          });
+        } else {
+          this._snackBarService.openError("Error saving RGB Mix group");
+        }
 
         if (!this.persistDialog) {
           this.dialogRef.close();
@@ -1257,6 +1272,85 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           subId: this.data.subId,
         });
       }
+    }
+  }
+
+  get widgetDialogPageCount(): number {
+    return this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length || 0;
+  }
+
+  get currentPageWidgets(): { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] {
+    return this.layoutWidgets.filter(widget => widget.pageIndex === this.currentWidgetTabIndex);
+  }
+
+  get currentPageLabel(): string {
+    const widget = this.currentPageWidgets[0];
+    return widget.tabName || `Tab ${(widget.pageIndex || 0) + 1}`;
+  }
+
+  canGoToPreviousWidgetPage(): boolean {
+    return this.currentWidgetTabIndex > 0;
+  }
+
+  canGoToNextWidgetPage(): boolean {
+    return this.currentWidgetTabIndex < this.widgetDialogPageCount - 1;
+  }
+
+  onPreviousWidgetPage(): void {
+    if (this.canGoToPreviousWidgetPage()) {
+      this.currentWidgetTabIndex--;
+    }
+  }
+
+  onNextWidgetPage(): void {
+    if (this.canGoToNextWidgetPage()) {
+      this.currentWidgetTabIndex++;
+    }
+  }
+
+  isWidgetSelected(widgetId: string): boolean {
+    return this._activeWidgetIds.includes(widgetId);
+  }
+
+  onToggleWidget(widgetId: string): void {
+    if (this.isWidgetSelected(widgetId)) {
+      this._activeWidgetIds = this._activeWidgetIds.filter(id => id !== widgetId);
+    } else {
+      this._activeWidgetIds.push(widgetId);
+    }
+    this.activeWidgetIds = this._activeWidgetIds;
+  }
+
+  get areAllCurrentPageWidgetsSelected(): boolean {
+    const currentPageWidgets = this.currentPageWidgets;
+    if (currentPageWidgets.length === 0) {
+      return false;
+    }
+    return currentPageWidgets.every(w => this.isWidgetSelected(w.widget.id));
+  }
+
+  onSelectAllCurrentPageWidgets(): void {
+    const currentPageWidgets = this.currentPageWidgets;
+    currentPageWidgets.forEach(w => {
+      if (!this.isWidgetSelected(w.widget.id)) {
+        this._activeWidgetIds.push(w.widget.id);
+      }
+    });
+    this.activeWidgetIds = this._activeWidgetIds;
+  }
+
+  onDeselectAllCurrentPageWidgets(): void {
+    const currentPageWidgets = this.currentPageWidgets;
+    const currentPageWidgetIds = currentPageWidgets.map(w => w.widget.id);
+    this._activeWidgetIds = this._activeWidgetIds.filter(id => !currentPageWidgetIds.includes(id));
+    this.activeWidgetIds = this._activeWidgetIds;
+  }
+
+  onToggleAllCurrentPageWidgets(): void {
+    if (this.areAllCurrentPageWidgetsSelected) {
+      this.onDeselectAllCurrentPageWidgets();
+    } else {
+      this.onSelectAllCurrentPageWidgets();
     }
   }
 

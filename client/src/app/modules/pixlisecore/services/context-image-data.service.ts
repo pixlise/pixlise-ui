@@ -32,6 +32,7 @@ import { getPathBase } from "src/app/utils/utils";
 export type SyncedTransform = {
   scale: Point;
   pan: Point;
+  canvasDimensions: { width: number; height: number };
 };
 
 @Injectable({

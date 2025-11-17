@@ -29,26 +29,88 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #addScanMenu>
+  <div class="scan-selection-dialog">
+    <div class="scan-dialog-header">
+      <div class="scan-search-container">
+        <input
+          autofocus="true"
+          type="text"
+          placeholder="Search by name ..."
+          [(ngModel)]="scanSearchText"
+          (click)="onAddScanSearchClick($event)"
+        />
+        <tag-picker
+          type="scan"
+          [selectedTagIDs]="filteredTagIDs"
+          [showCurrentTagsSection]="false"
+          (onTagSelectionChanged)="onTagFilterChanged($event)"
+        ></tag-picker>
+        <svg
+          width="10"
+          height="7"
+          viewBox="0 0 10 7"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M9 6L5.04938 2L1 6" stroke="#F8F8F8" stroke-width="1.75" />
+        </svg>
+      </div>
+    </div>
+    <div class="scan-list">
+      <div
+        class="scan-item"
+        *ngFor="let scan of addScanList; trackBy: trackByScanId"
+        (click)="onAddScan(scan.id)"
+        [class.disabled]="selectedScanIds.has(scan.id)"
+        (mouseenter)="onScanItemHover(scan, $event)"
+        (mouseleave)="onScanItemLeave()"
+      >
+        <div class="scan-label-area">
+          <div class="scan-title">{{ getScanTitle(scan) }}</div>
+          <div class="scan-description" *ngIf="scan.description">
+            {{ getShortDescription(scan.description) }}
+          </div>
+          <div class="scan-tags" *ngIf="scan.tags && scan.tags.length > 0">
+            <span class="tag-badge" *ngFor="let tag of scan.tags">{{
+              getTagTitle(tag)
+            }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="empty-scans" *ngIf="addScanList.length === 0">
+        <h5>No datasets found</h5>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
 <div class="scan-configuration-container">
   <header>
     <h5>Datasets</h5>
   </header>
-  <push-button class="add-scan-btn" buttonStyle="gray-title" [matMenuTriggerFor]="menu" (onMenuOpen)="onScanSearchMenu()">Add another dataset</push-button>
-  <mat-menu #menu="matMenu" class="scan-menu">
-    <div class="search-container">
-      <input class="scan-search" placeholder="Search scans" [(ngModel)]="scanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
-    </div>
-    <button mat-menu-item *ngFor="let scan of addScanList; trackBy: trackByScanId" (click)="onAddScan(scan.id)" [disabled]="selectedScanIds.has(scan.id)">
-      {{ getScanTitle(scan) }}
-    </button>
-  </mat-menu>
+  <widget-settings-menu
+    [settingsDialog]="addScanMenu"
+    #addScanMenuButton
+    [noPadding]="true"
+  >
+    <push-button
+      class="add-scan-btn"
+      buttonStyle="gray-title"
+      [flexBtn]="true"
+      [customStyle]="{ justifyContent: 'center', flex: '1' }"
+    >
+      + Add another dataset
+    </push-button>
+  </widget-settings-menu>
   <section class="scan-configurations">
     <scan-configuration-item
       [config]="config"
       [scan]="idToScan[config.id]"
       (updateConfig)="updateConfig($event)"
       (removeConfiguration)="onRemoveConfiguration(config.id)"
-      *ngFor="let config of scanConfigurations">
+      *ngFor="let config of scanConfigurations"
+    >
     </scan-configuration-item>
   </section>
   <div class="button-container">
@@ -64,7 +126,9 @@ POSSIBILITY OF SUCH DAMAGE.
     >
     <push-button
       #tootip="matTooltip"
-      [matTooltip]="hasConfigChanged ? 'Update configured scans' : 'No changes to save'"
+      [matTooltip]="
+        hasConfigChanged ? 'Update configured scans' : 'No changes to save'
+      "
       [matTooltipShowDelay]="500"
       class="save-btn"
       buttonStyle="yellow"

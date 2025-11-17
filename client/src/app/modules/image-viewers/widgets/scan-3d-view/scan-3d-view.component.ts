@@ -174,7 +174,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+        if (!result || !this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._widgetId)) {
           return;
         }
 
@@ -197,7 +197,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
         if (!result?.persistDialog) {
           // Expression picker has closed, so we can stop highlighting this widget
-          this._analysisLayoutService.highlightedWidgetId$.next("");
+          this._analysisLayoutService.highlightedWidgetIds$.next([]);
         }
       })
     );
@@ -459,7 +459,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
 
     this._expressionPickerDialog = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     this._expressionPickerDialog.afterClosed().subscribe(() => {
-      this._analysisLayoutService.highlightedWidgetId$.next("");
+      this._analysisLayoutService.highlightedWidgetIds$.next([]);
       this._expressionPickerDialog = null;
     });
   }

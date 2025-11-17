@@ -17,6 +17,8 @@ export class WidgetSwitcherOverlayComponent implements OnInit, OnDestroy {
   @Input() widgetOptions: WidgetConfiguration[] = [];
   @Input() activeWidgetType: WidgetType = "ternary-plot";
   @Input() activeWidget: WidgetConfiguration | null = null;
+  @Input() metadataEditable: boolean = true;
+  
   @Output() widgetSelected = new EventEmitter<WidgetType>();
 
   private _subs = new Subscription();

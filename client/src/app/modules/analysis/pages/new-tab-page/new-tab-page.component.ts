@@ -3,8 +3,19 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { createDefaultAnalysisTemplates, createDefaultOtherTemplates, ScreenTemplate } from "../../models/screen-configuration.model";
+import {
+  createDefaultAnalysisTemplates,
+  createDefaultOtherTemplates,
+  DEFAULT_CUSTOM_LAYOUT,
+  ScreenTemplate,
+} from "../../models/screen-configuration.model";
 import { TabLinks } from "src/app/models/TabLinks";
+import {
+  LayoutConfiguratorComponent,
+  LayoutConfiguratorData,
+} from "../../components/analysis-sidepanel/tabs/workspace-configuration/layout-configurator/layout-configurator.component";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { FullScreenLayout } from "../../../../generated-protos/screen-configuration";
 
 @Component({
   standalone: false,
@@ -24,12 +35,13 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _router: Router,
-    private _route: ActivatedRoute
+    private _route: ActivatedRoute,
+    private _dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
     this._subs.add(
-      this._route.queryParams.subscribe(params => {
+      this._route.queryParams.subscribe((params) => {
         this.queryParam = { ...params };
       })
     );
@@ -45,12 +57,9 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
       .join("&");
   }
 
-  // getWidgetIconUrl(widgetType: string): string {
-  //   return `assets/chart-placeholders/${widgetType}.svg` || "";
-  // }
-
   onAnalysisTemplateClick(tab: ScreenTemplate): void {
-    const screenConfig = this._analysisLayoutService.addScreenConfigurationLayout(tab?.layout);
+    const screenConfig =
+      this._analysisLayoutService.addScreenConfigurationLayout(tab?.layout);
     if (!screenConfig) {
       return;
     }
@@ -58,11 +67,14 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
     const lastTabId = screenConfig.layouts.length - 1;
     this.queryParam["tab"] = lastTabId.toString();
 
-    this._router.navigateByUrl(`${TabLinks.analysis}?${this.getQueryParamString()}`);
+    this._router.navigateByUrl(
+      `${TabLinks.analysis}?${this.getQueryParamString()}`
+    );
   }
 
   onOtherTemplateClick(tab: ScreenTemplate): void {
-    const screenConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    const screenConfig =
+      this._analysisLayoutService.activeScreenConfiguration$.value;
 
     if (tab.id === "browse") {
       if (screenConfig.browseTabHidden) {
@@ -70,7 +82,9 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
         this._analysisLayoutService.writeScreenConfiguration(screenConfig);
       }
 
-      this._router.navigateByUrl(`${TabLinks.browse}?${this.getQueryParamString()}`);
+      this._router.navigateByUrl(
+        `${TabLinks.browse}?${this.getQueryParamString()}`
+      );
     }
 
     if (tab.id === "code-editor") {
@@ -79,20 +93,60 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
         this._analysisLayoutService.writeScreenConfiguration(screenConfig);
       }
 
-      this._router.navigateByUrl(`${TabLinks.codeEditor}?${this.getQueryParamString()}`);
+      this._router.navigateByUrl(
+        `${TabLinks.codeEditor}?${this.getQueryParamString()}`
+      );
     } else if (tab.id === "element-maps") {
       if (screenConfig.elementMapsTabHidden) {
         screenConfig.elementMapsTabHidden = false;
         this._analysisLayoutService.writeScreenConfiguration(screenConfig);
       }
 
-      this._router.navigateByUrl(`${TabLinks.maps}?${this.getQueryParamString()}`);
+      this._router.navigateByUrl(
+        `${TabLinks.maps}?${this.getQueryParamString()}`
+      );
     }
+  }
+
+  onCustomLayoutClick(): void {
+    const dialogConfig = new MatDialogConfig<LayoutConfiguratorData>();
+    const customLayout = FullScreenLayout.create(DEFAULT_CUSTOM_LAYOUT);
+    dialogConfig.data = {
+      layout: customLayout,
+      tabName: "New Tab",
+    };
+    dialogConfig.maxWidth = "900px";
+    dialogConfig.width = "90vw";
+
+    const dialogRef = this._dialog.open(
+      LayoutConfiguratorComponent,
+      dialogConfig
+    );
+    dialogRef.afterClosed().subscribe((response) => {
+      if (response && response.layout) {
+        const screenConfig =
+          this._analysisLayoutService.activeScreenConfiguration$.value;
+        // Update the layout in the screen configuration
+        if (screenConfig) {
+          screenConfig.layouts.push(response.layout);
+          this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+
+          const lastTabId = screenConfig.layouts.length - 1;
+          this.queryParam["tab"] = lastTabId.toString();
+
+          this._router.navigateByUrl(
+            `${TabLinks.analysis}?${this.getQueryParamString()}`
+          );
+        }
+      }
+    });
   }
 
   @HostListener("window:keydown", ["$event"])
   onKeydown(event: KeyboardEvent): void {
-    const cmdOrCtrl = this._analysisLayoutService.isWindows ? "Control" : "Meta";
+    const cmdOrCtrl = this._analysisLayoutService.isWindows
+      ? "Control"
+      : "Meta";
     const bOrAltB = this._analysisLayoutService.isFirefox ? "∫" : "b";
 
     this._keyPresses.add(event.key);

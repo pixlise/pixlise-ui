@@ -1,35 +1,52 @@
 <section class="page analysis-container">
   <analysis-sidepanel></analysis-sidepanel>
-  <section
-    class="screen-container"
-    *ngIf="loadedScreenConfiguration && activeLayout && loadedScreenConfiguration.layouts.length > activeLayoutIndex && !soloViewWidget">
-    <section
-      class="widgets-container"
-      [ngStyle]="{
-        'grid-template-columns': computedLayouts[activeLayoutIndex].templateColumns,
-        'grid-template-rows': computedLayouts[activeLayoutIndex].templateRows
-      }">
-      <widget
-        *ngFor="let widget of activeLayout.widgets; trackBy: trackByWidgetId"
-        [widgetLayoutConfig]="widget"
-        [layoutIndex]="activeLayoutIndex"
-        [initWidget]="widget.type"
+  @if (
+    loadedScreenConfiguration &&
+    activeLayout &&
+    loadedScreenConfiguration.layouts.length > activeLayoutIndex &&
+    !soloViewWidget
+  ) {
+    <section class="screen-container">
+      <section
+        class="widgets-container"
         [ngStyle]="{
-          'grid-column-start': widget.startColumn,
-          'grid-column-end': widget.endColumn,
-          'grid-row-start': widget.startRow,
-          'grid-row-end': widget.endRow
-        }"></widget>
+          'grid-template-columns':
+            computedLayouts[activeLayoutIndex].templateColumns,
+          'grid-template-rows': computedLayouts[activeLayoutIndex].templateRows,
+        }"
+      >
+        @for (
+          widget of activeLayout.widgets;
+          track trackByWidgetId($index, widget)
+        ) {
+          <widget
+            [widgetLayoutConfig]="widget"
+            [layoutIndex]="activeLayoutIndex"
+            [initWidget]="widget.type"
+            [ngStyle]="{
+              'grid-column-start': widget.startColumn,
+              'grid-column-end': widget.endColumn,
+              'grid-row-start': widget.startRow,
+              'grid-row-end': widget.endRow,
+            }"
+          ></widget>
+        }
+      </section>
     </section>
-  </section>
-  <section class="screen-container" *ngIf="soloViewWidget">
-    <section
-      class="widgets-container"
-      [ngStyle]="{
-        'grid-template-columns': 'auto',
-        'grid-template-rows': 'auto'
-      }">
-      <widget [widgetLayoutConfig]="soloViewWidget" [initWidget]="soloViewWidget.type"></widget>
+  } @else if (soloViewWidget) {
+    <section class="screen-container">
+      <section
+        class="widgets-container"
+        [ngStyle]="{
+          'grid-template-columns': 'auto',
+          'grid-template-rows': 'auto',
+        }"
+      >
+        <widget
+          [widgetLayoutConfig]="soloViewWidget"
+          [initWidget]="soloViewWidget.type"
+        ></widget>
+      </section>
     </section>
-  </section>
+  }
 </section>

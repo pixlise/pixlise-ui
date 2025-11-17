@@ -316,7 +316,7 @@ export class DiffractionTabComponent implements OnInit, OnDestroy, HistogramSele
   }
 
   hoverChartSelection(id: string) {
-    this._analysisLayoutService.highlightedWidgetId$.next(id);
+    this._analysisLayoutService.highlightedWidgetIds$.next([id]);
   }
 
   get visiblePeaks(): (DiffractionPeak | ManualDiffractionPeak)[] {
