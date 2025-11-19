@@ -360,6 +360,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     }
 
     return new ImagePickerParams(
+      [this._widgetId],
       scanIds,
       warnMsg,
       new ImageDisplayOptions(

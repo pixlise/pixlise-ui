@@ -37,7 +37,7 @@ import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/r
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
@@ -83,6 +83,7 @@ export class ImageDisplayOptions {
 }
 export class ImagePickerParams {
   constructor(
+    public widgetIds: string[],
     public scanIds: string[],
     public warningMsg: string,
     public options: ImageDisplayOptions
@@ -127,16 +128,20 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   loadingBeamVersions: boolean = false;
 
+  private _targetWidgetIds: string[] = [];
+
   constructor(
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
     private _snackService: SnackbarService,
+    private _contextImageDataService: ContextImageDataService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
     public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>,
     public dialog: MatDialog //private _exportDataService: ExportDataService
   ) {
     // Copy the options so we can have "reset" buttons for eg
     this.loadOptions(data.options);
+    this._targetWidgetIds = data.widgetIds;
   }
 
   loadOptions(options: ImageDisplayOptions) {
@@ -248,6 +253,9 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   // Notifying caller of our options changing
   private publishOptionChange() {
     this.optionChange.emit(this.makeImagePickerResult());
+    for (const widgetId of this._targetWidgetIds) {
+      this._contextImageDataService.setWidgetImagePickerResult(widgetId, this.makeImagePickerResult());
+    }
   }
 
   private makeImagePickerResult(): ImagePickerResult {
