@@ -74,8 +74,10 @@ import { UserIconComponent } from "./components/atoms/user-icon/user-icon.compon
 import { GroupIconComponent } from "./components/atoms/group-icon/group-icon.component";
 import { ConfirmInputDialogComponent } from "./components/atoms/buttons/action-button/confirm-input-dialog/confirm-input-dialog.component";
 import { SearchableListComponent } from "./components/atoms/searchable-list/searchable-list.component";
+import { WidgetSelectionDialogComponent } from "./components/widget-selection-dialog/widget-selection-dialog.component";
 
 import { MagicLinkComponent } from "./components/pages/magiclink/magiclink.component";
+import { WidgetSelectionButtonComponent } from "./components/widget-selection-dialog/widget-selection-button/widget-selection-button.component";
 //import { AnalysisLayoutService } from "./services/analysis-layout.service";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
@@ -111,7 +113,7 @@ export { SearchableListComponent } from "./components/atoms/searchable-list/sear
 export { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
 export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
 export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./services/analysis-layout.service";
-
+export { WidgetSelectionDialogComponent } from "./components/widget-selection-dialog/widget-selection-dialog.component";
 
 @NgModule({
   declarations: [
@@ -173,7 +175,9 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     LayoutPreviewBoxComponent,
     UserIconComponent,
     GroupIconComponent,
-    SearchableListComponent
+    SearchableListComponent,
+    WidgetSelectionDialogComponent,
+    WidgetSelectionButtonComponent,
   ],
   imports: [
     CommonModule,
@@ -241,6 +245,8 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
     GroupIconComponent,
     SearchableListComponent,
     ScrollingModule,
+    WidgetSelectionDialogComponent,
+    WidgetSelectionButtonComponent,
   ],
   providers: [
     /*APICommService, APIDataService*/

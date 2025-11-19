@@ -845,9 +845,8 @@ export class BinaryChartWidgetComponent
 
           // Expression picker has closed, so we can stop highlighting this widget
           this._analysisLayoutService.highlightedWidgetIds$.next([]);
-        }
-      )
-    );
+        })
+      );
 
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe((displaySettings) => {

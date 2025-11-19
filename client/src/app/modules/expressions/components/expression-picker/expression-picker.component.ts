@@ -390,6 +390,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
+  get widgetId(): string {
+    return this.data.widgetId || "";
+  }
+
   onClearRGBMix(): void {
     this._selectedRGBMixGroup = ExpressionGroup.create();
     this._selectedRGBMixExpressions = [];
@@ -531,7 +535,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   set activeWidgetIds(ids: string[]) {
     this._activeWidgetIds = ids;
-    this._analysisLayoutService.highlightedWidgetIds$.next(this._activeWidgetIds);
+  }
+
+  onActiveWidgetIdsChanged(ids: string[]): void {
+    this._activeWidgetIds = ids;
     this.expressionTriggerPosition = -1;
 
     // While we can have many highlighted widgets, we only need to load the data for the first one as the others will be the same
@@ -1272,85 +1279,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           subId: this.data.subId,
         });
       }
-    }
-  }
-
-  get widgetDialogPageCount(): number {
-    return this._analysisLayoutService.activeScreenConfiguration$.value?.layouts.length || 0;
-  }
-
-  get currentPageWidgets(): { widget: WidgetLayoutConfiguration; name: string; type: string; pageIndex?: number; tabName?: string }[] {
-    return this.layoutWidgets.filter(widget => widget.pageIndex === this.currentWidgetTabIndex);
-  }
-
-  get currentPageLabel(): string {
-    const widget = this.currentPageWidgets[0];
-    return widget.tabName || `Tab ${(widget.pageIndex || 0) + 1}`;
-  }
-
-  canGoToPreviousWidgetPage(): boolean {
-    return this.currentWidgetTabIndex > 0;
-  }
-
-  canGoToNextWidgetPage(): boolean {
-    return this.currentWidgetTabIndex < this.widgetDialogPageCount - 1;
-  }
-
-  onPreviousWidgetPage(): void {
-    if (this.canGoToPreviousWidgetPage()) {
-      this.currentWidgetTabIndex--;
-    }
-  }
-
-  onNextWidgetPage(): void {
-    if (this.canGoToNextWidgetPage()) {
-      this.currentWidgetTabIndex++;
-    }
-  }
-
-  isWidgetSelected(widgetId: string): boolean {
-    return this._activeWidgetIds.includes(widgetId);
-  }
-
-  onToggleWidget(widgetId: string): void {
-    if (this.isWidgetSelected(widgetId)) {
-      this._activeWidgetIds = this._activeWidgetIds.filter(id => id !== widgetId);
-    } else {
-      this._activeWidgetIds.push(widgetId);
-    }
-    this.activeWidgetIds = this._activeWidgetIds;
-  }
-
-  get areAllCurrentPageWidgetsSelected(): boolean {
-    const currentPageWidgets = this.currentPageWidgets;
-    if (currentPageWidgets.length === 0) {
-      return false;
-    }
-    return currentPageWidgets.every(w => this.isWidgetSelected(w.widget.id));
-  }
-
-  onSelectAllCurrentPageWidgets(): void {
-    const currentPageWidgets = this.currentPageWidgets;
-    currentPageWidgets.forEach(w => {
-      if (!this.isWidgetSelected(w.widget.id)) {
-        this._activeWidgetIds.push(w.widget.id);
-      }
-    });
-    this.activeWidgetIds = this._activeWidgetIds;
-  }
-
-  onDeselectAllCurrentPageWidgets(): void {
-    const currentPageWidgets = this.currentPageWidgets;
-    const currentPageWidgetIds = currentPageWidgets.map(w => w.widget.id);
-    this._activeWidgetIds = this._activeWidgetIds.filter(id => !currentPageWidgetIds.includes(id));
-    this.activeWidgetIds = this._activeWidgetIds;
-  }
-
-  onToggleAllCurrentPageWidgets(): void {
-    if (this.areAllCurrentPageWidgetsSelected) {
-      this.onDeselectAllCurrentPageWidgets();
-    } else {
-      this.onSelectAllCurrentPageWidgets();
     }
   }
 

@@ -2121,7 +2121,7 @@ export class ContextImageComponent
     }
 
     return new ImagePickerParams(
-      [this._widgetId],
+      this._widgetId,
       scanIds,
       warnMsg,
       new ImageDisplayOptions(

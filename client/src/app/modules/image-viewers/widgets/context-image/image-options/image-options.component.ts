@@ -83,7 +83,7 @@ export class ImageDisplayOptions {
 }
 export class ImagePickerParams {
   constructor(
-    public widgetIds: string[],
+    public widgetId: string,
     public scanIds: string[],
     public warningMsg: string,
     public options: ImageDisplayOptions
@@ -141,7 +141,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   ) {
     // Copy the options so we can have "reset" buttons for eg
     this.loadOptions(data.options);
-    this._targetWidgetIds = data.widgetIds;
+    this._targetWidgetIds = [data.widgetId];
   }
 
   loadOptions(options: ImageDisplayOptions) {
@@ -636,6 +636,19 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     //     console.error(`Error exporting images: ${err}`);
     //   }
     // );
+  }
+
+  get activeWidgetIds(): string[] {
+    return this._targetWidgetIds;
+  }
+
+  set activeWidgetIds(ids: string[]) {
+    this._targetWidgetIds = ids;
+  }
+
+  onActiveWidgetIdsChanged(ids: string[]) {
+    this.activeWidgetIds = ids;
+    this.publishOptionChange();
   }
 
   onImport() {

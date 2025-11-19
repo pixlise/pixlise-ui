@@ -1,0 +1,16 @@
+<ng-template #widgetSelectionDialog>
+  <widget-selection-dialog
+    [widgetId]="widgetId"
+    [activeWidgetIds]="activeWidgetIds"
+    (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged.emit($event)"
+  ></widget-selection-dialog>
+</ng-template>
+
+<widget-settings-menu
+  [settingsDialog]="widgetSelectionDialog"
+  (onClose)="onClose()"
+>
+  <push-button buttonStyle="outline" class="active-group-btn">{{
+    activeWidgetIds.length > 0 ? activeWidgetNamesTooltip : "Select Widgets"
+  }}</push-button>
+</widget-settings-menu>
