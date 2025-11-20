@@ -223,6 +223,16 @@ export const WIDGETS = {
     dataKey: "variogram",
     controlConfiguration: {},
   },
+  "context-image2": {
+    name: "Context Image v2",
+    description: "Context Image with support for larger images and faster WebGL rendering",
+    hasExpressions: true,
+    widgetComponent: null,
+    //component: ContextImage2Component,
+    dataKey: "contextImage2",
+    showRGBMixExpressionPickerMode: true,
+    controlConfiguration: {},
+  },
 } satisfies Record<string, WidgetConfiguration>;
 
 export type WidgetType = keyof typeof WIDGETS;
@@ -242,11 +252,10 @@ const readWidgets = async () => {
       SingleAxisRGBUComponent,
       ParallelCoordinatesPlotWidgetComponent,
     } = await import("src/app/modules/scatterplots/scatterplots.module");
-    const { ContextImageComponent, MultiChannelViewerComponent } = await import("src/app/modules/image-viewers/image-viewers.module");
+    const { ContextImageComponent, MultiChannelViewerComponent, ContextImage2Component, Scan3DViewComponent } = await import("src/app/modules/image-viewers/image-viewers.module");
     const { QuantificationTableComponent } = await import("src/app/modules/table-views/table-views.module");
     const { MarkdownTextViewComponent } = await import("src/app/modules/text-views/text-views.module");
     const { VariogramWidgetComponent } = await import("src/app/modules/scatterplots/widgets/variogram-widget/variogram-widget.component");
-    const { Scan3DViewComponent } = await import("src/app/modules/image-viewers/widgets/scan-3d-view/scan-3d-view.component");
 
     loadedWidgets.set("spectrum-chart", SpectrumChartWidgetComponent);
     loadedWidgets.set("binary-plot", BinaryChartWidgetComponent);
@@ -262,6 +271,7 @@ const readWidgets = async () => {
     loadedWidgets.set("text-view", MarkdownTextViewComponent);
     loadedWidgets.set("variogram", VariogramWidgetComponent);
     loadedWidgets.set("scan-3d-view", Scan3DViewComponent);
+    loadedWidgets.set("context-image2", ContextImage2Component);
   }
   return loadedWidgets;
 };
