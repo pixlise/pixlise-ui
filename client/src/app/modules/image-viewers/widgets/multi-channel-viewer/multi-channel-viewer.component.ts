@@ -156,6 +156,7 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
         this._contextDataService.syncTransformForId(this.syncId, {
           pan: new Point(this.mdl.transform.pan.x, this.mdl.transform.pan.y),
           scale: new Point(this.mdl.transform.scale.x, this.mdl.transform.scale.y),
+          canvasDimensions: { width: this.transform.canvasParams?.width ?? 0, height: this.transform.canvasParams?.height ?? 0 },
         });
       })
     );

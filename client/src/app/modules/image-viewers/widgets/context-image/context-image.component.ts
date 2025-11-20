@@ -544,21 +544,6 @@ export class ContextImageComponent
                   );
                   this.mdl.colourScaleDisplayValueRanges.set(colourScaleRangeId, displayRange);
                 }
-
-
-                // const lastIndex = l.displayValueRanges.length - 1;
-                // for (let j = lastIndex; j >= 0; j--) {
-                //   // This gets stored in reverse order, so we need to flip it back
-                //   colourScaleRangeId = `${l.expressionID}-${lastIndex - j}`;
-                //   const displayRange = new MinMax(
-                //     l.displayValueRanges[j].displayValueRangeMin,
-                //     l.displayValueRanges[j].displayValueRangeMax
-                //   );
-                //   this.mdl.colourScaleDisplayValueRanges.set(
-                //     colourScaleRangeId,
-                //     displayRange
-                //   );
-                // }
               }
             }
           }
@@ -708,6 +693,7 @@ export class ContextImageComponent
               this.mdl.transform.scale.x,
               this.mdl.transform.scale.y
             ),
+            canvasDimensions: { width: this.transform.canvasParams?.width ?? 0, height: this.transform.canvasParams?.height ?? 0 },
           });
         }
       })
@@ -802,8 +788,7 @@ export class ContextImageComponent
         (result: ExpressionPickerResponse | null) => {
           if (
             !result ||
-            this._analysisLayoutService.highlightedWidgetId$.value !==
-              this._widgetId
+            !this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._widgetId)
           ) {
             return;
           }
@@ -850,7 +835,7 @@ export class ContextImageComponent
 
           if (!result?.persistDialog) {
             // Expression picker has closed, so we can stop highlighting this widget
-            this._analysisLayoutService.highlightedWidgetId$.next("");
+            this._analysisLayoutService.highlightedWidgetIds$.next([]);
           }
         }
       )
@@ -1898,7 +1883,7 @@ export class ContextImageComponent
       dialogConfig
     );
     this._expressionPickerDialog.afterClosed().subscribe(() => {
-      this._analysisLayoutService.highlightedWidgetId$.next("");
+      this._analysisLayoutService.highlightedWidgetIds$.next([]);
       this._expressionPickerDialog = null;
     });
   }

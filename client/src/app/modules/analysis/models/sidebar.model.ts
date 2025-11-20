@@ -40,7 +40,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     title: "Workspaces",
     icon: "assets/icons/workspaces-tab.svg",
     component: WorkspaceConfigurationTabComponent,
-    width: "350px",
+    width: "400px",
     tooltip: "Configure the workspace metadata",
     shortcut: ["Cmd", "Shift", "2"],
     showSearchButton: true,

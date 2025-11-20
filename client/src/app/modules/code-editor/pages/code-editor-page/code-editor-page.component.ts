@@ -394,7 +394,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
     this._subscriptions.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._id) {
+        if (!result || !this._analysisLayoutService.highlightedWidgetIds$.value.includes(this._id)) {
           return;
         }
 
@@ -419,7 +419,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
             this._router.navigate([], { queryParams: { ...this.queryParams } });
           }
 
-          this._analysisLayoutService.highlightedWidgetId$.next("");
+          this._analysisLayoutService.highlightedWidgetIds$.next([]);
         }
       })
     );

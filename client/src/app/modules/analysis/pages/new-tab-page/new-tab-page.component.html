@@ -3,18 +3,38 @@
   <div class="new-tab-container">
     <div class="presets analysis-presets">
       <div
-        *ngFor="let template of analysisTemplates"
+        *ngFor="let template of analysisTemplates; let i = index"
         class="layout-container"
         (click)="onAnalysisTemplateClick(template)"
-        tabindex="0"
+        [tabindex]="i"
         (keydown)="onAnalysisTemplateClick(template)"
         (keyup)="onAnalysisTemplateClick(template)"
-        (keypress)="onAnalysisTemplateClick(template)">
+        (keypress)="onAnalysisTemplateClick(template)"
+      >
         <div class="title-bar">
           <img [src]="template.templateIcon" alt="Analysis Template Icon" />
           <span class="label">{{ template.templateName }}</span>
         </div>
         <layout-preview-box [template]="template"></layout-preview-box>
+      </div>
+      <div
+        class="layout-container"
+        tabindex="1"
+        (click)="onCustomLayoutClick()"
+        (keydown)="onCustomLayoutClick()"
+        (keyup)="onCustomLayoutClick()"
+        (keypress)="onCustomLayoutClick()"
+      >
+        <div class="title-bar">
+          <img
+            src="assets/icons/workspaces-tab.svg"
+            alt="Analysis Template Icon"
+          />
+          <span class="label">Custom Layout</span>
+        </div>
+        <div class="custom-layout">
+          <img src="assets/button-icons/plus.svg" alt="Custom Layout Icon" />
+        </div>
       </div>
     </div>
     <div class="presets other-tabs">
@@ -25,7 +45,8 @@
         tabindex="0"
         (keydown)="onOtherTemplateClick(template)"
         (keyup)="onOtherTemplateClick(template)"
-        (keypress)="onOtherTemplateClick(template)">
+        (keypress)="onOtherTemplateClick(template)"
+      >
         <div class="title-bar">
           <img [src]="template.templateIcon" alt="Other Template Icon" />
           <span class="label">{{ template.templateName }}</span>
