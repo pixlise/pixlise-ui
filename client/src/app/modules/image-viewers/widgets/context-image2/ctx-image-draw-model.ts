@@ -148,8 +148,10 @@ export class ContextImage2DrawModel {
 
     //this._imageTiles.scale.set(this._tileSize / imageViewport.h, this._tileSize / imageViewport.w, 1);
 
-    const sz = viewportSize.x + viewportSize.y;
-    this._imageTiles.scale.set(this._tileSize / sz, this._tileSize / sz, 1);
+    // const sz = viewportSize.x + viewportSize.y;
+    // this._imageTiles.scale.set(this._tileSize / sz, this._tileSize / sz, 1);
+
+    this._imageTiles.scale.set(zoom, zoom, 1);
 
     this._imageTiles.position.set(pan.x, pan.y, -1); 
 
