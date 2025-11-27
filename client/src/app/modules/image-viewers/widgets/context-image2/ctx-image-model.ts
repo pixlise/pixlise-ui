@@ -65,10 +65,10 @@ export class ContextImage2Model {
       zoom = 1;
     }
 
-
     console.log(`setZoom: ${zoom}`);
 
     this._zoom = zoom;
+
     this.update();
   }
 
@@ -79,6 +79,8 @@ export class ContextImage2Model {
   setViewportSize(w: number, h: number) {
     this._viewportSize = new Point(w, h);
     console.log(`setViewportSize: ${w} x ${h}`);
+
+    this.update();
   }
 
   private update() {

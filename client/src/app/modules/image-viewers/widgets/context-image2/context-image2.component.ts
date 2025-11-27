@@ -143,10 +143,18 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         const state = items[0] as ContextImage2State;
         const canvasEvent = items[1] as CanvasSizeNotification;
 
-        this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
-        this.mdl.setViewportSize(canvasEvent.size.x, canvasEvent.size.y);
+        const needInit = this._canvasSize === undefined || canvasEvent.canvasElement.nativeElement !== this._canvasElem;
+        this._canvasSize = canvasEvent.size;
+        this._canvasElem = canvasEvent.canvasElement.nativeElement;
 
-        if (!state || state.contextImage.length <= 0) {
+        if (needInit) {
+          this.init3D(canvasEvent);
+        }
+
+        this.applyCanvasSize();
+
+        // If it's our first time here... load!
+        if (needInit && (!state || state.contextImage.length <= 0)) {
           this.getDefaultImage().subscribe(
             (resp: string) => {
               this.load(resp)
@@ -155,7 +163,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
           return;
         }
 
-        this.load(state.contextImage);
+        // If not our first time, but we have state, and context image differs from what we have loaded... load!
+        if (!needInit && state && state.contextImage != this.mdl.imageName) {
+          this.load(state.contextImage);
+        }
       }
     ));
   }
@@ -165,12 +176,13 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this._mouseInteractionHandler.clearMouseEventListeners();
   }
 
-  private load(imageName: string) {
-    if (this.mdl.imageName == imageName) {
-      console.log(`ContextImageV2 load: image "${imageName} already loaded...`)
-      return;
-    }
+  private init3D(canvasEvent: CanvasSizeNotification) {
+    console.log(`ContextImage v2 initialising or canvas of size: ${canvasEvent.size.x}x${canvasEvent.size.y}...`);
+    this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
+  }
 
+  private load(imageName: string) {
+    console.log(`ContextImageV2 load: image "${imageName} triggered...`)
     this.isWidgetDataLoading = true;
 
     this._cacheDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
@@ -185,7 +197,6 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
               throw new Error("Failed to load image pyramid: " + imageName);
             }
 
-            this.applyCanvasSize();
             this.mdl.setData(imageName, imgResp.image!, pyramidResp.image!);
             this.mdl.needsDraw$.next();
 
@@ -204,17 +215,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   }
 
   onCanvasSize(event: CanvasSizeNotification) {
-    const needInit = this._canvasSize === undefined || event.canvasElement.nativeElement !== this._canvasElem;
-    this._canvasSize = event.size;
-    this._canvasElem = event.canvasElement.nativeElement;
-
-    // If we have a size and it's the first time it was set, we now load our model data
-    if (needInit) {
-      console.log(`ContextImage v2 initialising or canvas of size: ${event.size.x}x${event.size.y}...`);
-
-      // Allow init to function normally
-      this._canvas$.next(event);
-    }
+    this._canvas$.next(event);
   }
 
   onSoloView() {
@@ -283,6 +284,8 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     //this.renderData.camera.lookAt(dataCenter);
     renderData.scene.add(renderData.camera);
 
-    console.log(`applyCanvasSize: ${this._canvasSize!.x} x ${this._canvasSize!.y}`);
+    this.mdl.setViewportSize(this._canvasSize.x, this._canvasSize.y);
+
+    //console.log(`applyCanvasSize: ${this._canvasSize!.x} x ${this._canvasSize!.y}`);
   }
 }
