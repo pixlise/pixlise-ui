@@ -1,11 +1,15 @@
-import { Point } from "@angular/cdk/drag-drop";
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { Subscription, Subject } from "rxjs";
+import { Subscription, Subject, combineLatest, Observable, map, of, switchMap } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { CanvasSizeNotification } from "../scan-3d-view/interactive-canvas-3d.component";
-import { APICachedDataService, AnalysisLayoutService, SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APICachedDataService, AnalysisLayoutService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ContextImage2MouseInteraction } from "./mouse-interaction";
 import { ContextImage2Model } from "./ctx-image-model";
+import * as THREE from 'three';
+import { ContextImage2State } from "src/app/generated-protos/widget-data";
+import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
+import { Point } from "src/app/models/Geometry";
+import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
 
 @Component({
   selector: "context-image2",
@@ -32,6 +36,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
       private _cacheDataService: APICachedDataService,
       private _analysisLayoutService: AnalysisLayoutService,
       private _selectionService: SelectionService,
+      private _snackService: SnackbarService,
     ) {
     super();
 
@@ -50,6 +55,15 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
           settingTitle: "Solo",
           settingGroupTitle: "Actions",
           onClick: () => this.onSoloView(),
+        },
+        {
+          id: "reset",
+          type: "button",
+          icon: "assets/button-icons/reset.svg",
+          tooltip: "Reset Zoom and Pan",
+          settingTitle: "Reset",
+          settingGroupTitle: "Actions",
+          onClick: () => this.onResetView(),
         }
       ],
       /*topLeftInsetButton: {
@@ -121,13 +135,72 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
       })
     );
 
-    this.isWidgetDataLoading = false;
-    this.mdl.setData();
+    this._subs.add(
+      combineLatest([
+        this.widgetData$,
+        this._canvas$
+      ]).subscribe((items) => {
+        const state = items[0] as ContextImage2State;
+        const canvasEvent = items[1] as CanvasSizeNotification;
+
+        this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
+        this.mdl.setViewportSize(canvasEvent.size.x, canvasEvent.size.y);
+
+        if (!state || state.contextImage.length <= 0) {
+          this.getDefaultImage().subscribe(
+            (resp: string) => {
+              this.load(resp)
+            }
+          )
+          return;
+        }
+
+        this.load(state.contextImage);
+      }
+    ));
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
     this._mouseInteractionHandler.clearMouseEventListeners();
+  }
+
+  private load(imageName: string) {
+    if (this.mdl.imageName == imageName) {
+      console.log(`ContextImageV2 load: image "${imageName} already loaded...`)
+      return;
+    }
+
+    this.isWidgetDataLoading = true;
+
+    this._cacheDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
+      switchMap((imgResp: ImageGetResp) => {
+        if (!imgResp.image || !imgResp.image.pyramidId) {
+          throw new Error("Error downloading image structure for: " + imageName);
+        }
+
+        return this._cacheDataService.getImagePyramid(ImagePyramidGetReq.create({id: imgResp.image.pyramidId})).pipe(
+          map((pyramidResp: ImagePyramidGetResp) => {
+            if (!pyramidResp.image) {
+              throw new Error("Failed to load image pyramid: " + imageName);
+            }
+
+            this.applyCanvasSize();
+            this.mdl.setData(imageName, imgResp.image!, pyramidResp.image!);
+            this.mdl.needsDraw$.next();
+
+            return null;
+          })
+        )}
+      )
+    ).subscribe({
+      next: () => {
+        this.isWidgetDataLoading = false;
+      },
+      error: (err) => {
+        this._snackService.openError(err);
+      }
+    });
   }
 
   onCanvasSize(event: CanvasSizeNotification) {
@@ -137,7 +210,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
     // If we have a size and it's the first time it was set, we now load our model data
     if (needInit) {
-      console.log(`Scan3D view initialising or canvas of size: ${event.size.x}x${event.size.y}...`);
+      console.log(`ContextImage v2 initialising or canvas of size: ${event.size.x}x${event.size.y}...`);
 
       // Allow init to function normally
       this._canvas$.next(event);
@@ -152,6 +225,64 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     }
   }
 
+  onResetView() {
+    this.mdl.resetPanZoom();
+  }
+
   protected saveState() {
+  }
+
+  protected getDefaultImage(): Observable<string> {
+    // Get the "default" image for the loaded scan if there is one
+    const scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+
+    if (scanId.length <= 0) {
+      return of("");
+    }
+
+    return this._cacheDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).pipe(
+      map((resp: ImageGetDefaultResp) => {
+        let img = resp.defaultImagesPerScanId[scanId];
+        if (!img) {
+          img = "";
+        }
+        return img;
+      }
+    ));
+  }
+
+  private applyCanvasSize() {
+    const renderData = this.mdl.drawModel.renderData;
+    if (!renderData) {
+      console.error(`Failed to get render data for created scene`);
+      return;
+    }
+
+    if (!this._canvasSize) {
+      console.error(`Failed to get canvas size`);
+      return;
+    }
+/*
+    renderData.camera = new THREE.PerspectiveCamera(
+      60,
+      this._canvasSize!.x / this._canvasSize!.y,
+      0.1,
+      1000
+    );
+*/
+    let aspectRatio = this._canvasSize.y / this._canvasSize.x;
+    if (!isFinite(aspectRatio)) {
+      aspectRatio = 1;
+    }
+
+    // renderData.camera = new THREE.OrthographicCamera(-w/2, w/2, h/2, -h/2, 0, 100);
+    // renderData.camera = new THREE.OrthographicCamera(0, w, 0, h, 0, 100);
+    //renderData.camera = new THREE.OrthographicCamera(0, 100, 0, aspectRatio*100, 0, 100);
+    renderData.camera = new THREE.OrthographicCamera(0, this._canvasSize!.x, 0, this._canvasSize!.y, 0, 100);
+
+    //this.renderData.camera.lookAt(dataCenter);
+    renderData.scene.add(renderData.camera);
+
+    console.log(`applyCanvasSize: ${this._canvasSize!.x} x ${this._canvasSize!.y}`);
   }
 }
