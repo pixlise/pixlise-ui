@@ -122,8 +122,8 @@ export class ContextImage2DrawModel {
 
     const baseColour = new THREE.Color(0.1, 0.1, 0.1);
 
-    const tilesWide = pyramidLevel == 0 ? 1 : 0; //Math.max(Math.floor(viewportSize.x / this._tileSize), 1);
-    const tilesHigh = pyramidLevel == 0 ? 1 : 0; //Math.max(Math.floor(viewportSize.y / this._tileSize), 1);
+    const tilesWide = pyramidLevel+1; //pyramidLevel == 0 ? 1 : 0; //Math.max(Math.floor(viewportSize.x / this._tileSize), 1);
+    const tilesHigh = pyramidLevel+1; //pyramidLevel == 0 ? 1 : 0; //Math.max(Math.floor(viewportSize.y / this._tileSize), 1);
 
     for (let y = 0; y < tilesHigh; y++) {
       for (let x = 0; x < tilesWide; x++) {
