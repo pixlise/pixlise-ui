@@ -1,8 +1,11 @@
 import { Subject } from "rxjs";
 import { ContextImage2DrawModel } from "./ctx-image-draw-model";
-import { Point, Rect } from "src/app/models/Geometry";
+import { Point } from "src/app/models/Geometry";
 import { ScanImage } from "src/app/generated-protos/image";
 import { ImagePyramid } from "src/app/generated-protos/image-pyramid";
+import * as THREE from 'three';
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { TileLoader } from "./tile-loader";
 
 
 export class ContextImage2Model {
@@ -14,10 +17,10 @@ export class ContextImage2Model {
   //private _pyramid?: ImagePyramid;
   private _viewportSize: Point = new Point(1,1);
 
-  setData(imageName: string, img: ScanImage, pyramid: ImagePyramid) {
+  setData(imageName: string, img: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileLoader) {
     this._imageName = imageName;
     //this._pyramid = pyramid;
-    this.drawModel.create(img, pyramid);
+    this.drawModel.create(img, pyramid, layer0Texture, tileLoader);
     this.resetPanZoom();
   }
 

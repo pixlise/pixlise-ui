@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 import { RenderData } from '../scan-3d-view/interactive-canvas-3d.component';
-import { Point, Rect } from 'src/app/models/Geometry';
+import { Point } from 'src/app/models/Geometry';
 import { ScanImage } from 'src/app/generated-protos/image';
-import { AABB, ImagePyramid } from 'src/app/generated-protos/image-pyramid';
+import { AABB, ImagePyramid, ImageTileSummary } from 'src/app/generated-protos/image-pyramid';
+import { TileLoader } from './tile-loader';
 
 
 export class ContextImage2DrawModel {
   protected _image?: ScanImage;
   protected _pyramid?: ImagePyramid;
+  protected _layer0Texture?: THREE.Texture;
+  protected _tileLoader?: TileLoader;
 
   protected _sceneAttachment?: THREE.Object3D;
   protected _imageTiles?: THREE.Object3D;
@@ -20,13 +23,15 @@ export class ContextImage2DrawModel {
     this.renderData = new RenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
   }
   
-  create(image: ScanImage, pyramid: ImagePyramid) {
+  create(image: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileLoader) {
     if (this._sceneAttachment) {
       this.renderData.scene.remove(this._sceneAttachment);
     }
 
     this._image = image;
     this._pyramid = pyramid;
+    this._layer0Texture = layer0Texture;
+    this._tileLoader = tileLoader;
 
     this._sceneAttachment = new THREE.Object3D();
 
@@ -122,27 +127,92 @@ export class ContextImage2DrawModel {
 
     const baseColour = new THREE.Color(0.1, 0.1, 0.1);
 
-    const tilesWide = pyramidLevel+1; //pyramidLevel == 0 ? 1 : 0; //Math.max(Math.floor(viewportSize.x / this._tileSize), 1);
-    const tilesHigh = pyramidLevel+1; //pyramidLevel == 0 ? 1 : 0; //Math.max(Math.floor(viewportSize.y / this._tileSize), 1);
+    // Create tiles as per instructions from pyramid!
 
+    ////////////////////////////////////////////
+    // Getting tile width/height for layer just for generating temp polygon colours
+    let tilesWide = 0;
+    let tilesHigh = 1;
+    for (const tile of this._pyramid.pyramid[pyramidLevel].tiles) {
+      if (tile.bounds!.min!.y == 0) {
+        tilesWide++;
+      }
+      if (tile.bounds!.min!.x == 0 && tile.bounds!.min!.y > 0) {
+        tilesHigh++;
+      }
+    }
+    ////////////////////////////////////////////
+
+    let tileX = 0;
+    let tileY = 0;
+    for (const tile of this._pyramid.pyramid[pyramidLevel].tiles) {
+      const tileMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(baseColour.r + tileX / tilesWide * 0.5, baseColour.g + tileY / tilesHigh * 0.5, baseColour.b),
+        //side: THREE.DoubleSide
+      });
+
+      if (pyramidLevel == 0 && this._layer0Texture) {
+        tileMaterial.map = this._layer0Texture;
+        this.makeTile(tile, tileMaterial);
+      } else if (pyramidLevel > 0) {
+        this._tileLoader!.loadTile(pyramidLevel, tileX, tileY).subscribe(
+          (tileTexture: THREE.Texture) => {
+            const tileMaterial = new THREE.MeshBasicMaterial({
+              color: new THREE.Color(1,1,1),
+              map: tileTexture
+            });
+
+            this.makeTile(tile, tileMaterial);
+          }
+        );
+      }
+
+      if (tile.bounds!.min!.y == 0) {
+        tileX++;
+      }
+      if (tile.bounds!.min!.x == 0 && tile.bounds!.min!.y > 0) {
+        tileY++;
+      }
+    }
+
+/*
+    let tilesWide = 0;
+    let tilesHigh = 1;
+    for (const tile of this._pyramid.pyramid[pyramidLevel].tiles) {
+      if (tile.bounds!.min!.y == 0) {
+        tilesWide++;
+      }
+      if (tile.bounds!.min!.x == 0 && tile.bounds!.min!.y > 0) {
+        tilesHigh++;
+      }
+    }
+
+    console.log(`pyramid level ${pyramidLevel}: ${tilesWide} x ${tilesHigh}`);
+
+//Need to look at pyramid tiles to determine tile layout here
     for (let y = 0; y < tilesHigh; y++) {
       for (let x = 0; x < tilesWide; x++) {
         const tileMaterial = new THREE.MeshBasicMaterial({
           color: new THREE.Color(baseColour.r + x / tilesWide * 0.5, baseColour.g + y / tilesHigh * 0.5, baseColour.b),
-          side: THREE.DoubleSide
+          //side: THREE.DoubleSide
         });
+
+        if (pyramidLevel == 0 && this._layer0Texture) {
+          tileMaterial.map = this._layer0Texture;
+        }
 
         const tileMesh = new THREE.Mesh(
           this._tile,
           tileMaterial
         );
 
+        tileMesh.scale()
         tileMesh.position.set(x * this._tileSize, y * this._tileSize, 0);
 
         this._imageTiles.add(tileMesh);
       }
     }
-
+*/
     // const maxVPSize = imageViewport.w > imageViewport.h ? imageViewport.w : imageViewport.h;
     // this._imageTiles.scale.set(this._tileSize / maxVPSize, this._tileSize / maxVPSize, 1);
 
@@ -151,11 +221,31 @@ export class ContextImage2DrawModel {
     // const sz = viewportSize.x + viewportSize.y;
     // this._imageTiles.scale.set(this._tileSize / sz, this._tileSize / sz, 1);
 
-    this._imageTiles.scale.set(zoom, zoom, 1);
+    const tileScale = zoom + 1 / (Math.pow(2, pyramidLevel));
+
+    this._imageTiles.scale.set(tileScale, tileScale, 1);
 
     this._imageTiles.position.set(pan.x, pan.y, -1); 
 
     this._sceneAttachment?.add(this._imageTiles);
+  }
+
+  private makeTile(tile: ImageTileSummary, tileMaterial?: THREE.MeshBasicMaterial) {
+    if (!tileMaterial) {
+      tileMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(1, 1, 1)
+      });
+    }
+    const tileMesh = new THREE.Mesh(
+        this._tile,
+        tileMaterial
+      );
+
+      const sz = getAABBSize(tile.bounds);
+      tileMesh.scale.set(sz.x / this._tileSize, sz.y / this._tileSize, 1);
+      tileMesh.position.set(tile.bounds!.min!.x, tile.bounds!.min!.x, 0);
+
+      this._imageTiles!.add(tileMesh);
   }
 
   private readPyramidProperties(): boolean {
@@ -184,21 +274,21 @@ export class ContextImage2DrawModel {
 
     const xyz = new Float32Array([
       0, 0, 0,
-      tileSize, 0, 0,
+      0, tileSize, 0,
       tileSize, tileSize, 0,
-      0, tileSize, 0
+      tileSize, 0, 0,
     ]);
 
     result.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
 
     const uv = new Float32Array([
+      0, 1,
       0, 0,
       1, 0,
       1, 1,
-      0, 1
     ]);
 
-    result.setAttribute("uv", new THREE.BufferAttribute(uv, 3));
+    result.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
 
     // Draw as a triangle fan
     result.setIndex(new THREE.BufferAttribute(new Uint32Array([0,1,2, 0,2,3]), 1));

@@ -10,6 +10,9 @@ import { ContextImage2State } from "src/app/generated-protos/widget-data";
 import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { Point } from "src/app/models/Geometry";
 import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { loadTexture } from "../scan-3d-view/pmc-mesh";
+import { TileLoader } from "./tile-loader";
 
 @Component({
   selector: "context-image2",
@@ -37,6 +40,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
       private _analysisLayoutService: AnalysisLayoutService,
       private _selectionService: SelectionService,
       private _snackService: SnackbarService,
+      private _endpointService: APIEndpointsService
     ) {
     super();
 
@@ -191,13 +195,28 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
           throw new Error("Error downloading image structure for: " + imageName);
         }
 
-        return this._cacheDataService.getImagePyramid(ImagePyramidGetReq.create({id: imgResp.image.pyramidId})).pipe(
-          map((pyramidResp: ImagePyramidGetResp) => {
+        // At this point we want the pyramid and the top layer image
+        const req$ = combineLatest([
+          this._cacheDataService.getImagePyramid(ImagePyramidGetReq.create({id: imgResp.image.pyramidId})),
+          this._endpointService.loadImageForPath(imgResp.image.imagePath).pipe(
+            switchMap(img => {
+              return loadTexture(img)
+            })
+          )
+        ]);
+
+        return req$.pipe(
+          map(resps => {
+            const pyramidResp = resps[0] as ImagePyramidGetResp;
+            const layer0Texture = resps[1] as THREE.Texture;
+
             if (!pyramidResp.image) {
               throw new Error("Failed to load image pyramid: " + imageName);
             }
 
-            this.mdl.setData(imageName, imgResp.image!, pyramidResp.image!);
+            const tileLoader = new TileLoader(this._endpointService, imageName);
+
+            this.mdl.setData(imageName, imgResp.image!, pyramidResp.image!, layer0Texture, tileLoader);
             this.mdl.needsDraw$.next();
 
             return null;

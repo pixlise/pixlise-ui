@@ -78,7 +78,7 @@ export class ContextImage2MouseInteraction {
   }
 
   onMouseWheel(event: WheelEvent): void {
-    const zoomPctChange = 0.025;
+    const zoomPctChange = 0.05;
     if (event.deltaY != 0) {
       let zoomPct = zoomPctChange + 1;
       if (event.deltaY > 0) {
