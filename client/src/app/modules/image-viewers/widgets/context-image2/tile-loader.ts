@@ -7,7 +7,7 @@ export class TileLoader {
     constructor(private _endpointService: APIEndpointsService, private _imageName: string) {}
 
     loadTile(layer: number, x: number, y: number): Observable<THREE.Texture> {
-        const url = `${this._imageName}?layer=${layer},x=${x},y=${y}`;
+        const url = `${this._imageName}?layer=${layer}&tilex=${x}&tiley=${y}`;
         return this._endpointService.loadImageForPath(url).pipe(
             switchMap(img => {
                 return loadTexture(img);
