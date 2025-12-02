@@ -99,7 +99,11 @@ export class ContextImage2MouseInteraction {
     );
 
     const thisPos = new Point(event.clientX, event.clientY);
-    return subtractVectors(thisPos, lastPos);
+    const result = subtractVectors(thisPos, lastPos);
+
+    // Apply y-flip (due to axis difference of HTML -> OpenGL)
+    result.y = -result.y;
+    return result;
   }
 
   private checkHover(canvas: HTMLCanvasElement, mousePoint: Point) {

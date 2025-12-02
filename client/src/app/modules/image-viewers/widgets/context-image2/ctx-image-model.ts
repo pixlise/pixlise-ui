@@ -4,8 +4,7 @@ import { Point } from "src/app/models/Geometry";
 import { ScanImage } from "src/app/generated-protos/image";
 import { ImagePyramid } from "src/app/generated-protos/image-pyramid";
 import * as THREE from 'three';
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { TileLoader } from "./tile-loader";
+import { TileImageLoader } from "./tile-loader";
 
 
 export class ContextImage2Model {
@@ -14,12 +13,16 @@ export class ContextImage2Model {
   private _pan: Point = new Point(0, 0);
   private _zoom: number = 1;
   private _imageName: string = "";
-  //private _pyramid?: ImagePyramid;
+  private _image?: ScanImage;
+  
   private _viewportSize: Point = new Point(1,1);
 
-  setData(imageName: string, img: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileLoader) {
+  private _viewportToWorldScale = 1;
+
+  setData(imageName: string, img: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
     this._imageName = imageName;
-    //this._pyramid = pyramid;
+    this._image = img;
+
     this.drawModel.create(img, pyramid, layer0Texture, tileLoader);
     this.resetPanZoom();
   }
@@ -44,8 +47,8 @@ export class ContextImage2Model {
       return;
     }
 
-    this._pan.x += drag.x;
-    this._pan.y += drag.y;
+    this._pan.x += drag.x * this._viewportToWorldScale;
+    this._pan.y += drag.y * this._viewportToWorldScale;
 
     console.log(`pan: ${this._pan.x}, ${this._pan.y}`);
 
@@ -81,17 +84,85 @@ export class ContextImage2Model {
 
   setViewportSize(w: number, h: number) {
     this._viewportSize = new Point(w, h);
-    console.log(`setViewportSize: ${w} x ${h}`);
 
     this.update();
   }
 
   private update() {
-    // Calculate the viewport rectangle considering pan and zoom
-    //const viewport = new Rect(this._pan.x, this._pan.y, this._viewportSize.x * this._zoom, this._viewportSize.y * this._zoom);
-    //this.drawModel.recalcTiles(viewport);
-    this.drawModel.recalcTiles(this._pan, this._zoom, this._viewportSize);
+    if (!this._image) {
+      console.warn("ContextImage2Model update called when no image loaded, ignored.");
+      return;
+    }
+
+    // Recalculate camera position based on viewport, zoom and pan
+    const cam = this.calcOrthoCamera();
+
+    // Calculate cam frustum so we can work out what tiles need to be drawn
+    const matrix = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+
+    const camFrustum = new THREE.Frustum();
+    camFrustum.setFromProjectionMatrix(matrix)
+
+    // Work out how many image pixels are visible per viewport pixel
+    const camWidth = cam.right-cam.left;
+    const texPerScreenPixel = camWidth / this._viewportSize.x;
+
+    //const frustumStr = `cam frustum [L: ${cam.left} R: ${cam.right} T: ${cam.top} B: ${cam.bottom}]`;
+    const frustumStr = `cam frustum [${Math.floor(cam.right-cam.left)} x ${Math.floor(cam.top-cam.bottom)}]`;
+    console.log(`UPDATE! viewport: [${this._viewportSize.x} x ${this._viewportSize.y}], zoom: ${this._zoom}, ${frustumStr}, cam pos: [${cam.position.x},${cam.position.y}] texPerScreenPixel: ${texPerScreenPixel}`);
+
+    this.drawModel.updateTiles(texPerScreenPixel, camFrustum, this.needsDraw$);
     
     this.needsDraw$.next();
+  }
+
+  private calcOrthoCamera() {
+    // Worked example to calculate view parameters:
+
+    // Aspect ratio of the viewport
+    // eg 2766x770 = ~3.59 => Viewport is landscape
+    const viewportAspect = this._viewportSize.x / this._viewportSize.y;
+
+    const halfFrustumSize = new Point(1, 1);
+    const camCenteringOffset = new Point(0, 0);
+    if (this._image) {
+      // Calculate scale factor that fits the entire image into the viewport
+      // eg 75264x45568 = ~1.65 => Image is landscape
+      const imageAspect = this._image.width / this._image.height;
+
+      // Pick the axis that needs to be fit in
+      this._viewportToWorldScale = 1;
+      if (imageAspect < viewportAspect) {
+        // Work with Y axis
+        this._viewportToWorldScale = this._image.height / this._viewportSize.y;
+      } else {
+        // Work with X axis
+        this._viewportToWorldScale = this._image.width / this._viewportSize.x;
+      }
+
+      halfFrustumSize.x = this._viewportSize.x * this._viewportToWorldScale;
+      halfFrustumSize.y = this._viewportSize.y * this._viewportToWorldScale;
+
+      camCenteringOffset.x = halfFrustumSize.x * 0.5 - (halfFrustumSize.x - this._image.width) / 2;
+      camCenteringOffset.y = halfFrustumSize.y * 0.5 - (halfFrustumSize.y - this._image.height) / 2;
+    }
+
+    halfFrustumSize.x *= 0.5 * this._zoom;
+    halfFrustumSize.y *= 0.5 * this._zoom;
+
+    const cam = this.drawModel.renderData.camera as THREE.OrthographicCamera
+    cam.left = -halfFrustumSize.x;
+    cam.right = halfFrustumSize.x;
+
+    cam.bottom = -halfFrustumSize.y;
+    cam.top = halfFrustumSize.y;
+
+    cam.position.set(-this._pan.x + camCenteringOffset.x, -this._pan.y + camCenteringOffset.y, 0);
+
+    cam.updateMatrix();
+    cam.updateMatrixWorld();
+    cam.updateProjectionMatrix();
+
+    return cam;
   }
 }

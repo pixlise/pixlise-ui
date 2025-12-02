@@ -11,8 +11,7 @@ import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp } fr
 import { Point } from "src/app/models/Geometry";
 import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { loadTexture } from "../scan-3d-view/pmc-mesh";
-import { TileLoader } from "./tile-loader";
+import { TileImageLoader } from "./tile-loader";
 
 @Component({
   selector: "context-image2",
@@ -196,13 +195,11 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         }
 
         // At this point we want the pyramid and the top layer image
+        const tileLoader = new TileImageLoader(this._endpointService, imageName);
+
         const req$ = combineLatest([
           this._cacheDataService.getImagePyramid(ImagePyramidGetReq.create({id: imgResp.image.pyramidId})),
-          this._endpointService.loadImageForPath(imgResp.image.imagePath).pipe(
-            switchMap(img => {
-              return loadTexture(img)
-            })
-          )
+          tileLoader.loadTileImage(),
         ]);
 
         return req$.pipe(
@@ -213,8 +210,6 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
             if (!pyramidResp.image) {
               throw new Error("Failed to load image pyramid: " + imageName);
             }
-
-            const tileLoader = new TileLoader(this._endpointService, imageName);
 
             this.mdl.setData(imageName, imgResp.image!, pyramidResp.image!, layer0Texture, tileLoader);
             this.mdl.needsDraw$.next();
@@ -282,29 +277,12 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
       console.error(`Failed to get canvas size`);
       return;
     }
-/*
-    renderData.camera = new THREE.PerspectiveCamera(
-      60,
-      this._canvasSize!.x / this._canvasSize!.y,
-      0.1,
-      1000
-    );
-*/
+
     let aspectRatio = this._canvasSize.y / this._canvasSize.x;
     if (!isFinite(aspectRatio)) {
       aspectRatio = 1;
     }
 
-    // renderData.camera = new THREE.OrthographicCamera(-w/2, w/2, h/2, -h/2, 0, 100);
-    // renderData.camera = new THREE.OrthographicCamera(0, w, 0, h, 0, 100);
-    //renderData.camera = new THREE.OrthographicCamera(0, 100, 0, aspectRatio*100, 0, 100);
-    renderData.camera = new THREE.OrthographicCamera(0, this._canvasSize!.x, 0, this._canvasSize!.y, 0, 100);
-
-    //this.renderData.camera.lookAt(dataCenter);
-    renderData.scene.add(renderData.camera);
-
     this.mdl.setViewportSize(this._canvasSize.x, this._canvasSize.y);
-
-    //console.log(`applyCanvasSize: ${this._canvasSize!.x} x ${this._canvasSize!.y}`);
   }
 }

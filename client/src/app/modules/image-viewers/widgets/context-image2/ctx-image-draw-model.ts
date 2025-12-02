@@ -1,251 +1,313 @@
 import * as THREE from 'three';
 import { RenderData } from '../scan-3d-view/interactive-canvas-3d.component';
-import { Point } from 'src/app/models/Geometry';
 import { ScanImage } from 'src/app/generated-protos/image';
-import { AABB, ImagePyramid, ImageTileSummary } from 'src/app/generated-protos/image-pyramid';
-import { TileLoader } from './tile-loader';
+import { AABB, ImagePyramid, ImagePyramidLayer, ImageTileSummary } from 'src/app/generated-protos/image-pyramid';
+import { TileImageLoader } from './tile-loader';
+import { Subject } from 'rxjs';
+import { util } from 'protobufjs';
 
 
 export class ContextImage2DrawModel {
   protected _image?: ScanImage;
   protected _pyramid?: ImagePyramid;
   protected _layer0Texture?: THREE.Texture;
-  protected _tileLoader?: TileLoader;
+  protected _tileLoader?: TileImageLoader;
 
   protected _sceneAttachment?: THREE.Object3D;
   protected _imageTiles?: THREE.Object3D;
+  protected _imageTileCache = new Map<number, THREE.Mesh>();
+  protected _imageLocator?: THREE.Mesh;
   protected _tile?: THREE.BufferGeometry;
   protected _tileSize = 1;
+
+  protected _tileBBoxes: THREE.Box3[][] = [];
+
+  protected _lastPyramidLevel = -1;
+  protected _lastPyramidLevelTilesVisible = new Set<number>();
 
   renderData: RenderData;
 
   constructor() {
-    this.renderData = new RenderData(new THREE.Scene(), new THREE.PerspectiveCamera());
+    this.renderData = new RenderData(
+      new THREE.Scene(),
+      new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 100)
+      // new THREE.OrthographicCamera(-w/2, w/2, h/2, -h/2, 0, 100)
+      // new THREE.OrthographicCamera(0, w, 0, h, 0, 100)
+      // new THREE.OrthographicCamera(0, 100, 0, aspectRatio*100, 0, 100)
+      // new THREE.PerspectiveCamera()
+    );
+
+    this.renderData.scene.add(this.renderData.camera);
   }
   
-  create(image: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileLoader) {
+  create(image: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
     if (this._sceneAttachment) {
       this.renderData.scene.remove(this._sceneAttachment);
     }
 
     this._image = image;
     this._pyramid = pyramid;
+
+    this.generateTileBBoxes();
+    // Generate bounding boxes compatible with THREE for each tile
+
     this._layer0Texture = layer0Texture;
     this._tileLoader = tileLoader;
 
+    // Generate a single tile geometry that we display
+    if (!this.readPyramidProperties()) {
+      return; // we had some issue with the pyramid...
+    }
+
+    // Create a tile
+    this._tile = this.makeQuad(this._tileSize, this._tileSize);
+    
+    // Create the attachment point in the scene where we attach all our model data to
     this._sceneAttachment = new THREE.Object3D();
 
-    // Attach tiles to the scene if we have any?
-    if (this._imageTiles) {
-        this._sceneAttachment.add(this._imageTiles);
-    }
+    // Create the image locator
+    this._imageLocator = new THREE.Mesh(
+      this.makeQuad(this._image.width, this._image.height),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(1,0.8,0.8),
+        map: layer0Texture,
+        opacity: 0.1,
+        transparent: true,
+        side: THREE.DoubleSide
+      })
+    );
+    this._sceneAttachment.add(this._imageLocator);
 
     this.renderData.scene.add(this._sceneAttachment);
   }
 
-  // Needs to be called if pan, zoom or viewport size changes
-  recalcTiles(pan: Point, zoom: number, viewportSize: Point) {
-    // Remove exiting from scene
-    if (this._imageTiles) {
-      this._sceneAttachment?.remove(this._imageTiles);
-    }
+  private generateTileBBoxes() {
+    this._tileBBoxes = [];
 
-    if (!this._image) {
+    if (!this._pyramid) {
+      console.error(`generateTileBBoxes: No pyramid defined`);
       return;
     }
 
-    if (!this._pyramid || this._pyramid.pyramid.length <= 0 || this._pyramid.pyramid[0].tiles.length <= 0) {
-      return;
-    }
+    for (let level = 0; level < this._pyramid.pyramid.length; level++) {
+      const pyramidLevel = this._pyramid.pyramid[level];
+      const pyramidTiles = pyramidLevel.tiles;
+      const tileBBoxes: THREE.Box3[] = [];
+      for (let c = 0; c < pyramidTiles.length; c++) {
+        const tile = pyramidTiles[c];
 
-    if (!this._tile) {
-      // Generate a single tile geometry that we display
-      if (!this.readPyramidProperties()) {
-        return; // we had some issue with the pyramid...
+        if (!tile.bounds || !tile.bounds.min || !tile.bounds.max) {
+          console.error(`Failed to read pyramid level ${level} tile ${c} bounds`);
+          return;
+        }
+
+        const bbox = new THREE.Box3(
+          new THREE.Vector3(tile.bounds.min.x, tile.bounds.min.y, tile.bounds.min.z),
+          new THREE.Vector3(tile.bounds.max.x, tile.bounds.max.y, tile.bounds.max.z + 1)
+        );
+
+        // Y axis is flipped when rendering, adjust for this
+        // Eg level bounds max Y is 1424
+        // BBox is 1024 high, at y=0
+        // The box was defined to be at the top-left of the image (y=0) but our rendered Y axis
+        // is flipped and 0 is bottom-left.
+        // Therefore we want this tile to be drawn at 1424-1024
+        bbox.max.y = pyramidLevel.bounds!.max!.y - bbox.max.y;
+        bbox.min.y = pyramidLevel.bounds!.max!.y - bbox.min.y;
+
+        // swap them (y axis is flipped, min just became max!)
+        const tmp = bbox.max.y;
+        bbox.max.y = bbox.min.y;
+        bbox.min.y = tmp;
+
+        tileBBoxes.push(bbox);
       }
 
-      // Create a tile
-      this._tile = this.makeBaseTile(this._tileSize);
+      this._tileBBoxes.push(tileBBoxes);
     }
+  }
 
-    // NOTE: Zoom is a bit funky. We consider 1.0 to mean whatever it takes to fit the entire image into the viewport.
-    // Zoom values < 1 mean smaller than the viewport, and > 1 means zooming into the image (eg at 2x zoom we scale the
-    // image to double its size when fit to the viewport)
-
-    // Calculate the scale factor for "1x" zooming
-    // Worked example:
-    // Viewport 2766x837, image 75264x45568
-    // Viewed as "fit to width", we have 75264/2766 = ~27.21
-    // Viewed as "fit to viewport", we have 45568/837 = ~54.44
-    const fitToWidth = false;
-
-    // Scale for fit works out to 27.21, in other words each screen pixel represents ~27 texture pixels
-    const texPerScreenPixel = fitToWidth ?
-                                (viewportSize.x > viewportSize.y ? this._image.width / viewportSize.x : this._image.height / viewportSize.y) :
-                                (viewportSize.x < viewportSize.y ? this._image.width / viewportSize.x : this._image.height / viewportSize.y);
-
-    console.log(`recalcTiles canvas: ${viewportSize.x} x ${viewportSize.y}, texPerScreenPixel: ${texPerScreenPixel}`);
-
-    // User can adjust zoom level. This is the user saying we want to squash less texture pixels into the same screen pixel.
-    // A zoom of 2x means we're now only wanting ~14 pixels per screen pixel. If the user zooms right in to 27x, we're showing
-    // 1 texture pixel per screen pixel. As zoom increases, our "window" into the texture gets smaller
-    const requestedTexPerScreenPixel = texPerScreenPixel / zoom;
+  // Needs to be called if pan, zoom or viewport size changes
+  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, redrawHook$: Subject<void>) {
+    if (!this._image ||
+      !this._pyramid || this._pyramid.pyramid.length <= 0 || this._pyramid.pyramid[0].tiles.length <= 0 ||
+      !this._tile) {
+      console.error("updateTiles: Called without all data available");
+      return;
+    }
 
     // Find the nearest pyramid level to this user request. This means if the user is greatly zoomed in (~27x) and
     // wants 1 tex/screen pixel, we're reading from the pyramid base level
     // The pyramid is increasing levels of 2x downscaling (from the bottom level), so an 8 level pyramid has
     // scaling levels of 1 2 4 8 16 32 64 128
 
-    let pyramidLevel = 0;
-    if (requestedTexPerScreenPixel > 1) {
-      let lastLevelScale = 1;
-      const numLevels = this._pyramid.pyramid.length;
-      for (let c = 1; c < numLevels; c++) {
-        const thisLevelScale = Math.pow(2, c);
+    const pyramidLevelIdx = this.pickPyramidLevel(requestedTexPerScreenPixel);
+    const pyramidLevel = this._pyramid!.pyramid[pyramidLevelIdx];
 
-        const distToLast = requestedTexPerScreenPixel-lastLevelScale;
-        const distToThis = thisLevelScale-requestedTexPerScreenPixel;
+    const pyramidTileScale = this._image.width / pyramidLevel.bounds!.max!.x; // / Math.pow(2, pyramidLevelIdx);
+    console.log(`requestedTexPerScreenPixel: ${requestedTexPerScreenPixel} -> pyramid level: ${pyramidLevelIdx} - ${pyramidLevel.bounds?.max?.x} x ${pyramidLevel.bounds?.max?.y}, tile scale: ${pyramidTileScale}`);
 
-        if (distToThis > 0) {
-          if (distToLast < distToThis) {
-            pyramidLevel = c-1;
-          } else {
-            pyramidLevel = c;
-          }
+    // We need to consider a new pyramid level, so throw out things we've cached for the previous layer
+    if (this._lastPyramidLevel != pyramidLevelIdx) {
+      // Throw out all old tiles and remove from scene
+      this._imageTileCache.clear();
+      this._lastPyramidLevelTilesVisible.clear();
 
-          // Invert because we started looking at c=1 -> 2^1 = between 1x and 2x, ie pyramid base
-          pyramidLevel = numLevels - c;
-          break
-        }
-      }
+      this._lastPyramidLevel = pyramidLevelIdx;
     }
 
-    console.log(`requestedTexPerScreenPixel: ${requestedTexPerScreenPixel} -> pyramid level: ${pyramidLevel} - ${this._pyramid.pyramid[pyramidLevel].bounds?.max?.x} x ${this._pyramid.pyramid[pyramidLevel].bounds?.max?.y}`);
+    // Get a list of tiles visible for this pyramid layer
+    const visibleTiles = this.listVisibleTiles(camFrustum, pyramidLevelIdx, pyramidTileScale);
+    console.log(`  Visible Tiles: ${Array.from(visibleTiles.values())}`);
 
-    // Create meshes for each tile we're drawing
-    this._imageTiles = new THREE.Object3D();
-
-    const baseColour = new THREE.Color(0.1, 0.1, 0.1);
-
-    // Create tiles as per instructions from pyramid!
-
-    ////////////////////////////////////////////
-    // Getting tile width/height for layer just for generating temp polygon colours
-    let tilesWide = 0;
-    let tilesHigh = 1;
-    for (const tile of this._pyramid.pyramid[pyramidLevel].tiles) {
-      if (tile.bounds!.min!.y == 0) {
-        tilesWide++;
+    if (!this.eqSet(visibleTiles, this._lastPyramidLevelTilesVisible)) {
+      // New list of tiles differs from the previous list, so do update the tiles
+      if (this._imageTiles) {
+        this._sceneAttachment!.remove(this._imageTiles);
       }
-      if (tile.bounds!.min!.x == 0 && tile.bounds!.min!.y > 0) {
-        tilesHigh++;
-      }
-    }
-    ////////////////////////////////////////////
+      this._imageTiles = new THREE.Object3D();
 
-    let tileX = 0;
-    let tileY = 0;
-    for (const tile of this._pyramid.pyramid[pyramidLevel].tiles) {
-      const tileMaterial = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(baseColour.r + tileX / tilesWide * 0.5, baseColour.g + tileY / tilesHigh * 0.5, baseColour.b),
-        //side: THREE.DoubleSide
-      });
-
-      if (pyramidLevel == 0 && this._layer0Texture) {
-        tileMaterial.map = this._layer0Texture;
-        this.makeTile(tile, tileMaterial);
-      } else if (pyramidLevel > 0) {
-        this._tileLoader!.loadTile(pyramidLevel, tileX, tileY).subscribe(
-          (tileTexture: THREE.Texture) => {
-            const tileMaterial = new THREE.MeshBasicMaterial({
-              color: new THREE.Color(1,1,1),
-              map: tileTexture
-            });
-
-            this.makeTile(tile, tileMaterial);
-          }
-        );
-      }
-
-      if (tile.bounds!.min!.y == 0) {
-        tileX++;
-      }
-      if (tile.bounds!.min!.x == 0 && tile.bounds!.min!.y > 0) {
-        tileY++;
-      }
-    }
-
-/*
-    let tilesWide = 0;
-    let tilesHigh = 1;
-    for (const tile of this._pyramid.pyramid[pyramidLevel].tiles) {
-      if (tile.bounds!.min!.y == 0) {
-        tilesWide++;
-      }
-      if (tile.bounds!.min!.x == 0 && tile.bounds!.min!.y > 0) {
-        tilesHigh++;
-      }
-    }
-
-    console.log(`pyramid level ${pyramidLevel}: ${tilesWide} x ${tilesHigh}`);
-
-//Need to look at pyramid tiles to determine tile layout here
-    for (let y = 0; y < tilesHigh; y++) {
-      for (let x = 0; x < tilesWide; x++) {
-        const tileMaterial = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(baseColour.r + x / tilesWide * 0.5, baseColour.g + y / tilesHigh * 0.5, baseColour.b),
-          //side: THREE.DoubleSide
-        });
-
-        if (pyramidLevel == 0 && this._layer0Texture) {
-          tileMaterial.map = this._layer0Texture;
+      // Load tiles we do have from cache
+      for (let tileIdx of visibleTiles) {
+        let tile = this._imageTileCache.get(tileIdx);
+        if (!tile) {
+          // Generate the tile, cache it, and add it
+          tile = this.generateTile(pyramidLevelIdx, pyramidLevel, tileIdx, redrawHook$);
+          this._imageTileCache.set(tileIdx, tile);
+        } else {
+          console.log(`  Using cached tile: ${tileIdx}`);
         }
 
-        const tileMesh = new THREE.Mesh(
-          this._tile,
-          tileMaterial
-        );
-
-        tileMesh.scale()
-        tileMesh.position.set(x * this._tileSize, y * this._tileSize, 0);
-
-        this._imageTiles.add(tileMesh);
+        if (tile) {
+          this._imageTiles.add(tile);
+        }
       }
+
+      this._imageTiles.scale.set(pyramidTileScale, pyramidTileScale, 1);
+
+      // Set it at a position where it'll be visible in the frustum
+      //this._imageTiles.position.set(0, 0, 0);
+
+      this._sceneAttachment!.add(this._imageTiles);
+
+      // Remember this for next time
+      this._lastPyramidLevelTilesVisible = visibleTiles;
+    } else {
+      // tile list is the same, we can continue on!
+      console.log("No tile generation needed");
     }
-*/
-    // const maxVPSize = imageViewport.w > imageViewport.h ? imageViewport.w : imageViewport.h;
-    // this._imageTiles.scale.set(this._tileSize / maxVPSize, this._tileSize / maxVPSize, 1);
-
-    //this._imageTiles.scale.set(this._tileSize / imageViewport.h, this._tileSize / imageViewport.w, 1);
-
-    // const sz = viewportSize.x + viewportSize.y;
-    // this._imageTiles.scale.set(this._tileSize / sz, this._tileSize / sz, 1);
-
-    const tileScale = zoom + 1 / (Math.pow(2, pyramidLevel));
-
-    this._imageTiles.scale.set(tileScale, tileScale, 1);
-
-    this._imageTiles.position.set(pan.x, pan.y, -1); 
-
-    this._sceneAttachment?.add(this._imageTiles);
   }
 
-  private makeTile(tile: ImageTileSummary, tileMaterial?: THREE.MeshBasicMaterial) {
-    if (!tileMaterial) {
-      tileMaterial = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(1, 1, 1)
-      });
-    }
-    const tileMesh = new THREE.Mesh(
-        this._tile,
-        tileMaterial
+  private eqSet(a: Set<number>, b: Set<number>) {
+    return a.size === b.size &&
+    [...a].every((x) => b.has(x));
+  }
+
+  private listVisibleTiles(camFrustum: THREE.Frustum, pyramidLevelIdx: number, pyramidTileScale: number): Set<number> {
+    const visibleIdxs = new Set<number>();
+
+    const selectedLevelTileBBoxes = this._tileBBoxes[pyramidLevelIdx];
+
+    for (let c = 0; c < selectedLevelTileBBoxes.length; c++) {
+      const thisBox = selectedLevelTileBBoxes[c];
+      const box = new THREE.Box3(
+        new THREE.Vector3(thisBox.min.x * pyramidTileScale, thisBox.min.y * pyramidTileScale, thisBox.min.z * pyramidTileScale),
+        new THREE.Vector3(thisBox.max.x * pyramidTileScale, thisBox.max.y * pyramidTileScale, thisBox.max.z * pyramidTileScale)
       );
 
-      const sz = getAABBSize(tile.bounds);
-      tileMesh.scale.set(sz.x / this._tileSize, sz.y / this._tileSize, 1);
-      tileMesh.position.set(tile.bounds!.min!.x, tile.bounds!.min!.x, 0);
+      if (camFrustum.intersectsBox(box)) {
+        visibleIdxs.add(c);
+      }
+    }
 
-      this._imageTiles!.add(tileMesh);
+    return visibleIdxs;
+  }
+
+  private pickPyramidLevel(requestedTexPerScreenPixel: number): number {
+    let pyramidLevelIdx = 0;
+    let lastLevelScale = 1;
+
+    const numLevels = this._pyramid!.pyramid.length;
+    for (let c = 1; c < numLevels; c++) {
+      const thisLevelScale = Math.pow(2, c);
+
+      const distToLast = requestedTexPerScreenPixel-lastLevelScale;
+      const distToThis = thisLevelScale-requestedTexPerScreenPixel;
+
+      if (distToThis > 0) {
+        if (distToLast < distToThis) {
+          pyramidLevelIdx = c-1;
+        } else {
+          pyramidLevelIdx = c;
+        }
+
+        // Invert because we started looking at c=1 -> 2^1 = between 1x and 2x, ie pyramid base
+        pyramidLevelIdx = numLevels - c;
+        break
+      }
+    }
+
+    return pyramidLevelIdx;
+  }
+
+  private white = new THREE.Color(1,1,1);
+
+  private generateTile(pyramidLevelIdx: number, pyramidLevel: ImagePyramidLayer, tileIdx: number, redrawHook$: Subject<void>): THREE.Mesh {
+    // Eg if we have a pyramid level that's 3 wide x 2 high tiles
+    // Index 4 (0 based!) must become tileX = 1, tileY = 1
+    const tileY = Math.floor(tileIdx / pyramidLevel.tilesWide);
+    const tileX = Math.floor(tileIdx % pyramidLevel.tilesWide);
+
+    console.log(`  Generating tile: ${tileIdx} [row ${tileY}, col ${tileX}]`);
+
+    const tile = pyramidLevel.tiles[tileIdx];
+
+    const tileMaterial = new THREE.MeshBasicMaterial({
+      color: this.white,
+      side: THREE.DoubleSide
+    });
+
+    // If we have this image available, use it now
+    const cachedTexture = this._tileLoader!.getCachedTile(pyramidLevelIdx, tileX, tileY);
+    if (cachedTexture) {
+      tileMaterial.map = cachedTexture;
+    }
+
+    const newTile = this.makeTile(this._tileBBoxes[pyramidLevelIdx][tileIdx], tileMaterial);
+
+    if (!cachedTexture) {
+      // Load image asynchronously and when it arrives update the material
+      this._tileLoader!.loadTileImage(pyramidLevelIdx, tileX, tileY).subscribe({
+        next: (tileTexture: THREE.Texture) => {
+          //tileMaterial.color = new THREE.Color(1,1,1);
+          tileMaterial.map = tileTexture;
+          tileMaterial.needsUpdate = true;
+
+          redrawHook$.next();
+        },
+        error: err => {
+          console.error(`Failed to read tile for pyramid level: ${pyramidLevelIdx}, x: ${tileX}, y: ${tileY}. Error: ${err}`);
+        }
+      });
+    }
+
+    return newTile;
+  }
+
+  private makeTile(tileBBox: THREE.Box3, tileMaterial: THREE.MeshBasicMaterial): THREE.Mesh {
+    const tileMesh = new THREE.Mesh(
+      this._tile,
+      tileMaterial
+    );
+
+
+    let sz = new THREE.Vector3(tileBBox.max.x-tileBBox.min.x, tileBBox.max.y-tileBBox.min.y, tileBBox.max.z-tileBBox.min.z);
+
+    tileMesh.scale.set(sz.x / this._tileSize, sz.y / this._tileSize, 1);
+    //tileMesh.position.set(tile.bounds!.min!.x, levelMaxY - tile.bounds!.min!.y - sz.y, 0);
+    tileMesh.position.set(tileBBox.min.x, tileBBox.min.y, 0);
+
+    return tileMesh;
   }
 
   private readPyramidProperties(): boolean {
@@ -253,20 +315,11 @@ export class ContextImage2DrawModel {
       return false;
     }
 
-    // Find the tile size, assume it's constant for all levels of the pyramid
-    // TODO: Should we provide this properly somehow from proto?
-    const size = getAABBSize(this._pyramid.pyramid[this._pyramid.pyramid.length-1].tiles[0].bounds);
-
-    if (size.x <= 0 || size.x != size.y) {
-      return false; // unexpected tile size!
-    }
-
-    // Save the tile size for later
-    this._tileSize = size.x;
+    this._tileSize = this._pyramid.tileSize;
     return true
   }
 
-  private makeBaseTile(tileSize: number) {
+  private makeQuad(width: number, height: number) {
     // Was useful for initial testing but not much else...
     //return new THREE.PlaneGeometry(tileSize, tileSize);
 
@@ -274,18 +327,18 @@ export class ContextImage2DrawModel {
 
     const xyz = new Float32Array([
       0, 0, 0,
-      0, tileSize, 0,
-      tileSize, tileSize, 0,
-      tileSize, 0, 0,
+      0, height, 0,
+      width, height, 0,
+      width, 0, 0,
     ]);
 
     result.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
 
     const uv = new Float32Array([
-      0, 1,
       0, 0,
-      1, 0,
+      0, 1,
       1, 1,
+      1, 0,
     ]);
 
     result.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
@@ -295,21 +348,4 @@ export class ContextImage2DrawModel {
 
     return result;
   }
-}
-
-// Some utils that should probably find their own home
-function getAABBSize(box?: AABB): THREE.Vector3 {
-  const min = new THREE.Vector3(
-    box?.min?.x || 0,
-    box?.min?.y || 0,
-    box?.min?.z || 0,
-  );
-
-  const max = new THREE.Vector3(
-    box?.max?.x || 0,
-    box?.max?.y || 0,
-    box?.max?.z || 0,
-  );
-
-  return new THREE.Vector3(max.x-min.x, max.y-min.y, max.z-min.z);
 }
