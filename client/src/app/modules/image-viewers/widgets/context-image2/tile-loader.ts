@@ -16,6 +16,10 @@ export class TileImageLoader {
         return this._tileCache.get(url);
     }
 
+    clearCache() {
+        this._tileCache.clear();
+    }
+
     loadTileImage(layer?: number, x?: number, y?: number): Observable<THREE.Texture> {
         let url = this._imageName;
         
@@ -31,5 +35,13 @@ export class TileImageLoader {
                 this._tileCache.set(url, texture);
             })
         );
+    }
+
+    setFiltering(minFilter: THREE.MinificationTextureFilter, magFilter: THREE.MagnificationTextureFilter) {
+        // Run through all textures we have loaded (they're in the cache)
+        for (let texture of this._tileCache.values()) {
+            texture.minFilter = minFilter;
+            texture.magFilter = magFilter;
+        }
     }
 }

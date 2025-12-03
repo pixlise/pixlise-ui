@@ -15,6 +15,7 @@ export class ContextImage2MouseInteraction {
   private _canvas?: HTMLCanvasElement;
 
   saveState$ = new Subject<void>();
+  mouseWheel$ = new Subject<WheelEvent>();
 
   constructor(
     protected _selectionService: SelectionService,
@@ -78,18 +79,10 @@ export class ContextImage2MouseInteraction {
   }
 
   onMouseWheel(event: WheelEvent): void {
-    const zoomPctChange = 0.05;
-    if (event.deltaY != 0) {
-      let zoomPct = zoomPctChange + 1;
-      if (event.deltaY > 0) {
-        zoomPct = 1 - zoomPctChange;
-      }
-
-      this._mdl.setZoom(this._mdl.zoom * zoomPct);
-      this.redraw();
-    }
-
-    this.saveState$.next();
+    // We were processing this as a zoom event passing directly to the model
+    // but we now pass this to a listener (the ContextImage2Component) directly
+    // so it can be interpreted for different purposes
+    this.mouseWheel$.next(event);
   }
 
   private mouseDrag(event: MouseEvent): Point {

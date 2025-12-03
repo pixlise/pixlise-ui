@@ -6,6 +6,13 @@ import { ImagePyramid } from "src/app/generated-protos/image-pyramid";
 import * as THREE from 'three';
 import { TileImageLoader } from "./tile-loader";
 
+export enum WheelMode {
+  ZOOM = "Zoom",
+  SWAP_IMAGE = "Image",
+  //Z_STACK,
+  BRIGHTNESS = "Brightness"
+};
+
 
 export class ContextImage2Model {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -14,21 +21,48 @@ export class ContextImage2Model {
   private _zoom: number = 1;
   private _imageName: string = "";
   private _image?: ScanImage;
+  private _imageSmoothing: boolean = true;
+  private _wheelMode: WheelMode = WheelMode.ZOOM;
+
+  private _tileLoader?: TileImageLoader;
   
   private _viewportSize: Point = new Point(1,1);
 
   private _viewportToWorldScale = 1;
 
-  setData(imageName: string, img: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
+  imageBrightness: number = 1;
+
+  constructor() {
+    this.resetPanZoom();
+  }
+
+  setImage(imageName: string, img: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
     this._imageName = imageName;
     this._image = img;
+    this._tileLoader = tileLoader;
 
-    this.drawModel.create(img, pyramid, layer0Texture, tileLoader);
-    this.resetPanZoom();
+    this.drawModel.rebuildForImage(img, pyramid, layer0Texture, tileLoader);
+    this.update();
   }
 
   get imageName(): string {
     return this._imageName;
+  }
+
+  get imageSmoothing(): boolean {
+    return this._imageSmoothing;
+  }
+
+  set imageSmoothing(v: boolean) {
+    this._imageSmoothing = v;
+
+    if (this._tileLoader) {
+      // Set texture filtering on all loaded textures
+      this._tileLoader.setFiltering(
+        this._imageSmoothing ? THREE.LinearFilter : THREE.NearestFilter,
+        this._imageSmoothing ? THREE.LinearFilter : THREE.NearestFilter
+      );
+    }
   }
 
   resetPanZoom() {
@@ -82,6 +116,29 @@ export class ContextImage2Model {
     return this._zoom;
   }
 
+  get wheelMode(): WheelMode {
+    return this._wheelMode;
+  }
+
+  set wheelMode(m: WheelMode) {
+    this._wheelMode = m;
+  }
+
+  stepBrightness(up: boolean) {
+    if (up) {
+      this.imageBrightness += 0.1;
+    } else {
+      this.imageBrightness -= 0.1;
+    }
+
+    if (this.imageBrightness < 0.1) {
+      this.imageBrightness = 0.1;
+    }
+    if (this.imageBrightness > 3) {
+      this.imageBrightness = 3;
+    }
+  }
+
   setViewportSize(w: number, h: number) {
     this._viewportSize = new Point(w, h);
 
@@ -101,7 +158,7 @@ export class ContextImage2Model {
     const matrix = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
 
     const camFrustum = new THREE.Frustum();
-    camFrustum.setFromProjectionMatrix(matrix)
+    camFrustum.setFromProjectionMatrix(matrix);
 
     // Work out how many image pixels are visible per viewport pixel
     const camWidth = cam.right-cam.left;

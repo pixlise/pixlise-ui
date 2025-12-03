@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { RenderData } from '../scan-3d-view/interactive-canvas-3d.component';
 import { ScanImage } from 'src/app/generated-protos/image';
-import { AABB, ImagePyramid, ImagePyramidLayer, ImageTileSummary } from 'src/app/generated-protos/image-pyramid';
+import { ImagePyramid, ImagePyramidLayer } from 'src/app/generated-protos/image-pyramid';
 import { TileImageLoader } from './tile-loader';
 import { Subject } from 'rxjs';
-import { util } from 'protobufjs';
 
 
 export class ContextImage2DrawModel {
@@ -27,6 +26,8 @@ export class ContextImage2DrawModel {
 
   renderData: RenderData;
 
+  private WHITE = new THREE.Color(1,1,1);
+
   constructor() {
     this.renderData = new RenderData(
       new THREE.Scene(),
@@ -39,11 +40,21 @@ export class ContextImage2DrawModel {
 
     this.renderData.scene.add(this.renderData.camera);
   }
-  
-  create(image: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
+
+  rebuildForImage(image: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
+    // Clear things if needed
     if (this._sceneAttachment) {
       this.renderData.scene.remove(this._sceneAttachment);
     }
+
+    if (this._tileLoader) {
+      this._tileLoader.clearCache();
+    }
+
+    this._imageTileCache.clear();
+
+    this._lastPyramidLevel = -1;
+    this._lastPyramidLevelTilesVisible.clear(); 
 
     this._image = image;
     this._pyramid = pyramid;
@@ -54,10 +65,7 @@ export class ContextImage2DrawModel {
     this._layer0Texture = layer0Texture;
     this._tileLoader = tileLoader;
 
-    // Generate a single tile geometry that we display
-    if (!this.readPyramidProperties()) {
-      return; // we had some issue with the pyramid...
-    }
+    this._tileSize = this._pyramid.tileSize;
 
     // Create a tile
     this._tile = this.makeQuad(this._tileSize, this._tileSize);
@@ -65,18 +73,29 @@ export class ContextImage2DrawModel {
     // Create the attachment point in the scene where we attach all our model data to
     this._sceneAttachment = new THREE.Object3D();
 
-    // Create the image locator
-    this._imageLocator = new THREE.Mesh(
-      this.makeQuad(this._image.width, this._image.height),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color(1,0.8,0.8),
-        map: layer0Texture,
-        opacity: 0.1,
-        transparent: true,
-        side: THREE.DoubleSide
-      })
-    );
-    this._sceneAttachment.add(this._imageLocator);
+    // Create the image locator, a faint copy of the level 0 pyramid image
+    // this._imageLocator = new THREE.Mesh(
+    //   this.makeQuad(this._image.width, this._image.height),
+    //   new THREE.MeshBasicMaterial({
+    //     color: new THREE.Color(1,0.8,0.8),
+    //     map: layer0Texture,
+    //     opacity: 0.1,
+    //     transparent: true,
+    //     side: THREE.DoubleSide
+    //   })
+    // );
+    // this._sceneAttachment.add(this._imageLocator);
+
+    // A test cyan cube drawn towards the bottom-left in front of the image
+    // let g = new THREE.BoxGeometry(1024,1024,2,1,1,1);
+    // let m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+    //   color: new THREE.Color(0,1,1),
+    //   opacity: 1,
+    //   transparent: false,
+    //   //side: THREE.DoubleSide
+    // }));
+    // m.position.set(10000, 10000, -5);
+    // this._sceneAttachment.add(m);
 
     this.renderData.scene.add(this._sceneAttachment);
   }
@@ -186,7 +205,7 @@ export class ContextImage2DrawModel {
       this._imageTiles.scale.set(pyramidTileScale, pyramidTileScale, 1);
 
       // Set it at a position where it'll be visible in the frustum
-      //this._imageTiles.position.set(0, 0, 0);
+      this._imageTiles.position.set(0, 0, -10);
 
       this._sceneAttachment!.add(this._imageTiles);
 
@@ -250,8 +269,6 @@ export class ContextImage2DrawModel {
     return pyramidLevelIdx;
   }
 
-  private white = new THREE.Color(1,1,1);
-
   private generateTile(pyramidLevelIdx: number, pyramidLevel: ImagePyramidLayer, tileIdx: number, redrawHook$: Subject<void>): THREE.Mesh {
     // Eg if we have a pyramid level that's 3 wide x 2 high tiles
     // Index 4 (0 based!) must become tileX = 1, tileY = 1
@@ -260,10 +277,8 @@ export class ContextImage2DrawModel {
 
     console.log(`  Generating tile: ${tileIdx} [row ${tileY}, col ${tileX}]`);
 
-    const tile = pyramidLevel.tiles[tileIdx];
-
     const tileMaterial = new THREE.MeshBasicMaterial({
-      color: this.white,
+      color: this.WHITE,
       side: THREE.DoubleSide
     });
 
@@ -279,7 +294,6 @@ export class ContextImage2DrawModel {
       // Load image asynchronously and when it arrives update the material
       this._tileLoader!.loadTileImage(pyramidLevelIdx, tileX, tileY).subscribe({
         next: (tileTexture: THREE.Texture) => {
-          //tileMaterial.color = new THREE.Color(1,1,1);
           tileMaterial.map = tileTexture;
           tileMaterial.needsUpdate = true;
 
@@ -308,15 +322,6 @@ export class ContextImage2DrawModel {
     tileMesh.position.set(tileBBox.min.x, tileBBox.min.y, 0);
 
     return tileMesh;
-  }
-
-  private readPyramidProperties(): boolean {
-    if (!this._pyramid || this._pyramid.pyramid.length <= 0 || this._pyramid.pyramid[0].tiles.length <= 0) {
-      return false;
-    }
-
-    this._tileSize = this._pyramid.tileSize;
-    return true
   }
 
   private makeQuad(width: number, height: number) {

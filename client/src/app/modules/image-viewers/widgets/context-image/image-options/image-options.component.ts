@@ -133,7 +133,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     private _snackService: SnackbarService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
     public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>,
-    public dialog: MatDialog //private _exportDataService: ExportDataService
+    public dialog: MatDialog
+    //private _exportDataService: ExportDataService
   ) {
     // Copy the options so we can have "reset" buttons for eg
     this.loadOptions(data.options);
