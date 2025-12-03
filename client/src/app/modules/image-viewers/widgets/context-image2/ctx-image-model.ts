@@ -37,11 +37,20 @@ export class ContextImage2Model {
   }
 
   setImage(imageName: string, img: ScanImage, pyramid: ImagePyramid, layer0Texture: THREE.Texture, tileLoader: TileImageLoader) {
+    // NOTE: if the new image has different dimensions than the current one we reset our view
+    const differentImage = img.width != this._image?.width || img.height != this._image?.height;
+
     this._imageName = imageName;
     this._image = img;
     this._tileLoader = tileLoader;
 
     this.drawModel.rebuildForImage(img, pyramid, layer0Texture, tileLoader);
+
+    if (differentImage) {
+      this.resetPanZoom();
+      return;
+    }
+
     this.update();
   }
 

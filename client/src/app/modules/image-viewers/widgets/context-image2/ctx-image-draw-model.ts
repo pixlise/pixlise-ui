@@ -73,18 +73,19 @@ export class ContextImage2DrawModel {
     // Create the attachment point in the scene where we attach all our model data to
     this._sceneAttachment = new THREE.Object3D();
 
-    // Create the image locator, a faint copy of the level 0 pyramid image
-    // this._imageLocator = new THREE.Mesh(
-    //   this.makeQuad(this._image.width, this._image.height),
-    //   new THREE.MeshBasicMaterial({
-    //     color: new THREE.Color(1,0.8,0.8),
-    //     map: layer0Texture,
-    //     opacity: 0.1,
-    //     transparent: true,
-    //     side: THREE.DoubleSide
-    //   })
-    // );
-    // this._sceneAttachment.add(this._imageLocator);
+    // In the background we draw the level 0 low-res image, as we zoom in
+    // and reload tiles this should always be visible. Good enough for a
+    // low effort solution while we improve the tile loading experience
+    this._imageLocator = new THREE.Mesh(
+      this.makeQuad(this._image.width, this._image.height),
+      new THREE.MeshBasicMaterial({
+        color: this.WHITE,
+        map: layer0Texture,
+        side: THREE.DoubleSide
+      })
+    );
+    this._imageLocator.position.set(0, 0, -20); // Set it so it's behind the pyramid tiles
+    this._sceneAttachment.add(this._imageLocator);
 
     // A test cyan cube drawn towards the bottom-left in front of the image
     // let g = new THREE.BoxGeometry(1024,1024,2,1,1,1);
@@ -279,7 +280,7 @@ export class ContextImage2DrawModel {
 
     const tileMaterial = new THREE.MeshBasicMaterial({
       color: this.WHITE,
-      side: THREE.DoubleSide
+      //side: THREE.DoubleSide
     });
 
     // If we have this image available, use it now
@@ -291,9 +292,16 @@ export class ContextImage2DrawModel {
     const newTile = this.makeTile(this._tileBBoxes[pyramidLevelIdx][tileIdx], tileMaterial);
 
     if (!cachedTexture) {
+      // For now, dim the tile
+      tileMaterial.opacity = 0.1;
+      tileMaterial.transparent = true;
+
       // Load image asynchronously and when it arrives update the material
       this._tileLoader!.loadTileImage(pyramidLevelIdx, tileX, tileY).subscribe({
         next: (tileTexture: THREE.Texture) => {
+          tileMaterial.opacity = 1;
+          tileMaterial.transparent = false;
+
           tileMaterial.map = tileTexture;
           tileMaterial.needsUpdate = true;
 
@@ -313,7 +321,6 @@ export class ContextImage2DrawModel {
       this._tile,
       tileMaterial
     );
-
 
     let sz = new THREE.Vector3(tileBBox.max.x-tileBBox.min.x, tileBBox.max.y-tileBBox.min.y, tileBBox.max.z-tileBBox.min.z);
 
@@ -348,8 +355,8 @@ export class ContextImage2DrawModel {
 
     result.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
 
-    // Draw as a triangle fan
-    result.setIndex(new THREE.BufferAttribute(new Uint32Array([0,1,2, 0,2,3]), 1));
+    // Draw as a triangle fan (anti-clockwise winding, shouldn't need "double sided" faces this way)
+    result.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 0,3,2]), 1));
 
     return result;
   }
