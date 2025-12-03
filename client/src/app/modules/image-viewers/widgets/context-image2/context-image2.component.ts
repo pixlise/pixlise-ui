@@ -41,6 +41,8 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
   private _imageList?: ImageListResp;
 
+  imageDetails: string = "";
+
   constructor(
       private _cacheDataService: APICachedDataService,
       private _analysisLayoutService: AnalysisLayoutService,
@@ -212,6 +214,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   private load(imageName: string) {
     console.log(`ContextImageV2 load: image "${imageName} triggered...`)
     this.isWidgetDataLoading = true;
+    this.imageDetails = `Loading ${imageName}...`;
 
     this._cacheDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
       switchMap((imgResp: ImageGetResp) => {
@@ -237,6 +240,8 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
             }
 
             this.mdl.setImage(imageName, imgResp.image!, pyramidResp.image!, layer0Texture, tileLoader);
+
+            this.imageDetails = `${imageName} [${imgResp.image!.width} x ${imgResp.image!.height}]`;
             this.mdl.needsDraw$.next();
 
             return null;
