@@ -114,6 +114,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   private _unmatchedExpressions: boolean = false;
 
+  widgetTypes: WidgetType[] = [];
+
   manualFilters: Partial<ExpressionSearchFilter> | null = null;
 
   showSearchControls: boolean = true;
@@ -180,6 +182,14 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this.draggable = this.data.draggable || false;
     this._enforceRequiredManualFilterTags();
+
+    console.log("widgetType", this.data?.widgetType);
+    if (this.data?.widgetType === "context-image" || this.data?.widgetType === "scan-3d-view") {
+      this.widgetTypes = ["context-image", "scan-3d-view"];
+    } else {
+      // Default to all widget types
+      this.widgetTypes = [];
+    }
 
     let widgetSpec: WidgetConfiguration = WIDGETS[this.data?.widgetType as keyof typeof WIDGETS];
 

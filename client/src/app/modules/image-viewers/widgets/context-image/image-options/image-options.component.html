@@ -41,11 +41,24 @@ POSSIBILITY OF SUCH DAMAGE.
       >
         Image Options
       </h1>
-      <widget-selection-button
-        [widgetId]="data.widgetId || ''"
-        [activeWidgetIds]="activeWidgetIds"
-        (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged($event)"
-      ></widget-selection-button>
+      <div class="widget-selection-button-container">
+        <widget-selection-button
+          [widgetId]="data.widgetId || ''"
+          [widgetTypes]="widgetTypes"
+          [activeWidgetIds]="activeWidgetIds"
+          (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged($event)"
+        >
+        </widget-selection-button>
+        <badge
+          *ngIf="activeWidgetIds.length > 1"
+          class="notifications"
+          [value]="activeWidgetIds.length.toString()"
+          [badgeStyle]="'notification'"
+          [badgeBorderColor]="'#2a3137'"
+          title="{{ activeWidgetIds.length }} active notifications"
+        >
+        </badge>
+      </div>
       <push-button buttonStyle="yellow" (onClick)="onImport()"
         >Import</push-button
       >

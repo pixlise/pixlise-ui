@@ -37,11 +37,12 @@ import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/r
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { WidgetType } from "../../../../widget/models/widgets.model";
 
 export class ImageDisplayOptions {
   constructor(
@@ -130,7 +131,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   private _targetWidgetIds: string[] = [];
 
+  widgetTypes: WidgetType[] = ['context-image'];
+
   constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
     private _snackService: SnackbarService,
@@ -180,10 +184,12 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this._analysisLayoutService.highlightedWidgetIds$.next([]);
     this._subs.unsubscribe();
   }
 
   onClose(): void {
+    this._analysisLayoutService.highlightedWidgetIds$.next([]);
     this.dialogRef.close();
   }
 
@@ -644,6 +650,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   set activeWidgetIds(ids: string[]) {
     this._targetWidgetIds = ids;
+    this._analysisLayoutService.highlightedWidgetIds$.next(this._targetWidgetIds);
   }
 
   onActiveWidgetIdsChanged(ids: string[]) {

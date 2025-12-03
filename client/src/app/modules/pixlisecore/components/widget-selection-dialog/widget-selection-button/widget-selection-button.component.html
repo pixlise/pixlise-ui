@@ -1,6 +1,7 @@
 <ng-template #widgetSelectionDialog>
   <widget-selection-dialog
     [widgetId]="widgetId"
+    [widgetTypes]="widgetTypes"
     [activeWidgetIds]="activeWidgetIds"
     (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged.emit($event)"
   ></widget-selection-dialog>
@@ -10,7 +11,12 @@
   [settingsDialog]="widgetSelectionDialog"
   (onClose)="onClose()"
 >
-  <push-button buttonStyle="outline" class="active-group-btn">{{
-    activeWidgetIds.length > 0 ? activeWidgetNamesTooltip : "Select Widgets"
-  }}</push-button>
+  <push-button
+    buttonStyle="outline"
+    class="active-group-btn"
+    [notificationCount]="showBadge ? activeWidgetIds.length : 0"
+    >{{
+      activeWidgetIds.length > 0 ? activeWidgetNamesTooltip : "Select Widgets"
+    }}</push-button
+  >
 </widget-settings-menu>

@@ -28,6 +28,7 @@ export class WidgetSelectionDialogComponent {
     tabName?: string;
   }[] = [];
 
+  @Input() widgetTypes: WidgetType[] = [];
   @Input() widgetId: string = "";
   @Output() onActiveWidgetIdsChanged: EventEmitter<string[]> = new EventEmitter<
     string[]
@@ -52,7 +53,11 @@ export class WidgetSelectionDialogComponent {
             }[] = [];
             config.layouts.forEach((layout, i) => {
               const widgetCounts: Record<string, number> = {};
-              layout.widgets.forEach((widget, widgetIndex) => {
+              layout.widgets.forEach((widget) => {
+                if (this.widgetTypes.length > 0 && !this.widgetTypes.includes(widget.type as WidgetType)) {
+                  return;
+                }
+
                 if (widgetCounts[widget.type]) {
                   widgetCounts[widget.type]++;
                 } else {

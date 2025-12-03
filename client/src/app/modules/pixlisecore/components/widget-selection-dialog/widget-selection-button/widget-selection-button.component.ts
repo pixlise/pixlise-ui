@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { Subscription } from "rxjs";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WidgetType } from "../../../../widget/models/widgets.model";
 
 @Component({
   standalone: false,
@@ -15,6 +16,8 @@ export class WidgetSelectionButtonComponent {
   private _activeWidgetIds: string[] = [];
 
   @Input() widgetId: string = "";
+  @Input() widgetTypes: WidgetType[] = [];
+  @Input() showBadge: boolean = false;
   @Output() onActiveWidgetIdsChanged: EventEmitter<string[]> = new EventEmitter<
     string[]
   >();
@@ -56,6 +59,5 @@ export class WidgetSelectionButtonComponent {
 
   onClose(): void {
     this.onActiveWidgetIdsChanged.emit(this._activeWidgetIds);
-    this._analysisLayoutService.highlightedWidgetIds$.next([]);
   }
 }
