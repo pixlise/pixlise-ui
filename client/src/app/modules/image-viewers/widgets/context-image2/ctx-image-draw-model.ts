@@ -4,6 +4,7 @@ import { ScanImage } from 'src/app/generated-protos/image';
 import { ImagePyramid, ImagePyramidLayer } from 'src/app/generated-protos/image-pyramid';
 import { TileImageLoader } from './tile-loader';
 import { Subject } from 'rxjs';
+import { Point } from 'src/app/models/Geometry';
 
 
 export class ContextImage2DrawModel {
@@ -18,6 +19,7 @@ export class ContextImage2DrawModel {
   protected _imageLocator?: THREE.Mesh;
   protected _tile?: THREE.BufferGeometry;
   protected _tileSize = 1;
+  protected _pipView?: THREE.Object3D;
 
   protected _tileBBoxes: THREE.Box3[][] = [];
 
@@ -27,6 +29,8 @@ export class ContextImage2DrawModel {
   renderData: RenderData;
 
   private WHITE = new THREE.Color(1,1,1);
+  private BLACK = new THREE.Color(0,0,0);
+  private PURPLE = new THREE.Color(1,0,1);
 
   constructor() {
     this.renderData = new RenderData(
@@ -81,7 +85,7 @@ export class ContextImage2DrawModel {
       new THREE.MeshBasicMaterial({
         color: this.WHITE,
         map: layer0Texture,
-        side: THREE.DoubleSide
+        //side: THREE.DoubleSide
       })
     );
     this._imageLocator.position.set(0, 0, -20); // Set it so it's behind the pyramid tiles
@@ -148,7 +152,7 @@ export class ContextImage2DrawModel {
   }
 
   // Needs to be called if pan, zoom or viewport size changes
-  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, redrawHook$: Subject<void>) {
+  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, drawPIPMap: boolean, redrawHook$: Subject<void>) {
     if (!this._image ||
       !this._pyramid || this._pyramid.pyramid.length <= 0 || this._pyramid.pyramid[0].tiles.length <= 0 ||
       !this._tile) {
@@ -215,6 +219,15 @@ export class ContextImage2DrawModel {
     } else {
       // tile list is the same, we can continue on!
       console.log("No tile generation needed");
+    }
+
+
+    if (this._pipView && this._sceneAttachment) {
+      this._sceneAttachment.remove(this._pipView)
+    }
+
+    if (drawPIPMap) {
+      this.updatePIPView(camFrustum, requestedTexPerScreenPixel);
     }
   }
 
@@ -359,5 +372,152 @@ export class ContextImage2DrawModel {
     result.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 0,3,2]), 1));
 
     return result;
+  }
+
+  private updatePIPView(camFrustum: THREE.Frustum, requestedTexPerScreenPixel: number) {
+    if (!this._sceneAttachment || !this._layer0Texture || !this._image) {
+      return;
+    }
+
+    // Rebuild it all
+    if (this._pipView) {
+      this._sceneAttachment.remove(this._pipView)
+    }
+
+    // Update the PIP
+    this._pipView = new THREE.Object3D();
+
+    // Get frustum location
+    let left = 0;
+    let top = 0;
+    let right = 0;
+    let bottom = 0;
+    for (const plane of camFrustum.planes) {
+      if (plane.normal.x > 0.9 && plane.normal.y == 0 && plane.normal.z == 0) {
+        left = -plane.constant;
+      }
+      if (plane.normal.x < -0.9 && plane.normal.y == 0 && plane.normal.z == 0) {
+        right = plane.constant;
+      }
+      if (plane.normal.x == 0 && plane.normal.y > 0.9 && plane.normal.z == 0) {
+        bottom = -plane.constant;
+      }
+      if (plane.normal.x == 0 && plane.normal.y < -0.9 && plane.normal.z == 0) {
+        top = plane.constant;
+      }
+    }
+
+    const frustumWidth = right-left;
+    const frustumHeight = top-bottom;
+
+    const scale = 0.1;
+
+    const pipWidth = this._image.width * scale;
+    const pipHeight = this._image.height * scale;
+
+    // Draw the level 0 image into a PIP view
+    let mat = new THREE.MeshBasicMaterial({
+        color: this.WHITE,
+        map: this._layer0Texture,
+        //side: THREE.DoubleSide
+    })
+    const pipBG = new THREE.Mesh(this._tile, mat);
+    pipBG.scale.set(1/this._tileSize * pipWidth, 1/this._tileSize * pipHeight, 1);
+    pipBG.position.set(0,0,-9);
+
+    this._pipView.add(pipBG);
+
+    // Draw a border
+    this._pipView.add(
+      this.makeLines(
+        this.makeRectPoints(pipWidth, pipHeight),
+        0, 0,
+        new THREE.LineBasicMaterial({
+          color: this.BLACK,
+          linewidth: 6,
+          opacity: 0.3,
+          transparent: true,
+        })
+      )
+    );
+
+    // Draw the frustum we're seeing - if it's too small change it into a cross-hair of constant size
+    let frustumViewScale = scale;
+    let drawCorners = false;
+    if ((frustumWidth * requestedTexPerScreenPixel) < 800) {
+      //frustumViewScale = 5;
+      drawCorners = true;
+    }
+
+    const viewWidth = frustumWidth * frustumViewScale;
+    const viewHeight = frustumHeight * frustumViewScale;
+
+    let pts: number[] = [];
+
+    // Add some lines that show the box corners more clearly when it's small
+    if (drawCorners) {
+      const sz = Math.max(frustumWidth, frustumHeight);
+      const cornerVec = new Point(sz, sz);
+      pts.push(
+        -cornerVec.x, -cornerVec.y, 0,
+        0, 0, 0,
+        -cornerVec.x, cornerVec.y + viewHeight, 0,
+        0, viewHeight, 0,
+        cornerVec.x+viewWidth, -cornerVec.y, 0,
+        viewWidth, 0, 0,
+        cornerVec.x+viewWidth, cornerVec.y + viewHeight, 0,
+        viewWidth, viewHeight, 0
+      );
+    } else {
+      pts = this.makeRectPoints(viewWidth, viewHeight);
+    }
+
+    this._pipView.add(
+      this.makeLines(
+        pts,
+        left * scale, bottom * scale,
+        new THREE.LineBasicMaterial({
+          color: this.PURPLE,
+          linewidth: 3,
+        })
+      )
+    );
+
+    // Scale pip view to be independent of zoom level
+    const pipScale = frustumWidth / this._image.width;
+    this._pipView.scale.set(pipScale, pipScale, 1);
+
+    // Move the pip view to the top-right
+    //this._pipView.position.set(right - 100, top - frustumHeight, 0);
+    this._pipView.position.set(left + frustumWidth * (1-scale*1.5), bottom + frustumHeight * (scale*0.5), 0);
+
+    // Position it so it's always visible in the top-right of the view frustum
+    // NOTE it's currently located at 0,0 relative to the image itself
+
+    this._sceneAttachment.add(this._pipView)
+  }
+
+  private makeRectPoints(width: number, height: number) {
+    return [
+      0, 0, 0,
+      0, height, 0,
+      0, height, 0,
+      width, height, 0,
+      width, height, 0,
+      width, 0, 0,
+      width, 0, 0,
+      0, 0, 0,
+    ];
+  }
+
+  private makeLines(endPoints: number[], x: number, y: number, mat: THREE.LineBasicMaterial) {
+    const points = new Float32Array(endPoints);
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.BufferAttribute(points, 3));
+    const mesh = new THREE.LineSegments(geom, mat);
+
+    mesh.position.set(x, y, 0);
+    return mesh;
   }
 }

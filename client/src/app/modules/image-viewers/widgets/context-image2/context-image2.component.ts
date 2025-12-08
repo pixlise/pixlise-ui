@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import { Subscription, Subject, combineLatest, Observable, map, of, switchMap } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { CanvasSizeNotification } from "../scan-3d-view/interactive-canvas-3d.component";
@@ -270,6 +270,20 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     }
   }
 
+  @HostListener("document:mousemove", ["$event"])
+  onGlobalMouseMoveCanvas(event: MouseEvent) {
+    if (this._mouseInteractionHandler.isMouseDown()) {
+      this._mouseInteractionHandler.onMouseMove(event);
+    }
+  }
+
+  @HostListener("document:mouseup", ["$event"])
+  onGlobalMouseUpCanvas(event: MouseEvent) {
+    if (this._mouseInteractionHandler.isMouseDown()) {
+      this._mouseInteractionHandler.onMouseUp(event);
+    }
+  }
+
   onMouseWheel(event: WheelEvent) {
     let mode = this.mdl.wheelMode;
     
@@ -290,7 +304,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         const zoomPctChange = 0.05;
         if (event.deltaY != 0) {
           let zoomPct = zoomPctChange + 1;
-          if (event.deltaY < 0) {
+          if (event.deltaY > 0) {
             zoomPct = 1 - zoomPctChange;
           }
 

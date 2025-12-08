@@ -104,11 +104,11 @@ export class ContextImage2Model {
 
   setZoom(zoom: number) {
     // Filter out rubbish
-    if (zoom < 0.0001) {
-      zoom = 0.0001;
+    if (zoom < 0.75) {
+      zoom = 0.75;
     }
-    if (zoom > 100) {
-      zoom = 100;
+    if (zoom > 1000) {
+      zoom = 1000;
     }
     if (!isFinite(zoom)) {
       zoom = 1;
@@ -177,7 +177,7 @@ export class ContextImage2Model {
     const frustumStr = `cam frustum [${Math.floor(cam.right-cam.left)} x ${Math.floor(cam.top-cam.bottom)}]`;
     console.log(`UPDATE! viewport: [${this._viewportSize.x} x ${this._viewportSize.y}], zoom: ${this._zoom}, ${frustumStr}, cam pos: [${cam.position.x},${cam.position.y}] texPerScreenPixel: ${texPerScreenPixel}`);
 
-    this.drawModel.updateTiles(texPerScreenPixel, camFrustum, this.needsDraw$);
+    this.drawModel.updateTiles(texPerScreenPixel, camFrustum, this._zoom > 1, this.needsDraw$);
     
     this.needsDraw$.next();
   }
@@ -213,8 +213,9 @@ export class ContextImage2Model {
       camCenteringOffset.y = halfFrustumSize.y * 0.5 - (halfFrustumSize.y - this._image.height) / 2;
     }
 
-    halfFrustumSize.x *= 0.5 * this._zoom;
-    halfFrustumSize.y *= 0.5 * this._zoom;
+    const scale = 0.5 / this._zoom; // For half!
+    halfFrustumSize.x *= scale;
+    halfFrustumSize.y *= scale;
 
     const cam = this.drawModel.renderData.camera as THREE.OrthographicCamera
     cam.left = -halfFrustumSize.x;

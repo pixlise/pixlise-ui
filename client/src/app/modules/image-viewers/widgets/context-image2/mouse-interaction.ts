@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ContextImage2Model } from "./ctx-image-model";
-import { Point, subtractVectors, vectorsEqual } from "src/app/models/Geometry";
+import { Point, subtractVectors } from "src/app/models/Geometry";
 import { Subject } from "rxjs";
+
 
 export class ContextImage2MouseInteraction {
   private _mouseMoved = false;
@@ -28,7 +29,6 @@ export class ContextImage2MouseInteraction {
     // Remove existing event listeners to avoid duplicates
     this.clearMouseEventListeners();
 
-    // Add click event listener
     this._canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
     this._canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
     this._canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
@@ -83,6 +83,10 @@ export class ContextImage2MouseInteraction {
     // but we now pass this to a listener (the ContextImage2Component) directly
     // so it can be interpreted for different purposes
     this.mouseWheel$.next(event);
+  }
+
+  isMouseDown(): boolean {
+    return this._mouseDownPos !== undefined;
   }
 
   private mouseDrag(event: MouseEvent): Point {
