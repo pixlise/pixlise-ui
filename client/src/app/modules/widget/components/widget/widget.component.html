@@ -35,6 +35,7 @@
       [activeWidgetType]="activeWidget"
       [description]="widgetConfiguration?.description"
       (widgetChange)="activeWidget = $event"
+      #widgetSwitcher
     >
     </widget-switcher>
     <div
@@ -43,6 +44,9 @@
       [title]="title"
     >
       {{ title }}
+    </div>
+    <div class="print-only-title">
+      {{ getWidgetDisplayTitle() }}
     </div>
 
     <div class="buttons" #buttonsContainer>

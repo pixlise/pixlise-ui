@@ -37,6 +37,10 @@
       color: rgb(190, 192, 194);
     }
 
+    .print-only-title {
+      display: none;
+    }
+
     .buttons {
       display: flex;
       width: 100%;
@@ -219,7 +223,35 @@
     flex-direction: column !important;
 
     header {
-      display: none !important;
+      display: flex !important;
+      background-color: black !important;
+      border-radius: 0 !important;
+      height: auto !important;
+      min-height: 32px !important;
+      padding: 8px 8px 4px 8px !important;
+
+      widget-switcher {
+        display: none !important;
+      }
+
+      .widget-title {
+        display: none !important;
+      }
+
+      .print-only-title {
+        display: block !important;
+        white-space: pre;
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 16px;
+        color: rgb(var(--clr-gray-50)) !important;
+      }
+
+      .buttons {
+        display: none !important;
+      }
     }
 
     .bottom-toolbar {
