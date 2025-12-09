@@ -37,6 +37,10 @@
       color: rgb(190, 192, 194);
     }
 
+    .print-only-title {
+      display: none;
+    }
+
     .buttons {
       display: flex;
       width: 100%;
@@ -204,4 +208,68 @@
 .settings-menu-trigger-btn {
   display: flex;
   align-items: center;
+}
+
+@media print {
+  .widget {
+    background-color: black !important;
+    border-radius: 0 !important;
+    border: none !important;
+    page-break-inside: avoid;
+
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+
+    header {
+      display: flex !important;
+      background-color: black !important;
+      border-radius: 0 !important;
+      height: auto !important;
+      min-height: 32px !important;
+      padding: 8px 8px 4px 8px !important;
+
+      widget-switcher {
+        display: none !important;
+      }
+
+      .widget-title {
+        display: none !important;
+      }
+
+      .print-only-title {
+        display: block !important;
+        white-space: pre;
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 16px;
+        color: rgb(var(--clr-gray-50)) !important;
+      }
+
+      .buttons {
+        display: none !important;
+      }
+    }
+
+    .bottom-toolbar {
+      display: none !important;
+    }
+
+    .inset-button {
+      display: none !important;
+    }
+
+    .visualization {
+      background-color: black !important;
+      border-radius: 0 !important;
+
+      width: 100% !important;
+      height: 100% !important;
+      flex: 1 !important;
+      position: relative !important;
+    }
+  }
 }

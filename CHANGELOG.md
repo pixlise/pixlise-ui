@@ -3,6 +3,7 @@
 ### New Features
 - Added ability to apply context image options to multiple context images at once. This can be done by opening the image options modal and clicking on the chart name in the top bar and selecting other widgets.
   - If multiple widgets are selected, a badge will show on the context image options button to show the number of active widgets.
+- Adds print mode that hides interactive utilities and makes the current workspace tab print as a single page.
 
 ### Bug Fixes
 

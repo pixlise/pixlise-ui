@@ -70,6 +70,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
   @ViewChild("contextMenu") contextMenu!: ElementRef;
   @ViewChild("overflowSection") overflowSection!: ElementRef;
+  @ViewChild("widgetSwitcher") widgetSwitcher!: any;
 
   @Input() widgetLayoutConfig!: WidgetLayoutConfiguration;
   @Input() layoutIndex: number = 0;
@@ -478,6 +479,22 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
     }
 
     return [];
+  }
+
+  getWidgetDisplayTitle(): string {
+    if (this.title && this.title.length > 0) {
+      return this.title;
+    }
+
+    if (this.widgetSwitcher?.widgetName) {
+      return this.widgetSwitcher.widgetName;
+    }
+
+    if (this.widgetConfiguration?.name) {
+      return this.widgetConfiguration.name;
+    }
+
+    return "";
   }
   
 

@@ -89,6 +89,7 @@ export class SpectrumChartToolHost implements CanvasInteractionHandler, ISpectru
   private _springOverriddenTool: BaseSpectrumTool | null = null;
 
   private _uiElems: BaseUIElement[] = [];
+  private _zoomMap: ZoomMap | null = null;
 
   toolStateChanged$ = new Subject<void>();
   cursor: string = CursorId.defaultPointer;
@@ -113,13 +114,35 @@ export class SpectrumChartToolHost implements CanvasInteractionHandler, ISpectru
     // Order matters... this is the draw order!!
     this._uiElems.push(new ChartXRFLines(this._ctx));
     this._uiElems.push(new XRFBrowser(this._ctx));
-    this._uiElems.push(new ZoomMap(this._ctx));
+    this._zoomMap = new ZoomMap(this._ctx);
+    this._uiElems.push(this._zoomMap);
     this._uiElems.push(new MouseCursor(this._ctx));
   }
 
   getDrawers(): CanvasDrawer[] {
     // Draw active tool last
     return [...this._uiElems, this._activeTool];
+  }
+
+  hideZoomMap(): void {
+    if (this._zoomMap) {
+      const index = this._uiElems.indexOf(this._zoomMap);
+      if (index > -1) {
+        this._uiElems.splice(index, 1);
+      }
+    }
+  }
+
+  showZoomMap(): void {
+    if (this._zoomMap && !this._uiElems.includes(this._zoomMap)) {
+      // Insert before MouseCursor (which should be the last element)
+      const mouseCursorIndex = this._uiElems.findIndex(elem => elem instanceof MouseCursor);
+      if (mouseCursorIndex > -1) {
+        this._uiElems.splice(mouseCursorIndex, 0, this._zoomMap);
+      } else {
+        this._uiElems.push(this._zoomMap);
+      }
+    }
   }
 
   // IToolHost
