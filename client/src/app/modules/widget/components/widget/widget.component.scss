@@ -205,3 +205,39 @@
   display: flex;
   align-items: center;
 }
+
+@media print {
+  .widget {
+    background-color: black !important;
+    border-radius: 0 !important;
+    border: none !important;
+    page-break-inside: avoid;
+
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+
+    header {
+      display: none !important;
+    }
+
+    .bottom-toolbar {
+      display: none !important;
+    }
+
+    .inset-button {
+      display: none !important;
+    }
+
+    .visualization {
+      background-color: black !important;
+      border-radius: 0 !important;
+
+      width: 100% !important;
+      height: 100% !important;
+      flex: 1 !important;
+      position: relative !important;
+    }
+  }
+}

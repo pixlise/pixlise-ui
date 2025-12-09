@@ -188,13 +188,33 @@ export abstract class ResizingCanvasComponent implements AfterViewInit, OnDestro
     const dpi = window.devicePixelRatio * this._resolutionMultiplier;
 
     const canvasElem = canvas.nativeElement;
-    if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
+    const containerWidth = canvasElem.parentNode.clientWidth;
+    const containerHeight = canvasElem.parentNode.clientHeight;
+
+    const isPrintMode = (window as any).__isPrintMode === true;
+    
+    let width = containerWidth;
+    let height = containerHeight;
+
+
+    // In print mode, preserve aspect ratio by fitting the canvas within the container
+    if (isPrintMode && canvasElem.width > 0 && canvasElem.height > 0) {
+      const currentAspectRatio = canvasElem.width / canvasElem.height;
+      const containerAspectRatio = containerWidth / containerHeight;
+
+      if (containerAspectRatio > currentAspectRatio) {
+        width = containerHeight * currentAspectRatio;
+        height = containerHeight;
+      } else {
+        width = containerWidth;
+        height = containerWidth / currentAspectRatio;
+      }
+    }
+
+    if (canvasElem.width == width * dpi && canvasElem.height == height * dpi) {
       //console.error('fitCanvasToContainer failed: size already matched');
       return null;
     }
-
-    const width = canvasElem.parentNode.clientWidth;
-    const height = canvasElem.parentNode.clientHeight;
 
     const displayBackup = canvasElem.style.display;
     canvasElem.style.display = "none";
@@ -204,10 +224,14 @@ export abstract class ResizingCanvasComponent implements AfterViewInit, OnDestro
 
     canvasElem.style.display = displayBackup;
 
-    // canvasElem.style.width = width + "px";
-    // canvasElem.style.height = height + "px";
-    canvasElem.style.width = "100%";
-    canvasElem.style.height = "100%";
+    if (isPrintMode) {
+      // In print mode, set explicit pixel dimensions to maintain aspect ratio
+      canvasElem.style.width = width + "px";
+      canvasElem.style.height = height + "px";
+    } else {
+      canvasElem.style.width = "100%";
+      canvasElem.style.height = "100%";
+    }
 
     return new CanvasParams(width, height, dpi);
   }

@@ -50,6 +50,20 @@ interactive-canvas {
   flex: 1;
 }
 
+@media print {
+  :host {
+    background-color: black !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  interactive-canvas,
+  canvas {
+    background-color: black !important;
+  }
+}
+
 .err-display {
   position: absolute;
   bottom: 0;

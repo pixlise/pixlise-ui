@@ -20,6 +20,8 @@ export type ScreenConfigurationCSS = {
 export class AnalysisPageComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
   private _keyPresses = new Set<string>();
+  private _onBeforePrintBound = this.onBeforePrint.bind(this);
+  private _onAfterPrintBound = this.onAfterPrint.bind(this);
 
   computedLayouts: ScreenConfigurationCSS[] = [];
   loadedScreenConfiguration: ScreenConfiguration | null = null;
@@ -93,10 +95,31 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
     );
 
     this._usersService.searchUsers("");
+
+    window.addEventListener("beforeprint", this._onBeforePrintBound);
+    window.addEventListener("afterprint", this._onAfterPrintBound);
   }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+    window.removeEventListener("beforeprint", this._onBeforePrintBound);
+    window.removeEventListener("afterprint", this._onAfterPrintBound);
+  }
+
+  onBeforePrint(): void {
+    (window as any).__isPrintMode = true;
+    document.body.classList.add("print-mode");
+
+    this._analysisLayoutService.notifyWindowResize();
+    this._analysisLayoutService.delayNotifyCanvasResize(50);
+  }
+
+  onAfterPrint(): void {
+    (window as any).__isPrintMode = false;
+    document.body.classList.remove("print-mode");
+
+    this._analysisLayoutService.notifyWindowResize();
+    this._analysisLayoutService.delayNotifyCanvasResize(50);
   }
 
   trackByWidgetId(index: number, widget: WidgetLayoutConfiguration): string {
