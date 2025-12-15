@@ -1,0 +1,47 @@
+<div class="widget-selection-dialog">
+  <div class="widget-dialog-header">
+    <div class="select-all-controls">
+      <h3>Select Widgets</h3>
+      <push-button
+        buttonStyle="outline"
+        [disabled]="currentPageWidgets.length === 0"
+        (onClick)="onToggleAllCurrentPageWidgets()"
+      >
+        {{ areAllCurrentPageWidgetsSelected ? "Deselect All" : "Select All" }}
+      </push-button>
+    </div>
+  </div>
+  <div class="widget-list">
+    <div
+      class="widget-item"
+      *ngFor="let widget of currentPageWidgets"
+      (click)="onToggleWidget(widget.widget.id)"
+    >
+      <div class="widget-label-area">
+        <two-state-icon-button
+          activeIcon="assets/button-icons/check-on.svg"
+          inactiveIcon="assets/button-icons/check-off.svg"
+          [active]="isWidgetSelected(widget.widget.id)"
+        >
+        </two-state-icon-button>
+        <div class="widget-title">{{ widget.name }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="widget-dialog-footer" *ngIf="widgetDialogPageCount > 1">
+    <icon-button
+      class="{{ !canGoToPreviousWidgetPage() ? 'disabled' : '' }}"
+      icon="assets/button-icons/arrow-left.svg"
+      (onClick)="onPreviousWidgetPage()"
+    ></icon-button>
+    <span class="page-label">{{
+      currentPageLabel ||
+        `Tab ${currentWidgetTabIndex + 1} of ${widgetDialogPageCount}`
+    }}</span>
+    <icon-button
+      class="{{ !canGoToNextWidgetPage() ? 'disabled' : '' }}"
+      icon="assets/button-icons/arrow-right.svg"
+      (onClick)="onNextWidgetPage()"
+    ></icon-button>
+  </div>
+</div>

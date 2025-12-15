@@ -65,6 +65,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   selectedPMC = -1;
 
   private _subs = new Subscription();
+  private _onBeforePrintBound = this.onBeforePrint.bind(this);
+  private _onAfterPrintBound = this.onAfterPrint.bind(this);
 
   constructor(
     private _chartRef: ElementRef,
@@ -257,6 +259,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         }
       })
     );
+
+    window.addEventListener("beforeprint", this._onBeforePrintBound);
+    window.addEventListener("afterprint", this._onAfterPrintBound);
 
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
@@ -476,6 +481,18 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
   ngOnDestroy() {
     this._subs.unsubscribe();
+    window.removeEventListener("beforeprint", this._onBeforePrintBound);
+    window.removeEventListener("afterprint", this._onAfterPrintBound);
+  }
+
+  onBeforePrint(): void {
+    this.toolhost.hideZoomMap();
+    this.reDraw();
+  }
+
+  onAfterPrint(): void {
+    this.toolhost.showZoomMap();
+    this.reDraw();
   }
 
   private setInitialConfig() {

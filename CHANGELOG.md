@@ -1,4 +1,13 @@
-## 4.81.0 (LATEST)
+## 4.82.0 (LATEST)
+
+### New Features
+- Added ability to apply context image options to multiple context images at once. This can be done by opening the image options modal and clicking on the chart name in the top bar and selecting other widgets.
+  - If multiple widgets are selected, a badge will show on the context image options button to show the number of active widgets.
+- Adds print mode that hides interactive utilities and makes the current workspace tab print as a single page.
+
+### Bug Fixes
+
+## 4.81.0 (2025-11-17)
 
 ### New Features
 - Slight logic change for RGB Mixes. If an existing RGB mix is selected and either the order is changed or an expression is added/removed, the RGB mix will now be saved as the temporary auto-generated group instead of trying to edit the existing one. To edit the existing one, use the "Save As/Edit Group" button.

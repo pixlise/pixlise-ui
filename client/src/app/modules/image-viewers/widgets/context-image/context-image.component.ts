@@ -842,6 +842,57 @@ export class ContextImageComponent
     );
 
     this._subs.add(
+      this._contextDataService.imagePickerResultMap$.subscribe(
+      (resultMap: Map<string, ImagePickerResult>) => {
+        const result = resultMap.get(this._widgetId);
+        if (!result) {
+          return;
+        }
+
+        // NOTE: it must be the path though... so must be like: <scanId>/<image>.png
+        this.mdl.drawImage = result.options.currentImage.length > 0;
+        // If user wants to draw the image, we got an image name back so apply to model. If it's
+        // an empty name, we just set the draw flag to false and don't change the imageName
+        // so reloading still works (and does almost nothing because it's the same image!)
+        if (this.mdl.drawImage) {
+          this.mdl.imageName = result.options.currentImage;
+          this.mdl.beamLocationVersionsRequested =
+            result.options.beamVersionMap;
+        }
+
+        if (
+          result.options.selectedScanId.length > 0 &&
+          result.options.selectedScanId !== this.scanId
+        ) {
+          this.scanId = result.options.selectedScanId;
+        }
+
+        this.mdl.imageSmoothing = result.options.imageSmoothing;
+        this.mdl.imageBrightness = result.options.imageBrightness;
+        this.mdl.removeTopSpecularArtifacts =
+          result.options.removeTopSpecularArtifacts;
+        this.mdl.removeBottomSpecularArtifacts =
+          result.options.removeBottomSpecularArtifacts;
+        this.mdl.colourRatioMin = result.options.colourRatioMin;
+        this.mdl.colourRatioMax = result.options.colourRatioMax;
+        this.mdl.rgbuChannels = result.options.rgbuChannels;
+        this.mdl.unselectedOpacity = result.options.unselectedOpacity;
+        this.mdl.unselectedGrayscale = result.options.unselectedGrayscale;
+
+        this.reloadModel();
+        this.saveState();
+
+        if (this._shownImageOptions?.componentInstance?.loadOptions) {
+          const params = this.getImagePickerParams();
+          this._shownImageOptions.componentInstance.loadOptions(params.options);
+        }
+
+        // Clear the result so we don't keep loading the same options over and over again
+        this._contextDataService.clearWidgetImagePickerResult(this._widgetId);
+      })
+    );
+
+    this._subs.add(
       this._roiService.displaySettingsMap$.subscribe((displaySettings) => {
         // Regenerate any regions we have
         if (this.mdl.roiIds.length > 0) {
@@ -2070,6 +2121,7 @@ export class ContextImageComponent
     }
 
     return new ImagePickerParams(
+      this._widgetId,
       scanIds,
       warnMsg,
       new ImageDisplayOptions(
@@ -2114,47 +2166,47 @@ export class ContextImageComponent
       ImageOptionsComponent,
       dialogConfig
     );
-    this._shownImageOptions.componentInstance.optionChange.subscribe(
-      (result: ImagePickerResult) => {
-        // NOTE: it must be the path though... so must be like: <scanId>/<image>.png
-        this.mdl.drawImage = result.options.currentImage.length > 0;
-        // If user wants to draw the image, we got an image name back so apply to model. If it's
-        // an empty name, we just set the draw flag to false and don't change the imageName
-        // so reloading still works (and does almost nothing because it's the same image!)
-        if (this.mdl.drawImage) {
-          this.mdl.imageName = result.options.currentImage;
-          this.mdl.beamLocationVersionsRequested =
-            result.options.beamVersionMap;
-        }
+    // this._shownImageOptions.componentInstance.optionChange.subscribe(
+    //   (result: ImagePickerResult) => {
+    //     // NOTE: it must be the path though... so must be like: <scanId>/<image>.png
+    //     this.mdl.drawImage = result.options.currentImage.length > 0;
+    //     // If user wants to draw the image, we got an image name back so apply to model. If it's
+    //     // an empty name, we just set the draw flag to false and don't change the imageName
+    //     // so reloading still works (and does almost nothing because it's the same image!)
+    //     if (this.mdl.drawImage) {
+    //       this.mdl.imageName = result.options.currentImage;
+    //       this.mdl.beamLocationVersionsRequested =
+    //         result.options.beamVersionMap;
+    //     }
 
-        if (
-          result.options.selectedScanId.length > 0 &&
-          result.options.selectedScanId !== this.scanId
-        ) {
-          this.scanId = result.options.selectedScanId;
-        }
+    //     if (
+    //       result.options.selectedScanId.length > 0 &&
+    //       result.options.selectedScanId !== this.scanId
+    //     ) {
+    //       this.scanId = result.options.selectedScanId;
+    //     }
 
-        this.mdl.imageSmoothing = result.options.imageSmoothing;
-        this.mdl.imageBrightness = result.options.imageBrightness;
-        this.mdl.removeTopSpecularArtifacts =
-          result.options.removeTopSpecularArtifacts;
-        this.mdl.removeBottomSpecularArtifacts =
-          result.options.removeBottomSpecularArtifacts;
-        this.mdl.colourRatioMin = result.options.colourRatioMin;
-        this.mdl.colourRatioMax = result.options.colourRatioMax;
-        this.mdl.rgbuChannels = result.options.rgbuChannels;
-        this.mdl.unselectedOpacity = result.options.unselectedOpacity;
-        this.mdl.unselectedGrayscale = result.options.unselectedGrayscale;
+    //     this.mdl.imageSmoothing = result.options.imageSmoothing;
+    //     this.mdl.imageBrightness = result.options.imageBrightness;
+    //     this.mdl.removeTopSpecularArtifacts =
+    //       result.options.removeTopSpecularArtifacts;
+    //     this.mdl.removeBottomSpecularArtifacts =
+    //       result.options.removeBottomSpecularArtifacts;
+    //     this.mdl.colourRatioMin = result.options.colourRatioMin;
+    //     this.mdl.colourRatioMax = result.options.colourRatioMax;
+    //     this.mdl.rgbuChannels = result.options.rgbuChannels;
+    //     this.mdl.unselectedOpacity = result.options.unselectedOpacity;
+    //     this.mdl.unselectedGrayscale = result.options.unselectedGrayscale;
 
-        this.reloadModel();
-        this.saveState();
+    //     this.reloadModel();
+    //     this.saveState();
 
-        if (this._shownImageOptions?.componentInstance?.loadOptions) {
-          const params = this.getImagePickerParams();
-          this._shownImageOptions.componentInstance.loadOptions(params.options);
-        }
-      }
-    );
+    //     if (this._shownImageOptions?.componentInstance?.loadOptions) {
+    //       const params = this.getImagePickerParams();
+    //       this._shownImageOptions.componentInstance.loadOptions(params.options);
+    //     }
+    //   }
+    // );
 
     this._shownImageOptions.afterClosed().subscribe(() => {
       this._shownImageOptions = null;

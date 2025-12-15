@@ -32,8 +32,36 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="image-options">
   <header>
     <div class="controls">
-      <h1 mat-dialog-title cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle class="title drag">Image Options</h1>
-      <push-button buttonStyle="yellow" (onClick)="onImport()">Import</push-button>
+      <h1
+        mat-dialog-title
+        cdkDrag
+        cdkDragRootElement=".cdk-overlay-pane"
+        cdkDragHandle
+        class="title drag"
+      >
+        Image Options
+      </h1>
+      <div class="widget-selection-button-container">
+        <widget-selection-button
+          [widgetId]="data.widgetId || ''"
+          [widgetTypes]="widgetTypes"
+          [activeWidgetIds]="activeWidgetIds"
+          (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged($event)"
+        >
+        </widget-selection-button>
+        <badge
+          *ngIf="activeWidgetIds.length > 1"
+          class="notifications"
+          [value]="activeWidgetIds.length.toString()"
+          [badgeStyle]="'notification'"
+          [badgeBorderColor]="'#2a3137'"
+          title="{{ activeWidgetIds.length }} active notifications"
+        >
+        </badge>
+      </div>
+      <push-button buttonStyle="yellow" (onClick)="onImport()"
+        >Import</push-button
+      >
       <!-- <icon-button (click)="onExport()" title="Download all images" icon="assets/button-icons/export.svg" [loading]="downloadLoading"></icon-button> -->
     </div>
   </header>
@@ -45,73 +73,130 @@ POSSIBILITY OF SUCH DAMAGE.
         [initialScanId]="selectedScanId"
         [scanIds]="data.scanIds"
         [currentImage]="options.currentImage"
-        (selectedImage)="onSelectedImageChanged($event)"></image-picker>
-      <div *ngIf="data.warningMsg" class="warning">{{data.warningMsg}}</div>
+        (selectedImage)="onSelectedImageChanged($event)"
+      ></image-picker>
+      <div *ngIf="data.warningMsg" class="warning">{{ data.warningMsg }}</div>
     </div>
 
-    <div class="ctrl-column" *ngIf="loadingBeamVersions || pickableBeamVersionScanIds.length > 0">
+    <div
+      class="ctrl-column"
+      *ngIf="loadingBeamVersions || pickableBeamVersionScanIds.length > 0"
+    >
       <div class="setting-label">Beam Version:</div>
       <wait-spinner *ngIf="loadingBeamVersions"></wait-spinner>
-      <div *ngFor="let scanId of pickableBeamVersionScanIds" class="row-space-between">
-        <div title="Scan ID: {{scanId}}" class="setting-label">{{scanNames?.get(scanId) || scanId}}</div>
-        <mat-select [(ngModel)]="selectedBeamVersions[scanId]" (selectionChange)="onBeamVersionChange(scanId)">
-          <mat-option *ngFor="let ver of pickableBeamVersions.get(scanId)" [value]="ver">{{ver}}</mat-option>
+      <div
+        *ngFor="let scanId of pickableBeamVersionScanIds"
+        class="row-space-between"
+      >
+        <div title="Scan ID: {{ scanId }}" class="setting-label">
+          {{ scanNames?.get(scanId) || scanId }}
+        </div>
+        <mat-select
+          [(ngModel)]="selectedBeamVersions[scanId]"
+          (selectionChange)="onBeamVersionChange(scanId)"
+        >
+          <mat-option
+            *ngFor="let ver of pickableBeamVersions.get(scanId)"
+            [value]="ver"
+            >{{ ver }}</mat-option
+          >
         </mat-select>
       </div>
     </div>
 
-    <div class="ctrl-row centered-row bunched" [ngClass]="{ 'disabled-area': !isRGBU }" [title]="rgbuOnlyHelpText">
+    <div
+      class="ctrl-row centered-row bunched"
+      [ngClass]="{ 'disabled-area': !isRGBU }"
+      [title]="rgbuOnlyHelpText"
+    >
       <two-state-icon-button
         activeIcon="assets/button-icons/radio-on.svg"
         inactiveIcon="assets/button-icons/radio-off.svg"
         disabledIcon="assets/button-icons/radio-disabled.svg"
         [active]="rgbuAsChannels && isRGBU"
         [disabled]="!isRGBU"
-        (onToggle)="onRGBUAsChannels()">
+        (onToggle)="onRGBUAsChannels()"
+      >
       </two-state-icon-button>
       <div class="centered-row">
         <div class="channel-setting-label">RGB Image:</div>
         <div class="centered-row">
           <div class="column">
             <div><strong>Red Channel</strong></div>
-            <mat-select [(ngModel)]="channelForRed" [disabled]="!isRGBU || !rgbuAsChannels">
-              <mat-option *ngFor="let ch of displayedChannelsWithNone" [value]="ch">{{ ch }}</mat-option>
+            <mat-select
+              [(ngModel)]="channelForRed"
+              [disabled]="!isRGBU || !rgbuAsChannels"
+            >
+              <mat-option
+                *ngFor="let ch of displayedChannelsWithNone"
+                [value]="ch"
+                >{{ ch }}</mat-option
+              >
             </mat-select>
           </div>
           <div class="column">
             <div><strong>Green Channel</strong></div>
-            <mat-select [(ngModel)]="channelForGreen" [disabled]="!isRGBU || !rgbuAsChannels">
-              <mat-option *ngFor="let ch of displayedChannelsWithNone" [value]="ch">{{ ch }}</mat-option>
+            <mat-select
+              [(ngModel)]="channelForGreen"
+              [disabled]="!isRGBU || !rgbuAsChannels"
+            >
+              <mat-option
+                *ngFor="let ch of displayedChannelsWithNone"
+                [value]="ch"
+                >{{ ch }}</mat-option
+              >
             </mat-select>
           </div>
           <div class="column">
             <div><strong>Blue Channel</strong></div>
-            <mat-select [(ngModel)]="channelForBlue" [disabled]="!isRGBU || !rgbuAsChannels">
-              <mat-option *ngFor="let ch of displayedChannelsWithNone" [value]="ch">{{ ch }}</mat-option>
+            <mat-select
+              [(ngModel)]="channelForBlue"
+              [disabled]="!isRGBU || !rgbuAsChannels"
+            >
+              <mat-option
+                *ngFor="let ch of displayedChannelsWithNone"
+                [value]="ch"
+                >{{ ch }}</mat-option
+              >
             </mat-select>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="ctrl-row centered-row bunched" [ngClass]="{ 'disabled-area': !isRGBU }" [title]="rgbuOnlyHelpText">
+    <div
+      class="ctrl-row centered-row bunched"
+      [ngClass]="{ 'disabled-area': !isRGBU }"
+      [title]="rgbuOnlyHelpText"
+    >
       <two-state-icon-button
         activeIcon="assets/button-icons/radio-on.svg"
         inactiveIcon="assets/button-icons/radio-off.svg"
         disabledIcon="assets/button-icons/radio-disabled.svg"
         [active]="!rgbuAsChannels && isRGBU"
         [disabled]="!isRGBU"
-        (onToggle)="onRGBUAsRatio()">
+        (onToggle)="onRGBUAsRatio()"
+      >
       </two-state-icon-button>
 
       <div class="centered-row">
         <div class="channel-setting-label">Ratio Image:</div>
-        <mat-select [(ngModel)]="channelForNumerator" [disabled]="!isRGBU || rgbuAsChannels">
-          <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{ ch }}</mat-option>
+        <mat-select
+          [(ngModel)]="channelForNumerator"
+          [disabled]="!isRGBU || rgbuAsChannels"
+        >
+          <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{
+            ch
+          }}</mat-option>
         </mat-select>
         <div><strong>/</strong></div>
-        <mat-select [(ngModel)]="channelForDenominator" [disabled]="!isRGBU || rgbuAsChannels">
-          <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{ ch }}</mat-option>
+        <mat-select
+          [(ngModel)]="channelForDenominator"
+          [disabled]="!isRGBU || rgbuAsChannels"
+        >
+          <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{
+            ch
+          }}</mat-option>
         </mat-select>
       </div>
     </div>
@@ -119,53 +204,113 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="subheading-line">Display Options</div>
     <div class="ctrl-row">
       <div class="setting-label">Image Smoothing:</div>
-      <switch-button [active]="options.imageSmoothing" title="Toggle smoothing of context image" (onToggle)="onToggleImageSmoothing()"></switch-button>
+      <switch-button
+        [active]="options.imageSmoothing"
+        title="Toggle smoothing of context image"
+        (onToggle)="onToggleImageSmoothing()"
+      ></switch-button>
     </div>
     <div *ngIf="!isRGBU || rgbuAsChannels" class="ctrl-row">
       <div class="setting-label">Image Brightness:</div>
       <div class="centered-row">
-        <input class="setting-label" type="number" step="0.1" [(ngModel)]="imageBrightnessStr" />
-        <slider title="Image Brightness" [value]="options.imageBrightness" [minValue]="0" [maxValue]="10" [pxLength]="140" (onChange)="onChangeBrightness($event)">
+        <input
+          class="setting-label"
+          type="number"
+          step="0.1"
+          [(ngModel)]="imageBrightnessStr"
+        />
+        <slider
+          title="Image Brightness"
+          [value]="options.imageBrightness"
+          [minValue]="0"
+          [maxValue]="10"
+          [pxLength]="140"
+          (onChange)="onChangeBrightness($event)"
+        >
         </slider>
-        <push-button title="Reset brightness to 1.0" (onClick)="onResetBrightness()">Reset</push-button>
+        <push-button
+          title="Reset brightness to 1.0"
+          (onClick)="onResetBrightness()"
+          >Reset</push-button
+        >
       </div>
     </div>
     <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
       <div class="setting-label">Colour Remapping:</div>
       <div class="centered-row">
-        <input [(ngModel)]="colourRatioMinStr" type="number" step="0.1" placeholder="" />
+        <input
+          [(ngModel)]="colourRatioMinStr"
+          type="number"
+          step="0.1"
+          placeholder=""
+        />
 
         <range-slider
-          *ngIf="(options.removeBottomSpecularArtifacts || options.removeTopSpecularArtifacts) && options.specularRemovedValueRange"
+          *ngIf="
+            (options.removeBottomSpecularArtifacts ||
+              options.removeTopSpecularArtifacts) &&
+            options.specularRemovedValueRange
+          "
           [minValue]="colourRatioRangeMin"
           [selectedMinValue]="colourRatioMin"
           [maxValue]="colourRatioRangeMax"
-          [selectedMaxValue]="options.colourRatioMax !== null ? options.colourRatioMax : colourRatioRangeMax"
+          [selectedMaxValue]="
+            options.colourRatioMax !== null
+              ? options.colourRatioMax
+              : colourRatioRangeMax
+          "
           [pxLength]="scaleImageWidth"
           trackColour="viridis"
-          (onChange)="onChangeRatioMinMaxSlider($event)">
+          (onChange)="onChangeRatioMinMaxSlider($event)"
+        >
         </range-slider>
         <range-slider
-          *ngIf="!options.removeBottomSpecularArtifacts && !options.removeTopSpecularArtifacts && options.valueRange"
+          *ngIf="
+            !options.removeBottomSpecularArtifacts &&
+            !options.removeTopSpecularArtifacts &&
+            options.valueRange
+          "
           [minValue]="colourRatioRangeMin"
           [selectedMinValue]="colourRatioMin"
           [maxValue]="colourRatioRangeMax"
           [selectedMaxValue]="colourRatioMax"
           [pxLength]="scaleImageWidth"
           trackColour="viridis"
-          (onChange)="onChangeRatioMinMaxSlider($event)">
+          (onChange)="onChangeRatioMinMaxSlider($event)"
+        >
         </range-slider>
 
-        <input [(ngModel)]="colourRatioMaxStr" type="number" step="0.1" placeholder="" />
-        <push-button title="Reset colour remapping" (onClick)="onResetRatioColourRemapping()">Reset</push-button>
+        <input
+          [(ngModel)]="colourRatioMaxStr"
+          type="number"
+          step="0.1"
+          placeholder=""
+        />
+        <push-button
+          title="Reset colour remapping"
+          (onClick)="onResetRatioColourRemapping()"
+          >Reset</push-button
+        >
       </div>
     </div>
     <div class="ctrl-row">
       <div class="setting-label">Opacity of Unselected Pixels:</div>
       <div class="centered-row">
-        <div class="setting-label">{{ options.unselectedOpacity * 100 | number: "1.0-0" }}%</div>
-        <slider [value]="options.unselectedOpacity" [minValue]="0.2" [maxValue]="0.5" (onChange)="onChangeUnselectedOpacity($event)"> </slider>
-        <push-button title="Reset unselected opacity" (onClick)="onResetUnselectedOpacity()">Reset</push-button>
+        <div class="setting-label">
+          {{ options.unselectedOpacity * 100 | number: "1.0-0" }}%
+        </div>
+        <slider
+          [value]="options.unselectedOpacity"
+          [minValue]="0.2"
+          [maxValue]="0.5"
+          (onChange)="onChangeUnselectedOpacity($event)"
+        >
+        </slider>
+        <push-button
+          title="Reset unselected opacity"
+          (onClick)="onResetUnselectedOpacity()"
+          >Reset</push-button
+        >
       </div>
     </div>
     <div class="ctrl-row">
@@ -175,7 +320,8 @@ POSSIBILITY OF SUCH DAMAGE.
         rightIcon="assets/button-icons/colour.svg"
         toolTip="Toggles colouring of unselected pixels"
         [active]="!options.unselectedGrayscale"
-        (onToggle)="onToggleUnselectedGrayscale()">
+        (onToggle)="onToggleUnselectedGrayscale()"
+      >
       </two-state-icon-switch>
     </div>
     <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
@@ -183,14 +329,16 @@ POSSIBILITY OF SUCH DAMAGE.
       <switch-button
         [active]="options.removeTopSpecularArtifacts"
         title="Toggle top 1% of specular artifacts"
-        (onToggle)="onToggleRemoveTopSpecularArtifacts()"></switch-button>
+        (onToggle)="onToggleRemoveTopSpecularArtifacts()"
+      ></switch-button>
     </div>
     <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
       <div class="setting-label">Remove Bottom 1% Fractile:</div>
       <switch-button
         [active]="options.removeBottomSpecularArtifacts"
         title="Toggle bottom 1% of specular artifacts"
-        (onToggle)="onToggleRemoveBottomSpecularArtifacts()"></switch-button>
+        (onToggle)="onToggleRemoveBottomSpecularArtifacts()"
+      ></switch-button>
     </div>
   </section>
   <div class="button-container">

@@ -124,17 +124,9 @@
 
       &.active-widget-selection {
         padding: 9px 0;
+        gap: 8px;
         display: flex;
         align-items: center;
-
-        widget-settings-menu {
-          .active-group-btn {
-            display: flex;
-            margin-left: 8px;
-
-            max-width: 160px;
-          }
-        }
 
         mat-select {
           margin-left: 0 !important;
@@ -453,7 +445,6 @@
     color: rgb(190, 192, 194);
   }
 }
-
 .widget-selection-dialog {
   display: flex;
   flex-direction: column;

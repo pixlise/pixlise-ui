@@ -28,6 +28,7 @@ import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
 
 import { getPathBase } from "src/app/utils/utils";
+import { ImagePickerResult } from "../../image-viewers/widgets/context-image/image-options/image-options.component";
 
 export type SyncedTransform = {
   scale: Point;
@@ -45,6 +46,8 @@ export class ContextImageDataService {
 
   // Cached just for tab switching purposes, but expecting a full tab reload to reset this...
   private _lastBeamLocationVersionsLoaded = new Map<string, Map<string, number>>();
+
+  private _imagePickerResultMap$: BehaviorSubject<Map<string, ImagePickerResult>> = new BehaviorSubject(new Map<string, ImagePickerResult>());
 
   constructor(
     protected _expressionsService: ExpressionsService,
@@ -72,6 +75,30 @@ export class ContextImageDataService {
 
   clearSyncedTransforms() {
     this._syncedTransform$.next({});
+  }
+
+  get imagePickerResultMap$(): BehaviorSubject<Map<string, ImagePickerResult>> {
+    return this._imagePickerResultMap$;
+  }
+
+  set imagePickerResultMap$(map: Map<string, ImagePickerResult>) {
+    this._imagePickerResultMap$.next(map);
+  }
+
+  getWidgetImagePickerResult(widgetId: string): ImagePickerResult | undefined {
+    return this._imagePickerResultMap$.value.get(widgetId);
+  }
+
+  setWidgetImagePickerResult(widgetId: string, result: ImagePickerResult) {
+    const current = new Map<string, ImagePickerResult>(this._imagePickerResultMap$.value);
+    current.set(widgetId, result);
+    this._imagePickerResultMap$.next(current);
+  }
+
+  clearWidgetImagePickerResult(widgetId: string) {
+    const current = new Map<string, ImagePickerResult>(this._imagePickerResultMap$.value);
+    current.delete(widgetId);
+    this._imagePickerResultMap$.next(current);
   }
 
   getModelData(imageName: string, beamLocationVersions: Map<string, number>, widgetId: string): Observable<ContextImageModelLoadedData> {

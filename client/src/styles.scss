@@ -36,8 +36,7 @@
 @include inter-ui.weight-700;
 */
 
-@use '@angular/material' as mat;
-
+@use "@angular/material" as mat;
 
 :root {
   --top-toolbar-height: 37px;
@@ -168,6 +167,9 @@ body {
   }
   -ms-overflow-style: none;
   scrollbar-width: none;
+
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 button {
@@ -264,10 +266,12 @@ small {
   color: $clr-gray-70;
 }
 
-@include mat.dialog-overrides((
-  container-color: $ui-panel-title-colour,
-  content-padding: 0px,
-));
+@include mat.dialog-overrides(
+  (
+    container-color: $ui-panel-title-colour,
+    content-padding: 0px,
+  )
+);
 /* Replaces:
 .mat-dialog-container,
 .mat-mdc-dialog-container {
@@ -417,12 +421,14 @@ h3 {
 $clr-gray-80-plus: #2b3135;
 
 :root {
-  @include mat.tooltip-overrides((
-    container-color: $clr-gray-80-plus,
-    container-shape: red,
-    supporting-text-color: $clr-gray-10,
-    supporting-text-size: 10px,
-  ));
+  @include mat.tooltip-overrides(
+    (
+      container-color: $clr-gray-80-plus,
+      container-shape: red,
+      supporting-text-color: $clr-gray-10,
+      supporting-text-size: 10px,
+    )
+  );
 }
 /* Replaces:
 .mat-mdc-tooltip {
@@ -451,9 +457,11 @@ $clr-gray-80-plus: #2b3135;
 }
 
 :root {
-  @include mat.autocomplete-overrides((
-    background-color: $clr-gray-80-plus,
-  ));
+  @include mat.autocomplete-overrides(
+    (
+      background-color: $clr-gray-80-plus,
+    )
+  );
 }
 /* Replaces:
 .mat-mdc-autocomplete-panel {
@@ -473,25 +481,28 @@ $clr-gray-80-plus: #2b3135;
   color: white;
 }
 
-.mdc-text-field--filled:not(.mdc-text-field--disabled):hover .mdc-line-ripple::before,
+.mdc-text-field--filled:not(.mdc-text-field--disabled):hover
+  .mdc-line-ripple::before,
 .mdc-text-field--filled .mdc-line-ripple::after {
   border-bottom-color: white;
 }
 
 :root {
-  @include mat.select-overrides((
-    panel-background-color: $clr-gray-80-plus,
-    /*enabled-trigger-text-color: red,
+  @include mat.select-overrides(
+    (
+      panel-background-color: $clr-gray-80-plus,
+      /*enabled-trigger-text-color: red,
     disabled-trigger-text-color: blue,
     placeholder-text-color: blue,*/
-  ));
+    )
+  );
 }
 
 mat-option {
   .mdc-list-item__primary-text {
     color: white !important;
   }
-/* Checkbox is black :(
+  /* Checkbox is black :(
   .mdc-pseudo-checkbox {
     color: white !important;
   }*/
@@ -586,7 +597,8 @@ mat-option {
 }
 
 .mat-primary .mat-pseudo-checkbox-checked.mat-pseudo-checkbox-minimal::after,
-.mat-primary .mat-pseudo-checkbox-indeterminate.mat-pseudo-checkbox-minimal::after,
+.mat-primary
+  .mat-pseudo-checkbox-indeterminate.mat-pseudo-checkbox-minimal::after,
 .mat-mdc-form-field.mat-focused.mat-primary .mat-mdc-select-arrow {
   color: white;
 }
@@ -603,9 +615,15 @@ mat-option {
 // globally and we set these styles as panelClass fields on openWithComponent() depending on the kind of
 // snack we're displaying
 .pixlise-message {
-  .mdc-snackbar__surface { background-color: $clr-gray-80-plus !important; }
-  .mdc-snackbar__label { color: $clr-gray-10 !important; }
-  button { color: $clr-yellow !important; }
+  .mdc-snackbar__surface {
+    background-color: $clr-gray-80-plus !important;
+  }
+  .mdc-snackbar__label {
+    color: $clr-gray-10 !important;
+  }
+  button {
+    color: $clr-yellow !important;
+  }
 
   /* Replaces:
   --mdc-snackbar-container-color: #2b3135 !important;
@@ -616,9 +634,15 @@ mat-option {
 }
 
 .pixlise-warn {
-  .mdc-snackbar__surface { background-color: $clr-orange !important; }
-  .mdc-snackbar__label { color: $clr-gray-90 !important; }
-  button { color: $clr-gray-90 !important; }
+  .mdc-snackbar__surface {
+    background-color: $clr-orange !important;
+  }
+  .mdc-snackbar__label {
+    color: $clr-gray-90 !important;
+  }
+  button {
+    color: $clr-gray-90 !important;
+  }
 
   /* Replaces:
   --mdc-snackbar-container-color: rgb(var(--clr-orange)) !important;
@@ -629,9 +653,15 @@ mat-option {
 }
 
 .pixlise-error {
-  .mdc-snackbar__surface { background-color: $clr-red !important; }
-  .mdc-snackbar__label { color: $clr-gray-10 !important; }
-  button { color: $clr-gray-10 !important; }
+  .mdc-snackbar__surface {
+    background-color: $clr-red !important;
+  }
+  .mdc-snackbar__label {
+    color: $clr-gray-10 !important;
+  }
+  button {
+    color: $clr-gray-10 !important;
+  }
 
   /* Replaces:
   --mdc-snackbar-container-color: rgb(var(--clr-red)) !important;
@@ -642,9 +672,15 @@ mat-option {
 }
 
 .pixlise-success {
-  .mdc-snackbar__surface { background-color: $clr-green !important; }
-  .mdc-snackbar__label { color: $clr-gray-90 !important; }
-  button { color: $clr-gray-90 !important; }
+  .mdc-snackbar__surface {
+    background-color: $clr-green !important;
+  }
+  .mdc-snackbar__label {
+    color: $clr-gray-90 !important;
+  }
+  button {
+    color: $clr-gray-90 !important;
+  }
 
   /* Replaces:
   --mdc-snackbar-container-color: #66bb6a !important;
@@ -782,5 +818,67 @@ color-picker {
     img {
       user-select: none;
     }
+  }
+}
+
+@media print {
+  @page {
+    size: auto;
+    margin: 0;
+  }
+
+  body,
+  html {
+    background-color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  * {
+    background-color: black !important;
+  }
+
+  app-toolbar,
+  .toolbar {
+    display: none !important;
+  }
+
+  analysis-sidepanel,
+  .sidebar {
+    display: none !important;
+  }
+
+  app-settings-sidebar {
+    display: none !important;
+  }
+
+  range-slider,
+  .axis {
+    display: none !important;
+  }
+
+  .axis-container .axis {
+    display: none !important;
+  }
+
+  // Ensure widgets and canvases maintain their aspect ratios
+  interactive-canvas,
+  canvas,
+  .widget,
+  .visualization,
+  .canvas-container,
+  app-chord-diagram-widget,
+  app-histogram-widget,
+  binary-chart-widget,
+  ternary-chart-widget,
+  app-spectrum-chart-widget {
+    background-color: black !important;
+  }
+
+  app-chord-diagram-widget :host,
+  app-histogram-widget :host {
+    background-color: black !important;
   }
 }

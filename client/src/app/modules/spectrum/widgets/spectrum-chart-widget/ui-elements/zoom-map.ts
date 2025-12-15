@@ -81,7 +81,7 @@ export class ZoomMap extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {    
     const rect = this.calcWindowRect(drawParams.drawViewport);
 
     // Draw in top-right corner
