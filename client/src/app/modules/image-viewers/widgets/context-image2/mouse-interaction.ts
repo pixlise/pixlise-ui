@@ -83,6 +83,7 @@ export class ContextImage2MouseInteraction {
     // but we now pass this to a listener (the ContextImage2Component) directly
     // so it can be interpreted for different purposes
     this.mouseWheel$.next(event);
+    this.saveState$.next();
   }
 
   isMouseDown(): boolean {
