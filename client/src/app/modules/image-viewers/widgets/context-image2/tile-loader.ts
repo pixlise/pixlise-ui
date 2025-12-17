@@ -17,6 +17,10 @@ export class TileImageLoader {
     }
 
     clearCache() {
+        for (let tile of this._tileCache.values()) {
+            tile.dispose();
+        }
+
         this._tileCache.clear();
     }
 
@@ -43,5 +47,9 @@ export class TileImageLoader {
             texture.minFilter = minFilter;
             texture.magFilter = magFilter;
         }
+    }
+
+    getCacheInfo(): string {
+        return `${this._tileCache.size}`;
     }
 }

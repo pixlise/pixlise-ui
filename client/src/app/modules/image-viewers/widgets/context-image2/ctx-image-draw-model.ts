@@ -3,8 +3,9 @@ import { RenderData } from '../scan-3d-view/interactive-canvas-3d.component';
 import { ScanImage } from 'src/app/generated-protos/image';
 import { ImagePyramid, ImagePyramidLayer } from 'src/app/generated-protos/image-pyramid';
 import { TileImageLoader } from './tile-loader';
-import { Subject } from 'rxjs';
+import { map, Observable, of, Subject, Subscription } from 'rxjs';
 import { Point } from 'src/app/models/Geometry';
+import { P } from 'node_modules/@angular/cdk/portal-directives.d-DbeNrI5D';
 
 
 export class ContextImage2DrawModel {
@@ -16,6 +17,7 @@ export class ContextImage2DrawModel {
   protected _sceneAttachment?: THREE.Object3D;
   protected _imageTiles?: THREE.Object3D;
   protected _imageTileCache = new Map<number, THREE.Mesh>();
+  protected _imageTilesLoading = new Map<number, Subscription>();
   protected _imageLocator?: THREE.Mesh;
   protected _tile?: THREE.BufferGeometry;
   protected _tileSize = 1;
@@ -56,6 +58,7 @@ export class ContextImage2DrawModel {
     }
 
     this._imageTileCache.clear();
+    this._imageTilesLoading.clear();
 
     this._lastPyramidLevel = -1;
     this._lastPyramidLevelTilesVisible.clear(); 
@@ -104,6 +107,9 @@ export class ContextImage2DrawModel {
 
     this.renderData.scene.add(this._sceneAttachment);
   }
+
+  get lastPyramidLevel(): number { return this._lastPyramidLevel; }
+  get lastPyramidLevelTilesVisible(): Set<number> { return this._lastPyramidLevelTilesVisible; }
 
   private generateTileBBoxes() {
     this._tileBBoxes = [];
@@ -175,6 +181,7 @@ export class ContextImage2DrawModel {
     if (this._lastPyramidLevel != pyramidLevelIdx) {
       // Throw out all old tiles and remove from scene
       this._imageTileCache.clear();
+      this._imageTilesLoading.clear();
       this._lastPyramidLevelTilesVisible.clear();
 
       this._lastPyramidLevel = pyramidLevelIdx;
@@ -183,6 +190,14 @@ export class ContextImage2DrawModel {
     // Get a list of tiles visible for this pyramid layer
     const visibleTiles = this.listVisibleTiles(camFrustum, pyramidLevelIdx, pyramidTileScale);
     console.log(`  Visible Tiles: ${Array.from(visibleTiles.values())}`);
+
+    // Print out cache information
+    console.log(`  Cached tiles: ${this._imageTileCache.size}, pending tiles: ${this._imageTilesLoading.size}, textures: ${this._tileLoader ? this._tileLoader.getCacheInfo() : "N/A"}`);
+
+    const pendingCleared = this.clearNonVisiblePendingTiles(visibleTiles);
+    if (pendingCleared > 0) {
+      console.log(`  Cleared ${pendingCleared} loading tiles as they are no longer visible`);
+    }
 
     if (!this.eqSet(visibleTiles, this._lastPyramidLevelTilesVisible)) {
       // New list of tiles differs from the previous list, so do update the tiles
@@ -194,16 +209,44 @@ export class ContextImage2DrawModel {
       // Load tiles we do have from cache
       for (let tileIdx of visibleTiles) {
         let tile = this._imageTileCache.get(tileIdx);
-        if (!tile) {
-          // Generate the tile, cache it, and add it
-          tile = this.generateTile(pyramidLevelIdx, pyramidLevel, tileIdx, redrawHook$);
-          this._imageTileCache.set(tileIdx, tile);
-        } else {
-          console.log(`  Using cached tile: ${tileIdx}`);
-        }
-
         if (tile) {
           this._imageTiles.add(tile);
+          console.log(`  Using cached tile: ${tileIdx}`);
+        } else {
+          // Make sure it's not already pending...
+          if (this._imageTilesLoading.has(tileIdx)) {
+            console.log(`  Tile: ${tileIdx} is already loading...`);
+            
+          } else {
+            // Generate the tile, cache it, and add it
+            const tileXY = this.getTileXY(pyramidLevel, tileIdx);
+
+            console.log(`  Generating tile: ${tileIdx} [row ${tileXY.y}, col ${tileXY.x}]`);
+
+            // ENSURE its subscribed
+            // ENSURE we limit how many requests go out at once
+            const tileSub$ = this.generateTile(pyramidLevelIdx, tileIdx, tileXY).subscribe({
+              next: (tile: THREE.Mesh) => {
+                // No longer need to remember it's loading
+                this._imageTilesLoading.delete(tileIdx);
+
+                // Save it for later
+                this._imageTileCache.set(tileIdx, tile);
+
+                // Add tile to drawn tiles
+                this._imageTiles?.add(tile);
+
+                // Force redraw
+                redrawHook$.next();
+              },
+              error: err => {
+                console.error(`Failed to read tile for pyramid level: ${pyramidLevelIdx}, x: ${tileXY.x}, y: ${tileXY.y}. Error: ${err}`);
+                this._imageTilesLoading.delete(tileIdx);
+              }
+            });
+
+            this._imageTilesLoading.set(tileIdx, tileSub$);
+          }
         }
       }
 
@@ -221,7 +264,6 @@ export class ContextImage2DrawModel {
       console.log("No tile generation needed");
     }
 
-
     if (this._pipView && this._sceneAttachment) {
       this._sceneAttachment.remove(this._pipView)
     }
@@ -229,6 +271,28 @@ export class ContextImage2DrawModel {
     if (drawPIPMap) {
       this.updatePIPView(camFrustum, requestedTexPerScreenPixel);
     }
+  }
+
+  // Clears pending tiles that are not in the visible list and returns how many were cleared
+  private clearNonVisiblePendingTiles(visibleTiles: Set<number>): number {
+    let removed = 0;
+    
+    for (const tileIdx of this._imageTilesLoading.keys()) {
+      if (!visibleTiles.has(tileIdx)) {
+        const tile$ = this._imageTilesLoading.get(tileIdx);
+
+        // Unsubscribing should cancel any requests for this tile
+        tile$!.unsubscribe();
+        //ENSURE cancelling image load here!
+
+        // Remove it from the list of loading tiles...
+        this._imageTilesLoading.delete(tileIdx);
+
+        removed++;
+      }
+    }
+
+    return removed;
   }
 
   private eqSet(a: Set<number>, b: Set<number>) {
@@ -283,50 +347,47 @@ export class ContextImage2DrawModel {
     return pyramidLevelIdx;
   }
 
-  private generateTile(pyramidLevelIdx: number, pyramidLevel: ImagePyramidLayer, tileIdx: number, redrawHook$: Subject<void>): THREE.Mesh {
+  private getTileXY(pyramidLevel: ImagePyramidLayer, tileIdx: number): Point {
     // Eg if we have a pyramid level that's 3 wide x 2 high tiles
     // Index 4 (0 based!) must become tileX = 1, tileY = 1
     const tileY = Math.floor(tileIdx / pyramidLevel.tilesWide);
     const tileX = Math.floor(tileIdx % pyramidLevel.tilesWide);
 
-    console.log(`  Generating tile: ${tileIdx} [row ${tileY}, col ${tileX}]`);
+    return new Point(tileX, tileY);
+  }
 
-    const tileMaterial = new THREE.MeshBasicMaterial({
-      color: this.WHITE,
-      //side: THREE.DoubleSide
-    });
-
+  private generateTile(
+    pyramidLevelIdx: number,
+    tileIdx: number,
+    tileXY: Point): Observable<THREE.Mesh> {
     // If we have this image available, use it now
-    const cachedTexture = this._tileLoader!.getCachedTile(pyramidLevelIdx, tileX, tileY);
+    const cachedTexture = this._tileLoader!.getCachedTile(pyramidLevelIdx, tileXY.x, tileXY.y);
     if (cachedTexture) {
-      tileMaterial.map = cachedTexture;
-    }
-
-    const newTile = this.makeTile(this._tileBBoxes[pyramidLevelIdx][tileIdx], tileMaterial);
-
-    if (!cachedTexture) {
-      // For now, dim the tile
-      tileMaterial.opacity = 0.1;
-      tileMaterial.transparent = true;
-
-      // Load image asynchronously and when it arrives update the material
-      this._tileLoader!.loadTileImage(pyramidLevelIdx, tileX, tileY).subscribe({
-        next: (tileTexture: THREE.Texture) => {
-          tileMaterial.opacity = 1;
-          tileMaterial.transparent = false;
-
-          tileMaterial.map = tileTexture;
-          tileMaterial.needsUpdate = true;
-
-          redrawHook$.next();
-        },
-        error: err => {
-          console.error(`Failed to read tile for pyramid level: ${pyramidLevelIdx}, x: ${tileX}, y: ${tileY}. Error: ${err}`);
-        }
+      // We can return this instantly!
+      const tileMaterial = new THREE.MeshBasicMaterial({
+        color: this.WHITE,
+        map: cachedTexture,
+        //side: THREE.DoubleSide
       });
+
+      return of(this.makeTile(this._tileBBoxes[pyramidLevelIdx][tileIdx], tileMaterial));
     }
 
-    return newTile;
+    // Load image asynchronously and when it arrives create a tile. Until then we track it in the pending
+    // tiles list, because any texture that's been requested (or is about to be requested) but is no longer
+    // visible can be cancelled
+    return this._tileLoader!.loadTileImage(pyramidLevelIdx, tileXY.x, tileXY.y).pipe(
+      map((tileTexture: THREE.Texture) => {
+        // Texture has arrived, create the tile and we're done!
+        const tileMaterial = new THREE.MeshBasicMaterial({
+          color: this.WHITE,
+          map: tileTexture,
+          //side: THREE.DoubleSide
+        });
+
+        return this.makeTile(this._tileBBoxes[pyramidLevelIdx][tileIdx], tileMaterial);
+      })
+    );
   }
 
   private makeTile(tileBBox: THREE.Box3, tileMaterial: THREE.MeshBasicMaterial): THREE.Mesh {

@@ -156,6 +156,9 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this._subs.add(
       this._mouseInteractionHandler.saveState$.subscribe(() => {
         this.saveState();
+
+        // If the state changed enough, we may need to re-display our image info
+        this.updateImageDetails();
       })
     );
 
@@ -241,7 +244,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
             this.mdl.setImage(imageName, imgResp.image!, pyramidResp.image!, layer0Texture, tileLoader);
 
-            this.imageDetails = `${imageName} [${imgResp.image!.width} x ${imgResp.image!.height}]`;
+            this.updateImageDetails();
             this.mdl.needsDraw$.next();
 
             return null;
@@ -314,6 +317,11 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     }
 
     this.saveState();
+  }
+
+  private updateImageDetails() {
+    
+    this.imageDetails = `${this.mdl.getDetails()}]`;
   }
 
   private switchImage(next: boolean) {

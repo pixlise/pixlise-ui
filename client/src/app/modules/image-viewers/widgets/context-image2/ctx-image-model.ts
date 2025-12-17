@@ -154,6 +154,10 @@ export class ContextImage2Model {
     this.update();
   }
 
+  getDetails(): string {
+    return `${this._imageName} [${this._image!.width} x ${this._image!.height}], zoom ${this._zoom.toFixed(2)} viewport ${this._viewportSize.x} x ${this._viewportSize.y} pyramid level ${this.drawModel.lastPyramidLevel} showing tiles [${Array.from(this.drawModel.lastPyramidLevelTilesVisible)}]`;
+  }
+
   private update() {
     if (!this._image) {
       console.warn("ContextImage2Model update called when no image loaded, ignored.");
