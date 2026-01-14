@@ -91,7 +91,14 @@ POSSIBILITY OF SUCH DAMAGE.
       <action-button action="verticalEllipsis"></action-button>
     </widget-settings-menu>
   </div>
+  <div class="mid-line">
+    <div class="title">Description</div>
+    <div class="description">
+      <markdown>{{scan.description}}</markdown>
+    </div>
+  </div>
   <div class="bottom-line">
+    <div>Selected Quantification</div>
     <quantification-selector [scanId]="config.id" [selectedQuantID]="config.quantId" (selectQuant)="onSelectQuantForScan($event, config.id)">
     </quantification-selector>
   </div>

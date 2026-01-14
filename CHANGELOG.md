@@ -1,4 +1,14 @@
-## 4.82.0 (LATEST)
+## 4.83.0 (LATEST)
+
+### New Features
+- Allow the ability to delete FM scans that have no spectra and images associated with them. This covers the case like sol 1637 and 1641 which were safety survey scans and didn't actually acquire data, or other failed scan scenarios. Previously these were deleted by hand from the DB but it makes sense to allow admins to delete them here.
+- Show scrollable scan description (including markdown rendering) on dataset side-bar
+
+### Bug Fixes
+- Don't hide user role viewing/editing if user has no roles. This prevents being able to add new roles and reconfigure them in PIXLISE.
+- Flip Z-axis of models generated for 3D view from scan X,Y,Z data. The Z axis is more "distance from PIXL detector" not a height, so to draw it as a 3D model we need to flip that axis.
+
+## 4.82.0 (2025-12-16)
 
 ### New Features
 - Added ability to apply context image options to multiple context images at once. This can be done by opening the image options modal and clicking on the chart name in the top bar and selecting other widgets.

@@ -313,7 +313,7 @@
           <span class="info access-level">
             <push-button (onClick)="onChangeGroupMembership(selectedUser, selectedUserRole)" buttonStyle="yellow">Change Access Level</push-button>
           </span>
-          <div class="info roles" *ngIf="isAdmin && selectedUser && selectedUserRoles && selectedUserRoles.length">
+          <div class="info roles" *ngIf="isAdmin && selectedUser && selectedUserRoles">
             <div class="label-container">
               <span class="label">Roles</span>
               <action-button action="add" tooltipTitle="Add Role" [customDialog]="addUserRoleDialog" #addUserRoleDialogBtn></action-button>
