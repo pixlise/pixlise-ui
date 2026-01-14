@@ -43,7 +43,7 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
       name = "Unquantified Weight %" + detectorSuffix;
     } else if (id === DataExpressionId.predefinedHeightZDataExpression) {
       expr = 'position("z")';
-      name = "Height in Z";
+      name = "Distance in Z";
     } else if (id === DataExpressionId.predefinedRoughnessDataExpression) {
       expr = "roughness()";
       name = "Roughness";

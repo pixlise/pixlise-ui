@@ -815,12 +815,12 @@ export class PMCMeshData {
     return scale;
   }
 
-  // Create the point centerecreateImage3DPointArrayd at 0,0,0 and scaled to what we want
+  // Create the point centered at 0,0,0 and scaled to what we want
   private rawToTerrainPoint(pt: THREE.Vector3Like, ptDataCenter: THREE.Vector3, scale: number): THREE.Vector3 {
     return new THREE.Vector3(
       -(pt.x - ptDataCenter.x) * scale,
       (pt.y - ptDataCenter.y) * scale,
-      (pt.z - ptDataCenter.z) * scale
+      -(pt.z - ptDataCenter.z) * scale
     )
   }
 
