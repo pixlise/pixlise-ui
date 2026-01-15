@@ -1,3 +1,6 @@
+@import "variables.scss";
+@import "atoms.scss";
+
 .scan-configuration {
   display: flex;
   flex-direction: column;
@@ -7,6 +10,9 @@
 
   background-color: #222829;
 
+  font-family: Inter;
+  font-size: 12px;
+  
   .top-line {
     display: flex;
     gap: 4px;
@@ -14,8 +20,6 @@
     padding: 8px;
 
     .scan-name {
-      font-family: Inter;
-      font-size: 12px;
       font-weight: 500;
       margin: 0;
       flex: 1;
@@ -40,9 +44,39 @@
     }
   }
 
+  .mid-line {
+    display: flex;
+    flex-direction: column;
+
+    .title {
+      color: $clr-gray-10;
+      font-weight: 500;
+      padding-left: $sz-unit;
+    }
+
+    .description {
+      overflow-y: scroll;
+      color: $clr-gray-30;
+
+      max-height: 120px;
+      padding-left: $sz-unit;
+
+      markdown {
+        overflow-wrap: break-word;
+      }
+    }
+  }
+
   .bottom-line {
     display: flex;
-    align-items: center;
+    //align-items: center;
+    flex-direction: column;
+
+    padding-left: $sz-unit;
+    padding-top: $sz-unit;
+
+    color: $clr-gray-10;
+    font-weight: 500;
 
     quantification-selector {
       width: 100%;
