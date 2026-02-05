@@ -1,0 +1,23 @@
+@import 'variables.scss';
+@import 'atoms.scss';
+
+:host {
+  position: relative;
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.overlay {
+  display: block;
+  position: absolute;
+  left: 40%;
+  top: -36px;
+
+  //background-color: darkred;
+  background-color: $clr-gray-80;
+  color: white;
+  
+  padding: 8px;
+  border-radius: 8px;
+}

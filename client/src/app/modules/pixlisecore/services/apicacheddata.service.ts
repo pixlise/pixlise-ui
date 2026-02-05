@@ -35,6 +35,7 @@ import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/us
 import { decodeIndexList } from "src/app/utils/utils";
 import { VariogramPoint } from "src/app/modules/scatterplots/widgets/variogram-widget/vario-data";
 import { Image3DModelPointsReq, Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
+import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -77,6 +78,7 @@ export class APICachedDataService {
   private _imageListReqMap = new Map<string, Observable<ImageListResp>>();
   private _userGroupListReqMap = new Map<string, Observable<UserGroupListResp>>();
   private _image3DPointsReqMap = new Map<string, Observable<Image3DModelPointsResp>>();
+  private _imagePyramidReqMap = new Map<string, Observable<ImagePyramidGetResp>>();
 
   // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
   public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
@@ -217,6 +219,8 @@ export class APICachedDataService {
 
     // We've cleared it!
     this._imageCacheKeys.delete(imageName);
+
+    // TODO: clear this too? _imagePyramidReqMap
   }
 
   private clearCacheForROI(roiId: string) {
@@ -555,6 +559,21 @@ export class APICachedDataService {
       // Add it to the map too so a subsequent request will get this
       this.addToCache(cacheId, "imageReqMap", result, this._imageReqMap);
       this.addIdCacheItem(req.imageName, cacheId, this._imageCacheKeys);
+    }
+
+    return result;
+  }
+
+  getImagePyramid(req: ImagePyramidGetReq): Observable<ImagePyramidGetResp> {
+    const cacheId = JSON.stringify(ImagePyramidGetReq.toJSON(req));
+    let result = this._imagePyramidReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendImagePyramidGetRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this.addToCache(cacheId, "imagePyramidReqMap", result, this._imagePyramidReqMap);
+      //this.addIdCacheItem(req.id, cacheId, this._imageCacheKeys);
     }
 
     return result;

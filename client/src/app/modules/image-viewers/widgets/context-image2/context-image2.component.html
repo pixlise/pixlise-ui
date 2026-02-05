@@ -1,0 +1,7 @@
+<interactive-canvas-3d
+  [renderData]="mdl.drawModel.renderData"
+  (canvasSize)="onCanvasSize($event)"
+  [drawNotifier]="mdl">
+</interactive-canvas-3d>
+
+<div *ngIf="imageDetails" class="overlay">{{imageDetails}}</div>

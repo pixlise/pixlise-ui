@@ -78,19 +78,23 @@ POSSIBILITY OF SUCH DAMAGE.
         </ng-container>
       </div>
 
-      <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
-        <ngx-dropzone-label>
-            <div>
-                <h2>Drop spectrum zip file</h2>
-            </div>
-        </ngx-dropzone-label>
-        <ngx-dropzone-preview
-            *ngFor="let f of droppedFiles"
-            [removable]="true"
-            (removed)="onRemoveDroppedFile(f)">
-            <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
-        </ngx-dropzone-preview>
-      </div>
+      <ng-container *ngIf="detector=='user-defined'">
+        
+      </ng-container>
+
+      <ng-container *ngIf="detector!='user-defined'">
+        <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+          <ngx-dropzone-label>
+            <h2>{{singleZipPrompt}}</h2>
+          </ngx-dropzone-label>
+          <ngx-dropzone-preview
+              *ngFor="let f of droppedFiles"
+              [removable]="true"
+              (removed)="onRemoveDroppedFile(f)">
+              <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
+          </ngx-dropzone-preview>
+        </div>
+      </ng-container>
     </ng-container>
 
     <ng-container *ngSwitchDefault>

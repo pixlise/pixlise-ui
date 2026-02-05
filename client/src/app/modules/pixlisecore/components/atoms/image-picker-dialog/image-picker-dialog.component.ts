@@ -149,7 +149,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
         this.allScans = scans;
         if (this._analysisLayoutService.activeScreenConfiguration$.value && !this.data.noAssociatedScreenConfiguration) {
           this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
-          if (this.configuredScans && (!this.data.scanIds || this.data.scanIds.length === 0)) {
+          if (this.configuredScans && this.configuredScans.length > 0 && (!this.data.scanIds || this.data.scanIds.length === 0)) {
             if (!this.filterScanId) {
               this.filterScanId = this.configuredScans[0].id;
             }

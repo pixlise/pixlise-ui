@@ -10,7 +10,6 @@ import { coordinate3DToThreeVector3, coordinate4DToThreeQuaternion } from "src/a
 import * as THREE from 'three';
 import { Scan3DDrawModel } from "./scan-3d-draw-model";
 import { Coordinate4D, LightMode, ModelStyle, ROILayerVisibility } from "src/app/generated-protos/widget-data";
-import { Colours } from "src/app/utils/colours";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ContextImageMapLayer } from "../../models/map-layer";
 import { ROIItem } from "src/app/generated-protos/roi";
