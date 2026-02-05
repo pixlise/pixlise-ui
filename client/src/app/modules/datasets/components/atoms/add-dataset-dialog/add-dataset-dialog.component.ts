@@ -37,6 +37,9 @@ import { ScanUploadReq, ScanUploadResp, ScanUploadUpd } from "src/app/generated-
 import { httpErrorToString } from "src/app/utils/utils";
 import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { environment } from "src/environments/environment";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { makeHeaders } from "src/app/utils/api-helpers";
 
 @Component({
   standalone: false,
@@ -63,7 +66,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   mode: string = this.modeEntry;
 
   detector: string = "";
-  detectors = ["jpl-breadboard", "sbu-breadboard", "pixl-em", "bruker", "wds"];
+  detectors =  ["jpl-breadboard", "sbu-breadboard", "pixl-em", /*"bruker",*/ "SEM"];
 
   skipRows = 0;
   skipColumns = 0;
@@ -74,7 +77,11 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<boolean>,
     private _dataService: APIDataService,
     private _endpointService: APIEndpointsService
-  ) {}
+  ) {
+    if (!EnvConfigurationInitService.getConfig$.value!.showPIXLDevices) {
+      this.detectors = ["SEM"];
+    }
+  }
 
   ngOnInit(): void {
     this._subs.add(

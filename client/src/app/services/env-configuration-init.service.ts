@@ -66,6 +66,9 @@ export class AppConfig {
   unassignedNewUserRoleId: string = ""; // Auth0 role ID for unassigned new user
 
   maxUsersPerOwnershipItem: number = 5; // Max number of users that can be assigned as an editor or user for an ownership item
+
+  showPIXLDevices: boolean = true; // Show PIXL-EM, JPL and Stonybrook breadboard as import option formats
+  showAuscopeBanner: boolean = false; // Show Auscope banner on top of public site
 }
 
 @Injectable({

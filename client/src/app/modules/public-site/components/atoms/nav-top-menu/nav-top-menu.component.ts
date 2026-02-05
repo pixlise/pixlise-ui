@@ -37,6 +37,7 @@ import { DefaultLoggedInLink } from "../../navigation";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Subscription } from "rxjs";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
   standalone: false,
@@ -122,5 +123,9 @@ export class NavTopMenuComponent implements OnInit, OnDestroy {
   isActiveNav(navGroup: string): boolean {
     // Find if we're in one of these categories...
     return this._activeNavGroup == navGroup;
+  }
+
+  get showAuscopeBanner(): boolean {
+    return EnvConfigurationInitService.getConfig$.value!.showAuscopeBanner;
   }
 }
