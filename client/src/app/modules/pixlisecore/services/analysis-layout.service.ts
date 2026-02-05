@@ -952,22 +952,22 @@ export class AnalysisLayoutService implements OnDestroy {
 
           if (widgetKey === "contextImage") {
             let contextImage = widget.data.contextImage;
-            if (contextImage) {
+            if (contextImage && contextImage.contextImage && contextImage.contextImage.length > 0) {
               imageIDs.push(contextImage.contextImage);
             }
           } else if (widgetKey === "rgbuPlot") {
             let rgbuPlot = widget.data.rgbuPlot;
-            if (rgbuPlot) {
+            if (rgbuPlot && rgbuPlot.imageName && rgbuPlot.imageName.length > 0) {
               imageIDs.push(rgbuPlot.imageName);
             }
           } else if (widgetKey === "singleAxisRGBU") {
             let singleAxisRGBU = widget.data.singleAxisRGBU;
-            if (singleAxisRGBU) {
+            if (singleAxisRGBU && singleAxisRGBU.imageName && singleAxisRGBU.imageName.length > 0) {
               imageIDs.push(singleAxisRGBU.imageName);
             }
           } else if (widgetKey === "rgbuImage") {
             let rgbuImage = widget.data.rgbuImage;
-            if (rgbuImage) {
+            if (rgbuImage && rgbuImage.imageName && rgbuImage.imageName.length > 0) {
               imageIDs.push(rgbuImage.imageName);
             }
           }
