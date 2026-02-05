@@ -693,7 +693,7 @@ export class SelectionService {
     // Transform PMC selection into a list of pixel indices that are within all PMC sub-polygons
     const selectedPixels = Array.from(locationIndexes).reduce((prevPixels: number[], location: number) => {
       // Get pixels within each polygon corresponding to selected PMCs
-      let polygonPixels = this.getPixelsInPolygon(mdl.scanPointPolygons[location], rgbuImage, imageTransform);
+      let polygonPixels = this.getPixelsInPolygon(mdl.scanPointPolygons[location].points, rgbuImage, imageTransform);
       return [...prevPixels, ...polygonPixels];
     }, []);
 

@@ -28,6 +28,7 @@ import { RGBA } from "src/app/utils/colours";
 import { ContextImageScanModel, PointCluster } from "./context-image-model-internals";
 import { convertLocationComponentToPixelPosition } from "./context-image-model";
 import { environment } from "src/environments/environment";
+import { ScanPointPolygon } from "../../models/context-image-draw-model";
 
 export class PMCClusters {
   constructor(
@@ -130,7 +131,7 @@ export class ContextImageScanModelGenerator {
     // Allocate blank polygons for each...
     const scanPointPolygons = [];
     for (let c = 0; c < scanPoints.length; c++) {
-      scanPointPolygons.push([]);
+      scanPointPolygons.push(new ScanPointPolygon([]));
     }
 
     for (const cluster of clusters) {
@@ -912,7 +913,7 @@ export class ContextImageScanModelGenerator {
     return boxes;
   }
 
-  static makeScanPointPolygons(bboxExpand: number, cluster: PointCluster, scanPoints: ScanPoint[], scanPointPolygons: Point[][]) {
+  static makeScanPointPolygons(bboxExpand: number, cluster: PointCluster, scanPoints: ScanPoint[], scanPointPolygons: ScanPointPolygon[]) {
     const voronoi = new Voronoi();
 
     // Create a larger bbox to ensure all polygons generated extend past the hull
@@ -994,12 +995,21 @@ export class ContextImageScanModelGenerator {
           );
 
           // Now we convert it back to Points
-          scanPointPolygons[siteLocIdx] = [];
+          scanPointPolygons[siteLocIdx] = new ScanPointPolygon([]);
           if (clippedPolyPts.length == 1 && clippedPolyPts[0].length == 1) {
             // NOTE: we don't add the last one, because it's a repeat of the first one
             for (let ptIdx = 0; ptIdx < clippedPolyPts[0][0].length - 1; ptIdx++) {
-              const pt = clippedPolyPts[0][0][ptIdx];
-              scanPointPolygons[siteLocIdx].push(new Point(pt[0], pt[1]));
+              const ptClip = clippedPolyPts[0][0][ptIdx];
+              const pt = new Point(ptClip[0], ptClip[1]);
+
+              scanPointPolygons[siteLocIdx].points.push(pt);
+
+              if (ptIdx == 0) {
+                scanPointPolygons[siteLocIdx].bbox.x = pt.x;
+                scanPointPolygons[siteLocIdx].bbox.y = pt.y;
+              } else {
+                scanPointPolygons[siteLocIdx].bbox.expandToFitPoint(pt);
+              }
             }
           }
         }

@@ -6,8 +6,8 @@ import { RGBA } from "src/app/utils/colours";
 
 export function drawRegion(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  region: ContextImageRegionLayer,
   worldTransform: CanvasWorldTransform,
+  region: ContextImageRegionLayer,
   imageTransform: ContextImageItemTransform | null,
   colourOverride: RGBA | null,
   drawOutline: boolean
