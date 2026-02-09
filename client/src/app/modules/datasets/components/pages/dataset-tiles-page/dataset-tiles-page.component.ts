@@ -1483,8 +1483,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     for (const sdt of this.selectedScan.dataTypes.sort()) {
       if (sdt.dataType == ScanDataType.SD_IMAGE) {
+        let imgTypePrefix = "";
+        if (this.selectedScan.instrument == ScanInstrument.PIXL_FM || this.selectedScan.instrument == ScanInstrument.PIXL_EM) {
+          imgTypePrefix = "MCC ";
+        }
         this.selectedScanSummaryItems.push(
-          new SummaryItem("MCC Images:", sdt.count.toString())
+          new SummaryItem(`${imgTypePrefix}Images:`, sdt.count.toString())
         );
       } else if (sdt.dataType == ScanDataType.SD_XRF) {
         this.selectedScanSummaryItems.push(

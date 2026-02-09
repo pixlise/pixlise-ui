@@ -92,6 +92,10 @@ export function filterScans(searchString: string, instruments: ScanInstrument[],
 }
 
 export function readSol(sol: string): number {
+  if (sol === undefined) {
+    return 0;
+  }
+
   // If it starts with a letter, read as test sol
   if (sol[0] >= 'A' && sol[0] <= 'Z') {
     const yearOffset = (-30 + (sol.charCodeAt(0) - "A".charCodeAt(0))) * 1000;
