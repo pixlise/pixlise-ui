@@ -5,7 +5,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AnalysisLayoutService, APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
-import { Observable, of, Subscription, throwError } from "rxjs";
+import { combineLatest, concat, from, map, Observable, of, Subscription, switchMap, tap, throwError } from "rxjs";
 import {
   ImageListReq,
   ImageListResp,
@@ -16,6 +16,7 @@ import {
   ImageSetMatchTransformReq,
   ImageSetMatchTransformResp,
   ImageUploadHttpRequest,
+  ImageUploadHttpPartialInfo,
 } from "src/app/generated-protos/image-msgs";
 import { ScanGetReq, ScanTriggerJobReq } from "src/app/generated-protos/scan-msgs";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
@@ -111,6 +112,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     [this.waitGetQuant, false],
     [this.waitMakeMap, false],
   ]);
+
+  waitItemDetails: Map<string, string> = new Map<string, string>();
+
   hasWaitItems: boolean = false;
   waitItemsDisplay: string = "";
 
@@ -206,8 +210,14 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this._analysisLayoutService.notifyWindowResize();
   }
 
-  setWait(name: string, isWait: boolean) {
+  setWait(name: string, isWait: boolean, details?: string) {
     this.waitItems.set(name, isWait);
+
+    if (details !== undefined) {
+      this.waitItemDetails.set(name, details);
+    } else {
+      this.waitItemDetails.delete(name);
+    }
 
     let hasWaitItems = false;
     for (const i of this.waitItems.values()) {
@@ -222,7 +232,12 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     const items: string[] = [];
     for (const [k, v] of this.waitItems.entries()) {
       if (v) {
-        items.push(k);
+        const details = this.waitItemDetails.get(k);
+        let item = k;
+        if (details) {
+          item += ` (${details})`;
+        }
+        items.push(item);
       }
     }
 
@@ -393,7 +408,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           // - sclk is non-zero length
           // - version is >= 1
           if (!fields) {
-            errs.push("invalid length, should be 58 chars (including .tif)");
+            // Previously we only allowed TIF images that were RGBU - now we say here if we failed to parse it with the SDS file name
+            // convention, we just allow it through
+            //errs.push("invalid length, should be 58 chars (including .tif)");
           } else {
             if (["VIS", "MSA"].indexOf(fields.prodType) < 0) {
               errs.push("Bad prod type: " + fields.prodType);
@@ -432,48 +449,122 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       }
 
       this._snackService.open(`Uploading ${result.imageToUpload.name}...`);
-      this.setWait(this.waitUploadImage, true);
+      this.setWait(this.waitUploadImage, true, "Checking Resume");
 
       // Do the actual upload
-      result.imageToUpload.arrayBuffer().then((imgBytes: ArrayBuffer) => {
-        let beamImageRef: ImageMatchTransform | undefined = undefined;
-        if (result.imageToMatch) {
-          // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
-          // is a matched image that _can_ be edited in this way
-          beamImageRef = ImageMatchTransform.create({
-            beamImageFileName: result.imageToMatch,
-            xOffset: 0,
-            yOffset: 0,
-            xScale: 1,
-            yScale: 1,
-          });
-        }
+      let beamImageRef: ImageMatchTransform | undefined = undefined;
+      if (result.imageToMatch) {
+        // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
+        // is a matched image that _can_ be edited in this way
+        beamImageRef = ImageMatchTransform.create({
+          beamImageFileName: result.imageToMatch,
+          xOffset: 0,
+          yOffset: 0,
+          xScale: 1,
+          yScale: 1,
+        });
+      }
 
-        this._endpointsService
-          .uploadImage(
-            ImageUploadHttpRequest.create({
-              name: result.imageToUpload.name,
-              imageData: new Uint8Array(imgBytes),
-              associatedScanIds: [scanId],
-              originScanId: scanId,
-              // oneof
-              //locationPerScan
-              beamImageRef: beamImageRef,
-            })
-          )
-          .subscribe({
-            next: () => {
-              this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}`);
-              this.refreshImages();
-              this.setWait(this.waitUploadImage, false);
-            },
-            error: err => {
-              this._snackService.openError(err);
-              this.setWait(this.waitUploadImage, false);
-            },
-          });
-      });
+      // First, see if we can resume it from a previous attempt
+      const imagePutResumeCheckReq = {
+        name: result.imageToUpload.name,
+        imageData: new Uint8Array(),
+        imageByteSize: result.imageToUpload.size,
+        associatedScanIds: [scanId],
+        originScanId: scanId,
+      };
+
+      this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe(
+        (resp: ImageUploadHttpPartialInfo) => {
+          const chunkSize = 20*1024*1024;
+          const totalChunks = Math.ceil(result.imageToUpload.size / chunkSize);
+
+          // Set up the observables
+          let chunks$ = this.readFileChunks(scanId, result.imageToUpload.name, result.imageToUpload, chunkSize, totalChunks, beamImageRef);
+
+          // Chop out the ones that we have sent already
+          if (resp?.bytesReceived > 0) {
+            // If it's not a round number of chunks, don't chop...
+            if (resp.bytesReceived % chunkSize != 0) {
+              console.error(`Error resuming upload, server does not have a multiple of ${chunkSize} bytes, has ${resp.bytesReceived} bytes.`);
+            } else {
+              const skip = resp.bytesReceived / chunkSize;
+              chunks$ = chunks$.slice(skip);
+            }
+          }
+
+          // Subscribe on-by-one
+          concat(...chunks$).subscribe({
+              error: err => {
+                console.log(`Error uploading ${result.imageToUpload.name}: ${err}`);
+
+                this._snackService.openError(err);
+                this.setWait(this.waitUploadImage, false);
+              },
+              complete: () => {
+                console.log(`Uploading ${result.imageToUpload.name} complete, ${totalChunks} x ${chunkSize} bytes`);
+
+                this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}...`);
+                this.refreshImages();
+                this.setWait(this.waitUploadImage, false);
+              }
+            }
+          );
+        }
+      );
     });
+  }
+
+  protected readFileChunks(scanId: string, fileName: string, file: File, chunkSize: number, totalChunks: number, beamImageRef: ImageMatchTransform | undefined): Observable<ImageUploadHttpPartialInfo>[] {
+    const chunks$: Observable<ImageUploadHttpPartialInfo>[] = [];
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunk = file.slice(start, end); // Extract chunk
+
+      const chunkByte$ = new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(chunk);
+      });
+  
+      const obs$ = from(chunkByte$ as Promise<ArrayBuffer>);
+      chunks$.push(obs$.pipe(
+        switchMap(chunk => {
+          console.log(`Uploading ${fileName} chunk ${chunkIndex} from ${start}->${end}...`);
+          return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks);
+        })
+      ));
+    }
+
+    return chunks$;
+  }
+
+  protected sendChunk(scanId: string, fileName: string, totalSize: number, data: ArrayBuffer, beamImageRef: ImageMatchTransform | undefined, idx: number, totalChunks: number): Observable<ImageUploadHttpPartialInfo> {
+    const req = {
+      name: fileName,
+      imageData: new Uint8Array(data),
+      imageByteSize: totalSize,
+      associatedScanIds: [scanId],
+      originScanId: scanId,
+      // oneof
+      //locationPerScan
+      beamImageRef: beamImageRef,
+      partNo: idx,
+      totalParts: totalChunks
+    };
+
+    if (totalChunks > 1) {
+      this.setWait(this.waitUploadImage, true, idx == totalChunks-1 ? "Processing Upload" : `Sending part ${idx} of ${totalChunks}`);
+    }
+
+    return this._endpointsService.uploadImage(ImageUploadHttpRequest.create(req)).pipe(
+      tap(() => {
+          console.log(`Upload OK: ${fileName} chunk ${idx}!`);
+      })
+    );
   }
 
   onAdd3DPoints() {

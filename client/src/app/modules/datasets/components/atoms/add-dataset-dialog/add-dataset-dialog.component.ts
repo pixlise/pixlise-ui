@@ -70,6 +70,8 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   skipColumns = 0;
   maxMapPoints = 0;
 
+  uploadButtonLabel = "Upload";
+
   constructor(
     //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
     public dialogRef: MatDialogRef<boolean>,
@@ -78,6 +80,9 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   ) {
     if (!EnvConfigurationInitService.getConfig$.value!.showPIXLDevices) {
       this.detectors = ["user-defined"];
+
+      // In this case, this is the only option anyway...
+      this.onChangeDetector(this.detectors[0]);
     }
   }
 
@@ -148,6 +153,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
       this._dataService.sendScanCreateUserDefinedRequest(ScanCreateUserDefinedReq.create({id: this.nameHint})).subscribe({
         next: () => {
           this.setStatus(JobStatus_Status.UNKNOWN, "Dataset created: " + this.nameHint + "...");
+          this.mode = this.modeComplete;
         },
         error: err => {
           this.setStatus(JobStatus_Status.ERROR, httpErrorToString(err, "Failed to upload dataset"));
@@ -244,6 +250,12 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
 
   onChangeDetector(detector: string) {
     this.detector = detector;
+
+    if (this.detector == "user-defined") {
+      this.uploadButtonLabel = "Create";
+    } else {
+      this.uploadButtonLabel = "Upload";
+    }
   }
 
   onCancel() {

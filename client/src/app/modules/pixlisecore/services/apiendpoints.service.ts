@@ -6,7 +6,7 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { Uint8ToString } from "src/app/utils/utils";
-import { ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
+import { ImageUploadHttpPartialInfo, ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
 
@@ -228,7 +228,7 @@ export class APIEndpointsService {
     return this.http.put<void>(apiUrl, imageData, httpOptions);
   }
 
-  uploadImage(req: ImageUploadHttpRequest): Observable<void> {
+  uploadImage(req: ImageUploadHttpRequest): Observable<ImageUploadHttpPartialInfo> {
     const writer = ImageUploadHttpRequest.encode(req);
     const bytes = writer.finish();
     const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
@@ -240,7 +240,7 @@ export class APIEndpointsService {
     };
 
     const apiUrl = APIPaths.getWithHost(APIPaths.api_images);
-    return this.http.put<void>(apiUrl, sendbuf, httpOptions);
+    return this.http.put<ImageUploadHttpPartialInfo>(apiUrl, sendbuf, httpOptions);
   }
 
   private isValidLocallyCachedImage(imageData: CachedImageItem | CachedRGBUImageItem | undefined, maxAgeSec: number): boolean {

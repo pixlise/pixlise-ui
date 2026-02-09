@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="add-dataset-container">
   <div class="title-area card-toolbar card-toolbar-shadow">
-    <div class="txt-widget-title">Upload New Dataset</div>
+    <div class="txt-widget-title">Create/Upload New Dataset</div>
   </div>
 
   <div *ngIf="mode !== modeEntry" class="job-status">
@@ -106,7 +106,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button *ngIf="mode !== modeEntry" buttonStyle="yellow" (onClick)="onCancel()">Close</push-button>
     <ng-container *ngIf="mode === modeEntry">
       <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-      <push-button buttonStyle="yellow" (onClick)="onOK()">Upload</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onOK()">{{uploadButtonLabel}}</push-button>
     </ng-container>
   </div>
 </div>
