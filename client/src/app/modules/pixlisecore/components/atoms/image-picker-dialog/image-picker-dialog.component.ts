@@ -273,8 +273,10 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   }
 
   private loadImagePreview(imgChoice: ImageChoice) {
-    const isTiff = imgChoice.name.toLowerCase().endsWith(".tif") || imgChoice.name.toLowerCase().endsWith(".tiff");
-    if (isTiff) {
+    // Check if it's RGBU - in this case we need to load the data in a specific way to be able to display the 4 channel float tiff
+    let sdsName = SDSFields.makeFromFileName(imgChoice.name);
+
+    if (sdsName && (sdsName.prodType == "MSA" || sdsName.prodType == "VIS")) {
       return this._endpointsService.loadRGBUImageTIFPreview(imgChoice.path).pipe(
         tap(url => {
           imgChoice.url = url;
