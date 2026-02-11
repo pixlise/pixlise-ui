@@ -31,9 +31,9 @@ import { Component, OnInit, Input } from "@angular/core";
 
 // import { AuthenticationService } from "src/app/services/authentication.service";
 import { Navigation } from "../../navigation";
-import { DefaultLoggedInLink } from "../../navigation";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
   standalone: false,
@@ -47,7 +47,11 @@ export class FooterComponent implements OnInit {
 
   navigation: Navigation = new Navigation();
 
-  constructor(private _authService: AuthService) {}
+  appLogo: string = "";
+  
+  constructor(private _authService: AuthService) {
+    this.appLogo = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.appLogo;
+  }
 
   ngOnInit(): void {}
 

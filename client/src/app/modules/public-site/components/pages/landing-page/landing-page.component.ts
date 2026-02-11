@@ -32,6 +32,7 @@ import { Component, OnInit } from "@angular/core";
 import { SectionImageListTextInputs, SectionImageItemContent } from "../../layouts/section-image-list-text/section-image-list-text.component";
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
 import { MetaTagService } from "../../../services/meta-tag.service";
+import { EnvConfigurationInitService, PublicSiteConfig } from "src/app/services/env-configuration-init.service";
 
 export const LandingRouteName = "pixlise";
 
@@ -42,8 +43,6 @@ export const LandingRouteName = "pixlise";
   styleUrls: ["./landing-page.component.scss"],
 })
 export class LandingPageComponent implements OnInit {
-  headingParts = ["Finally, a tool as ", "smart", " as the modern geoscientist."];
-
   collaborationParts = ["Unlock real-time collaboration in your lab with open-source ", "web access", " to geoscience investigation."];
 
   piquantParts = [
@@ -115,6 +114,10 @@ export class LandingPageComponent implements OnInit {
   quoteParts = ["This tool allows me to make new and different types of analyses ", "which I had never imagined were possible."];
 
   constructor(private _metaTagService: MetaTagService) {}
+
+  get publicSiteConfig(): PublicSiteConfig {
+    return EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!;
+  }
 
   ngOnInit(): void {
     // NOTE: these must be in sync with the root index.html

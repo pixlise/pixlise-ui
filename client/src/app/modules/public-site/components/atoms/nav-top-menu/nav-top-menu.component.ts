@@ -61,10 +61,14 @@ export class NavTopMenuComponent implements OnInit, OnDestroy {
   private _authService = inject(AuthService);
   isAuthenticated$ = this._authService.isAuthenticated$;
 
+  appLogo: string = "";
+
   constructor(
     private _activeRoute: ActivatedRoute,
     private _router: Router
-  ) {}
+  ) {
+    this.appLogo = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.appLogo;
+  }
 
   ngOnInit(): void {
     for (let c of this.navigation.categories) {
@@ -123,9 +127,5 @@ export class NavTopMenuComponent implements OnInit, OnDestroy {
   isActiveNav(navGroup: string): boolean {
     // Find if we're in one of these categories...
     return this._activeNavGroup == navGroup;
-  }
-
-  get showAuscopeBanner(): boolean {
-    return EnvConfigurationInitService.getConfig$.value!.showAuscopeBanner;
   }
 }

@@ -32,6 +32,7 @@ import { ActivatedRoute } from "@angular/router";
 
 import { LandingRouteName } from "../landing-page/landing-page.component";
 import { AboutUsRouteName } from "../about-us-page/about-us-page.component";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
   standalone: false,
@@ -49,7 +50,7 @@ export class PublicPageComponent implements OnInit {
     this._route.url.subscribe(params => {
       // TODO: fixme, this is ugly and likely to break if we change our routes!!!
       this.showBrandingLogos = window.location.href.indexOf("/public/" + LandingRouteName) >= 0;
-      this.showTeam = window.location.href.indexOf("/public/" + AboutUsRouteName) >= 0;
+      this.showTeam = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showTeam && window.location.href.indexOf("/public/" + AboutUsRouteName) >= 0;
     });
   }
 }

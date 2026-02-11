@@ -68,8 +68,64 @@ export class AppConfig {
   maxUsersPerOwnershipItem: number = 5; // Max number of users that can be assigned as an editor or user for an ownership item
 
   showPIXLDevices: boolean = true; // Show PIXL-EM, JPL and Stonybrook breadboard as import option formats
-  showAuscopeBanner: boolean = false; // Show Auscope banner on top of public site
+
+  // Public site settings
+  publicSiteConfig: PublicSiteConfig = {
+    imagePrefix: "",
+    aboutTopSection: "pixl",
+    appLogo: "pixlise-white-logo.svg",
+    ownerLogo: "logo_nasa_trio_colour.png",
+    ownerLink: "https://www.jpl.nasa.gov",
+    headingParts: ["Finally, a tool as ", "smart", " as the modern geoscientist."],
+    showTeam: true,
+    showImpact: false,
+    menus: {
+      "Features": {
+        link: "/public/get-started",
+        items: {
+          "Workflow": "/public/workflow",
+          "Quantification": "/public/quantification",
+          "Investigation": "/public/investigation"
+        }
+      },
+      "Get Started": {
+        link: "",
+        items: {
+          "PIXLISE Options": "/public/get-started#top",
+          "Get PIXLISE": "/public/get-started#get",
+          "Links and Docs": "/public/get-started#links"
+        }
+      },
+      "About Us": {
+        link: "/public/about-us",
+        items: {
+          "PIXL + MARS 2020": "/public/about-us#mars2020",
+          "Impact": "/public/about-us#impact",
+          "Our Team": "/public/about-us#team"
+        }
+      }
+    }
+  };
 }
+
+// To control the public site and allow white-labelling
+
+export type PublicSiteMenu = {
+  link: string;
+  items: Record<string, string>;
+};
+
+export type PublicSiteConfig = {
+  imagePrefix: string;
+  aboutTopSection: string;
+  appLogo: string;
+  ownerLogo: string;
+  ownerLink: string;
+  headingParts: string[];
+  showTeam: boolean;
+  showImpact: boolean;
+  menus: Record<string, PublicSiteMenu>;
+};
 
 @Injectable({
   providedIn: "root",
