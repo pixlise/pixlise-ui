@@ -81,7 +81,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <img src="assets/images/aboutus/open-cut-mine.jpg" />
     </div>
   </div>
-  <branding-logos></branding-logos>
+  <branding-logos *ngIf="showBrandingLogos"></branding-logos>
   <div class="flex-column mission section" id="pixlise">
     <number-button theNumber="02" theLabel="PIXLISE" link="" colourStyle="red" [showArrow]="false"></number-button>
     <div class="flex-row img-spacer">

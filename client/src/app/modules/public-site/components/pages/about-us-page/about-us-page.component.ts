@@ -78,6 +78,7 @@ export class AboutUsPageComponent implements OnInit {
   title = "Out of this world geoscience, literally.";
   aboutTopSection: string = "pixl";
   showImpact: boolean = true;
+  showBrandingLogos: boolean = true;
 
   constructor(
     private _router: Router,
@@ -85,6 +86,7 @@ export class AboutUsPageComponent implements OnInit {
   ) {
     this.aboutTopSection = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.aboutTopSection;
     this.showImpact = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showImpact;
+    this.showBrandingLogos = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showPartners;
 
     // Randomise the articles
     let articles = [

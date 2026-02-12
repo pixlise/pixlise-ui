@@ -39,9 +39,11 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="logo">
           <a href="/"><img src="assets/images/{{appLogo}}" /></a>
         </div>
-        <div class="tagline">Experience the future of spectroscopy visualisation and analysis.</div>
-        <div class="credits">Image Credits:</div>
-        <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
+        <div class="tagline">{{tagline}}<a href="https://auscope.org.au">auscope.org.au</a></div>
+        <ng-container *ngIf="showImageCredits">
+          <div class="credits">Image Credits:</div>
+          <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
+        </ng-container>
       </div>
     </div>
     <div class="flex-row link-groups">

@@ -66,7 +66,7 @@ const APP_ROUTES: Routes = [
       { path: LandingRouteName, component: LandingPageComponent },
       { path: "workflow", component: WorkflowPageComponent },
       { path: "investigation", component: InvestigationPageComponent },
-      { path: "quantification", component: QuantificationPageComponent },
+      { path: "computation", component: QuantificationPageComponent },
       { path: AboutUsRouteName, component: AboutUsPageComponent },
       { path: "get-started", component: GetPIXLISEComponent },
     ],

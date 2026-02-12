@@ -63,6 +63,19 @@
         max-width: 100%;
         padding-top: $sz-spacer-gap;
       }
+
+      .top-logos {
+        display: flex;
+        flex-direction: row;
+        gap: 32px;
+
+        a {
+          img {
+            height: 60px;
+            width: auto;
+          }
+        }
+      }
     }
   }
   .product {
@@ -77,6 +90,14 @@
     p {
       color: $clr-gray-30;
       height: 100px;
+    }
+
+    .product-title {
+      width: 1000px;
+      //font-size: 50px;
+      .subtitle {
+        font-size: 40px;
+      }
     }
 
     .product-card-container {
@@ -197,7 +218,7 @@
         }
     }
 */
-  .quantification {
+  .data-processing {
     background-color: $clr-gray-80;
     //background-image: url("assets/images/landing/piquant-pie.svg");
     //background-repeat: no-repeat;

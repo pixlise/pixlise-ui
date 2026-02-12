@@ -48,9 +48,15 @@ export class FooterComponent implements OnInit {
   navigation: Navigation = new Navigation();
 
   appLogo: string = "";
+  showImageCredits = true;
+  tagline: string = "";
+  link: string = "";
   
   constructor(private _authService: AuthService) {
     this.appLogo = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.appLogo;
+    this.showImageCredits = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showImageCredits;
+    this.tagline = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.footerTagline;
+    this.link = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.footerTaglineLink;
   }
 
   ngOnInit(): void {}

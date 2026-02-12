@@ -30,6 +30,7 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
 import { VersionResponse, VersionResponse_Version } from "src/app/generated-protos/restmsgs";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { VERSION } from "src/environments/version";
@@ -58,16 +59,28 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
 
   versions: VersionResponse_Version[] = [this._uiVersion, this._apiVersionDefault, this._piquantVersionDefault];
 
-  constructor(public envConfigService: EnvConfigurationService) {}
+  constructor(public envConfigService: EnvConfigurationService) {
+    if (!EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showPIQUANT) {
+      this.versions = this.versions.slice(0, 2);
+    }
+
+    this._uiVersion.component = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.clientNameForVersion;
+  }
 
   ngOnInit() {
     this._subs.add(
       this.envConfigService.getComponentVersions().subscribe({
         next: (versions: VersionResponse) => {
           // Overwrite ours
-          this.versions = [this._uiVersion, ...versions.versions];
+          this.versions = [this._uiVersion];
+          
+          for (const v of versions.versions) {
+            if (!EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showPIQUANT && v.component == "PIQUANT") {
+              continue; // Don't show PIQUANT version!
+            }
+            this.versions.push(v);
+          }
 
-          versions.versions;
           // Remove the image name from piquant version
           for (const ver of this.versions) {
             if (ver.component == "PIQUANT") {
@@ -87,12 +100,17 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
             VersionResponse_Version.create({
               component: this._apiVersionDefault.component,
               version: "(error)",
-            }),
-            VersionResponse_Version.create({
-              component: this._piquantVersionDefault.component,
-              version: "(error)",
-            }),
+            })
           ];
+
+          if (EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showPIQUANT) {
+            this.versions.push(
+              VersionResponse_Version.create({
+                component: this._piquantVersionDefault.component,
+                version: "(error)",
+              })
+            );
+          }
         },
       })
     );
