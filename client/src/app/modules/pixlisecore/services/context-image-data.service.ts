@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, generate, map, shareReplay, switchMap } from "rxjs";
 import { APIEndpointsService } from "./apiendpoints.service";
 import { APICachedDataService } from "./apicacheddata.service";
 import { WidgetError, DataSourceParams, RegionDataResults } from "src/app/modules/pixlisecore/models/widget-data-source";
@@ -9,11 +9,11 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageScanModelGenerator } from "src/app/modules/image-viewers/widgets/context-image/context-image-scan-model-generator";
 import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "src/app/modules/image-viewers/models/map-layer";
-import { ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
+import { ContextImageModelLoadedData, ContextImageScanModel, PointCluster } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
-import { Point } from "src/app/models/Geometry";
+import { Point, Rect } from "src/app/models/Geometry";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 
@@ -29,6 +29,11 @@ import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-p
 
 import { getPathBase } from "src/app/utils/utils";
 import { ImagePickerResult } from "../../image-viewers/widgets/context-image/image-options/image-options.component";
+import { ImageScanEntryDisplayElementsGetReq, ImageScanEntryDisplayElementsGetResp } from "src/app/generated-protos/scan-entry-polygon-msgs";
+import { HullPoint as protoHullPoint } from "src/app/generated-protos/scan-entry-polygon";
+import { HullPoint } from "../../image-viewers/models/footprint";
+import { ScanPoint } from "../../image-viewers/models/scan-point";
+import { ScanPointPolygon } from "../../image-viewers/models/context-image-draw-model";
 
 export type SyncedTransform = {
   scale: Point;
@@ -492,13 +497,15 @@ export class ContextImageDataService {
             this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
             this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
             this._cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: scanListResp.scans[0].instrumentConfig })),
+            this._cachedDataService.getScanEntryDisplayPolygons(ImageScanEntryDisplayElementsGetReq.create({imageName: imageName, scanId: scanId, beamVersion: beamLocVersion}))
           ];
 
           return combineLatest(requests).pipe(
-            map((results: (ScanBeamLocationsResp | ScanEntryResp | DetectorConfigResp | HTMLImageElement | ImageBeamLocationsResp)[]) => {
+            map((results: (ScanBeamLocationsResp | ScanEntryResp | DetectorConfigResp | ImageScanEntryDisplayElementsGetResp)[]) => {
               const beamResp: ScanBeamLocationsResp = results[0] as ScanBeamLocationsResp;
               const scanEntryResp: ScanEntryResp = results[1] as ScanEntryResp;
               const detConfResp: DetectorConfigResp = results[2] as DetectorConfigResp;
+              const imgDispResp: ImageScanEntryDisplayElementsGetResp = results[3] as ImageScanEntryDisplayElementsGetResp;
 
               if (!scanListResp.scans || scanListResp.scans.length != 1 || !scanListResp.scans[0]) {
                 throw new Error(`Failed to get scan summary for ${scanId}`);
@@ -510,11 +517,211 @@ export class ContextImageDataService {
 
               // Set beam data (this reads beams & turns it into scan points, polygons for each point and calculates a footprint)
               const gen = new ContextImageScanModelGenerator();
-              return gen.processBeamData(imageName, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, beamLocVersion, beamIJs, detConfResp);
+              const mdl = gen.processBeamData(imageName, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, beamLocVersion, beamIJs, detConfResp);
+
+              this.compareModels(mdl, imgDispResp);
+              const resultMdl = this.useModel(mdl, imgDispResp);
+
+              //return mdl;
+              return resultMdl;
             }),
             shareReplay(1)
           );
         })
       );
+  }
+
+  private useModel(
+    generatedMdl: ContextImageScanModel,
+    imgDispResp: ImageScanEntryDisplayElementsGetResp): ContextImageScanModel {
+    const bbox: Rect = new Rect(imgDispResp.scanPointBBox!.x, imgDispResp.scanPointBBox!.y, imgDispResp.scanPointBBox!.w, imgDispResp.scanPointBBox!.h);
+    const clusters: PointCluster[] = [];
+    for (const cluster of imgDispResp.pointClusters) {
+      const footprintPoints: HullPoint[] = [];
+      for (const fp of cluster.footprintPoints) {
+        footprintPoints.push(this.convertHullPoint(fp));
+      }
+
+      clusters.push(new PointCluster(
+        cluster.scanEntryIndexes, cluster.averagePointDistance, footprintPoints, cluster.angleRadiansToImage
+      ));
+    }
+
+    const scanPts: ScanPoint[] = [];
+    for (const pt of imgDispResp.scanPoints) {
+      const newPt = new ScanPoint(
+        pt.PMC,
+        null,
+        pt.locationIdx,
+        pt.hasNormalSpectra,
+        pt.hasDwellSpectra,
+        pt.hasPseudoIntensities,
+        pt.hasMissingData
+      );
+      if (pt.coord) {
+        newPt.coord = new Point(pt.coord.i, pt.coord.j);
+      }
+
+      scanPts.push(newPt);
+    }
+
+    const scanPointPolygons: ScanPointPolygon[] = [];
+    for (const poly of imgDispResp.scanEntryPolygons) {
+      const pts: Point[] = [];
+      for (const pt of poly.points) {
+        pts.push(new Point(pt.i, pt.j));
+      }
+
+      scanPointPolygons.push(new ScanPointPolygon(pts));
+    }
+
+    const footprint: HullPoint[][] = [];
+    for (const fp of imgDispResp.footprints) {
+      const pts: HullPoint[] = [];
+      for (const p of fp.hullPoints) {
+        pts.push(this.convertHullPoint(p));
+      }
+      footprint.push(pts);
+    }
+
+    return new ContextImageScanModel(
+      generatedMdl.scanId,
+      generatedMdl.scanTitle,
+      generatedMdl.imageName,
+      generatedMdl.beamLocVersion,
+      clusters,
+      scanPts,
+      scanPointPolygons,
+      footprint,
+      imgDispResp.pixelToMMConversion,
+      imgDispResp.beamRadiusMM / imgDispResp.pixelToMMConversion,
+      imgDispResp.scanPointDisplayRadius,
+      bbox,
+      generatedMdl.scanPointColourOverrides
+    );
+  }
+
+  private convertHullPoint(pt: protoHullPoint): HullPoint {
+    const np = new HullPoint(pt.point!.i, pt.point!.j, pt.scanEntryIndex);
+    if (pt.normal) {
+      np.normal = new Point(pt.normal.i, pt.normal.j);
+    }
+    return np;
+  }
+
+  private compareModels(mdl: ContextImageScanModel, imgDispResp: ImageScanEntryDisplayElementsGetResp) {
+    // Compare server-side polygon generation with our own
+    if (mdl.scanPointDisplayRadius != imgDispResp.scanPointDisplayRadius ||
+      mdl.clusters.length != imgDispResp.pointClusters.length ||
+      mdl.contextPixelsTommConversion != imgDispResp.pixelToMMConversion ||
+      mdl.scanPointsBBox.x != imgDispResp.scanPointBBox!.x ||
+      mdl.scanPointsBBox.y != imgDispResp.scanPointBBox!.y ||
+      mdl.scanPointsBBox.w != imgDispResp.scanPointBBox!.w ||
+      mdl.scanPointsBBox.h != imgDispResp.scanPointBBox!.h ||
+      mdl.footprint.length != imgDispResp.footprints.length ||
+      mdl.scanPointPolygons.length != imgDispResp.scanEntryPolygons.length) {
+      throw new Error("Server-side poly generation mismatch with local poly generation");
+    }
+
+    // Check each list
+    const errors = [];
+    for (let c = 0; c < mdl.scanPointPolygons.length; c++) {
+      const genPoly = mdl.scanPointPolygons[c];
+      const svrPoly = imgDispResp.scanEntryPolygons[c];
+      if (!this.closeEnough(genPoly.bbox.x, svrPoly.bbox!.x) ||
+          !this.closeEnough(genPoly.bbox.y, svrPoly.bbox!.y) ||
+          !this.closeEnough(genPoly.bbox.w, svrPoly.bbox!.w) ||
+          !this.closeEnough(genPoly.bbox.h, svrPoly.bbox!.h)) {
+        errors.push(new Error(`poly bbox mismatch: ${c}`));
+      }
+
+      if (genPoly.points.length != svrPoly.points.length) {
+        errors.push(Error(`poly points length mismatch: ${c}`));
+      } else {
+        for (let i = 0; i < genPoly.points.length; i++) {
+          if (!genPoly.points[i] || !svrPoly.points[i]) {
+            errors.push(Error(`poly null mismatch: ${c}, ${i}`));
+          } else {
+            if (!this.closeEnough(genPoly.points[i].x, svrPoly.points[i].i) || !this.closeEnough(genPoly.points[i].y, svrPoly.points[i].j)) {
+              errors.push(Error(`poly mismatch: ${c}, ${i}`));
+            }
+          }
+        }
+      }
+    }
+
+    for (let c = 0; c < mdl.footprint.length; c++) {
+      const genFP = mdl.footprint[c];
+      const svrFP = imgDispResp.footprints[c];
+      for (let i = 0; i < genFP.length; i++) {
+        if (!genFP[i].normal && !svrFP.hullPoints[i].normal) {
+          continue;
+        }
+
+        if (!this.hullPtCompare(genFP[i], svrFP.hullPoints[i])) {
+          errors.push(Error(`footprint mismatch: ${c}, ${i}`));
+        }
+      }
+    }
+
+    for (let c = 0; c < mdl.clusters.length; c++) {
+      const genCluster = mdl.clusters[c];
+      const svrCluster = imgDispResp.pointClusters[c];
+      if (!this.closeEnough(genCluster.angleRadiansToContextImage, svrCluster.angleRadiansToImage) ||
+        !this.closeEnough(genCluster.pointDistance, svrCluster.averagePointDistance) ||
+        genCluster.locIdxs.length != svrCluster.scanEntryIndexes.length ||
+        genCluster.footprintPoints.length != svrCluster.footprintPoints.length) {
+        errors.push(Error(`cluster mismatch: ${c}`));
+      }
+
+      for (let i = 0; i < genCluster.locIdxs.length; i++) {
+        if (genCluster.locIdxs[i] != svrCluster.scanEntryIndexes[i]) {
+          errors.push(Error(`cluster scanEntryIndexes mismatch: ${c}, ${i}`));
+        }
+      }
+
+      for (let i = 0; i < genCluster.footprintPoints.length; i++) {
+        const genFP = genCluster.footprintPoints[c];
+        const svrFP = svrCluster.footprintPoints[i];
+        if (!this.hullPtCompare(genFP, svrFP)) {
+          errors.push(Error(`cluster footprint mismatch: ${c}, ${i}`));
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      //throw errors[0];
+      for (const e of errors) {
+        console.error(e);
+      }
+    }
+  }
+
+  private hullPtCompare(pt1: HullPoint, pt2: protoHullPoint): boolean {
+    if (!pt1 && !pt2) {
+      return true; // both null
+    }
+    if (!pt1 && !pt2.point) {
+      return true; // both null
+    }
+
+    if (pt1 && !pt2 || !pt1 && pt2) {
+      return false; // differing null
+    }
+    if (pt1 && !pt2.point || !pt1 && pt2.point) {
+      return false; // differing null
+    }
+
+    if (!pt1.x && !pt2.point!.i || !pt1.y && !pt2.point!.j) {
+      return true; // both null
+    }
+
+    return !this.closeEnough(pt1.x, pt2.point!.i) || this.closeEnough(pt1.y, pt2.point!.j) ||
+          pt1.idx != pt2.scanEntryIndex ||
+          this.closeEnough(pt1.normal!.x, pt2.normal!.i) || this.closeEnough(pt1.normal!.y, pt2.normal!.j);
+  }
+
+  private closeEnough(n1: number, n2: number): boolean {
+    return Math.abs(n1-n2) < 0.0001;
   }
 }

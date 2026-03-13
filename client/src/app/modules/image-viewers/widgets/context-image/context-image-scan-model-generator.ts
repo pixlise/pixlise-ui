@@ -424,14 +424,14 @@ export class ContextImageScanModelGenerator {
       throw new Error("findMinPointDistances with no location data");
     }
 
-    const NumSamples = 100;
+    //const NumSamples = 100;
 
     // Randomly pick a few points, find the min distance to between any other point to that point
     // and then average this out
     const samples: number[] = [];
     const nearestDistanceToSamples: number[] = [];
 
-    for (let c = 0; c < NumSamples; c++) {
+    /*for (let c = 0; c < NumSamples; c++) {
       let sampleIdx = null;
 
       // Make sure it's got a location
@@ -443,12 +443,18 @@ export class ContextImageScanModelGenerator {
       }
 
       samples.push(sampleIdx);
+    }*/
+
+    for (let c = 0; c < scanEntries.length; c++) {
+      if (scanEntries[c].location) {
+        samples.push(c);
+      }
     }
 
     // Now loop through all and find the nearest point to each sample in distance-squared units
     const ExclusionBoxSize = (this._locationPointBBox.w + this._locationPointBBox.h) / 2 / 10;
 
-    for (let c = 0; c < NumSamples; c++) {
+    for (let c = 0; c < samples.length; c++) {
       const sampleIdx = samples[c];
       const samplePt = scanPoints[sampleIdx].coord!;
 
