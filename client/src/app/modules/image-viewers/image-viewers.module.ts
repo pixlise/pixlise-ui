@@ -31,8 +31,31 @@ export { ContextImage2Component } from './widgets/context-image2/context-image2.
 
 
 @NgModule({
-  declarations: [ContextImageComponent, ImageOptionsComponent, ContextImagePickerComponent, MultiChannelViewerComponent, InteractiveCanvas3DComponent, Scan3DViewComponent, ContextImage2Component, ImageOptions2Component],
-  imports: [CommonModule, PIXLISECoreModule, /*AnalysisModule,*/ FormsModule, DragDropModule, MaterialModule, WidgetModule],
-  exports: [ContextImageComponent, ContextImagePickerComponent, ContextImage2Component, Scan3DViewComponent, MultiChannelViewerComponent],
+  declarations: [
+    ContextImageComponent,
+    ImageOptionsComponent,
+    ContextImagePickerComponent,
+    MultiChannelViewerComponent,
+    InteractiveCanvas3DComponent,
+    Scan3DViewComponent,
+    ContextImage2Component,
+    ImageOptions2Component
+  ],
+  imports: [
+    CommonModule,
+    PIXLISECoreModule,
+    //AnalysisModule,
+    FormsModule,
+    DragDropModule,
+    MaterialModule,
+    WidgetModule
+  ],
+  exports: [
+    ContextImageComponent,
+    ContextImagePickerComponent,
+    ContextImage2Component,
+    Scan3DViewComponent,
+    MultiChannelViewerComponent
+  ],
 })
 export class ImageViewersModule {}

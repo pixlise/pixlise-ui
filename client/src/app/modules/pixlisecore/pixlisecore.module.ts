@@ -102,7 +102,12 @@ export {
   ReferenceCSVUploadResponse,
 } from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
 export { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
-export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+export {
+  LayerOpacityChange,
+  LayerVisibilityChange,
+  LayerVisibilityDialogComponent,
+  LayerVisibilitySection,
+  LayerVisiblilityData } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
 export { LayoutPreviewBoxComponent } from "./components/atoms/layout-preview-box/layout-preview-box.component";
@@ -114,6 +119,7 @@ export { ShareDialogComponent } from "./components/atoms/share-ownership-item/sh
 export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
 export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./services/analysis-layout.service";
 export { WidgetSelectionDialogComponent } from "./components/widget-selection-dialog/widget-selection-dialog.component";
+
 
 @NgModule({
   declarations: [

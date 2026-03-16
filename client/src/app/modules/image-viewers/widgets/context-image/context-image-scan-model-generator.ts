@@ -11,24 +11,28 @@ import {
   subtractVectors,
   vectorsEqual,
 } from "src/app/models/Geometry";
+import { MinMax } from "src/app/models/BasicTypes";
+import { radToDeg } from "src/app/utils/utils";
+import { RGBA } from "src/app/utils/colours";
+
 import { ScanPoint } from "../../models/scan-point";
 import { HullPoint } from "../../models/footprint";
+import { ScanPointPolygon } from "../../models/context-image-draw-model";
 
 import QuickHull from "quickhull";
 import Voronoi from "voronoi";
 import polygonClipping, { MultiPolygon, Polygon } from "polygon-clipping";
+
+import { ContextImageScanModel, PointCluster } from "./context-image-model-internals";
+import { convertLocationComponentToPixelPosition } from "./context-image-model";
+
+import { environment } from "src/environments/environment";
+
 import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { MinMax } from "src/app/models/BasicTypes";
-import { radToDeg } from "src/app/utils/utils";
 import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { RGBA } from "src/app/utils/colours";
-import { ContextImageScanModel, PointCluster } from "./context-image-model-internals";
-import { convertLocationComponentToPixelPosition } from "./context-image-model";
-import { environment } from "src/environments/environment";
-import { ScanPointPolygon } from "../../models/context-image-draw-model";
 
 export class PMCClusters {
   constructor(

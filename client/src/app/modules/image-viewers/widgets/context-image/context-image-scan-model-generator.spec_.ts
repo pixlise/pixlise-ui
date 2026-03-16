@@ -1,8 +1,8 @@
 // TODO: unit test getPearsonCorrelation
 
 import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { ContextImageScanModelGenerator } from "./context-image-scan-model-generator";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { ContextImageScanModelGenerator } from "./context-image-scan-model-generator";
 
 
 describe("scanModelGenerator", () => {
@@ -22,6 +22,7 @@ describe("scanModelGenerator", () => {
     );
 
     expect(mdl.imageName).toEqual(imgName);
+    //expect("hello.jpg").toEqual(imgName);
   });
 });
 
