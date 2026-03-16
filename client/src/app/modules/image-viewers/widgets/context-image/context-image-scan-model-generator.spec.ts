@@ -4,13 +4,8 @@ import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msg
 import { ContextImageScanModelGenerator } from "./context-image-scan-model-generator";
 import { ScanItem } from "src/app/generated-protos/scan";
 
-fdescribe("smallTest", () => {
-  it("should return ok", () => {
-    expect("A").toEqual("B");
-  });
-});
 
-fdescribe("scanModelGenerator", () => {
+describe("scanModelGenerator", () => {
   it("should calculate", () => {
     const gen = new ContextImageScanModelGenerator();
 
