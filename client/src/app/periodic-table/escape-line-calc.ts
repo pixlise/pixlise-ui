@@ -29,6 +29,8 @@
 
 import { db_data, db_index, db_numberCoherent, db_numberPhoto, maxZ } from "./xray-xsect-data";
 
+/* eslint-disable prefer-const */
+
 class EscapeLine {
   constructor(
     public energy: number,
@@ -132,6 +134,7 @@ class XrayXsectTable {
   }
 }
 
+/* Went unused:
 function spline(x: number[], y: number[], yp1: number, ypn: number): number[] {
   // calculates vector y2 for spline interpolation of data in x and y vectors
   let n = x.length;
@@ -178,6 +181,7 @@ function spline(x: number[], y: number[], yp1: number, ypn: number): number[] {
   }
   return y2;
 }
+*/
 
 function splint(xa: number[], ya: number[], y2a: number[], x: number): number {
   let n = xa.length;
@@ -3240,7 +3244,7 @@ class XrayLinesInfo {
 class XrayLines {
   private lines: XrayLinesInfo[] = [];
 
-  constructor(newEdge: XrayEdge) {}
+  constructor(private _newEdge: XrayEdge) {}
 
   lineCount(): number {
     return this.lines.length;
@@ -3334,12 +3338,13 @@ export function calcEscapeLines(energy: number, detectorActiveLayer: XrayMateria
       result.push(new EscapeLine(escEnergy, fraction));
     }
   }
-
+/*
   let total_escape_fraction = 0;
   for (let escLine of result) {
     total_escape_fraction += escLine.fraction;
   }
 
   // TODO: original code also returns: 1 - total_escape_fraction;
+  */
   return result;
 }

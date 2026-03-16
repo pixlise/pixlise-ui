@@ -53,7 +53,7 @@ export class TagService {
 
         this._cachedTags = res.tags;
 
-        let tagsMap = this._getBuiltInTags();
+        const tagsMap = this._getBuiltInTags();
         res.tags.forEach(tag => {
           tagsMap.set(tag.id, tag);
         });
@@ -69,7 +69,7 @@ export class TagService {
 
   // Fixed list of built-in tags that can be assigned by users with privilege, but not edited
   private _getBuiltInTags(): Map<string, Tag> {
-    let tags = new Map<string, Tag>([
+    const tags = new Map<string, Tag>([
       [
         BuiltInTags.exampleTag,
         Tag.create({
@@ -129,8 +129,8 @@ export class TagService {
 
   deleteTag(tagId: string) {
     return this._dataService.sendTagDeleteRequest(TagDeleteReq.create({ tagId })).subscribe({
-      next: res => {
-        let tagName = this.tags$.value.get(tagId)?.name || tagId;
+      next: () => {
+        const tagName = this.tags$.value.get(tagId)?.name || tagId;
 
         this._cachedTags = this._cachedTags.filter(tag => tag.id !== tagId);
         if (this.tags$.value.delete(tagId)) {

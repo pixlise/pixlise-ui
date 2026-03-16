@@ -5,6 +5,7 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetKeyItem } from "src/app/modules/pixlisecore/models/widget-key-item";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 
 export function getWidgetComponent(widgetType: WidgetType): Observable<any> {
   return from(readWidgets()).pipe(

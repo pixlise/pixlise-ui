@@ -93,6 +93,7 @@ export class MarkdownTextViewComponent extends BaseWidgetModel implements OnInit
     */
 
     this._subs.add(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.widgetData$.subscribe((data: any) => {
         const markdownState: MarkdownViewState = data as MarkdownViewState;
 

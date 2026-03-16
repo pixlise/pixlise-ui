@@ -61,8 +61,7 @@ export class FitElementsComponent implements OnInit, OnDestroy {
       this.mdl.fitSelectedElementZs$.subscribe(
         () => {
           this.refresh();
-        },
-        err => {}
+        }
       )
     );
   }

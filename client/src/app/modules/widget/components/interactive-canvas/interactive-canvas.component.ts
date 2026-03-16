@@ -157,6 +157,7 @@ export interface CanvasInteractionHandler {
 }
 
 export interface CanvasWorldTransform {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setCanvasParams(canvasParams: CanvasParams): any;
 
   getScale(): Point;
@@ -217,6 +218,7 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected override setTransformCanvasParams(params: CanvasParams, canvas: ElementRef<any>): void {
       this.transform?.setCanvasParams(params);
   }

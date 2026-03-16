@@ -383,7 +383,7 @@ export class RangeSelect extends BaseSpectrumTool {
     return CanvasInteractionResult.neither;
   }
 
-  override draw(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
+  override draw(ctx: CanvasRenderingContext2D, _drawParams: CanvasDrawParameters): Observable<void> {
     if (!this._ctx.xAxisEnergyScale || !this._ctx.xAxis || !this._ctx.yAxis) {
       return of(void 0);
     }

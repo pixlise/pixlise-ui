@@ -189,8 +189,6 @@ export class EnvConfigurationInitService {
   // valid by the time it's accessed... should...
   static getConfig$: BehaviorSubject<AppConfig | null> = new BehaviorSubject<AppConfig | null>(null);
 
-  constructor() {}
-
   readAppConfig(handler: HttpBackend, authConfig?: AuthClientConfig): Promise<AppConfig | null> {
     const request$ = new HttpClient(handler).get<AppConfig>(`./${environment.configName}`).pipe(take(1));
     return firstValueFrom(request$)

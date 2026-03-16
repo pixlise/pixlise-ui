@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -272,7 +274,6 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
   }
 
   const xys: any[] = [];
-  const c = 0;
 
   for (let c = 0; c < xvalues.length; c++) {
     const xy: any = { x: xvalues[c], y: yvalues[c] };

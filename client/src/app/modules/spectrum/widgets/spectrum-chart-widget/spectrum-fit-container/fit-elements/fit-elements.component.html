@@ -64,7 +64,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="scrollable">
         <div *ngFor="let src of sources" class="elem-item">
-            <div [ngClass]="{'not-in-fit-elem': src.lineChoices.length==0}">{{src.roiName}}</div>
+            <div [ngClass]="{'not-in-fit-elem': src.lineChoices.length===0}">{{src.roiName}}</div>
             <div class="elem-item-lines">
                 <div *ngFor="let line of getPadding(src, true)" class="line-selector"></div>
                 <div

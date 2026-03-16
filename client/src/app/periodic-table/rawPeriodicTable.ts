@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-export const rawPeriodicTable: Record<string, any> = {
+export const rawPeriodicTable: Record<string, Object> = {
   "1": {
     name: "Hydrogen",
     atomic_mass: 1.0079,

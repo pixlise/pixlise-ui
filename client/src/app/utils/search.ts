@@ -1,4 +1,4 @@
-import { ScanInstrument, scanInstrumentToJSON, ScanItem } from "../generated-protos/scan";
+import { ScanInstrument, ScanItem } from "../generated-protos/scan";
 
 /**
  * Calculate the number of operations required to transform string a into string b

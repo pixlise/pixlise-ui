@@ -45,6 +45,8 @@ import {
 } from "../../../../pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 import { ScanImagePurpose } from "../../../../../generated-protos/image";
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 @Component({
   standalone: false,
   selector: "widget-export-button",
@@ -197,7 +199,7 @@ export class WidgetExportButtonComponent implements OnInit, OnChanges {
     dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
       if (result) {
         // Make sure the selected ROI is from the correct scan
-        let rois = result.selectedROISummaries.filter(roi => roi.scanId === this.option?.scanId);
+        const rois = result.selectedROISummaries.filter(roi => roi.scanId === this.option?.scanId);
         this.onSelectROIsOption(rois);
       }
     });
@@ -217,7 +219,7 @@ export class WidgetExportButtonComponent implements OnInit, OnChanges {
     };
 
     this.accordionOpen = true;
-    let dialogRef = this._dialog.open(ExpressionPickerComponent, dialogConfig);
+    const dialogRef = this._dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((response: ExpressionPickerResponse) => {
       this.accordionOpen = true;
       if (response) {

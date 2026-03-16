@@ -44,6 +44,8 @@ import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Permissions } from "src/app/utils/permissions";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export class SpectrumPeakIdentificationData {
   constructor(
     public mdl: SpectrumChartModel,
@@ -83,7 +85,7 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy, A
 
   ngOnInit() {
     this._subs.add(
-      this._dataService.quantCreateUpd$.subscribe((upd: QuantCreateUpd) => {
+      this._dataService.quantCreateUpd$.subscribe(() => {
         this.updateJobsRunning();
       })
     );

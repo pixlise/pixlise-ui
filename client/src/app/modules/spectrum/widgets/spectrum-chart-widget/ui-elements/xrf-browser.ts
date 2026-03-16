@@ -167,7 +167,6 @@ export class XRFBrowser extends BaseUIElement {
       yMax = 0;
     }
 
-    // eslint-disable-next-line prettier/prettier
     return new Point(Math.floor(this._ctx.xAxis.valueToCanvas(line.eV / 1000)), Math.floor(this._ctx.yAxis.valueToCanvas(line.intensity * yMax)));
   }
 

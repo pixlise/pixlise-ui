@@ -31,6 +31,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
 import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
 import { SpectrumChartModel, SpectrumLineChoice, SpectrumSource } from "../../spectrum-model";
+import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 
 @Component({
   standalone: false,
@@ -130,7 +131,7 @@ export class FitLineConfigComponent implements OnInit, OnDestroy {
     return 0.0;
   }
 
-  onChangeMeasuredOpacity(src: SpectrumSource, event: any): void {
+  onChangeMeasuredOpacity(src: SpectrumSource, event: SliderValue): void {
     // It's the first line in this source...
     if (src.lineChoices.length == 1) {
       src.lineChoices[0].opacity = event.value;
