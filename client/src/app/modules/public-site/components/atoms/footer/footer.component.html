@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="logo">
           <a href="/"><img src="assets/images/{{appLogo}}" /></a>
         </div>
-        <div class="tagline">{{tagline}}<a href="https://auscope.org.au">auscope.org.au</a></div>
+        <div class="tagline">{{tagline}}<a *ngIf="link && link.length > 0" href="https://{{link}}">{{link}}</a></div>
         <ng-container *ngIf="showImageCredits">
           <div class="credits">Image Credits:</div>
           <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
