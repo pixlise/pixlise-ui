@@ -44,6 +44,7 @@ import {
   replaceAsDateIfTestSOL,
   doesVersionDiffer,
   makeValidFloatString,
+  mimeTypeForImage
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation
@@ -69,6 +70,28 @@ describe("randomString", () => {
       //expect(prevs.has(str)).toEqual(false);
       prevs.add(str);
     }
+  });
+});
+
+describe("mimeTypeForImage", () => {
+  it("mimeTypeForImage should return expected mime type", () => {
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.png?minwidth=240")).toEqual("image/png");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM.N082286663373363300030LUJ01.PNG?minwidth=240")).toEqual("image/png");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.jpeg?minwidth=240")).toEqual("image/jpeg");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.jpg?minwidth=240")).toEqual("image/jpeg");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.Jpg?minwidth=240")).toEqual("image/jpeg");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.Jpg")).toEqual("image/jpeg");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.JPEG")).toEqual("image/jpeg");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.PNG")).toEqual("image/png");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.png ")).toEqual("image/png");
+    expect(mimeTypeForImage("http://localhost:8080/images/download/633733633/PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.TIF ")).toEqual("image/tiff");
+    expect(mimeTypeForImage("PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.png ")).toEqual("image/png");
+    expect(mimeTypeForImage(" PCW_1706_0818347669_000RCM_N082286663373363300030LUJ01.pNg")).toEqual("image/png");
+    expect(mimeTypeForImage(" file.jpg.png.tif ")).toEqual("image/tiff");
+    expect(mimeTypeForImage("file.TIF")).toEqual("image/tiff");
+    expect(mimeTypeForImage(" .TIF")).toEqual("");
+    expect(mimeTypeForImage("jpg")).toEqual("");
+    expect(mimeTypeForImage(" a.TIF")).toEqual("image/tiff");
   });
 });
 
