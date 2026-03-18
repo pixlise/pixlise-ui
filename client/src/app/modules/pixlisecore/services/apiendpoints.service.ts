@@ -5,7 +5,7 @@ import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { Uint8ToString } from "src/app/utils/utils";
+import { mimeTypeForImage, Uint8ToString } from "src/app/utils/utils";
 import { ImageUploadHttpPartialInfo, ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
@@ -69,17 +69,25 @@ export class APIEndpointsService {
   private loadImageFromURL(url: string): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
+      const mime = mimeTypeForImage(url);
+      if (mime.length <= 0) {
+        const err = `Unknown mime type for image: ${url}`;
+        console.error(err);
+        observer.error(err);
+        return;
+      }
+
       this.http.get(url, { responseType: "arraybuffer" }).subscribe({
         next: (arrayBuf: ArrayBuffer) => {
           const img = new Image();
 
-          img.onload = event => {
+          img.onload = () => {
             console.log("  Loaded image: " + url + ". Dimensions: " + img.width + "x" + img.height);
             observer.next(img);
             observer.complete();
           };
 
-          img.onerror = event => {
+          img.onerror = () => {
             // event doesn't seem to provide us much, usually just says "error" inside it... found that this
             // last occurred when a bug allowed us to try to load a tif image with this function!
             const errStr = "Failed to download image: " + url;
@@ -92,7 +100,7 @@ export class APIEndpointsService {
           // below seems to work but it's def not optimal.
           const data = new Uint8Array(arrayBuf);
           const base64 = btoa(Uint8ToString(data));
-          const dataURL = "data:image;base64," + base64;
+          const dataURL = `data:${mime};base64,` + base64;
           // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
           img.src = dataURL;
         },
