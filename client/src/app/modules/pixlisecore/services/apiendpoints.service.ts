@@ -95,13 +95,23 @@ export class APIEndpointsService {
             observer.error(errStr);
           };
 
-          // TODO: look at this for speed, javascript puke is probably copying the array 100x before
-          // we get our string. Found this was happening with some code examples used... This implementation
-          // below seems to work but it's def not optimal.
+          // This is done this ugly way because of JWT tokens. When assigning a url to an img.src there is no
+          // way to intercept the subsequent HTTP request and insert the Authorisation header. There are a few
+          // common solutions, one is to generate a "key" on the server (and store it, expire it) and append
+          // that to the URL as a query parameter (you don't want to include the JWT in query param!) but this
+          // is another common solution - download the image via code, and create an Image and assign the data
+          // Unfortunately the only way is as a "data URL", so here we convert the array to a string, then to
+          // base64, then construct the data URL.
+          // NOTE: This code worked fine for 4+ years and stopped working with Chrome 146 in March 2026 because
+          // we were just saying "data:image;base64" but they made the Chrome parser more strict, and it expects
+          // a mime type now, eg image/png so we had to update this.
+          // There's a new function for ArrayBuffer: toBase64 which came out in September 2025 and is supported
+          // by all browsers but at time of writing Angular 21 uses Typescript 5.9.3 which doesn't contain this
+          // function yet. We may be able to use a polyfill.
+          // TODO: Update this to use toBase64 when it's available, perhaps in Typescript 6.x?
           const data = new Uint8Array(arrayBuf);
           const base64 = btoa(Uint8ToString(data));
           const dataURL = `data:${mime};base64,` + base64;
-          // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
           img.src = dataURL;
         },
         error: err => {

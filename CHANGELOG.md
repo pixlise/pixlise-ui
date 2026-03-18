@@ -1,4 +1,9 @@
-## 4.83.0 (LATEST)
+## 4.84.0 (LATEST)
+
+### Bug Fixes
+- Fixing issue with introduced by Chrome 146 update - we were not able to display images because Chromes "data URL" parsing became more strict, and now checks that we supply a full MIME type.
+
+## 4.83.0 (2026-01-15)
 
 ### New Features
 - Allow the ability to delete FM scans that have no spectra and images associated with them. This covers the case like sol 1637 and 1641 which were safety survey scans and didn't actually acquire data, or other failed scan scenarios. Previously these were deleted by hand from the DB but it makes sense to allow admins to delete them here.
