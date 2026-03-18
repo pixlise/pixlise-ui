@@ -395,6 +395,42 @@ export function Uint8ToString(u8a: Uint8Array) {
   return c.join("");
 }
 
+export function mimeTypeForImage(imageUrl: string): string {
+  let url = imageUrl.trim();
+  let mime = "";
+  let endPos = url.indexOf("?");
+  if (endPos < 0) {
+    endPos = url.length;
+  }
+
+  for (let c = endPos-1; c > 0; c--) {
+    if (url[c] == ".") {
+      mime += url.substring(c+1, endPos).toLowerCase();
+      break;
+    }
+  }
+
+  if (mime == "jpg") {
+    mime = "jpeg";
+  } else if (mime == "tif") {
+    mime = "tiff";
+  }
+  
+  // If it's not one we support in this case, stop here
+  if (mime != "jpeg" && mime != "png" && mime != "tiff") {
+    return "";
+  }
+
+  return "image/" + mime;
+}
+
+export function arrayBufferToImageDataURL(mime: string, buf: ArrayBuffer): string {
+  const data = new Uint8Array(buf);
+  const base64 = btoa(Uint8ToString(data));
+  const dataURL = `data:${mime};base64,` + base64;
+  return dataURL;
+}
+
 export function positionDialogNearParent(openerRect: any, ourWindowRect: any, dontCoverOpener: boolean = false): object {
   const gapSizeHalf = 4; // Should be the same as $sz-half from CSS
 
