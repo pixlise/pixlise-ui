@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,7 +29,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 <ng-template #metadataMenu>
-  <div fxLayout="column" class="gap-separated-vertical-elements" class="metadata-menu">
+  <div
+    fxLayout="column"
+    class="gap-separated-vertical-elements"
+    class="metadata-menu"
+  >
     <div class="metadata-header">
       <h2>{{ name }}</h2>
       <tag-picker
@@ -37,96 +41,150 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectedTagIDs]="tags"
         [showCurrentTagsSection]="true"
         (onTagSelectionChanged)="onTagSelectionChanged($event)"
-        [allowAdminBuiltin]="true">
+        [allowAdminBuiltin]="true"
+      >
       </tag-picker>
     </div>
     <span class="doi-btns">
       <!-- <span
-                *ngIf="!isModule && !isSharedByOtherUser"
-                class="new-doi-btn"
-                (click)="openDOIFormDialog()"
-                #tooltip="matTooltip"
-                [matTooltip]="expression.shared ? 'Create New DOI for this expression' : 'Cannot create DOI for private expression'"
-            >
-                <img
-                    *ngIf="!doiLink"
-                    src="{{expression.shared ? 'assets/button-icons/doi-create.svg' : 'assets/button-icons/doi-create-disabled.svg'}}"
-                >
-                <img
-                    class="edit-doi-btn"
-                    *ngIf="doiLink"
-                    src="assets/button-icons/edit.svg"
-                >
-            </span>
-            <a
-                *ngIf="doiLink"
-                [href]="doiLink"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                <img 
-                    *ngIf="doiBadge"
-                    [src]="doiBadge"
-                    #tooltip="matTooltip"
-                    matTooltip="Open DOI link in Zenodo"
-                >
-            </a> -->
+      *ngIf="!isModule && !isSharedByOtherUser"
+      class="new-doi-btn"
+      (click)="openDOIFormDialog()"
+      #tooltip="matTooltip"
+      [matTooltip]="expression.shared ? 'Create New DOI for this expression' : 'Cannot create DOI for private expression'"
+      >
+      <img
+        *ngIf="!doiLink"
+        src="{{expression.shared ? 'assets/button-icons/doi-create.svg' : 'assets/button-icons/doi-create-disabled.svg'}}"
+        >
+      <img
+        class="edit-doi-btn"
+        *ngIf="doiLink"
+        src="assets/button-icons/edit.svg"
+        >
+    </span>
+    <a
+      *ngIf="doiLink"
+      [href]="doiLink"
+      target="_blank"
+      rel="noopener noreferrer"
+      >
+      <img
+        *ngIf="doiBadge"
+        [src]="doiBadge"
+        #tooltip="matTooltip"
+        matTooltip="Open DOI link in Zenodo"
+        >
+    </a> -->
     </span>
     <div class="metadata-fields">
       <h5 class="metadata-label">Description</h5>
-      <textarea [disabled]="!isEditable" [(ngModel)]="description">{{ description }}</textarea>
+      <textarea [disabled]="!isEditable" [(ngModel)]="description">{{
+        description
+      }}</textarea>
     </div>
-    <div *ngIf="!isModule && expression?.id" class="metadata-fields">
-      <h5 class="metadata-label">Manage Cache</h5>
-      <push-button
-        class="clear-cache-btn"
-        confirmText="Are you sure you want to clear all cached versions of this expression?"
-        (onClick)="clearCacheForSelectedExpression()"
-        >Clear Cache</push-button
-      >
-    </div>
-    <div *ngIf="isModule && releaseNotes.length > 0" class="release-notes">
-      <div *ngFor="let release of releaseNotes; let i = index" class="grouped-release">
-        <h2 *ngIf="release.majorVersion" class="release-title">
-          Major Release ({{ getVersionDisplayName(release.majorVersion) }})
-          <span *ngIf="showDiff && i === 0" class="latest-release">Latest Release</span>
-          <span *ngIf="showDiff && currentVersion?.version === release.majorVersion.version" class="current-release">Current Release</span>
-        </h2>
-        <div *ngIf="release.majorVersion" class="release-comments-container">
-          <div class="release-comments">
-            {{ release.majorVersion.comments || "No release notes" }}
-          </div>
-        </div>
-        <h2 *ngIf="release?.minorVersions && release.minorVersions.length > 0" class="minor-release-title">Minor Releases</h2>
-        <div *ngIf="release?.minorVersions && release.minorVersions.length > 0" class="minor-releases">
-          <div *ngFor="let minorRelease of release.minorVersions; let j = index" class="minor-release">
-            <h3>
-              <b>{{ getVersionDisplayName(minorRelease) }}</b> ({{ getVersionReleaseDate(minorRelease) }})
-              <span *ngIf="showDiff && i === 0 && !release.majorVersion && j === 0" class="latest-release">Latest Release</span>
-              <span *ngIf="showDiff && currentVersion?.version === minorRelease.version" class="current-release">Current Release</span>
-            </h3>
-            <div class="release-comments">
-              {{ minorRelease.comments || "No release notes" }}
-            </div>
-          </div>
-        </div>
+    @if (!isModule && expression?.id) {
+      <div class="metadata-fields">
+        <h5 class="metadata-label">Manage Cache</h5>
+        <push-button
+          class="clear-cache-btn"
+          confirmText="Are you sure you want to clear all cached versions of this expression?"
+          (onClick)="clearCacheForSelectedExpression()"
+          >Clear Cache</push-button
+        >
       </div>
-    </div>
-    <div *ngIf="showDiff" class="bottom-container">
-      <push-button
-        class="code-diff-btn"
-        [buttonStyle]="buttonStyle"
-        #tooltip="matTooltip"
-        matTooltip="{{ isShowingDifference ? 'Hide' : 'Show' }} Code Difference between v{{ currentVersion?.version }} and v{{ latestRelease?.version }}"
-        (onClick)="showDiffClicked()"
-        >{{ isShowingDifference ? "Hide" : "Show" }} Difference
-      </push-button>
-    </div>
+    }
+    @if (isModule && releaseNotes.length > 0) {
+      <div class="release-notes">
+        @for (release of releaseNotes; track release; let i = $index) {
+          <div class="grouped-release">
+            @if (release.majorVersion) {
+              <h2 class="release-title">
+                Major Release ({{
+                  getVersionDisplayName(release.majorVersion)
+                }})
+                @if (showDiff && i === 0) {
+                  <span class="latest-release">Latest Release</span>
+                }
+                @if (
+                  showDiff &&
+                  currentVersion?.version === release.majorVersion.version
+                ) {
+                  <span class="current-release">Current Release</span>
+                }
+              </h2>
+            }
+            @if (release.majorVersion) {
+              <div class="release-comments-container">
+                <div class="release-comments">
+                  {{ release.majorVersion.comments || "No release notes" }}
+                </div>
+              </div>
+            }
+            @if (release?.minorVersions && release.minorVersions.length > 0) {
+              <h2 class="minor-release-title">Minor Releases</h2>
+            }
+            @if (release?.minorVersions && release.minorVersions.length > 0) {
+              <div class="minor-releases">
+                @for (
+                  minorRelease of release.minorVersions;
+                  track minorRelease;
+                  let j = $index
+                ) {
+                  <div class="minor-release">
+                    <h3>
+                      <b>{{ getVersionDisplayName(minorRelease) }}</b> ({{
+                        getVersionReleaseDate(minorRelease)
+                      }})
+                      @if (
+                        showDiff && i === 0 && !release.majorVersion && j === 0
+                      ) {
+                        <span class="latest-release">Latest Release</span>
+                      }
+                      @if (
+                        showDiff &&
+                        currentVersion?.version === minorRelease.version
+                      ) {
+                        <span class="current-release">Current Release</span>
+                      }
+                    </h3>
+                    <div class="release-comments">
+                      {{ minorRelease.comments || "No release notes" }}
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+    @if (showDiff) {
+      <div class="bottom-container">
+        <push-button
+          class="code-diff-btn"
+          [buttonStyle]="buttonStyle"
+          #tooltip="matTooltip"
+          matTooltip="{{
+            isShowingDifference ? 'Hide' : 'Show'
+          }} Code Difference between v{{ currentVersion?.version }} and v{{
+            latestRelease?.version
+          }}"
+          (onClick)="showDiffClicked()"
+          >{{ isShowingDifference ? "Hide" : "Show" }} Difference
+        </push-button>
+      </div>
+    }
   </div>
 </ng-template>
 
 <widget-settings-menu [settingsDialog]="metadataMenu" (onClose)="onClose()">
-  <push-button class="metadata-btn" [buttonStyle]="buttonStyle" #tooltip="matTooltip" matTooltip="Edit Metadata" [matTooltipShowDelay]="500"
+  <push-button
+    class="metadata-btn"
+    [buttonStyle]="buttonStyle"
+    #tooltip="matTooltip"
+    matTooltip="Edit Metadata"
+    [matTooltipShowDelay]="500"
     >{{ title }}
   </push-button>
 </widget-settings-menu>

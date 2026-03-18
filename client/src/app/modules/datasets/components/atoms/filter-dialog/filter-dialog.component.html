@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,12 +32,22 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="filter-container">
   <div class="choice-row" [ngClass]="{ 'choice-row-active': targetSet }">
     <div class="label">Target:</div>
-    <input [(ngModel)]="data.filter.target" type="text" placeholder="..." class="large-input" />
+    <input
+      [(ngModel)]="data.filter.target"
+      type="text"
+      placeholder="..."
+      class="large-input"
+    />
   </div>
 
   <div class="choice-row" [ngClass]="{ 'choice-row-active': siteSet }">
     <div class="label">Site:</div>
-    <input [(ngModel)]="data.filter.site" type="text" placeholder="..." class="large-input" />
+    <input
+      [(ngModel)]="data.filter.site"
+      type="text"
+      placeholder="..."
+      class="large-input"
+    />
   </div>
 
   <div class="choice-row" [ngClass]="{ 'choice-row-active': solSet }">
@@ -51,13 +61,20 @@ POSSIBILITY OF SUCH DAMAGE.
 
   <div class="choice-row" [ngClass]="{ 'choice-row-active': driveSet }">
     <div class="label">Drive:</div>
-    <input [(ngModel)]="data.filter.drive" type="text" placeholder="..." class="large-input" />
+    <input
+      [(ngModel)]="data.filter.drive"
+      type="text"
+      placeholder="..."
+      class="large-input"
+    />
   </div>
 
   <div class="choice-row" [ngClass]="{ 'choice-row-active': detectorSet }">
     <div class="label">Detector:</div>
     <mat-select [(ngModel)]="data.filter.detectorChosen">
-      <mat-option *ngFor="let detector of allDetectorConfigs" [value]="detector">{{ detector }}</mat-option>
+      @for (detector of allDetectorConfigs; track detector) {
+        <mat-option [value]="detector">{{ detector }}</mat-option>
+      }
     </mat-select>
   </div>
 
@@ -67,27 +84,29 @@ POSSIBILITY OF SUCH DAMAGE.
       activeIcon="assets/button-icons/check-on.svg"
       inactiveIcon="assets/button-icons/check-off.svg"
       [active]="data.filter.hasDwell"
-      (onToggle)="onToggleHasDwell()">
+      (onToggle)="onToggleHasDwell()"
+    >
     </two-state-icon-button>
   </div>
   <!--
-    <div class="choice-row" [ngClass]="{'choice-row-active': quantSet}">
-        <div class="label">Has Quant:</div>
-        <two-state-icon-button
-            activeIcon="assets/button-icons/check-on.svg"
-            inactiveIcon="assets/button-icons/check-off.svg"
-            [active]="data.filter.hasQuant"
-            (onToggle)="onToggleHasQuant()">
-        </two-state-icon-button>
-    </div>
--->
+  <div class="choice-row" [ngClass]="{'choice-row-active': quantSet}">
+    <div class="label">Has Quant:</div>
+    <two-state-icon-button
+      activeIcon="assets/button-icons/check-on.svg"
+      inactiveIcon="assets/button-icons/check-off.svg"
+      [active]="data.filter.hasQuant"
+      (onToggle)="onToggleHasQuant()">
+    </two-state-icon-button>
+  </div>
+  -->
   <div class="choice-row" [ngClass]="{ 'choice-row-active': normalSet }">
     <div class="label">Has Normal:</div>
     <two-state-icon-button
       activeIcon="assets/button-icons/check-on.svg"
       inactiveIcon="assets/button-icons/check-off.svg"
       [active]="data.filter.hasNormal"
-      (onToggle)="onToggleHasNormal()">
+      (onToggle)="onToggleHasNormal()"
+    >
     </two-state-icon-button>
   </div>
 

@@ -9,42 +9,66 @@
           Must be unique
         </div>
         <div class="requirement">
-          <status-indicator [valid]="isNewModuleNameAlphanumeric"></status-indicator>
+          <status-indicator
+            [valid]="isNewModuleNameAlphanumeric"
+          ></status-indicator>
           Must be alphanumeric
         </div>
         <div class="requirement">
-          <status-indicator [valid]="isNewModuleNameCorrectLength"></status-indicator>
+          <status-indicator
+            [valid]="isNewModuleNameCorrectLength"
+          ></status-indicator>
           Must be less than or equal to 20 characters
         </div>
         <div class="requirement">
-          <status-indicator [valid]="doesNewModuleNameNotContainSpaces"></status-indicator>
+          <status-indicator
+            [valid]="doesNewModuleNameNotContainSpaces"
+          ></status-indicator>
           Cannot contain spaces
         </div>
         <div class="requirement">
-          <status-indicator [valid]="doesNewModuleNameNotContainSpecialCharacters"></status-indicator>
+          <status-indicator
+            [valid]="doesNewModuleNameNotContainSpecialCharacters"
+          ></status-indicator>
           Cannot contain special characters
         </div>
         <div class="requirement">
-          <status-indicator [valid]="doesNewModuleNameNotStartWithNumber"></status-indicator>
+          <status-indicator
+            [valid]="doesNewModuleNameNotStartWithNumber"
+          ></status-indicator>
           Cannot start with a number
         </div>
       </div>
     </div>
     <div class="button-container">
-      <push-button buttonStyle="yellow" [disabled]="!isNewModuleNameValid" (onClick)="onCreateNewModule()">Create</push-button>
+      <push-button
+        buttonStyle="yellow"
+        [disabled]="!isNewModuleNameValid"
+        (onClick)="onCreateNewModule()"
+        >Create</push-button
+      >
     </div>
   </div>
 </ng-template>
 
 <ng-template #newEditorDialog>
   <div class="new-editor-dialog">
-    <push-button buttonStyle="gray-title" (onClick)="onCreateNewExpression()" class="create-btn">
+    <push-button
+      buttonStyle="gray-title"
+      (onClick)="onCreateNewExpression()"
+      class="create-btn"
+    >
       <span class="inner-btn-container">
         <img class="icon" src="assets/button-icons/plus-white.svg" />
         <span class="label">Expression</span>
       </span>
     </push-button>
-    <push-button buttonStyle="gray-title" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">
+    <push-button
+      buttonStyle="gray-title"
+      [customDialog]="newModuleDialog"
+      #newModuleDialogBtn
+      class="create-btn"
+    >
       <span class="inner-btn-container">
         <img class="icon" src="assets/button-icons/plus-white.svg" />
         <span class="label">Module</span>
@@ -54,26 +78,48 @@
 </ng-template>
 
 <div class="code-editor" aria-label="CodeEditor">
-  <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}" aria-label="CodeEditorExplorer">
+  <section
+    class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}"
+    aria-label="CodeEditorExplorer"
+  >
     <div class="top-header">
-      <h2 *ngIf="isSidebarOpen" class="explorer-header">
-        Explorer
-        <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
-        <push-button buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">
-          <widget-settings-menu [settingsDialog]="newEditorDialog" #newEditorDialogBtn>
-            <div class="new-btn-container">
-              <img class="icon" src="assets/button-icons/plus-white.svg" />
-              <span class="label">New</span>
-            </div>
-          </widget-settings-menu>
-        </push-button>
-        <push-button buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn" [customStyle]="{ padding: '4px 8px' }">
-          <img class="icon" src="assets/button-icons/search.svg" />
-          <span class="label">Browse</span>
-        </push-button>
-      </h2>
+      @if (isSidebarOpen) {
+        <h2 class="explorer-header">
+          Explorer
+          <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
+          <push-button
+            buttonStyle="gray"
+            [flexBtn]="true"
+            class="new-btn"
+            [customStyle]="{ padding: '4px 8px' }"
+          >
+            <widget-settings-menu
+              [settingsDialog]="newEditorDialog"
+              #newEditorDialogBtn
+            >
+              <div class="new-btn-container">
+                <img class="icon" src="assets/button-icons/plus-white.svg" />
+                <span class="label">New</span>
+              </div>
+            </widget-settings-menu>
+          </push-button>
+          <push-button
+            buttonStyle="yellow"
+            [flexBtn]="true"
+            (onClick)="addExpressions()"
+            class="add-expressions-btn"
+            [customStyle]="{ padding: '4px 8px' }"
+          >
+            <img class="icon" src="assets/button-icons/search.svg" />
+            <span class="label">Browse</span>
+          </push-button>
+        </h2>
+      }
       <div class="sidebar-header-toggle-btn" (click)="onToggleSidebar()">
-        <img src="assets/button-icons/double-arrow-left.svg" class="{{ isSidebarOpen ? 'open' : 'closed' }}" />
+        <img
+          src="assets/button-icons/double-arrow-left.svg"
+          class="{{ isSidebarOpen ? 'open' : 'closed' }}"
+        />
       </div>
     </div>
     <section class="expressions" aria-label="CodeEditorExpressions">
@@ -87,21 +133,28 @@
               inactiveIcon="assets/button-icons/caret-right.svg"
               class="carat-button"
               [active]="isCurrentlyOpenSectionOpen"
-              (onToggle)="onToggleCurrentlyOpenSection()">
+              (onToggle)="onToggleCurrentlyOpenSection()"
+            >
             </two-state-icon-button>
           </div>
-          <div class="group-layers" *ngIf="isCurrentlyOpenSectionOpen">
-            <expression-layer
-              *ngIf="topExpression"
-              [isSelectable]="false"
-              [expression]="topExpression"
-              [module]="isTopModule ? loadedModule : null"></expression-layer>
-            <expression-layer
-              *ngIf="bottomExpression"
-              [isSelectable]="false"
-              [expression]="bottomExpression"
-              [module]="!isTopModule ? loadedModule : null"></expression-layer>
-          </div>
+          @if (isCurrentlyOpenSectionOpen) {
+            <div class="group-layers">
+              @if (topExpression) {
+                <expression-layer
+                  [isSelectable]="false"
+                  [expression]="topExpression"
+                  [module]="isTopModule ? loadedModule : null"
+                ></expression-layer>
+              }
+              @if (bottomExpression) {
+                <expression-layer
+                  [isSelectable]="false"
+                  [expression]="bottomExpression"
+                  [module]="!isTopModule ? loadedModule : null"
+                ></expression-layer>
+              }
+            </div>
+          }
         </div>
         <div class="group currently-open">
           <div class="header">
@@ -112,219 +165,329 @@
               inactiveIcon="assets/button-icons/caret-right.svg"
               class="carat-button"
               [active]="isModulesSectionOpen"
-              (onToggle)="onToggleModulesSection()">
+              (onToggle)="onToggleModulesSection()"
+            >
             </two-state-icon-button>
           </div>
-          <div class="group-layers" *ngIf="isModulesSectionOpen">
-            <expression-layer
-              *ngFor="let module of modules; trackBy: trackByModuleId"
-              [isSelectable]="true"
-              [selected]="topModuleIds.includes(module.id)"
-              (onSelect)="onSelectModule(module)"
-              [module]="module"></expression-layer>
-          </div>
+          @if (isModulesSectionOpen) {
+            <div class="group-layers">
+              @for (module of modules; track trackByModuleId($index, module)) {
+                <expression-layer
+                  [isSelectable]="true"
+                  [selected]="topModuleIds.includes(module.id)"
+                  (onSelect)="onSelectModule(module)"
+                  [module]="module"
+                ></expression-layer>
+              }
+            </div>
+          }
         </div>
       </div>
     </section>
   </section>
-  <section class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}" aria-label="CodeEditorContainer">
-    <div class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
-      <status-indicator
-        *ngIf="!isTopModuleIdNew || !isTopModule"
-        [valid]="!topExpressionChanged && !isTopExpressionIdNew"
-        [status]="!topExpressionChanged ? 'Latest version is saved' : 'Latest version is not saved'"></status-indicator>
+  <section
+    class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}"
+    aria-label="CodeEditorContainer"
+  >
+    <div
+      class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}"
+    >
+      @if (!isTopModuleIdNew || !isTopModule) {
+        <status-indicator
+          [valid]="!topExpressionChanged && !isTopExpressionIdNew"
+          [status]="
+            !topExpressionChanged
+              ? 'Latest version is saved'
+              : 'Latest version is not saved'
+          "
+        ></status-indicator>
+      }
       <input
-        class="expression-name {{ (isTopModule && !isTopModuleIdNew) || !isTopEditable ? 'disabled' : '' }}"
+        class="expression-name {{
+          (isTopModule && !isTopModuleIdNew) || !isTopEditable ? 'disabled' : ''
+        }}"
         [value]="topExpression?.name || ''"
         (change)="onTopNameChangeEvent($event)"
-        [disabled]="(isTopModule && !isTopModuleIdNew) || !isTopEditable" />
-      <mat-select *ngIf="topExpression && isTopModule && !isTopModuleIdNew" class="versions-select" [(ngModel)]="selectedModuleVersion">
-        <mat-option *ngFor="let version of loadedModuleVersions" [value]="version">{{ version }}</mat-option>
-      </mat-select>
-      <status-indicator
-        *ngIf="!isTopModuleIdNew && isTopModule"
-        [valid]="isTopModuleReleased"
-        [status]="
-          isTopModuleReleased
-            ? !isLoadedModuleVersionLatest
-              ? 'Switch to latest version to edit'
-              : 'Latest version is publicly available'
-            : 'Latest version hasn\'t been released'
-        ">
-      </status-indicator>
+        [disabled]="(isTopModule && !isTopModuleIdNew) || !isTopEditable"
+      />
+      @if (topExpression && isTopModule && !isTopModuleIdNew) {
+        <mat-select class="versions-select" [(ngModel)]="selectedModuleVersion">
+          @for (version of loadedModuleVersions; track version) {
+            <mat-option [value]="version">{{ version }}</mat-option>
+          }
+        </mat-select>
+      }
+      @if (!isTopModuleIdNew && isTopModule) {
+        <status-indicator
+          [valid]="isTopModuleReleased"
+          [status]="
+            isTopModuleReleased
+              ? !isLoadedModuleVersionLatest
+                ? 'Switch to latest version to edit'
+                : 'Latest version is publicly available'
+              : 'Latest version hasn\'t been released'
+          "
+        >
+        </status-indicator>
+      }
       <multi-switch-button
         class="split-screen-btn"
         [disabled]="!isSplitScreen && isSplitScreenDisabled"
         [options]="['Single', 'Split']"
         [value]="isSplitScreen ? 'Split' : 'Single'"
-        (onChange)="onToggleSplitScreen()">
+        (onChange)="onToggleSplitScreen()"
+      >
       </multi-switch-button>
-      <expression-metadata-editor
-        *ngIf="topExpression"
-        [expression]="topExpression"
-        [isModule]="isTopModule"
-        [currentVersion]="loadedModuleVersion"
-        [versions]="loadedModule?.versions || []"
-        (changeName)="onTopNameChange($event)"
-        (changeDescription)="onTopDescriptionChange($event)"
-        (changeTags)="onTopTagSelectionChanged($event)"
-        (updateMetadata)="onUpdateTopMetadata()"></expression-metadata-editor>
+      @if (topExpression) {
+        <expression-metadata-editor
+          [expression]="topExpression"
+          [isModule]="isTopModule"
+          [currentVersion]="loadedModuleVersion"
+          [versions]="loadedModule?.versions || []"
+          (changeName)="onTopNameChange($event)"
+          (changeDescription)="onTopDescriptionChange($event)"
+          (changeTags)="onTopTagSelectionChanged($event)"
+          (updateMetadata)="onUpdateTopMetadata()"
+        ></expression-metadata-editor>
+      }
 
-      <push-button class="run-btn" [flexBtn]="true" buttonStyle="gray-title" (onClick)="runExpression()"><img src="assets/button-icons/play.svg" />Run</push-button>
-      <push-button class="run-highlighted-btn" [flexBtn]="true" buttonStyle="gray-title" (onClick)="runHighlightedExpression()" [disabled]="!highlightedSelection"
-        ><img class="icon {{ !highlightedSelection ? 'disabled' : '' }}" src="assets/button-icons/run-selection.svg" />{{
+      <push-button
+        class="run-btn"
+        [flexBtn]="true"
+        buttonStyle="gray-title"
+        (onClick)="runExpression()"
+        ><img src="assets/button-icons/play.svg" />Run</push-button
+      >
+      <push-button
+        class="run-highlighted-btn"
+        [flexBtn]="true"
+        buttonStyle="gray-title"
+        (onClick)="runHighlightedExpression()"
+        [disabled]="!highlightedSelection"
+        ><img
+          class="icon {{ !highlightedSelection ? 'disabled' : '' }}"
+          src="assets/button-icons/run-selection.svg"
+        />{{
           textHighlighted === "" ? "Run Code To Line #" : "Run Selected Code"
         }}
       </push-button>
     </div>
     <section class="editors">
-      <section *ngIf="!topExpression && !(isSplitScreen && bottomExpression)" class="empty-editor">
-        <div class="new-btn-container" (click)="addExpressions()">
-          <img class="icon" src="assets/button-icons/search.svg" />
-          <span class="title">Browse</span>
-        </div>
-        <div class="new-btn-container" (click)="onCreateNewExpression()">
-          <img class="icon" src="assets/button-icons/plus-white.svg" />
-          <span class="title">New Expression</span>
-        </div>
-
-        <widget-settings-menu [settingsDialog]="newModuleDialog" #newModuleDialogBtn>
-          <div class="new-btn-container">
-            <img class="icon" src="assets/button-icons/plus-white.svg" />
-            <span class="title">New Module</span>
+      @if (!topExpression && !(isSplitScreen && bottomExpression)) {
+        <section class="empty-editor">
+          <div class="new-btn-container" (click)="addExpressions()">
+            <img class="icon" src="assets/button-icons/search.svg" />
+            <span class="title">Browse</span>
           </div>
-        </widget-settings-menu>
+          <div class="new-btn-container" (click)="onCreateNewExpression()">
+            <img class="icon" src="assets/button-icons/plus-white.svg" />
+            <span class="title">New Expression</span>
+          </div>
+          <widget-settings-menu
+            [settingsDialog]="newModuleDialog"
+            #newModuleDialogBtn
+          >
+            <div class="new-btn-container">
+              <img class="icon" src="assets/button-icons/plus-white.svg" />
+              <span class="title">New Module</span>
+            </div>
+          </widget-settings-menu>
+        </section>
+      }
+      <section
+        class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}"
+        aria-label="CodeEditorTopEdit"
+      >
+        @if (topExpression) {
+          <expression-text-editor
+            class="top-expression {{
+              isTopEditorActive && isSplitScreen ? 'active' : ''
+            }}"
+            [allowEdit]="isTopEditable"
+            (onTextChange)="onTopTextChange($event)"
+            (onTextSelect)="onTopTextSelect($event)"
+            (toggleSplitView)="onToggleSplitScreen()"
+            (runExpression)="runExpression()"
+            (onClick)="setTopEditorActive()"
+            (runHighlightedExpression)="runHighlightedExpression()"
+            (saveExpression)="onSave(true)"
+            [linkedModuleID]="linkedModuleID"
+            (linkModule)="onLinkModule($event)"
+            [isHeaderOpen]="topHeaderOpen"
+            [isSplitScreen]="isSplitScreen"
+            (toggleHeader)="onToggleTopHeader()"
+            (onModuleChange)="onTopModulesChange($event)"
+            [installedModules]="topModules"
+            [expression]="topExpression"
+            [showInstalledModules]="!isTopModule"
+            [isLua]="topExpression?.sourceLanguage === 'LUA'"
+            [scanId]="scanId"
+            [quantId]="quantId"
+          ></expression-text-editor>
+        }
       </section>
-      <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}" aria-label="CodeEditorTopEdit">
-        <expression-text-editor
-          *ngIf="topExpression"
-          class="top-expression {{ isTopEditorActive && isSplitScreen ? 'active' : '' }}"
-          [allowEdit]="isTopEditable"
-          (onTextChange)="onTopTextChange($event)"
-          (onTextSelect)="onTopTextSelect($event)"
-          (toggleSplitView)="onToggleSplitScreen()"
-          (runExpression)="runExpression()"
-          (onClick)="setTopEditorActive()"
-          (runHighlightedExpression)="runHighlightedExpression()"
-          (saveExpression)="onSave(true)"
-          [linkedModuleID]="linkedModuleID"
-          (linkModule)="onLinkModule($event)"
-          [isHeaderOpen]="topHeaderOpen"
-          [isSplitScreen]="isSplitScreen"
-          (toggleHeader)="onToggleTopHeader()"
-          (onModuleChange)="onTopModulesChange($event)"
-          [installedModules]="topModules"
-          [expression]="topExpression"
-          [showInstalledModules]="!isTopModule"
-          [isLua]="topExpression?.sourceLanguage === 'LUA'"
-          [scanId]="scanId"
-          [quantId]="quantId"></expression-text-editor>
-      </section>
-      <section class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}" aria-label="CodeEditorBottomEdit">
-        <div *ngIf="isSplitScreen && bottomExpression" class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
-          <input
-            class="expression-name {{ !isBottomExpressionIdNew ? 'disabled' : '' }}"
-            [value]="bottomExpression?.name || ''"
-            (change)="onBottomNameChangeEvent($event)"
-            [disabled]="!isBottomExpressionIdNew" />
-          <status-indicator
-            [valid]="!bottomExpressionChanged && !isBottomExpressionIdNew"
-            [status]="!bottomExpressionChanged ? 'Latest version is saved' : 'Latest version is not saved'"></status-indicator>
-          <mat-select *ngIf="bottomExpression && !isTopModule && !isBottomExpressionIdNew" class="versions-select" [(ngModel)]="selectedModuleVersion">
-            <mat-option *ngFor="let version of loadedModuleVersions" [value]="version">{{ version }}</mat-option>
-          </mat-select>
-          <status-indicator
-            *ngIf="!isBottomExpressionIdNew && !isTopModule"
-            [valid]="isBottomModuleReleased"
-            [status]="
-              isBottomModuleReleased
-                ? !isLoadedModuleVersionLatest
-                  ? 'Switch to latest version to edit'
-                  : 'Latest version is publicly available'
-                : 'Latest version hasn\'t been released'
-            ">
-          </status-indicator>
-          <expression-metadata-editor
-            *ngIf="bottomExpression"
-            [isModule]="true"
-            [currentVersion]="loadedModuleVersion"
-            [versions]="loadedModule?.versions || []"
-            (changeName)="onBottomNameChange($event)"
-            (changeDescription)="onBottomDescriptionChange($event)"
-            (changeTags)="onBottomTagSelectionChanged($event)"
-            (updateMetadata)="onUpdateBottomMetadata()"
-            [expression]="bottomExpression"></expression-metadata-editor>
-        </div>
-        <expression-text-editor
-          *ngIf="isSplitScreen && bottomExpression"
-          class="bottom-expression {{ !isTopEditorActive && isSplitScreen ? 'active' : '' }}"
-          [allowEdit]="isBottomEditable"
-          (onTextChange)="onBottomTextChange($event)"
-          (onTextSelect)="onBottomTextSelect($event)"
-          (toggleSplitView)="onToggleSplitScreen()"
-          (runExpression)="runExpression()"
-          (onClick)="setBottomEditorActive()"
-          (runHighlightedExpression)="runHighlightedExpression()"
-          (saveExpression)="onSave(false)"
-          [expression]="bottomExpression"
-          [showInstalledModules]="false"
-          [isSplitScreen]="isSplitScreen"
-          [isLua]="true"
-          [scanId]="scanId"
-          [quantId]="quantId">
-        </expression-text-editor>
+      <section
+        class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}"
+        aria-label="CodeEditorBottomEdit"
+      >
+        @if (isSplitScreen && bottomExpression) {
+          <div
+            class="top-header {{
+              isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'
+            }}"
+          >
+            <input
+              class="expression-name {{
+                !isBottomExpressionIdNew ? 'disabled' : ''
+              }}"
+              [value]="bottomExpression?.name || ''"
+              (change)="onBottomNameChangeEvent($event)"
+              [disabled]="!isBottomExpressionIdNew"
+            />
+            <status-indicator
+              [valid]="!bottomExpressionChanged && !isBottomExpressionIdNew"
+              [status]="
+                !bottomExpressionChanged
+                  ? 'Latest version is saved'
+                  : 'Latest version is not saved'
+              "
+            ></status-indicator>
+            @if (bottomExpression && !isTopModule && !isBottomExpressionIdNew) {
+              <mat-select
+                class="versions-select"
+                [(ngModel)]="selectedModuleVersion"
+              >
+                @for (version of loadedModuleVersions; track version) {
+                  <mat-option [value]="version">{{ version }}</mat-option>
+                }
+              </mat-select>
+            }
+            @if (!isBottomExpressionIdNew && !isTopModule) {
+              <status-indicator
+                [valid]="isBottomModuleReleased"
+                [status]="
+                  isBottomModuleReleased
+                    ? !isLoadedModuleVersionLatest
+                      ? 'Switch to latest version to edit'
+                      : 'Latest version is publicly available'
+                    : 'Latest version hasn\'t been released'
+                "
+              >
+              </status-indicator>
+            }
+            @if (bottomExpression) {
+              <expression-metadata-editor
+                [isModule]="true"
+                [currentVersion]="loadedModuleVersion"
+                [versions]="loadedModule?.versions || []"
+                (changeName)="onBottomNameChange($event)"
+                (changeDescription)="onBottomDescriptionChange($event)"
+                (changeTags)="onBottomTagSelectionChanged($event)"
+                (updateMetadata)="onUpdateBottomMetadata()"
+                [expression]="bottomExpression"
+              ></expression-metadata-editor>
+            }
+          </div>
+        }
+        @if (isSplitScreen && bottomExpression) {
+          <expression-text-editor
+            class="bottom-expression {{
+              !isTopEditorActive && isSplitScreen ? 'active' : ''
+            }}"
+            [allowEdit]="isBottomEditable"
+            (onTextChange)="onBottomTextChange($event)"
+            (onTextSelect)="onBottomTextSelect($event)"
+            (toggleSplitView)="onToggleSplitScreen()"
+            (runExpression)="runExpression()"
+            (onClick)="setBottomEditorActive()"
+            (runHighlightedExpression)="runHighlightedExpression()"
+            (saveExpression)="onSave(false)"
+            [expression]="bottomExpression"
+            [showInstalledModules]="false"
+            [isSplitScreen]="isSplitScreen"
+            [isLua]="true"
+            [scanId]="scanId"
+            [quantId]="quantId"
+          >
+          </expression-text-editor>
+        }
       </section>
     </section>
     <div class="bottom-toolbar">
-      <mat-select *ngIf="topExpression" [(ngModel)]="topExpression.sourceLanguage">
-        <mat-option value="LUA">Lua</mat-option>
-        <mat-option value="PIXLANG">PIXLang</mat-option>
-      </mat-select>
+      @if (topExpression) {
+        <mat-select [(ngModel)]="topExpression.sourceLanguage">
+          <mat-option value="LUA">Lua</mat-option>
+          <mat-option value="PIXLANG">PIXLang</mat-option>
+        </mat-select>
+      }
+      @if (hasVisibleModule) {
+        <push-button
+          class="release-btn"
+          buttonStyle="yellow"
+          [disabled]="!isVisibleModuleEditable || !isVisibleModuleVersionLatest"
+          (onClick)="onRelease()"
+          >Release Module
+        </push-button>
+      }
       <push-button
-        *ngIf="hasVisibleModule"
-        class="release-btn"
         buttonStyle="yellow"
-        [disabled]="!isVisibleModuleEditable || !isVisibleModuleVersionLatest"
-        (onClick)="onRelease()"
-        >Release Module
-      </push-button>
-      <push-button buttonStyle="yellow" (onClick)="onSave()" [disabled]="!activeExpressionChanged" class="save-btn">Save</push-button>
+        (onClick)="onSave()"
+        [disabled]="!activeExpressionChanged"
+        class="save-btn"
+        >Save</push-button
+      >
     </div>
   </section>
   <section
-    class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}"
-    aria-label="CodeEditorVisualisation">
+    class="visualization-container {{
+      isExpressionConsoleSolo ? 'console-solo' : ''
+    }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}"
+    aria-label="CodeEditorVisualisation"
+  >
     <div class="top-header">
       <h2>Visualization: Viz</h2>
       <div class="timeout">
         <span class="label">Max Timeout:</span>
         <mat-select [(ngModel)]="expressionTimeoutMs">
-          <mat-option *ngFor="let option of expressionTimeoutMsOptions" [value]="option.value">{{ option.label }}</mat-option>
+          @for (option of expressionTimeoutMsOptions; track option) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
         </mat-select>
       </div>
     </div>
     <section class="widget-container">
-      <widget
-        *ngIf="canMountWidgets && idsLoaded"
-        [liveExpression]="liveExpressionConfig"
-        [widgetTypes]="previewWidgetTypes"
-        [initWidget]="initPreviewWidgetType"
-        [widgetLayoutConfig]="previewLayoutConfig">
-      </widget>
-      <div *ngIf="!canMountWidgets || !idsLoaded" class="loading-message">
-        <div class="skeleton-header"></div>
-        <div class="skeleton-body">
-          <wait-spinner *ngIf="isTopExpressionLoaded"></wait-spinner>
-          <div *ngIf="!isTopExpressionLoaded" class="invalid-input">
-            <img src="assets/icons/error-triangle-dark.svg" alt="no valid input for expression preview" />
-            <h5>No Valid Input</h5>
-            <h6>
-              Select or create an expression <br />
-              to get started
-            </h6>
+      @if (canMountWidgets && idsLoaded) {
+        <widget
+          [liveExpression]="liveExpressionConfig"
+          [widgetTypes]="previewWidgetTypes"
+          [initWidget]="initPreviewWidgetType"
+          [widgetLayoutConfig]="previewLayoutConfig"
+        >
+        </widget>
+      }
+      @if (!canMountWidgets || !idsLoaded) {
+        <div class="loading-message">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-body">
+            @if (isTopExpressionLoaded) {
+              <wait-spinner></wait-spinner>
+            }
+            @if (!isTopExpressionLoaded) {
+              <div class="invalid-input">
+                <img
+                  src="assets/icons/error-triangle-dark.svg"
+                  alt="no valid input for expression preview"
+                />
+                <h5>No Valid Input</h5>
+                <h6>
+                  Select or create an expression <br />
+                  to get started
+                </h6>
+              </div>
+            }
           </div>
         </div>
-      </div>
+      }
     </section>
     <section class="output-container" aria-label="CodeEditorOutput">
       <expression-console
@@ -335,7 +498,8 @@
         [stdout]="stdout"
         [stderr]="stderr"
         (onToggleSolo)="onToggleExpressionConsoleSolo()"
-        [columnCount]="10"></expression-console>
+        [columnCount]="10"
+      ></expression-console>
     </section>
   </section>
 </div>

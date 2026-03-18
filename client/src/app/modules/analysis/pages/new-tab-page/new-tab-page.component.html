@@ -2,21 +2,22 @@
   <analysis-sidepanel></analysis-sidepanel>
   <div class="new-tab-container">
     <div class="presets analysis-presets">
-      <div
-        *ngFor="let template of analysisTemplates; let i = index"
-        class="layout-container"
-        (click)="onAnalysisTemplateClick(template)"
-        [tabindex]="i"
-        (keydown)="onAnalysisTemplateClick(template)"
-        (keyup)="onAnalysisTemplateClick(template)"
-        (keypress)="onAnalysisTemplateClick(template)"
-      >
-        <div class="title-bar">
-          <img [src]="template.templateIcon" alt="Analysis Template Icon" />
-          <span class="label">{{ template.templateName }}</span>
+      @for (template of analysisTemplates; track template; let i = $index) {
+        <div
+          class="layout-container"
+          (click)="onAnalysisTemplateClick(template)"
+          [tabindex]="i"
+          (keydown)="onAnalysisTemplateClick(template)"
+          (keyup)="onAnalysisTemplateClick(template)"
+          (keypress)="onAnalysisTemplateClick(template)"
+        >
+          <div class="title-bar">
+            <img [src]="template.templateIcon" alt="Analysis Template Icon" />
+            <span class="label">{{ template.templateName }}</span>
+          </div>
+          <layout-preview-box [template]="template"></layout-preview-box>
         </div>
-        <layout-preview-box [template]="template"></layout-preview-box>
-      </div>
+      }
       <div
         class="layout-container"
         tabindex="1"
@@ -38,21 +39,22 @@
       </div>
     </div>
     <div class="presets other-tabs">
-      <div
-        *ngFor="let template of otherTemplates"
-        class="layout-container"
-        (click)="onOtherTemplateClick(template)"
-        tabindex="0"
-        (keydown)="onOtherTemplateClick(template)"
-        (keyup)="onOtherTemplateClick(template)"
-        (keypress)="onOtherTemplateClick(template)"
-      >
-        <div class="title-bar">
-          <img [src]="template.templateIcon" alt="Other Template Icon" />
-          <span class="label">{{ template.templateName }}</span>
+      @for (template of otherTemplates; track template) {
+        <div
+          class="layout-container"
+          (click)="onOtherTemplateClick(template)"
+          tabindex="0"
+          (keydown)="onOtherTemplateClick(template)"
+          (keyup)="onOtherTemplateClick(template)"
+          (keypress)="onOtherTemplateClick(template)"
+        >
+          <div class="title-bar">
+            <img [src]="template.templateIcon" alt="Other Template Icon" />
+            <span class="label">{{ template.templateName }}</span>
+          </div>
+          <layout-preview-box [template]="template"></layout-preview-box>
         </div>
-        <layout-preview-box [template]="template"></layout-preview-box>
-      </div>
+      }
     </div>
   </div>
 </section>

@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,27 +31,62 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="picker-dialog-container" [style.opacity]="isVisible ? '1' : '0'">
   <div class="scrollable">
-    <div *ngFor="let item of data.items" class="picker-item" [title]="isEnabled(item) ? '' : disabledTooltip">
-      <div *ngIf="!item.id" class="txt-dlg-heading">{{ item.label }}</div>
-      <ng-container *ngIf="item.id">
-        <two-state-icon-button
-          [activeIcon]="activeIcon"
-          [inactiveIcon]="inactiveIcon"
-          [disabledIcon]="disabledIcon"
-          [active]="isSelected(item.id)"
-          [disabled]="!isEnabled(item)"
-          (onToggle)="onToggleItem(item)">
-        </two-state-icon-button>
-        <span class="item-label" [ngClass]="{ disabled: !isEnabled(item) }" #tooltip="matTooltip" [matTooltip]="item.tooltip" [matTooltipDisabled]="!item.tooltip"
-          >{{ item.label }}
-          <img *ngIf="item.tooltip" class="warning-tooltip" src="assets/icons/error-triangle.svg" alt="Warning" />
-        </span>
-        <img *ngIf="item.icon" [ngClass]="{ 'colour-disabled': !isEnabled(item) }" [src]="item.icon" alt="Icon" />
-      </ng-container>
-    </div>
+    @for (item of data.items; track item) {
+      <div class="picker-item" [title]="isEnabled(item) ? '' : disabledTooltip">
+        @if (!item.id) {
+          <div class="txt-dlg-heading">{{ item.label }}</div>
+        }
+        @if (item.id) {
+          <two-state-icon-button
+            [activeIcon]="activeIcon"
+            [inactiveIcon]="inactiveIcon"
+            [disabledIcon]="disabledIcon"
+            [active]="isSelected(item.id)"
+            [disabled]="!isEnabled(item)"
+            (onToggle)="onToggleItem(item)"
+          >
+          </two-state-icon-button>
+          <span
+            class="item-label"
+            [ngClass]="{ disabled: !isEnabled(item) }"
+            #tooltip="matTooltip"
+            [matTooltip]="item.tooltip"
+            [matTooltipDisabled]="!item.tooltip"
+            >{{ item.label }}
+            @if (item.tooltip) {
+              <img
+                class="warning-tooltip"
+                src="assets/icons/error-triangle.svg"
+                alt="Warning"
+              />
+            }
+          </span>
+          @if (item.icon) {
+            <img
+              [ngClass]="{ 'colour-disabled': !isEnabled(item) }"
+              [src]="item.icon"
+              alt="Icon"
+            />
+          }
+        }
+      </div>
+    }
   </div>
 
-  <push-button *ngIf="showClearButton" buttonStyle="outline" [disabled]="clearButtonDisabled" (onClick)="onClear()">Clear</push-button>
-  <push-button *ngIf="showSelectAllButton" buttonStyle="outline" (onClick)="onSelectAll()">Select All</push-button>
-  <push-button *ngIf="showApplyButton" buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>
+  @if (showClearButton) {
+    <push-button
+      buttonStyle="outline"
+      [disabled]="clearButtonDisabled"
+      (onClick)="onClear()"
+      >Clear</push-button
+    >
+  }
+  @if (showSelectAllButton) {
+    <push-button buttonStyle="outline" (onClick)="onSelectAll()"
+      >Select All</push-button
+    >
+  }
+  @if (showApplyButton) {
+    <push-button buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>
+  }
 </div>

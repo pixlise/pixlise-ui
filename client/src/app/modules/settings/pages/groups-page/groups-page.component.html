@@ -11,21 +11,37 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              *ngFor="let role of allUserRoles"
-              [class.disabled]="selectedUserRoleIds.includes(role.id)"
-              [class.selected]="selectedUserNewRoleId === role.id"
-              (click)="!selectedUserRoleIds.includes(role.id) && (selectedUserNewRoleId = role.id)">
-              <td>{{ role.name }}</td>
-              <td>{{ role.description }}</td>
-            </tr>
+            @for (role of allUserRoles; track role) {
+              <tr
+                [class.disabled]="selectedUserRoleIds.includes(role.id)"
+                [class.selected]="selectedUserNewRoleId === role.id"
+                (click)="
+                  !selectedUserRoleIds.includes(role.id) &&
+                    (selectedUserNewRoleId = role.id)
+                "
+              >
+                <td>{{ role.name }}</td>
+                <td>{{ role.description }}</td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
     </div>
     <div class="button-container">
-      <push-button class="close-btn" buttonStyle="outline" (onClick)="onCloseAddUserRoleDialog()">Close</push-button>
-      <push-button class="save-btn" buttonStyle="yellow" [disabled]="!selectedUserNewRoleId" (onClick)="onAddUserRole()">Add Role</push-button>
+      <push-button
+        class="close-btn"
+        buttonStyle="outline"
+        (onClick)="onCloseAddUserRoleDialog()"
+        >Close</push-button
+      >
+      <push-button
+        class="save-btn"
+        buttonStyle="yellow"
+        [disabled]="!selectedUserNewRoleId"
+        (onClick)="onAddUserRole()"
+        >Add Role</push-button
+      >
     </div>
   </div>
 </ng-template>
@@ -43,26 +59,56 @@
           <img src="assets/icons/admin-badge.svg" alt="Admin Badge" />
         </div>
         <div class="content-container">
-          <div *ngFor="let group of groupsWithAdminAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-            <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-              <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
-                <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
-              </span>
-              <span class="group-name">{{ group.name }}</span>
-              <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+          @for (group of groupsWithAdminAccess; track group) {
+            <div
+              class="group-row {{
+                selectedGroup?.info?.id === group.id ? 'selected' : ''
+              }}"
+            >
+              <div
+                class="group-title"
+                (click)="onSelectGroup(group)"
+                (keydown)="onSelectGroup(group)"
+                tabindex="0"
+              >
+                @if (!group.joinable) {
+                  <span
+                    class="locked-icon"
+                    #tooltip="matTooltip"
+                    [matTooltip]="group.name + ' is not joinable'"
+                  >
+                    <img
+                      src="assets/button-icons/lock.svg"
+                      alt="Group is not joinable"
+                    />
+                  </span>
+                }
+                <span class="group-name">{{ group.name }}</span>
+                @if (groupAccessRequests[group.id]?.length) {
+                  <span class="request-count">{{
+                    groupAccessRequests[group.id]?.length || 0
+                  }}</span>
+                }
+              </div>
+              @if (canDeleteGroup) {
+                <action-button
+                  color="#BCBCBC"
+                  action="close"
+                  [disabled]="!group"
+                  confirmText="Are you sure you want to delete {{
+                    group.name
+                  }}?"
+                  tooltipTitle="Delete"
+                  (onClick)="onDeleteGroup(group)"
+                ></action-button>
+              }
             </div>
-            <action-button
-              color="#BCBCBC"
-              *ngIf="canDeleteGroup"
-              action="close"
-              [disabled]="!group"
-              confirmText="Are you sure you want to delete {{ group.name }}?"
-              tooltipTitle="Delete"
-              (onClick)="onDeleteGroup(group)"></action-button>
-          </div>
-          <div *ngIf="groupsWithAdminAccess.length === 0" class="group-row empty">
-            <h5>None</h5>
-          </div>
+          }
+          @if (groupsWithAdminAccess.length === 0) {
+            <div class="group-row empty">
+              <h5>None</h5>
+            </div>
+          }
         </div>
       </div>
       <div class="groups member-groups">
@@ -71,26 +117,56 @@
           <img src="assets/icons/member-badge.svg" alt="Member Badge" />
         </div>
         <div class="content-container">
-          <div *ngFor="let group of groupsWithMemberAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-            <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-              <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
-                <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
-              </span>
-              <span class="group-name">{{ group.name }}</span>
-              <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+          @for (group of groupsWithMemberAccess; track group) {
+            <div
+              class="group-row {{
+                selectedGroup?.info?.id === group.id ? 'selected' : ''
+              }}"
+            >
+              <div
+                class="group-title"
+                (click)="onSelectGroup(group)"
+                (keydown)="onSelectGroup(group)"
+                tabindex="0"
+              >
+                @if (!group.joinable) {
+                  <span
+                    class="locked-icon"
+                    #tooltip="matTooltip"
+                    [matTooltip]="group.name + ' is not joinable'"
+                  >
+                    <img
+                      src="assets/button-icons/lock.svg"
+                      alt="Group is not joinable"
+                    />
+                  </span>
+                }
+                <span class="group-name">{{ group.name }}</span>
+                @if (groupAccessRequests[group.id]?.length) {
+                  <span class="request-count">{{
+                    groupAccessRequests[group.id]?.length || 0
+                  }}</span>
+                }
+              </div>
+              @if (canDeleteGroup) {
+                <action-button
+                  color="#BCBCBC"
+                  action="close"
+                  [disabled]="!group"
+                  confirmText="Are you sure you want to delete {{
+                    group.name
+                  }}?"
+                  tooltipTitle="Delete"
+                  (onClick)="onDeleteGroup(group)"
+                ></action-button>
+              }
             </div>
-            <action-button
-              color="#BCBCBC"
-              *ngIf="canDeleteGroup"
-              action="close"
-              [disabled]="!group"
-              confirmText="Are you sure you want to delete {{ group.name }}?"
-              tooltipTitle="Delete"
-              (onClick)="onDeleteGroup(group)"></action-button>
-          </div>
-          <div *ngIf="groupsWithMemberAccess.length === 0" class="group-row empty">
-            <h5>None</h5>
-          </div>
+          }
+          @if (groupsWithMemberAccess.length === 0) {
+            <div class="group-row empty">
+              <h5>None</h5>
+            </div>
+          }
         </div>
       </div>
       <div class="groups viewer-groups">
@@ -99,33 +175,70 @@
           <img src="assets/icons/viewer-badge.svg" alt="Viewer Badge" />
         </div>
         <div class="content-container">
-          <div *ngFor="let group of groupsWithViewerAccess" class="group-row {{ selectedGroup?.info?.id === group.id ? 'selected' : '' }}">
-            <div class="group-title" (click)="onSelectGroup(group)" (keydown)="onSelectGroup(group)" tabindex="0">
-              <span *ngIf="!group.joinable" class="locked-icon" #tooltip="matTooltip" [matTooltip]="group.name + ' is not joinable'">
-                <img src="assets/button-icons/lock.svg" alt="Group is not joinable" />
-              </span>
-              <span class="group-name">{{ group.name }}</span>
-              <span *ngIf="groupAccessRequests[group.id]?.length" class="request-count">{{ groupAccessRequests[group.id]?.length || 0 }}</span>
+          @for (group of groupsWithViewerAccess; track group) {
+            <div
+              class="group-row {{
+                selectedGroup?.info?.id === group.id ? 'selected' : ''
+              }}"
+            >
+              <div
+                class="group-title"
+                (click)="onSelectGroup(group)"
+                (keydown)="onSelectGroup(group)"
+                tabindex="0"
+              >
+                @if (!group.joinable) {
+                  <span
+                    class="locked-icon"
+                    #tooltip="matTooltip"
+                    [matTooltip]="group.name + ' is not joinable'"
+                  >
+                    <img
+                      src="assets/button-icons/lock.svg"
+                      alt="Group is not joinable"
+                    />
+                  </span>
+                }
+                <span class="group-name">{{ group.name }}</span>
+                @if (groupAccessRequests[group.id]?.length) {
+                  <span class="request-count">{{
+                    groupAccessRequests[group.id]?.length || 0
+                  }}</span>
+                }
+              </div>
+              @if (canDeleteGroup) {
+                <action-button
+                  color="#BCBCBC"
+                  action="close"
+                  [disabled]="!group"
+                  confirmText="Are you sure you want to delete {{
+                    group.name
+                  }}?"
+                  tooltipTitle="Delete"
+                  (onClick)="onDeleteGroup(group)"
+                ></action-button>
+              }
             </div>
-            <action-button
-              color="#BCBCBC"
-              *ngIf="canDeleteGroup"
-              action="close"
-              [disabled]="!group"
-              confirmText="Are you sure you want to delete {{ group.name }}?"
-              tooltipTitle="Delete"
-              (onClick)="onDeleteGroup(group)"></action-button>
-          </div>
-          <div *ngIf="groupsWithViewerAccess.length === 0" class="group-row empty">
-            <h5>None</h5>
-          </div>
+          }
+          @if (groupsWithViewerAccess.length === 0) {
+            <div class="group-row empty">
+              <h5>None</h5>
+            </div>
+          }
         </div>
       </div>
     </div>
     <div class="content-container request">
-      <push-button (onClick)="onOpenGroupRequestDialog()" buttonStyle="yellow">Request Group Access</push-button>
+      <push-button (onClick)="onOpenGroupRequestDialog()" buttonStyle="yellow"
+        >Request Group Access</push-button
+      >
     </div>
-    <div class="new-group" (click)="onOpenCreateNewGroupDialog()" tabindex="0" (keydown)="onOpenCreateNewGroupDialog()">
+    <div
+      class="new-group"
+      (click)="onOpenCreateNewGroupDialog()"
+      tabindex="0"
+      (keydown)="onOpenCreateNewGroupDialog()"
+    >
       <img src="assets/button-icons/plus-white.svg" alt="Add Group Icon" />
       <span class="label">Create New Group</span>
     </div>
@@ -133,210 +246,358 @@
   <div class="group-container">
     <div class="selected-group">
       <div class="group-header">
-        <action-button
-          *ngIf="selectedGroup?.info && isSelectedGroupAdmin"
-          action="edit"
-          tooltipTitle="Edit Group"
-          (onClick)="onEditGroup(selectedGroup?.info || null)"></action-button>
-        <h1 class="{{ selectedGroup?.info?.name ? 'active' : '' }}">{{ selectedGroup?.info?.name || "Select a Group ..." }}</h1>
+        @if (selectedGroup?.info && isSelectedGroupAdmin) {
+          <action-button
+            action="edit"
+            tooltipTitle="Edit Group"
+            (onClick)="onEditGroup(selectedGroup?.info || null)"
+          ></action-button>
+        }
+        <h1 class="{{ selectedGroup?.info?.name ? 'active' : '' }}">
+          {{ selectedGroup?.info?.name || "Select a Group ..." }}
+        </h1>
       </div>
       <div class="selected-group-search-container">
-        <input type="text" class="user-search" placeholder="Search Members ..." [(ngModel)]="userSearchString" />
+        <input
+          type="text"
+          class="user-search"
+          placeholder="Search Members ..."
+          [(ngModel)]="userSearchString"
+        />
         <div class="search-icon">
           <img src="assets/button-icons/search.svg" alt="Search Icon" />
         </div>
       </div>
-      <div *ngIf="selectedGroup" class="add-user-container">
-        <push-button class="add-btn" (onClick)="onAddSubGroupToGroup(selectedGroup.info!.id)" buttonStyle="yellow">Add Sub-Group</push-button>
-        <push-button class="add-btn" (onClick)="onAddUserToGroup(selectedGroup.info!.id)" buttonStyle="yellow">Add Member</push-button>
-      </div>
+      @if (selectedGroup) {
+        <div class="add-user-container">
+          <push-button
+            class="add-btn"
+            (onClick)="onAddSubGroupToGroup(selectedGroup.info!.id)"
+            buttonStyle="yellow"
+            >Add Sub-Group</push-button
+          >
+          <push-button
+            class="add-btn"
+            (onClick)="onAddUserToGroup(selectedGroup.info!.id)"
+            buttonStyle="yellow"
+            >Add Member</push-button
+          >
+        </div>
+      }
       <div class="selected-group-card-container">
-        <div *ngIf="isSelectedGroupAdmin" class="requested-access">
-          <div class="user-header-section">
-            <h2>New Requests ({{ selectedGroupAccessRequestsCount }})</h2>
-          </div>
-          <div class="empty-requests" *ngIf="selectedGroupAccessRequestsCount === 0">
-            <span class="requests-empty">No New Requests ...</span>
-          </div>
-          <div *ngFor="let request of selectedGroupAccessRequests" class="access-request">
-            <div class="request-card-container">
-              <div class="user-card">
-                <div
-                  class="icon"
-                  (click)="request.details ? onSelectUser(request.details) : null"
-                  tabindex="0"
-                  (keydown)="request.details ? onSelectUser(request.details) : null">
-                  <user-icon [userId]="request.details?.id || ''" size="26px"></user-icon>
-                </div>
-                <div
-                  class="details"
-                  (click)="request.details ? onSelectUser(request.details) : null"
-                  tabindex="0"
-                  (keydown)="request.details ? onSelectUser(request.details) : null">
-                  <span class="info name">
-                    <h3
-                      #tooltip="matTooltip"
-                      [matTooltip]="'Auth0 User Id: ' + (request.details?.id || 'Not available')"
-                      [matTooltipShowDelay]="500">{{ request.details?.name || request.details?.id }}</h3>
-                  </span>
-                  <span class="info email">
-                    <h3>{{ request.details?.email }}</h3>
-                  </span>
-                  <span class="info as-member">
-                    <h3>Requesting: {{ request.asMember ? "Member" : "Viewer" }} Access</h3>
-                  </span>
-                </div>
-                <div class="new-request-actions">
-                  <action-button action="deny" tooltipTitle="Dismiss Request" (onClick)="onDismissAccessRequest(request)"></action-button>
-                  <action-button action="confirm" tooltipTitle="Confirm Request" (onClick)="onGrantAccessToGroup(request)"></action-button>
+        @if (isSelectedGroupAdmin) {
+          <div class="requested-access">
+            <div class="user-header-section">
+              <h2>New Requests ({{ selectedGroupAccessRequestsCount }})</h2>
+            </div>
+            @if (selectedGroupAccessRequestsCount === 0) {
+              <div class="empty-requests">
+                <span class="requests-empty">No New Requests ...</span>
+              </div>
+            }
+            @for (request of selectedGroupAccessRequests; track request) {
+              <div class="access-request">
+                <div class="request-card-container">
+                  <div class="user-card">
+                    <div
+                      class="icon"
+                      (click)="
+                        request.details ? onSelectUser(request.details) : null
+                      "
+                      tabindex="0"
+                      (keydown)="
+                        request.details ? onSelectUser(request.details) : null
+                      "
+                    >
+                      <user-icon
+                        [userId]="request.details?.id || ''"
+                        size="26px"
+                      ></user-icon>
+                    </div>
+                    <div
+                      class="details"
+                      (click)="
+                        request.details ? onSelectUser(request.details) : null
+                      "
+                      tabindex="0"
+                      (keydown)="
+                        request.details ? onSelectUser(request.details) : null
+                      "
+                    >
+                      <span class="info name">
+                        <h3
+                          #tooltip="matTooltip"
+                          [matTooltip]="
+                            'Auth0 User Id: ' +
+                            (request.details?.id || 'Not available')
+                          "
+                          [matTooltipShowDelay]="500"
+                        >
+                          {{ request.details?.name || request.details?.id }}
+                        </h3>
+                      </span>
+                      <span class="info email">
+                        <h3>{{ request.details?.email }}</h3>
+                      </span>
+                      <span class="info as-member">
+                        <h3>
+                          Requesting:
+                          {{ request.asMember ? "Member" : "Viewer" }} Access
+                        </h3>
+                      </span>
+                    </div>
+                    <div class="new-request-actions">
+                      <action-button
+                        action="deny"
+                        tooltipTitle="Dismiss Request"
+                        (onClick)="onDismissAccessRequest(request)"
+                      ></action-button>
+                      <action-button
+                        action="confirm"
+                        tooltipTitle="Confirm Request"
+                        (onClick)="onGrantAccessToGroup(request)"
+                      ></action-button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            }
           </div>
-        </div>
+        }
 
         <div class="user-header-section">
           <h2>Team Members ({{ selectedGroupUsers.length }})</h2>
         </div>
         <div class="user-card-container">
-          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card {{ selectedUser?.id === user.id ? 'selected' : '' }}">
-            <div class="icon" (click)="onSelectUser(user)" tabindex="0" (keydown)="onSelectUser(user)">
-              <user-icon [userId]="user.id" size="26px"></user-icon>
+          @for (user of selectedGroupUsers; track user; let i = $index) {
+            <div
+              class="user-card {{
+                selectedUser?.id === user.id ? 'selected' : ''
+              }}"
+            >
+              <div
+                class="icon"
+                (click)="onSelectUser(user)"
+                tabindex="0"
+                (keydown)="onSelectUser(user)"
+              >
+                <user-icon [userId]="user.id" size="26px"></user-icon>
+              </div>
+              <div
+                class="details"
+                (click)="onSelectUser(user)"
+                tabindex="0"
+                (keydown)="onSelectUser(user)"
+              >
+                <span class="info name">
+                  <h3
+                    #tooltip="matTooltip"
+                    [matTooltip]="
+                      'Auth0 User Id: ' + (user?.id || 'Not available')
+                    "
+                    [matTooltipShowDelay]="500"
+                  >
+                    {{ user.name || user.id }}
+                  </h3>
+                </span>
+                <span class="info email">
+                  <h3>{{ user.email }}</h3>
+                </span>
+              </div>
+              <div class="actions">
+                <img
+                  class="user-type-badge"
+                  src="{{
+                    selectedGroupUserRoles[user.id] === 'admin'
+                      ? 'assets/icons/admin-badge.svg'
+                      : selectedGroupUserRoles[user.id] === 'editor'
+                        ? 'assets/icons/member-badge.svg'
+                        : selectedGroupUserRoles[user.id] === 'viewer'
+                          ? 'assets/icons/viewer-badge.svg'
+                          : ''
+                  }}"
+                  alt="User Type Badge"
+                />
+                <action-button
+                  action="close"
+                  confirmText="Are you sure you want to remove user ({{
+                    user.name
+                  }}) from group ({{ selectedGroup?.info?.name }})?"
+                  [disabled]="!user"
+                  tooltipTitle="Remove"
+                  (onClick)="onRemoveFromGroup(user.id)"
+                ></action-button>
+              </div>
             </div>
-            <div class="details" (click)="onSelectUser(user)" tabindex="0" (keydown)="onSelectUser(user)">
-              <span class="info name">
-                <h3
-                  #tooltip="matTooltip"
-                  [matTooltip]="'Auth0 User Id: ' + (user?.id || 'Not available')"
-                  [matTooltipShowDelay]="500">{{ user.name || user.id }}</h3>
-              </span>
-              <span class="info email">
-                <h3>{{ user.email }}</h3>
-              </span>
-            </div>
-            <div class="actions">
-              <img
-                class="user-type-badge"
-                src="{{
-                  selectedGroupUserRoles[user.id] === 'admin'
-                    ? 'assets/icons/admin-badge.svg'
-                    : selectedGroupUserRoles[user.id] === 'editor'
-                    ? 'assets/icons/member-badge.svg'
-                    : selectedGroupUserRoles[user.id] === 'viewer'
-                    ? 'assets/icons/viewer-badge.svg'
-                    : ''
-                }}"
-                alt="User Type Badge" />
-              <action-button
-                action="close"
-                confirmText="Are you sure you want to remove user ({{ user.name }}) from group ({{ selectedGroup?.info?.name }})?"
-                [disabled]="!user"
-                tooltipTitle="Remove"
-                (onClick)="onRemoveFromGroup(user.id)"></action-button>
-            </div>
+          }
+        </div>
+        @if (selectedGroupUsers.length === 0) {
+          <div class="empty-requests">
+            <span class="requests-empty">No Team Members ...</span>
           </div>
-        </div>
-        <div class="empty-requests" *ngIf="selectedGroupUsers.length === 0">
-          <span class="requests-empty">No Team Members ...</span>
-        </div>
+        }
         <div class="user-header-section">
           <h2>Associated Sub-Groups ({{ selectedGroupSubGroups.length }})</h2>
         </div>
         <div class="user-card-container">
-          <div *ngFor="let group of selectedGroupSubGroups; let i = index" class="user-card">
-            <div class="icon" (click)="onSelectGroup(group)" tabindex="0" (keydown)="onSelectGroup(group)">
-              <group-icon [groupId]="group.id" size="26px"></group-icon>
+          @for (group of selectedGroupSubGroups; track group; let i = $index) {
+            <div class="user-card">
+              <div
+                class="icon"
+                (click)="onSelectGroup(group)"
+                tabindex="0"
+                (keydown)="onSelectGroup(group)"
+              >
+                <group-icon [groupId]="group.id" size="26px"></group-icon>
+              </div>
+              <div
+                class="details"
+                (click)="onSelectGroup(group)"
+                tabindex="0"
+                (keydown)="onSelectGroup(group)"
+              >
+                <span class="info name">
+                  <h3
+                    #tooltip="matTooltip"
+                    [matTooltip]="'Group Id: ' + group.id"
+                    [matTooltipShowDelay]="500"
+                  >
+                    {{ group.name || group.id }}
+                  </h3>
+                </span>
+                <span class="info email">
+                  <h3>{{ group.description }}</h3>
+                </span>
+              </div>
+              <div class="actions">
+                <img
+                  class="user-type-badge"
+                  src="{{
+                    selectedGroupSubGroupRoles[group.id] === 'editor'
+                      ? 'assets/icons/member-badge.svg'
+                      : selectedGroupSubGroupRoles[group.id] === 'viewer'
+                        ? 'assets/icons/viewer-badge.svg'
+                        : ''
+                  }}"
+                  alt="User Type Badge"
+                />
+                <action-button
+                  action="close"
+                  confirmText="Are you sure you want to remove sub-group ({{
+                    group.name
+                  }}) from group ({{ selectedGroup?.info?.name }})?"
+                  [disabled]="!group"
+                  tooltipTitle="Remove"
+                  (onClick)="onRemoveSubGroupFromGroup(group.id)"
+                ></action-button>
+              </div>
             </div>
-            <div class="details" (click)="onSelectGroup(group)" tabindex="0" (keydown)="onSelectGroup(group)">
-              <span class="info name">
-                <h3
-                  #tooltip="matTooltip"
-                  [matTooltip]="'Group Id: ' + group.id"
-                  [matTooltipShowDelay]="500">{{ group.name || group.id }}</h3>
-              </span>
-              <span class="info email">
-                <h3>{{ group.description }}</h3>
-              </span>
-            </div>
-            <div class="actions">
-              <img
-                class="user-type-badge"
-                src="{{
-                  selectedGroupSubGroupRoles[group.id] === 'editor'
-                    ? 'assets/icons/member-badge.svg'
-                    : selectedGroupSubGroupRoles[group.id] === 'viewer'
-                    ? 'assets/icons/viewer-badge.svg'
-                    : ''
-                }}"
-                alt="User Type Badge" />
-              <action-button
-                action="close"
-                confirmText="Are you sure you want to remove sub-group ({{ group.name }}) from group ({{ selectedGroup?.info?.name }})?"
-                [disabled]="!group"
-                tooltipTitle="Remove"
-                (onClick)="onRemoveSubGroupFromGroup(group.id)"></action-button>
-            </div>
+          }
+        </div>
+        @if (selectedGroupSubGroups.length === 0) {
+          <div class="empty-requests">
+            <span class="requests-empty">No Associated Sub Groups ...</span>
           </div>
-        </div>
-        <div class="empty-requests" *ngIf="selectedGroupSubGroups.length === 0">
-          <span class="requests-empty">No Associated Sub Groups ...</span>
-        </div>
+        }
       </div>
-      <div *ngIf="!canAccessSelectedGroup && selectedGroupInfo" class="no-group-access">
-        <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, false)">Request Viewer Access</push-button>
-        <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, true)">Request Member Access</push-button>
-      </div>
+      @if (!canAccessSelectedGroup && selectedGroupInfo) {
+        <div class="no-group-access">
+          <push-button
+            (onClick)="onRequestAccessToGroup(selectedGroupInfo, false)"
+            >Request Viewer Access</push-button
+          >
+          <push-button
+            (onClick)="onRequestAccessToGroup(selectedGroupInfo, true)"
+            >Request Member Access</push-button
+          >
+        </div>
+      }
     </div>
   </div>
   <div class="selected-user">
     <div class="user-header">
-      <h1 *ngIf="!selectedUser">Select a User ...</h1>
-      <h1 *ngIf="selectedUser">{{ selectedUser.name }}</h1>
+      @if (!selectedUser) {
+        <h1>Select a User ...</h1>
+      }
+      @if (selectedUser) {
+        <h1>{{ selectedUser.name }}</h1>
+      }
     </div>
     <div class="user-details">
-      <div class="selected-user-details" *ngIf="selectedUser">
-        <div class="icon">
-          <user-icon [userId]="selectedUser.id" size="120px"></user-icon>
-        </div>
-        <div class="details">
-          <span class="info name">
-            <span class="label">Name</span>
-            <h3
-              #tooltip="matTooltip"
-              [matTooltip]="'Auth0 User Id: ' + (selectedUser?.id || 'Not available')"
-              [matTooltipShowDelay]="500">{{ selectedUser?.name || selectedUser?.id }}</h3>
-          </span>
-          <span class="info email">
-            <span class="label">Email</span>
-            <h3>{{ selectedUser?.email }}</h3>
-          </span>
-          <span class="info access-level">
-            <push-button (onClick)="onChangeGroupMembership(selectedUser, selectedUserRole)" buttonStyle="yellow">Change Access Level</push-button>
-          </span>
-          <div class="info roles" *ngIf="isAdmin && selectedUser && selectedUserRoles">
-            <div class="label-container">
-              <span class="label">Roles</span>
-              <action-button action="add" tooltipTitle="Add Role" [customDialog]="addUserRoleDialog" #addUserRoleDialogBtn></action-button>
-            </div>
-            <div class="role-list">
-              <div class="role" *ngFor="let role of selectedUserRoles">
-                <div class="role-info">
-                  <span class="role-name">{{ role.name }}</span>
-                  <span class="role-description">{{ role.description }}</span>
+      @if (selectedUser) {
+        <div class="selected-user-details">
+          <div class="icon">
+            <user-icon [userId]="selectedUser.id" size="120px"></user-icon>
+          </div>
+          <div class="details">
+            <span class="info name">
+              <span class="label">Name</span>
+              <h3
+                #tooltip="matTooltip"
+                [matTooltip]="
+                  'Auth0 User Id: ' + (selectedUser?.id || 'Not available')
+                "
+                [matTooltipShowDelay]="500"
+              >
+                {{ selectedUser?.name || selectedUser?.id }}
+              </h3>
+            </span>
+            <span class="info email">
+              <span class="label">Email</span>
+              <h3>{{ selectedUser?.email }}</h3>
+            </span>
+            <span class="info access-level">
+              <push-button
+                (onClick)="
+                  onChangeGroupMembership(selectedUser, selectedUserRole)
+                "
+                buttonStyle="yellow"
+                >Change Access Level</push-button
+              >
+            </span>
+            @if (isAdmin && selectedUser && selectedUserRoles) {
+              <div class="info roles">
+                <div class="label-container">
+                  <span class="label">Roles</span>
+                  <action-button
+                    action="add"
+                    tooltipTitle="Add Role"
+                    [customDialog]="addUserRoleDialog"
+                    #addUserRoleDialogBtn
+                  ></action-button>
                 </div>
-                <action-button
-                  action="close"
-                  confirmText="Are you sure you want to remove role ({{ role.name }}) from user ({{ selectedUser.name }})?"
-                  (onClick)="onDeleteUserRole(role)"
-                  tooltipTitle="Remove Role"></action-button>
+                <div class="role-list">
+                  @for (role of selectedUserRoles; track role) {
+                    <div class="role">
+                      <div class="role-info">
+                        <span class="role-name">{{ role.name }}</span>
+                        <span class="role-description">{{
+                          role.description
+                        }}</span>
+                      </div>
+                      <action-button
+                        action="close"
+                        confirmText="Are you sure you want to remove role ({{
+                          role.name
+                        }}) from user ({{ selectedUser.name }})?"
+                        (onClick)="onDeleteUserRole(role)"
+                        tooltipTitle="Remove Role"
+                      ></action-button>
+                    </div>
+                  }
+                  @if (selectedUserRoles.length === 0) {
+                    <div class="role-list-empty">
+                      <span class="requests-empty"
+                        >User has no assigned roles ...</span
+                      >
+                    </div>
+                  }
+                </div>
               </div>
-              <div class="role-list-empty" *ngIf="selectedUserRoles.length === 0">
-                <span class="requests-empty">User has no assigned roles ...</span>
-              </div>
-            </div>
+            }
           </div>
         </div>
-      </div>
+      }
     </div>
   </div>
 </div>

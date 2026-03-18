@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -52,9 +52,24 @@ POSSIBILITY OF SUCH DAMAGE.
     <mat-icon>{{ icon }}</mat-icon>
   </span>
   <span class="message">{{ data.message }}</span>
-  <push-button *ngIf="data.details" buttonStyle="white-outline" [customDialog]="detailsPopup" #detailsModal class="details snack-btn">Details</push-button>
-  <span class="close-btn snack-btn {{ data.action ? 'rounded' : '' }}" (click)="close()">
-    <span *ngIf="data.action">{{ data.action }}</span>
-    <mat-icon *ngIf="!data.action">close</mat-icon>
+  @if (data.details) {
+    <push-button
+      buttonStyle="white-outline"
+      [customDialog]="detailsPopup"
+      #detailsModal
+      class="details snack-btn"
+      >Details</push-button
+    >
+  }
+  <span
+    class="close-btn snack-btn {{ data.action ? 'rounded' : '' }}"
+    (click)="close()"
+  >
+    @if (data.action) {
+      <span>{{ data.action }}</span>
+    }
+    @if (!data.action) {
+      <mat-icon>close</mat-icon>
+    }
   </span>
 </div>

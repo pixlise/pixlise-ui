@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -35,12 +35,17 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="row-title">Selection Mode</div>
       <multi-switch-button
         [options]="selectionModes"
-        [optionIcons]="['assets/button-icons/minus.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus.svg']"
+        [optionIcons]="[
+          'assets/button-icons/minus.svg',
+          'assets/button-icons/reset.svg',
+          'assets/button-icons/plus.svg',
+        ]"
         [value]="currentSelectionMode"
         [showLabels]="false"
         (onChange)="onChangeSelectionMode($event)"
         [colorizeActiveIcon]="true"
-        [darkMode]="true"></multi-switch-button>
+        [darkMode]="true"
+      ></multi-switch-button>
     </div>
 
     <div
@@ -49,9 +54,13 @@ POSSIBILITY OF SUCH DAMAGE.
       (keyup)="onToggleMineralLabels()"
       (keydown)="onToggleMineralLabels()"
       (keypress)="onToggleMineralLabels()"
-      tabindex="0">
+      tabindex="0"
+    >
       <div class="row-title">Mineral Labels</div>
-      <action-button class="switch" [action]="mdl.showAllMineralLabels ? 'checkOn' : 'checkOff'"></action-button>
+      <action-button
+        class="switch"
+        [action]="mdl.showAllMineralLabels ? 'checkOn' : 'checkOff'"
+      ></action-button>
     </div>
 
     <div class="row above-title">
@@ -60,19 +69,24 @@ POSSIBILITY OF SUCH DAMAGE.
         [options]="['Opacity', 'Stacked']"
         [value]="roiStackedOverlap ? 'Stacked' : 'Opacity'"
         (onChange)="onToggleROIStackedOverlap()"
-        [darkMode]="true"></multi-switch-button>
+        [darkMode]="true"
+      ></multi-switch-button>
     </div>
 
     <div class="row above-title">
       <div class="row-title">Plot Colour</div>
       <multi-switch-button
         [options]="['Monochrome', 'Viridis']"
-        [optionIcons]="['assets/button-icons/monochrome.svg', 'assets/button-icons/viridis.svg']"
+        [optionIcons]="[
+          'assets/button-icons/monochrome.svg',
+          'assets/button-icons/viridis.svg',
+        ]"
         [value]="drawMonochrome ? 'Monochrome' : 'Viridis'"
         [showLabels]="false"
         (onChange)="onToggleDrawMonochrome()"
         [colorizeActiveIcon]="true"
-        [darkMode]="true">
+        [darkMode]="true"
+      >
       </multi-switch-button>
     </div>
     <div class="row selection-container">
@@ -84,7 +98,8 @@ POSSIBILITY OF SUCH DAMAGE.
           (keyup)="onSelectionClear()"
           (keydown)="onSelectionClear()"
           (keypress)="onSelectionClear()"
-          tabindex="0">
+          tabindex="0"
+        >
           Clear
         </div>
       </div>
@@ -94,24 +109,44 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="axis-container">
   <div class="canvas-container">
-    <interactive-canvas *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
-    </interactive-canvas>
+    @if (!errorMsg) {
+      <interactive-canvas
+        [ngClass]="mdl.cursorShown"
+        [drawer]="drawer"
+        [drawNotifier]="mdl"
+        [interactionHandler]="toolhost"
+        [transform]="transform"
+      >
+      </interactive-canvas>
+    }
 
-    <div *ngIf="mdl.hasRawData()" class="axis x-axis">
-      <h5 class="axis-label" (click)="onAxisClick()" (keyup)="onAxisClick()" (keydown)="onAxisClick()" (keypress)="onAxisClick()" tabindex="0">
-        <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg" /></span>
-        {{ mdl.drawModel.xAxisUnitLabel }}
-      </h5>
-      <span>
-        <range-slider
-          [minValue]="xRangeMin"
-          [selectedMinValue]="xRangeSelectedMin"
-          [maxValue]="xRangeMax"
-          [selectedMaxValue]="xRangeSelectedMax"
-          [pxLength]="xAxisSliderLength"
-          (onChange)="onChangeXAxis($event)">
-        </range-slider>
-      </span>
-    </div>
+    @if (mdl.hasRawData()) {
+      <div class="axis x-axis">
+        <h5
+          class="axis-label"
+          (click)="onAxisClick()"
+          (keyup)="onAxisClick()"
+          (keydown)="onAxisClick()"
+          (keypress)="onAxisClick()"
+          tabindex="0"
+        >
+          <span class="clickable-axis-btn"
+            ><img alt="X Axis Options" src="assets/icons/clickable.svg"
+          /></span>
+          {{ mdl.drawModel.xAxisUnitLabel }}
+        </h5>
+        <span>
+          <range-slider
+            [minValue]="xRangeMin"
+            [selectedMinValue]="xRangeSelectedMin"
+            [maxValue]="xRangeMax"
+            [selectedMaxValue]="xRangeSelectedMax"
+            [pxLength]="xAxisSliderLength"
+            (onChange)="onChangeXAxis($event)"
+          >
+          </range-slider>
+        </span>
+      </div>
+    }
   </div>
 </div>

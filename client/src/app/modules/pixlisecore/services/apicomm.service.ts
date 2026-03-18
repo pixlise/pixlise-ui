@@ -128,7 +128,7 @@ export class APICommService implements OnDestroy {
               return res;
             } catch (e) {
               // Log the deserialisation error, otherwise it gets swallowed up and next thing we know is the connection is closed
-              const msgInfo = rawProtoMessageToDebugString(arr, 20);
+              const msgInfo = rawProtoMessageToDebugString(arr.buffer, 20);
               const errMsg = `Deserialisation error for incoming ${msgInfo}. Error: ${e}`;
               SentryHelper.logMsg(true, errMsg);
               console.error(e);
@@ -146,7 +146,7 @@ export class APICommService implements OnDestroy {
                 console.warn(`Large message being sent: ${sendbuf.byteLength} bytes, type: ${getMessageName(msg)}, msgId: ${msg.msgId}`);
               }
 
-              return sendbuf;
+              return sendbuf as ArrayBuffer;
             } catch (e) {
               // Log the serialisation error, otherwise it gets swallowed up and next thing we know is the connection is closed
               const errMsg = `Serialisation error for outgoing ${getMessageName(msg)} message with id: ${msg.msgId}. Error: ${e}`;

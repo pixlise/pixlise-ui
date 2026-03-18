@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,23 +30,52 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="elem-set-row">
-  <div *ngIf="item" class="left-container">
-    <div class="left-naming">
-      <span title="Id: {{ item.id }}">{{ item.name }}</span>
-      <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{ createdTime | date: "d MMM y, HH:mm:ss" }}</span>
-      <span *ngIf="shared && item.owner && item.owner?.creatorUser" class="obj-creator">By: {{ item.owner?.creatorUser?.name || "" }}</span>
+  @if (item) {
+    <div class="left-container">
+      <div class="left-naming">
+        <span title="Id: {{ item.id }}">{{ item.name }}</span>
+        @if (createdTime > 0) {
+          <span class="obj-create-time"
+            >Created: {{ createdTime | date: "d MMM y, HH:mm:ss" }}</span
+          >
+        }
+        @if (shared && item.owner && item.owner?.creatorUser) {
+          <span class="obj-creator"
+            >By: {{ item.owner?.creatorUser?.name || "" }}</span
+          >
+        }
+      </div>
+      <div class="elements">
+        @for (Z of item.atomicNumbers; track Z) {
+          <element-tile [atomicNumber]="Z"> </element-tile>
+        }
+      </div>
     </div>
-    <div class="elements">
-      <element-tile *ngFor="let Z of item.atomicNumbers" [atomicNumber]="Z"> </element-tile>
-    </div>
-  </div>
+  }
   <div class="right-container">
     <!-- *ngIf="item.creator && !item.shared" -->
-    <share-ownership-item-button *ngIf="enableSharing && canEdit" [id]="item?.id || ''" [type]="objectType" [ownershipSummary]="item?.owner || null"> </share-ownership-item-button>
+    @if (enableSharing && canEdit) {
+      <share-ownership-item-button
+        [id]="item?.id || ''"
+        [type]="objectType"
+        [ownershipSummary]="item?.owner || null"
+      >
+      </share-ownership-item-button>
+    }
 
     <!-- *ngIf="canDelete(item.id, item.creator, item.shared)" -->
-    <icon-button *ngIf="showDeleteButton" (click)="onDeleteElementSet()" title="Delete Element Set" icon="assets/button-icons/delete.svg"></icon-button>
+    @if (showDeleteButton) {
+      <icon-button
+        (click)="onDeleteElementSet()"
+        title="Delete Element Set"
+        icon="assets/button-icons/delete.svg"
+      ></icon-button>
+    }
 
-    <icon-button (click)="onUseElementSet()" title="Apply Element Set to Spectrum Chart" icon="assets/button-icons/open-item.svg"></icon-button>
+    <icon-button
+      (click)="onUseElementSet()"
+      title="Apply Element Set to Spectrum Chart"
+      icon="assets/button-icons/open-item.svg"
+    ></icon-button>
   </div>
 </div>

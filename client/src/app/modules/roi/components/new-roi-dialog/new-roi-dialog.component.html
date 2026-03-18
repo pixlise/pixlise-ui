@@ -7,28 +7,57 @@
       [selectedTagIDs]="newROITags"
       [showCurrentTagsSection]="true"
       [editable]="true"
-      (onTagSelectionChanged)="onNewTagSelectionChanged($event)">
+      (onTagSelectionChanged)="onNewTagSelectionChanged($event)"
+    >
     </tag-picker>
   </header>
-  <div class="meta-line">Pixels: {{ pixelCount | number }}, PMCs: {{ entryCount | number }}</div>
+  <div class="meta-line">
+    Pixels: {{ pixelCount | number }}, PMCs: {{ entryCount | number }}
+  </div>
 
-  <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
-  <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
+  <input
+    type="text"
+    class="name"
+    [(ngModel)]="newROIName"
+    placeholder="ROI Name"
+  />
+  <textarea
+    class="description"
+    [(ngModel)]="newROIDescription"
+    placeholder="ROI Description"
+    rows="4"
+  ></textarea>
 
   <div class="separate-roi">
     <span>Separate ROIs for contiguous PMCs</span>
     <switch-button
       [active]="saveSeparateContiguousRegions"
       title="When enabled, will cause one ROI to be saved for each contiguous region of selected PMCs. Region names will have a counter appended to them."
-      (onToggle)="onToggleSeparateContiguous()"></switch-button>
+      (onToggle)="onToggleSeparateContiguous()"
+    ></switch-button>
   </div>
 
-  <div class="multiple-scan-warning" *ngIf="selectedScanIds.length > 1">
-    <span>*ROI spans multiple scans, so multiple ROIs for the following scans will be created: {{ selectedScanIds.join(", ") }}</span>
-  </div>
+  @if (selectedScanIds.length > 1) {
+    <div class="multiple-scan-warning">
+      <span
+        >*ROI spans multiple scans, so multiple ROIs for the following scans
+        will be created: {{ selectedScanIds.join(", ") }}</span
+      >
+    </div>
+  }
 
   <div class="buttons">
-    <push-button buttonStyle="outline" (onClick)="onCancelCreateROI()" title="Cancel creating this ROI">Cancel</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
+    <push-button
+      buttonStyle="outline"
+      (onClick)="onCancelCreateROI()"
+      title="Cancel creating this ROI"
+      >Cancel</push-button
+    >
+    <push-button
+      buttonStyle="yellow"
+      (onClick)="onSaveNewROI()"
+      title="Save new ROI"
+      >Save</push-button
+    >
   </div>
 </div>

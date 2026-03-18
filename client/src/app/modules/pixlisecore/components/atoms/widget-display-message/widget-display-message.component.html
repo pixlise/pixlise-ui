@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,19 +29,24 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div *ngIf="message" class="widget-display-msg" [ngClass]="{ 'display-large': large }">
-  <div class="fx-column fx-start-center">
-    <ng-container [ngSwitch]="showSpinner">
-      <ng-container *ngSwitchCase="true">
-        <wait-spinner></wait-spinner>
-        <!-- TODO: was <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"> -->
-      </ng-container>
-      <ng-container *ngSwitchDefault>
-        <img class="img-gap error-img" [ngClass]="{ 'error-img-large': large }" [src]="image" />
-      </ng-container>
-    </ng-container>
-
-    <div class="msg">{{ message }}</div>
-    <!-- <div class="footer">Communiqué from The Ministry of Visualisation</div> -->
+@if (message) {
+  <div class="widget-display-msg" [ngClass]="{ 'display-large': large }">
+    <div class="fx-column fx-start-center">
+      @switch (showSpinner) {
+        @case (true) {
+          <wait-spinner></wait-spinner>
+          <!-- TODO: was <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"> -->
+        }
+        @default {
+          <img
+            class="img-gap error-img"
+            [ngClass]="{ 'error-img-large': large }"
+            [src]="image"
+          />
+        }
+      }
+      <div class="msg">{{ message }}</div>
+      <!-- <div class="footer">Communiqué from The Ministry of Visualisation</div> -->
+    </div>
   </div>
-</div>
+}

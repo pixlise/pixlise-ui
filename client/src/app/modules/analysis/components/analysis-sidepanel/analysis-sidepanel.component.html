@@ -41,46 +41,57 @@
       </span>
     </div>
     <div class="tab-shortcuts">
-      <div
-        class="tab-btn-wrapper {{
-          sidepanelOpen && activeTab?.title === tab.title ? 'active' : ''
-        }}"
-        (click)="onToggleTab(tab)"
-        *ngFor="let tab of tabs"
-      >
-        <img
-          class="clickable tab-shortcut"
-          [src]="tab.icon"
-          #tooltip="matTooltip"
-          [matTooltip]="tab.tooltip || tab.title"
-          [matTooltipShowDelay]="500"
-        />
-      </div>
+      @for (tab of tabs; track tab) {
+        <div
+          class="tab-btn-wrapper {{
+            sidepanelOpen && activeTab?.title === tab.title ? 'active' : ''
+          }}"
+          (click)="onToggleTab(tab)"
+        >
+          <img
+            class="clickable tab-shortcut"
+            [src]="tab.icon"
+            #tooltip="matTooltip"
+            [matTooltip]="tab.tooltip || tab.title"
+            [matTooltipShowDelay]="500"
+          />
+        </div>
+      }
     </div>
-    <hr class="panel-break" *ngIf="views.length > 0" />
+    @if (views.length > 0) {
+      <hr class="panel-break" />
+    }
     <div class="tab-shortcuts">
-      <div *ngFor="let viewShortcut of views" class="view-btn-container">
-        <icon-button
-          icon="{{ viewShortcut.icon }}"
-          #tooltip="matTooltip"
-          [matTooltip]="viewShortcut.tooltip || viewShortcut.title"
-          [matTooltipShowDelay]="500"
-          (click)="onOpenView(viewShortcut)"
-        ></icon-button>
-      </div>
+      @for (viewShortcut of views; track viewShortcut) {
+        <div class="view-btn-container">
+          <icon-button
+            icon="{{ viewShortcut.icon }}"
+            #tooltip="matTooltip"
+            [matTooltip]="viewShortcut.tooltip || viewShortcut.title"
+            [matTooltipShowDelay]="500"
+            (click)="onOpenView(viewShortcut)"
+          ></icon-button>
+        </div>
+      }
     </div>
-    <hr *ngIf="isAdmin && adminShortcuts.length > 0" class="panel-break" />
-    <div *ngIf="isAdmin" class="tab-shortcuts">
-      <div *ngFor="let adminBtn of adminShortcuts" class="view-btn-container">
-        <icon-button
-          icon="{{ adminBtn.icon }}"
-          #tooltip="matTooltip"
-          [matTooltip]="adminBtn.tooltip || adminBtn.title"
-          [matTooltipShowDelay]="500"
-          (click)="onOpenView(adminBtn)"
-        ></icon-button>
+    @if (isAdmin && adminShortcuts.length > 0) {
+      <hr class="panel-break" />
+    }
+    @if (isAdmin) {
+      <div class="tab-shortcuts">
+        @for (adminBtn of adminShortcuts; track adminBtn) {
+          <div class="view-btn-container">
+            <icon-button
+              icon="{{ adminBtn.icon }}"
+              #tooltip="matTooltip"
+              [matTooltip]="adminBtn.tooltip || adminBtn.title"
+              [matTooltipShowDelay]="500"
+              (click)="onOpenView(adminBtn)"
+            ></icon-button>
+          </div>
+        }
       </div>
-    </div>
+    }
   </section>
 
   <section class="contents-wrapper">

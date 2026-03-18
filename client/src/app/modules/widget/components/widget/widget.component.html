@@ -1,19 +1,22 @@
 <ng-template #overflowSection>
   <div class="settings-buttons-container">
     <div class="settings-title">Chart Settings</div>
-    <div *ngFor="let group of settingsGroups" class="setting-group">
-      <div class="setting-title">{{ group.title }}</div>
-      <widget-configuration-button
-        *ngFor="let button of group.buttons"
-        [buttonConfiguration]="button"
-        [rowMode]="true"
-        [ngStyle]="{
-          display: button.type !== 'divider' ? 'block' : 'none',
-          margin: button.margin,
-        }"
-      >
-      </widget-configuration-button>
-    </div>
+    @for (group of settingsGroups; track group) {
+      <div class="setting-group">
+        <div class="setting-title">{{ group.title }}</div>
+        @for (button of group.buttons; track button) {
+          <widget-configuration-button
+            [buttonConfiguration]="button"
+            [rowMode]="true"
+            [ngStyle]="{
+              display: button.type !== 'divider' ? 'block' : 'none',
+              margin: button.margin,
+            }"
+          >
+          </widget-configuration-button>
+        }
+      </div>
+    }
   </div>
 </ng-template>
 
@@ -27,142 +30,157 @@
   }}"
   [attr.aria-label]="_activeWidget"
 >
-  <header *ngIf="!exportMode">
-    <widget-switcher
-      *ngIf="!disableSwitch"
-      [widgetId]="widgetLayoutConfig.id"
-      [widgetOptions]="allWidgetOptions"
-      [activeWidgetType]="activeWidget"
-      [description]="widgetConfiguration?.description"
-      (widgetChange)="activeWidget = $event"
-      #widgetSwitcher
-    >
-    </widget-switcher>
-    <div
-      class="widget-title"
-      *ngIf="disableSwitch && title.length > 0"
-      [title]="title"
-    >
-      {{ title }}
-    </div>
-    <div class="print-only-title">
-      {{ getWidgetDisplayTitle() }}
-    </div>
-
-    <div class="buttons" #buttonsContainer>
-      <div
-        class="top-toolbar {{ showTopToolbar ? 'visible' : 'hidden' }}"
-        #topToolbar
-      >
-        <widget-configuration-button
-          *ngFor="let button of topToolbarButtons"
-          [location]="'top-toolbar'"
-          [buttonConfiguration]="button"
-          [ngStyle]="{
-            display: button._overflowed ? 'none' : 'block',
-            margin: button.margin,
-          }"
-        ></widget-configuration-button>
-      </div>
-      <widget-settings-menu
-        class="settings-menu-trigger-btn"
-        *ngIf="settingsMenu || isOverflowed"
-        [settingsDialog]="settingsMenu || defaultOverflowSection"
-        [noPadding]="true"
-        [overflowSection]="overflowSection"
-        #settingsButton
-      >
-        <div class="settings-button-container">
-          <icon-button
-            #tooltip="matTooltip"
-            matTooltip="Show Settings Menu"
-            icon="assets/button-icons/settings.svg"
-          ></icon-button>
-          <icon-button icon="assets/button-icons/arrow-down.svg"></icon-button>
+  @if (!exportMode) {
+    <header>
+      @if (!disableSwitch) {
+        <widget-switcher
+          [widgetId]="widgetLayoutConfig.id"
+          [widgetOptions]="allWidgetOptions"
+          [activeWidgetType]="activeWidget"
+          [description]="widgetConfiguration?.description"
+          (widgetChange)="activeWidget = $event"
+          #widgetSwitcher
+        >
+        </widget-switcher>
+      }
+      @if (disableSwitch && title.length > 0) {
+        <div class="widget-title" [title]="title">
+          {{ title }}
         </div>
-      </widget-settings-menu>
-    </div>
-  </header>
+      }
+      <div class="print-only-title">
+        {{ getWidgetDisplayTitle() }}
+      </div>
+      <div class="buttons" #buttonsContainer>
+        <div
+          class="top-toolbar {{ showTopToolbar ? 'visible' : 'hidden' }}"
+          #topToolbar
+        >
+          @for (button of topToolbarButtons; track button) {
+            <widget-configuration-button
+              [location]="'top-toolbar'"
+              [buttonConfiguration]="button"
+              [ngStyle]="{
+                display: button._overflowed ? 'none' : 'block',
+                margin: button.margin,
+              }"
+            ></widget-configuration-button>
+          }
+        </div>
+        @if (settingsMenu || isOverflowed) {
+          <widget-settings-menu
+            class="settings-menu-trigger-btn"
+            [settingsDialog]="settingsMenu || defaultOverflowSection"
+            [noPadding]="true"
+            [overflowSection]="overflowSection"
+            #settingsButton
+          >
+            <div class="settings-button-container">
+              <icon-button
+                #tooltip="matTooltip"
+                matTooltip="Show Settings Menu"
+                icon="assets/button-icons/settings.svg"
+              ></icon-button>
+              <icon-button
+                icon="assets/button-icons/arrow-down.svg"
+              ></icon-button>
+            </div>
+          </widget-settings-menu>
+        }
+      </div>
+    </header>
+  }
   <div
     class="visualization {{
       bottomToolbarButtons.length > 0 ? '' : 'hide-overflow'
     }} {{ exportMode ? 'export-mode' : '' }}"
     (contextmenu)="onContextMenu($event)"
   >
-    <div *ngIf="isWidgetDataLoading" class="loading-overlay">
-      <wait-spinner
-        #tooltip="matTooltip"
-        [matTooltip]="'Loading...'"
-      ></wait-spinner>
-    </div>
+    @if (isWidgetDataLoading) {
+      <div class="loading-overlay">
+        <wait-spinner
+          #tooltip="matTooltip"
+          [matTooltip]="'Loading...'"
+        ></wait-spinner>
+      </div>
+    }
 
-    <widget-configuration-button
-      *ngIf="!exportMode"
-      [location]="'top-left'"
-      class="inset-button top-left"
-      [ngStyle]="
-        topLeftInsetButton?.margin ? { margin: topLeftInsetButton?.margin } : {}
-      "
-      [buttonConfiguration]="topLeftInsetButton"
-    ></widget-configuration-button>
-    <widget-configuration-button
-      *ngIf="!exportMode"
-      [location]="'top-center'"
-      class="inset-button top-center"
-      [ngStyle]="
-        topCenterInsetButton?.margin
-          ? { margin: topCenterInsetButton?.margin }
-          : {}
-      "
-      [buttonConfiguration]="topCenterInsetButton"
-    ></widget-configuration-button>
-    <widget-configuration-button
-      *ngIf="!exportMode"
-      class="inset-button top-right"
-      [ngStyle]="
-        topRightInsetButton?.margin
-          ? { margin: topRightInsetButton?.margin }
-          : {}
-      "
-      [buttonConfiguration]="topRightInsetButton"
-    ></widget-configuration-button>
+    @if (!exportMode) {
+      <widget-configuration-button
+        [location]="'top-left'"
+        class="inset-button top-left"
+        [ngStyle]="
+          topLeftInsetButton?.margin
+            ? { margin: topLeftInsetButton?.margin }
+            : {}
+        "
+        [buttonConfiguration]="topLeftInsetButton"
+      ></widget-configuration-button>
+    }
+    @if (!exportMode) {
+      <widget-configuration-button
+        [location]="'top-center'"
+        class="inset-button top-center"
+        [ngStyle]="
+          topCenterInsetButton?.margin
+            ? { margin: topCenterInsetButton?.margin }
+            : {}
+        "
+        [buttonConfiguration]="topCenterInsetButton"
+      ></widget-configuration-button>
+    }
+    @if (!exportMode) {
+      <widget-configuration-button
+        class="inset-button top-right"
+        [ngStyle]="
+          topRightInsetButton?.margin
+            ? { margin: topRightInsetButton?.margin }
+            : {}
+        "
+        [buttonConfiguration]="topRightInsetButton"
+      ></widget-configuration-button>
+    }
 
     <ng-template #currentWidget></ng-template>
 
-    <widget-configuration-button
-      *ngIf="!exportMode"
-      [location]="'bottom-left'"
-      class="inset-button bottom-left"
-      [ngStyle]="
-        bottomLeftInsetButton?.margin
-          ? { margin: bottomLeftInsetButton?.margin }
-          : {}
-      "
-      [buttonConfiguration]="bottomLeftInsetButton"
-    ></widget-configuration-button>
-    <widget-configuration-button
-      *ngIf="!exportMode"
-      [location]="'bottom-right'"
-      class="inset-button bottom-right"
-      [ngStyle]="
-        bottomRightInsetButton?.margin
-          ? { margin: bottomRightInsetButton?.margin }
-          : {}
-      "
-      [buttonConfiguration]="bottomRightInsetButton"
-    ></widget-configuration-button>
+    @if (!exportMode) {
+      <widget-configuration-button
+        [location]="'bottom-left'"
+        class="inset-button bottom-left"
+        [ngStyle]="
+          bottomLeftInsetButton?.margin
+            ? { margin: bottomLeftInsetButton?.margin }
+            : {}
+        "
+        [buttonConfiguration]="bottomLeftInsetButton"
+      ></widget-configuration-button>
+    }
+    @if (!exportMode) {
+      <widget-configuration-button
+        [location]="'bottom-right'"
+        class="inset-button bottom-right"
+        [ngStyle]="
+          bottomRightInsetButton?.margin
+            ? { margin: bottomRightInsetButton?.margin }
+            : {}
+        "
+        [buttonConfiguration]="bottomRightInsetButton"
+      ></widget-configuration-button>
+    }
   </div>
-  <div
-    class="bottom-toolbar {{ showBottomToolbar ? 'visible' : 'hidden' }}"
-    #bottomToolbar
-    *ngIf="!exportMode"
-  >
-    <widget-configuration-button
-      *ngFor="let button of bottomToolbarButtons"
-      [location]="'bottom-toolbar'"
-      [ngClass]="{ 'bottom-toolbar-button': button.type !== 'divider' }"
-      [buttonConfiguration]="button"
-      [ngStyle]="{ margin: button.margin }"
-    ></widget-configuration-button>
-  </div>
+  @if (!exportMode) {
+    <div
+      class="bottom-toolbar {{ showBottomToolbar ? 'visible' : 'hidden' }}"
+      #bottomToolbar
+    >
+      @for (button of bottomToolbarButtons; track button) {
+        <widget-configuration-button
+          [location]="'bottom-toolbar'"
+          [ngClass]="{ 'bottom-toolbar-button': button.type !== 'divider' }"
+          [buttonConfiguration]="button"
+          [ngStyle]="{ margin: button.margin }"
+        ></widget-configuration-button>
+      }
+    </div>
+  }
 </div>

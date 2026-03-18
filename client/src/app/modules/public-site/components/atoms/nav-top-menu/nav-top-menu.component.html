@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,34 +31,65 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="flex-row nav">
   <div class="logo-container">
-    <a href="/"><img src="assets/images/{{appLogo}}" /></a>
+    <a href="/"><img src="assets/images/{{ appLogo }}" /></a>
   </div>
   <div class="flex-row links">
-    <div
-      *ngFor="let navGroup of navigation.categories"
-      class="category"
-      (mouseenter)="onMouseEnter(navGroup)"
-      (mouseleave)="onMouseLeave(navGroup)"
-      (click)="onClickNav(navGroup)">
-      <div class="clickable nav-item" [ngClass]="{ active: isActiveNav(navGroup) }">
-        {{ navGroup }}<img [ngClass]="{ active: isActiveNav(navGroup) }" src="assets/images/arrow-down-nav.svg" />
+    @for (navGroup of navigation.categories; track navGroup) {
+      <div
+        class="category"
+        (mouseenter)="onMouseEnter(navGroup)"
+        (mouseleave)="onMouseLeave(navGroup)"
+        (click)="onClickNav(navGroup)"
+      >
+        <div
+          class="clickable nav-item"
+          [ngClass]="{ active: isActiveNav(navGroup) }"
+        >
+          {{ navGroup
+          }}<img
+            [ngClass]="{ active: isActiveNav(navGroup) }"
+            src="assets/images/arrow-down-nav.svg"
+          />
+        </div>
+        @if (isMenuOpen(navGroup)) {
+          <nav-menu
+            [items]="navigation.getItems(navGroup)"
+            [isChild]="true"
+            #childMenu
+          ></nav-menu>
+        }
       </div>
-      <nav-menu *ngIf="isMenuOpen(navGroup)" [items]="navigation.getItems(navGroup)" [isChild]="true" #childMenu></nav-menu>
-    </div>
+    }
   </div>
   <div class="flex-row buttons">
-    <ng-container *ngIf="isAuthenticated$ | async; else unAuthenticated">
-      <number-button (click)="onLogout()" colourStyle="red-solid" theLabel="Log Out" [showArrow]="false"></number-button>  
-    <number-button [link]="loggedInPage" colourStyle="white-solid" theLabel="Open" [showArrow]="true" [showArrowSeparator]="true"></number-button>
-  </ng-container>
-  <ng-template #unAuthenticated>
-    <number-button [link]="loginLink" colourStyle="red-solid" theLabel="Log In" [showArrow]="false"></number-button>
-    <number-button
-      [link]="signupLink"
-      colourStyle="white-solid"
-      theLabel="Try Pixlise"
-      [showArrow]="true"
-      [showArrowSeparator]="true"></number-button>
-  </ng-template>
+    @if (isAuthenticated$ | async) {
+      <number-button
+        (click)="onLogout()"
+        colourStyle="red-solid"
+        theLabel="Log Out"
+        [showArrow]="false"
+      ></number-button>
+      <number-button
+        [link]="loggedInPage"
+        colourStyle="white-solid"
+        theLabel="Open"
+        [showArrow]="true"
+        [showArrowSeparator]="true"
+      ></number-button>
+    } @else {
+      <number-button
+        [link]="loginLink"
+        colourStyle="red-solid"
+        theLabel="Log In"
+        [showArrow]="false"
+      ></number-button>
+      <number-button
+        [link]="signupLink"
+        colourStyle="white-solid"
+        theLabel="Try Pixlise"
+        [showArrow]="true"
+        [showArrowSeparator]="true"
+      ></number-button>
+    }
   </div>
 </div>

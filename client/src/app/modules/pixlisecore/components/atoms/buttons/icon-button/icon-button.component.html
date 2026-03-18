@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -39,17 +39,22 @@ POSSIBILITY OF SUCH DAMAGE.
     'button-disabled': state == 3,
     'icon-button-background': hasBackground && notificationCount === 0,
     'button-hoverable': hasBackground && notificationCount === 0,
-    'hover-yellow': hoverYellow || notificationCount > 0
+    'hover-yellow': hoverYellow || notificationCount > 0,
   }"
   [ngStyle]="{ width: sizeStr, height: sizeStr }"
-  (click)="onClickInternal($event)">
+  (click)="onClickInternal($event)"
+>
   <img src="{{ iconURL }}" />
-  <wait-spinner *ngIf="loading"></wait-spinner>
+  @if (loading) {
+    <wait-spinner></wait-spinner>
+  }
   <!-- TODO: was <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"> -->
-  <badge
-    *ngIf="notificationCount > 0"
-    class="notifications"
-    [value]="notificationCount > 99 ? '99+' : notificationCount.toString()"
-    title="{{ notificationCount }} {{ badgeText }}">
-  </badge>
+  @if (notificationCount > 0) {
+    <badge
+      class="notifications"
+      [value]="notificationCount > 99 ? '99+' : notificationCount.toString()"
+      title="{{ notificationCount }} {{ badgeText }}"
+    >
+    </badge>
+  }
 </div>

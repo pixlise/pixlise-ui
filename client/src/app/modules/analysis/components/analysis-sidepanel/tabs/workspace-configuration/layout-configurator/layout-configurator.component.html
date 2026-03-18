@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -47,93 +47,93 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="layout-configurator-content">
     <div class="layout-preview-section">
       <h4>Layout Preview</h4>
-      <div
-        *ngIf="layout?.widgets && templateColumns && templateRows"
-        class="layout-preview-wrapper"
-      >
-        <div
-          #layoutPreview
-          class="layout-preview"
-          [ngStyle]="{
-            'grid-template-columns': templateColumns,
-            'grid-template-rows': templateRows,
-          }"
-        >
+      @if (layout?.widgets && templateColumns && templateRows) {
+        <div class="layout-preview-wrapper">
           <div
-            #tooltip="matTooltip"
-            matTooltip="{{ getWidgetName(widget.type) }}"
-            matTooltipShowDelay="1000"
-            *ngFor="let widget of layout.widgets"
-            class="widget-preview"
+            #layoutPreview
+            class="layout-preview"
             [ngStyle]="{
-              'grid-column-start': getWidgetGridColumnStart(widget),
-              'grid-column-end': getWidgetGridColumnEnd(widget),
-              'grid-row-start': getWidgetGridRowStart(widget),
-              'grid-row-end': getWidgetGridRowEnd(widget),
+              'grid-template-columns': templateColumns,
+              'grid-template-rows': templateRows,
             }"
           >
-            <div
-              class="resize-handle resize-handle-top"
-              (mousedown)="onResizeStart($event, widget, 'top')"
-            ></div>
-            <div
-              class="resize-handle resize-handle-bottom"
-              (mousedown)="onResizeStart($event, widget, 'bottom')"
-            ></div>
-            <div
-              class="resize-handle resize-handle-left"
-              (mousedown)="onResizeStart($event, widget, 'left')"
-            ></div>
-            <div
-              class="resize-handle resize-handle-right"
-              (mousedown)="onResizeStart($event, widget, 'right')"
-            ></div>
-            <div class="widget-controls">
-              <widget-switcher
-                [widgetOptions]="allWidgetOptions"
-                [activeWidgetType]="getWidgetType(widget.type)"
-                [metadataEditable]="false"
-                (widgetChange)="widget.type = $event"
-                [iconOnlyTrigger]="true"
-                [customStyle]="{
-                  width: '50%',
-                  'max-width': '50px',
-                  height: 'auto',
+            @for (widget of layout.widgets; track widget) {
+              <div
+                #tooltip="matTooltip"
+                matTooltip="{{ getWidgetName(widget.type) }}"
+                matTooltipShowDelay="1000"
+                class="widget-preview"
+                [ngStyle]="{
+                  'grid-column-start': getWidgetGridColumnStart(widget),
+                  'grid-column-end': getWidgetGridColumnEnd(widget),
+                  'grid-row-start': getWidgetGridRowStart(widget),
+                  'grid-row-end': getWidgetGridRowEnd(widget),
                 }"
               >
-              </widget-switcher>
-              <action-button
-                action="delete"
-                (onClick)="onDeleteWidget(widget)"
-              ></action-button>
-            </div>
-          </div>
-          <div
-            *ngFor="let placeholder of getValidPlaceholders()"
-            class="widget-placeholder"
-            [ngStyle]="{
-              'grid-column-start': placeholder.startColumn,
-              'grid-column-end': placeholder.endColumn,
-              'grid-row-start': placeholder.startRow,
-              'grid-row-end': placeholder.endRow,
-            }"
-          >
-            <div class="placeholder-content">
-              <action-button
-                action="add"
-                (onClick)="onRestoreWidget(placeholder)"
-                tooltipTitle="Add widget back"
-              ></action-button>
-            </div>
+                <div
+                  class="resize-handle resize-handle-top"
+                  (mousedown)="onResizeStart($event, widget, 'top')"
+                ></div>
+                <div
+                  class="resize-handle resize-handle-bottom"
+                  (mousedown)="onResizeStart($event, widget, 'bottom')"
+                ></div>
+                <div
+                  class="resize-handle resize-handle-left"
+                  (mousedown)="onResizeStart($event, widget, 'left')"
+                ></div>
+                <div
+                  class="resize-handle resize-handle-right"
+                  (mousedown)="onResizeStart($event, widget, 'right')"
+                ></div>
+                <div class="widget-controls">
+                  <widget-switcher
+                    [widgetOptions]="allWidgetOptions"
+                    [activeWidgetType]="getWidgetType(widget.type)"
+                    [metadataEditable]="false"
+                    (widgetChange)="widget.type = $event"
+                    [iconOnlyTrigger]="true"
+                    [customStyle]="{
+                      width: '50%',
+                      'max-width': '50px',
+                      height: 'auto',
+                    }"
+                  >
+                  </widget-switcher>
+                  <action-button
+                    action="delete"
+                    (onClick)="onDeleteWidget(widget)"
+                  ></action-button>
+                </div>
+              </div>
+            }
+            @for (placeholder of getValidPlaceholders(); track placeholder) {
+              <div
+                class="widget-placeholder"
+                [ngStyle]="{
+                  'grid-column-start': placeholder.startColumn,
+                  'grid-column-end': placeholder.endColumn,
+                  'grid-row-start': placeholder.startRow,
+                  'grid-row-end': placeholder.endRow,
+                }"
+              >
+                <div class="placeholder-content">
+                  <action-button
+                    action="add"
+                    (onClick)="onRestoreWidget(placeholder)"
+                    tooltipTitle="Add widget back"
+                  ></action-button>
+                </div>
+              </div>
+            }
           </div>
         </div>
-      </div>
-      <div
-        *ngIf="!layout?.widgets || !templateColumns || !templateRows"
-        class="layout-preview"
-      >
-        <div class="no-layout">No layout available</div>
-      </div>
+      }
+      @if (!layout?.widgets || !templateColumns || !templateRows) {
+        <div class="layout-preview">
+          <div class="no-layout">No layout available</div>
+        </div>
+      }
     </div>
 
     <div class="layout-customization-section">

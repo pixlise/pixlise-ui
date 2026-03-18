@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -33,12 +33,24 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="dlg-border-with-backdrop new-workspace-dialog">
     <div class="title">
       <h1>New Workspace</h1>
-      <tag-picker [type]="'workspace'" [selectedTagIDs]="newWorkspaceTags" [showCurrentTagsSection]="true" (onTagSelectionChanged)="onNewWorkspaceTagChange($event)">
+      <tag-picker
+        [type]="'workspace'"
+        [selectedTagIDs]="newWorkspaceTags"
+        [showCurrentTagsSection]="true"
+        (onTagSelectionChanged)="onNewWorkspaceTagChange($event)"
+      >
       </tag-picker>
     </div>
     <h5 class="confirm-text">Enter a name for the workspace</h5>
     <div class="input-container">
-      <input class="text-field" [(ngModel)]="newWorkspaceName" type="text" autocomplete="off" data-lpignore="true" placeholder="Workspace Name" />
+      <input
+        class="text-field"
+        [(ngModel)]="newWorkspaceName"
+        type="text"
+        autocomplete="off"
+        data-lpignore="true"
+        placeholder="Workspace Name"
+      />
     </div>
     <h5 class="confirm-text">Enter a description for the workspace</h5>
     <div class="input-container">
@@ -49,36 +61,64 @@ POSSIBILITY OF SUCH DAMAGE.
         type="text"
         autocomplete="off"
         data-lpignore="true"
-        placeholder="Workspace Description">
+        placeholder="Workspace Description"
+      >
       </textarea>
     </div>
 
     <div class="scan-select-container">
-      <push-button class="add-scan-btn" buttonStyle="gray-title" [matMenuTriggerFor]="menu" (onMenuOpen)="onScanSearchMenu()"
+      <push-button
+        class="add-scan-btn"
+        buttonStyle="gray-title"
+        [matMenuTriggerFor]="menu"
+        (onMenuOpen)="onScanSearchMenu()"
         >Select datasets to add to the workspace</push-button
       >
       <mat-menu #menu="matMenu" class="scan-menu">
         <div class="search-container">
-          <input class="scan-search" placeholder="Search scans" [(ngModel)]="newWorkspaceScanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
+          <input
+            class="scan-search"
+            placeholder="Search scans"
+            [(ngModel)]="newWorkspaceScanSearchText"
+            (click)="onAddScanSearchClick($event)"
+            autofocus
+          />
         </div>
-        <button
-          mat-menu-item
-          *ngFor="let scan of newWorkspaceAddScanList"
-          (click)="onAddScanToNewWorkspace(scan.id)"
-          [disabled]="newWorkspaceSelectedScans.has(scan.id)">
-          Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
-        </button>
+        @for (scan of newWorkspaceAddScanList; track scan) {
+          <button
+            mat-menu-item
+            (click)="onAddScanToNewWorkspace(scan.id)"
+            [disabled]="newWorkspaceSelectedScans.has(scan.id)"
+          >
+            Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
+          </button>
+        }
       </mat-menu>
       <div class="selected-scans-container">
-        <div *ngFor="let scanId of newWorkspaceSelectedScans" class="selected-scan">
-          <span class="selected-scan-title">{{ idToScan[scanId].title }}</span>
-          <action-button color="rgb(var(--clr-gray-30))" (onClick)="onRemoveScanFromNewWorkspace(scanId)" action="close"></action-button>
-        </div>
-        <span *ngIf="newWorkspaceSelectedScans.size === 0" class="empty-field">No datasets selected</span>
+        @for (scanId of newWorkspaceSelectedScans; track scanId) {
+          <div class="selected-scan">
+            <span class="selected-scan-title">{{
+              idToScan[scanId].title
+            }}</span>
+            <action-button
+              color="rgb(var(--clr-gray-30))"
+              (onClick)="onRemoveScanFromNewWorkspace(scanId)"
+              action="close"
+            ></action-button>
+          </div>
+        }
+        @if (newWorkspaceSelectedScans.size === 0) {
+          <span class="empty-field">No datasets selected</span>
+        }
       </div>
     </div>
     <div class="gap-separated-horizontal-elements button-container">
-      <push-button class="cancel-btn" buttonStyle="outline" (onClick)="onCloseNewWorkspaceDialog()">Cancel</push-button>
+      <push-button
+        class="cancel-btn"
+        buttonStyle="outline"
+        (onClick)="onCloseNewWorkspaceDialog()"
+        >Cancel</push-button
+      >
       <push-button
         buttonStyle="yellow"
         (onClick)="onNewWorkspace()"
@@ -94,24 +134,47 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #openOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <push-button *ngIf="userCanEdit" (onClick)="onOpen(null, true)" buttonStyle="gray">Open In New Tab</push-button>
-    <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="gray">New Workspace From Scan</push-button>
-    <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="gray">Edit</push-button>
-    <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="gray">Delete</push-button>
+    @if (userCanEdit) {
+      <push-button (onClick)="onOpen(null, true)" buttonStyle="gray"
+        >Open In New Tab</push-button
+      >
+    }
+    @if (userCanEdit) {
+      <push-button (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="gray"
+        >New Workspace From Scan</push-button
+      >
+    }
+    @if (userCanEdit) {
+      <push-button (onClick)="onEdit()" buttonStyle="gray">Edit</push-button>
+    }
+    @if (userCanEdit) {
+      <push-button (onClick)="onDelete()" buttonStyle="gray"
+        >Delete</push-button
+      >
+    }
   </div>
 </ng-template>
 
 <ng-template #openWorkspaceOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <push-button *ngIf="userCanEdit" (onClick)="onOpenDuplicateWorkspaceDialog()" buttonStyle="gray">Duplicate</push-button>
+    @if (userCanEdit) {
+      <push-button
+        (onClick)="onOpenDuplicateWorkspaceDialog()"
+        buttonStyle="gray"
+        >Duplicate</push-button
+      >
+    }
 
-    <push-button
-      *ngIf="userCanEdit"
-      confirmText="Are you sure you want to delete this workspace ({{ selectedWorkspace?.name || selectedWorkspace?.id }})?"
-      (onClick)="onDeleteWorkspace()"
-      buttonStyle="gray"
-      >Delete</push-button
-    >
+    @if (userCanEdit) {
+      <push-button
+        confirmText="Are you sure you want to delete this workspace ({{
+          selectedWorkspace?.name || selectedWorkspace?.id
+        }})?"
+        (onClick)="onDeleteWorkspace()"
+        buttonStyle="gray"
+        >Delete</push-button
+      >
+    }
   </div>
 </ng-template>
 
@@ -119,35 +182,58 @@ POSSIBILITY OF SUCH DAMAGE.
   <!-- <app-toolbar titleToShow="Select Dataset"></app-toolbar> -->
 
   <div class="search-panel">
-    <div *ngIf="datasetListingAllowed" class="gap-separated-horizontal-elements dataset-search">
-      <!-- <h2>Search</h2> -->
-      <mat-select class="search-selector" [(value)]="searchType">
-        <mat-option value="datasets">Datasets</mat-option>
-        <mat-option value="workspaces">Workspaces</mat-option>
-      </mat-select>
-
-      <div class="search-box-group">
-        <div (click)="onSearch()" class="search-btn-container">
-          <img src="assets/button-icons/search.svg" />
+    @if (datasetListingAllowed) {
+      <div class="gap-separated-horizontal-elements dataset-search">
+        <!-- <h2>Search</h2> -->
+        <mat-select class="search-selector" [(value)]="searchType">
+          <mat-option value="datasets">Datasets</mat-option>
+          <mat-option value="workspaces">Workspaces</mat-option>
+        </mat-select>
+        <div class="search-box-group">
+          <div (click)="onSearch()" class="search-btn-container">
+            <img src="assets/button-icons/search.svg" />
+          </div>
+          <input
+            [(ngModel)]="searchString"
+            class="search-box"
+            type="text"
+            placeholder="Search by title or metadata..."
+            (keyup.enter)="onSearch()"
+          />
         </div>
-        <input [(ngModel)]="searchString" class="search-box" type="text" placeholder="Search by title or metadata..." (keyup.enter)="onSearch()" />
+        <tag-picker
+          [type]="datasetsMode ? 'scan' : 'workspace'"
+          [selectedTagIDs]="filterTags"
+          [showCurrentTagsSection]="false"
+          (onTagSelectionChanged)="onFilterTagChange($event)"
+        ></tag-picker>
+        <icon-button
+          title="Instrument Filter"
+          (click)="onFilterMenu($event)"
+          type="filter"
+          [notificationCount]="selectedInstrumentCount"
+          badgeText="instruments selected"
+        ></icon-button>
+        <div class="dim">{{ searchResultSummary }}</div>
+        @if (publicOnlyUser) {
+          <push-button
+            (onClick)="onManageGroups()"
+            buttonStyle="yellow"
+            title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join."
+            >Join User Groups</push-button
+          >
+        }
       </div>
-      <tag-picker
-        [type]="datasetsMode ? 'scan' : 'workspace'"
-        [selectedTagIDs]="filterTags"
-        [showCurrentTagsSection]="false"
-        (onTagSelectionChanged)="onFilterTagChange($event)"></tag-picker>
-      <icon-button
-        title="Instrument Filter"
-        (click)="onFilterMenu($event)"
-        type="filter"
-        [notificationCount]="selectedInstrumentCount"
-        badgeText="instruments selected"></icon-button>
-      <div class="dim">{{ searchResultSummary }}</div>
-      <push-button *ngIf="publicOnlyUser" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
-    </div>
+    }
     <div class="right-header-btns">
-      <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload a new dataset">Upload</push-button>
+      @if (userCanEdit) {
+        <push-button
+          (onClick)="onAddScan()"
+          buttonStyle="gray"
+          title="Upload a new dataset"
+          >Upload</push-button
+        >
+      }
       <push-button
         #newWorkspaceButton
         [notificationCount]="newWorkspaceScans.length"
@@ -161,392 +247,777 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <div class="summary-container">
-    <div *ngIf="!errorString && !loading && datasetsMode" class="scrollable">
-      <div class="tiles" (onClick)="onClickTileArea()">
-        <data-set-summary
-          *ngFor="let item of filteredScans; trackBy: trackScansBy"
-          [summary]="item"
-          [defaultImage]="scanDefaultImages.get(item.id)"
-          [selected]="selectedScan"
-          [isMultiSelected]="newWorkspaceSelectedScans.has(item.id)"
-          (onSelect)="onSelect($event)"
-          (onCtrlSelect)="onMultiSelectScan($event)">
-        </data-set-summary>
-      </div>
-    </div>
-
-    <div class="workspaces-listing" *ngIf="!errorString && !loading && workspacesMode">
-      <div class="workspace-summary-headers">
-        <div class="cell workspace-creator" (click)="changeSortWorkspaceBy('Creator')">
-          Creator
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Creator'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
-        </div>
-        <div class="cell workspace-title" (click)="changeSortWorkspaceBy('Name')">
-          Name
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Name'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
-        </div>
-        <div class="cell workspace-description" (click)="changeSortWorkspaceBy('Description')">
-          Description
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Description'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
-        </div>
-        <div class="cell workspace-datasets" (click)="changeSortWorkspaceBy('Datasets')">
-          Datasets
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Datasets'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
-        </div>
-        <div class="cell workspace-last-updated" (click)="changeSortWorkspaceBy('Last Updated')">
-          Last Updated
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Last Updated'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
-        </div>
-        <div class="cell workspace-tags" (click)="changeSortWorkspaceBy('Tags')">
-          Tags
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Tags'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
-        </div>
-        <div class="cell workspace-snapshots" (click)="changeSortWorkspaceBy('Snapshots')">
-          Snapshots
-          <span class="active-sort-container" *ngIf="sortWorkspacesBy === 'Snapshots'">
-            <img *ngIf="sortWorkspacesAsc" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" class="sort-arrow" />
-            <img *ngIf="!sortWorkspacesAsc" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" class="sort-arrow" />
-          </span>
+    @if (!errorString && !loading && datasetsMode) {
+      <div class="scrollable">
+        <div class="tiles" (onClick)="onClickTileArea()">
+          @for (item of filteredScans; track trackScansBy($index, item)) {
+            <data-set-summary
+              [summary]="item"
+              [defaultImage]="scanDefaultImages.get(item.id)"
+              [selected]="selectedScan"
+              [isMultiSelected]="newWorkspaceSelectedScans.has(item.id)"
+              (onSelect)="onSelect($event)"
+              (onCtrlSelect)="onMultiSelectScan($event)"
+            >
+            </data-set-summary>
+          }
         </div>
       </div>
+    }
 
-      <div class="workspaces-summary-container">
-        <div
-          class="workspace-summary {{ selectedWorkspace?.id === workspace.id && workspace.id ? 'selected' : '' }}"
-          *ngFor="let workspace of filteredWorkspaces; trackBy: trackWorkspacesBy"
-          (click)="onSelectWorkspace(workspace)">
-          <div class="cell workspace-creator">
-            <user-icon
-              [userId]="workspace.owner?.creatorUser?.id || ''"
-              size="32px"
-              #tooltip="matTooltip"
-              [matTooltip]="workspace.owner?.creatorUser?.name || ''"
-              [matTooltipDisabled]="!workspace.owner?.creatorUser">
-            </user-icon>
+    @if (!errorString && !loading && workspacesMode) {
+      <div class="workspaces-listing">
+        <div class="workspace-summary-headers">
+          <div
+            class="cell workspace-creator"
+            (click)="changeSortWorkspaceBy('Creator')"
+          >
+            Creator
+            @if (sortWorkspacesBy === "Creator") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
           </div>
-          <div class="cell workspace-title">
-            <span *ngIf="workspace.name" class="text-ellipsis workspace-title">{{ workspace.name }}</span>
-            <span *ngIf="!workspace.name" class="text-ellipsis workspace-title empty-field">N/A</span>
+          <div
+            class="cell workspace-title"
+            (click)="changeSortWorkspaceBy('Name')"
+          >
+            Name
+            @if (sortWorkspacesBy === "Name") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
           </div>
-          <div class="cell">
-            <span class="text-ellipsis workspace-description" [title]="workspace.description">{{ workspace.description }}</span>
+          <div
+            class="cell workspace-description"
+            (click)="changeSortWorkspaceBy('Description')"
+          >
+            Description
+            @if (sortWorkspacesBy === "Description") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
           </div>
-          <div class="cell workspace-datasets">
-            <span class="workspace-scan-count">{{ getScanNamesForWorkspace(workspace).length }}</span>
-            <span class="text-ellipsis workspace-datasets">{{ getScanNamesForWorkspace(workspace).join(", ") }}</span>
-            <span *ngIf="!getScanNamesForWorkspace(workspace).length" class="text-ellipsis workspace-datasets empty-field">None</span>
+          <div
+            class="cell workspace-datasets"
+            (click)="changeSortWorkspaceBy('Datasets')"
+          >
+            Datasets
+            @if (sortWorkspacesBy === "Datasets") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
           </div>
-          <div class="cell">
-            <span class="text-ellipsis workspace-last-updated">{{ workspace.modifiedUnixSec * 1000 | date: "medium" }}</span>
+          <div
+            class="cell workspace-last-updated"
+            (click)="changeSortWorkspaceBy('Last Updated')"
+          >
+            Last Updated
+            @if (sortWorkspacesBy === "Last Updated") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
           </div>
-          <div class="cell workspace-tags">
-            <div class="tag-container">
-              <div *ngFor="let tag of getTagsForWorkspace(workspace)" class="tag">{{ tag.name }}</div>
+          <div
+            class="cell workspace-tags"
+            (click)="changeSortWorkspaceBy('Tags')"
+          >
+            Tags
+            @if (sortWorkspacesBy === "Tags") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
+          </div>
+          <div
+            class="cell workspace-snapshots"
+            (click)="changeSortWorkspaceBy('Snapshots')"
+          >
+            Snapshots
+            @if (sortWorkspacesBy === "Snapshots") {
+              <span class="active-sort-container">
+                @if (sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-up.svg"
+                    alt="Sort Ascending"
+                    class="sort-arrow"
+                  />
+                }
+                @if (!sortWorkspacesAsc) {
+                  <img
+                    src="assets/button-icons/arrow-down.svg"
+                    alt="Sort Descending"
+                    class="sort-arrow"
+                  />
+                }
+              </span>
+            }
+          </div>
+        </div>
+        <div class="workspaces-summary-container">
+          @for (
+            workspace of filteredWorkspaces;
+            track trackWorkspacesBy($index, workspace)
+          ) {
+            <div
+              class="workspace-summary {{
+                selectedWorkspace?.id === workspace.id && workspace.id
+                  ? 'selected'
+                  : ''
+              }}"
+              (click)="onSelectWorkspace(workspace)"
+            >
+              <div class="cell workspace-creator">
+                <user-icon
+                  [userId]="workspace.owner?.creatorUser?.id || ''"
+                  size="32px"
+                  #tooltip="matTooltip"
+                  [matTooltip]="workspace.owner?.creatorUser?.name || ''"
+                  [matTooltipDisabled]="!workspace.owner?.creatorUser"
+                >
+                </user-icon>
+              </div>
+              <div class="cell workspace-title">
+                @if (workspace.name) {
+                  <span class="text-ellipsis workspace-title">{{
+                    workspace.name
+                  }}</span>
+                }
+                @if (!workspace.name) {
+                  <span class="text-ellipsis workspace-title empty-field"
+                    >N/A</span
+                  >
+                }
+              </div>
+              <div class="cell">
+                <span
+                  class="text-ellipsis workspace-description"
+                  [title]="workspace.description"
+                  >{{ workspace.description }}</span
+                >
+              </div>
+              <div class="cell workspace-datasets">
+                <span class="workspace-scan-count">{{
+                  getScanNamesForWorkspace(workspace).length
+                }}</span>
+                <span class="text-ellipsis workspace-datasets">{{
+                  getScanNamesForWorkspace(workspace).join(", ")
+                }}</span>
+                @if (!getScanNamesForWorkspace(workspace).length) {
+                  <span class="text-ellipsis workspace-datasets empty-field"
+                    >None</span
+                  >
+                }
+              </div>
+              <div class="cell">
+                <span class="text-ellipsis workspace-last-updated">{{
+                  workspace.modifiedUnixSec * 1000 | date: "medium"
+                }}</span>
+              </div>
+              <div class="cell workspace-tags">
+                <div class="tag-container">
+                  @for (tag of getTagsForWorkspace(workspace); track tag) {
+                    <div class="tag">{{ tag.name }}</div>
+                  }
+                </div>
+              </div>
+              <div class="cell workspace-snapshots">
+                <div class="snapshot-count-container">
+                  <span
+                    class="snapshot-count {{
+                      getSnapshotCount(workspace) === 0
+                        ? 'empty'
+                        : 'has-snapshots'
+                    }}"
+                    >{{ getSnapshotCount(workspace) }}</span
+                  >
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="cell workspace-snapshots">
-            <div class="snapshot-count-container">
-              <span class="snapshot-count {{ getSnapshotCount(workspace) === 0 ? 'empty' : 'has-snapshots' }}">{{ getSnapshotCount(workspace) }}</span>
-            </div>
-          </div>
+          }
         </div>
       </div>
-    </div>
+    }
 
-    <app-widget-display-message *ngIf="errorString" [showSpinner]="loading" [message]="errorString" [large]="true" class="fx-flex"> </app-widget-display-message>
+    @if (errorString) {
+      <app-widget-display-message
+        [showSpinner]="loading"
+        [message]="errorString"
+        [large]="true"
+        class="fx-flex"
+      >
+      </app-widget-display-message>
+    }
 
     <!-- Workspaces Mode -->
-    <div *ngIf="workspacesMode" class="meta-summary workspaces-meta">
-      <app-widget-display-message *ngIf="!selectedWorkspace" [message]="noSelectedWorkspaceMsg"> </app-widget-display-message>
-
-      <div *ngIf="selectedWorkspace" class="info-panel">
-        <div class="meta-image-container">
-          <div *ngIf="!selectedWorkspaceTemplate" class="no-context">
-            <div>No Workspace Layout</div>
-          </div>
-          <div *ngIf="selectedWorkspaceTemplate" class="layout-container">
-            <layout-preview-box [template]="selectedWorkspaceTemplate"></layout-preview-box>
-          </div>
-        </div>
-        <div class="meta-open-row">
-          <div class="title-container" (dblclick)="onWorkspaceTitleEditToggle(true)">
-            <div class="view-title" *ngIf="!workspaceTitleEditMode">{{ selectedWorkspace.name }}</div>
-            <input
-              *ngIf="workspaceTitleEditMode"
-              class="edit-title"
-              [(ngModel)]="selectedWorkspaceName"
-              type="text"
-              autocomplete="off"
-              data-lpignore="true"
-              placeholder="Workspace Title" />
-            <action-button
-              *ngIf="selectedWorkspace.owner?.canEdit && workspaceTitleEditMode"
-              class="edit-btn"
-              (onClick)="onSaveWorkspaceTitle()"
-              action="check"
-              color="rgb(var(--clr-gray-30))"></action-button>
-            <action-button
-              *ngIf="selectedWorkspace.owner?.canEdit"
-              class="edit-btn"
-              (onClick)="onWorkspaceTitleEditToggle()"
-              [action]="workspaceTitleEditMode ? 'close' : 'edit'"
-              color="rgb(var(--clr-gray-30))"></action-button>
-          </div>
-          <div class="meta-buttons">
-            <tag-picker
-              [openRightDirection]="false"
-              type="workspace"
-              placeholderText="Search Workspace Tags ..."
-              [selectedTagIDs]="selectedWorkspaceTags"
-              [showCurrentTagsSection]="true"
-              [editable]="selectedWorkspace.owner?.canEdit || false"
-              (onTagSelectionChanged)="onWorkspaceTagChange($event)">
-            </tag-picker>
-            <push-button
-              *ngIf="selectedWorkspace.owner?.canEdit && !selectedWorkspace.snapshotParentId"
-              (onClick)="onOpenWorkspace()"
-              buttonStyle="yellow"
-              title="Open the workspace with views as you last used them"
-              >Open</push-button
-            >
-            <push-button
-              *ngIf="!selectedWorkspace.owner?.canEdit || selectedWorkspace.snapshotParentId"
-              buttonStyle="yellow"
-              (onClick)="onDuplicateLatestClick(selectedWorkspace.snapshotParentId, $event)"
-              >Duplicate
-            </push-button>
-            <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openWorkspaceOptionsMenu" #openWorkspaceOptionsButton>
-              <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
-            </widget-settings-menu>
-          </div>
-        </div>
-        <div class="tab-switcher">
-          <span class="tab-btn" [class.active]="selectedTab === 'description'" (click)="selectedTab = 'description'">Description</span>
-          <span class="tab-btn" [class.active]="selectedTab === 'details'" (click)="selectedTab = 'details'">Details</span>
-          <span class="tab-btn" [class.active]="selectedTab === 'snapshots'" (click)="selectedTab = 'snapshots'">Snapshots</span>
-        </div>
-        <div *ngIf="selectedTab === 'description'" class="tab description">
-          <div class="meta-area">
-            <div *ngIf="userCanEdit" class="field-label">
-              <multi-switch-button [options]="descriptionModes" [value]="descriptionMode" (onChange)="descriptionMode = $event"></multi-switch-button>
+    @if (workspacesMode) {
+      <div class="meta-summary workspaces-meta">
+        @if (!selectedWorkspace) {
+          <app-widget-display-message [message]="noSelectedWorkspaceMsg">
+          </app-widget-display-message>
+        }
+        @if (selectedWorkspace) {
+          <div class="info-panel">
+            <div class="meta-image-container">
+              @if (!selectedWorkspaceTemplate) {
+                <div class="no-context">
+                  <div>No Workspace Layout</div>
+                </div>
+              }
+              @if (selectedWorkspaceTemplate) {
+                <div class="layout-container">
+                  <layout-preview-box
+                    [template]="selectedWorkspaceTemplate"
+                  ></layout-preview-box>
+                </div>
+              }
             </div>
-            <div *ngIf="descriptionMode === 'View'" class="markdown-container">
-              <markdown
-                (dblclick)="switchToEditMode()"
-                class="text-field description-field {{ !userCanEdit ? 'no-edit' : '' }}"
-                [lineOffset]="5"
-                [data]="selectedWorkspaceDescription || '## Scan Description'"></markdown>
-            </div>
-            <textarea
-              *ngIf="descriptionMode === 'Edit'"
-              #descriptionEditMode
-              class="text-field description-field"
-              [(ngModel)]="selectedWorkspaceDescription"
-              type="text"
-              autocomplete="off"
-              data-lpignore="true"
-              placeholder="## Scan Description"></textarea>
-          </div>
-          <div *ngIf="userCanEdit" class="bottom-buttons">
-            <push-button [disabled]="!hasWorkspaceDescriptionChanged && !hasWorkspaceTitleChanged" (onClick)="onSaveWorkspaceMetadata()" buttonStyle="yellow">
-              Save
-            </push-button>
-          </div>
-        </div>
-        <div *ngIf="selectedTab === 'details'" class="tab details">
-          <div class="meta-area">
-            <div *ngFor="let item of selectedWorkspaceSummaryItems" class="summary-item">
-              <span class="meta-name">{{ item.label }}</span>
-              <span class="meta-value">{{ item.value }}</span>
-            </div>
-          </div>
-        </div>
-        <div *ngIf="selectedTab === 'snapshots'" class="tab snapshots">
-          <div class="snapshots-container">
-            <div *ngFor="let item of selectedWorkspaceSnapshots; let i = index" class="snapshot">
-              <div class="info">
-                <span class="snapshot-name">{{ item.name || (item.snapshotParentId ? "Snapshot " + (selectedWorkspaceSnapshots.length - i) : "Original") }}</span>
-                <span class="snapshot-date">Created: {{ (item.owner?.createdUnixSec || 0) * 1000 | date: "medium" }}</span>
+            <div class="meta-open-row">
+              <div
+                class="title-container"
+                (dblclick)="onWorkspaceTitleEditToggle(true)"
+              >
+                @if (!workspaceTitleEditMode) {
+                  <div class="view-title">{{ selectedWorkspace.name }}</div>
+                }
+                @if (workspaceTitleEditMode) {
+                  <input
+                    class="edit-title"
+                    [(ngModel)]="selectedWorkspaceName"
+                    type="text"
+                    autocomplete="off"
+                    data-lpignore="true"
+                    placeholder="Workspace Title"
+                  />
+                }
+                @if (
+                  selectedWorkspace.owner?.canEdit && workspaceTitleEditMode
+                ) {
+                  <action-button
+                    class="edit-btn"
+                    (onClick)="onSaveWorkspaceTitle()"
+                    action="check"
+                    color="rgb(var(--clr-gray-30))"
+                  ></action-button>
+                }
+                @if (selectedWorkspace.owner?.canEdit) {
+                  <action-button
+                    class="edit-btn"
+                    (onClick)="onWorkspaceTitleEditToggle()"
+                    [action]="workspaceTitleEditMode ? 'close' : 'edit'"
+                    color="rgb(var(--clr-gray-30))"
+                  ></action-button>
+                }
               </div>
-              <div class="action-btns">
-                <push-button *ngIf="item.snapshotParentId" (onClick)="onDuplicateClick(item, $event)" buttonStyle="gray">Duplicate</push-button>
-                <push-button *ngIf="!item.snapshotParentId" (onClick)="onOpenWorkspace(item)" buttonStyle="gray">Open</push-button>
+              <div class="meta-buttons">
+                <tag-picker
+                  [openRightDirection]="false"
+                  type="workspace"
+                  placeholderText="Search Workspace Tags ..."
+                  [selectedTagIDs]="selectedWorkspaceTags"
+                  [showCurrentTagsSection]="true"
+                  [editable]="selectedWorkspace.owner?.canEdit || false"
+                  (onTagSelectionChanged)="onWorkspaceTagChange($event)"
+                >
+                </tag-picker>
+                @if (
+                  selectedWorkspace.owner?.canEdit &&
+                  !selectedWorkspace.snapshotParentId
+                ) {
+                  <push-button
+                    (onClick)="onOpenWorkspace()"
+                    buttonStyle="yellow"
+                    title="Open the workspace with views as you last used them"
+                    >Open</push-button
+                  >
+                }
+                @if (
+                  !selectedWorkspace.owner?.canEdit ||
+                  selectedWorkspace.snapshotParentId
+                ) {
+                  <push-button
+                    buttonStyle="yellow"
+                    (onClick)="
+                      onDuplicateLatestClick(
+                        selectedWorkspace.snapshotParentId,
+                        $event
+                      )
+                    "
+                    >Duplicate
+                  </push-button>
+                }
+                @if (showOpenOptions) {
+                  <widget-settings-menu
+                    [settingsDialog]="openWorkspaceOptionsMenu"
+                    #openWorkspaceOptionsButton
+                  >
+                    <push-button buttonStyle="yellow" title="More options"
+                      >&#9660;</push-button
+                    >
+                  </widget-settings-menu>
+                }
               </div>
             </div>
+            <div class="tab-switcher">
+              <span
+                class="tab-btn"
+                [class.active]="selectedTab === 'description'"
+                (click)="selectedTab = 'description'"
+                >Description</span
+              >
+              <span
+                class="tab-btn"
+                [class.active]="selectedTab === 'details'"
+                (click)="selectedTab = 'details'"
+                >Details</span
+              >
+              <span
+                class="tab-btn"
+                [class.active]="selectedTab === 'snapshots'"
+                (click)="selectedTab = 'snapshots'"
+                >Snapshots</span
+              >
+            </div>
+            @if (selectedTab === "description") {
+              <div class="tab description">
+                <div class="meta-area">
+                  @if (userCanEdit) {
+                    <div class="field-label">
+                      <multi-switch-button
+                        [options]="descriptionModes"
+                        [value]="descriptionMode"
+                        (onChange)="descriptionMode = $event"
+                      ></multi-switch-button>
+                    </div>
+                  }
+                  @if (descriptionMode === "View") {
+                    <div class="markdown-container">
+                      <markdown
+                        (dblclick)="switchToEditMode()"
+                        class="text-field description-field {{
+                          !userCanEdit ? 'no-edit' : ''
+                        }}"
+                        [lineOffset]="5"
+                        [data]="
+                          selectedWorkspaceDescription || '## Scan Description'
+                        "
+                      ></markdown>
+                    </div>
+                  }
+                  @if (descriptionMode === "Edit") {
+                    <textarea
+                      #descriptionEditMode
+                      class="text-field description-field"
+                      [(ngModel)]="selectedWorkspaceDescription"
+                      type="text"
+                      autocomplete="off"
+                      data-lpignore="true"
+                      placeholder="## Scan Description"
+                    ></textarea>
+                  }
+                </div>
+                @if (userCanEdit) {
+                  <div class="bottom-buttons">
+                    <push-button
+                      [disabled]="
+                        !hasWorkspaceDescriptionChanged &&
+                        !hasWorkspaceTitleChanged
+                      "
+                      (onClick)="onSaveWorkspaceMetadata()"
+                      buttonStyle="yellow"
+                    >
+                      Save
+                    </push-button>
+                  </div>
+                }
+              </div>
+            }
+            @if (selectedTab === "details") {
+              <div class="tab details">
+                <div class="meta-area">
+                  @for (item of selectedWorkspaceSummaryItems; track item) {
+                    <div class="summary-item">
+                      <span class="meta-name">{{ item.label }}</span>
+                      <span class="meta-value">{{ item.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            @if (selectedTab === "snapshots") {
+              <div class="tab snapshots">
+                <div class="snapshots-container">
+                  @for (
+                    item of selectedWorkspaceSnapshots;
+                    track item;
+                    let i = $index
+                  ) {
+                    <div class="snapshot">
+                      <div class="info">
+                        <span class="snapshot-name">{{
+                          item.name ||
+                            (item.snapshotParentId
+                              ? "Snapshot " +
+                                (selectedWorkspaceSnapshots.length - i)
+                              : "Original")
+                        }}</span>
+                        <span class="snapshot-date"
+                          >Created:
+                          {{
+                            (item.owner?.createdUnixSec || 0) * 1000
+                              | date: "medium"
+                          }}</span
+                        >
+                      </div>
+                      <div class="action-btns">
+                        @if (item.snapshotParentId) {
+                          <push-button
+                            (onClick)="onDuplicateClick(item, $event)"
+                            buttonStyle="gray"
+                            >Duplicate</push-button
+                          >
+                        }
+                        @if (!item.snapshotParentId) {
+                          <push-button
+                            (onClick)="onOpenWorkspace(item)"
+                            buttonStyle="gray"
+                            >Open</push-button
+                          >
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
-    </div>
+    }
 
     <!-- Datasets Mode -->
-    <div *ngIf="datasetListingAllowed && datasetsMode" class="meta-summary" aria-label="DatasetMetaSummary">
-      <app-widget-display-message *ngIf="!selectedScan" [message]="noSelectedScanMsg"> </app-widget-display-message>
-
-      <div class="info-panel" *ngIf="selectedScan !== null">
-        <div class="meta-image-container">
-          <ng-container [ngSwitch]="selectedScanContextImage.length">
-            <ng-container *ngSwitchCase="0">
-              <div class="no-context">
-                <div>No Context Image</div>
-              </div>
-            </ng-container>
-            <ng-container *ngSwitchCase="1">
-              <div class="no-context">
-                <wait-spinner></wait-spinner>
-              </div>
-            </ng-container>
-            <ng-container *ngSwitchDefault>
-              <img [src]="selectedScanContextImage" class="meta-image" />
-            </ng-container>
-          </ng-container>
-        </div>
-        <div class="meta-open-row">
-          <div class="title-container" (dblclick)="onTitleEditToggle(true)">
-            <div #tooltip="matTooltip" [matTooltip]="selectedScan.title" [matTooltipShowDelay]="1000" class="view-title" *ngIf="!scanTitleEditMode">
-              {{ selectedScan.title }}
+    @if (datasetListingAllowed && datasetsMode) {
+      <div class="meta-summary" aria-label="DatasetMetaSummary">
+        @if (!selectedScan) {
+          <app-widget-display-message [message]="noSelectedScanMsg">
+          </app-widget-display-message>
+        }
+        @if (selectedScan !== null) {
+          <div class="info-panel">
+            <div class="meta-image-container">
+              @switch (selectedScanContextImage.length) {
+                @case (0) {
+                  <div class="no-context">
+                    <div>No Context Image</div>
+                  </div>
+                }
+                @case (1) {
+                  <div class="no-context">
+                    <wait-spinner></wait-spinner>
+                  </div>
+                }
+                @default {
+                  <img [src]="selectedScanContextImage" class="meta-image" />
+                }
+              }
             </div>
-            <input
-              *ngIf="scanTitleEditMode"
-              class="edit-title"
-              [(ngModel)]="selectedScanTitle"
-              type="text"
-              autocomplete="off"
-              data-lpignore="true"
-              placeholder="Dataset Title" />
-            <action-button
-              *ngIf="userCanEdit"
-              class="edit-btn"
-              (onClick)="onTitleEditToggle()"
-              [action]="scanTitleEditMode ? 'close' : 'edit'"
-              color="rgb(var(--clr-gray-30))"></action-button>
-          </div>
-          <div class="meta-buttons">
-            <tag-picker
-              [openRightDirection]="false"
-              type="scan"
-              placeholderText="Search Scan Tags ..."
-              [selectedTagIDs]="selectedScanTags"
-              [showCurrentTagsSection]="true"
-              [editable]="(userCanEdit && selectedScan.owner?.canEdit) || false"
-              (onTagSelectionChanged)="onTagChange($event)">
-            </tag-picker>
-            <push-button
-              (onClick)="onOpen($event, false)"
-              buttonStyle="yellow"
-              title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!"
-              >Open</push-button
+            <div class="meta-open-row">
+              <div class="title-container" (dblclick)="onTitleEditToggle(true)">
+                @if (!scanTitleEditMode) {
+                  <div
+                    #tooltip="matTooltip"
+                    [matTooltip]="selectedScan.title"
+                    [matTooltipShowDelay]="1000"
+                    class="view-title"
+                  >
+                    {{ selectedScan.title }}
+                  </div>
+                }
+                @if (scanTitleEditMode) {
+                  <input
+                    class="edit-title"
+                    [(ngModel)]="selectedScanTitle"
+                    type="text"
+                    autocomplete="off"
+                    data-lpignore="true"
+                    placeholder="Dataset Title"
+                  />
+                }
+                @if (userCanEdit) {
+                  <action-button
+                    class="edit-btn"
+                    (onClick)="onTitleEditToggle()"
+                    [action]="scanTitleEditMode ? 'close' : 'edit'"
+                    color="rgb(var(--clr-gray-30))"
+                  ></action-button>
+                }
+              </div>
+              <div class="meta-buttons">
+                <tag-picker
+                  [openRightDirection]="false"
+                  type="scan"
+                  placeholderText="Search Scan Tags ..."
+                  [selectedTagIDs]="selectedScanTags"
+                  [showCurrentTagsSection]="true"
+                  [editable]="
+                    (userCanEdit && selectedScan.owner?.canEdit) || false
+                  "
+                  (onTagSelectionChanged)="onTagChange($event)"
+                >
+                </tag-picker>
+                <push-button
+                  (onClick)="onOpen($event, false)"
+                  buttonStyle="yellow"
+                  title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!"
+                  >Open</push-button
+                >
+                @if (showOpenOptions) {
+                  <widget-settings-menu
+                    [settingsDialog]="openOptionsMenu"
+                    #openOptionsButton
+                  >
+                    <push-button buttonStyle="yellow" title="More options"
+                      >&#9660;</push-button
+                    >
+                  </widget-settings-menu>
+                }
+              </div>
+            </div>
+            <div
+              class="tag-expand-area {{ expandTags ? 'expanded' : 'preview' }}"
             >
-            <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
-              <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
-            </widget-settings-menu>
-          </div>
-        </div>
-        <div class="tag-expand-area {{ expandTags ? 'expanded' : 'preview' }}">
-          <div class="tag-container">
-            <div *ngFor="let tag of selectedScanTagsDisplay" class="tag">{{ tag.name }}</div>
-          </div>
-          <div *ngIf="selectedScanTagsDisplay.length > 0" class="expand">
-            <action-button [action]="expandTags ? 'closeAccordion' : 'openAccordion'" (onClick)="expandTags = !expandTags"></action-button>
-          </div>
-        </div>
-        <div class="tab-switcher">
-          <span class="tab-btn" [class.active]="selectedTab === 'description'" (click)="selectedTab = 'description'">Description</span>
-          <span class="tab-btn" [class.active]="selectedTab === 'details'" (click)="selectedTab = 'details'">Details</span>
-          <!-- <span class="tab-btn" [class.active]="selectedTab === 'workspaces'" (click)="selectedTab = 'workspaces'">Workspaces</span> -->
-        </div>
-        <div *ngIf="selectedTab === 'description'" class="tab description">
-          <div class="meta-area">
-            <div *ngIf="userCanEdit" class="field-label">
-              <multi-switch-button [options]="descriptionModes" [value]="descriptionMode" (onChange)="descriptionMode = $event"></multi-switch-button>
-            </div>
-            <div *ngIf="descriptionMode === 'View'" class="markdown-container">
-              <markdown
-                (dblclick)="switchToEditMode()"
-                class="text-field description-field {{ !userCanEdit ? 'no-edit' : '' }}"
-                [lineOffset]="5"
-                [data]="selectedScanDescription || '## Scan Description'"></markdown>
-            </div>
-            <textarea
-              *ngIf="descriptionMode === 'Edit'"
-              #descriptionEditMode
-              class="text-field description-field"
-              [(ngModel)]="selectedScanDescription"
-              type="text"
-              autocomplete="off"
-              data-lpignore="true"
-              placeholder="## Scan Description"></textarea>
-          </div>
-          <div *ngIf="userCanEdit" class="bottom-buttons">
-            <push-button [disabled]="!hasDescriptionChanged && !hasTitleChanged" (onClick)="onSaveMetadata()" buttonStyle="yellow">Save</push-button>
-          </div>
-        </div>
-        <div *ngIf="selectedTab === 'details'" class="tab details">
-          <div class="meta-heading">Details</div>
-          <div *ngIf="selectedIsIncomplete" class="incomplete">{{ selectedMissingData }}</div>
-          <div class="meta-area">
-            <div *ngFor="let item of selectedScanSummaryItems" class="summary-item">
-              <span class="meta-name">{{ item.label }}</span>
-              <span class="meta-value">{{ item.value }}</span>
-            </div>
-          </div>
-          <div class="meta-heading">Tracking</div>
-          <div class="meta-area align-start fx-column">
-            <div *ngFor="let item of selectedScanTrackingItems" class="summary-item">
-              <span class="meta-name">{{ item.label }}</span>
-              <span class="meta-value">{{ item.value }}</span>
-            </div>
-          </div>
-          <div class="row">
-            <div class="meta-heading">Access</div>
-            <share-ownership-item-button
-              *ngIf="selectedScan.id"
-              [id]="selectedScan.id"
-              [ownershipSummary]="selectedScan.owner || null"
-              [type]="scanItemType"></share-ownership-item-button>
-          </div>
-          <div class="meta-area align-start fx-column">
-            <div *ngFor="let item of selectedScanAccess" class="summary-item">
-              <span class="meta-name">{{ item.label }}</span>
-              <span class="meta-value">{{ item.value }}</span>
-            </div>
-          </div>
-          <div class="meta-heading">Scan Update Times</div>
-          <div class="meta-area align-start fx-column">
-            <div *ngFor="let item of selectedScanUpdates" class="summary-item">
-              <span class="meta-name">{{ item.label }}</span>
-              <span class="meta-value">{{ item.value }}</span>
-            </div>
-            <ng-container *ngIf="limitedUpdateTimes; else elseShowAllUpdates">
-              <div class="show-more clickable" (click)="onShowMoreUpdates()">Show all update times...</div>
-            </ng-container>
-        
-            <ng-template #elseShowAllUpdates>
-              <div *ngFor="let item of selectedScanUpdatesExtended" class="summary-item">
-                <span class="meta-name">{{ item.label }}</span>
-                <span class="meta-value">{{ item.value }}</span>
+              <div class="tag-container">
+                @for (tag of selectedScanTagsDisplay; track tag) {
+                  <div class="tag">{{ tag.name }}</div>
+                }
               </div>
-            </ng-template>
+              @if (selectedScanTagsDisplay.length > 0) {
+                <div class="expand">
+                  <action-button
+                    [action]="expandTags ? 'closeAccordion' : 'openAccordion'"
+                    (onClick)="expandTags = !expandTags"
+                  ></action-button>
+                </div>
+              }
+            </div>
+            <div class="tab-switcher">
+              <span
+                class="tab-btn"
+                [class.active]="selectedTab === 'description'"
+                (click)="selectedTab = 'description'"
+                >Description</span
+              >
+              <span
+                class="tab-btn"
+                [class.active]="selectedTab === 'details'"
+                (click)="selectedTab = 'details'"
+                >Details</span
+              >
+              <!-- <span class="tab-btn" [class.active]="selectedTab === 'workspaces'" (click)="selectedTab = 'workspaces'">Workspaces</span> -->
+            </div>
+            @if (selectedTab === "description") {
+              <div class="tab description">
+                <div class="meta-area">
+                  @if (userCanEdit) {
+                    <div class="field-label">
+                      <multi-switch-button
+                        [options]="descriptionModes"
+                        [value]="descriptionMode"
+                        (onChange)="descriptionMode = $event"
+                      ></multi-switch-button>
+                    </div>
+                  }
+                  @if (descriptionMode === "View") {
+                    <div class="markdown-container">
+                      <markdown
+                        (dblclick)="switchToEditMode()"
+                        class="text-field description-field {{
+                          !userCanEdit ? 'no-edit' : ''
+                        }}"
+                        [lineOffset]="5"
+                        [data]="
+                          selectedScanDescription || '## Scan Description'
+                        "
+                      ></markdown>
+                    </div>
+                  }
+                  @if (descriptionMode === "Edit") {
+                    <textarea
+                      #descriptionEditMode
+                      class="text-field description-field"
+                      [(ngModel)]="selectedScanDescription"
+                      type="text"
+                      autocomplete="off"
+                      data-lpignore="true"
+                      placeholder="## Scan Description"
+                    ></textarea>
+                  }
+                </div>
+                @if (userCanEdit) {
+                  <div class="bottom-buttons">
+                    <push-button
+                      [disabled]="!hasDescriptionChanged && !hasTitleChanged"
+                      (onClick)="onSaveMetadata()"
+                      buttonStyle="yellow"
+                      >Save</push-button
+                    >
+                  </div>
+                }
+              </div>
+            }
+            @if (selectedTab === "details") {
+              <div class="tab details">
+                <div class="meta-heading">Details</div>
+                @if (selectedIsIncomplete) {
+                  <div class="incomplete">{{ selectedMissingData }}</div>
+                }
+                <div class="meta-area">
+                  @for (item of selectedScanSummaryItems; track item) {
+                    <div class="summary-item">
+                      <span class="meta-name">{{ item.label }}</span>
+                      <span class="meta-value">{{ item.value }}</span>
+                    </div>
+                  }
+                </div>
+                <div class="meta-heading">Tracking</div>
+                <div class="meta-area align-start fx-column">
+                  @for (item of selectedScanTrackingItems; track item) {
+                    <div class="summary-item">
+                      <span class="meta-name">{{ item.label }}</span>
+                      <span class="meta-value">{{ item.value }}</span>
+                    </div>
+                  }
+                </div>
+                <div class="row">
+                  <div class="meta-heading">Access</div>
+                  @if (selectedScan.id) {
+                    <share-ownership-item-button
+                      [id]="selectedScan.id"
+                      [ownershipSummary]="selectedScan.owner || null"
+                      [type]="scanItemType"
+                    ></share-ownership-item-button>
+                  }
+                </div>
+                <div class="meta-area align-start fx-column">
+                  @for (item of selectedScanAccess; track item) {
+                    <div class="summary-item">
+                      <span class="meta-name">{{ item.label }}</span>
+                      <span class="meta-value">{{ item.value }}</span>
+                    </div>
+                  }
+                </div>
+                <div class="meta-heading">Scan Update Times</div>
+                <div class="meta-area align-start fx-column">
+                  @for (item of selectedScanUpdates; track item) {
+                    <div class="summary-item">
+                      <span class="meta-name">{{ item.label }}</span>
+                      <span class="meta-value">{{ item.value }}</span>
+                    </div>
+                  }
+                  @if (limitedUpdateTimes) {
+                    <div
+                      class="show-more clickable"
+                      (click)="onShowMoreUpdates()"
+                    >
+                      Show all update times...
+                    </div>
+                  } @else {
+                    @for (item of selectedScanUpdatesExtended; track item) {
+                      <div class="summary-item">
+                        <span class="meta-name">{{ item.label }}</span>
+                        <span class="meta-value">{{ item.value }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
-    </div>
+    }
   </div>
 </div>

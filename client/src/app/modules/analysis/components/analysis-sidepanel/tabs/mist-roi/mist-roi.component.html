@@ -35,11 +35,14 @@ POSSIBILITY OF SUCH DAMAGE. -->
     <div class="upload-btn">
       <push-button
         matTooltip="You don't have permission to upload MIST ROIs"
-        [matTooltipDisabled]="!isPublicUser && (canEditAllMIST || mistROIs.length === 0)"
+        [matTooltipDisabled]="
+          !isPublicUser && (canEditAllMIST || mistROIs.length === 0)
+        "
         [disabled]="isPublicUser || (!canEditAllMIST && mistROIs.length > 0)"
         (onClick)="onUploadROIs($event)"
         buttonStyle="yellow"
-        fxFlex="100%">
+        fxFlex="100%"
+      >
         Upload ROI Set From CSV
       </push-button>
     </div>
@@ -50,8 +53,11 @@ POSSIBILITY OF SUCH DAMAGE. -->
         placeholder="Scan ..."
         #tooltip="matTooltip"
         matTooltip="Filter to a scan"
-        [matTooltipShowDelay]="500">
-        <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+        [matTooltipShowDelay]="500"
+      >
+        @for (scan of configuredScans; track scan) {
+          <mat-option [value]="scan.id">{{ scan.title }} </mat-option>
+        }
       </mat-select>
       <mat-select
         [(ngModel)]="selectedContextImage"
@@ -59,8 +65,11 @@ POSSIBILITY OF SUCH DAMAGE. -->
         placeholder="Open a Context Image ..."
         #tooltip="matTooltip"
         matTooltip="Choose a context image to display the ROIs on"
-        [matTooltipShowDelay]="500">
-        <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+        [matTooltipShowDelay]="500"
+      >
+        @for (chart of allContextImages; track chart) {
+          <mat-option [value]="chart.widget.id">{{ chart.name }} </mat-option>
+        }
       </mat-select>
     </div>
 
@@ -71,23 +80,43 @@ POSSIBILITY OF SUCH DAMAGE. -->
         (onClick)="onDeleteSelected()"
         [disabled]="roiSelectionEmpty || !canEditSelected"
         #tooltip="matTooltip"
-        [matTooltip]="!roiSelectionEmpty && !canEditSelected ? 'You do not have edit permission on all selected MIST ROIs' : ''"
+        [matTooltip]="
+          !roiSelectionEmpty && !canEditSelected
+            ? 'You do not have edit permission on all selected MIST ROIs'
+            : ''
+        "
         buttonStyle="outline"
         >Delete Selected
       </push-button>
-      <push-button class="option" (onClick)="onConvertSelected()" [disabled]="roiSelectionEmpty" buttonStyle="outline">Convert Selected</push-button>
+      <push-button
+        class="option"
+        (onClick)="onConvertSelected()"
+        [disabled]="roiSelectionEmpty"
+        buttonStyle="outline"
+        >Convert Selected</push-button
+      >
     </div>
   </div>
   <section class="bulk-controls">
-    <span class="count">{{ selectionCount }} ROIs selected / {{ highlightedROIIds.length }} ROIs highlighted</span>
+    <span class="count"
+      >{{ selectionCount }} ROIs selected / {{ highlightedROIIds.length }} ROIs
+      highlighted</span
+    >
     <action-button
       class="visible-toggle"
       [disabled]="highlightedROIIds.length <= 0 && selectionCount === 0"
       [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
       #tooltip="matTooltip"
-      [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle selected ROIs on'"
-      [matTooltipDisabled]="highlightedROIIds.length <= 0 && selectionCount === 0"
-      (onClick)="onToggleAllVisible()">
+      [matTooltip]="
+        highlightedROIIds.length > 0
+          ? 'Toggle ROIs off'
+          : 'Toggle selected ROIs on'
+      "
+      [matTooltipDisabled]="
+        highlightedROIIds.length <= 0 && selectionCount === 0
+      "
+      (onClick)="onToggleAllVisible()"
+    >
     </action-button>
   </section>
   <cdk-accordion class="mist-roi-accordion">
@@ -99,7 +128,8 @@ POSSIBILITY OF SUCH DAMAGE. -->
           inactiveIcon="assets/button-icons/check-off.svg"
           class="checkbox-button"
           [active]="isAllFullyIdentifiedMistROIsChecked"
-          (onToggle)="toggleFullyIdentifiedMistROIs($event)">
+          (onToggle)="toggleFullyIdentifiedMistROIs($event)"
+        >
         </two-state-icon-button>
         <div class="accordion-label" (click)="onToggleExpand(0)">
           <span
@@ -110,25 +140,28 @@ POSSIBILITY OF SUCH DAMAGE. -->
             activeIcon="assets/button-icons/caret-down.svg"
             inactiveIcon="assets/button-icons/caret-right.svg"
             class="carat-button"
-            [active]="expandedIndices.includes(0)">
+            [active]="expandedIndices.includes(0)"
+          >
           </two-state-icon-button>
         </div>
       </div>
       <div [style.display]="expandedIndices.includes(0) ? '' : 'none'">
         <!-- <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport"> -->
-        <roi-item
-          *ngFor="let region of fullyIdentifiedMistROIs"
-          [summary]="region"
-          [displaySettings]="displaySettingsMap[region.id]"
-          [nextDisplayOnFirstToggle]="false"
-          [isSelectable]="true"
-          [colorChangeOnly]="true"
-          [showCreatorIcon]="false"
-          [selected]="checkSelected(region)"
-          (onROISelect)="onROISelectToggle(region)"
-          [isVisible]="highlightedROIIds.includes(region.id)"
-          (onVisibilityChange)="onROIVisibleToggle(region)">
-        </roi-item>
+        @for (region of fullyIdentifiedMistROIs; track region) {
+          <roi-item
+            [summary]="region"
+            [displaySettings]="displaySettingsMap[region.id]"
+            [nextDisplayOnFirstToggle]="false"
+            [isSelectable]="true"
+            [colorChangeOnly]="true"
+            [showCreatorIcon]="false"
+            [selected]="checkSelected(region)"
+            (onROISelect)="onROISelectToggle(region)"
+            [isVisible]="highlightedROIIds.includes(region.id)"
+            (onVisibilityChange)="onROIVisibleToggle(region)"
+          >
+          </roi-item>
+        }
         <!-- </cdk-virtual-scroll-viewport> -->
       </div>
     </cdk-accordion-item>
@@ -140,7 +173,8 @@ POSSIBILITY OF SUCH DAMAGE. -->
           inactiveIcon="assets/button-icons/check-off.svg"
           class="checkbox-button"
           [active]="isAllGroupIdentifiedMistROIsChecked"
-          (onToggle)="toggleGroupIdentifiedMistROIs($event)">
+          (onToggle)="toggleGroupIdentifiedMistROIs($event)"
+        >
         </two-state-icon-button>
         <div class="accordion-label" (click)="onToggleExpand(1)">
           <span>Mineral Group Identifications</span>
@@ -149,24 +183,27 @@ POSSIBILITY OF SUCH DAMAGE. -->
             activeIcon="assets/button-icons/caret-down.svg"
             inactiveIcon="assets/button-icons/caret-right.svg"
             class="carat-button"
-            [active]="expandedIndices.includes(1)">
+            [active]="expandedIndices.includes(1)"
+          >
           </two-state-icon-button>
         </div>
       </div>
       <div [style.display]="expandedIndices.includes(1) ? '' : 'none'">
-        <roi-item
-          *ngFor="let region of groupIdentifiedMistROIs"
-          [summary]="region"
-          [displaySettings]="displaySettingsMap[region.id]"
-          [nextDisplayOnFirstToggle]="false"
-          [isSelectable]="true"
-          [colorChangeOnly]="true"
-          [showCreatorIcon]="false"
-          [selected]="checkSelected(region)"
-          (onROISelect)="onROISelectToggle(region)"
-          [isVisible]="highlightedROIIds.includes(region.id)"
-          (onVisibilityChange)="onROIVisibleToggle(region)">
-        </roi-item>
+        @for (region of groupIdentifiedMistROIs; track region) {
+          <roi-item
+            [summary]="region"
+            [displaySettings]="displaySettingsMap[region.id]"
+            [nextDisplayOnFirstToggle]="false"
+            [isSelectable]="true"
+            [colorChangeOnly]="true"
+            [showCreatorIcon]="false"
+            [selected]="checkSelected(region)"
+            (onROISelect)="onROISelectToggle(region)"
+            [isVisible]="highlightedROIIds.includes(region.id)"
+            (onVisibilityChange)="onROIVisibleToggle(region)"
+          >
+          </roi-item>
+        }
       </div>
     </cdk-accordion-item>
   </cdk-accordion>

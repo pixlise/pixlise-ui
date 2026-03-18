@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,27 +31,40 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="footer">
   <join-the-community></join-the-community>
-  <branding-logos *ngIf="showLogos"></branding-logos>
-  <team-list *ngIf="showTeam"></team-list>
+  @if (showLogos) {
+    <branding-logos></branding-logos>
+  }
+  @if (showTeam) {
+    <team-list></team-list>
+  }
   <div class="flex-row links">
     <div class="logo-container">
       <div class="logo-group">
         <div class="logo">
-          <a href="/"><img src="assets/images/{{appLogo}}" /></a>
+          <a href="/"><img src="assets/images/{{ appLogo }}" /></a>
         </div>
-        <div class="tagline">{{tagline}}<a *ngIf="link && link.length > 0" href="https://{{link}}">{{link}}</a></div>
-        <ng-container *ngIf="showImageCredits">
+        <div class="tagline">
+          {{ tagline }}
+          @if (link && link.length > 0) {
+            <a href="https://{{ link }}">{{ link }}</a>
+          }
+        </div>
+        @if (showImageCredits) {
           <div class="credits">Image Credits:</div>
           <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
-        </ng-container>
+        }
       </div>
     </div>
     <div class="flex-row link-groups">
       <div class="caption clickable" (click)="onLogin()">Log In</div>
-      <div *ngFor="let navGroup of navigation.categories" class="flex-column">
-        <div class="caption">{{ navGroup }}</div>
-        <a *ngFor="let item of navigation.getItems(navGroup)" [href]="item.link">{{ item.label }}</a>
-      </div>
+      @for (navGroup of navigation.categories; track navGroup) {
+        <div class="flex-column">
+          <div class="caption">{{ navGroup }}</div>
+          @for (item of navigation.getItems(navGroup); track item) {
+            <a [href]="item.link">{{ item.label }}</a>
+          }
+        </div>
+      }
       <div class="flex-column">
         <div class="caption">Versions</div>
         <version-display></version-display>

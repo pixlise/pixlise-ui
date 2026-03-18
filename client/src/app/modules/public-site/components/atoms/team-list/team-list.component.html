@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,21 +30,33 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-column team section" id="team">
-  <number-button theNumber="04" theLabel="Our Team" link="" colourStyle="red" [showArrow]="false"></number-button>
+  <number-button
+    theNumber="04"
+    theLabel="Our Team"
+    link=""
+    colourStyle="red"
+    [showArrow]="false"
+  ></number-button>
   <div class="flex-row container">
-    <div class="flex-column contributors" *ngFor="let contribCol of contributors">
-      <div *ngFor="let group of contribCol">
-        <h4>{{ group.group }}</h4>
-        <div *ngFor="let person of group.contributors" class="flex-row contributor">
-          <p class="name">{{ person.name }}</p>
-          <p class="role">{{ person.role }}</p>
-        </div>
+    @for (contribCol of contributors; track contribCol) {
+      <div class="flex-column contributors">
+        @for (group of contribCol; track group) {
+          <div>
+            <h4>{{ group.group }}</h4>
+            @for (person of group.contributors; track person) {
+              <div class="flex-row contributor">
+                <p class="name">{{ person.name }}</p>
+                <p class="role">{{ person.role }}</p>
+              </div>
+            }
+          </div>
+        }
       </div>
-    </div>
+    }
   </div>
   <!--
-    <p>To reference PIXLISE, please cite:</p>
-    <p>Allwood, A. C., Wade, L. A., Foote, M. C., Elam, W. T., Hurowitz, J. A., Battel, S., ... & Zimmerman, R. (2020). PIXL: Planetary instrument for X-ray lithochemistry. Space Science Reviews, 216(8), 1-132.</p>
-    <p>DOI: <a href="https://doi.org/10.1007/s11214-020-00767-7">https://doi.org/10.1007/s11214-020-00767-7 </a> <a href="assets/citations/10.1007_s11214-020-00767-7-citation.ris">BibTex </a> <a href="assets/citations/10.1007_s11214-020-00767-7-citation.bib">EndNote</a></p>
-    https://zenodo.org/badge/latestdoi/519266678
+  <p>To reference PIXLISE, please cite:</p>
+  <p>Allwood, A. C., Wade, L. A., Foote, M. C., Elam, W. T., Hurowitz, J. A., Battel, S., ... & Zimmerman, R. (2020). PIXL: Planetary instrument for X-ray lithochemistry. Space Science Reviews, 216(8), 1-132.</p>
+  <p>DOI: <a href="https://doi.org/10.1007/s11214-020-00767-7">https://doi.org/10.1007/s11214-020-00767-7 </a> <a href="assets/citations/10.1007_s11214-020-00767-7-citation.ris">BibTex </a> <a href="assets/citations/10.1007_s11214-020-00767-7-citation.bib">EndNote</a></p>
+  https://zenodo.org/badge/latestdoi/519266678
 --></div>

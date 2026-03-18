@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,34 +30,70 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="peakid-container">
-    <div class="peakid-tabs-container">
-        <div class="peak-tabs {{ data.draggable ? 'drag' : '' }}"
-            mat-dialog-title
-            cdkDrag
-            cdkDragRootElement=".cdk-overlay-pane"
-            cdkDragHandle
-            [cdkDragDisabled]="!data.draggable">
-            <div
-              class="title">Peak Identification</div>
-            <div class="tab-row">
-                <div *ngIf="userCanViewQuantJobs" class="clickable row" [ngClass]='{"tab-selected": isQuantJobsSelected}' (click)="onTabQuantJobs()">Quant Jobs<wait-spinner *ngIf="jobsRunning > 0"></wait-spinner></div>
-                <div class="clickable" [ngClass]='{"tab-selected": isPeriodicTableSelected}' (click)="onTabPeriodicTable()">Periodic Table</div>
-                <div class="clickable" [ngClass]='{"tab-selected": isBrowseOnChartSelected}' (click)="onTabBrowseOnChart()">Browse On Chart</div>
-                <div class="clickable" [ngClass]='{"tab-selected": isElementSetsSelected}' (click)="onTabElementSets()">Element Sets</div>
-            </div>
+  <div class="peakid-tabs-container">
+    <div
+      class="peak-tabs {{ data.draggable ? 'drag' : '' }}"
+      mat-dialog-title
+      cdkDrag
+      cdkDragRootElement=".cdk-overlay-pane"
+      cdkDragHandle
+      [cdkDragDisabled]="!data.draggable"
+    >
+      <div class="title">Peak Identification</div>
+      <div class="tab-row">
+        @if (userCanViewQuantJobs) {
+          <div
+            class="clickable row"
+            [ngClass]="{ 'tab-selected': isQuantJobsSelected }"
+            (click)="onTabQuantJobs()"
+          >
+            Quant Jobs
+            @if (jobsRunning > 0) {
+              <wait-spinner></wait-spinner>
+            }
+          </div>
+        }
+        <div
+          class="clickable"
+          [ngClass]="{ 'tab-selected': isPeriodicTableSelected }"
+          (click)="onTabPeriodicTable()"
+        >
+          Periodic Table
         </div>
-
-        <div class="tab-content-container">
-            <div *ngIf="!isQuantJobsSelected" class="key-container">
-                <img class="peak-id-key" src="assets/peak-id-key.svg">
-                <div class="footer">
-                    <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
-                </div>
-            </div>
-            <div class="tab-content">
-                <template #peakTab></template>
-            </div>
+        <div
+          class="clickable"
+          [ngClass]="{ 'tab-selected': isBrowseOnChartSelected }"
+          (click)="onTabBrowseOnChart()"
+        >
+          Browse On Chart
         </div>
+        <div
+          class="clickable"
+          [ngClass]="{ 'tab-selected': isElementSetsSelected }"
+          (click)="onTabElementSets()"
+        >
+          Element Sets
+        </div>
+      </div>
     </div>
-    <peak-id-picked-elements *ngIf="!isQuantJobsSelected"></peak-id-picked-elements>
+
+    <div class="tab-content-container">
+      @if (!isQuantJobsSelected) {
+        <div class="key-container">
+          <img class="peak-id-key" src="assets/peak-id-key.svg" />
+          <div class="footer">
+            <push-button buttonStyle="outline" (onClick)="onClose()"
+              >Close</push-button
+            >
+          </div>
+        </div>
+      }
+      <div class="tab-content">
+        <template #peakTab></template>
+      </div>
+    </div>
+  </div>
+  @if (!isQuantJobsSelected) {
+    <peak-id-picked-elements></peak-id-picked-elements>
+  }
 </div>

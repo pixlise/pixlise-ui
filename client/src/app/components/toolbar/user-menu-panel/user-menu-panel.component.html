@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -39,25 +39,70 @@ POSSIBILITY OF SUCH DAMAGE.
         <div>{{ userEmail }}</div>
       </div>
     </div>
-    <user-icon *ngIf="user !== null" class="user-icon" [userId]="user?.info?.id || ''" size="40px"></user-icon>
+    @if (user !== null) {
+      <user-icon
+        class="user-icon"
+        [userId]="user?.info?.id || ''"
+        size="40px"
+      ></user-icon>
+    }
   </section>
   <section class="buttons">
-    <ng-container *ngIf="isPIXLISEAdmin">
-      <wait-spinner *ngIf="impersonateUserEnabled && impersonatingUserName === undefined">Loading Impersonation Setting</wait-spinner>
-      <push-button *ngIf="impersonateUserEnabled" buttonStyle="yellow" (onClick)="onImpersonate()">{{
-        impersonatingUserName ? "Stop Impersonating: " + impersonatingUserName : "Impersonate User..."
-      }}</push-button>
-      <push-button *ngIf="backupEnabled" buttonStyle="hover-yellow" (onClick)="onBackupData()">Backup Data</push-button>
-      <push-button *ngIf="restoreEnabled" buttonStyle="hover-yellow" (onClick)="onRestoreData()">Restore Data</push-button>
-    </ng-container>
-    <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
-    <push-button *ngIf="!isReadOnlyUser" buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
-    <div *ngIf="user.info?.expirationDateUnixSec">
-      <div class="gap-separated-horizontal-elements user-field">
-        <div>Account Expires:</div>
-        <div>{{ (user.info?.expirationDateUnixSec || 0) * 1000 | date: "medium" }}</div>
+    @if (isPIXLISEAdmin) {
+      @if (impersonateUserEnabled && impersonatingUserName === undefined) {
+        <wait-spinner>Loading Impersonation Setting</wait-spinner>
+      }
+      @if (impersonateUserEnabled) {
+        <push-button buttonStyle="yellow" (onClick)="onImpersonate()">{{
+          impersonatingUserName
+            ? "Stop Impersonating: " + impersonatingUserName
+            : "Impersonate User..."
+        }}</push-button>
+      }
+      @if (backupEnabled) {
+        <push-button buttonStyle="hover-yellow" (onClick)="onBackupData()"
+          >Backup Data</push-button
+        >
+      }
+      @if (restoreEnabled) {
+        <push-button buttonStyle="hover-yellow" (onClick)="onRestoreData()"
+          >Restore Data</push-button
+        >
+      }
+    }
+    @if (isAdminOfAnyGroup) {
+      <push-button
+        buttonStyle="hover-yellow"
+        class="settings"
+        (onClick)="onGroups()"
+        >Group Admin</push-button
+      >
+    }
+    @if (!isReadOnlyUser) {
+      <push-button
+        buttonStyle="hover-yellow"
+        class="settings"
+        (onClick)="onSettings()"
+        >Settings</push-button
+      >
+    }
+    @if (user.info?.expirationDateUnixSec) {
+      <div>
+        <div class="gap-separated-horizontal-elements user-field">
+          <div>Account Expires:</div>
+          <div>
+            {{
+              (user.info?.expirationDateUnixSec || 0) * 1000 | date: "medium"
+            }}
+          </div>
+        </div>
       </div>
-    </div>
-    <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
+    }
+    <push-button
+      buttonStyle="hover-yellow"
+      class="sign-out"
+      (onClick)="onLogout()"
+      >Sign Out</push-button
+    >
   </section>
 </div>

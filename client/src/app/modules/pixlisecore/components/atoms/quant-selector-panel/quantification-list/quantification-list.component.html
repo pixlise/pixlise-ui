@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,43 +30,61 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="scrollable-container" fxFill>
-  <div *ngIf="loading" class="loading-icon">
-    <wait-spinner></wait-spinner>
-  </div>
-  <div *ngIf="noQuants" class="no-quants">No available quantifications found for this dataset</div>
-  <div *ngIf="!loading">
-    <ng-container *ngIf="showNoneOption && selectedQuantId">
-      <div class="setting-row">
-        <div class="setting-label">Clear Selected Quantification</div>
-        <push-button (onClick)="onClearSelection()" buttonStyle="yellow">Clear</push-button>
-      </div>
-      <div *ngIf="userQuants.length > 0" class="list-subheading">User Quantifications</div>
-    </ng-container>
-    <quantification-item
-      *ngFor="let quant of userQuants"
-      [quantItem]="quant"
-      [roiMatched]="isROIMatch(quant)"
-      (onQuantSelected)="onSelectQuant(quant)"
-      (onClearSelection)="onClearSelection()">
-      <!-- <div *ngIf="showControlButtons" class="control-btns left-gap gap-separated-horizontal-elements" controlButtons>
-        <icon-button (click)="onShare(quant, $event)" title="Share quantification with other users" icon="assets/button-icons/share.svg"></icon-button>
+  @if (loading) {
+    <div class="loading-icon">
+      <wait-spinner></wait-spinner>
+    </div>
+  }
+  @if (noQuants) {
+    <div class="no-quants">
+      No available quantifications found for this dataset
+    </div>
+  }
+  @if (!loading) {
+    <div>
+      @if (showNoneOption && selectedQuantId) {
+        <div class="setting-row">
+          <div class="setting-label">Clear Selected Quantification</div>
+          <push-button (onClick)="onClearSelection()" buttonStyle="yellow"
+            >Clear</push-button
+          >
+        </div>
+        @if (userQuants.length > 0) {
+          <div class="list-subheading">User Quantifications</div>
+        }
+      }
+      @for (quant of userQuants; track quant) {
+        <quantification-item
+          [quantItem]="quant"
+          [roiMatched]="isROIMatch(quant)"
+          (onQuantSelected)="onSelectQuant(quant)"
+          (onClearSelection)="onClearSelection()"
+        >
+          <!-- <div *ngIf="showControlButtons" class="control-btns left-gap gap-separated-horizontal-elements" controlButtons>
+          <icon-button (click)="onShare(quant, $event)" title="Share quantification with other users" icon="assets/button-icons/share.svg"></icon-button>
+          <icon-button *ngIf="canDelete(quant)" (click)="onDelete(quant, $event)" title="Delete quantification" icon="assets/button-icons/delete.svg"></icon-button>
+          <icon-button *ngIf="canBless" (click)="onBless(quant, $event)" title="Bless quantification" icon="assets/button-icons/bless.svg"></icon-button>
+          <icon-button *ngIf="canPublish" (click)="onPublish(quant, $event)" title="Publish quantification to PDS" icon="assets/button-icons/publish.svg"></icon-button>
+        </div> -->
+        </quantification-item>
+      }
+      @if (sharedQuants.length > 0) {
+        <div class="list-subheading">Shared Quantifications</div>
+      }
+      @for (quant of sharedQuants; track quant) {
+        <quantification-item
+          [quantItem]="quant"
+          [roiMatched]="isROIMatch(quant)"
+          (onQuantSelected)="onSelectQuant(quant)"
+          (onClearSelection)="onClearSelection()"
+        >
+          <!-- <div *ngIf="showControlButtons" class="shared-control-btns left-gap gap-separated-horizontal-elements" controlButtons>
         <icon-button *ngIf="canDelete(quant)" (click)="onDelete(quant, $event)" title="Delete quantification" icon="assets/button-icons/delete.svg"></icon-button>
         <icon-button *ngIf="canBless" (click)="onBless(quant, $event)" title="Bless quantification" icon="assets/button-icons/bless.svg"></icon-button>
         <icon-button *ngIf="canPublish" (click)="onPublish(quant, $event)" title="Publish quantification to PDS" icon="assets/button-icons/publish.svg"></icon-button>
       </div> -->
-    </quantification-item>
-    <div *ngIf="sharedQuants.length > 0" class="list-subheading">Shared Quantifications</div>
-    <quantification-item
-      *ngFor="let quant of sharedQuants"
-      [quantItem]="quant"
-      [roiMatched]="isROIMatch(quant)"
-      (onQuantSelected)="onSelectQuant(quant)"
-      (onClearSelection)="onClearSelection()">
-      <!-- <div *ngIf="showControlButtons" class="shared-control-btns left-gap gap-separated-horizontal-elements" controlButtons>
-        <icon-button *ngIf="canDelete(quant)" (click)="onDelete(quant, $event)" title="Delete quantification" icon="assets/button-icons/delete.svg"></icon-button>
-        <icon-button *ngIf="canBless" (click)="onBless(quant, $event)" title="Bless quantification" icon="assets/button-icons/bless.svg"></icon-button>
-        <icon-button *ngIf="canPublish" (click)="onPublish(quant, $event)" title="Publish quantification to PDS" icon="assets/button-icons/publish.svg"></icon-button>
-      </div> -->
-    </quantification-item>
-  </div>
+        </quantification-item>
+      }
+    </div>
+  }
 </div>

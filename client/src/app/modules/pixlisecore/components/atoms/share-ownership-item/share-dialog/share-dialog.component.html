@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,190 +32,355 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="sub-item-sharing-menu">
     <span>Adds view access for</span>
     <div class="new-view-access">
-      <div *ngFor="let member of members; trackBy: trackByMemberId" class="member-item">
-        <div class="member-container" *ngIf="subItemViewershipChangeMap.get(selectedSubItemId)?.has(member.id)">
-          <div class="icon {{ !member.isGroup && member.id === currentUserId ? 'current-user' : '' }}">
-            <user-icon *ngIf="!member.isGroup" [userId]="member?.id || ''" size="32px"></user-icon>
-            <group-icon *ngIf="member.isGroup" [groupId]="member?.id || ''" size="32px"></group-icon>
-          </div>
-          <div class="name">{{ member.name }}</div>
-          <div class="access-type">
-            <span class="static-access">{{ member.isGroup ? "Group" : "User" }}</span>
-          </div>
+      @for (member of members; track trackByMemberId($index, member)) {
+        <div class="member-item">
+          @if (
+            subItemViewershipChangeMap.get(selectedSubItemId)?.has(member.id)
+          ) {
+            <div class="member-container">
+              <div
+                class="icon {{
+                  !member.isGroup && member.id === currentUserId
+                    ? 'current-user'
+                    : ''
+                }}"
+              >
+                @if (!member.isGroup) {
+                  <user-icon
+                    [userId]="member?.id || ''"
+                    size="32px"
+                  ></user-icon>
+                }
+                @if (member.isGroup) {
+                  <group-icon
+                    [groupId]="member?.id || ''"
+                    size="32px"
+                  ></group-icon>
+                }
+              </div>
+              <div class="name">{{ member.name }}</div>
+              <div class="access-type">
+                <span class="static-access">{{
+                  member.isGroup ? "Group" : "User"
+                }}</span>
+              </div>
+            </div>
+          }
         </div>
-      </div>
+      }
     </div>
   </div>
 </ng-template>
 
 <div class="share-dialog">
   <h1>{{ dialogTitle }}</h1>
-  <div *ngIf="data.description" class="description-container">
-    <h5>{{ data.description }}</h5>
-  </div>
-  <div class="fields">
-    <div *ngIf="!data.isReviewerSnapshot" class="search-field">
-      <div class="auto-container" *ngIf="isSearchingGroups">
-        <input type="text" placeholder="Search Groups..." matInput [matAutocomplete]="groupAuto" [(ngModel)]="searchField" />
-        <mat-autocomplete #groupAuto="matAutocomplete">
-          <mat-option
-            [disabled]="memberIds.has(group.id)"
-            (onSelectionChange)="onSelectGroup(group, $event)"
-            *ngFor="let group of filteredGroups"
-            [value]="group.id"
-            >{{ group.name }}</mat-option
-          >
-        </mat-autocomplete>
-      </div>
-      <div class="auto-container" *ngIf="!isSearchingGroups">
-        <input type="text" placeholder="Search Users..." matInput [matAutocomplete]="userAuto" [(ngModel)]="searchField" />
-        <mat-autocomplete #userAuto="matAutocomplete">
-          <mat-option [disabled]="memberIds.has(user.id)" (onSelectionChange)="onSelectUser(user, $event)" *ngFor="let user of filteredUsers" [value]="user.id">{{
-            user.name
-          }}</mat-option>
-        </mat-autocomplete>
-      </div>
-
-      <div class="search-type {{ canEdit ? '' : 'disabled' }}">
-        <mat-select [(ngModel)]="isSearchingGroups">
-          <mat-option [value]="true">Groups</mat-option>
-          <mat-option [value]="false">Users</mat-option>
-        </mat-select>
-      </div>
+  @if (data.description) {
+    <div class="description-container">
+      <h5>{{ data.description }}</h5>
     </div>
+  }
+  <div class="fields">
+    @if (!data.isReviewerSnapshot) {
+      <div class="search-field">
+        @if (isSearchingGroups) {
+          <div class="auto-container">
+            <input
+              type="text"
+              placeholder="Search Groups..."
+              matInput
+              [matAutocomplete]="groupAuto"
+              [(ngModel)]="searchField"
+            />
+            <mat-autocomplete #groupAuto="matAutocomplete">
+              @for (group of filteredGroups; track group) {
+                <mat-option
+                  [disabled]="memberIds.has(group.id)"
+                  (onSelectionChange)="onSelectGroup(group, $event)"
+                  [value]="group.id"
+                  >{{ group.name }}</mat-option
+                >
+              }
+            </mat-autocomplete>
+          </div>
+        }
+        @if (!isSearchingGroups) {
+          <div class="auto-container">
+            <input
+              type="text"
+              placeholder="Search Users..."
+              matInput
+              [matAutocomplete]="userAuto"
+              [(ngModel)]="searchField"
+            />
+            <mat-autocomplete #userAuto="matAutocomplete">
+              @for (user of filteredUsers; track user) {
+                <mat-option
+                  [disabled]="memberIds.has(user.id)"
+                  (onSelectionChange)="onSelectUser(user, $event)"
+                  [value]="user.id"
+                  >{{ user.name }}</mat-option
+                >
+              }
+            </mat-autocomplete>
+          </div>
+        }
+        <div class="search-type {{ canEdit ? '' : 'disabled' }}">
+          <mat-select [(ngModel)]="isSearchingGroups">
+            <mat-option [value]="true">Groups</mat-option>
+            <mat-option [value]="false">Users</mat-option>
+          </mat-select>
+        </div>
+      </div>
+    }
 
     <!-- <h1 *ngIf="data.isReviewerSnapshot" class="link-to-review">Link to review snapshot</h1>
-    <div *ngIf="data.isReviewerSnapshot" class="review-link-container">
-      <input readonly type="text" placeholder="Link to review snapshot" matInput [(ngModel)]="reviewerSnapshotLink" />
+      <div *ngIf="data.isReviewerSnapshot" class="review-link-container">
+        <input readonly type="text" placeholder="Link to review snapshot" matInput [(ngModel)]="reviewerSnapshotLink" />
 
-      <div class="copy-container" (click)="copyReviewLinkToClipboard()">
-        <action-button [action]="copiedReviewerSnapshotLink ? 'check' : 'copy'"></action-button>
-      </div>
-    </div> -->
+        <div class="copy-container" (click)="copyReviewLinkToClipboard()">
+          <action-button [action]="copiedReviewerSnapshotLink ? 'check' : 'copy'"></action-button>
+        </div>
+      </div> -->
 
     <h1 class="has-access">Has access</h1>
-    <div *ngIf="data.isReviewerSnapshot" class="access-list review-time">
-      <mat-select [(ngModel)]="reviewerAccessTime" (selectionChange)="onReviewerAccessTimeChange($event)">
-        <mat-select-trigger class="access-dropdown"><img src="assets/icons/clock.svg" alt="Access Time Icon" />{{ reviewerAccessTime.label }}</mat-select-trigger>
-
-        <mat-option *ngFor="let timeOption of reviewTimeOptions" [value]="timeOption">{{ timeOption.label }}</mat-option>
-      </mat-select>
-      <span class="accessor">Anyone with link</span>
-      <span class="access-type">Viewer</span>
-    </div>
-    <div *ngIf="!data.isReviewerSnapshot" class="access-list">
-      <div *ngFor="let member of members; trackBy: trackByMemberId" class="member-item">
-        <div class="error-icon" *ngIf="memberSharingErrorChangeMap.get(member.id)">
-          <img
-            #tooltip="matTooltip"
-            [matTooltip]="
-              (memberSharingErrorChangeMap.get(member.id)?.size?.toString() || '0') +
-              ' items cannot be shared with this user.\n\n' +
-              'Please go through the below list of items and make sure you have edit permission on them\nto update sharing settings or confirm that the intended audience otherwise has access.\n\n' +
-              'Sharing without resolving these issues could potentially lead to broken items for this user.'
-            "
-            class="sharing-warning"
-            src="assets/icons/error-triangle.svg"
-            alt="Error Icon" />
-        </div>
-        <div class="icon {{ !member.isGroup && member.id === currentUserId ? 'current-user' : '' }}">
-          <user-icon *ngIf="!member.isGroup" [userId]="member?.id || ''" size="32px"></user-icon>
-          <group-icon *ngIf="member.isGroup" [groupId]="member?.id || ''" size="32px"></group-icon>
-        </div>
-        <div class="name">{{ member.name }}</div>
-        <div class="access-type">
-          <span class="static-access" *ngIf="member.id === currentUserId && data?.ownershipSummary?.creatorUser?.id === member.id && preventSelfAssignment"
-            >Owner</span
+    @if (data.isReviewerSnapshot) {
+      <div class="access-list review-time">
+        <mat-select
+          [(ngModel)]="reviewerAccessTime"
+          (selectionChange)="onReviewerAccessTimeChange($event)"
+        >
+          <mat-select-trigger class="access-dropdown"
+            ><img src="assets/icons/clock.svg" alt="Access Time Icon" />{{
+              reviewerAccessTime.label
+            }}</mat-select-trigger
           >
-          <span class="static-access" *ngIf="member.id !== currentUserId && data.restrictSubItemSharingToViewer && subItems.length > 0">View all included items</span>
-          <mat-select
-            *ngIf="(member.id !== currentUserId && (!data.restrictSubItemSharingToViewer || subItems.length === 0)) || !preventSelfAssignment"
-            [disabled]="!canEdit || (member.id === currentUserId && preventSelfAssignment) || (!canEdit && memberIds.has(member.id))"
-            [(ngModel)]="member.isEditor"
-            (selectionChange)="onAccessChange('', $event)">
-            <mat-option [value]="true">Editor</mat-option>
-            <mat-option [value]="false">Viewer</mat-option>
-          </mat-select>
-          <action-button
-            *ngIf="canEdit && (member.id !== currentUserId || !preventSelfAssignment)"
-            action="close"
-            color="rgb(var(--clr-gray-30))"
-            confirmText="Are you sure you want to remove {{ member.name }}?"
-            (onClick)="onRemoveMember(member.id)"></action-button>
-        </div>
+          @for (timeOption of reviewTimeOptions; track timeOption) {
+            <mat-option [value]="timeOption">{{ timeOption.label }}</mat-option>
+          }
+        </mat-select>
+        <span class="accessor">Anyone with link</span>
+        <span class="access-type">Viewer</span>
       </div>
-    </div>
+    }
+    @if (!data.isReviewerSnapshot) {
+      <div class="access-list">
+        @for (member of members; track trackByMemberId($index, member)) {
+          <div class="member-item">
+            @if (memberSharingErrorChangeMap.get(member.id)) {
+              <div class="error-icon">
+                <img
+                  #tooltip="matTooltip"
+                  [matTooltip]="
+                    (memberSharingErrorChangeMap
+                      .get(member.id)
+                      ?.size?.toString() || '0') +
+                    ' items cannot be shared with this user.\n\n' +
+                    'Please go through the below list of items and make sure you have edit permission on them\nto update sharing settings or confirm that the intended audience otherwise has access.\n\n' +
+                    'Sharing without resolving these issues could potentially lead to broken items for this user.'
+                  "
+                  class="sharing-warning"
+                  src="assets/icons/error-triangle.svg"
+                  alt="Error Icon"
+                />
+              </div>
+            }
+            <div
+              class="icon {{
+                !member.isGroup && member.id === currentUserId
+                  ? 'current-user'
+                  : ''
+              }}"
+            >
+              @if (!member.isGroup) {
+                <user-icon [userId]="member?.id || ''" size="32px"></user-icon>
+              }
+              @if (member.isGroup) {
+                <group-icon
+                  [groupId]="member?.id || ''"
+                  size="32px"
+                ></group-icon>
+              }
+            </div>
+            <div class="name">{{ member.name }}</div>
+            <div class="access-type">
+              @if (
+                member.id === currentUserId &&
+                data?.ownershipSummary?.creatorUser?.id === member.id &&
+                preventSelfAssignment
+              ) {
+                <span class="static-access">Owner</span>
+              }
+              @if (
+                member.id !== currentUserId &&
+                data.restrictSubItemSharingToViewer &&
+                subItems.length > 0
+              ) {
+                <span class="static-access">View all included items</span>
+              }
+              @if (
+                (member.id !== currentUserId &&
+                  (!data.restrictSubItemSharingToViewer ||
+                    subItems.length === 0)) ||
+                !preventSelfAssignment
+              ) {
+                <mat-select
+                  [disabled]="
+                    !canEdit ||
+                    (member.id === currentUserId && preventSelfAssignment) ||
+                    (!canEdit && memberIds.has(member.id))
+                  "
+                  [(ngModel)]="member.isEditor"
+                  (selectionChange)="onAccessChange('', $event)"
+                >
+                  <mat-option [value]="true">Editor</mat-option>
+                  <mat-option [value]="false">Viewer</mat-option>
+                </mat-select>
+              }
+              @if (
+                canEdit &&
+                (member.id !== currentUserId || !preventSelfAssignment)
+              ) {
+                <action-button
+                  action="close"
+                  color="rgb(var(--clr-gray-30))"
+                  confirmText="Are you sure you want to remove {{
+                    member.name
+                  }}?"
+                  (onClick)="onRemoveMember(member.id)"
+                ></action-button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
 
-    <div class="sub-items" *ngIf="subItems.length > 0">
-      <div class="title">
-        <h1>Included in {{ data.typeName }} Sharing</h1>
-        <div *ngIf="!data.isReviewerSnapshot" class="share-subitems">
-          <span class="share-sub-label">Share with Sub Items:</span>
-          <action-button [action]="shareWithSubItems ? 'checkOn' : 'checkOff'" (onClick)="shareWithSubItems = !shareWithSubItems"></action-button>
+    @if (subItems.length > 0) {
+      <div class="sub-items">
+        <div class="title">
+          <h1>Included in {{ data.typeName }} Sharing</h1>
+          @if (!data.isReviewerSnapshot) {
+            <div class="share-subitems">
+              <span class="share-sub-label">Share with Sub Items:</span>
+              <action-button
+                [action]="shareWithSubItems ? 'checkOn' : 'checkOff'"
+                (onClick)="shareWithSubItems = !shareWithSubItems"
+              ></action-button>
+            </div>
+          }
         </div>
-      </div>
-      <div class="warning-not-shared" *ngIf="!shareWithSubItems">
-        <div class="warning-icon">
-          <img class="sharing-warning" src="assets/icons/error-triangle.svg" alt="Error Icon" />
-        </div>
-        <span class="text-label">
-          Sharing settings will not be updated for sub-items in this {{ data.typeName }}, so it may appear broken for users who don't already have access.
-        </span>
-      </div>
-      <div *ngIf="shareWithSubItems" class="sub-item-list">
-        <div *ngFor="let subItem of subItems" class="sub-item">
-          <div class="icon">
-            <img
-              *ngIf="subItemSharingErrorMap.get(subItem.id)"
-              #tooltip="matTooltip"
-              [matTooltip]="
-                'You don\'t have edit permission on this expression to update sharing settings.\n' +
-                'Please make a copy of it or ask the owner (' +
-                (subItem.ownershipSummary?.creatorUser?.name || 'N/A') +
-                ') to make you an editor to share this group with others.'
-              "
-              class="sharing-warning"
-              src="assets/icons/error-triangle.svg"
-              alt="Error Icon" />
-            <user-icon [userId]="subItem.ownershipSummary.creatorUser?.id || ''" size="32px"></user-icon>
+        @if (!shareWithSubItems) {
+          <div class="warning-not-shared">
+            <div class="warning-icon">
+              <img
+                class="sharing-warning"
+                src="assets/icons/error-triangle.svg"
+                alt="Error Icon"
+              />
+            </div>
+            <span class="text-label">
+              Sharing settings will not be updated for sub-items in this
+              {{ data.typeName }}, so it may appear broken for users who don't
+              already have access.
+            </span>
           </div>
-          <div class="details {{ subItemSharingErrorMap.get(subItem.id) ? 'error-state' : '' }}">
-            <h2>{{ subItem.name }}</h2>
-            <h5>{{ subItem.typeName }}</h5>
+        }
+        @if (shareWithSubItems) {
+          <div class="sub-item-list">
+            @for (subItem of subItems; track subItem) {
+              <div class="sub-item">
+                <div class="icon">
+                  @if (subItemSharingErrorMap.get(subItem.id)) {
+                    <img
+                      #tooltip="matTooltip"
+                      [matTooltip]="
+                        'You don\'t have edit permission on this expression to update sharing settings.\n' +
+                        'Please make a copy of it or ask the owner (' +
+                        (subItem.ownershipSummary?.creatorUser?.name || 'N/A') +
+                        ') to make you an editor to share this group with others.'
+                      "
+                      class="sharing-warning"
+                      src="assets/icons/error-triangle.svg"
+                      alt="Error Icon"
+                    />
+                  }
+                  <user-icon
+                    [userId]="subItem.ownershipSummary.creatorUser?.id || ''"
+                    size="32px"
+                  ></user-icon>
+                </div>
+                <div
+                  class="details {{
+                    subItemSharingErrorMap.get(subItem.id) ? 'error-state' : ''
+                  }}"
+                >
+                  <h2>{{ subItem.name }}</h2>
+                  <h5>{{ subItem.typeName }}</h5>
+                </div>
+                <div class="right-menu">
+                  <widget-settings-menu [settingsDialog]="subItemSharingMenu">
+                    @if (
+                      canEdit &&
+                      subItem.ownershipSummary.canEdit &&
+                      subItemViewershipChangeMap.get(subItem.id)?.size
+                    ) {
+                      <push-button
+                        [disabled]="
+                          !canEdit || !subItem.ownershipSummary.canEdit
+                        "
+                        buttonStyle="gray"
+                        (onClick)="selectedSubItemId = subItem.id"
+                        >+{{
+                          subItemViewershipChangeMap.get(subItem.id)?.size || 0
+                        }}
+                        Viewers</push-button
+                      >
+                    }
+                  </widget-settings-menu>
+                  <share-ownership-item-button
+                    [id]="subItem.id"
+                    [ownershipSummary]="subItem.ownershipSummary"
+                    [type]="subItem.type"
+                  ></share-ownership-item-button>
+                </div>
+              </div>
+            }
           </div>
-          <div class="right-menu">
-            <widget-settings-menu [settingsDialog]="subItemSharingMenu">
-              <push-button
-                *ngIf="canEdit && subItem.ownershipSummary.canEdit && subItemViewershipChangeMap.get(subItem.id)?.size"
-                [disabled]="!canEdit || !subItem.ownershipSummary.canEdit"
-                buttonStyle="gray"
-                (onClick)="selectedSubItemId = subItem.id"
-                >+{{ subItemViewershipChangeMap.get(subItem.id)?.size || 0 }} Viewers</push-button
-              >
-            </widget-settings-menu>
-            <share-ownership-item-button [id]="subItem.id" [ownershipSummary]="subItem.ownershipSummary" [type]="subItem.type"></share-ownership-item-button>
-          </div>
-        </div>
+        }
       </div>
-    </div>
+    }
     <div class="gap-separated-horizontal-elements button-container">
-      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-      <push-button
-        *ngIf="validShareCount > 0 && shareWithSubItems"
-        buttonStyle="yellow"
-        (onClick)="onConfirm()"
-        #tooltip="matTooltip"
-        [matTooltip]="canEdit ? confirmButtonTooltip : 'NOTE: You only have permission to add viewers.'"
-        >Share {{ validShareCount }} items</push-button
+      <push-button buttonStyle="outline" (onClick)="onCancel()"
+        >Cancel</push-button
       >
-      <push-button
-        *ngIf="validShareCount === 0 || !shareWithSubItems"
-        buttonStyle="yellow"
-        (onClick)="onConfirm()"
-        #tooltip="matTooltip"
-        [matTooltip]="canEdit ? confirmButtonTooltip : 'NOTE: You only have permission to add viewers.'"
-        >{{ data.isReviewerSnapshot ? "Create reviewer snapshot" : "Confirm" }}</push-button
-      >
+      @if (validShareCount > 0 && shareWithSubItems) {
+        <push-button
+          buttonStyle="yellow"
+          (onClick)="onConfirm()"
+          #tooltip="matTooltip"
+          [matTooltip]="
+            canEdit
+              ? confirmButtonTooltip
+              : 'NOTE: You only have permission to add viewers.'
+          "
+          >Share {{ validShareCount }} items</push-button
+        >
+      }
+      @if (validShareCount === 0 || !shareWithSubItems) {
+        <push-button
+          buttonStyle="yellow"
+          (onClick)="onConfirm()"
+          #tooltip="matTooltip"
+          [matTooltip]="
+            canEdit
+              ? confirmButtonTooltip
+              : 'NOTE: You only have permission to add viewers.'
+          "
+          >{{
+            data.isReviewerSnapshot ? "Create reviewer snapshot" : "Confirm"
+          }}</push-button
+        >
+      }
     </div>
   </div>
 </div>

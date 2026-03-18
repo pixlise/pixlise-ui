@@ -40,9 +40,14 @@ POSSIBILITY OF SUCH DAMAGE. -->
         class="scan-filter"
         placeholder="Scan ..."
         #tooltip="matTooltip"
-        matTooltip="The {{ datasetIDHeader }} field will override this if included"
-        [matTooltipShowDelay]="500">
-        <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }}</mat-option>
+        matTooltip="The {{
+          datasetIDHeader
+        }} field will override this if included"
+        [matTooltipShowDelay]="500"
+      >
+        @for (scan of configuredScans; track scan) {
+          <mat-option [value]="scan.id">{{ scan.title }}</mat-option>
+        }
       </mat-select>
     </div>
     <div class="upload-option">
@@ -53,77 +58,117 @@ POSSIBILITY OF SUCH DAMAGE. -->
         placeholder="Group ..."
         #tooltip="matTooltip"
         matTooltip="Share MIST ROIs with this group"
-        [matTooltipShowDelay]="500">
-        <mat-option *ngFor="let group of editableGroups" [value]="group.id">{{ group.name }}</mat-option>
+        [matTooltipShowDelay]="500"
+      >
+        @for (group of editableGroups; track group) {
+          <mat-option [value]="group.id">{{ group.name }}</mat-option>
+        }
       </mat-select>
     </div>
     <div class="upload-option">
       <h5>Choose .CSV:</h5>
-      <input type="file" style="display: none" #csvFile (change)="onBrowse($event)" accept=".csv" />
-      <push-button #tooltip="matTooltip" [matTooltip]="browseTooltip" [matTooltipShowDelay]="500" class="browse-btn" buttonStyle="normal" (onClick)="csvFile.click()"
+      <input
+        type="file"
+        style="display: none"
+        #csvFile
+        (change)="onBrowse($event)"
+        accept=".csv"
+      />
+      <push-button
+        #tooltip="matTooltip"
+        [matTooltip]="browseTooltip"
+        [matTooltipShowDelay]="500"
+        class="browse-btn"
+        buttonStyle="normal"
+        (onClick)="csvFile.click()"
         >Browse Files</push-button
       >
     </div>
-    <mat-radio-group class="top-gap overwrite-options" [(ngModel)]="overwriteOption">
-      <mat-radio-button *ngFor="let option of overwriteOptions" [value]="option" class="overwrite-option" labelPosition="before"> {{ option }}: </mat-radio-button>
+    <mat-radio-group
+      class="top-gap overwrite-options"
+      [(ngModel)]="overwriteOption"
+    >
+      @for (option of overwriteOptions; track option) {
+        <mat-radio-button
+          [value]="option"
+          class="overwrite-option"
+          labelPosition="before"
+        >
+          {{ option }}:
+        </mat-radio-button>
+      }
     </mat-radio-group>
-    <div *ngIf="uploadSummaries.length > 0" class="upload-summary">
-      <h5>Summary:</h5>
-      <div class="summary-header">
-        <div class="cell upload">
-          <two-state-icon-button
-            toolTip="Toggle whether to upload these ROIs or not"
-            activeIcon="assets/button-icons/check-on.svg"
-            inactiveIcon="assets/button-icons/check-off.svg"
-            class="checkbox-button"
-            [active]="allChecked"
-            (onToggle)="allChecked = !allChecked">
-          </two-state-icon-button>
-        </div>
-        <div class="cell scan">Scan</div>
-        <div class="cell count">Count</div>
-        <div class="cell configured">
-          <img
-            *ngIf="allScansConfigured"
-            src="assets/button-icons/blue-circle-check.svg"
-            #tooltip="matTooltip"
-            matTooltip="All scans to be uploaded are configured in your workspace." />
-          <img
-            *ngIf="!allScansConfigured"
-            src="assets/button-icons/red-circle-x.svg"
-            #tooltip="matTooltip"
-            matTooltip="Some scans to be uploaded are not configured in your workspace." />
-        </div>
-      </div>
-      <div class="summary-rows">
-        <div *ngFor="let summary of uploadSummaries" class="summary-row">
+    @if (uploadSummaries.length > 0) {
+      <div class="upload-summary">
+        <h5>Summary:</h5>
+        <div class="summary-header">
           <div class="cell upload">
             <two-state-icon-button
               toolTip="Toggle whether to upload these ROIs or not"
               activeIcon="assets/button-icons/check-on.svg"
               inactiveIcon="assets/button-icons/check-off.svg"
               class="checkbox-button"
-              [active]="summary.upload"
-              (onToggle)="summary.upload = !summary.upload">
+              [active]="allChecked"
+              (onToggle)="allChecked = !allChecked"
+            >
             </two-state-icon-button>
           </div>
-          <div class="cell scan">{{ summary.scanName }}</div>
-          <div class="cell count">{{ summary.mistROIs.length }}</div>
+          <div class="cell scan">Scan</div>
+          <div class="cell count">Count</div>
           <div class="cell configured">
-            <img
-              *ngIf="summary.isScanConfigured"
-              src="assets/button-icons/blue-circle-check.svg"
-              #tooltip="matTooltip"
-              matTooltip="Scan is configured for this workspace" />
-            <img
-              *ngIf="!summary.isScanConfigured"
-              src="assets/button-icons/red-circle-x.svg"
-              #tooltip="matTooltip"
-              matTooltip="Scan is not configured for this workspace. The uploaded ROIs will not be visible until it is added." />
+            @if (allScansConfigured) {
+              <img
+                src="assets/button-icons/blue-circle-check.svg"
+                #tooltip="matTooltip"
+                matTooltip="All scans to be uploaded are configured in your workspace."
+              />
+            }
+            @if (!allScansConfigured) {
+              <img
+                src="assets/button-icons/red-circle-x.svg"
+                #tooltip="matTooltip"
+                matTooltip="Some scans to be uploaded are not configured in your workspace."
+              />
+            }
           </div>
         </div>
+        <div class="summary-rows">
+          @for (summary of uploadSummaries; track summary) {
+            <div class="summary-row">
+              <div class="cell upload">
+                <two-state-icon-button
+                  toolTip="Toggle whether to upload these ROIs or not"
+                  activeIcon="assets/button-icons/check-on.svg"
+                  inactiveIcon="assets/button-icons/check-off.svg"
+                  class="checkbox-button"
+                  [active]="summary.upload"
+                  (onToggle)="summary.upload = !summary.upload"
+                >
+                </two-state-icon-button>
+              </div>
+              <div class="cell scan">{{ summary.scanName }}</div>
+              <div class="cell count">{{ summary.mistROIs.length }}</div>
+              <div class="cell configured">
+                @if (summary.isScanConfigured) {
+                  <img
+                    src="assets/button-icons/blue-circle-check.svg"
+                    #tooltip="matTooltip"
+                    matTooltip="Scan is configured for this workspace"
+                  />
+                }
+                @if (!summary.isScanConfigured) {
+                  <img
+                    src="assets/button-icons/red-circle-x.svg"
+                    #tooltip="matTooltip"
+                    matTooltip="Scan is not configured for this workspace. The uploaded ROIs will not be visible until it is added."
+                  />
+                }
+              </div>
+            </div>
+          }
+        </div>
       </div>
-    </div>
+    }
     <!-- <mat-checkbox
       class="top-gap upload-subdatasets"
       [(ngModel)]="uploadToSubDatasets"
@@ -136,7 +181,14 @@ POSSIBILITY OF SUCH DAMAGE. -->
   </div>
 
   <div class="card-toolbar gap-separated-horizontal-elements buttons">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button buttonStyle="yellow" [disabled]="!isValidMistROIFile" (onClick)="onUpload()">Upload</push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
+    >
+    <push-button
+      buttonStyle="yellow"
+      [disabled]="!isValidMistROIFile"
+      (onClick)="onUpload()"
+      >Upload</push-button
+    >
   </div>
 </div>

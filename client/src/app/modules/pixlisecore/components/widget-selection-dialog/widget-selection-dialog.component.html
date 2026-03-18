@@ -12,36 +12,36 @@
     </div>
   </div>
   <div class="widget-list">
-    <div
-      class="widget-item"
-      *ngFor="let widget of currentPageWidgets"
-      (click)="onToggleWidget(widget.widget.id)"
-    >
-      <div class="widget-label-area">
-        <two-state-icon-button
-          activeIcon="assets/button-icons/check-on.svg"
-          inactiveIcon="assets/button-icons/check-off.svg"
-          [active]="isWidgetSelected(widget.widget.id)"
-        >
-        </two-state-icon-button>
-        <div class="widget-title">{{ widget.name }}</div>
+    @for (widget of currentPageWidgets; track widget) {
+      <div class="widget-item" (click)="onToggleWidget(widget.widget.id)">
+        <div class="widget-label-area">
+          <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="isWidgetSelected(widget.widget.id)"
+          >
+          </two-state-icon-button>
+          <div class="widget-title">{{ widget.name }}</div>
+        </div>
       </div>
+    }
+  </div>
+  @if (widgetDialogPageCount > 1) {
+    <div class="widget-dialog-footer">
+      <icon-button
+        class="{{ !canGoToPreviousWidgetPage() ? 'disabled' : '' }}"
+        icon="assets/button-icons/arrow-left.svg"
+        (onClick)="onPreviousWidgetPage()"
+      ></icon-button>
+      <span class="page-label">{{
+        currentPageLabel ||
+          `Tab ${currentWidgetTabIndex + 1} of ${widgetDialogPageCount}`
+      }}</span>
+      <icon-button
+        class="{{ !canGoToNextWidgetPage() ? 'disabled' : '' }}"
+        icon="assets/button-icons/arrow-right.svg"
+        (onClick)="onNextWidgetPage()"
+      ></icon-button>
     </div>
-  </div>
-  <div class="widget-dialog-footer" *ngIf="widgetDialogPageCount > 1">
-    <icon-button
-      class="{{ !canGoToPreviousWidgetPage() ? 'disabled' : '' }}"
-      icon="assets/button-icons/arrow-left.svg"
-      (onClick)="onPreviousWidgetPage()"
-    ></icon-button>
-    <span class="page-label">{{
-      currentPageLabel ||
-        `Tab ${currentWidgetTabIndex + 1} of ${widgetDialogPageCount}`
-    }}</span>
-    <icon-button
-      class="{{ !canGoToNextWidgetPage() ? 'disabled' : '' }}"
-      icon="assets/button-icons/arrow-right.svg"
-      (onClick)="onNextWidgetPage()"
-    ></icon-button>
-  </div>
+  }
 </div>

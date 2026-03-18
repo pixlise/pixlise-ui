@@ -1,6 +1,7 @@
 <div class="filters-row">
   <div class="broad-filters">
-    <filter-box placeholder="Search" (onFilterChanged)="onFilterText($event)"> </filter-box>
+    <filter-box placeholder="Search" (onFilterChanged)="onFilterText($event)">
+    </filter-box>
   </div>
   <div class="option-filters">
     <two-state-push-button
@@ -11,8 +12,17 @@
       title="Only show expressions that can be edited"
       >Can Edit?</two-state-push-button
     >
-    <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author">
-      <mat-option *ngFor="let author of authors" [value]="author.id">{{ author.name }} </mat-option>
+    <mat-select
+      #tooltip="matTooltip"
+      [matTooltip]="authorsTooltip"
+      multiple
+      [(ngModel)]="filteredAuthors"
+      class="authors-filter"
+      placeholder="Author"
+    >
+      @for (author of authors; track author) {
+        <mat-option [value]="author.id">{{ author.name }} </mat-option>
+      }
     </mat-select>
     <tag-picker
       type="expression"
@@ -20,7 +30,8 @@
       [selectedTagIDs]="filteredTagIDs"
       [showCurrentTagsSection]="false"
       [allowAdminBuiltin]="true"
-      (onTagSelectionChanged)="onTagFilterChanged($event)">
+      (onTagSelectionChanged)="onTagFilterChanged($event)"
+    >
     </tag-picker>
   </div>
 </div>

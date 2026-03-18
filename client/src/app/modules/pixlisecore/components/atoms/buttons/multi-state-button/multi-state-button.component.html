@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,17 +30,22 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="btn-bg button-shadow">
-  <div
-    *ngFor="let state of states"
-    class="btn-side clickable"
-    [ngClass]="{
-      'btn-on': activeState == state.id,
-      'btn-off': activeState != state.id,
-      'icon-btn': state.label.length <= 0,
-      'btn-text-pad': state.label.length > 0
-    }"
-    [ngStyle]="{ 'background-image': state.icon.length > 0 ? 'url(' + state.icon + ')' : 'unset' }"
-    (click)="onClick(state)">
-    {{ state.label }}
-  </div>
+  @for (state of states; track state) {
+    <div
+      class="btn-side clickable"
+      [ngClass]="{
+        'btn-on': activeState == state.id,
+        'btn-off': activeState != state.id,
+        'icon-btn': state.label.length <= 0,
+        'btn-text-pad': state.label.length > 0,
+      }"
+      [ngStyle]="{
+        'background-image':
+          state.icon.length > 0 ? 'url(' + state.icon + ')' : 'unset',
+      }"
+      (click)="onClick(state)"
+    >
+      {{ state.label }}
+    </div>
+  }
 </div>

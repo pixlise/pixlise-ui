@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -49,17 +49,16 @@ POSSIBILITY OF SUCH DAMAGE.
         >Overwrite existing expression group?</mat-checkbox
       >
 
-      <mat-select
-        *ngIf="overwriteExistingExpressionGroup"
-        [(ngModel)]="selectedGroup.id"
-        placeholder="Editable Groups ..."
-      >
-        <mat-option
-          *ngFor="let group of editableExpressionGroups"
-          [value]="group.id"
-          >{{ group.name }}</mat-option
+      @if (overwriteExistingExpressionGroup) {
+        <mat-select
+          [(ngModel)]="selectedGroup.id"
+          placeholder="Editable Groups ..."
         >
-      </mat-select>
+          @for (group of editableExpressionGroups; track group) {
+            <mat-option [value]="group.id">{{ group.name }}</mat-option>
+          }
+        </mat-select>
+      }
 
       <span class="input-label">Expression Group Name</span>
       <input
@@ -115,30 +114,37 @@ POSSIBILITY OF SUCH DAMAGE.
         <h4>Browse</h4>
       </div>
       <div class="browser">
-        <div *ngFor="let section of browseSections" class="browse-section">
-          <h5 class="{{ activeBrowseGroup === section.name ? 'active' : '' }}">
-            {{ section.name }}
-          </h5>
-          <div class="browse-list">
-            <div
-              class="subsection {{
-                activeBrowseGroup === section.name &&
-                activeBrowseSection === subSection
-                  ? 'active'
-                  : ''
-              }}"
-              *ngFor="let subSection of section.subSections"
+        @for (section of browseSections; track section) {
+          <div class="browse-section">
+            <h5
+              class="{{ activeBrowseGroup === section.name ? 'active' : '' }}"
             >
-              <h6
-                (click)="onSubSectionSelect(section.name, subSection)"
-                (keydown.enter)="onSubSectionSelect(section.name, subSection)"
-                tabindex="0"
-              >
-                {{ subSection }}
-              </h6>
+              {{ section.name }}
+            </h5>
+            <div class="browse-list">
+              @for (subSection of section.subSections; track subSection) {
+                <div
+                  class="subsection {{
+                    activeBrowseGroup === section.name &&
+                    activeBrowseSection === subSection
+                      ? 'active'
+                      : ''
+                  }}"
+                >
+                  <h6
+                    (click)="onSubSectionSelect(section.name, subSection)"
+                    (keydown.enter)="
+                      onSubSectionSelect(section.name, subSection)
+                    "
+                    tabindex="0"
+                  >
+                    {{ subSection }}
+                  </h6>
+                </div>
+              }
             </div>
           </div>
-        </div>
+        }
       </div>
     </section>
     <section class="column expressions-list">
@@ -150,35 +156,38 @@ POSSIBILITY OF SUCH DAMAGE.
         }}"
       >
         <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
-        <push-button
-          *ngIf="activeBrowseSection === 'Recent'"
-          class="recent-btn"
-          buttonStyle="outline"
-          (onClick)="onClearRecent(activeBrowseGroup)"
-          >Clear Recent</push-button
-        >
-        <multi-switch-button
-          class="quant-element-switch-button"
-          *ngIf="activeBrowseSection === 'Quantified Elements'"
-          [options]="['A', 'B', 'A&B']"
-          [value]="activeQuantifiedElementDetector || 'A'"
-          (onChange)="activeQuantifiedElementDetector = $event"
-        >
-        </multi-switch-button>
-        <mat-select
-          class="scan-selector"
-          *ngIf="
-            ['Quantified Elements', 'Pseudo-Intensities'].includes(
-              activeBrowseSection
-            )
-          "
-          [(ngModel)]="scanId"
-          placeholder="Choose a Scan"
-        >
-          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{
-            scan.title
-          }}</mat-option>
-        </mat-select>
+        @if (activeBrowseSection === "Recent") {
+          <push-button
+            class="recent-btn"
+            buttonStyle="outline"
+            (onClick)="onClearRecent(activeBrowseGroup)"
+            >Clear Recent</push-button
+          >
+        }
+        @if (activeBrowseSection === "Quantified Elements") {
+          <multi-switch-button
+            class="quant-element-switch-button"
+            [options]="['A', 'B', 'A&B']"
+            [value]="activeQuantifiedElementDetector || 'A'"
+            (onChange)="activeQuantifiedElementDetector = $event"
+          >
+          </multi-switch-button>
+        }
+        @if (
+          ["Quantified Elements", "Pseudo-Intensities"].includes(
+            activeBrowseSection
+          )
+        ) {
+          <mat-select
+            class="scan-selector"
+            [(ngModel)]="scanId"
+            placeholder="Choose a Scan"
+          >
+            @for (scan of configuredScans; track scan) {
+              <mat-option [value]="scan.id">{{ scan.title }}</mat-option>
+            }
+          </mat-select>
+        }
       </div>
       <expression-search-controls
         class="{{ showSearchControls ? 'visible' : '' }}"
@@ -190,16 +199,15 @@ POSSIBILITY OF SUCH DAMAGE.
         [manualFilters]="manualFilters"
       ></expression-search-controls>
       <section class="expressions">
-        <div
-          *ngIf="
-            !quantId &&
-            filteredExpressions.length === 0 &&
-            'Quantified Elements' === activeBrowseSection
-          "
-          class="empty-expressions"
-        >
-          <h5>No quantification configured</h5>
-        </div>
+        @if (
+          !quantId &&
+          filteredExpressions.length === 0 &&
+          "Quantified Elements" === activeBrowseSection
+        ) {
+          <div class="empty-expressions">
+            <h5>No quantification configured</h5>
+          </div>
+        }
         <cdk-virtual-scroll-viewport
           [itemSize]="48"
           class="expressions-viewport"
@@ -233,146 +241,156 @@ POSSIBILITY OF SUCH DAMAGE.
         </cdk-virtual-scroll-viewport>
       </section>
     </section>
-    <section
-      *ngIf="maxSelection !== 1"
-      class="column active-expressions {{
-        showRGBMixMode && isRGBMixModeActive ? 'rgbmix-mode' : ''
-      }}"
-    >
-      <div class="title active-widget-selection">
-        <widget-selection-button
-          [widgetId]="widgetId"
-          [widgetTypes]="widgetTypes"
-          [activeWidgetIds]="activeWidgetIds"
-          (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged($event)"
-        ></widget-selection-button>
-        <push-button
-          buttonStyle="gray"
-          #saveExpressionGroupDialogBtn
-          [customDialog]="saveExpressionGroupDialog"
-          [disabled]="selectedExpressionIds.size === 0"
-          #tooltip="matTooltip"
-          matTooltip="Edit Group ({{ selectedGroup?.name }})"
-          [matTooltipDisabled]="
-            selectedGroup.id.length === 0 || !selectedGroup?.owner?.canEdit
-          "
-          >{{
-            selectedGroup?.owner?.canEdit && selectedGroup.id.length > 0
-              ? "Edit"
-              : "Save As"
-          }}
-          Group</push-button
-        >
-        <action-button
-          *ngIf="showRGBMixMode && isRGBMixModeActive && selectedGroup"
-          class="clear-group"
-          #tooltip="matTooltip"
-          matTooltip="Remove the loaded RGB Mix"
-          [matTooltipDisabled]="!selectedGroup.id"
-          [disabled]="!selectedGroup.id"
-          action="close"
-          color="rgb(var(--clr-gray-30))"
-          (onClick)="onClearRGBMix()"
-        ></action-button>
-      </div>
-      <div class="rgbmix-row" *ngIf="showRGBMixMode">
-        <multi-switch-button
-          class="rgbmix-toggle"
-          [options]="rgbMixModeGroupOptions"
-          [value]="activeRGBMixModeGroup"
-          (onChange)="activeRGBMixModeGroup = $event"
-        ></multi-switch-button>
-      </div>
+    @if (maxSelection !== 1) {
       <section
-        class="layer-container {{
-          showRGBMixMode ? 'rgbmix-mode' : 'expression-mode'
+        class="column active-expressions {{
+          showRGBMixMode && isRGBMixModeActive ? 'rgbmix-mode' : ''
         }}"
       >
-        <cdk-virtual-scroll-viewport
-          [itemSize]="activeLayerHeight"
-          class="expressions-viewport"
+        <div class="title active-widget-selection">
+          <widget-selection-button
+            [widgetId]="widgetId"
+            [widgetTypes]="widgetTypes"
+            [activeWidgetIds]="activeWidgetIds"
+            (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged($event)"
+          ></widget-selection-button>
+          <push-button
+            buttonStyle="gray"
+            #saveExpressionGroupDialogBtn
+            [customDialog]="saveExpressionGroupDialog"
+            [disabled]="selectedExpressionIds.size === 0"
+            #tooltip="matTooltip"
+            matTooltip="Edit Group ({{ selectedGroup?.name }})"
+            [matTooltipDisabled]="
+              selectedGroup.id.length === 0 || !selectedGroup?.owner?.canEdit
+            "
+            >{{
+              selectedGroup?.owner?.canEdit && selectedGroup.id.length > 0
+                ? "Edit"
+                : "Save As"
+            }}
+            Group</push-button
+          >
+          @if (showRGBMixMode && isRGBMixModeActive && selectedGroup) {
+            <action-button
+              class="clear-group"
+              #tooltip="matTooltip"
+              matTooltip="Remove the loaded RGB Mix"
+              [matTooltipDisabled]="!selectedGroup.id"
+              [disabled]="!selectedGroup.id"
+              action="close"
+              color="rgb(var(--clr-gray-30))"
+              (onClick)="onClearRGBMix()"
+            ></action-button>
+          }
+        </div>
+        @if (showRGBMixMode) {
+          <div class="rgbmix-row">
+            <multi-switch-button
+              class="rgbmix-toggle"
+              [options]="rgbMixModeGroupOptions"
+              [value]="activeRGBMixModeGroup"
+              (onChange)="activeRGBMixModeGroup = $event"
+            ></multi-switch-button>
+          </div>
+        }
+        <section
+          class="layer-container {{
+            showRGBMixMode ? 'rgbmix-mode' : 'expression-mode'
+          }}"
         >
-          <expression-layer
-            *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
-            [expression]="item"
-            (onFilterAuthor)="onFilterAuthor($event)"
-            [selectionDisabledMessage]="
-              maxSelection === 1 || canSelectMore
-                ? ''
-                : 'Maximum number of expressions selected'
-            "
-            (onSelect)="onSelect(item)"
-            [isWidgetExpression]="true"
-            [widgetType]="widgetType || ''"
-            [showRGBMixMode]="isRGBMixModeActive"
-            [showColourPicker]="!isRGBMixModeActive"
-            [selectIfValidPosition]="true"
-            [isTriggerPosition]="
-              expressionTriggerPosition > -1 &&
-              expressionTriggerPosition ===
-                selectedExpressionIdOrder.indexOf(item.id)
-            "
-            [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
-            [showActiveExpressionConfiguration]="true"
-            (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"
-            (onCloseModal)="onCancel()"
-          ></expression-layer>
-        </cdk-virtual-scroll-viewport>
+          <cdk-virtual-scroll-viewport
+            [itemSize]="activeLayerHeight"
+            class="expressions-viewport"
+          >
+            <expression-layer
+              *cdkVirtualFor="
+                let item of selectedExpressions;
+                trackBy: trackById
+              "
+              [expression]="item"
+              (onFilterAuthor)="onFilterAuthor($event)"
+              [selectionDisabledMessage]="
+                maxSelection === 1 || canSelectMore
+                  ? ''
+                  : 'Maximum number of expressions selected'
+              "
+              (onSelect)="onSelect(item)"
+              [isWidgetExpression]="true"
+              [widgetType]="widgetType || ''"
+              [showRGBMixMode]="isRGBMixModeActive"
+              [showColourPicker]="!isRGBMixModeActive"
+              [selectIfValidPosition]="true"
+              [isTriggerPosition]="
+                expressionTriggerPosition > -1 &&
+                expressionTriggerPosition ===
+                  selectedExpressionIdOrder.indexOf(item.id)
+              "
+              [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
+              [showActiveExpressionConfiguration]="true"
+              (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"
+              (onCloseModal)="onCancel()"
+            ></expression-layer>
+          </cdk-virtual-scroll-viewport>
+        </section>
       </section>
-    </section>
+    }
   </section>
   <div class="button-container">
-    <div class="persist-dialog" *ngIf="singleSelectionOption">
-      <two-state-icon-button
-        #tooltip="matTooltip"
-        matTooltip="Instantly apply the expression or group on selection (clears previous selection)"
-        [matTooltipShowDelay]="200"
-        [activeIcon]="'assets/button-icons/check-on.svg'"
-        [inactiveIcon]="'assets/button-icons/check-off.svg'"
-        class="checkbox-button"
-        [active]="maxSelection === 1"
-        (onToggle)="onSingleSelectionToggle()"
-      >
-      </two-state-icon-button>
-      <span class="label">Single Layer Mode</span>
-    </div>
-    <div
-      class="toggle-trigger-position-btn"
-      *ngIf="expressionTriggerPosition > -1"
-    >
-      <action-button
-        action="close"
-        color="rgb(var(--clr-gray-30))"
-        (onClick)="onClearTriggerPosition()"
-      ></action-button>
-      <h5>Trigger Position: {{ triggerName }}</h5>
-    </div>
+    @if (singleSelectionOption) {
+      <div class="persist-dialog">
+        <two-state-icon-button
+          #tooltip="matTooltip"
+          matTooltip="Instantly apply the expression or group on selection (clears previous selection)"
+          [matTooltipShowDelay]="200"
+          [activeIcon]="'assets/button-icons/check-on.svg'"
+          [inactiveIcon]="'assets/button-icons/check-off.svg'"
+          class="checkbox-button"
+          [active]="maxSelection === 1"
+          (onToggle)="onSingleSelectionToggle()"
+        >
+        </two-state-icon-button>
+        <span class="label">Single Layer Mode</span>
+      </div>
+    }
+    @if (expressionTriggerPosition > -1) {
+      <div class="toggle-trigger-position-btn">
+        <action-button
+          action="close"
+          color="rgb(var(--clr-gray-30))"
+          (onClick)="onClearTriggerPosition()"
+        ></action-button>
+        <h5>Trigger Position: {{ triggerName }}</h5>
+      </div>
+    }
     <push-button buttonStyle="outline" (onClick)="onCancel()"
       >Cancel</push-button
     >
-    <push-button
-      *ngIf="maxSelection !== 1 || !persistDialog"
-      buttonStyle="yellow"
-      #tooltip="matTooltip"
-      [matTooltip]="applyTooltip"
-      [matTooltipDisabled]="
-        waitingForExpressions.length === 0 && selectedExpressionIds.size === 0
-      "
-      [disabled]="waitingForExpressions.length > 0"
-      (onClick)="onConfirm()"
-      >Apply</push-button
-    >
-    <push-button
-      *ngIf="maxSelection !== 1 && persistDialog"
-      buttonStyle="yellow"
-      #tooltip="matTooltip"
-      [matTooltip]="applyTooltip"
-      [matTooltipDisabled]="
-        waitingForExpressions.length === 0 && selectedExpressionIds.size === 0
-      "
-      [disabled]="waitingForExpressions.length > 0"
-      (onClick)="onApplyAndClose()"
-      >Apply & Close</push-button
-    >
+    @if (maxSelection !== 1 || !persistDialog) {
+      <push-button
+        buttonStyle="yellow"
+        #tooltip="matTooltip"
+        [matTooltip]="applyTooltip"
+        [matTooltipDisabled]="
+          waitingForExpressions.length === 0 && selectedExpressionIds.size === 0
+        "
+        [disabled]="waitingForExpressions.length > 0"
+        (onClick)="onConfirm()"
+        >Apply</push-button
+      >
+    }
+    @if (maxSelection !== 1 && persistDialog) {
+      <push-button
+        buttonStyle="yellow"
+        #tooltip="matTooltip"
+        [matTooltip]="applyTooltip"
+        [matTooltipDisabled]="
+          waitingForExpressions.length === 0 && selectedExpressionIds.size === 0
+        "
+        [disabled]="waitingForExpressions.length > 0"
+        (onClick)="onApplyAndClose()"
+        >Apply & Close</push-button
+      >
+    }
   </div>
 </div>

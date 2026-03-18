@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -36,12 +36,27 @@ POSSIBILITY OF SUCH DAMAGE.
   (keydown)="onImagePicker()"
   (keyup)="onImagePicker()"
   (keypress)="onImagePicker()"
-  tabindex="0">
-  <wait-spinner *ngIf="loading"></wait-spinner>
-  <div *ngIf="errorText.length > 0" class="error">ERROR: {{ errorText }}</div>
-  <img *ngIf="showWarning" class="warn" src="assets/icons/error-triangle.svg" alt="Error" />
-  <div *ngIf="errorText.length <= 0" class="txt">{{ currentFileName }}</div>
-  <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false" aria-hidden="true">
+  tabindex="0"
+>
+  @if (loading) {
+    <wait-spinner></wait-spinner>
+  }
+  @if (errorText.length > 0) {
+    <div class="error">ERROR: {{ errorText }}</div>
+  }
+  @if (showWarning) {
+    <img class="warn" src="assets/icons/error-triangle.svg" alt="Error" />
+  }
+  @if (errorText.length <= 0) {
+    <div class="txt">{{ currentFileName }}</div>
+  }
+  <svg
+    viewBox="0 0 24 24"
+    width="24px"
+    height="24px"
+    focusable="false"
+    aria-hidden="true"
+  >
     <path class="downarrow" d="M7 10l5 5 5-5z"></path>
   </svg>
 </div>

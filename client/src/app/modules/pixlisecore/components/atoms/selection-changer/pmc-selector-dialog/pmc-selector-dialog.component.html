@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,15 +31,29 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="pmc-selector-dialog-container">
   <h1>Enter PMCs to Select</h1>
-  <div class="info-text">You can enter PMCs in a comma-separated list, and ranges are also allowed.<br />For example: 10,11,13-17</div>
+  <div class="info-text">
+    You can enter PMCs in a comma-separated list, and ranges are also
+    allowed.<br />For example: 10,11,13-17
+  </div>
   <div class="selection-container">
-    <div class="scan-selection" *ngFor="let scan of configuredScans">
-      <div class="scan-title">Enter PMCs for {{ scan.title }} ({{ scan.id }}):</div>
-      <input type="text" class="pmc-entry" placeholder="Enter PMCs ..." [(ngModel)]="selectedPMCsByScan[scan.id]" />
-    </div>
+    @for (scan of configuredScans; track scan) {
+      <div class="scan-selection">
+        <div class="scan-title">
+          Enter PMCs for {{ scan.title }} ({{ scan.id }}):
+        </div>
+        <input
+          type="text"
+          class="pmc-entry"
+          placeholder="Enter PMCs ..."
+          [(ngModel)]="selectedPMCsByScan[scan.id]"
+        />
+      </div>
+    }
   </div>
   <div class="buttons">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
+    >
     <push-button buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>
   </div>
 </div>

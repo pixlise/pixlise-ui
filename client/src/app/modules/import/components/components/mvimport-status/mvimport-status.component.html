@@ -1,4 +1,6 @@
 <div class="msg">
-    <div class="status">{{status}}</div>
-    <wait-spinner *ngIf="waiting"></wait-spinner>
+  <div class="status">{{ status }}</div>
+  @if (waiting) {
+    <wait-spinner></wait-spinner>
+  }
 </div>

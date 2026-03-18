@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,97 +29,211 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div
-  *ngIf="exportMode || keyShowing"
-  class="dlg-border-no-backdrop key-display {{ maxKey ? 'max-key' : '' }} {{ lightMode ? 'light-mode' : '' }}"
-  [ngStyle]="backgroundColor ? { backgroundColor: backgroundColor, boxShadow: backgroundColor === 'transparent' ? 'none' : '0 0 0 1px ' + backgroundColor } : null">
-  <div class="title unit-padding key-header">
-    <div class="txt-dlg-heading label">KEY</div>
-    <span class="max-key-toggle">
-      <push-button
-        *ngIf="showExpandButton"
-        (onClick)="onToggleMaxKey()"
-        buttonStyle="outline-small"
-        [matTooltip]="maxKey ? 'Minimize key' : 'Maximize key'"
-        [matTooltipDisabled]="false">
-        {{ maxKey ? "Collapse" : "Expand" }}
-      </push-button>
-    </span>
-    <img *ngIf="!exportMode" class="clickable" src="assets/button-icons/close-cross.svg" alt="Toggle key" (click)="onToggleShowKey()" />
-  </div>
-  <div class="key-items {{ exportMode ? 'export-mode' : '' }}">
-    <div class="key-item-group" *ngFor="let group of groupedItems">
-      <div
-        *ngIf="group.title"
-        class="key-group-header"
-        #tooltip="matTooltip"
-        [matTooltip]="group.title"
-        [matTooltipDisabled]="group.title.length <= maxTitleCharacters">
-        <action-button *ngIf="!exportMode" (onClick)="onToggleGroupVisibility(group, $event)" [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
-        <span
-          (click)="onToggleGroupVisibility(group, $event)"
-          class="key-group-title {{ group.isVisible ? '' : 'region-hidden' }}"
-          [ngStyle]="{ color: group.colour, 'max-width': maxTitleCharacters + 'ch' }"
-          >{{ group.title }}</span
-        >
-        <action-button
-          *ngIf="!maxKey && !exportMode"
-          (onClick)="group.isOpen = !group.isOpen"
-          [action]="group.isOpen || maxKey ? 'closeAccordion' : 'openAccordion'"></action-button>
-      </div>
-      <div *ngIf="!group.title || group.isOpen || maxKey || exportMode" class="item-container">
-        <div *ngFor="let item of group.items" class="key-item">
-          <action-button
-            *ngIf="item.isToggleable && !exportMode"
-            (onClick)="onToggleItemVisibility(item, group, $event)"
-            [action]="item.isVisible ? 'checkOn' : 'checkOff'"></action-button>
-          <div *ngIf="item.dashPattern !== null" class="dash-pattern">
-            <svg width="58" height="12" xmlns="http://www.w3.org/2000/svg">
-              <line [attr.stroke-dasharray]="item.dashPattern" x1="0" y1="6" x2="50" y2="6" stroke-width="2" [style]="'stroke: ' + item.colour"></line>
-            </svg>
-          </div>
-          <div
-            *ngIf="item.dashPattern === null"
-            #tooltip="matTooltip"
-            [matTooltip]="getLabel(item)"
-            [matTooltipDisabled]="exportMode || getLabel(item).length <= maxTitleCharacters"
-            class="main-label {{ item.isVisible ? '' : 'region-hidden' }} {{ !exportMode && isItemOnTop(item) ? 'top-layer' : '' }}"
-            [ngClass]="{ 'main-label-clickable': !exportMode && item.id.length > 0 && item.canBeReordered }"
-            [style]="{ color: item.colour, 'font-size': fontSize + 'px', padding: fontPadding + 'px 8px' }"
-            (click)="onClickLabel(item, $event)"
-            [title]="item.id.length > 0 ? 'Bring to front' : ''">
-            <roi-shape [scale]="1" [color]="item.colour" [shape]="item.shape"></roi-shape>
-            <span
-              class="key-label"
-              [ngStyle]="{
-                'max-width': exportMode ? 'fit-content' : maxTitleCharacters + 'ch',
-                'text-shadow': !exportMode && isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
-              }"
-              >{{ item.label }}</span
+@if (exportMode || keyShowing) {
+  <div
+    class="dlg-border-no-backdrop key-display {{ maxKey ? 'max-key' : '' }} {{
+      lightMode ? 'light-mode' : ''
+    }}"
+    [ngStyle]="
+      backgroundColor
+        ? {
+            backgroundColor: backgroundColor,
+            boxShadow:
+              backgroundColor === 'transparent'
+                ? 'none'
+                : '0 0 0 1px ' + backgroundColor,
+          }
+        : null
+    "
+  >
+    <div class="title unit-padding key-header">
+      <div class="txt-dlg-heading label">KEY</div>
+      <span class="max-key-toggle">
+        @if (showExpandButton) {
+          <push-button
+            (onClick)="onToggleMaxKey()"
+            buttonStyle="outline-small"
+            [matTooltip]="maxKey ? 'Minimize key' : 'Maximize key'"
+            [matTooltipDisabled]="false"
+          >
+            {{ maxKey ? "Collapse" : "Expand" }}
+          </push-button>
+        }
+      </span>
+      @if (!exportMode) {
+        <img
+          class="clickable"
+          src="assets/button-icons/close-cross.svg"
+          alt="Toggle key"
+          (click)="onToggleShowKey()"
+        />
+      }
+    </div>
+    <div class="key-items {{ exportMode ? 'export-mode' : '' }}">
+      @for (group of groupedItems; track group) {
+        <div class="key-item-group">
+          @if (group.title) {
+            <div
+              class="key-group-header"
+              #tooltip="matTooltip"
+              [matTooltip]="group.title"
+              [matTooltipDisabled]="group.title.length <= maxTitleCharacters"
             >
-          </div>
-          <div *ngIf="item.dashPattern !== null" class="dash-label" (click)="onClickLabel(item, $event)">
-            <span
-              class="key-label"
-              [ngStyle]="{
-                'max-width': exportMode ? 'fit-content' : maxTitleCharacters + 'ch',
-                'text-shadow': !exportMode && isItemOnTop(item) ? '0 0 0.65px ' + item.colour + ', 0 0 .65px ' + item.colour : ''
-              }"
-              >{{ item.label }}</span
-            >
-          </div>
+              @if (!exportMode) {
+                <action-button
+                  (onClick)="onToggleGroupVisibility(group, $event)"
+                  [action]="group.isVisible ? 'checkOn' : 'checkOff'"
+                ></action-button>
+              }
+              <span
+                (click)="onToggleGroupVisibility(group, $event)"
+                class="key-group-title {{
+                  group.isVisible ? '' : 'region-hidden'
+                }}"
+                [ngStyle]="{
+                  color: group.colour,
+                  'max-width': maxTitleCharacters + 'ch',
+                }"
+                >{{ group.title }}</span
+              >
+              @if (!maxKey && !exportMode) {
+                <action-button
+                  (onClick)="group.isOpen = !group.isOpen"
+                  [action]="
+                    group.isOpen || maxKey ? 'closeAccordion' : 'openAccordion'
+                  "
+                ></action-button>
+              }
+            </div>
+          }
+          @if (!group.title || group.isOpen || maxKey || exportMode) {
+            <div class="item-container">
+              @for (item of group.items; track item) {
+                <div class="key-item">
+                  @if (item.isToggleable && !exportMode) {
+                    <action-button
+                      (onClick)="onToggleItemVisibility(item, group, $event)"
+                      [action]="item.isVisible ? 'checkOn' : 'checkOff'"
+                    ></action-button>
+                  }
+                  @if (item.dashPattern !== null) {
+                    <div class="dash-pattern">
+                      <svg
+                        width="58"
+                        height="12"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <line
+                          [attr.stroke-dasharray]="item.dashPattern"
+                          x1="0"
+                          y1="6"
+                          x2="50"
+                          y2="6"
+                          stroke-width="2"
+                          [style]="'stroke: ' + item.colour"
+                        ></line>
+                      </svg>
+                    </div>
+                  }
+                  @if (item.dashPattern === null) {
+                    <div
+                      #tooltip="matTooltip"
+                      [matTooltip]="getLabel(item)"
+                      [matTooltipDisabled]="
+                        exportMode ||
+                        getLabel(item).length <= maxTitleCharacters
+                      "
+                      class="main-label {{
+                        item.isVisible ? '' : 'region-hidden'
+                      }} {{
+                        !exportMode && isItemOnTop(item) ? 'top-layer' : ''
+                      }}"
+                      [ngClass]="{
+                        'main-label-clickable':
+                          !exportMode &&
+                          item.id.length > 0 &&
+                          item.canBeReordered,
+                      }"
+                      [style]="{
+                        color: item.colour,
+                        'font-size': fontSize + 'px',
+                        padding: fontPadding + 'px 8px',
+                      }"
+                      (click)="onClickLabel(item, $event)"
+                      [title]="item.id.length > 0 ? 'Bring to front' : ''"
+                    >
+                      <roi-shape
+                        [scale]="1"
+                        [color]="item.colour"
+                        [shape]="item.shape"
+                      ></roi-shape>
+                      <span
+                        class="key-label"
+                        [ngStyle]="{
+                          'max-width': exportMode
+                            ? 'fit-content'
+                            : maxTitleCharacters + 'ch',
+                          'text-shadow':
+                            !exportMode && isItemOnTop(item)
+                              ? '0 0 0.65px ' +
+                                item.colour +
+                                ', 0 0 .65px ' +
+                                item.colour
+                              : '',
+                        }"
+                        >{{ item.label }}</span
+                      >
+                    </div>
+                  }
+                  @if (item.dashPattern !== null) {
+                    <div
+                      class="dash-label"
+                      (click)="onClickLabel(item, $event)"
+                    >
+                      <span
+                        class="key-label"
+                        [ngStyle]="{
+                          'max-width': exportMode
+                            ? 'fit-content'
+                            : maxTitleCharacters + 'ch',
+                          'text-shadow':
+                            !exportMode && isItemOnTop(item)
+                              ? '0 0 0.65px ' +
+                                item.colour +
+                                ', 0 0 .65px ' +
+                                item.colour
+                              : '',
+                        }"
+                        >{{ item.label }}</span
+                      >
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
-      </div>
+      }
     </div>
+    <ng-content></ng-content>
   </div>
-  <ng-content></ng-content>
-</div>
+}
 
-<push-button class="trigger-btn" *ngIf="!exportMode && !keyShowing && items.length > 0" (onClick)="onToggleShowKey()">
-  <div class="trigger-contents">
-    <div class="key-icons">
-      <roi-shape class="key-item-icon" [scale]="1" [color]="item.colour" shape="circle" borderColor="#1e2021" *ngFor="let item of previewItems"></roi-shape>
+@if (!exportMode && !keyShowing && items.length > 0) {
+  <push-button class="trigger-btn" (onClick)="onToggleShowKey()">
+    <div class="trigger-contents">
+      <div class="key-icons">
+        @for (item of previewItems; track item) {
+          <roi-shape
+            class="key-item-icon"
+            [scale]="1"
+            [color]="item.colour"
+            shape="circle"
+            borderColor="#1e2021"
+          ></roi-shape>
+        }
+      </div>
+      <span class="key-label">Key</span>
     </div>
-    <span class="key-label">Key</span>
-  </div>
-</push-button>
+  </push-button>
+}

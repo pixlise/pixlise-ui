@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,7 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
     <h1>{{ isExistingGroup ? "Edit Group" : "New Group" }}</h1>
     <div class="joinable-container">
       <span class="input-label">Joinable</span>
-      <action-button (onClick)="joinable = !joinable" [action]="joinable ? 'checkOn' : 'checkOff'"></action-button>
+      <action-button
+        (onClick)="joinable = !joinable"
+        [action]="joinable ? 'checkOn' : 'checkOff'"
+      ></action-button>
     </div>
   </header>
   <div class="fields">
@@ -42,26 +45,48 @@ POSSIBILITY OF SUCH DAMAGE.
     <input type="text" [(ngModel)]="groupName" placeholder="Group Name ..." />
 
     <span class="input-label">Group Description</span>
-    <textarea type="text" rows="3" [(ngModel)]="groupDescription" placeholder="Group Description ..."></textarea>
+    <textarea
+      type="text"
+      rows="3"
+      [(ngModel)]="groupDescription"
+      placeholder="Group Description ..."
+    ></textarea>
 
     <span
       class="input-label"
       #tooltip="matTooltip"
-      [matTooltip]="'Default roles are assigned to users when they join the group. Only Pixlise admins can set default roles.'"
+      [matTooltip]="
+        'Default roles are assigned to users when they join the group. Only Pixlise admins can set default roles.'
+      "
       >Default Roles</span
     >
     <div
       class="auto-roles-container"
       #tooltip="matTooltip"
-      [matTooltip]="'Default roles are assigned to users when they join the group. Only Pixlise admins can set default roles.'"
-      [matTooltipDisabled]="isAdmin">
-      <mat-select [disabled]="!isAdmin" multiple [(ngModel)]="defaultRoles" class="role-select" placeholder="No default roles ...">
-        <mat-option *ngFor="let role of allAuth0Roles" [value]="role.id">{{ role.name }}</mat-option>
+      [matTooltip]="
+        'Default roles are assigned to users when they join the group. Only Pixlise admins can set default roles.'
+      "
+      [matTooltipDisabled]="isAdmin"
+    >
+      <mat-select
+        [disabled]="!isAdmin"
+        multiple
+        [(ngModel)]="defaultRoles"
+        class="role-select"
+        placeholder="No default roles ..."
+      >
+        @for (role of allAuth0Roles; track role) {
+          <mat-option [value]="role.id">{{ role.name }}</mat-option>
+        }
       </mat-select>
     </div>
   </div>
   <div class="gap-separated-horizontal-elements button-container">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Confirm</push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
+    >
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()"
+      >Confirm</push-button
+    >
   </div>
 </div>

@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -38,38 +38,59 @@ POSSIBILITY OF SUCH DAMAGE.
       <span class="input-label">PMC</span>
       <input type="text" [(ngModel)]="newPeakPMC" placeholder="PMC ..." />
       <span class="input-label">Energy (keV)</span>
-      <input type="number" [(ngModel)]="newPeakEnergy" placeholder="Energy ..." />
+      <input
+        type="number"
+        [(ngModel)]="newPeakEnergy"
+        placeholder="Energy ..."
+      />
     </div>
     <div class="button-container">
-      <push-button buttonStyle="outline" (onClick)="onCloseNewPeakDialog()">Cancel</push-button>
-      <push-button buttonStyle="yellow" [disabled]="newPeakPMC < 0 || newPeakEnergy <= 0" (onClick)="onAddPeak()">Add</push-button>
+      <push-button buttonStyle="outline" (onClick)="onCloseNewPeakDialog()"
+        >Cancel</push-button
+      >
+      <push-button
+        buttonStyle="yellow"
+        [disabled]="newPeakPMC < 0 || newPeakEnergy <= 0"
+        (onClick)="onAddPeak()"
+        >Add</push-button
+      >
     </div>
   </div>
 </ng-template>
 
 <ng-template #statusMenu>
-  <div *ngIf="activeList === detectedPeaksLabel" class="status-menu">
-    <div *ngFor="let status of allDetectedStatuses" class="status-menu-item" (click)="onToggleDetectedStatus(status)">
-      <two-state-icon-button
-        class="checkbox"
-        activeIcon="assets/button-icons/check-on.svg"
-        inactiveIcon="assets/button-icons/check-off.svg"
-        [active]="visibleDetectedStatuses.includes(status)">
-      </two-state-icon-button>
-      <span class="label">{{ statusToLabelMap[status] }}</span>
+  @if (activeList === detectedPeaksLabel) {
+    <div class="status-menu">
+      @for (status of allDetectedStatuses; track status) {
+        <div class="status-menu-item" (click)="onToggleDetectedStatus(status)">
+          <two-state-icon-button
+            class="checkbox"
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="visibleDetectedStatuses.includes(status)"
+          >
+          </two-state-icon-button>
+          <span class="label">{{ statusToLabelMap[status] }}</span>
+        </div>
+      }
     </div>
-  </div>
-  <div *ngIf="activeList === userPeaksLabel" class="status-menu">
-    <div *ngFor="let status of allUserStatuses" class="status-menu-item" (click)="onToggleUserStatus(status)">
-      <two-state-icon-button
-        class="checkbox"
-        activeIcon="assets/button-icons/check-on.svg"
-        inactiveIcon="assets/button-icons/check-off.svg"
-        [active]="visibleUserStatuses.includes(status)">
-      </two-state-icon-button>
-      <span class="label">{{ statusToLabelMap[status] }}</span>
+  }
+  @if (activeList === userPeaksLabel) {
+    <div class="status-menu">
+      @for (status of allUserStatuses; track status) {
+        <div class="status-menu-item" (click)="onToggleUserStatus(status)">
+          <two-state-icon-button
+            class="checkbox"
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="visibleUserStatuses.includes(status)"
+          >
+          </two-state-icon-button>
+          <span class="label">{{ statusToLabelMap[status] }}</span>
+        </div>
+      }
     </div>
-  </div>
+  }
 </ng-template>
 
 <div class="tab-container">
@@ -77,14 +98,29 @@ POSSIBILITY OF SUCH DAMAGE.
     <h5>Diffraction</h5>
   </header>
   <div class="outer-panel histogram">
-    <interactive-canvas class="histogram" [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interaction" [transform]="transform">
+    <interactive-canvas
+      class="histogram"
+      [ngClass]="cursorShown"
+      [drawer]="drawer"
+      [drawNotifier]="mdl"
+      [interactionHandler]="interaction"
+      [transform]="transform"
+    >
     </interactive-canvas>
 
-    <push-button class="histogram-buttons" (onClick)="onResetBarSelection()">Reset</push-button>
+    <push-button class="histogram-buttons" (onClick)="onResetBarSelection()"
+      >Reset</push-button
+    >
   </div>
   <div class="scan-selector">
-    <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
-      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+    <mat-select
+      [(ngModel)]="selectedScanId"
+      class="scan-filter"
+      placeholder="Scan ..."
+    >
+      @for (scan of configuredScans; track scan) {
+        <mat-option [value]="scan.id">{{ scan.title }} </mat-option>
+      }
     </mat-select>
   </div>
   <div class="widget-selectors">
@@ -94,8 +130,11 @@ POSSIBILITY OF SUCH DAMAGE.
       placeholder="Open a Context Image ..."
       #tooltip="matTooltip"
       matTooltip="Choose a context image to display diffraction count map on"
-      [matTooltipShowDelay]="500">
-      <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      [matTooltipShowDelay]="500"
+    >
+      @for (chart of allContextImages; track chart) {
+        <mat-option [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      }
     </mat-select>
     <mat-select
       [(ngModel)]="selectedSpectrumChart"
@@ -103,8 +142,11 @@ POSSIBILITY OF SUCH DAMAGE.
       placeholder="Open a Spectrum Chart ..."
       #tooltip="matTooltip"
       matTooltip="Choose a spectrum chart to view peaks on"
-      [matTooltipShowDelay]="500">
-      <mat-option *ngFor="let chart of allSpectrumCharts" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      [matTooltipShowDelay]="500"
+    >
+      @for (chart of allSpectrumCharts; track chart) {
+        <mat-option [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      }
     </mat-select>
   </div>
   <div class="diff-count-btn unit-padding light-background">
@@ -115,13 +157,17 @@ POSSIBILITY OF SUCH DAMAGE.
         activeIcon="assets/button-icons/visible-on-yellow.svg"
         inactiveIcon="assets/button-icons/visible-off.svg"
         [active]="isMapShown"
-        (click)="onShowMap()">
+        (click)="onShowMap()"
+      >
       </two-state-icon-button>
     </div>
   </div>
   <div class="save-btns unit-padding light-background">
-    <action-button class="save-button" action="export" (onClick)="onExport()"> </action-button>
-    <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline">Select PMCs</push-button>
+    <action-button class="save-button" action="export" (onClick)="onExport()">
+    </action-button>
+    <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline"
+      >Select PMCs</push-button
+    >
     <push-button
       confirmText="Create an expression from the currently configured diffraction selection?"
       (onClick)="onSaveAsExpressionMap()"
@@ -132,81 +178,178 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div class="scrollable">
     <div class="mode">
-      <multi-switch-button [options]="[userPeaksLabel, detectedPeaksLabel]" [value]="activeList" (onChange)="onSwitchList($event)"></multi-switch-button>
-      <action-button class="new-peak" action="add" [customDialog]="newPeakDialog" #newPeakDialogBtn></action-button>
+      <multi-switch-button
+        [options]="[userPeaksLabel, detectedPeaksLabel]"
+        [value]="activeList"
+        (onChange)="onSwitchList($event)"
+      ></multi-switch-button>
+      <action-button
+        class="new-peak"
+        action="add"
+        [customDialog]="newPeakDialog"
+        #newPeakDialogBtn
+      ></action-button>
     </div>
     <div class="table-header">
       <span class="main-cols">
-        <div class="header-col table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModePMC }" (click)="sort = sortModePMC">
+        <div
+          class="header-col table-sort-button"
+          [ngClass]="{ 'highlighted-col': sort == sortModePMC }"
+          (click)="sort = sortModePMC"
+        >
           PMC
-          <img class="sort-arrow" *ngIf="sort === sortModePMC && !isAscending" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" />
-          <img class="sort-arrow" *ngIf="sort === sortModePMC && isAscending" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" />
-        </div>
-        <div class="header-col table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModekeV }" (click)="sort = sortModekeV">
-          keV
-          <img class="sort-arrow" *ngIf="sort === sortModekeV && !isAscending" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" />
-          <img class="sort-arrow" *ngIf="sort === sortModekeV && isAscending" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" />
+          @if (sort === sortModePMC && !isAscending) {
+            <img
+              class="sort-arrow"
+              src="assets/button-icons/arrow-down.svg"
+              alt="Sort Descending"
+            />
+          }
+          @if (sort === sortModePMC && isAscending) {
+            <img
+              class="sort-arrow"
+              src="assets/button-icons/arrow-up.svg"
+              alt="Sort Ascending"
+            />
+          }
         </div>
         <div
-          *ngIf="activeList === detectedPeaksLabel"
           class="header-col table-sort-button"
-          [ngClass]="{ 'highlighted-col': sort == sortModeEffectSize }"
-          (click)="sort = sortModeEffectSize">
-          Effect
-          <img class="sort-arrow" *ngIf="sort === sortModeEffectSize && !isAscending" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" />
-          <img class="sort-arrow" *ngIf="sort === sortModeEffectSize && isAscending" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" />
+          [ngClass]="{ 'highlighted-col': sort == sortModekeV }"
+          (click)="sort = sortModekeV"
+        >
+          keV
+          @if (sort === sortModekeV && !isAscending) {
+            <img
+              class="sort-arrow"
+              src="assets/button-icons/arrow-down.svg"
+              alt="Sort Descending"
+            />
+          }
+          @if (sort === sortModekeV && isAscending) {
+            <img
+              class="sort-arrow"
+              src="assets/button-icons/arrow-up.svg"
+              alt="Sort Ascending"
+            />
+          }
         </div>
+        @if (activeList === detectedPeaksLabel) {
+          <div
+            class="header-col table-sort-button"
+            [ngClass]="{ 'highlighted-col': sort == sortModeEffectSize }"
+            (click)="sort = sortModeEffectSize"
+          >
+            Effect
+            @if (sort === sortModeEffectSize && !isAscending) {
+              <img
+                class="sort-arrow"
+                src="assets/button-icons/arrow-down.svg"
+                alt="Sort Descending"
+              />
+            }
+            @if (sort === sortModeEffectSize && isAscending) {
+              <img
+                class="sort-arrow"
+                src="assets/button-icons/arrow-up.svg"
+                alt="Sort Ascending"
+              />
+            }
+          </div>
+        }
       </span>
-      <widget-settings-menu *ngIf="activeList === detectedPeaksLabel" [settingsDialog]="statusMenu" #statusMenuBtn>
-        <div class="header-col cell">
-          <div class="status-dropdown">Status <img src="assets/button-icons/caret-down.svg" alt="Filter Status" /></div>
-        </div>
-      </widget-settings-menu>
-      <div class="header-col cell" *ngIf="activeList !== detectedPeaksLabel && userPeakEditing">Delete</div>
+      @if (activeList === detectedPeaksLabel) {
+        <widget-settings-menu [settingsDialog]="statusMenu" #statusMenuBtn>
+          <div class="header-col cell">
+            <div class="status-dropdown">
+              Status
+              <img
+                src="assets/button-icons/caret-down.svg"
+                alt="Filter Status"
+              />
+            </div>
+          </div>
+        </widget-settings-menu>
+      }
+      @if (activeList !== detectedPeaksLabel && userPeakEditing) {
+        <div class="header-col cell">Delete</div>
+      }
     </div>
     <div class="virtual-list-container">
-      <div *ngIf="visiblePeaks.length === 0" class="empty-row">
-        <span>No peaks to display</span>
-      </div>
-      <cdk-virtual-scroll-viewport *ngIf="activeList === detectedPeaksLabel" [itemSize]="48" class="peaks-viewport">
-        <div
-          class="peak-item"
-          *cdkVirtualFor="let item of filteredPeaks; trackBy: trackByPeakId"
-          [ngClass]="{ 'selected-peak': selectedPeakTrackId === trackByPeakId(0, item) }">
-          <div class="detected-peaks">
-            <span class="main-cols" (click)="onTogglePeakVisible(item)">
-              <div class="col pmc">{{ item.pmc }}</div>
-              <div class="col energy">{{ item.keV | number: "1.2-2" }}</div>
-              <div class="col effect-size">{{ item.effectSize | number: "1.2-2" }}</div>
-            </span>
-            <action-button
-              class="col view"
-              [action]="item.status === regularDiffractionPeakLabel ? 'visibleOn' : 'visibleOff'"
-              [confirmText]="'Are you sure you want to mark this peak as ' + (item.status === regularDiffractionPeakLabel ? 'invalid' : 'valid') + '?'"
-              (onClick)="onToggleDetectedPeakStatus(item)">
-            </action-button>
-          </div>
+      @if (visiblePeaks.length === 0) {
+        <div class="empty-row">
+          <span>No peaks to display</span>
         </div>
-      </cdk-virtual-scroll-viewport>
-      <cdk-virtual-scroll-viewport *ngIf="activeList === userPeaksLabel" [itemSize]="48" class="peaks-viewport">
-        <div
-          class="peak-item"
-          *cdkVirtualFor="let item of filteredUserPeaks; trackBy: trackByUserId"
-          [ngClass]="{ 'selected-peak': selectedPeakTrackId === trackByUserId(0, item) }">
-          <div class="user-defined">
-            <span class="main-cols" (click)="onToggleUserPeakVisible(item)">
-              <div class="col pmc">{{ item.pmc }}</div>
-              <div class="col energy">{{ item.energykeV | number: "1.2-2" }}</div>
-            </span>
-            <action-button
-              *ngIf="userPeakEditing"
-              class="col delete"
-              action="delete"
-              (onClick)="onDeleteUserPeak(item)"
-              confirmText="Are you sure you want to delete this peak?"></action-button>
+      }
+      @if (activeList === detectedPeaksLabel) {
+        <cdk-virtual-scroll-viewport [itemSize]="48" class="peaks-viewport">
+          <div
+            class="peak-item"
+            *cdkVirtualFor="let item of filteredPeaks; trackBy: trackByPeakId"
+            [ngClass]="{
+              'selected-peak': selectedPeakTrackId === trackByPeakId(0, item),
+            }"
+          >
+            <div class="detected-peaks">
+              <span class="main-cols" (click)="onTogglePeakVisible(item)">
+                <div class="col pmc">{{ item.pmc }}</div>
+                <div class="col energy">{{ item.keV | number: "1.2-2" }}</div>
+                <div class="col effect-size">
+                  {{ item.effectSize | number: "1.2-2" }}
+                </div>
+              </span>
+              <action-button
+                class="col view"
+                [action]="
+                  item.status === regularDiffractionPeakLabel
+                    ? 'visibleOn'
+                    : 'visibleOff'
+                "
+                [confirmText]="
+                  'Are you sure you want to mark this peak as ' +
+                  (item.status === regularDiffractionPeakLabel
+                    ? 'invalid'
+                    : 'valid') +
+                  '?'
+                "
+                (onClick)="onToggleDetectedPeakStatus(item)"
+              >
+              </action-button>
+            </div>
           </div>
-        </div>
-      </cdk-virtual-scroll-viewport>
+        </cdk-virtual-scroll-viewport>
+      }
+      @if (activeList === userPeaksLabel) {
+        <cdk-virtual-scroll-viewport [itemSize]="48" class="peaks-viewport">
+          <div
+            class="peak-item"
+            *cdkVirtualFor="
+              let item of filteredUserPeaks;
+              trackBy: trackByUserId
+            "
+            [ngClass]="{
+              'selected-peak': selectedPeakTrackId === trackByUserId(0, item),
+            }"
+          >
+            <div class="user-defined">
+              <span class="main-cols" (click)="onToggleUserPeakVisible(item)">
+                <div class="col pmc">{{ item.pmc }}</div>
+                <div class="col energy">
+                  {{ item.energykeV | number: "1.2-2" }}
+                </div>
+              </span>
+              @if (userPeakEditing) {
+                <action-button
+                  class="col delete"
+                  action="delete"
+                  (onClick)="onDeleteUserPeak(item)"
+                  confirmText="Are you sure you want to delete this peak?"
+                ></action-button>
+              }
+            </div>
+          </div>
+        </cdk-virtual-scroll-viewport>
+      }
     </div>
   </div>
 </div>

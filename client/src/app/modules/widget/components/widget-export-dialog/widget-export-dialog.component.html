@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,165 +31,262 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #downloadMenu>
   <div class="download-menu-container">
-    <push-button buttonStyle="yellow" (onClick)="onDownloadPNG()">Download .png</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onConfirm()" [disabled]="!chartView">Download .zip</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onDownloadPNG()"
+      >Download .png</push-button
+    >
+    <push-button
+      buttonStyle="yellow"
+      (onClick)="onConfirm()"
+      [disabled]="!chartView"
+      >Download .zip</push-button
+    >
   </div>
 </ng-template>
 
 <div class="export-dialog {{ data.showPreview ? 'interactive' : '' }}">
   <h1>
     {{ title }}
-    <action-button *ngIf="data.showPreview" class="close-btn" action="close" (onClick)="onCancel()" color="#F8F8F8"></action-button>
+    @if (data.showPreview) {
+      <action-button
+        class="close-btn"
+        action="close"
+        (onClick)="onCancel()"
+        color="#F8F8F8"
+      ></action-button>
+    }
   </h1>
   <div class="data-container">
-    <div *ngIf="data.showPreview && previewWidgetConfiguration" class="preview-container" #previewWidgetContainer>
-      <div class="key-switcher">
-        <multi-switch-button [options]="['Chart', 'Key']" [value]="chartView ? 'Chart' : 'Key'" (onChange)="onSwitchView($event)"></multi-switch-button>
-      </div>
-      <widget
-        *ngIf="chartView && previewWidgetConfiguration"
-        [ngStyle]="{ height: previewWidgetHeight + 'px', width: previewWidgetWidth + 'px' }"
-        [widgetLayoutConfig]="previewWidgetConfiguration"
-        [initWidget]="previewWidgetConfiguration.type"
-        [exportMode]="true"
-        [liveOptionChanges$]="liveOptionChanges$"
-        [exportOptions]="options"
-        [exportChartOptions]="chartOptions"
-        #previewWidget>
-      </widget>
-      <div class="key-view" *ngIf="!chartView">
-        <div class="key" #widgetKeyDisplay>
-          <widget-key-display [items]="keyItems" [exportMode]="true" [backgroundColor]="widgetKeyBackgroundColor" [fontSize]="widgetKeyFontSize"></widget-key-display>
+    @if (data.showPreview && previewWidgetConfiguration) {
+      <div class="preview-container" #previewWidgetContainer>
+        <div class="key-switcher">
+          <multi-switch-button
+            [options]="['Chart', 'Key']"
+            [value]="chartView ? 'Chart' : 'Key'"
+            (onChange)="onSwitchView($event)"
+          ></multi-switch-button>
         </div>
+        @if (chartView && previewWidgetConfiguration) {
+          <widget
+            [ngStyle]="{
+              height: previewWidgetHeight + 'px',
+              width: previewWidgetWidth + 'px',
+            }"
+            [widgetLayoutConfig]="previewWidgetConfiguration"
+            [initWidget]="previewWidgetConfiguration.type"
+            [exportMode]="true"
+            [liveOptionChanges$]="liveOptionChanges$"
+            [exportOptions]="options"
+            [exportChartOptions]="chartOptions"
+            #previewWidget
+          >
+          </widget>
+        }
+        @if (!chartView) {
+          <div class="key-view">
+            <div class="key" #widgetKeyDisplay>
+              <widget-key-display
+                [items]="keyItems"
+                [exportMode]="true"
+                [backgroundColor]="widgetKeyBackgroundColor"
+                [fontSize]="widgetKeyFontSize"
+              ></widget-key-display>
+            </div>
+          </div>
+        }
+        <div class="bottom-bar"></div>
       </div>
-      <div class="bottom-bar"></div>
-    </div>
+    }
     <div class="fields">
       <div class="zip-options">
         <h5 class="zip-label">Zip File Name</h5>
-        <input type="text" [(ngModel)]="zipFileName" [placeholder]="data.defaultZipName.replace('.zip', '') + '.zip'" />
+        <input
+          type="text"
+          [(ngModel)]="zipFileName"
+          [placeholder]="data.defaultZipName.replace('.zip', '') + '.zip'"
+        />
       </div>
-      <div *ngIf="chartView && options && options.length > 0" class="export-options options">
-        <span class="options-label-container">
-          <h5 class="options-label">Options</h5>
-        </span>
-        <div class="options-container">
-          <widget-export-button
-            *ngFor="let option of options; trackBy: trackByFn"
-            [option]="option"
-            (toggleOption)="toggleOption($event)"
-            (selectOption)="selectOption($event)"
-            (selectDropdownOption)="selectDropdownOption($event)"
-            (selectROIsOption)="selectROIsOption($event)"
-            (selectExpressionsOption)="selectExpressionsOption($event)"
-            (selectImagesOption)="selectImagesOption($event)"
-            (updateValue)="updateValue($event)"
-            (selectColor)="selectColor($event)"
-            [toggleable]="option.toggleable">
-          </widget-export-button>
+      @if (chartView && options && options.length > 0) {
+        <div class="export-options options">
+          <span class="options-label-container">
+            <h5 class="options-label">Options</h5>
+          </span>
+          <div class="options-container">
+            @for (option of options; track trackByFn($index, option)) {
+              <widget-export-button
+                [option]="option"
+                (toggleOption)="toggleOption($event)"
+                (selectOption)="selectOption($event)"
+                (selectDropdownOption)="selectDropdownOption($event)"
+                (selectROIsOption)="selectROIsOption($event)"
+                (selectExpressionsOption)="selectExpressionsOption($event)"
+                (selectImagesOption)="selectImagesOption($event)"
+                (updateValue)="updateValue($event)"
+                (selectColor)="selectColor($event)"
+                [toggleable]="option.toggleable"
+              >
+              </widget-export-button>
+            }
+          </div>
         </div>
-      </div>
-      <div *ngIf="chartView && chartOptions && chartOptions.length > 0" class="export-options options">
-        <span class="options-label-container">
-          <h5 class="options-label">Chart</h5>
-        </span>
-        <div class="options-container">
-          <widget-export-button
-            *ngFor="let option of chartOptions; trackBy: trackByFn"
-            [option]="option"
-            (toggleOption)="toggleOption($event)"
-            (selectOption)="selectOption($event)"
-            (selectDropdownOption)="selectDropdownOption($event)"
-            (selectROIsOption)="selectROIsOption($event)"
-            (selectExpressionsOption)="selectExpressionsOption($event)"
-            (selectImagesOption)="selectImagesOption($event)"
-            (updateValue)="updateValue($event)"
-            (selectColor)="selectColor($event)"
-            [toggleable]="option.toggleable">
-          </widget-export-button>
+      }
+      @if (chartView && chartOptions && chartOptions.length > 0) {
+        <div class="export-options options">
+          <span class="options-label-container">
+            <h5 class="options-label">Chart</h5>
+          </span>
+          <div class="options-container">
+            @for (option of chartOptions; track trackByFn($index, option)) {
+              <widget-export-button
+                [option]="option"
+                (toggleOption)="toggleOption($event)"
+                (selectOption)="selectOption($event)"
+                (selectDropdownOption)="selectDropdownOption($event)"
+                (selectROIsOption)="selectROIsOption($event)"
+                (selectExpressionsOption)="selectExpressionsOption($event)"
+                (selectImagesOption)="selectImagesOption($event)"
+                (updateValue)="updateValue($event)"
+                (selectColor)="selectColor($event)"
+                [toggleable]="option.toggleable"
+              >
+              </widget-export-button>
+            }
+          </div>
         </div>
-      </div>
-      <div *ngIf="chartView && dataProducts && dataProducts.length > 0" class="export-options data-products">
-        <span class="options-label-container">
-          <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
-          <action-button [action]="allDataProductsSelected ? 'checkOn' : 'checkOff'" (onClick)="toggleAllDataProducts()"></action-button>
-        </span>
-        <div class="options-container">
-          <widget-export-button
-            *ngFor="let option of dataProducts; trackBy: trackByFn"
-            [option]="option"
-            (toggleOption)="toggleOption($event)"
-            (selectOption)="selectOption($event)"
-            (selectDropdownOption)="selectDropdownOption($event)"
-            (selectROIsOption)="selectROIsOption($event)"
-            (selectExpressionsOption)="selectExpressionsOption($event)"
-            (selectImagesOption)="selectImagesOption($event, true)"
-            (updateValue)="updateValue($event)"
-            (selectColor)="selectColor($event)"
-            [toggleable]="option.toggleable">
-          </widget-export-button>
+      }
+      @if (chartView && dataProducts && dataProducts.length > 0) {
+        <div class="export-options data-products">
+          <span class="options-label-container">
+            <h5 class="options-label">
+              Data Products ({{ selectedDataProductsCount }})
+            </h5>
+            <action-button
+              [action]="allDataProductsSelected ? 'checkOn' : 'checkOff'"
+              (onClick)="toggleAllDataProducts()"
+            ></action-button>
+          </span>
+          <div class="options-container">
+            @for (option of dataProducts; track trackByFn($index, option)) {
+              <widget-export-button
+                [option]="option"
+                (toggleOption)="toggleOption($event)"
+                (selectOption)="selectOption($event)"
+                (selectDropdownOption)="selectDropdownOption($event)"
+                (selectROIsOption)="selectROIsOption($event)"
+                (selectExpressionsOption)="selectExpressionsOption($event)"
+                (selectImagesOption)="selectImagesOption($event, true)"
+                (updateValue)="updateValue($event)"
+                (selectColor)="selectColor($event)"
+                [toggleable]="option.toggleable"
+              >
+              </widget-export-button>
+            }
+          </div>
         </div>
-      </div>
-      <div *ngIf="!chartView && keyOptions && keyOptions.length > 0" class="export-options options">
-        <span class="options-label-container">
-          <h5 class="options-label">Key</h5>
-        </span>
-        <div class="options-container">
-          <widget-export-button
-            *ngFor="let option of keyOptions; trackBy: trackByFn"
-            [option]="option"
-            (toggleOption)="toggleOption($event)"
-            (selectOption)="selectOption($event)"
-            (selectDropdownOption)="selectDropdownOption($event)"
-            (selectROIsOption)="selectROIsOption($event)"
-            (selectExpressionsOption)="selectExpressionsOption($event)"
-            (selectImagesOption)="selectImagesOption($event)"
-            (updateValue)="updateValue($event)"
-            (selectColor)="selectColor($event)"
-            [toggleable]="option.toggleable">
-          </widget-export-button>
+      }
+      @if (!chartView && keyOptions && keyOptions.length > 0) {
+        <div class="export-options options">
+          <span class="options-label-container">
+            <h5 class="options-label">Key</h5>
+          </span>
+          <div class="options-container">
+            @for (option of keyOptions; track trackByFn($index, option)) {
+              <widget-export-button
+                [option]="option"
+                (toggleOption)="toggleOption($event)"
+                (selectOption)="selectOption($event)"
+                (selectDropdownOption)="selectDropdownOption($event)"
+                (selectROIsOption)="selectROIsOption($event)"
+                (selectExpressionsOption)="selectExpressionsOption($event)"
+                (selectImagesOption)="selectImagesOption($event)"
+                (updateValue)="updateValue($event)"
+                (selectColor)="selectColor($event)"
+                [toggleable]="option.toggleable"
+              >
+              </widget-export-button>
+            }
+          </div>
         </div>
-      </div>
-      <div *ngIf="data.preview" class="export-options preview">
-        <span class="options-label-container">
-          <h5 class="options-label">Preview</h5>
-          <action-button [action]="showPreview ? 'checkOn' : 'checkOff'" (onClick)="showPreview = !showPreview"></action-button>
-        </span>
-      </div>
+      }
+      @if (data.preview) {
+        <div class="export-options preview">
+          <span class="options-label-container">
+            <h5 class="options-label">Preview</h5>
+            <action-button
+              [action]="showPreview ? 'checkOn' : 'checkOff'"
+              (onClick)="showPreview = !showPreview"
+            ></action-button>
+          </span>
+        </div>
+      }
       <div class="gap-separated-horizontal-elements button-container">
-        <div *ngIf="loading && !errorMessage" class="loading-container">
-          <wait-spinner></wait-spinner>
-          <div class="prompt">
-            <h5 *ngIf="!hideProgressLabels" class="loading-message">Exporting Data</h5>
+        @if (loading && !errorMessage) {
+          <div class="loading-container">
+            <wait-spinner></wait-spinner>
+            <div class="prompt">
+              @if (!hideProgressLabels) {
+                <h5 class="loading-message">Exporting Data</h5>
+              }
+            </div>
           </div>
-        </div>
-        <div
-          *ngIf="errorMessage"
-          class="loading-container"
-          #tooltip="matTooltip"
-          [matTooltip]="hideProgressLabels ? 'Error exporting: ' + errorMessage : errorMessage">
-          <img src="assets/icons/error-triangle-yellow.svg" alt="Error exporting" />
-          <div class="prompt">
-            <h5 *ngIf="!hideProgressLabels" class="error">Error exporting</h5>
+        }
+        @if (errorMessage) {
+          <div
+            class="loading-container"
+            #tooltip="matTooltip"
+            [matTooltip]="
+              hideProgressLabels
+                ? 'Error exporting: ' + errorMessage
+                : errorMessage
+            "
+          >
+            <img
+              src="assets/icons/error-triangle-yellow.svg"
+              alt="Error exporting"
+            />
+            <div class="prompt">
+              @if (!hideProgressLabels) {
+                <h5 class="error">Error exporting</h5>
+              }
+            </div>
           </div>
-        </div>
-        <push-button *ngIf="dialogRef" buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button *ngIf="!dialogRef" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
-        <push-button
-          *ngIf="!data.showPreview"
-          buttonStyle="yellow"
-          [disabled]="selectedDataProductsCount === 0"
-          #tooltip="matTooltip"
-          matTooltip="Nothing to export"
-          [matTooltipDisabled]="selectedDataProductsCount > 0"
-          (onClick)="onConfirm()"
-          >Export</push-button
-        >
+        }
+        @if (dialogRef) {
+          <push-button buttonStyle="outline" (onClick)="onCancel()"
+            >Cancel</push-button
+          >
+        }
+        @if (!dialogRef) {
+          <push-button buttonStyle="outline" (onClick)="onClear()"
+            >Clear</push-button
+          >
+        }
+        @if (!data.showPreview) {
+          <push-button
+            buttonStyle="yellow"
+            [disabled]="selectedDataProductsCount === 0"
+            #tooltip="matTooltip"
+            matTooltip="Nothing to export"
+            [matTooltipDisabled]="selectedDataProductsCount > 0"
+            (onClick)="onConfirm()"
+            >Export</push-button
+          >
+        }
         <!-- <push-button *ngIf="data.showPreview" buttonStyle="outline" (onClick)="onConfirm()" [disabled]="!chartView">Download .zip</push-button> -->
-        <push-button *ngIf="data.showPreview" buttonStyle="yellow" (onClick)="onCopyPNG()">Copy .png</push-button>
-        <widget-settings-menu *ngIf="data.showPreview" [settingsDialog]="downloadMenu" #downloadMenuButton>
-          <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
-        </widget-settings-menu>
+        @if (data.showPreview) {
+          <push-button buttonStyle="yellow" (onClick)="onCopyPNG()"
+            >Copy .png</push-button
+          >
+        }
+        @if (data.showPreview) {
+          <widget-settings-menu
+            [settingsDialog]="downloadMenu"
+            #downloadMenuButton
+          >
+            <push-button buttonStyle="yellow" title="More options"
+              >&#9660;</push-button
+            >
+          </widget-settings-menu>
+        }
       </div>
     </div>
   </div>

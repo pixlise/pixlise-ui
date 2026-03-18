@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,15 +32,23 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="panel">
   <section class="header">
     <h1>Hotkeys</h1>
-    <action-button action="close" (onClick)="onHidePanel()" color="#fff"></action-button>
+    <action-button
+      action="close"
+      (onClick)="onHidePanel()"
+      color="#fff"
+    ></action-button>
   </section>
   <section class="notifications-container">
-    <div class="hotkey-section" *ngFor="let hotkeySectionTitle of hotKeySections">
-      <h2>{{ hotkeySectionTitle }}</h2>
-      <div class="hotkey" *ngFor="let hotkey of hotkeys[hotkeySectionTitle]">
-        <span class="name">{{ hotkey.name }}:</span>
-        <span class="shortcut">{{ hotkey.shortcut }}</span>
+    @for (hotkeySectionTitle of hotKeySections; track hotkeySectionTitle) {
+      <div class="hotkey-section">
+        <h2>{{ hotkeySectionTitle }}</h2>
+        @for (hotkey of hotkeys[hotkeySectionTitle]; track hotkey) {
+          <div class="hotkey">
+            <span class="name">{{ hotkey.name }}:</span>
+            <span class="shortcut">{{ hotkey.shortcut }}</span>
+          </div>
+        }
       </div>
-    </div>
+    }
   </section>
 </div>

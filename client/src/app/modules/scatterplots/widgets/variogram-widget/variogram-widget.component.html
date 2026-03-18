@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -42,11 +42,19 @@ POSSIBILITY OF SUCH DAMAGE.
             [min]="distanceSliderMin"
             [max]="distanceSliderMax"
             step="0.1"
-            class="slider-input" />
+            class="slider-input"
+          />
         </span>
       </div>
       <div class="slider-container">
-        <slider [minValue]="distanceSliderMin" [maxValue]="distanceSliderMax" [pxLength]="180" [value]="maxDistance" (onChange)="onChangeDistance($event)"> </slider>
+        <slider
+          [minValue]="distanceSliderMin"
+          [maxValue]="distanceSliderMax"
+          [pxLength]="180"
+          [value]="maxDistance"
+          (onChange)="onChangeDistance($event)"
+        >
+        </slider>
       </div>
     </div>
     <div class="row above-title slider-container-row">
@@ -60,11 +68,19 @@ POSSIBILITY OF SUCH DAMAGE.
             [min]="binSliderMin"
             [max]="binSliderMax"
             step="1"
-            class="slider-input" />
+            class="slider-input"
+          />
         </span>
       </div>
       <div class="slider-container">
-        <slider [minValue]="binSliderMin" [maxValue]="binSliderMax" [pxLength]="180" [value]="binNumber" (onChange)="onChangeBins($event)"> </slider>
+        <slider
+          [minValue]="binSliderMin"
+          [maxValue]="binSliderMax"
+          [pxLength]="180"
+          [value]="binNumber"
+          (onChange)="onChangeBins($event)"
+        >
+        </slider>
       </div>
     </div>
     <div
@@ -73,55 +89,95 @@ POSSIBILITY OF SUCH DAMAGE.
       (keyup)="toggleBestFitLine()"
       (keydown)="toggleBestFitLine()"
       (keypress)="toggleBestFitLine()"
-      tabindex="0">
+      tabindex="0"
+    >
       <div class="row-title">Line of Best Fit</div>
-      <action-button class="switch" [action]="bestFitLineShowing ? 'checkOn' : 'checkOff'"></action-button>
+      <action-button
+        class="switch"
+        [action]="bestFitLineShowing ? 'checkOn' : 'checkOff'"
+      ></action-button>
     </div>
 
-    <ng-container *ngIf="expressions.length > 0">
+    @if (expressions.length > 0) {
       <div class="expressions-container">
         <div class="algorithm-option-container">
           <div class="row-title">{{ expressions[0].name }}</div>
           <div class="radio-group">
-            <div
-              *ngFor="let algorithm of crossCombiningAlgorithms"
-              class="row link {{ activeLeftCrossCombiningAlgorithm === algorithm ? 'active' : '' }}"
-              (click)="setActiveCrossCombiningAlgorithm(true, algorithm)"
-              (keyup)="setActiveCrossCombiningAlgorithm(true, algorithm)"
-              (keydown)="setActiveCrossCombiningAlgorithm(true, algorithm)"
-              (keypress)="setActiveCrossCombiningAlgorithm(true, algorithm)"
-              tabindex="0">
-              <div class="row-title">{{ algorithm }}</div>
-              <action-button class="switch" [action]="activeLeftCrossCombiningAlgorithm === algorithm ? 'radioOn' : 'radioOff'"></action-button>
+            @for (algorithm of crossCombiningAlgorithms; track algorithm) {
+              <div
+                class="row link {{
+                  activeLeftCrossCombiningAlgorithm === algorithm
+                    ? 'active'
+                    : ''
+                }}"
+                (click)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+                (keyup)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+                (keydown)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+                (keypress)="setActiveCrossCombiningAlgorithm(true, algorithm)"
+                tabindex="0"
+              >
+                <div class="row-title">{{ algorithm }}</div>
+                <action-button
+                  class="switch"
+                  [action]="
+                    activeLeftCrossCombiningAlgorithm === algorithm
+                      ? 'radioOn'
+                      : 'radioOff'
+                  "
+                ></action-button>
+              </div>
+            }
+          </div>
+          @if (activeLeftCrossCombiningAlgorithm === "Custom") {
+            <div class="expression-selector">
+              <push-button (onClick)="onCustomAlgorithm(true)">{{
+                customLeftAlgorithm?.name || "Select Algorithm"
+              }}</push-button>
             </div>
-          </div>
-          <div *ngIf="activeLeftCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
-            <push-button (onClick)="onCustomAlgorithm(true)">{{ customLeftAlgorithm?.name || "Select Algorithm" }}</push-button>
-          </div>
+          }
         </div>
-        <ng-container *ngIf="expressions.length > 1">
+        @if (expressions.length > 1) {
           <div class="algorithm-option-container">
             <div class="row-title">{{ expressions[1].name }}</div>
             <div class="radio-group">
-              <div
-                *ngFor="let algorithm of crossCombiningAlgorithms"
-                class="row link {{ activeRightCrossCombiningAlgorithm === algorithm ? 'active' : '' }}"
-                (click)="setActiveCrossCombiningAlgorithm(false, algorithm)"
-                (keyup)="setActiveCrossCombiningAlgorithm(false, algorithm)"
-                (keydown)="setActiveCrossCombiningAlgorithm(false, algorithm)"
-                (keypress)="setActiveCrossCombiningAlgorithm(false, algorithm)"
-                tabindex="0">
-                <div class="row-title">{{ algorithm }}</div>
-                <action-button class="switch" [action]="activeRightCrossCombiningAlgorithm === algorithm ? 'radioOn' : 'radioOff'"></action-button>
+              @for (algorithm of crossCombiningAlgorithms; track algorithm) {
+                <div
+                  class="row link {{
+                    activeRightCrossCombiningAlgorithm === algorithm
+                      ? 'active'
+                      : ''
+                  }}"
+                  (click)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                  (keyup)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                  (keydown)="setActiveCrossCombiningAlgorithm(false, algorithm)"
+                  (keypress)="
+                    setActiveCrossCombiningAlgorithm(false, algorithm)
+                  "
+                  tabindex="0"
+                >
+                  <div class="row-title">{{ algorithm }}</div>
+                  <action-button
+                    class="switch"
+                    [action]="
+                      activeRightCrossCombiningAlgorithm === algorithm
+                        ? 'radioOn'
+                        : 'radioOff'
+                    "
+                  ></action-button>
+                </div>
+              }
+            </div>
+            @if (activeRightCrossCombiningAlgorithm === "Custom") {
+              <div class="expression-selector">
+                <push-button (onClick)="onCustomAlgorithm(false)">{{
+                  customRightAlgorithm?.name || "Select Algorithm"
+                }}</push-button>
               </div>
-            </div>
-            <div *ngIf="activeRightCrossCombiningAlgorithm === 'Custom'" class="expression-selector">
-              <push-button (onClick)="onCustomAlgorithm(false)">{{ customRightAlgorithm?.name || "Select Algorithm" }}</push-button>
-            </div>
+            }
           </div>
-        </ng-container>
+        }
       </div>
-    </ng-container>
+    }
 
     <div
       class="row link {{ liveUpdate ? 'active' : '' }}"
@@ -129,24 +185,35 @@ POSSIBILITY OF SUCH DAMAGE.
       (keyup)="liveUpdate = !liveUpdate"
       (keydown)="liveUpdate = !liveUpdate"
       (keypress)="liveUpdate = !liveUpdate"
-      tabindex="0">
+      tabindex="0"
+    >
       <div class="row-title">Live Update</div>
-      <action-button class="switch" [action]="liveUpdate ? 'checkOn' : 'checkOff'"></action-button>
+      <action-button
+        class="switch"
+        [action]="liveUpdate ? 'checkOn' : 'checkOff'"
+      ></action-button>
     </div>
 
     <div class="update-button-container">
-      <push-button [disabled]="liveUpdate" (onClick)="saveAndUpdate()" class="full-width-button">Update</push-button>
+      <push-button
+        [disabled]="liveUpdate"
+        (onClick)="saveAndUpdate()"
+        class="full-width-button"
+        >Update</push-button
+      >
     </div>
   </div>
 </ng-template>
 
 <div class="canvas-container">
-  <interactive-canvas
-    *ngIf="drawer && !errorMsg"
-    [ngClass]="cursorShown"
-    [drawer]="this"
-    [drawNotifier]="this"
-    [interactionHandler]="interaction"
-    [transform]="transform">
-  </interactive-canvas>
+  @if (drawer && !errorMsg) {
+    <interactive-canvas
+      [ngClass]="cursorShown"
+      [drawer]="this"
+      [drawNotifier]="this"
+      [interactionHandler]="interaction"
+      [transform]="transform"
+    >
+    </interactive-canvas>
+  }
 </div>

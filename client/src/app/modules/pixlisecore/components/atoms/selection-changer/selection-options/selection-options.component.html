@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,11 +30,29 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="options" fxLayout="column">
-    <div class="option" (click)="onSelectAll()">Select All PMCs</div>
-    <div *ngFor="let id of data.subDataSetIDs" class="option" (click)="onSelectForSubDataset(id)">All Points for Dataset: {{id}}</div>
-    <div class="option" (click)="onSelectEntered()">Enter PMCs to Select</div>
-    <div *ngIf="data.showDwell" class="option" (click)="onSelectDwell()">Select PMC with Dwell Spectra</div>
-    <div class="option" [ngClass]="{'disabled': !data.showNewROI}" (click)="onNewROI()">New ROI from Selection</div>
-    <div class="option" (click)="onInvertSelection()">Invert Selection</div>
-    <div *ngIf="data.showSelectNearbyPixels" class="option" (click)="onSelectNearbyPixels()">Select Nearby Pixels</div>
+  <div class="option" (click)="onSelectAll()">Select All PMCs</div>
+  @for (id of data.subDataSetIDs; track id) {
+    <div class="option" (click)="onSelectForSubDataset(id)">
+      All Points for Dataset: {{ id }}
+    </div>
+  }
+  <div class="option" (click)="onSelectEntered()">Enter PMCs to Select</div>
+  @if (data.showDwell) {
+    <div class="option" (click)="onSelectDwell()">
+      Select PMC with Dwell Spectra
+    </div>
+  }
+  <div
+    class="option"
+    [ngClass]="{ disabled: !data.showNewROI }"
+    (click)="onNewROI()"
+  >
+    New ROI from Selection
+  </div>
+  <div class="option" (click)="onInvertSelection()">Invert Selection</div>
+  @if (data.showSelectNearbyPixels) {
+    <div class="option" (click)="onSelectNearbyPixels()">
+      Select Nearby Pixels
+    </div>
+  }
 </div>

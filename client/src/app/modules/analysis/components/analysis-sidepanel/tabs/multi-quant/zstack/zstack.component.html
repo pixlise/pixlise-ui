@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,31 +30,42 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="zstack-list">
-    <div *ngIf="items.length <= 0" class="help-empty-msg">Add some regions!</div>
+  @if (items.length <= 0) {
+    <div class="help-empty-msg">Add some regions!</div>
+  }
+  @for (item of items; track item; let i = $index) {
     <zstack-item
-        *ngFor="let item of items; let i = index"
-        [item]="item"
-        (onSelectQuant)="onSelectQuant(item.zStackItem.roiId, $event)">
-        <div class="zstack-content" listControls>
-            <ng-container [ngSwitch]="item.zStackItem.roiId">
-                <ng-container *ngSwitchCase="remainingPointsROI">
-                    <ng-content select="[remainingArea]"></ng-content>
-                </ng-container>
-                <ng-container *ngSwitchDefault>
-                    <img *ngIf="i > 0"
-                        class='clickable hover-circle'
-                        src="assets/button-icons/arrow-up.svg"
-                        (click)="onChangeZOrder(item.zStackItem.roiId, true)">
-                    <img *ngIf="i < lastROIIdx"
-                        class='clickable hover-circle'
-                        src="assets/button-icons/arrow-down.svg"
-                        (click)="onChangeZOrder(item.zStackItem.roiId, false)">
-                    <img
-                        class='clickable hover-circle'
-                        src="assets/button-icons/close-cross-gray.svg"
-                        (click)="onDeleteZItem(item.zStackItem.roiId)">
-                </ng-container>
-            </ng-container>
-        </div>
+      [item]="item"
+      (onSelectQuant)="onSelectQuant(item.zStackItem.roiId, $event)"
+    >
+      <div class="zstack-content" listControls>
+        @switch (item.zStackItem.roiId) {
+          @case (remainingPointsROI) {
+            <ng-content select="[remainingArea]"></ng-content>
+          }
+          @default {
+            @if (i > 0) {
+              <img
+                class="clickable hover-circle"
+                src="assets/button-icons/arrow-up.svg"
+                (click)="onChangeZOrder(item.zStackItem.roiId, true)"
+              />
+            }
+            @if (i < lastROIIdx) {
+              <img
+                class="clickable hover-circle"
+                src="assets/button-icons/arrow-down.svg"
+                (click)="onChangeZOrder(item.zStackItem.roiId, false)"
+              />
+            }
+            <img
+              class="clickable hover-circle"
+              src="assets/button-icons/close-cross-gray.svg"
+              (click)="onDeleteZItem(item.zStackItem.roiId)"
+            />
+          }
+        }
+      </div>
     </zstack-item>
+  }
 </div>

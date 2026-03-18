@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,43 +29,89 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 <ng-template #messageDisplay>
-  <div class="message-display" *ngIf="activeNotification">
-    <header>
-      <h1>{{ activeNotification.type }} Details</h1>
-      <span *ngIf="(activeNotification.systemNotification?.timeStampUnixSec || 0) > 0" class="timestamp">{{ (activeNotification.systemNotification?.timeStampUnixSec || 0) * 1000 | date: "d MMM y, HH:mm:ss" }}</span>
-    </header>
-    <section class="content">
-      <h2>{{ activeNotification.title }}</h2>
-      <span class="details">{{ activeNotification.systemNotification?.contents }}</span>
-    </section>
-    <div class="buttons"></div>
-  </div>
+  @if (activeNotification) {
+    <div class="message-display">
+      <header>
+        <h1>{{ activeNotification.type }} Details</h1>
+        @if (
+          (activeNotification.systemNotification?.timeStampUnixSec || 0) > 0
+        ) {
+          <span class="timestamp">{{
+            (activeNotification.systemNotification?.timeStampUnixSec || 0) *
+              1000 | date: "d MMM y, HH:mm:ss"
+          }}</span>
+        }
+      </header>
+      <section class="content">
+        <h2>{{ activeNotification.title }}</h2>
+        <span class="details">{{
+          activeNotification.systemNotification?.contents
+        }}</span>
+      </section>
+      <div class="buttons"></div>
+    </div>
+  }
 </ng-template>
 <div class="panel">
   <section class="header">
     <h1>Notifications</h1>
-    <action-button action="close" (onClick)="onHidePanel()" color="#fff"></action-button>
+    <action-button
+      action="close"
+      (onClick)="onHidePanel()"
+      color="#fff"
+    ></action-button>
   </section>
   <section class="notifications-container">
-    <div *ngIf="notifications.length === 0" class="empty">No notifications</div>
-    <div class="notification" *ngFor="let notification of notifications">
-      <div class="notification-content">
-        <div *ngIf="notification?.timestampUTCSeconds" class="notification-time">{{ (notification?.timestampUTCSeconds || 0) * 1000 | date: "d MMM y, HH:mm:ss" }}</div>
-        <div class="notification-title">{{ notification.title }}</div>
-        <div *ngIf="notification.type === 'action'" class="notification-action">
-          <push-button buttonStyle="outline" (onClick)="onNotificationAction(notification)">
-            {{ notification.action?.buttonTitle }}
-          </push-button>
+    @if (notifications.length === 0) {
+      <div class="empty">No notifications</div>
+    }
+    @for (notification of notifications; track notification) {
+      <div class="notification">
+        <div class="notification-content">
+          @if (notification?.timestampUTCSeconds) {
+            <div class="notification-time">
+              {{
+                (notification?.timestampUTCSeconds || 0) * 1000
+                  | date: "d MMM y, HH:mm:ss"
+              }}
+            </div>
+          }
+          <div class="notification-title">{{ notification.title }}</div>
+          @if (notification.type === "action") {
+            <div class="notification-action">
+              <push-button
+                buttonStyle="outline"
+                (onClick)="onNotificationAction(notification)"
+              >
+                {{ notification.action?.buttonTitle }}
+              </push-button>
+            </div>
+          }
+          @if (notification.type === "message") {
+            <div class="notification-action">
+              <push-button
+                [customDialog]="messageDisplay"
+                buttonStyle="outline"
+                (click)="onNotificationMessageClick(notification)"
+                >Details</push-button
+              >
+            </div>
+          }
+          <action-button
+            action="close"
+            color="rgb(188, 188, 188)"
+            (onClick)="dismissNotification(notification)"
+          ></action-button>
         </div>
-        <div *ngIf="notification.type === 'message'" class="notification-action">
-          <push-button [customDialog]="messageDisplay" buttonStyle="outline" (click)="onNotificationMessageClick(notification)">Details</push-button>
-        </div>
-        <action-button action="close" color="rgb(188, 188, 188)" (onClick)="dismissNotification(notification)"></action-button>
       </div>
-    </div>
+    }
   </section>
   <section class="buttons">
-    <push-button [disabled]="notifications.length === 0" buttonStyle="hover-yellow" class="sign-out" (onClick)="dismissAllNotifications()"
+    <push-button
+      [disabled]="notifications.length === 0"
+      buttonStyle="hover-yellow"
+      class="sign-out"
+      (onClick)="dismissAllNotifications()"
       >Dismiss All Notifications
     </push-button>
     <!-- <push-button (onClick)="testNotification()">Add Test</push-button> -->

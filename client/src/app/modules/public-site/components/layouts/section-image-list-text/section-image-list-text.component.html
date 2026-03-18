@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,29 +32,76 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="section">
   <number-button [params]="params.navButtonParams"></number-button>
   <div class="flex-row container image-list-container">
-    <div class="flex-column text-container" [ngClass]="{ narrowbox: params.headingLarge, 'text-container-list-limit': hasList }">
-      <h2 *ngIf="params.headingLarge">
-        <text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights>
-      </h2>
-      <h3 *ngIf="!params.headingLarge">
-        <text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights>
-      </h3>
-      <ng-container *ngIf="hasList">
+    <div
+      class="flex-column text-container"
+      [ngClass]="{
+        narrowbox: params.headingLarge,
+        'text-container-list-limit': hasList,
+      }"
+    >
+      @if (params.headingLarge) {
+        <h2>
+          <text-with-highlights
+            [parts]="params.headingParts"
+            styleMain=""
+            styleAlternate="red"
+          ></text-with-highlights>
+        </h2>
+      }
+      @if (!params.headingLarge) {
+        <h3>
+          <text-with-highlights
+            [parts]="params.headingParts"
+            styleMain=""
+            styleAlternate="red"
+          ></text-with-highlights>
+        </h3>
+      }
+      @if (hasList) {
         <div class="list-heading">{{ params.listTitle }}</div>
         <ul>
-          <li *ngFor="let item of params.listItems" [ngClass]="{ active: item.listLabel == activeItem?.listLabel }" (click)="onClickListItem(item)">
-            {{ item.listLabel }}
-          </li>
+          @for (item of params.listItems; track item) {
+            <li
+              [ngClass]="{ active: item.listLabel == activeItem?.listLabel }"
+              (click)="onClickListItem(item)"
+            >
+              {{ item.listLabel }}
+            </li>
+          }
         </ul>
-      </ng-container>
-      <ng-container *ngIf="activeItem">
-        <h4><text-with-highlights [parts]="activeItem.headingParts" styleMain="" styleAlternate="bold"></text-with-highlights></h4>
-        <p><text-with-highlights [parts]="activeItem.descriptionParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
-      </ng-container>
+      }
+      @if (activeItem) {
+        <h4>
+          <text-with-highlights
+            [parts]="activeItem.headingParts"
+            styleMain=""
+            styleAlternate="bold"
+          ></text-with-highlights>
+        </h4>
+        <p>
+          <text-with-highlights
+            [parts]="activeItem.descriptionParts"
+            styleMain=""
+            styleAlternate="bold"
+          ></text-with-highlights>
+        </p>
+      }
     </div>
-    <div *ngIf="activeItem" class="flex-column img-vcenter {{ activeItem.imageLinkForeground && activeItem.imageLinkBackground ? 'two-images' : '' }}">
-      <img *ngIf="activeItem.imageLinkForeground" class="img-foreground" [src]="activeItem.imageLinkForeground" />
-      <img *ngIf="activeItem.imageLinkBackground" class="img-background" [src]="activeItem.imageLinkBackground" />
-    </div>
+    @if (activeItem) {
+      <div
+        class="flex-column img-vcenter {{
+          activeItem.imageLinkForeground && activeItem.imageLinkBackground
+            ? 'two-images'
+            : ''
+        }}"
+      >
+        @if (activeItem.imageLinkForeground) {
+          <img class="img-foreground" [src]="activeItem.imageLinkForeground" />
+        }
+        @if (activeItem.imageLinkBackground) {
+          <img class="img-background" [src]="activeItem.imageLinkBackground" />
+        }
+      </div>
+    }
   </div>
 </div>

@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -35,14 +35,19 @@ POSSIBILITY OF SUCH DAMAGE.
   height="30"
   attr.viewBox="0 0 {{ pxLength }} 30"
   fill="none"
-  xmlns="http://www.w3.org/2000/svg">
-  <rect
-    *ngFor="let bar of histogram"
-    [attr.x]="bar.x"
-    [attr.y]="baselineY - bar.h - 1"
-    [attr.width]="barWidth"
-    [attr.height]="bar.h"
-    [attr.fill]="bar.x >= sliderXPos ? trackColourBelowValue : histogramBarBelowValue" />
+  xmlns="http://www.w3.org/2000/svg"
+>
+  @for (bar of histogram; track bar) {
+    <rect
+      [attr.x]="bar.x"
+      [attr.y]="baselineY - bar.h - 1"
+      [attr.width]="barWidth"
+      [attr.height]="bar.h"
+      [attr.fill]="
+        bar.x >= sliderXPos ? trackColourBelowValue : histogramBarBelowValue
+      "
+    />
+  }
 
   <rect
     class="progress-outside"
@@ -51,7 +56,23 @@ POSSIBILITY OF SUCH DAMAGE.
     [attr.width]="sliderRightTrackWidth"
     height="4"
     rx="2"
-    [attr.fill]="trackColourAboveValue" />
-  <rect class="progress-bar" x="6" [attr.y]="baselineY" [attr.width]="sliderXPos" height="4" rx="2" [attr.fill]="trackColourBelowValue" />
-  <circle class="track" [attr.cx]="sliderXPos" [attr.cy]="baselineY + 2" r="6" fill="#F8F8F8" (mousedown)="onMouseDown($event)" />
+    [attr.fill]="trackColourAboveValue"
+  />
+  <rect
+    class="progress-bar"
+    x="6"
+    [attr.y]="baselineY"
+    [attr.width]="sliderXPos"
+    height="4"
+    rx="2"
+    [attr.fill]="trackColourBelowValue"
+  />
+  <circle
+    class="track"
+    [attr.cx]="sliderXPos"
+    [attr.cy]="baselineY + 2"
+    r="6"
+    fill="#F8F8F8"
+    (mousedown)="onMouseDown($event)"
+  />
 </svg>

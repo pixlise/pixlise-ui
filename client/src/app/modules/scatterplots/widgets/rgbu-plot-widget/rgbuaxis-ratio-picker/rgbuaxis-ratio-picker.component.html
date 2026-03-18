@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -33,25 +33,41 @@ POSSIBILITY OF SUCH DAMAGE.
   <h3>RGBU Axis</h3>
   <div class="channel-selection">
     <mat-select [(ngModel)]="numeratorChannel">
-        <mat-option *ngFor="let channel of channels" [value]="channel">{{channel}}</mat-option>
+      @for (channel of channels; track channel) {
+        <mat-option [value]="channel">{{ channel }}</mat-option>
+      }
     </mat-select>
     <div class="channel-divider">/</div>
     <mat-select [(ngModel)]="denominatorChannel">
-        <mat-option *ngFor="let channel of channelsWithNone" [value]="channel">{{channel}}</mat-option>
+      @for (channel of channelsWithNone; track channel) {
+        <mat-option [value]="channel">{{ channel }}</mat-option>
+      }
     </mat-select>
   </div>
   <div class="range-selection">
     <div>
       <div class="label min-label">Min:</div>
-      <input class="min-label" type="number" step="0.1" [(ngModel)]="minValue">
+      <input
+        class="min-label"
+        type="number"
+        step="0.1"
+        [(ngModel)]="minValue"
+      />
     </div>
     <div>
       <div class="label max-label">Max:</div>
-      <input class="max-label" type="number" step="0.1" [(ngModel)]="maxValue">
+      <input
+        class="max-label"
+        type="number"
+        step="0.1"
+        [(ngModel)]="maxValue"
+      />
     </div>
   </div>
   <div class="options">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
+    >
     <push-button buttonStyle="yellow" (onClick)="onOK()">Apply</push-button>
   </div>
 </div>

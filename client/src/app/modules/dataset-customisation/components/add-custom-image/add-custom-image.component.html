@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,21 +34,30 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="txt-widget-title">{{ title }}</div>
   </div>
 
-  <div *ngIf="params.allowMatched" class="meta-fields">
-    <div class="row">
-      <span>Matched MCC image</span>
-      <image-picker
-        [scanIds]="[params.scanIdForMatching]"
-        [includeHideOption]="false"
-        [onlyInstrumentImages]="true"
-        [noAssociatedScreenConfiguration]="true"
-        [preventDatasetChange]="true"
-        [mccOnly]="true"
-        (selectedImage)="onChangeAlignToImage($event)"></image-picker>
+  @if (params.allowMatched) {
+    <div class="meta-fields">
+      <div class="row">
+        <span>Matched MCC image</span>
+        <image-picker
+          [scanIds]="[params.scanIdForMatching]"
+          [includeHideOption]="false"
+          [onlyInstrumentImages]="true"
+          [noAssociatedScreenConfiguration]="true"
+          [preventDatasetChange]="true"
+          [mccOnly]="true"
+          (selectedImage)="onChangeAlignToImage($event)"
+        ></image-picker>
+      </div>
     </div>
-  </div>
+  }
 
-  <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+  <div
+    class="dropzone"
+    ngx-dropzone
+    [accept]="acceptTypes"
+    [multiple]="false"
+    (change)="onDropFile($event)"
+  >
     <ngx-dropzone-label>
       <div class="dropzone-label-container">
         <h2>Drop image to upload</h2>
@@ -62,16 +71,23 @@ POSSIBILITY OF SUCH DAMAGE.
         </p>
       </div>
     </ngx-dropzone-label>
-    <ngx-dropzone-preview *ngFor="let f of droppedFiles" [removable]="true" (removed)="onRemoveDroppedFile(f)">
-      <ngx-dropzone-label
-        ><div class="filename">{{ f.name }}</div>
-        <div class="filetype">({{ f.type }})</div></ngx-dropzone-label
+    @for (f of droppedFiles; track f) {
+      <ngx-dropzone-preview
+        [removable]="true"
+        (removed)="onRemoveDroppedFile(f)"
       >
-    </ngx-dropzone-preview>
+        <ngx-dropzone-label
+          ><div class="filename">{{ f.name }}</div>
+          <div class="filetype">({{ f.type }})</div></ngx-dropzone-label
+        >
+      </ngx-dropzone-preview>
+    }
   </div>
 
   <div class="button-container">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
+    >
     <push-button buttonStyle="yellow" (onClick)="onOK()">Add</push-button>
   </div>
 </div>

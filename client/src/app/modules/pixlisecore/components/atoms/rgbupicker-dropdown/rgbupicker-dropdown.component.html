@@ -1,3 +1,5 @@
 <mat-select [(ngModel)]="imageName" (selectionChange)="onImageChanged($event)">
-  <mat-option *ngFor="let img of imageChoices" [value]="img.path">{{ img.name }}</mat-option>
+  @for (img of imageChoices; track img) {
+    <mat-option [value]="img.path">{{ img.name }}</mat-option>
+  }
 </mat-select>

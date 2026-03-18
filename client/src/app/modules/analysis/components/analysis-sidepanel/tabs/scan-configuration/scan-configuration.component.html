@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -58,29 +58,36 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
     <div class="scan-list">
-      <div
-        class="scan-item"
-        *ngFor="let scan of addScanList; trackBy: trackByScanId"
-        (click)="onAddScan(scan.id)"
-        [class.disabled]="selectedScanIds.has(scan.id)"
-        (mouseenter)="onScanItemHover(scan, $event)"
-        (mouseleave)="onScanItemLeave()"
-      >
-        <div class="scan-label-area">
-          <div class="scan-title">{{ getScanTitle(scan) }}</div>
-          <div class="scan-description" *ngIf="scan.description">
-            {{ getShortDescription(scan.description) }}
-          </div>
-          <div class="scan-tags" *ngIf="scan.tags && scan.tags.length > 0">
-            <span class="tag-badge" *ngFor="let tag of scan.tags">{{
-              getTagTitle(tag)
-            }}</span>
+      @for (scan of addScanList; track trackByScanId($index, scan)) {
+        <div
+          class="scan-item"
+          (click)="onAddScan(scan.id)"
+          [class.disabled]="selectedScanIds.has(scan.id)"
+          (mouseenter)="onScanItemHover(scan, $event)"
+          (mouseleave)="onScanItemLeave()"
+        >
+          <div class="scan-label-area">
+            <div class="scan-title">{{ getScanTitle(scan) }}</div>
+            @if (scan.description) {
+              <div class="scan-description">
+                {{ getShortDescription(scan.description) }}
+              </div>
+            }
+            @if (scan.tags && scan.tags.length > 0) {
+              <div class="scan-tags">
+                @for (tag of scan.tags; track tag) {
+                  <span class="tag-badge">{{ getTagTitle(tag) }}</span>
+                }
+              </div>
+            }
           </div>
         </div>
-      </div>
-      <div class="empty-scans" *ngIf="addScanList.length === 0">
-        <h5>No datasets found</h5>
-      </div>
+      }
+      @if (addScanList.length === 0) {
+        <div class="empty-scans">
+          <h5>No datasets found</h5>
+        </div>
+      }
     </div>
   </div>
 </ng-template>
@@ -104,14 +111,15 @@ POSSIBILITY OF SUCH DAMAGE.
     </push-button>
   </widget-settings-menu>
   <section class="scan-configurations">
-    <scan-configuration-item
-      [config]="config"
-      [scan]="idToScan[config.id]"
-      (updateConfig)="updateConfig($event)"
-      (removeConfiguration)="onRemoveConfiguration(config.id)"
-      *ngFor="let config of scanConfigurations"
-    >
-    </scan-configuration-item>
+    @for (config of scanConfigurations; track config) {
+      <scan-configuration-item
+        [config]="config"
+        [scan]="idToScan[config.id]"
+        (updateConfig)="updateConfig($event)"
+        (removeConfiguration)="onRemoveConfiguration(config.id)"
+      >
+      </scan-configuration-item>
+    }
   </section>
   <div class="button-container">
     <push-button

@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,158 +32,269 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #changeLogDialog>
   <div class="change-log-container">
     <h1>
-      Change Log (Updated {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }})
-      <action-button (onClick)="closeChangeLogDialog()" action="close" color="rgb(var(--clr-gray-30))"></action-button>
+      Change Log (Updated
+      {{ uiVersionLastCommitDate * 1000 | date: "mediumDate" }})
+      <action-button
+        (onClick)="closeChangeLogDialog()"
+        action="close"
+        color="rgb(var(--clr-gray-30))"
+      ></action-button>
     </h1>
     <div class="change-log">
-      <markdown lineHighlight [lineOffset]="5" src="/assets/CHANGELOG.md"> </markdown>
+      <markdown lineHighlight [lineOffset]="5" src="/assets/CHANGELOG.md">
+      </markdown>
     </div>
   </div>
 </ng-template>
 
-<div *ngIf="isVisible" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }" aria-label="TopToolbar">
-  <div class="logo-title">
-    <img
-      class="abbreviated"
-      *ngIf="hasActiveWorkspace && title.length > 0"
-      src="assets/PIXLISE-abbreviated.svg"
-      (click)="onLogoClick()"
-      tabindex="0"
-      (keydown)="onLogoClick()"
-      (keyup)="onLogoClick()"
-      (keypress)="onLogoClick()"
-      #tooltip="matTooltip"
-      matTooltip="Go to homepage"
-      [matTooltipShowDelay]="500"
-      alt="PIXLISE Logo" />
-    <img
-      class="full"
-      *ngIf="!hasActiveWorkspace || title.length === 0"
-      src="assets/PIXLISE-red-logo.svg"
-      (click)="onLogoClick()"
-      tabindex="0"
-      (keydown)="onLogoClick()"
-      (keyup)="onLogoClick()"
-      (keypress)="onLogoClick()"
-      #tooltip="matTooltip"
-      matTooltip="Go to homepage"
-      [matTooltipShowDelay]="500"
-      alt="PIXLISE Logo" />
-    <div
-      class="title-text"
-      [ngClass]="{ 'condensed-mode': hasActiveWorkspace && openTabs.length > 5 }"
-      *ngIf="hasActiveWorkspace && title.length > 0"
-      [title]="title"
-      #tooltip="matTooltip"
-      [matTooltip]="title"
-      [matTooltipShowDelay]="500">
-      {{ title }}
-    </div>
-  </div>
-  <div class="tabs">
-    <div
-      class="tab builtin {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }} {{
-        editingTabIndex === getTabIndex(tab) && editingTabIndex !== null ? 'editing' : 'viewing'
-      }}"
-      *ngFor="let tab of builtInTabs"
-      #tooltip="matTooltip"
-      [matTooltip]="tab.tooltip || ''"
-      [matTooltipShowDelay]="1000">
-      <a (click)="onOpenTab(tab)" tabindex="0" (keydown)="onOpenTab(tab)" (keyup)="onOpenTab(tab)" (keypress)="onOpenTab(tab)">
-        <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" alt="Tab Icon" />
-        <div *ngIf="tab.label && openTabs.length < 5" class="tab-label">
-          <span class="view-label">{{ tab.label }}</span>
-        </div>
-      </a>
-    </div>
-    <div class="user-tabs" cdkDropList (cdkDropListDropped)="dropTab($event)">
-      <div
-        class="tab {{ tab.active ? 'active' : '' }} {{ tab.label ? 'show-label' : 'no-label' }} {{
-          editingTabIndex === getTabIndex(tab) && editingTabIndex !== null ? 'editing' : 'viewing'
-        }}"
-        *ngFor="let tab of openTabs"
-        #tooltip="matTooltip"
-        [matTooltip]="tab.tooltip || ''"
-        [matTooltipShowDelay]="1000">
-        <a (click)="onOpenTab(tab)" tabindex="0" (keydown)="onOpenTab(tab)" (keyup)="onOpenTab(tab)" (keypress)="onOpenTab(tab)">
-          <img *ngIf="tab.icon" class="tab-icon" [src]="tab.icon" alt="Tab Icon" />
-          <div *ngIf="tab.label" class="tab-label">
-            <span *ngIf="editingTabIndex !== getTabIndex(tab) || editingTabIndex === null" class="view-label" (dblclick)="onEditTab(tab)">{{ tab.label }}</span>
-            <input
-              *ngIf="editingTabIndex === getTabIndex(tab) && editingTabIndex !== null"
-              class="edit-label"
-              [(ngModel)]="newTabName"
-              type="text"
-              autocomplete="off"
-              data-lpignore="true" />
-          </div>
-
-          <action-button
-            *ngIf="canEditTab(tab) && editingTabIndex !== getTabIndex(tab) && currentAnalysisTabIndex === getTabIndex(tab)"
-            class="tab-edit"
-            action="edit"
-            (onClick)="onEditTab(tab)"></action-button>
-          <div class="edit-btns" *ngIf="canEditTab(tab) && editingTabIndex === getTabIndex(tab)">
-            <action-button class="tab-save" action="check" (onClick)="saveTabName(tab)"></action-button>
-            <action-button class="tab-delete" action="close" (onClick)="cancelEditTabName()"></action-button>
-          </div>
-        </a>
-      </div>
-    </div>
-    <div *ngIf="isNewTab" class="tab active new-tab" #tooltip="matTooltip" matTooltip="New Tab" [matTooltipShowDelay]="1000">
-      <a>
-        <span class="tab-label">New Tab</span>
-      </a>
-    </div>
-    <div *ngIf="hasActiveWorkspace && !readOnlyMode" class="tab new-tab-btn">
-      <a (click)="onNewTab()" tabindex="0" (keydown)="onNewTab()" (keyup)="onNewTab()" (keypress)="onNewTab()">
-        <span class="tab-label">+</span>
-      </a>
-    </div>
-  </div>
-
-  <div class="authenticated-buttons">
-    <span class="buttons">
-      <div *ngIf="readOnlyMode" class="read-only-container">
-        <span class="read-only">Read Only</span>
-      </div>
-      <wait-spinner *ngIf="outstandingInfo" #tooltip="matTooltip" [matTooltip]="outstandingInfo"></wait-spinner>
-      <push-button
-        title="PIXLISE Version Information"
-        *ngIf="uiVersionLastCommitDate > 0"
-        [customDialog]="changeLogDialog"
-        (onClick)="markLatestVersionViewed()"
-        class="changelog-btn"
-        [buttonStyle]="hasViewedLatestVersion ? 'changelog-viewed' : 'changelog-new'"
-        #changeLogBtn>
+@if (isVisible) {
+  <div
+    class="toolbar"
+    [ngClass]="{ 'dark-background': darkBackground }"
+    aria-label="TopToolbar"
+  >
+    <div class="logo-title">
+      @if (hasActiveWorkspace && title.length > 0) {
         <img
-          *ngIf="!hasViewedLatestVersion"
-          class="changelog-icon {{ hasViewedLatestVersion ? 'viewed' : '' }}"
-          src="assets/button-icons/change-log-lightning.svg"
-          alt="Change Log Icon" />
-        <span>{{ uiVersion }}</span>
-      </push-button>
-      <icon-button
-        title="Notifications"
-        (click)="onNotificationsMenu()"
-        [state]="notificationsMenuOpen ? 1 : 0"
-        type="notification"
-        badgeText="active notifications"
-        [notificationCount]="notificationsCount"></icon-button>
-      <icon-button
-        title="Hot-Keys (Keyboard Shortcuts)"
-        (click)="onHotkeysMenu()"
-        [hoverYellow]="true"
-        [state]="hotKeysMenuOpen ? 1 : 0"
-        type="hotkeys"
-        [hasBackground]="true"></icon-button>
-      <user-icon
-        size="24px"
-        title="User Account"
-        cdkOverlayOrigin
-        #trigger="cdkOverlayOrigin"
-        (click)="onUserMenu()"
-        class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
-    </span>
+          class="abbreviated"
+          src="assets/PIXLISE-abbreviated.svg"
+          (click)="onLogoClick()"
+          tabindex="0"
+          (keydown)="onLogoClick()"
+          (keyup)="onLogoClick()"
+          (keypress)="onLogoClick()"
+          #tooltip="matTooltip"
+          matTooltip="Go to homepage"
+          [matTooltipShowDelay]="500"
+          alt="PIXLISE Logo"
+        />
+      }
+      @if (!hasActiveWorkspace || title.length === 0) {
+        <img
+          class="full"
+          src="assets/PIXLISE-red-logo.svg"
+          (click)="onLogoClick()"
+          tabindex="0"
+          (keydown)="onLogoClick()"
+          (keyup)="onLogoClick()"
+          (keypress)="onLogoClick()"
+          #tooltip="matTooltip"
+          matTooltip="Go to homepage"
+          [matTooltipShowDelay]="500"
+          alt="PIXLISE Logo"
+        />
+      }
+      @if (hasActiveWorkspace && title.length > 0) {
+        <div
+          class="title-text"
+          [ngClass]="{
+            'condensed-mode': hasActiveWorkspace && openTabs.length > 5,
+          }"
+          [title]="title"
+          #tooltip="matTooltip"
+          [matTooltip]="title"
+          [matTooltipShowDelay]="500"
+        >
+          {{ title }}
+        </div>
+      }
+    </div>
+    <div class="tabs">
+      @for (tab of builtInTabs; track tab) {
+        <div
+          class="tab builtin {{ tab.active ? 'active' : '' }} {{
+            tab.label ? 'show-label' : 'no-label'
+          }} {{
+            editingTabIndex === getTabIndex(tab) && editingTabIndex !== null
+              ? 'editing'
+              : 'viewing'
+          }}"
+          #tooltip="matTooltip"
+          [matTooltip]="tab.tooltip || ''"
+          [matTooltipShowDelay]="1000"
+        >
+          <a
+            (click)="onOpenTab(tab)"
+            tabindex="0"
+            (keydown)="onOpenTab(tab)"
+            (keyup)="onOpenTab(tab)"
+            (keypress)="onOpenTab(tab)"
+          >
+            @if (tab.icon) {
+              <img class="tab-icon" [src]="tab.icon" alt="Tab Icon" />
+            }
+            @if (tab.label && openTabs.length < 5) {
+              <div class="tab-label">
+                <span class="view-label">{{ tab.label }}</span>
+              </div>
+            }
+          </a>
+        </div>
+      }
+      <div class="user-tabs" cdkDropList (cdkDropListDropped)="dropTab($event)">
+        @for (tab of openTabs; track tab) {
+          <div
+            class="tab {{ tab.active ? 'active' : '' }} {{
+              tab.label ? 'show-label' : 'no-label'
+            }} {{
+              editingTabIndex === getTabIndex(tab) && editingTabIndex !== null
+                ? 'editing'
+                : 'viewing'
+            }}"
+            #tooltip="matTooltip"
+            [matTooltip]="tab.tooltip || ''"
+            [matTooltipShowDelay]="1000"
+          >
+            <a
+              (click)="onOpenTab(tab)"
+              tabindex="0"
+              (keydown)="onOpenTab(tab)"
+              (keyup)="onOpenTab(tab)"
+              (keypress)="onOpenTab(tab)"
+            >
+              @if (tab.icon) {
+                <img class="tab-icon" [src]="tab.icon" alt="Tab Icon" />
+              }
+              @if (tab.label) {
+                <div class="tab-label">
+                  @if (
+                    editingTabIndex !== getTabIndex(tab) ||
+                    editingTabIndex === null
+                  ) {
+                    <span class="view-label" (dblclick)="onEditTab(tab)">{{
+                      tab.label
+                    }}</span>
+                  }
+                  @if (
+                    editingTabIndex === getTabIndex(tab) &&
+                    editingTabIndex !== null
+                  ) {
+                    <input
+                      class="edit-label"
+                      [(ngModel)]="newTabName"
+                      type="text"
+                      autocomplete="off"
+                      data-lpignore="true"
+                    />
+                  }
+                </div>
+              }
+              @if (
+                canEditTab(tab) &&
+                editingTabIndex !== getTabIndex(tab) &&
+                currentAnalysisTabIndex === getTabIndex(tab)
+              ) {
+                <action-button
+                  class="tab-edit"
+                  action="edit"
+                  (onClick)="onEditTab(tab)"
+                ></action-button>
+              }
+              @if (canEditTab(tab) && editingTabIndex === getTabIndex(tab)) {
+                <div class="edit-btns">
+                  <action-button
+                    class="tab-save"
+                    action="check"
+                    (onClick)="saveTabName(tab)"
+                  ></action-button>
+                  <action-button
+                    class="tab-delete"
+                    action="close"
+                    (onClick)="cancelEditTabName()"
+                  ></action-button>
+                </div>
+              }
+            </a>
+          </div>
+        }
+      </div>
+      @if (isNewTab) {
+        <div
+          class="tab active new-tab"
+          #tooltip="matTooltip"
+          matTooltip="New Tab"
+          [matTooltipShowDelay]="1000"
+        >
+          <a>
+            <span class="tab-label">New Tab</span>
+          </a>
+        </div>
+      }
+      @if (hasActiveWorkspace && !readOnlyMode) {
+        <div class="tab new-tab-btn">
+          <a
+            (click)="onNewTab()"
+            tabindex="0"
+            (keydown)="onNewTab()"
+            (keyup)="onNewTab()"
+            (keypress)="onNewTab()"
+          >
+            <span class="tab-label">+</span>
+          </a>
+        </div>
+      }
+    </div>
+    <div class="authenticated-buttons">
+      <span class="buttons">
+        @if (readOnlyMode) {
+          <div class="read-only-container">
+            <span class="read-only">Read Only</span>
+          </div>
+        }
+        @if (outstandingInfo) {
+          <wait-spinner
+            #tooltip="matTooltip"
+            [matTooltip]="outstandingInfo"
+          ></wait-spinner>
+        }
+        @if (uiVersionLastCommitDate > 0) {
+          <push-button
+            title="PIXLISE Version Information"
+            [customDialog]="changeLogDialog"
+            (onClick)="markLatestVersionViewed()"
+            class="changelog-btn"
+            [buttonStyle]="
+              hasViewedLatestVersion ? 'changelog-viewed' : 'changelog-new'
+            "
+            #changeLogBtn
+          >
+            @if (!hasViewedLatestVersion) {
+              <img
+                class="changelog-icon {{
+                  hasViewedLatestVersion ? 'viewed' : ''
+                }}"
+                src="assets/button-icons/change-log-lightning.svg"
+                alt="Change Log Icon"
+              />
+            }
+            <span>{{ uiVersion }}</span>
+          </push-button>
+        }
+        <icon-button
+          title="Notifications"
+          (click)="onNotificationsMenu()"
+          [state]="notificationsMenuOpen ? 1 : 0"
+          type="notification"
+          badgeText="active notifications"
+          [notificationCount]="notificationsCount"
+        ></icon-button>
+        <icon-button
+          title="Hot-Keys (Keyboard Shortcuts)"
+          (click)="onHotkeysMenu()"
+          [hoverYellow]="true"
+          [state]="hotKeysMenuOpen ? 1 : 0"
+          type="hotkeys"
+          [hasBackground]="true"
+        ></icon-button>
+        <user-icon
+          size="24px"
+          title="User Account"
+          cdkOverlayOrigin
+          #trigger="cdkOverlayOrigin"
+          (click)="onUserMenu()"
+          class="{{ userMenuOpen ? 'open' : '' }}"
+        ></user-icon>
+      </span>
+    </div>
   </div>
-</div>
+}

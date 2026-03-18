@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -49,15 +49,16 @@ POSSIBILITY OF SUCH DAMAGE.
           (onActiveWidgetIdsChanged)="onActiveWidgetIdsChanged($event)"
         >
         </widget-selection-button>
-        <badge
-          *ngIf="activeWidgetIds.length > 1"
-          class="notifications"
-          [value]="activeWidgetIds.length.toString()"
-          [badgeStyle]="'notification'"
-          [badgeBorderColor]="'#2a3137'"
-          title="{{ activeWidgetIds.length }} active notifications"
-        >
-        </badge>
+        @if (activeWidgetIds.length > 1) {
+          <badge
+            class="notifications"
+            [value]="activeWidgetIds.length.toString()"
+            [badgeStyle]="'notification'"
+            [badgeBorderColor]="'#2a3137'"
+            title="{{ activeWidgetIds.length }} active notifications"
+          >
+          </badge>
+        }
       </div>
       <push-button buttonStyle="yellow" (onClick)="onImport()"
         >Import</push-button
@@ -75,34 +76,34 @@ POSSIBILITY OF SUCH DAMAGE.
         [currentImage]="options.currentImage"
         (selectedImage)="onSelectedImageChanged($event)"
       ></image-picker>
-      <div *ngIf="data.warningMsg" class="warning">{{ data.warningMsg }}</div>
+      @if (data.warningMsg) {
+        <div class="warning">{{ data.warningMsg }}</div>
+      }
     </div>
 
-    <div
-      class="ctrl-column"
-      *ngIf="loadingBeamVersions || pickableBeamVersionScanIds.length > 0"
-    >
-      <div class="setting-label">Beam Version:</div>
-      <wait-spinner *ngIf="loadingBeamVersions"></wait-spinner>
-      <div
-        *ngFor="let scanId of pickableBeamVersionScanIds"
-        class="row-space-between"
-      >
-        <div title="Scan ID: {{ scanId }}" class="setting-label">
-          {{ scanNames?.get(scanId) || scanId }}
-        </div>
-        <mat-select
-          [(ngModel)]="selectedBeamVersions[scanId]"
-          (selectionChange)="onBeamVersionChange(scanId)"
-        >
-          <mat-option
-            *ngFor="let ver of pickableBeamVersions.get(scanId)"
-            [value]="ver"
-            >{{ ver }}</mat-option
-          >
-        </mat-select>
+    @if (loadingBeamVersions || pickableBeamVersionScanIds.length > 0) {
+      <div class="ctrl-column">
+        <div class="setting-label">Beam Version:</div>
+        @if (loadingBeamVersions) {
+          <wait-spinner></wait-spinner>
+        }
+        @for (scanId of pickableBeamVersionScanIds; track scanId) {
+          <div class="row-space-between">
+            <div title="Scan ID: {{ scanId }}" class="setting-label">
+              {{ scanNames?.get(scanId) || scanId }}
+            </div>
+            <mat-select
+              [(ngModel)]="selectedBeamVersions[scanId]"
+              (selectionChange)="onBeamVersionChange(scanId)"
+            >
+              @for (ver of pickableBeamVersions.get(scanId); track ver) {
+                <mat-option [value]="ver">{{ ver }}</mat-option>
+              }
+            </mat-select>
+          </div>
+        }
       </div>
-    </div>
+    }
 
     <div
       class="ctrl-row centered-row bunched"
@@ -127,11 +128,9 @@ POSSIBILITY OF SUCH DAMAGE.
               [(ngModel)]="channelForRed"
               [disabled]="!isRGBU || !rgbuAsChannels"
             >
-              <mat-option
-                *ngFor="let ch of displayedChannelsWithNone"
-                [value]="ch"
-                >{{ ch }}</mat-option
-              >
+              @for (ch of displayedChannelsWithNone; track ch) {
+                <mat-option [value]="ch">{{ ch }}</mat-option>
+              }
             </mat-select>
           </div>
           <div class="column">
@@ -140,11 +139,9 @@ POSSIBILITY OF SUCH DAMAGE.
               [(ngModel)]="channelForGreen"
               [disabled]="!isRGBU || !rgbuAsChannels"
             >
-              <mat-option
-                *ngFor="let ch of displayedChannelsWithNone"
-                [value]="ch"
-                >{{ ch }}</mat-option
-              >
+              @for (ch of displayedChannelsWithNone; track ch) {
+                <mat-option [value]="ch">{{ ch }}</mat-option>
+              }
             </mat-select>
           </div>
           <div class="column">
@@ -153,11 +150,9 @@ POSSIBILITY OF SUCH DAMAGE.
               [(ngModel)]="channelForBlue"
               [disabled]="!isRGBU || !rgbuAsChannels"
             >
-              <mat-option
-                *ngFor="let ch of displayedChannelsWithNone"
-                [value]="ch"
-                >{{ ch }}</mat-option
-              >
+              @for (ch of displayedChannelsWithNone; track ch) {
+                <mat-option [value]="ch">{{ ch }}</mat-option>
+              }
             </mat-select>
           </div>
         </div>
@@ -185,18 +180,18 @@ POSSIBILITY OF SUCH DAMAGE.
           [(ngModel)]="channelForNumerator"
           [disabled]="!isRGBU || rgbuAsChannels"
         >
-          <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{
-            ch
-          }}</mat-option>
+          @for (ch of displayedChannels; track ch) {
+            <mat-option [value]="ch">{{ ch }}</mat-option>
+          }
         </mat-select>
         <div><strong>/</strong></div>
         <mat-select
           [(ngModel)]="channelForDenominator"
           [disabled]="!isRGBU || rgbuAsChannels"
         >
-          <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{
-            ch
-          }}</mat-option>
+          @for (ch of displayedChannels; track ch) {
+            <mat-option [value]="ch">{{ ch }}</mat-option>
+          }
         </mat-select>
       </div>
     </div>
@@ -210,89 +205,93 @@ POSSIBILITY OF SUCH DAMAGE.
         (onToggle)="onToggleImageSmoothing()"
       ></switch-button>
     </div>
-    <div *ngIf="!isRGBU || rgbuAsChannels" class="ctrl-row">
-      <div class="setting-label">Image Brightness:</div>
-      <div class="centered-row">
-        <input
-          class="setting-label"
-          type="number"
-          step="0.1"
-          [(ngModel)]="imageBrightnessStr"
-        />
-        <slider
-          title="Image Brightness"
-          [value]="options.imageBrightness"
-          [minValue]="0"
-          [maxValue]="10"
-          [pxLength]="140"
-          (onChange)="onChangeBrightness($event)"
-        >
-        </slider>
-        <push-button
-          title="Reset brightness to 1.0"
-          (onClick)="onResetBrightness()"
-          >Reset</push-button
-        >
+    @if (!isRGBU || rgbuAsChannels) {
+      <div class="ctrl-row">
+        <div class="setting-label">Image Brightness:</div>
+        <div class="centered-row">
+          <input
+            class="setting-label"
+            type="number"
+            step="0.1"
+            [(ngModel)]="imageBrightnessStr"
+          />
+          <slider
+            title="Image Brightness"
+            [value]="options.imageBrightness"
+            [minValue]="0"
+            [maxValue]="10"
+            [pxLength]="140"
+            (onChange)="onChangeBrightness($event)"
+          >
+          </slider>
+          <push-button
+            title="Reset brightness to 1.0"
+            (onClick)="onResetBrightness()"
+            >Reset</push-button
+          >
+        </div>
       </div>
-    </div>
-    <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
-      <div class="setting-label">Colour Remapping:</div>
-      <div class="centered-row">
-        <input
-          [(ngModel)]="colourRatioMinStr"
-          type="number"
-          step="0.1"
-          placeholder=""
-        />
-
-        <range-slider
-          *ngIf="
+    }
+    @if (isRGBU && !rgbuAsChannels) {
+      <div class="ctrl-row">
+        <div class="setting-label">Colour Remapping:</div>
+        <div class="centered-row">
+          <input
+            [(ngModel)]="colourRatioMinStr"
+            type="number"
+            step="0.1"
+            placeholder=""
+          />
+          @if (
             (options.removeBottomSpecularArtifacts ||
               options.removeTopSpecularArtifacts) &&
             options.specularRemovedValueRange
-          "
-          [minValue]="colourRatioRangeMin"
-          [selectedMinValue]="colourRatioMin"
-          [maxValue]="colourRatioRangeMax"
-          [selectedMaxValue]="
-            options.colourRatioMax !== null
-              ? options.colourRatioMax
-              : colourRatioRangeMax
-          "
-          [pxLength]="scaleImageWidth"
-          trackColour="viridis"
-          (onChange)="onChangeRatioMinMaxSlider($event)"
-        >
-        </range-slider>
-        <range-slider
-          *ngIf="
+          ) {
+            <range-slider
+              [minValue]="colourRatioRangeMin"
+              [selectedMinValue]="colourRatioMin"
+              [maxValue]="colourRatioRangeMax"
+              [selectedMaxValue]="
+                options.colourRatioMax !== null
+                  ? options.colourRatioMax
+                  : colourRatioRangeMax
+              "
+              [pxLength]="scaleImageWidth"
+              trackColour="viridis"
+              (onChange)="onChangeRatioMinMaxSlider($event)"
+            >
+            </range-slider>
+          }
+          @if (
             !options.removeBottomSpecularArtifacts &&
             !options.removeTopSpecularArtifacts &&
             options.valueRange
-          "
-          [minValue]="colourRatioRangeMin"
-          [selectedMinValue]="colourRatioMin"
-          [maxValue]="colourRatioRangeMax"
-          [selectedMaxValue]="colourRatioMax"
-          [pxLength]="scaleImageWidth"
-          trackColour="viridis"
-          (onChange)="onChangeRatioMinMaxSlider($event)"
-        >
-        </range-slider>
-
-        <input
-          [(ngModel)]="colourRatioMaxStr"
-          type="number"
-          step="0.1"
-          placeholder=""
-        />
-        <push-button
-          title="Reset colour remapping"
-          (onClick)="onResetRatioColourRemapping()"
-          >Reset</push-button
-        >
+          ) {
+            <range-slider
+              [minValue]="colourRatioRangeMin"
+              [selectedMinValue]="colourRatioMin"
+              [maxValue]="colourRatioRangeMax"
+              [selectedMaxValue]="colourRatioMax"
+              [pxLength]="scaleImageWidth"
+              trackColour="viridis"
+              (onChange)="onChangeRatioMinMaxSlider($event)"
+            >
+            </range-slider>
+          }
+          <input
+            [(ngModel)]="colourRatioMaxStr"
+            type="number"
+            step="0.1"
+            placeholder=""
+          />
+          <push-button
+            title="Reset colour remapping"
+            (onClick)="onResetRatioColourRemapping()"
+            >Reset</push-button
+          >
+        </div>
       </div>
-    </div>
+    }
     <div class="ctrl-row">
       <div class="setting-label">Opacity of Unselected Pixels:</div>
       <div class="centered-row">
@@ -324,22 +323,26 @@ POSSIBILITY OF SUCH DAMAGE.
       >
       </two-state-icon-switch>
     </div>
-    <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
-      <div class="setting-label">Remove Top 1% Fractile:</div>
-      <switch-button
-        [active]="options.removeTopSpecularArtifacts"
-        title="Toggle top 1% of specular artifacts"
-        (onToggle)="onToggleRemoveTopSpecularArtifacts()"
-      ></switch-button>
-    </div>
-    <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
-      <div class="setting-label">Remove Bottom 1% Fractile:</div>
-      <switch-button
-        [active]="options.removeBottomSpecularArtifacts"
-        title="Toggle bottom 1% of specular artifacts"
-        (onToggle)="onToggleRemoveBottomSpecularArtifacts()"
-      ></switch-button>
-    </div>
+    @if (isRGBU && !rgbuAsChannels) {
+      <div class="ctrl-row">
+        <div class="setting-label">Remove Top 1% Fractile:</div>
+        <switch-button
+          [active]="options.removeTopSpecularArtifacts"
+          title="Toggle top 1% of specular artifacts"
+          (onToggle)="onToggleRemoveTopSpecularArtifacts()"
+        ></switch-button>
+      </div>
+    }
+    @if (isRGBU && !rgbuAsChannels) {
+      <div class="ctrl-row">
+        <div class="setting-label">Remove Bottom 1% Fractile:</div>
+        <switch-button
+          [active]="options.removeBottomSpecularArtifacts"
+          title="Toggle bottom 1% of specular artifacts"
+          (onToggle)="onToggleRemoveBottomSpecularArtifacts()"
+        ></switch-button>
+      </div>
+    }
   </section>
   <div class="button-container">
     <span class="live-indicator">

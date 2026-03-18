@@ -13,22 +13,14 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
-    "downlevelIteration": true,
     "skipLibCheck": true,
     "isolatedModules": false,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "useDefineForClassFields": false,
-    "lib": [
-      "ES2022",
-      "dom"
-    ]
+    "typeRoots": ["node_modules/@types"],
+    "useDefineForClassFields": false
   },
   "include": ["src/**/*.ts"],
   "angularCompilerOptions": {

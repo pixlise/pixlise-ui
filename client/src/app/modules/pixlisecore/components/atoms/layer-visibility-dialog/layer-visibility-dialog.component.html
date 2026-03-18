@@ -3,126 +3,266 @@
     <h2 cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle>Layers</h2>
   </section>
   <section class="layers-container">
-    <div *ngFor="let section of sections" class="layer-section {{ section.isVisible ? '' : 'not-showing' }}">
-      <div class="section-title">
-        <action-button class="menu-open" [action]="section.isOpen ? 'closeAccordion' : 'openAccordion'" (onClick)="section.isOpen = !section.isOpen"></action-button>
-        <div *ngIf="section.icon" class="icon" [ngStyle]="{ 'mask-image': 'url(' + section.icon + ')', 'background-color': section.scanColor || '#fff' }"></div>
-        <h2 #tooltip="matTooltip" [matTooltip]="section.title" [matTooltipShowDelay]="500" [matTooltipDisabled]="section.title.length < 50" class="layer-name">
-          {{ section.title }}
-        </h2>
-        <div *ngIf="section.scanId" class="scan-tag">
-          <div class="scan-color" [ngStyle]="{ 'background-color': section.scanColor || 'grey' }"></div>
-          <span class="scan-name">{{ section.scanName }}</span>
-        </div>
-        <div class="right-group">
-          <action-button class="visibility-toggle" [action]="section.isVisible ? 'openEye' : 'closedEye'" (onClick)="toggleSection(section)"></action-button>
-        </div>
-      </div>
-      <div *ngIf="section.isOpen" class="sub-layers" cdkDropList (cdkDropListDropped)="dropLayer(section, $event)">
-        <div [cdkDragData]="layer" cdkDrag cdkDragLockAxis="y" *ngFor="let layer of section.options" class="layer-item {{ layer.visible ? '' : 'not-showing' }}">
-          <div class="section-title">
-            <img cdkDragHandle class="drag-handle" src="assets/button-icons/drag-handle.svg" />
-            <action-button
-              *ngIf="layer.subOptions && layer.subOptions.length > 0"
-              class="menu-open"
-              [action]="layer.isSubMenuOpen ? 'closeAccordion' : 'openAccordion'"
-              (onClick)="layer.isSubMenuOpen = !layer.isSubMenuOpen"></action-button>
+    @for (section of sections; track section) {
+      <div class="layer-section {{ section.isVisible ? '' : 'not-showing' }}">
+        <div class="section-title">
+          <action-button
+            class="menu-open"
+            [action]="section.isOpen ? 'closeAccordion' : 'openAccordion'"
+            (onClick)="section.isOpen = !section.isOpen"
+          ></action-button>
+          @if (section.icon) {
             <div
-              *ngIf="layer.icon && layer.color"
               class="icon"
-              [ngStyle]="{ 'mask-image': 'url(' + layer.icon + ')', 'background-color': layer.color || '#fff' }"></div>
-            <img *ngIf="layer.icon && !layer.color" class="icon" [src]="layer.icon" />
-            <div *ngIf="!layer.icon && layer.color" class="gradient">
-              <div class="gradient-color" [ngStyle]="{ background: layer.color }"></div>
+              [ngStyle]="{
+                'mask-image': 'url(' + section.icon + ')',
+                'background-color': section.scanColor || '#fff',
+              }"
+            ></div>
+          }
+          <h2
+            #tooltip="matTooltip"
+            [matTooltip]="section.title"
+            [matTooltipShowDelay]="500"
+            [matTooltipDisabled]="section.title.length < 50"
+            class="layer-name"
+          >
+            {{ section.title }}
+          </h2>
+          @if (section.scanId) {
+            <div class="scan-tag">
+              <div
+                class="scan-color"
+                [ngStyle]="{ 'background-color': section.scanColor || 'grey' }"
+              ></div>
+              <span class="scan-name">{{ section.scanName }}</span>
             </div>
-            <h2 #tooltip="matTooltip" [matTooltip]="layer.name" [matTooltipShowDelay]="500" [matTooltipDisabled]="layer.name.length < 50" class="layer-name">
-              {{ layer.name }}
-            </h2>
-            <div class="right-group">
-              <ng-container *ngIf="layer.showOpacity">
-                <ng-container *ngIf="showOpacityInputFor === layer">
-                  <input class="layer-opacity-input" [(ngModel)]="layerOpacityInput" type="text" autocomplete="off" placeholder="Opacity 0-100" />
-                  <action-button
-                    action="check"
-                    [disabled]="layerOpacityInput.length <= 0"
-                    tooltipTitle="Set Opacity"
-                    color="rgb(var(--clr-green))"
-                    (onClick)="onEnterOpacity(layer, layerOpacityInput)"></action-button>
-                  <action-button action="close" tooltipTitle="Cancel" (onClick)="onCancelOpacityEdit()"></action-button>
-                </ng-container>
-                <ng-container *ngIf="showOpacityInputFor !== layer">
-                  <slider
-                    [value]="layer.opacity"
-                    [minValue]="0"
-                    [maxValue]="1"
-                    [pxLength]="110"
-                    (onChange)="onChangeLayerOpacity(layer, $event)"
-                    [onlyShowTrackOnHover]="true">
-                  </slider>
-                  <div class="clickable opacity-display" (dblclick)="onEditOpacity(layer)">{{layer.opacity*100|number:'1.0-0'}}%</div>
-                  <action-button
-                    action="edit"
-                    tooltipTitle="Edit Opacity"
-                    color="rgb(var(--clr-gray-30))"
-                    (onClick)="onEditOpacity(layer)"></action-button>
-                </ng-container>
-              </ng-container>
-              <action-button
-                *ngIf="layer.canDelete"
-                action="verticalEllipsis"
-                [customMenuOptions]="['Delete']"
-                (onCustomMenuItemClick)="onLayerOptionsClick($event, section, layer)">
-              </action-button>
-              <action-button
-                class="visibility-toggle"
-                [action]="layer.visible ? 'openEye' : 'closedEye'"
-                (onClick)="onLayerVisibilityChanged(section, layer, !layer.visible)"></action-button>
-            </div>
-          </div>
-          <div
-            *ngIf="layer.isSubMenuOpen && layer.subOptions && layer.subOptions.length > 0"
-            cdkDropList
-            (cdkDropListDropped)="dropSubLayer(layer, $event)"
-            class="sub-layers">
-            <div
-              *ngFor="let subLayer of layer.subOptions"
-              class="layer-item {{ subLayer.visible ? '' : 'not-showing' }}"
-              cdkDrag
-              [cdkDragData]="subLayer"
-              cdkDragLockAxis="y">
-              <div class="section-title" [ngStyle]="{ 'padding-left.px': 24 }">
-                <img cdkDragHandle class="drag-handle" src="assets/button-icons/drag-handle.svg" [ngStyle]="{ 'padding-left.px': 12 }" />
-                <div
-                  *ngIf="subLayer.icon && subLayer.color"
-                  class="icon"
-                  [ngStyle]="{ 'mask-image': 'url(' + subLayer.icon + ')', 'background-color': subLayer.color || '#fff' }"></div>
-                <img *ngIf="subLayer.icon && !subLayer.color" class="icon" [src]="subLayer.icon" />
-                <div *ngIf="!subLayer.icon && subLayer.color" class="gradient">
-                  <div class="gradient-color" [ngStyle]="{ background: subLayer.color }"></div>
-                </div>
-                <h2
-                  #tooltip="matTooltip"
-                  [matTooltip]="subLayer.name"
-                  [matTooltipShowDelay]="500"
-                  [matTooltipDisabled]="subLayer.name.length < 50"
-                  class="layer-name">
-                  {{ subLayer.name }}
-                </h2>
-                <div class="right-group">
-                  <action-button
-                    *ngIf="!subLayer.isVisibilityLocked"
-                    class="visibility-toggle"
-                    [action]="subLayer.visible ? 'openEye' : 'closedEye'"
-                    (onClick)="onSubLayerVisibilityChanged(section, layer, subLayer, !subLayer.visible)"></action-button>
-                </div>
-              </div>
-            </div>
+          }
+          <div class="right-group">
+            <action-button
+              class="visibility-toggle"
+              [action]="section.isVisible ? 'openEye' : 'closedEye'"
+              (onClick)="toggleSection(section)"
+            ></action-button>
           </div>
         </div>
+        @if (section.isOpen) {
+          <div
+            class="sub-layers"
+            cdkDropList
+            (cdkDropListDropped)="dropLayer(section, $event)"
+          >
+            @for (layer of section.options; track layer) {
+              <div
+                [cdkDragData]="layer"
+                cdkDrag
+                cdkDragLockAxis="y"
+                class="layer-item {{ layer.visible ? '' : 'not-showing' }}"
+              >
+                <div class="section-title">
+                  <img
+                    cdkDragHandle
+                    class="drag-handle"
+                    src="assets/button-icons/drag-handle.svg"
+                  />
+                  @if (layer.subOptions && layer.subOptions.length > 0) {
+                    <action-button
+                      class="menu-open"
+                      [action]="
+                        layer.isSubMenuOpen ? 'closeAccordion' : 'openAccordion'
+                      "
+                      (onClick)="layer.isSubMenuOpen = !layer.isSubMenuOpen"
+                    ></action-button>
+                  }
+                  @if (layer.icon && layer.color) {
+                    <div
+                      class="icon"
+                      [ngStyle]="{
+                        'mask-image': 'url(' + layer.icon + ')',
+                        'background-color': layer.color || '#fff',
+                      }"
+                    ></div>
+                  }
+                  @if (layer.icon && !layer.color) {
+                    <img class="icon" [src]="layer.icon" />
+                  }
+                  @if (!layer.icon && layer.color) {
+                    <div class="gradient">
+                      <div
+                        class="gradient-color"
+                        [ngStyle]="{ background: layer.color }"
+                      ></div>
+                    </div>
+                  }
+                  <h2
+                    #tooltip="matTooltip"
+                    [matTooltip]="layer.name"
+                    [matTooltipShowDelay]="500"
+                    [matTooltipDisabled]="layer.name.length < 50"
+                    class="layer-name"
+                  >
+                    {{ layer.name }}
+                  </h2>
+                  <div class="right-group">
+                    @if (layer.showOpacity) {
+                      @if (showOpacityInputFor === layer) {
+                        <input
+                          class="layer-opacity-input"
+                          [(ngModel)]="layerOpacityInput"
+                          type="text"
+                          autocomplete="off"
+                          placeholder="Opacity 0-100"
+                        />
+                        <action-button
+                          action="check"
+                          [disabled]="layerOpacityInput.length <= 0"
+                          tooltipTitle="Set Opacity"
+                          color="rgb(var(--clr-green))"
+                          (onClick)="onEnterOpacity(layer, layerOpacityInput)"
+                        ></action-button>
+                        <action-button
+                          action="close"
+                          tooltipTitle="Cancel"
+                          (onClick)="onCancelOpacityEdit()"
+                        ></action-button>
+                      }
+                      @if (showOpacityInputFor !== layer) {
+                        <slider
+                          [value]="layer.opacity"
+                          [minValue]="0"
+                          [maxValue]="1"
+                          [pxLength]="110"
+                          (onChange)="onChangeLayerOpacity(layer, $event)"
+                          [onlyShowTrackOnHover]="true"
+                        >
+                        </slider>
+                        <div
+                          class="clickable opacity-display"
+                          (dblclick)="onEditOpacity(layer)"
+                        >
+                          {{ layer.opacity * 100 | number: "1.0-0" }}%
+                        </div>
+                        <action-button
+                          action="edit"
+                          tooltipTitle="Edit Opacity"
+                          color="rgb(var(--clr-gray-30))"
+                          (onClick)="onEditOpacity(layer)"
+                        ></action-button>
+                      }
+                    }
+                    @if (layer.canDelete) {
+                      <action-button
+                        action="verticalEllipsis"
+                        [customMenuOptions]="['Delete']"
+                        (onCustomMenuItemClick)="
+                          onLayerOptionsClick($event, section, layer)
+                        "
+                      >
+                      </action-button>
+                    }
+                    <action-button
+                      class="visibility-toggle"
+                      [action]="layer.visible ? 'openEye' : 'closedEye'"
+                      (onClick)="
+                        onLayerVisibilityChanged(section, layer, !layer.visible)
+                      "
+                    ></action-button>
+                  </div>
+                </div>
+                @if (
+                  layer.isSubMenuOpen &&
+                  layer.subOptions &&
+                  layer.subOptions.length > 0
+                ) {
+                  <div
+                    cdkDropList
+                    (cdkDropListDropped)="dropSubLayer(layer, $event)"
+                    class="sub-layers"
+                  >
+                    @for (subLayer of layer.subOptions; track subLayer) {
+                      <div
+                        class="layer-item {{
+                          subLayer.visible ? '' : 'not-showing'
+                        }}"
+                        cdkDrag
+                        [cdkDragData]="subLayer"
+                        cdkDragLockAxis="y"
+                      >
+                        <div
+                          class="section-title"
+                          [ngStyle]="{ 'padding-left.px': 24 }"
+                        >
+                          <img
+                            cdkDragHandle
+                            class="drag-handle"
+                            src="assets/button-icons/drag-handle.svg"
+                            [ngStyle]="{ 'padding-left.px': 12 }"
+                          />
+                          @if (subLayer.icon && subLayer.color) {
+                            <div
+                              class="icon"
+                              [ngStyle]="{
+                                'mask-image': 'url(' + subLayer.icon + ')',
+                                'background-color': subLayer.color || '#fff',
+                              }"
+                            ></div>
+                          }
+                          @if (subLayer.icon && !subLayer.color) {
+                            <img class="icon" [src]="subLayer.icon" />
+                          }
+                          @if (!subLayer.icon && subLayer.color) {
+                            <div class="gradient">
+                              <div
+                                class="gradient-color"
+                                [ngStyle]="{ background: subLayer.color }"
+                              ></div>
+                            </div>
+                          }
+                          <h2
+                            #tooltip="matTooltip"
+                            [matTooltip]="subLayer.name"
+                            [matTooltipShowDelay]="500"
+                            [matTooltipDisabled]="subLayer.name.length < 50"
+                            class="layer-name"
+                          >
+                            {{ subLayer.name }}
+                          </h2>
+                          <div class="right-group">
+                            @if (!subLayer.isVisibilityLocked) {
+                              <action-button
+                                class="visibility-toggle"
+                                [action]="
+                                  subLayer.visible ? 'openEye' : 'closedEye'
+                                "
+                                (onClick)="
+                                  onSubLayerVisibilityChanged(
+                                    section,
+                                    layer,
+                                    subLayer,
+                                    !subLayer.visible
+                                  )
+                                "
+                              ></action-button>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
-    </div>
+    }
   </section>
   <div class="bottom-buttons">
-    <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
+    <push-button
+      buttonStyle="outline"
+      title="Close window"
+      (onClick)="onClose()"
+      >Close</push-button
+    >
   </div>
 </div>

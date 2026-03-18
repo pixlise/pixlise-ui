@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,79 +34,129 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="txt-widget-title">Create/Upload New Dataset</div>
   </div>
 
-  <div *ngIf="mode !== modeEntry" class="job-status">
-    <div *ngIf="modeTitle" class="mode-title">{{ modeTitle }}</div>
-    <wait-spinner *ngIf="mode === modeUpload && !complete"></wait-spinner>
-  </div>
+  @if (mode !== modeEntry) {
+    <div class="job-status">
+      @if (modeTitle) {
+        <div class="mode-title">{{ modeTitle }}</div>
+      }
+      @if (mode === modeUpload && !complete) {
+        <wait-spinner></wait-spinner>
+      }
+    </div>
+  }
 
-  <ng-container [ngSwitch]="mode">
+  @switch (mode) {
     <!-- Data entry mode -->
-    <ng-container *ngSwitchCase="modeEntry">
+    @case (modeEntry) {
       <div class="entry meta-fields">
         <div class="row">
-            <span>Source Instrument</span>
-            <mat-select
-                [value]="detector"
-                (selectionChange)="onChangeDetector($event.value)">
-                <mat-option
-                    *ngFor="let detector of detectors"
-                    [value]="detector">{{detector}}</mat-option>
-            </mat-select>
+          <span>Source Instrument</span>
+          <mat-select
+            [value]="detector"
+            (selectionChange)="onChangeDetector($event.value)"
+          >
+            @for (detector of detectors; track detector) {
+              <mat-option [value]="detector">{{ detector }}</mat-option>
+            }
+          </mat-select>
         </div>
         <div class="row">
-            <span>{{datasetIdFieldName}}</span>
-            <input [(ngModel)]="nameHint" type="text" placeholder="Name of dataset">
+          <span>{{ datasetIdFieldName }}</span>
+          <input
+            [(ngModel)]="nameHint"
+            type="text"
+            placeholder="Name of dataset"
+          />
         </div>
-        <div class="important width-limit">{{formatHelp}}</div>
-        <ng-container *ngIf="detector == 'wds'">
+        <div class="important width-limit">{{ formatHelp }}</div>
+        @if (detector == "wds") {
           <strong>Reducing Import Data Size</strong>
-          <span class="width-limit">PIXLISE currently struggles to handle scans with over 50,000 element map points. To be able to import large areas but reduce the data size you can tune the following parameters for importing...</span>
+          <span class="width-limit"
+            >PIXLISE currently struggles to handle scans with over 50,000
+            element map points. To be able to import large areas but reduce the
+            data size you can tune the following parameters for
+            importing...</span
+          >
           <table>
             <tr>
               <td>Skip Rows</td>
-              <td><input [(ngModel)]="skipRows" type="number" placeholder="Number of rows to skip while importing"></td>
+              <td>
+                <input
+                  [(ngModel)]="skipRows"
+                  type="number"
+                  placeholder="Number of rows to skip while importing"
+                />
+              </td>
             </tr>
             <tr>
               <td>Skip Columns</td>
-              <td><input [(ngModel)]="skipColumns" type="number" placeholder="Number of columns to skip while importing"></td>
+              <td>
+                <input
+                  [(ngModel)]="skipColumns"
+                  type="number"
+                  placeholder="Number of columns to skip while importing"
+                />
+              </td>
             </tr>
             <tr>
               <td>Max Map Points</td>
-              <td><input [(ngModel)]="maxMapPoints" type="number" placeholder="Number of points to import, or 0 means import all"></td>
+              <td>
+                <input
+                  [(ngModel)]="maxMapPoints"
+                  type="number"
+                  placeholder="Number of points to import, or 0 means import all"
+                />
+              </td>
             </tr>
           </table>
-        </ng-container>
+        }
       </div>
-
-      <ng-container *ngIf="detector=='user-defined'">
-        
-      </ng-container>
-
-      <ng-container *ngIf="detector!='user-defined'">
-        <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+      @if (detector == "user-defined") {}
+      @if (detector != "user-defined") {
+        <div
+          class="dropzone"
+          ngx-dropzone
+          [accept]="acceptTypes"
+          [multiple]="false"
+          (change)="onDropFile($event)"
+        >
           <ngx-dropzone-label>
-            <h2>{{singleZipPrompt}}</h2>
+            <h2>{{ singleZipPrompt }}</h2>
           </ngx-dropzone-label>
-          <ngx-dropzone-preview
-              *ngFor="let f of droppedFiles"
+          @for (f of droppedFiles; track f) {
+            <ngx-dropzone-preview
               [removable]="true"
-              (removed)="onRemoveDroppedFile(f)">
-              <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
-          </ngx-dropzone-preview>
+              (removed)="onRemoveDroppedFile(f)"
+            >
+              <ngx-dropzone-label
+                ><div class="filename">{{ f.name }}</div>
+                <div class="filetype">({{ f.type }})</div></ngx-dropzone-label
+              >
+            </ngx-dropzone-preview>
+          }
         </div>
-      </ng-container>
-    </ng-container>
-
-    <ng-container *ngSwitchDefault>
-      <log-viewer *ngIf="logId" title="Dataset Creation Log" [logID]="logId"></log-viewer>
-    </ng-container>
-  </ng-container>
+      }
+    }
+    @default {
+      @if (logId) {
+        <log-viewer title="Dataset Creation Log" [logID]="logId"></log-viewer>
+      }
+    }
+  }
 
   <div class="buttons card-toolbar">
-    <push-button *ngIf="mode !== modeEntry" buttonStyle="yellow" (onClick)="onCancel()">Close</push-button>
-    <ng-container *ngIf="mode === modeEntry">
-      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-      <push-button buttonStyle="yellow" (onClick)="onOK()">{{uploadButtonLabel}}</push-button>
-    </ng-container>
+    @if (mode !== modeEntry) {
+      <push-button buttonStyle="yellow" (onClick)="onCancel()"
+        >Close</push-button
+      >
+    }
+    @if (mode === modeEntry) {
+      <push-button buttonStyle="outline" (onClick)="onCancel()"
+        >Cancel</push-button
+      >
+      <push-button buttonStyle="yellow" (onClick)="onOK()">{{
+        uploadButtonLabel
+      }}</push-button>
+    }
   </div>
 </div>

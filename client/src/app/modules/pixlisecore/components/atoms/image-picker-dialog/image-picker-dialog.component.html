@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -33,95 +33,191 @@ POSSIBILITY OF SUCH DAMAGE.
   <h1 class="header">
     Image Picker
 
-    <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
-      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+    <mat-select
+      [(ngModel)]="filterScanId"
+      class="scan-filter"
+      placeholder="Scan ..."
+    >
+      @for (scan of configuredScans; track scan) {
+        <mat-option [value]="scan.id">{{ scan.title }} </mat-option>
+      }
     </mat-select>
   </h1>
   <div class="options-container">
     <div class="image-options">
-      <div *ngIf="loadingList" class="loading">
-        <wait-spinner></wait-spinner>
-      </div>
-      <div
-        class="image-option"
-        class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
-        *ngFor="let image of filteredImageChoices; let i = index"
-        (click)="onSelectImage(image)"
-        (keydown)="onSelectImage(image)"
-        (keyup)="onSelectImage(image)"
-        (keypress)="onSelectImage(image)"
-        tabindex="0">
-        <div [id]="'img_' + i" class="image-type-tag" class="{{ image.path === selectedImagePath ? 'selected' : '' }}">{{ image.imgType }}</div>
-        <div class="preview-image">
-          <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
-          <img
-            *ngIf="image.url !== 'loading'"
-            class="{{ image.url === 'error' ? 'error' : '' }}"
-            [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url"
-            [alt]="image.name" />
+      @if (loadingList) {
+        <div class="loading">
+          <wait-spinner></wait-spinner>
         </div>
-        <div class="image-option-content">
-          <h5 class="name" #tooltip="matTooltip" [matTooltip]="image.name" [matTooltipShowDelay]="200"><b>Image: </b>{{ image.name }}</h5>
-          <h5>
-            <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b>{{ image.scanIds.join(", ") }}
-          </h5>
-          <h5 *ngIf="image.imgType === 'MCC' && image.imagePMC >= 0"><b>Image PMC: </b>{{ image.imagePMC }}</h5>
-          <h5 class="mars-viewer" *ngIf="image.marsViewerURL">
-            <b>Mars Viewer: </b
-            ><a [href]="image.marsViewerURL" target="_blank" rel="noopener noreferrer"
-              ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
-            /></a>
-          </h5>
+      }
+      @for (image of filteredImageChoices; track image; let i = $index) {
+        <div
+          class="image-option"
+          class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
+          (click)="onSelectImage(image)"
+          (keydown)="onSelectImage(image)"
+          (keyup)="onSelectImage(image)"
+          (keypress)="onSelectImage(image)"
+          tabindex="0"
+        >
+          <div
+            [id]="'img_' + i"
+            class="image-type-tag"
+            class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
+          >
+            {{ image.imgType }}
+          </div>
+          <div class="preview-image">
+            @if (image.url === "loading") {
+              <wait-spinner
+                #tooltip="matTooltip"
+                [matTooltip]="'Loading...'"
+              ></wait-spinner>
+            }
+            @if (image.url !== "loading") {
+              <img
+                class="{{ image.url === 'error' ? 'error' : '' }}"
+                [src]="
+                  image.url === 'error'
+                    ? 'assets/icons/error-triangle.svg'
+                    : image.url
+                "
+                [alt]="image.name"
+              />
+            }
+          </div>
+          <div class="image-option-content">
+            <h5
+              class="name"
+              #tooltip="matTooltip"
+              [matTooltip]="image.name"
+              [matTooltipShowDelay]="200"
+            >
+              <b>Image: </b>{{ image.name }}
+            </h5>
+            <h5>
+              <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b
+              >{{ image.scanIds.join(", ") }}
+            </h5>
+            @if (image.imgType === "MCC" && image.imagePMC >= 0) {
+              <h5><b>Image PMC: </b>{{ image.imagePMC }}</h5>
+            }
+            @if (image.marsViewerURL) {
+              <h5 class="mars-viewer">
+                <b>Mars Viewer: </b
+                ><a
+                  [href]="image.marsViewerURL"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><img
+                    src="assets/button-icons/open-external.svg"
+                    alt="Open in Mars Viewer"
+                /></a>
+              </h5>
+            }
+          </div>
+          <div class="selection">
+            <mat-checkbox
+              class="image-option-checkbox"
+              [checked]="checkSelected(image)"
+            ></mat-checkbox>
+          </div>
         </div>
-        <div class="selection">
-          <mat-checkbox class="image-option-checkbox" [checked]="checkSelected(image)"></mat-checkbox>
-        </div>
-      </div>
+      }
     </div>
-    <div class="expanded-preview" *ngIf="selectedChoice">
-      <div class="preview-image  {{ selectedChoice?.url === 'loading' ? 'loading' : '' }}">
-        <wait-spinner *ngIf="selectedChoice?.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
-        <img
-          *ngIf="selectedChoice?.url !== 'loading'"
-          class="{{ selectedChoice?.url === 'error' ? 'error' : '' }}"
-          [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url"
-          [alt]="selectedChoice?.name" />
+    @if (selectedChoice) {
+      <div class="expanded-preview">
+        <div
+          class="preview-image  {{
+            selectedChoice?.url === 'loading' ? 'loading' : ''
+          }}"
+        >
+          @if (selectedChoice?.url === "loading") {
+            <wait-spinner
+              #tooltip="matTooltip"
+              [matTooltip]="'Loading...'"
+            ></wait-spinner>
+          }
+          @if (selectedChoice?.url !== "loading") {
+            <img
+              class="{{ selectedChoice?.url === 'error' ? 'error' : '' }}"
+              [src]="
+                selectedChoice?.url === 'error'
+                  ? 'assets/icons/error-triangle.svg'
+                  : selectedChoice?.url
+              "
+              [alt]="selectedChoice?.name"
+            />
+          }
+        </div>
+        @if (selectedChoice) {
+          <div class="image-option-content">
+            <h5 class="name">
+              <b>{{ selectedChoice?.name }}</b>
+            </h5>
+            <!-- <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
+            <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
+          </h5> -->
+            @if (selectedChoice.marsViewerURL) {
+              <h5 class="mars-viewer">
+                <b>Mars Viewer: </b
+                ><a
+                  title="Open in MarsViewer"
+                  [href]="selectedChoice.marsViewerURL"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><img
+                    src="assets/button-icons/open-external.svg"
+                    alt="Open in Mars Viewer"
+                /></a>
+                <img
+                  src="assets/button-icons/copy.svg"
+                  (click)="onCopyToClipboard(selectedChoice.path)"
+                  title="Copy file name"
+                />
+              </h5>
+            }
+          </div>
+        }
+        <div class="details-container">
+          <div class="image-details-area">{{ selectedImageDetails }}</div>
+        </div>
       </div>
-      <div class="image-option-content" *ngIf="selectedChoice">
-        <h5 class="name">
-          <b>{{ selectedChoice?.name }}</b>
-        </h5>
-        <!-- <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
-          <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
-        </h5> -->
-        <h5 class="mars-viewer" *ngIf="selectedChoice.marsViewerURL">
-          <b>Mars Viewer: </b
-          ><a title="Open in MarsViewer" [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"
-            ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
-          /></a>
-          <img src="assets/button-icons/copy.svg" (click)="onCopyToClipboard(selectedChoice.path)" title="Copy file name">
-        </h5>
-      </div>
-      <div class="details-container">
-        <div class="image-details-area">{{ selectedImageDetails }}</div>
-      </div>
-    </div>
+    }
   </div>
   <div class="button-container">
     <div class="loading">
-      <wait-spinner *ngIf="waitingForImages.length > 0" #tooltip="matTooltip" [matTooltip]="waitingForImagesTooltip"></wait-spinner>
+      @if (waitingForImages.length > 0) {
+        <wait-spinner
+          #tooltip="matTooltip"
+          [matTooltip]="waitingForImagesTooltip"
+        ></wait-spinner>
+      }
     </div>
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button *ngIf="data.multipleSelection" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
-    <push-button
-      *ngIf="data.multipleSelection"
-      #tooltip="matTooltip"
-      matTooltip="Select all images in the currently visible scan"
-      [matTooltipShowDelay]="1000"
-      buttonStyle="outline"
-      (onClick)="onSelectAllForScan()"
-      >Select All</push-button
+    <push-button buttonStyle="outline" (onClick)="onCancel()"
+      >Cancel</push-button
     >
-    <push-button badgeBorderColor="#2a3137" [notificationCount]="selectedPaths.size" buttonStyle="yellow" (onClick)="onApply()">Confirm</push-button>
+    @if (data.multipleSelection) {
+      <push-button buttonStyle="outline" (onClick)="onClear()"
+        >Clear</push-button
+      >
+    }
+    @if (data.multipleSelection) {
+      <push-button
+        #tooltip="matTooltip"
+        matTooltip="Select all images in the currently visible scan"
+        [matTooltipShowDelay]="1000"
+        buttonStyle="outline"
+        (onClick)="onSelectAllForScan()"
+        >Select All</push-button
+      >
+    }
+    <push-button
+      badgeBorderColor="#2a3137"
+      [notificationCount]="selectedPaths.size"
+      buttonStyle="yellow"
+      (onClick)="onApply()"
+      >Confirm</push-button
+    >
   </div>
 </div>

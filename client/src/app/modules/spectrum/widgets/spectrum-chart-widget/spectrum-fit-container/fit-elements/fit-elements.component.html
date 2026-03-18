@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,61 +30,80 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="fit-elements-container">
-    <div class="top-toolbar top-toolbar-shadow">
-        <span>Fits All:</span>
-        <div class="line-selector-all">
-            <div class="line-selector">
-                <span>K</span>
-                <two-state-icon-button
-                    activeIcon="assets/button-icons/check-on.svg"
-                    inactiveIcon="assets/button-icons/check-off.svg"
-                    [active]="showAllK"
-                    (onToggle)="onToggleShowAllK()">
-                </two-state-icon-button>
-            </div>
-            <div class="line-selector">
-                <span>L</span>
-                <two-state-icon-button
-                    activeIcon="assets/button-icons/check-on.svg"
-                    inactiveIcon="assets/button-icons/check-off.svg"
-                    [active]="showAllL"
-                    (onToggle)="onToggleShowAllL()">
-                </two-state-icon-button>
-            </div>
-            <div class="line-selector">
-                <span>M</span>
-                <two-state-icon-button
-                    activeIcon="assets/button-icons/check-on.svg"
-                    inactiveIcon="assets/button-icons/check-off.svg"
-                    [active]="showAllM"
-                    (onToggle)="onToggleShowAllM()">
-                </two-state-icon-button>
-            </div>
-        </div>
+  <div class="top-toolbar top-toolbar-shadow">
+    <span>Fits All:</span>
+    <div class="line-selector-all">
+      <div class="line-selector">
+        <span>K</span>
+        <two-state-icon-button
+          activeIcon="assets/button-icons/check-on.svg"
+          inactiveIcon="assets/button-icons/check-off.svg"
+          [active]="showAllK"
+          (onToggle)="onToggleShowAllK()"
+        >
+        </two-state-icon-button>
+      </div>
+      <div class="line-selector">
+        <span>L</span>
+        <two-state-icon-button
+          activeIcon="assets/button-icons/check-on.svg"
+          inactiveIcon="assets/button-icons/check-off.svg"
+          [active]="showAllL"
+          (onToggle)="onToggleShowAllL()"
+        >
+        </two-state-icon-button>
+      </div>
+      <div class="line-selector">
+        <span>M</span>
+        <two-state-icon-button
+          activeIcon="assets/button-icons/check-on.svg"
+          inactiveIcon="assets/button-icons/check-off.svg"
+          [active]="showAllM"
+          (onToggle)="onToggleShowAllM()"
+        >
+        </two-state-icon-button>
+      </div>
     </div>
-    <div class="scrollable">
-        <div *ngFor="let src of sources" class="elem-item">
-            <div [ngClass]="{'not-in-fit-elem': src.lineChoices.length===0}">{{src.roiName}}</div>
-            <div class="elem-item-lines">
-                <div *ngFor="let line of getPadding(src, true)" class="line-selector"></div>
-                <div
-                    *ngFor="let line of src.lineChoices"
-                    class="line-selector"
-                    fxLayout="row"
-                    fxLayoutAlign="start center"
-                    (mouseover)="onHover(line.lineExpression)"
-                    (mouseleave)="onHoverFinish()">
-                    <span>{{makeDisplayLabel(line.label)}}</span>
-                    <two-state-icon-button
-                        activeIcon="assets/button-icons/check-on.svg"
-                        inactiveIcon="assets/button-icons/check-off.svg"
-                        [active]="line.enabled"
-                        (onToggle)="onToggleLine(src, line)">
-                    </two-state-icon-button>
-                </div>
-                <div *ngFor="let line of getPadding(src, false)" class="line-selector"></div>
-                <img class='clickable hover-circle' src="assets/button-icons/close-cross-gray.svg" title="Delete Element" (click)="onDeleteSource(src)">
-            </div>
+  </div>
+  <div class="scrollable">
+    @for (src of sources; track src) {
+      <div class="elem-item">
+        <div [ngClass]="{ 'not-in-fit-elem': src.lineChoices.length === 0 }">
+          {{ src.roiName }}
         </div>
-    </div>
+        <div class="elem-item-lines">
+          @for (line of getPadding(src, true); track line) {
+            <div class="line-selector"></div>
+          }
+          @for (line of src.lineChoices; track line) {
+            <div
+              class="line-selector"
+              fxLayout="row"
+              fxLayoutAlign="start center"
+              (mouseover)="onHover(line.lineExpression)"
+              (mouseleave)="onHoverFinish()"
+            >
+              <span>{{ makeDisplayLabel(line.label) }}</span>
+              <two-state-icon-button
+                activeIcon="assets/button-icons/check-on.svg"
+                inactiveIcon="assets/button-icons/check-off.svg"
+                [active]="line.enabled"
+                (onToggle)="onToggleLine(src, line)"
+              >
+              </two-state-icon-button>
+            </div>
+          }
+          @for (line of getPadding(src, false); track line) {
+            <div class="line-selector"></div>
+          }
+          <img
+            class="clickable hover-circle"
+            src="assets/button-icons/close-cross-gray.svg"
+            title="Delete Element"
+            (click)="onDeleteSource(src)"
+          />
+        </div>
+      </div>
+    }
+  </div>
 </div>

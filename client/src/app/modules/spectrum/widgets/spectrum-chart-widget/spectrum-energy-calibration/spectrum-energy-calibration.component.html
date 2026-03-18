@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -38,29 +38,41 @@ POSSIBILITY OF SUCH DAMAGE.
         cdkDragRootElement=".cdk-overlay-pane"
         cdkDragHandle
         [cdkDragDisabled]="!data.draggable"
-        class="title {{ data.draggable ? 'drag' : '' }}">
+        class="title {{ data.draggable ? 'drag' : '' }}"
+      >
         Calibration
       </h1>
       <img class="title-icon" [alt]="calibrationIcon" [src]="calibrationIcon" />
     </div>
   </header>
   <section class="calibration">
-    <div *ngIf="allScans.length <= 0" class="no-scan-msg">
-      <h3>No scans available for calibration</h3>
-      <div>Add some data to widgets for scans to appear here</div>
-    </div>
-    <single-scan-energy-calibration *ngFor="let scan of allScans" [calibration]="scan" class="scan-calibration"></single-scan-energy-calibration>
+    @if (allScans.length <= 0) {
+      <div class="no-scan-msg">
+        <h3>No scans available for calibration</h3>
+        <div>Add some data to widgets for scans to appear here</div>
+      </div>
+    }
+    @for (scan of allScans; track scan) {
+      <single-scan-energy-calibration
+        [calibration]="scan"
+        class="scan-calibration"
+      ></single-scan-energy-calibration>
+    }
   </section>
   <div class="button-container">
-    <span *ngIf="!data.hideXAxisEnergyScaleToggle">Show energy on X axis</span>
-    <two-state-icon-button
-      *ngIf="!data.hideXAxisEnergyScaleToggle"
-      activeIcon="assets/button-icons/check-on.svg"
-      inactiveIcon="assets/button-icons/check-off.svg"
-      class="checkbox-button"
-      [active]="xAxisEnergyScale"
-      (onToggle)="xAxisEnergyScale = !xAxisEnergyScale">
-    </two-state-icon-button>
+    @if (!data.hideXAxisEnergyScaleToggle) {
+      <span>Show energy on X axis</span>
+    }
+    @if (!data.hideXAxisEnergyScaleToggle) {
+      <two-state-icon-button
+        activeIcon="assets/button-icons/check-on.svg"
+        inactiveIcon="assets/button-icons/check-off.svg"
+        class="checkbox-button"
+        [active]="xAxisEnergyScale"
+        (onToggle)="xAxisEnergyScale = !xAxisEnergyScale"
+      >
+      </two-state-icon-button>
+    }
 
     <push-button
       class="apply-btn"

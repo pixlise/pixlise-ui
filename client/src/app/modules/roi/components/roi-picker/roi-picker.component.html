@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -38,7 +38,8 @@ POSSIBILITY OF SUCH DAMAGE.
         cdkDragRootElement=".cdk-overlay-pane"
         cdkDragHandle
         [cdkDragDisabled]="!data.draggable"
-        class="title {{ data.draggable ? 'drag' : '' }}">
+        class="title {{ data.draggable ? 'drag' : '' }}"
+      >
         {{ data.title || "Regions of Interest" }}
       </h1>
       <two-state-icon-push-button
@@ -48,7 +49,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [active]="showSearchControls"
         (onToggle)="onToggleSearch()"
         #tooltip="matTooltip"
-        matTooltip="{{ showSearchControls ? 'Hide' : 'Show' }} search options">
+        matTooltip="{{ showSearchControls ? 'Hide' : 'Show' }} search options"
+      >
       </two-state-icon-push-button>
     </div>
     <roi-search-controls
@@ -59,25 +61,36 @@ POSSIBILITY OF SUCH DAMAGE.
       (onFilterChanged)="onFilterChanged($event)"
       [manualFilters]="manualFilters"
       [showBuiltin]="!data.hideBuiltin"
-      [showSelectedPoints]="data.showSelectedPoints || false">
+      [showSelectedPoints]="data.showSelectedPoints || false"
+    >
     </roi-search-controls>
-    <section class="bulk-controls" *ngIf="!data.selectableSubItemOptions">
-      <span class="count">{{ selectionCount }} ROIs selected</span>
-      <action-button
-        class="visible-toggle"
-        [disabled]="filteredSummaries.length <= 0 && selectionCount === 0"
-        [action]="selectionCount > 0 ? 'checkOn' : 'checkOff'"
-        #tooltip="matTooltip"
-        [matTooltip]="selectionCount > 0 ? 'Toggle ROIs off' : 'Toggle selected ROIs on'"
-        [matTooltipDisabled]="filteredSummaries.length <= 0 && selectionCount === 0"
-        (onClick)="onToggleAllVisible()">
-      </action-button>
-    </section>
+    @if (!data.selectableSubItemOptions) {
+      <section class="bulk-controls">
+        <span class="count">{{ selectionCount }} ROIs selected</span>
+        <action-button
+          class="visible-toggle"
+          [disabled]="filteredSummaries.length <= 0 && selectionCount === 0"
+          [action]="selectionCount > 0 ? 'checkOn' : 'checkOff'"
+          #tooltip="matTooltip"
+          [matTooltip]="
+            selectionCount > 0 ? 'Toggle ROIs off' : 'Toggle selected ROIs on'
+          "
+          [matTooltipDisabled]="
+            filteredSummaries.length <= 0 && selectionCount === 0
+          "
+          (onClick)="onToggleAllVisible()"
+        >
+        </action-button>
+      </section>
+    }
   </header>
   <section class="rois">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
       <roi-item
-        *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
+        *cdkVirtualFor="
+          let item of filteredSummaries;
+          trackBy: trackBySummaryId
+        "
         [showDetailsButton]="false"
         [selected]="!!selectedROIs[item.id]"
         (onROISelect)="onROISelect(item, $event)"
@@ -93,26 +106,34 @@ POSSIBILITY OF SUCH DAMAGE.
         [displaySettings]="displaySettingsMap[item.id]"
         [selectionOptions]="data.selectableSubItemOptions || []"
         [selectionLabel]="data.subItemButtonName || ''"
-        [isSingleSelect]="data.singleSelect || false">
+        [isSingleSelect]="data.singleSelect || false"
+      >
       </roi-item>
     </cdk-virtual-scroll-viewport>
   </section>
   <div class="button-container">
-    <span *ngIf="data.liveUpdate" class="live-indicator">
-      <span class="status-indicator"></span>
-      <span class="label">Live Update</span>
-    </span>
-    <push-button buttonStyle="outline" (onClick)="onCancel()">{{ data.liveUpdate ? "Close" : "Cancel" }}</push-button>
+    @if (data.liveUpdate) {
+      <span class="live-indicator">
+        <span class="status-indicator"></span>
+        <span class="label">Live Update</span>
+      </span>
+    }
+    <push-button buttonStyle="outline" (onClick)="onCancel()">{{
+      data.liveUpdate ? "Close" : "Cancel"
+    }}</push-button>
     <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
-    <push-button
-      *ngIf="!data.liveUpdate"
-      buttonStyle="yellow"
-      #tooltip="matTooltip"
-      matTooltip="Waiting for ({{ waitingForROIs.length }}) ROIs to finish downloading..."
-      [matTooltipDisabled]="waitingForROIs.length === 0"
-      [disabled]="waitingForROIs.length > 0"
-      (onClick)="onConfirm()"
-      >Apply</push-button
-    >
+    @if (!data.liveUpdate) {
+      <push-button
+        buttonStyle="yellow"
+        #tooltip="matTooltip"
+        matTooltip="Waiting for ({{
+          waitingForROIs.length
+        }}) ROIs to finish downloading..."
+        [matTooltipDisabled]="waitingForROIs.length === 0"
+        [disabled]="waitingForROIs.length > 0"
+        (onClick)="onConfirm()"
+        >Apply</push-button
+      >
+    }
   </div>
 </div>

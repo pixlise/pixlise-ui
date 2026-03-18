@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,21 +30,33 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dlg-border-with-backdrop text-file-viewer-container">
-    <h1>{{title}}</h1>
-    <div class="file-contents">
-        <div *ngIf="loading" class="spinner">
-            <wait-spinner></wait-spinner>
-        </div>
-        <div *ngIf="content !== null" class="content">{{content}}</div>
-        <div *ngIf="contentCSV !== null" class="content-table">
-            <table>
-                <tr>
-                    <th *ngFor="let col of contentCSVHeader">{{col}}</th>
-                </tr>
-                <tr *ngFor="let row of contentCSV">
-                    <td *ngFor="let col of row">{{col}}</td>
-                </tr>
-            </table>
-        </div>
-    </div>
+  <h1>{{ title }}</h1>
+  <div class="file-contents">
+    @if (loading) {
+      <div class="spinner">
+        <wait-spinner></wait-spinner>
+      </div>
+    }
+    @if (content !== null) {
+      <div class="content">{{ content }}</div>
+    }
+    @if (contentCSV !== null) {
+      <div class="content-table">
+        <table>
+          <tr>
+            @for (col of contentCSVHeader; track col) {
+              <th>{{ col }}</th>
+            }
+          </tr>
+          @for (row of contentCSV; track row) {
+            <tr>
+              @for (col of row; track col) {
+                <td>{{ col }}</td>
+              }
+            </tr>
+          }
+        </table>
+      </div>
+    }
+  </div>
 </div>

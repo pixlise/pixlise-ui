@@ -1,4 +1,14 @@
 <span class="group-icon" [ngStyle]="{ width: size, height: size }">
-  <img *ngIf="iconURL || !iconAbbreviation" [ngStyle]="{ height: size }" src="{{ iconURL || defaultIconURL }}" alt="Group Icon" />
-  <span *ngIf="!iconURL && iconAbbreviation" class="icon-abbreviation" [ngStyle]="{ width: size, height: size }">{{ iconAbbreviation }}</span>
+  @if (iconURL || !iconAbbreviation) {
+    <img
+      [ngStyle]="{ height: size }"
+      src="{{ iconURL || defaultIconURL }}"
+      alt="Group Icon"
+    />
+  }
+  @if (!iconURL && iconAbbreviation) {
+    <span class="icon-abbreviation" [ngStyle]="{ width: size, height: size }">{{
+      iconAbbreviation
+    }}</span>
+  }
 </span>

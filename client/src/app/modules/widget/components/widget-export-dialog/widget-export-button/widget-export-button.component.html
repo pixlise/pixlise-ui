@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,182 +29,297 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div *ngIf="option" class="option {{ option.selected ? 'selected' : '' }}">
-  <action-button
-    (onClick)="accordionOpen = !accordionOpen"
-    *ngIf="option.subOptions && option.subOptions.length > 0"
-    [disabled]="!option.selected"
-    [action]="accordionOpen ? 'closeAccordion' : 'openAccordion'">
-  </action-button>
-  <img *ngIf="option.optionIcon" class="option-icon" [src]="option.optionIcon" alt="Export option" />
-  <div
-    *ngIf="option.colorPicker"
-    class="color-picker-container"
-    [ngStyle]="{ backgroundColor: selectedColor }"
-    [(colorPicker)]="selectedColor"
-    [cpEyeDropper]="true"
-    cpPosition="auto"
-    (colorPickerSelect)="onSelectColor($event)"></div>
-  <div *ngIf="option.type === 'checkbox'" class="option-type checkbox-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled && option.count !== 0 ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && option.count !== 0 && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <action-button
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled && option.count !== 0 ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && option.count !== 0 && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
-      [disabled]="option.disabled || option.count === 0"
-      [action]="option.selected ? 'checkOn' : 'checkOff'"
-      (onClick)="onToggleOption()"></action-button>
-  </div>
-  <div *ngIf="option.type === 'multiswitch'" class="option-type multiswitch-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <multi-switch-button
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
-      [disabled]="!!option.disabled"
-      [options]="option.options || []"
-      [value]="option.selectedOption || ''"
-      (onChange)="onSelectOption($event)">
-    </multi-switch-button>
-  </div>
-  <div *ngIf="option.type === 'number'" class="option-type number-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <div class="input-container">
-      <div *ngIf="option?.unitIcon" class="icon-container">
-        <img
-          [src]="option.unitIcon"
-          (drag)="dragNumber($event, option)"
-          (dragstart)="onDragStart($event, option)"
-          (dragleave)="onDragEnd($event, option)"
-          (dragover)="onDragOver($event)"
-          (dragend)="onDragEnd($event, option)"
-          alt="Units" />
+@if (option) {
+  <div class="option {{ option.selected ? 'selected' : '' }}">
+    @if (option.subOptions && option.subOptions.length > 0) {
+      <action-button
+        (onClick)="accordionOpen = !accordionOpen"
+        [disabled]="!option.selected"
+        [action]="accordionOpen ? 'closeAccordion' : 'openAccordion'"
+      >
+      </action-button>
+    }
+    @if (option.optionIcon) {
+      <img class="option-icon" [src]="option.optionIcon" alt="Export option" />
+    }
+    @if (option.colorPicker) {
+      <div
+        class="color-picker-container"
+        [ngStyle]="{ backgroundColor: selectedColor }"
+        [(colorPicker)]="selectedColor"
+        [cpEyeDropper]="true"
+        cpPosition="auto"
+        (colorPickerSelect)="onSelectColor($event)"
+      ></div>
+    }
+    @if (option.type === "checkbox") {
+      <div class="option-type checkbox-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled && option.count !== 0
+              ? option.description
+              : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && option.count !== 0 && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <action-button
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled && option.count !== 0
+              ? option.description
+              : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && option.count !== 0 && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+          [disabled]="option.disabled || option.count === 0"
+          [action]="option.selected ? 'checkOn' : 'checkOff'"
+          (onClick)="onToggleOption()"
+        ></action-button>
       </div>
-      <input
-        type="number"
-        [(ngModel)]="optionValue"
-        [min]="minValue"
-        [max]="maxValue"
-        [placeholder]="option.placeholder || option.description"
-        [step]="option.stepValue || 1"
-        [disabled]="!!option.disabled"
-        [ngStyle]="{ minWidth: toggleable ? '125px' : '156px', width: toggleable ? '125px' : '156px' }" />
-    </div>
-    <action-button *ngIf="toggleable" [action]="option.value ? 'openEye' : 'closedEye'" (onClick)="onToggleEmptyValue()"></action-button>
+    }
+    @if (option.type === "multiswitch") {
+      <div class="option-type multiswitch-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <multi-switch-button
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+          [disabled]="!!option.disabled"
+          [options]="option.options || []"
+          [value]="option.selectedOption || ''"
+          (onChange)="onSelectOption($event)"
+        >
+        </multi-switch-button>
+      </div>
+    }
+    @if (option.type === "number") {
+      <div class="option-type number-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <div class="input-container">
+          @if (option?.unitIcon) {
+            <div class="icon-container">
+              <img
+                [src]="option.unitIcon"
+                (drag)="dragNumber($event, option)"
+                (dragstart)="onDragStart($event, option)"
+                (dragleave)="onDragEnd($event, option)"
+                (dragover)="onDragOver($event)"
+                (dragend)="onDragEnd($event, option)"
+                alt="Units"
+              />
+            </div>
+          }
+          <input
+            type="number"
+            [(ngModel)]="optionValue"
+            [min]="minValue"
+            [max]="maxValue"
+            [placeholder]="option.placeholder || option.description"
+            [step]="option.stepValue || 1"
+            [disabled]="!!option.disabled"
+            [ngStyle]="{
+              minWidth: toggleable ? '125px' : '156px',
+              width: toggleable ? '125px' : '156px',
+            }"
+          />
+        </div>
+        @if (toggleable) {
+          <action-button
+            [action]="option.value ? 'openEye' : 'closedEye'"
+            (onClick)="onToggleEmptyValue()"
+          ></action-button>
+        }
+      </div>
+    }
+    @if (option.type === "dropdown" && option.dropdownOptions) {
+      <div class="option-type dropdown-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <mat-select
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+          [disabled]="!!option.disabled"
+          [(ngModel)]="option.selectedOption"
+          (selectionChange)="onSelectDropdownOption($event)"
+        >
+          @for (subOption of option.dropdownOptions; track subOption) {
+            <mat-option [value]="subOption.id">{{ subOption.name }}</mat-option>
+          }
+        </mat-select>
+      </div>
+    }
+    @if (option.type === "regions") {
+      <div class="option-type button-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <push-button
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+          [disabled]="!!option.disabled"
+          (onClick)="onOpenRegionPicker()"
+          [notificationCount]="option?.selectedRegions?.length || 0"
+          >Select Regions
+        </push-button>
+      </div>
+    }
+    @if (option.type === "expressions") {
+      <div class="option-type button-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <push-button
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+          [disabled]="!!option.disabled"
+          (onClick)="onOpenExpressionPicker()"
+          [notificationCount]="option?.selectedExpressions?.length || 0"
+          >Select Expressions
+        </push-button>
+      </div>
+    }
+    @if (option.type === "images") {
+      <div class="option-type button-option">
+        <span
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="500"
+          class="option-label"
+          >{{ option.name }}</span
+        >
+        <push-button
+          #tooltip="matTooltip"
+          [matTooltip]="
+            !option.disabled ? option.description : option.disabledText || ''
+          "
+          [matTooltipDisabled]="
+            (!option.disabled && !option.description) ||
+            (option.disabled && !option.disabledText)
+          "
+          [matTooltipShowDelay]="option.disabled ? 200 : 2000"
+          [disabled]="!!option.disabled"
+          (onClick)="onOpenImagePicker()"
+          [notificationCount]="option?.selectedImagePaths?.length || 0"
+          >Select Images
+        </push-button>
+      </div>
+    }
   </div>
-  <div *ngIf="option.type === 'dropdown' && option.dropdownOptions" class="option-type dropdown-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <mat-select
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
-      [disabled]="!!option.disabled"
-      [(ngModel)]="option.selectedOption"
-      (selectionChange)="onSelectDropdownOption($event)">
-      <mat-option *ngFor="let subOption of option.dropdownOptions" [value]="subOption.id">{{ subOption.name }}</mat-option>
-    </mat-select>
+}
+@if (accordionOpen && option?.subOptions) {
+  <div class="sub-options-container">
+    @for (
+      subOption of option?.subOptions || [];
+      track trackByFn($index, subOption)
+    ) {
+      <widget-export-button
+        [option]="subOption"
+        (toggleOption)="onToggleSubOption(subOption)"
+        (selectOption)="onSelectSubOption($event)"
+        (selectDropdownOption)="onSelectSubDropdownOption($event)"
+        (selectROIsOption)="onSelectSubRegionOption($event)"
+        (selectExpressionsOption)="onSelectSubExpressionOption($event)"
+        (selectImagesOption)="onSelectSubImageOption($event)"
+      >
+      </widget-export-button>
+    }
   </div>
-  <div *ngIf="option.type === 'regions'" class="option-type button-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <push-button
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
-      [disabled]="!!option.disabled"
-      (onClick)="onOpenRegionPicker()"
-      [notificationCount]="option?.selectedRegions?.length || 0"
-      >Select Regions
-    </push-button>
-  </div>
-  <div *ngIf="option.type === 'expressions'" class="option-type button-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <push-button
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
-      [disabled]="!!option.disabled"
-      (onClick)="onOpenExpressionPicker()"
-      [notificationCount]="option?.selectedExpressions?.length || 0"
-      >Select Expressions
-    </push-button>
-  </div>
-  <div *ngIf="option.type === 'images'" class="option-type button-option">
-    <span
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="500"
-      class="option-label"
-      >{{ option.name }}</span
-    >
-    <push-button
-      #tooltip="matTooltip"
-      [matTooltip]="!option.disabled ? option.description : option.disabledText || ''"
-      [matTooltipDisabled]="(!option.disabled && !option.description) || (option.disabled && !option.disabledText)"
-      [matTooltipShowDelay]="option.disabled ? 200 : 2000"
-      [disabled]="!!option.disabled"
-      (onClick)="onOpenImagePicker()"
-      [notificationCount]="option?.selectedImagePaths?.length || 0"
-      >Select Images
-    </push-button>
-  </div>
-</div>
-<div *ngIf="accordionOpen && option?.subOptions" class="sub-options-container">
-  <widget-export-button
-    *ngFor="let subOption of option?.subOptions || []; trackBy: trackByFn"
-    [option]="subOption"
-    (toggleOption)="onToggleSubOption(subOption)"
-    (selectOption)="onSelectSubOption($event)"
-    (selectDropdownOption)="onSelectSubDropdownOption($event)"
-    (selectROIsOption)="onSelectSubRegionOption($event)"
-    (selectExpressionsOption)="onSelectSubExpressionOption($event)"
-    (selectImagesOption)="onSelectSubImageOption($event)">
-  </widget-export-button>
-</div>
+}

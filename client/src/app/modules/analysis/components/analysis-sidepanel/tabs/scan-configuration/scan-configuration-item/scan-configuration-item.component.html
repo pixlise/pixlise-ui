@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,19 +31,40 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #scanColorPicker>
   <div class="scan-color-picker">
     <div class="color-container">
-      <div
-        class="color-option {{ config.colour === option.colour ? 'selected' : '' }}"
-        *ngFor="let option of colorOptions; let i = index"
-        [ngStyle]="{ 'background-color': config.colour === option.colour ? semiTransparentSelectedColour : '' }"
-        (click)="onSelectColor(option)"
-        (keypress)="onSelectColor(option)"
-        tabindex="0">
-        <roi-shape [scale]="4" [color]="option.colour" [borderColor]="config.colour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
-        <div *ngIf="config.colour === option.colour" class="active-color"></div>
-      </div>
+      @for (option of colorOptions; track option; let i = $index) {
+        <div
+          class="color-option {{
+            config.colour === option.colour ? 'selected' : ''
+          }}"
+          [ngStyle]="{
+            'background-color':
+              config.colour === option.colour
+                ? semiTransparentSelectedColour
+                : '',
+          }"
+          (click)="onSelectColor(option)"
+          (keypress)="onSelectColor(option)"
+          tabindex="0"
+        >
+          <roi-shape
+            [scale]="4"
+            [color]="option.colour"
+            [borderColor]="config.colour === option.colour ? '#fff' : ''"
+            shape="circle"
+          ></roi-shape>
+          @if (config.colour === option.colour) {
+            <div class="active-color"></div>
+          }
+        </div>
+      }
     </div>
     <div class="bottom-buttons">
-      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColor()">Clear</push-button>
+      <push-button
+        buttonStyle="outline"
+        title="Clear Color"
+        (onClick)="clearColor()"
+        >Clear</push-button
+      >
     </div>
   </div>
 </ng-template>
@@ -56,13 +77,37 @@ POSSIBILITY OF SUCH DAMAGE.
       (keydown)="onCalibration(config.id)"
       (keyup)="onCalibration(config.id)"
       (keypress)="onCalibration(config.id)"
-      tabindex="0">
-      <img *ngIf="!config.calibrations || config.calibrations.length === 0" class="menu-icon" src="assets/button-icons/disabled-gray.svg" alt="Calibration" />
-      <img *ngIf="config.calibrations && config.calibrations.length > 0" class="menu-icon" src="assets/button-icons/yellow-tick.svg" alt="Calibration" />
+      tabindex="0"
+    >
+      @if (!config.calibrations || config.calibrations.length === 0) {
+        <img
+          class="menu-icon"
+          src="assets/button-icons/disabled-gray.svg"
+          alt="Calibration"
+        />
+      }
+      @if (config.calibrations && config.calibrations.length > 0) {
+        <img
+          class="menu-icon"
+          src="assets/button-icons/yellow-tick.svg"
+          alt="Calibration"
+        />
+      }
       <span class="menu-text">Calibration</span>
     </div>
-    <div class="menu-item" (click)="onReplaceScan()" (keydown)="onReplaceScan()" (keyup)="onReplaceScan()" (keypress)="onReplaceScan()" tabindex="0">
-      <img class="menu-icon" src="assets/icons/datasets.svg" alt="Replace Scan" />
+    <div
+      class="menu-item"
+      (click)="onReplaceScan()"
+      (keydown)="onReplaceScan()"
+      (keyup)="onReplaceScan()"
+      (keypress)="onReplaceScan()"
+      tabindex="0"
+    >
+      <img
+        class="menu-icon"
+        src="assets/icons/datasets.svg"
+        alt="Replace Scan"
+      />
       <span class="menu-text">Replace Scan</span>
     </div>
     <div
@@ -71,8 +116,13 @@ POSSIBILITY OF SUCH DAMAGE.
       (keydown)="onRemoveConfiguration()"
       (keyup)="onRemoveConfiguration()"
       (keypress)="onRemoveConfiguration()"
-      tabindex="0">
-      <img class="menu-icon" src="assets/button-icons/delete.svg" alt="Remove" />
+      tabindex="0"
+    >
+      <img
+        class="menu-icon"
+        src="assets/button-icons/delete.svg"
+        alt="Remove"
+      />
       <span class="menu-text">Remove</span>
     </div>
   </div>
@@ -80,26 +130,49 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="scan-configuration">
   <div class="top-line">
-    <div class="scan-name">Sol {{ scan?.meta?.["Sol"] || "N/A" }}: {{ scan?.title || "N/A" }}</div>
-    <widget-settings-menu [settingsDialog]="scanColorPicker" #scanColorPickerButton>
-      <div class="color-shape-picker" #tooltip="matTooltip" matTooltip="Choose default color for All Scan Points" [matTooltipShowDelay]="500">
-        <roi-shape [scale]="2" [color]="config.colour || 'white'" shape="circle"></roi-shape>
+    <div class="scan-name">
+      Sol {{ scan?.meta?.["Sol"] || "N/A" }}: {{ scan?.title || "N/A" }}
+    </div>
+    <widget-settings-menu
+      [settingsDialog]="scanColorPicker"
+      #scanColorPickerButton
+    >
+      <div
+        class="color-shape-picker"
+        #tooltip="matTooltip"
+        matTooltip="Choose default color for All Scan Points"
+        [matTooltipShowDelay]="500"
+      >
+        <roi-shape
+          [scale]="2"
+          [color]="config.colour || 'white'"
+          shape="circle"
+        ></roi-shape>
         <img src="assets/button-icons/arrow-down.svg" alt="Color" />
       </div>
     </widget-settings-menu>
-    <widget-settings-menu [settingsDialog]="scanOptionsMenu" #scanOptionsMenuButton>
+    <widget-settings-menu
+      [settingsDialog]="scanOptionsMenu"
+      #scanOptionsMenuButton
+    >
       <action-button action="verticalEllipsis"></action-button>
     </widget-settings-menu>
   </div>
-  <div *ngIf="scan?.description && scan?.description.length > 0" class="mid-line">
-    <div class="title">Description</div>
-    <div class="description">
-      <markdown>{{scan.description}}</markdown>
+  @if (scan?.description && scan?.description.length > 0) {
+    <div class="mid-line">
+      <div class="title">Description</div>
+      <div class="description">
+        <markdown>{{ scan.description }}</markdown>
+      </div>
     </div>
-  </div>
+  }
   <div class="bottom-line">
     <div>Selected Quantification</div>
-    <quantification-selector [scanId]="config.id" [selectedQuantID]="config.quantId" (selectQuant)="onSelectQuantForScan($event, config.id)">
+    <quantification-selector
+      [scanId]="config.id"
+      [selectedQuantID]="config.quantId"
+      (selectQuant)="onSelectQuantForScan($event, config.id)"
+    >
     </quantification-selector>
   </div>
 </div>

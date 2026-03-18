@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,6 +32,10 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="flex-column flex-center-center logos">
   <div class="caption">OUR GLOBAL PARTNERS</div>
   <div class="logo-row">
-    <a *ngFor="let item of logos" [href]="item[1]" target="_blank" [title]="item[2]"><img [src]="item[0]" /></a>
+    @for (item of logos; track item) {
+      <a [href]="item[1]" target="_blank" [title]="item[2]"
+        ><img [src]="item[0]"
+      /></a>
+    }
   </div>
 </div>

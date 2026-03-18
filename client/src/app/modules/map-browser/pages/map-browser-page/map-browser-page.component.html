@@ -2,22 +2,54 @@
   <!-- <analysis-sidepanel></analysis-sidepanel> -->
   <div class="top-line">
     <div class="dataset-selector">
-      <mat-select placeholder="Select Scan" [(ngModel)]="scanId" (selectionChange)="onScanChange($event)">
-        <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">
-          {{ scanToTitleMap[scan.id] }}
-        </mat-option>
+      <mat-select
+        placeholder="Select Scan"
+        [(ngModel)]="scanId"
+        (selectionChange)="onScanChange($event)"
+      >
+        @for (scan of configuredScans; track scan) {
+          <mat-option [value]="scan.id">
+            {{ scanToTitleMap[scan.id] }}
+          </mat-option>
+        }
       </mat-select>
     </div>
-    <quantification-selector *ngIf="scanId" [scanId]="scanId" [selectedQuantID]="quantId" (selectQuant)="onSelectQuantForScan($event)"> </quantification-selector>
+    @if (scanId) {
+      <quantification-selector
+        [scanId]="scanId"
+        [selectedQuantID]="quantId"
+        (selectQuant)="onSelectQuantForScan($event)"
+      >
+      </quantification-selector>
+    }
     <div class="page-controls">
-      <mat-select placeholder="Elements/Page" [(ngModel)]="widgetsPerPage" #tooltip="matTooltip" [matTooltipShowDelay]="500" matTooltip="Elements per page">
-        <mat-option *ngFor="let count of widgetsPerPageOptions" [value]="count"> {{ count }} elements</mat-option>
+      <mat-select
+        placeholder="Elements/Page"
+        [(ngModel)]="widgetsPerPage"
+        #tooltip="matTooltip"
+        [matTooltipShowDelay]="500"
+        matTooltip="Elements per page"
+      >
+        @for (count of widgetsPerPageOptions; track count) {
+          <mat-option [value]="count"> {{ count }} elements</mat-option>
+        }
       </mat-select>
-      <icon-button class="{{ currentPage - 1 < 0 ? 'disabled' : '' }}" icon="assets/button-icons/arrow-left.svg" (onClick)="onPreviousPage()"></icon-button>
-      <span class="page-tracker" #tooltip="matTooltip" [matTooltip]="quantifiedExpressionCount + ' quantified elements'"
+      <icon-button
+        class="{{ currentPage - 1 < 0 ? 'disabled' : '' }}"
+        icon="assets/button-icons/arrow-left.svg"
+        (onClick)="onPreviousPage()"
+      ></icon-button>
+      <span
+        class="page-tracker"
+        #tooltip="matTooltip"
+        [matTooltip]="quantifiedExpressionCount + ' quantified elements'"
         >{{ currentPage + 1 }} / {{ pageCount }}</span
       >
-      <icon-button class="{{ currentPage + 1 >= pageCount ? 'disabled' : '' }}" icon="assets/button-icons/arrow-right.svg" (onClick)="onNextPage()"></icon-button>
+      <icon-button
+        class="{{ currentPage + 1 >= pageCount ? 'disabled' : '' }}"
+        icon="assets/button-icons/arrow-right.svg"
+        (onClick)="onNextPage()"
+      ></icon-button>
     </div>
   </div>
   <section class="screen-container">
@@ -25,32 +57,37 @@
       class="widgets-container"
       [ngStyle]="{
         'grid-template-columns': 'auto',
-        'grid-template-rows': 'auto'
-      }">
-      <div
-        class="widget-container"
-        *ngFor="let widget of layout.widgets; trackBy: trackByWidget"
-        [ngStyle]="
-          soloViewWidget && soloViewWidget?.id !== widget.id
-            ? { display: 'none' }
-            : soloViewWidget && soloViewWidget?.id === widget.id
-            ? {}
-            : {
-                'grid-column-start': widget.startColumn,
-                'grid-column-end': widget.endColumn,
-                'grid-row-start': widget.startRow,
-                'grid-row-end': widget.endRow
-              }
-        ">
-        <widget
-          *ngIf="!soloViewWidget || soloViewWidget?.id === widget.id"
-          [widgetLayoutConfig]="widget"
-          [layoutIndex]="0"
-          [initWidget]="widget.type"
-          [title]="idToTitleMap[widget.id]"
-          [liveExpression]="liveExpressionMap[widget.id]"
-          [disableSwitch]="true"></widget>
-      </div>
+        'grid-template-rows': 'auto',
+      }"
+    >
+      @for (widget of layout.widgets; track trackByWidget($index, widget)) {
+        <div
+          class="widget-container"
+          [ngStyle]="
+            soloViewWidget && soloViewWidget?.id !== widget.id
+              ? { display: 'none' }
+              : soloViewWidget && soloViewWidget?.id === widget.id
+                ? {}
+                : {
+                    'grid-column-start': widget.startColumn,
+                    'grid-column-end': widget.endColumn,
+                    'grid-row-start': widget.startRow,
+                    'grid-row-end': widget.endRow,
+                  }
+          "
+        >
+          @if (!soloViewWidget || soloViewWidget?.id === widget.id) {
+            <widget
+              [widgetLayoutConfig]="widget"
+              [layoutIndex]="0"
+              [initWidget]="widget.type"
+              [title]="idToTitleMap[widget.id]"
+              [liveExpression]="liveExpressionMap[widget.id]"
+              [disableSwitch]="true"
+            ></widget>
+          }
+        </div>
+      }
     </section>
   </section>
 </section>

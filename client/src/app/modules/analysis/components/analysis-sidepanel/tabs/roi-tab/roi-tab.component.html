@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,12 +29,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-
 <section class="roi-container">
   <header>
     <h5>Regions of Interest</h5>
   </header>
-  <div class="roi-list-container" [ngClass]="{'list-hidden': showDetailsForROIId }">
+  <div
+    class="roi-list-container"
+    [ngClass]="{ 'list-hidden': showDetailsForROIId }"
+  >
     <div class="panel-row">
       <push-button
         #tooltip="matTooltip"
@@ -55,8 +57,11 @@ POSSIBILITY OF SUCH DAMAGE.
         placeholder="Open a Context Image ..."
         #tooltip="matTooltip"
         matTooltip="Choose a context image to display the ROIs on"
-        [matTooltipShowDelay]="500">
-        <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+        [matTooltipShowDelay]="500"
+      >
+        @for (chart of allContextImages; track chart) {
+          <mat-option [value]="chart.widget.id">{{ chart.name }} </mat-option>
+        }
       </mat-select>
     </div>
 
@@ -65,38 +70,46 @@ POSSIBILITY OF SUCH DAMAGE.
       [summaries]="summaries"
       (onFilterChanged)="onFilterChanged($event)"
       [showBuiltin]="false"
-      [manualFilters]="manualFilters"></roi-search-controls>
+      [manualFilters]="manualFilters"
+    ></roi-search-controls>
     <section class="bulk-controls">
       <span class="count">{{ highlightedROIIds.length }} ROIs highlighted</span>
       <action-button
         class="visible-toggle"
         [action]="highlightedROIIds.length > 0 ? 'visibleOn' : 'visibleOff'"
         #tooltip="matTooltip"
-        [matTooltip]="highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'"
-        (onClick)="onToggleAllVisible()">
+        [matTooltip]="
+          highlightedROIIds.length > 0 ? 'Toggle ROIs off' : 'Toggle ROIs on'
+        "
+        (onClick)="onToggleAllVisible()"
+      >
       </action-button>
     </section>
     <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
       <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
         <roi-item
-          *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
+          *cdkVirtualFor="
+            let item of filteredSummaries;
+            trackBy: trackBySummaryId
+          "
           [summary]="item"
           [selectAuthorToFilter]="showSearch"
           (onFilterAuthor)="onFilterAuthor($event)"
           [displaySettings]="displaySettingsMap[item.id]"
           [isVisible]="highlightedROIIds.includes(item.id)"
           (onVisibilityChange)="onROIVisibleToggle(item)"
-          (onROIDetails)="onROIDetails($event)"></roi-item>
+          (onROIDetails)="onROIDetails($event)"
+        ></roi-item>
       </cdk-virtual-scroll-viewport>
     </section>
   </div>
 
-  <ng-container *ngIf="showDetailsForROIId">
+  @if (showDetailsForROIId) {
     <roi-item-details
       [roiId]="showDetailsForROIId"
       [displaySettings]="displaySettingsMap[showDetailsForROIId]"
-      (closeROIDetails)="onCloseROIDetails()">
+      (closeROIDetails)="onCloseROIDetails()"
+    >
     </roi-item-details>
-  </ng-container>
-
+  }
 </section>

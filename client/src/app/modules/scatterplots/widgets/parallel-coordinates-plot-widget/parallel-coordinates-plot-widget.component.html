@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,27 +34,48 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="row selection-row">
       <div class="settings-title">Dimensions</div>
       <div class="selection-container">
-        <div class="select-opt link" (click)="toggleAll(true)" (keyup)="toggleAll(true)" (keydown)="toggleAll(true)" (keypress)="toggleAll(true)" tabindex="0">
+        <div
+          class="select-opt link"
+          (click)="toggleAll(true)"
+          (keyup)="toggleAll(true)"
+          (keydown)="toggleAll(true)"
+          (keypress)="toggleAll(true)"
+          tabindex="0"
+        >
           <div class="row-title">All</div>
         </div>
-        <div class="select-opt link" (click)="toggleAll(false)" (keyup)="toggleAll(false)" (keydown)="toggleAll(false)" (keypress)="toggleAll(false)" tabindex="0">
+        <div
+          class="select-opt link"
+          (click)="toggleAll(false)"
+          (keyup)="toggleAll(false)"
+          (keydown)="toggleAll(false)"
+          (keypress)="toggleAll(false)"
+          tabindex="0"
+        >
           <div class="row-title">None</div>
         </div>
       </div>
     </div>
-    <div class="dimensions" *ngIf="dimensions">
-      <div
-        *ngFor="let axis of axes"
-        class="row link {{ axis.visible ? 'active' : '' }}"
-        (click)="toggleAxis(axis.key)"
-        (keyup)="toggleAxis(axis.key)"
-        (keydown)="toggleAxis(axis.key)"
-        (keypress)="toggleAxis(axis.key)"
-        tabindex="0">
-        <div class="row-title">{{ axis.title }}</div>
-        <action-button class="switch" [action]="axis.visible ? 'checkOn' : 'checkOff'"></action-button>
+    @if (dimensions) {
+      <div class="dimensions">
+        @for (axis of axes; track axis) {
+          <div
+            class="row link {{ axis.visible ? 'active' : '' }}"
+            (click)="toggleAxis(axis.key)"
+            (keyup)="toggleAxis(axis.key)"
+            (keydown)="toggleAxis(axis.key)"
+            (keypress)="toggleAxis(axis.key)"
+            tabindex="0"
+          >
+            <div class="row-title">{{ axis.title }}</div>
+            <action-button
+              class="switch"
+              [action]="axis.visible ? 'checkOn' : 'checkOff'"
+            ></action-button>
+          </div>
+        }
       </div>
-    </div>
+    }
 
     <div class="subheading-line settings-title">Display Options</div>
     <div
@@ -63,9 +84,13 @@ POSSIBILITY OF SUCH DAMAGE.
       (keyup)="toggleLineVisibility()"
       (keydown)="toggleLineVisibility()"
       (keypress)="toggleLineVisibility()"
-      tabindex="0">
+      tabindex="0"
+    >
       <div class="row-title">Lines</div>
-      <action-button class="switch" [action]="showLines ? 'checkOn' : 'checkOff'"></action-button>
+      <action-button
+        class="switch"
+        [action]="showLines ? 'checkOn' : 'checkOff'"
+      ></action-button>
     </div>
     <div
       class="row link {{ showLabels ? 'active' : '' }}"
@@ -73,9 +98,13 @@ POSSIBILITY OF SUCH DAMAGE.
       (keyup)="toggleLabelVisibility()"
       (keydown)="toggleLabelVisibility()"
       (keypress)="toggleLabelVisibility()"
-      tabindex="0">
+      tabindex="0"
+    >
       <div class="row-title">Labels</div>
-      <action-button class="switch" [action]="showLabels ? 'checkOn' : 'checkOff'"></action-button>
+      <action-button
+        class="switch"
+        [action]="showLabels ? 'checkOn' : 'checkOff'"
+      ></action-button>
     </div>
   </div>
 </ng-template>
@@ -84,15 +113,23 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="widget-container">
     <div class="{{ plotID }} pcp-plot">
       <div class="x-axis-top">
-        <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
-          <div class="tick"></div>
-          <div *ngIf="tick.visible || i === 0 || i === axisTicks.length - 1" class="tick-label">{{ tick.value | number: "1.0-3" }} nm</div>
-        </div>
+        @for (tick of axisTicks; track tick; let i = $index) {
+          <div class="tick-container">
+            <div class="tick"></div>
+            @if (tick.visible || i === 0 || i === axisTicks.length - 1) {
+              <div class="tick-label">
+                {{ tick.value | number: "1.0-3" }} nm
+              </div>
+            }
+          </div>
+        }
       </div>
       <div class="x-axis-btm">
-        <div *ngFor="let tick of axisTicks; let i = index" class="tick-container">
-          <div class="tick"></div>
-        </div>
+        @for (tick of axisTicks; track tick; let i = $index) {
+          <div class="tick-container">
+            <div class="tick"></div>
+          </div>
+        }
       </div>
       <div class="y-scale">
         <div class="tick-container top">
@@ -106,48 +143,81 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
       </div>
       <div class="axes">
-        <div
-          *ngFor="let axis of visibleAxes; let i = index"
-          class="axis-container"
-          [ngStyle]="{ left: 'calc(' + getXAxisDistance(axis.wavelength, i) + '% - 10px)' }">
-          <div class="tick-container">
-            <div class="tick"></div>
-          </div>
-          <div class="axis-line">
-            <div class="point-container">
-              <div
-                *ngFor="let point of data"
-                class="point-tick-container"
-                [style.top]="getValueOnPlot(point, axis) + 'px'"
-                [style.visibility]="point.visible ? 'visible' : 'hidden'">
-                <div class="inner-tick"></div>
-                <div class="inner-point" style.background="rgb({{ point.color }})" #tooltip="matTooltip" [matTooltip]="point.tooltipText"></div>
-                <div *ngIf="showLabels" class="tick-label">{{ point.getValue(axis.key) | number: "1.0-2" }}</div>
-                <div *ngIf="!showLabels" class="tick-label-placeholder"></div>
+        @for (axis of visibleAxes; track axis; let i = $index) {
+          <div
+            class="axis-container"
+            [ngStyle]="{
+              left:
+                'calc(' + getXAxisDistance(axis.wavelength, i) + '% - 10px)',
+            }"
+          >
+            <div class="tick-container">
+              <div class="tick"></div>
+            </div>
+            <div class="axis-line">
+              <div class="point-container">
+                @for (point of data; track point) {
+                  <div
+                    class="point-tick-container"
+                    [style.top]="getValueOnPlot(point, axis) + 'px'"
+                    [style.visibility]="point.visible ? 'visible' : 'hidden'"
+                  >
+                    <div class="inner-tick"></div>
+                    <div
+                      class="inner-point"
+                      style.background="rgb({{ point.color }})"
+                      #tooltip="matTooltip"
+                      [matTooltip]="point.tooltipText"
+                    ></div>
+                    @if (showLabels) {
+                      <div class="tick-label">
+                        {{ point.getValue(axis.key) | number: "1.0-2" }}
+                      </div>
+                    }
+                    @if (!showLabels) {
+                      <div class="tick-label-placeholder"></div>
+                    }
+                  </div>
+                }
               </div>
             </div>
+            <div class="tick-container">
+              <div class="tick"></div>
+            </div>
+            <div class="axis-title">
+              {{ miniMode ? axis.shortName.toUpperCase() : axis.title }}
+              @if (axis.wavelength) {
+                <span class="wavelength">{{ axis.wavelength }} nm</span>
+              }
+            </div>
           </div>
-          <div class="tick-container">
-            <div class="tick"></div>
-          </div>
-          <div class="axis-title">
-            {{ miniMode ? axis.shortName.toUpperCase() : axis.title }}
-            <span *ngIf="axis.wavelength" class="wavelength">{{ axis.wavelength }} nm</span>
-          </div>
-        </div>
+        }
       </div>
-      <svg width="100%" class="line-container" *ngIf="showLines">
-        <g *ngFor="let point of data" [style.visibility]="point.visible ? 'visible' : 'hidden'">
-          <path
-            *ngFor="let line of point.lines"
-            [attr.d]="getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)"
-            attr.stroke="rgb({{ point.color }})"
-            stroke-width="2"
-            stroke-linecap="round"
-            fill="none" />
-          <polygon *ngFor="let line of point.sigmaLines" [attr.points]="getPolygonPoints(line)" attr.fill="rgba({{ point.color }}, 0.5)" />
-        </g>
-      </svg>
+      @if (showLines) {
+        <svg width="100%" class="line-container">
+          @for (point of data; track point) {
+            <g [style.visibility]="point.visible ? 'visible' : 'hidden'">
+              @for (line of point.lines; track line) {
+                <path
+                  [attr.d]="
+                    getLinePath(line.xStart, line.yStart, line.xEnd, line.yEnd)
+                  "
+                  attr.stroke="rgb({{ point.color }})"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  fill="none"
+                />
+              }
+              @for (line of point.sigmaLines; track line) {
+                <polygon
+                  [attr.points]="getPolygonPoints(line)"
+                  attr.fill="rgba({{ point.color }}, 0.5)"
+                />
+              }
+            </g>
+          }
+        </svg>
+      }
     </div>
   </div>
 </div>

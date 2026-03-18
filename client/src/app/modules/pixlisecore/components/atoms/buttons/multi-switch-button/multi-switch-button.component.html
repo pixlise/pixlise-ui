@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,17 +29,37 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="multi-switch-container {{ disabled ? 'disabled' : '' }} {{ darkMode ? 'dark-mode' : '' }} {{ noPadding ? 'no-padding' : '' }}">
+<div
+  class="multi-switch-container {{ disabled ? 'disabled' : '' }} {{
+    darkMode ? 'dark-mode' : ''
+  }} {{ noPadding ? 'no-padding' : '' }}"
+>
+  @for (option of options; track option; let i = $index) {
+    <div
+      (click)="onClick(option)"
+      class="multi-switch-option {{ value === option ? 'active' : '' }}"
+      [tabindex]="0"
+      (keyup)="onClick(option)"
+      (keydown)="onClick(option)"
+      (keypress)="onClick(option)"
+    >
+      @if (optionIcons?.[i]) {
+        <img
+          [src]="optionIcons?.[i] || ''"
+          alt="Option Icon"
+          [ngClass]="{ 'colorize-active-icon': colorizeActiveIcon }"
+        />
+      }
+      @if (showLabels) {
+        <span>{{
+          optionLabels?.[i] !== undefined ? optionLabels?.[i] : option
+        }}</span>
+      }
+    </div>
+  }
   <div
-    *ngFor="let option of options; let i = index"
-    (click)="onClick(option)"
-    class="multi-switch-option {{ value === option ? 'active' : '' }}"
-    [tabindex]="0"
-    (keyup)="onClick(option)"
-    (keydown)="onClick(option)"
-    (keypress)="onClick(option)">
-    <img *ngIf="optionIcons?.[i]" [src]="optionIcons?.[i] || ''" alt="Option Icon" [ngClass]="{ 'colorize-active-icon': colorizeActiveIcon }" />
-    <span *ngIf="showLabels">{{ optionLabels?.[i] !== undefined ? optionLabels?.[i] : option }}</span>
-  </div>
-  <div class="active-selector" [style.margin-left]="activeLeftOffset" [style.width]="activeWidth"></div>
+    class="active-selector"
+    [style.margin-left]="activeLeftOffset"
+    [style.width]="activeWidth"
+  ></div>
 </div>

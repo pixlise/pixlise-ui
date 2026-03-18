@@ -1,20 +1,30 @@
 <ng-template #customSelectDialog>
   <div class="custom-select-picker">
-    <div *ngFor="let section of selectionOptions" class="option-section">
-      <h2>{{ section.title }}</h2>
-      <span class="checkbox-group" *ngFor="let option of section.options">
-        <two-state-icon-button
-          activeIcon="assets/button-icons/check-on.svg"
-          inactiveIcon="assets/button-icons/check-off.svg"
-          class="checkbox-button"
-          [active]="selectedOptions.includes(option.value)"
-          (onToggle)="onToggleCustomSelect(option.value)">
-        </two-state-icon-button>
-        <span>{{ option.title }}</span>
-      </span>
-    </div>
+    @for (section of selectionOptions; track section) {
+      <div class="option-section">
+        <h2>{{ section.title }}</h2>
+        @for (option of section.options; track option) {
+          <span class="checkbox-group">
+            <two-state-icon-button
+              activeIcon="assets/button-icons/check-on.svg"
+              inactiveIcon="assets/button-icons/check-off.svg"
+              class="checkbox-button"
+              [active]="selectedOptions.includes(option.value)"
+              (onToggle)="onToggleCustomSelect(option.value)"
+            >
+            </two-state-icon-button>
+            <span>{{ option.title }}</span>
+          </span>
+        }
+      </div>
+    }
     <div class="bottom-buttons">
-      <push-button buttonStyle="outline" title="Clear Selection" (onClick)="clearCustomSelection()">Clear</push-button>
+      <push-button
+        buttonStyle="outline"
+        title="Clear Selection"
+        (onClick)="clearCustomSelection()"
+        >Clear</push-button
+      >
     </div>
   </div>
 </ng-template>
@@ -24,10 +34,19 @@
   [ngStyle]="{
     'border-left-color':
       colour.colour ||
-      (lightVariant ? (selected ? 'rgb(var(--clr-gray-60))' : 'rgb(var(--clr-gray-70))') : selected ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))'),
+      (lightVariant
+        ? selected
+          ? 'rgb(var(--clr-gray-60))'
+          : 'rgb(var(--clr-gray-70))'
+        : selected
+          ? 'rgb(var(--clr-gray-70))'
+          : 'rgb(var(--clr-gray-80))'),
     'border-left-width': '4px',
-    'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))'
-  }">
+    'border-bottom': lightVariant
+      ? '1px solid rgb(var(--clr-gray-80))'
+      : '1px solid rgb(var(--clr-gray-70))',
+  }"
+>
   <div
     class="summary"
     [ngStyle]="{
@@ -36,87 +55,160 @@
           ? 'rgb(var(--clr-gray-60))'
           : 'rgb(var(--clr-gray-70))'
         : selected
-        ? 'rgb(var(--clr-gray-70))'
-        : 'rgb(var(--clr-gray-80))'
-    }">
-    <two-state-icon-button
-      *ngIf="isSelectable && !rightSelection && !isSubItemSelectionEnabled"
-      toolTip="Toggle ROI"
-      [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
-      [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
-      class="checkbox-button"
-      [active]="selected"
-      (onToggle)="onCheckboxClick($event)">
-    </two-state-icon-button>
-    <div
-      *ngIf="showCreatorIcon"
-      class="creator {{ selectAuthorToFilter ? 'filterable' : '' }}"
-      #tooltip="matTooltip"
-      (click)="filterToAuthor()"
-      [matTooltipShowDelay]="200"
-      matTooltip="Creator: {{ creatorName || 'N/A' }} {{ selectAuthorToFilter && creatorName ? '\n\n(Click to filter)' : '' }}">
-      <img *ngIf="icon" [src]="icon" />
-      <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
-    </div>
+          ? 'rgb(var(--clr-gray-70))'
+          : 'rgb(var(--clr-gray-80))',
+    }"
+  >
+    @if (isSelectable && !rightSelection && !isSubItemSelectionEnabled) {
+      <two-state-icon-button
+        toolTip="Toggle ROI"
+        [activeIcon]="
+          isSingleSelect
+            ? 'assets/button-icons/radio-on.svg'
+            : 'assets/button-icons/check-on.svg'
+        "
+        [inactiveIcon]="
+          isSingleSelect
+            ? 'assets/button-icons/radio-off.svg'
+            : 'assets/button-icons/check-off.svg'
+        "
+        class="checkbox-button"
+        [active]="selected"
+        (onToggle)="onCheckboxClick($event)"
+      >
+      </two-state-icon-button>
+    }
+    @if (showCreatorIcon) {
+      <div
+        class="creator {{ selectAuthorToFilter ? 'filterable' : '' }}"
+        #tooltip="matTooltip"
+        (click)="filterToAuthor()"
+        [matTooltipShowDelay]="200"
+        matTooltip="Creator: {{ creatorName || 'N/A' }} {{
+          selectAuthorToFilter && creatorName ? '\n\n(Click to filter)' : ''
+        }}"
+      >
+        @if (icon) {
+          <img [src]="icon" />
+        }
+        @if (!icon) {
+          <span class="name-abbreviation">{{ creatorAbbreviation }}</span>
+        }
+      </div>
+    }
     <div
       class="info"
       #tooltip="matTooltip"
       matTooltipClass="multiline-tooltip"
       [matTooltipShowDelay]="500"
-      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString + '\nROI Id: ' + id : '')">
+      [matTooltip]="
+        name +
+        (description ? '\n\n' + description : '') +
+        (createdDate > 0
+          ? '\n\nCreated: ' + dateCreatedString + '\nROI Id: ' + id
+          : '')
+      "
+    >
       <h4>
         {{ name }}
-        <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this ROI.">
-          <img src="assets/button-icons/lock.svg" />
-        </span>
+        @if (!canEdit) {
+          <span
+            class="lock-icon"
+            #tooltip="matTooltip"
+            matTooltip="You are not an editor of this ROI."
+          >
+            <img src="assets/button-icons/lock.svg" />
+          </span>
+        }
       </h4>
-      <span *ngIf="summary.isMIST || createdDate > 0" class="metadata-line" title="Level">
-        <div *ngIf="summary.isMIST" class="level-dots" title="Level">
-          <div class="level-dot {{ hasLevel ? 'filled' : '' }}" *ngFor="let hasLevel of mistLevels"></div>
-        </div>
-        <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "mediumDate" }}</p>
-      </span>
+      @if (summary.isMIST || createdDate > 0) {
+        <span class="metadata-line" title="Level">
+          @if (summary.isMIST) {
+            <div class="level-dots" title="Level">
+              @for (hasLevel of mistLevels; track hasLevel) {
+                <div class="level-dot {{ hasLevel ? 'filled' : '' }}"></div>
+              }
+            </div>
+          }
+          <p
+            [ngStyle]="{
+              color: lightVariant
+                ? 'rgb(var(--clr-gray-50))'
+                : 'rgb(var(--clr-gray-60))',
+            }"
+          >
+            {{ createdDate | date: "mediumDate" }}
+          </p>
+        </span>
+      }
     </div>
-    <roi-shape *ngIf="displayConfigured" class="current-shape" [color]="colour.colour || '#fff'" [shape]="shape || 'circle'"></roi-shape>
+    @if (displayConfigured) {
+      <roi-shape
+        class="current-shape"
+        [color]="colour.colour || '#fff'"
+        [shape]="shape || 'circle'"
+      ></roi-shape>
+    }
     <div class="buttons {{ displayConfigured ? '' : 'unconfigured-display' }}">
-      <share-ownership-item-button *ngIf="canEdit && colorChangeOnly" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
-      </share-ownership-item-button>
+      @if (canEdit && colorChangeOnly) {
+        <share-ownership-item-button
+          [id]="summary?.id || ''"
+          [type]="objectType"
+          [ownershipSummary]="summary?.owner || null"
+        >
+        </share-ownership-item-button>
+      }
       <tag-picker
         type="roi"
         placeholderText="Search ROI Tags ..."
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
         [editable]="summary.owner?.canEdit || false"
-        (onTagSelectionChanged)="onTagSelectionChanged($event)">
+        (onTagSelectionChanged)="onTagSelectionChanged($event)"
+      >
       </tag-picker>
-      <roi-item-display-settings
-        *ngIf="colorChangeOnly && summary"
-        [roiId]="summary.id"
-        [displaySettings]="displaySettings">
-      </roi-item-display-settings>
-      <two-state-icon-button
-        *ngIf="showVisibilityButton"
-        toolTip="Toggle visibility on Context Image"
-        activeIcon="assets/button-icons/visible-on-yellow.svg"
-        inactiveIcon="assets/button-icons/visible-off.svg"
-        [active]="isVisible"
-        (onToggle)="onVisibility($event)"></two-state-icon-button>
-      <icon-button
-        *ngIf="showDetailsButton"
-        (click)="onShowDetails()"
-        [hasBackground]="false"
-        icon="assets/button-icons/settings-gray.svg"
-        title="Shows ROI details"></icon-button>
+      @if (colorChangeOnly && summary) {
+        <roi-item-display-settings
+          [roiId]="summary.id"
+          [displaySettings]="displaySettings"
+        >
+        </roi-item-display-settings>
+      }
+      @if (showVisibilityButton) {
+        <two-state-icon-button
+          toolTip="Toggle visibility on Context Image"
+          activeIcon="assets/button-icons/visible-on-yellow.svg"
+          inactiveIcon="assets/button-icons/visible-off.svg"
+          [active]="isVisible"
+          (onToggle)="onVisibility($event)"
+        ></two-state-icon-button>
+      }
+      @if (showDetailsButton) {
+        <icon-button
+          (click)="onShowDetails()"
+          [hasBackground]="false"
+          icon="assets/button-icons/settings-gray.svg"
+          title="Shows ROI details"
+        ></icon-button>
+      }
     </div>
-    <two-state-icon-button
-      *ngIf="isSelectable && rightSelection && !isSubItemSelectionEnabled"
-      toolTip="Toggle ROI"
-      activeIcon="assets/button-icons/check-on.svg"
-      inactiveIcon="assets/button-icons/check-off.svg"
-      class="checkbox-button"
-      [active]="selected"
-      (onToggle)="onCheckboxClick($event)">
-    </two-state-icon-button>
-    <push-button *ngIf="selectionLabel && isSubItemSelectionEnabled" class="selection-button" [customDialog]="customSelectDialog">{{ selectionLabel }}</push-button>
+    @if (isSelectable && rightSelection && !isSubItemSelectionEnabled) {
+      <two-state-icon-button
+        toolTip="Toggle ROI"
+        activeIcon="assets/button-icons/check-on.svg"
+        inactiveIcon="assets/button-icons/check-off.svg"
+        class="checkbox-button"
+        [active]="selected"
+        (onToggle)="onCheckboxClick($event)"
+      >
+      </two-state-icon-button>
+    }
+    @if (selectionLabel && isSubItemSelectionEnabled) {
+      <push-button
+        class="selection-button"
+        [customDialog]="customSelectDialog"
+        >{{ selectionLabel }}</push-button
+      >
+    }
   </div>
 </div>

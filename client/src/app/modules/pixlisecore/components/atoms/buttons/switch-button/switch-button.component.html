@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -33,20 +33,62 @@ POSSIBILITY OF SUCH DAMAGE.
   <span>{{ label }}</span>
   <!-- <img src="{{getImg()}}" class="button-shadow button-hoverable clickable"> -->
 
-  <span *ngIf="active && !disabled" class="btn-container switch-on">
-    <svg width="32" height="16" viewBox="0 0 32 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0.5" y="0.5" width="31" height="15" rx="7.5" fill="#FFFF8D" fill-opacity="0.2" stroke="#FFFF8D" class="switch-bg" />
-      <path
-        d="M24 13C26.7614 13 29 10.7614 29 8C29 5.23858 26.7614 3 24 3C21.2386 3 19 5.23858 19 8C19 10.7614 21.2386 13 24 13Z"
-        fill="white" />
-    </svg>
-  </span>
-  <span *ngIf="!active || disabled" class="btn-container switch-off">
-    <svg width="32" height="16" viewBox="0 0 32 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0.5" y="0.5" width="31" height="15" rx="7.5" fill="#F8F8F8" fill-opacity="0.2" stroke="#F8F8F8" class="switch-bg" />
-      <path d="M8 13C10.7614 13 13 10.7614 13 8C13 5.23858 10.7614 3 8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13Z" fill="#F8F8F8" />
-    </svg>
-  </span>
+  @if (active && !disabled) {
+    <span class="btn-container switch-on">
+      <svg
+        width="32"
+        height="16"
+        viewBox="0 0 32 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="0.5"
+          y="0.5"
+          width="31"
+          height="15"
+          rx="7.5"
+          fill="#FFFF8D"
+          fill-opacity="0.2"
+          stroke="#FFFF8D"
+          class="switch-bg"
+        />
+        <path
+          d="M24 13C26.7614 13 29 10.7614 29 8C29 5.23858 26.7614 3 24 3C21.2386 3 19 5.23858 19 8C19 10.7614 21.2386 13 24 13Z"
+          fill="white"
+        />
+      </svg>
+    </span>
+  }
+  @if (!active || disabled) {
+    <span class="btn-container switch-off">
+      <svg
+        width="32"
+        height="16"
+        viewBox="0 0 32 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="0.5"
+          y="0.5"
+          width="31"
+          height="15"
+          rx="7.5"
+          fill="#F8F8F8"
+          fill-opacity="0.2"
+          stroke="#F8F8F8"
+          class="switch-bg"
+        />
+        <path
+          d="M8 13C10.7614 13 13 10.7614 13 8C13 5.23858 10.7614 3 8 3C5.23858 3 3 5.23858 3 8C3 10.7614 5.23858 13 8 13Z"
+          fill="#F8F8F8"
+        />
+      </svg>
+    </span>
+  }
 
-  <span *ngIf="endLabel" class="last">{{ endLabel }} </span>
+  @if (endLabel) {
+    <span class="last">{{ endLabel }} </span>
+  }
 </div>

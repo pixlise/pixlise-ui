@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -30,7 +30,19 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="number-button" [ngClass]="styles" (click)="onClick()">
-  <div *ngIf="params.labelPrefix" class="label prefix">{{ params.labelPrefix }}</div>
-  <div class="label" [ngClass]="{ sep: params.labelPrefix, 'right-sep': params.showArrowSeparator }">{{ params.label }}</div>
-  <div *ngIf="params.showArrow" class="chevron">&raquo;</div>
+  @if (params.labelPrefix) {
+    <div class="label prefix">{{ params.labelPrefix }}</div>
+  }
+  <div
+    class="label"
+    [ngClass]="{
+      sep: params.labelPrefix,
+      'right-sep': params.showArrowSeparator,
+    }"
+  >
+    {{ params.label }}
+  </div>
+  @if (params.showArrow) {
+    <div class="chevron">&raquo;</div>
+  }
 </div>

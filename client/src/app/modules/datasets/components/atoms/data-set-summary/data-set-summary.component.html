@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -33,58 +33,94 @@ POSSIBILITY OF SUCH DAMAGE.
   class="dataset-container clickable fx-start-center"
   [ngClass]="{ 'dataset-selected': isSelected || isMultiSelected }"
   (click)="onClickTileArea($event)"
-  [attr.aria-label]="'DatasetTile:' + title">
-  <ng-container [ngSwitch]="tileImage.length">
-    <ng-container *ngSwitchCase="0">
+  [attr.aria-label]="'DatasetTile:' + title"
+>
+  @switch (tileImage.length) {
+    @case (0) {
       <div class="fx-space-around-center fx-flex">
         <div class="no-image">No Context Image</div>
       </div>
-    </ng-container>
-    <ng-container *ngSwitchDefault>
+    }
+    @default {
       <img [src]="tileImage" class="tile-img" />
-    </ng-container>
-  </ng-container>
+    }
+  }
   <div class="title-container">
-    <div class="title" [ngClass]="{ incomplete: incomplete }" title="Title: &quot;{{ title }}&quot;. Dataset ID: &quot;{{ summaryId }}&quot; {{ missingDataList }}">
+    <div
+      class="title"
+      [ngClass]="{ incomplete: incomplete }"
+      title="Title: &quot;{{ title }}&quot;. Dataset ID: &quot;{{
+        summaryId
+      }}&quot; {{ missingDataList }}"
+    >
       {{ title }}<br />{{ displaySite }}
     </div>
     <div class="types">
-      <img class="lg-icon" [ngStyle]="{ display: isXRF ? 'inline-block' : 'none' }" src="assets/icons/xrf-symbol.svg" />
-      <img class="lg-icon" [ngStyle]="{ display: isRGBU ? 'inline-block' : 'none' }" src="assets/icons/rgbu-symbol.svg" />
+      <img
+        class="lg-icon"
+        [ngStyle]="{ display: isXRF ? 'inline-block' : 'none' }"
+        src="assets/icons/xrf-symbol.svg"
+      />
+      <img
+        class="lg-icon"
+        [ngStyle]="{ display: isRGBU ? 'inline-block' : 'none' }"
+        src="assets/icons/rgbu-symbol.svg"
+      />
     </div>
   </div>
-  <div *ngIf="incomplete" class="incomplete-icon" title="{{ missingDataList }}"><img src="assets/button-icons/disabled-orange.svg" /></div>
+  @if (incomplete) {
+    <div class="incomplete-icon" title="{{ missingDataList }}">
+      <img src="assets/button-icons/disabled-orange.svg" />
+    </div>
+  }
 
   <div class="left-data fx-column">
-    <div class="fx-start-center" *ngIf="dwellSpectra > 0">
-      <span class="label">Dwell:</span><span class="value">{{ dwellSpectra }}</span>
+    @if (dwellSpectra > 0) {
+      <div class="fx-start-center">
+        <span class="label">Dwell:</span
+        ><span class="value">{{ dwellSpectra }}</span>
+      </div>
+    }
+    <div class="fx-start-center">
+      <span class="label">BulkSum:</span
+      ><span class="value">{{ bulkSpectra }}</span>
     </div>
     <div class="fx-start-center">
-      <span class="label">BulkSum:</span><span class="value">{{ bulkSpectra }}</span>
+      <span class="label">MaxValue:</span
+      ><span class="value">{{ maxSpectra }}</span>
     </div>
     <div class="fx-start-center">
-      <span class="label">MaxValue:</span><span class="value">{{ maxSpectra }}</span>
+      <span class="label">Normal:</span
+      ><span class="value">{{ normalSpectra }}</span>
     </div>
     <div class="fx-start-center">
-      <span class="label">Normal:</span><span class="value">{{ normalSpectra }}</span>
-    </div>
-    <div class="fx-start-center">
-      <span class="label">Pseudo:</span><span class="value">{{ pseudoIntensities }}</span>
+      <span class="label">Pseudo:</span
+      ><span class="value">{{ pseudoIntensities }}</span>
     </div>
   </div>
 
-  <div class="fx-column fx-start-end right-data gap-separated-vertical-elements-half">
-    <ng-container *ngIf="displaySol">
+  <div
+    class="fx-column fx-start-end right-data gap-separated-vertical-elements-half"
+  >
+    @if (displaySol) {
       <div class="fx-start-center" title="SOL: &quot;{{ displaySol }}&quot;">
         <span class="value">{{ displaySol }}</span
         ><img class="icon" src="assets/icons/sol.svg" />
       </div>
-      <div class="fx-start-center" title="Drive ID: &quot;{{ displayDriveID }}&quot;">
+      <div
+        class="fx-start-center"
+        title="Drive ID: &quot;{{ displayDriveID }}&quot;"
+      >
         <span class="value">{{ displayDriveID }}</span
         ><img class="icon" src="assets/icons/drive.svg" />
       </div>
-    </ng-container>
-    <div class="fx-start-center" title="Target: &quot;{{ displayTarget }}&quot; (ID: &quot;{{ displayTargetId }}&quot;)">
+    }
+    <div
+      class="fx-start-center"
+      title="Target: &quot;{{ displayTarget }}&quot; (ID: &quot;{{
+        displayTargetId
+      }}&quot;)"
+    >
       <span class="value target">{{ displayTarget }}</span
       ><img class="icon" src="assets/icons/target.svg" />
     </div>

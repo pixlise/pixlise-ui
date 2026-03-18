@@ -7,14 +7,14 @@ modification, are permitted provided that the following conditions are
 met:
 
 * Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
 * Neither the name of Caltech nor its operating division, the Jet Propulsion
-  Laboratory, nor the names of its contributors may be used to endorse or
-  promote products derived from this software without specific prior written
-  permission.
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,41 +29,75 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="quant-row setting-row clickable gap-separated-vertical-elements" [ngClass]="{ 'setting-row-visible': quantItem?.selected }">
-  <div (click)="onClickQuant()" class="gap-separated-horizontal-elements quant-info">
+<div
+  class="quant-row setting-row clickable gap-separated-vertical-elements"
+  [ngClass]="{ 'setting-row-visible': quantItem?.selected }"
+>
+  <div
+    (click)="onClickQuant()"
+    class="gap-separated-horizontal-elements quant-info"
+  >
     <div class="quant-info-header">
-      <div>{{ quantItem?.quant?.params?.userParams?.name }}{{ roiMatched ? " (ROI MATCH)" : "" }}</div>
-      <div class="obj-creator">By {{ quantItem?.quant?.owner?.creatorUser?.name }}</div>
-      <div class="detectors">{{ quantItem?.detectorType }}, {{ (quantItem?.quant?.params?.startUnixTimeSec || 0) * 1000 | date: "mediumDate" }}</div>
+      <div>
+        {{ quantItem?.quant?.params?.userParams?.name
+        }}{{ roiMatched ? " (ROI MATCH)" : "" }}
+      </div>
+      <div class="obj-creator">
+        By {{ quantItem?.quant?.owner?.creatorUser?.name }}
+      </div>
+      <div class="detectors">
+        {{ quantItem?.detectorType }},
+        {{
+          (quantItem?.quant?.params?.startUnixTimeSec || 0) * 1000
+            | date: "mediumDate"
+        }}
+      </div>
       <!-- <div
-                *ngIf="quantItem.quant.blessDetails"
-                fxLayout="row"
-                fxLayoutAlign="start center"
-                class="gap-separated-horizontal-elements blessed"
-                title="Version: {{quantItem.quant.blessDetails.version}} by {{quantItem.quant.blessDetails.userName}} at {{(quantItem.quant.blessDetails.blessedAt*1000)|date:'mediumDate'}}">
-                <img src="assets/icons/blessed.svg">
-                <span>Blessed Quant</span>
-            </div> -->
+      *ngIf="quantItem.quant.blessDetails"
+      fxLayout="row"
+      fxLayoutAlign="start center"
+      class="gap-separated-horizontal-elements blessed"
+      title="Version: {{quantItem.quant.blessDetails.version}} by {{quantItem.quant.blessDetails.userName}} at {{(quantItem.quant.blessDetails.blessedAt*1000)|date:'mediumDate'}}">
+      <img src="assets/icons/blessed.svg">
+      <span>Blessed Quant</span>
+    </div> -->
     </div>
     <div class="quant-element-container">
       <div class="quant-elem-list">
         <div class="element-row">
-          <element-tile *ngFor="let Z of quantItem?.quantifiedAtomicNumbers" [atomicNumber]="Z"> </element-tile>
-          <div *ngFor="let item of quantItem?.notElements" class="not-an-element">{{ item }}</div>
+          @for (Z of quantItem?.quantifiedAtomicNumbers; track Z) {
+            <element-tile [atomicNumber]="Z"> </element-tile>
+          }
+          @for (item of quantItem?.notElements; track item) {
+            <div class="not-an-element">{{ item }}</div>
+          }
         </div>
         <div class="elem-states">{{ quantItem?.stateLabel }}</div>
       </div>
     </div>
   </div>
   <div class="shared-control-btns left-gap gap-separated-horizontal-elements">
-    <share-ownership-item-button [id]="quantItem?.quant?.id || ''" [ownershipSummary]="quantItem?.quant?.owner || null" [type]="objectType">
+    <share-ownership-item-button
+      [id]="quantItem?.quant?.id || ''"
+      [ownershipSummary]="quantItem?.quant?.owner || null"
+      [type]="objectType"
+    >
     </share-ownership-item-button>
     <action-button
       [disabled]="!quantItem?.quant?.owner?.canEdit"
       action="delete"
-      [tooltipTitle]="quantItem?.quant?.owner?.canEdit ? 'Delete Quantification' : 'You do not have permission to delete this quantification.'"
-      [confirmText]="'Are you sure you want to delete the quantification: ' + (quantItem?.quant?.params?.userParams?.name || quantItem?.quant?.id) + '?'"
-      (onClick)="onDeleteQuant()">
+      [tooltipTitle]="
+        quantItem?.quant?.owner?.canEdit
+          ? 'Delete Quantification'
+          : 'You do not have permission to delete this quantification.'
+      "
+      [confirmText]="
+        'Are you sure you want to delete the quantification: ' +
+        (quantItem?.quant?.params?.userParams?.name || quantItem?.quant?.id) +
+        '?'
+      "
+      (onClick)="onDeleteQuant()"
+    >
     </action-button>
   </div>
 </div>
