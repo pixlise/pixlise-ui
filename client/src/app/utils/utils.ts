@@ -387,15 +387,6 @@ export const UNICODE_MATHEMATICAL_F = "\ud835\udc53";
 export const UNICODE_GREEK_LOWERCASE_PSI = "\u03C8";
 export const UNICODE_ELLIPSIS = "\u2026";
 
-export function Uint8ToString(u8a: Uint8Array) {
-  const CHUNK_SZ = 0x8000;
-  const c = [];
-  for (let i = 0; i < u8a.length; i += CHUNK_SZ) {
-    c.push(String.fromCharCode.apply(null, Array.from(u8a.subarray(i, i + CHUNK_SZ))));
-  }
-  return c.join("");
-}
-
 export function mimeTypeForImage(imageUrl: string): string {
   let url = imageUrl.trim();
   let mime = "";
@@ -425,18 +416,21 @@ export function mimeTypeForImage(imageUrl: string): string {
   return "image/" + mime;
 }
 
+function uint8ToString(u8a: Uint8Array) {
+  const CHUNK_SZ = 0x8000;
+  const c = [];
+  for (let i = 0; i < u8a.length; i += CHUNK_SZ) {
+    c.push(String.fromCharCode.apply(null, Array.from(u8a.subarray(i, i + CHUNK_SZ))));
+  }
+  return c.join("");
+}
+
 export function arrayBufferToImageDataURL(mime: string, buf: ArrayBuffer): string {
   const data = new Uint8Array(buf);
-  const base64 = btoa(Uint8ToString(data));
+  const base64 = btoa(uint8ToString(data));
   const dataURL = `data:${mime};base64,` + base64;
   return dataURL;
 }
-
-// export function arrayBufferToImageDataURL2(mime: string, data: Uint8Array): string {
-//   const base64 = data.toBase64({ alphabet: "base64url" });
-//   const dataURL = `data:${mime};base64,` + base64;
-//   return dataURL;
-// }
 
 export function positionDialogNearParent(openerRect: any, ourWindowRect: any, dontCoverOpener: boolean = false): object {
   const gapSizeHalf = 4; // Should be the same as $sz-half from CSS

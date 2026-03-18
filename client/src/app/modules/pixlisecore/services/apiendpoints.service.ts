@@ -5,7 +5,7 @@ import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { mimeTypeForImage, Uint8ToString } from "src/app/utils/utils";
+import { arrayBufferToImageDataURL, mimeTypeForImage } from "src/app/utils/utils";
 import { ImageUploadHttpPartialInfo, ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
@@ -109,10 +109,7 @@ export class APIEndpointsService {
           // by all browsers but at time of writing Angular 21 uses Typescript 5.9.3 which doesn't contain this
           // function yet. We may be able to use a polyfill.
           // TODO: Update this to use toBase64 when it's available, perhaps in Typescript 6.x?
-          const data = new Uint8Array(arrayBuf);
-          const base64 = btoa(Uint8ToString(data));
-          const dataURL = `data:${mime};base64,` + base64;
-          img.src = dataURL;
+          img.src = arrayBufferToImageDataURL(mime, arrayBuf);
         },
         error: err => {
           if (err instanceof HttpErrorResponse && err.status == 404) {
