@@ -1,5 +1,5 @@
 import { Injectable, OnDestroy } from "@angular/core";
-import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from "@angular/material/snack-bar";
 import { SnackBarPopupComponent } from "../components/atoms/snackbar-popup/snackbar-popup.component";
 import { LocalStorageService } from "./local-storage.service";
 import { WSError } from "./wsMessageHandler";
@@ -16,6 +16,8 @@ import { SnackbarDataItem, SnackbarType } from "../models/snackbar-data";
 export class SnackbarService implements OnDestroy {
   subscriptions: Subscription = new Subscription();
   history: SnackbarDataItem[] = [];
+  private _activeProgress = new Map<number, MatSnackBarRef<TextOnlySnackBar>>();
+  private _nextActiveProgressId = 1;
 
   constructor(
     private _snackBar: MatSnackBar,
@@ -30,6 +32,7 @@ export class SnackbarService implements OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
+    this._activeProgress.clear();
   }
 
   addMessageToHistory(message: string, details: string, action: string, type: SnackbarType): void {
@@ -136,6 +139,41 @@ export class SnackbarService implements OnDestroy {
       panelClass: ["pixlise-message"],
       duration: 5000,
     });
+  }
+
+  openProgress(message: string, action: string = "Dismiss"): number {
+    const ref = this._snackBar.open(message, action, {
+      horizontalPosition: "left",
+      panelClass: ["pixlise-message"],
+    });
+
+
+    const id = this._nextActiveProgressId
+    this._activeProgress.set(id, ref);
+    this._nextActiveProgressId++;
+
+    return id;
+  }
+
+  setProgress(id: number, message: string): void {
+    if (!this._activeProgress.has(id)) {
+      return; // Ignore
+    }
+
+    const msg = this._activeProgress.get(id);
+    msg!.instance.data.message = message;
+  }
+
+  closeProgress(id: number, message: string): void {
+    if (!this._activeProgress.has(id)) {
+      return; // Ignore
+    }
+
+    const msg = this._activeProgress.get(id);
+    msg?.dismiss();
+
+    this._activeProgress.delete(id);
+    this.addMessageToHistory(message, "", "", "info");
   }
 
   clearHistory(): void {

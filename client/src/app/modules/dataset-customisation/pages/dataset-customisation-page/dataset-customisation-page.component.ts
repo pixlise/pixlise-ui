@@ -1,11 +1,21 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
+import { MatSelectChange } from "@angular/material/select";
+import { ElementRef, ViewChild } from "@angular/core";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+
 import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+
 import { AnalysisLayoutService, APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
+
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
+
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
-import { combineLatest, concat, from, map, Observable, of, Subscription, switchMap, tap, throwError } from "rxjs";
+import { Observable, of, Subscription, throwError } from "rxjs";
 import {
   ImageListReq,
   ImageListResp,
@@ -15,37 +25,32 @@ import {
   ImageGetDefaultResp,
   ImageSetMatchTransformReq,
   ImageSetMatchTransformResp,
-  ImageUploadHttpRequest,
-  ImageUploadHttpPartialInfo,
 } from "src/app/generated-protos/image-msgs";
 import { ScanGetReq, ScanTriggerJobReq } from "src/app/generated-protos/scan-msgs";
-import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
+import { ImageDeleteReq } from "src/app/generated-protos/image-msgs";
+import { ImageDeleteResp } from "src/app/generated-protos/image-msgs";
+import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { Image3DModelPointUploadReq, Image3DModelPointUploadResp } from "src/app/generated-protos/image-3d-model-point-msgs";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { Image3DPoints } from "src/app/generated-protos/image-3d-model-points";
+
 import { DatasetCustomisationModel } from "./dataset-customisation-model";
 import { DatasetCustomisationDrawer } from "./dataset-customisation-drawer";
 import { AlignmentInteraction } from "./dataset-customisation-interaction";
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { ImageDeleteReq } from "src/app/generated-protos/image-msgs";
-import { ImageDeleteResp } from "src/app/generated-protos/image-msgs";
-import { MatSelectChange } from "@angular/material/select";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
 import { ColourRamp } from "src/app/utils/colours";
-import { SDSFields, getPathBase, isValidNumber, makeValidFloatString } from "src/app/utils/utils";
-import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../../components/add-custom-image/add-custom-image.component";
+import { getPathBase, isValidNumber, makeValidFloatString } from "src/app/utils/utils";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
-import { ScanItem } from "../../../../generated-protos/scan";
-import { ObjectType } from "../../../../generated-protos/ownership-access";
 import { rgbBytesToImage } from "src/app/utils/drawing";
-import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
-import { ElementRef, ViewChild } from "@angular/core";
-import { Image3DModelPointUploadReq, Image3DModelPointUploadResp } from "src/app/generated-protos/image-3d-model-point-msgs";
-import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
-import { Image3DPoints } from "src/app/generated-protos/image-3d-model-points";
+import { ImageUploader } from "src/app/utils/image-upload";
+
+
 @Component({
   standalone: false,
   selector: "app-dataset-customisation-page",
@@ -363,208 +368,21 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   onAddImage(): void {
-    const scanId = this.getScanId();
-    if (!scanId) {
-      this._snackService.openError("No scan id supplied");
-      return;
-    }
+    const imageUploader = new ImageUploader(
+      this._snackService,
+      this._endpointsService,
+      this.dialog,
+      (chunkProgress: number, details?: string) => {
+        this.setWait(this.waitUploadImage, chunkProgress > -1, details);
 
-    const dialogConfig = new MatDialogConfig();
-
-    //dialogConfig.disableClose = true;
-    //dialogConfig.autoFocus = true;
-    //dialogConfig.width = '1200px';
-
-    const title = "Add Image";
-    const acceptTypes = "image/jpeg,image/png,image/tiff";
-
-    dialogConfig.data = new AddCustomImageParameters(acceptTypes, true, title, scanId);
-    const dialogRef = this.dialog.open(AddCustomImageComponent, dialogConfig);
-
-    dialogRef.afterClosed().subscribe((result: AddCustomImageResult) => {
-      if (!result) {
-        // Cancelled
-        return;
-      }
-
-      const nameToSave = result.imageToUpload.name;
-
-      if (nameToSave.toUpperCase().endsWith(".TIF") || nameToSave.toUpperCase().endsWith(".TIFF")) {
-        const errs = [];
-
-        // Check that the file name is not too long because of file extension. We expect it to just be TIF not TIFF
-        if (!nameToSave.toUpperCase().endsWith(".TIF")) {
-          errs.push("Must end in .tif");
-        } else {
-          // Check that the file name conforms to the iSDS name standard, otherwise import will fail
-          const fields = SDSFields.makeFromFileName(result.imageToUpload.name);
-
-          // Expecting it to parse, and expecting:
-          // - prodType to be VIS (visualisation image) or MSA (multi-spectral analysis... NOT to be confused with MSA spectrum files)
-          // - instrument to be PC (PIXL MCC)
-          // - colour filter to be C (special field for 4-channel RGBU TIF images)
-          // - sol is non-zero length
-          // - rtt is non-zero length
-          // - sclk is non-zero length
-          // - version is >= 1
-          if (!fields) {
-            // Previously we only allowed TIF images that were RGBU - now we say here if we failed to parse it with the SDS file name
-            // convention, we just allow it through
-            //errs.push("invalid length, should be 58 chars (including .tif)");
-          } else {
-            if (["VIS", "MSA"].indexOf(fields.prodType) < 0) {
-              errs.push("Bad prod type: " + fields.prodType);
-            }
-
-            if (fields.instrument != "PC") {
-              errs.push("Bad instrument: " + fields.instrument);
-            }
-
-            if (fields.colourFilter != "C") {
-              errs.push("Bad colour filter: " + fields.colourFilter);
-            }
-
-            if (fields.getSolNumber() <= 0) {
-              errs.push("Bad sol: " + fields.primaryTimestamp);
-            }
-
-            if (fields.RTT <= 0) {
-              errs.push("Bad RTT: " + fields.seqRTT);
-            }
-
-            if (fields.SCLK <= 0) {
-              errs.push("Bad SCLK: " + fields.secondaryTimestamp);
-            }
-
-            if (fields.version < 1) {
-              errs.push("Bad version: " + fields.version);
-            }
-          }
-        }
-
-        if (errs.length > 0) {
-          alert(`Invalid file name: "${result.imageToUpload.name}'\nErrors encountered:\n${errs.join("\n")}`);
-          return;
+        if (chunkProgress < 0) {
+          // No longer waiting, refresh images
+          this.refreshImages();
         }
       }
-
-      this._snackService.open(`Uploading ${result.imageToUpload.name}...`);
-      this.setWait(this.waitUploadImage, true, "Checking Resume");
-
-      // Do the actual upload
-      let beamImageRef: ImageMatchTransform | undefined = undefined;
-      if (result.imageToMatch) {
-        // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
-        // is a matched image that _can_ be edited in this way
-        beamImageRef = ImageMatchTransform.create({
-          beamImageFileName: result.imageToMatch,
-          xOffset: 0,
-          yOffset: 0,
-          xScale: 1,
-          yScale: 1,
-        });
-      }
-
-      // First, see if we can resume it from a previous attempt
-      const imagePutResumeCheckReq = {
-        name: result.imageToUpload.name,
-        imageData: new Uint8Array(),
-        imageByteSize: result.imageToUpload.size,
-        associatedScanIds: [scanId],
-        originScanId: scanId,
-      };
-
-      this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe(
-        (resp: ImageUploadHttpPartialInfo) => {
-          const chunkSize = 20*1024*1024;
-          const totalChunks = Math.ceil(result.imageToUpload.size / chunkSize);
-
-          // Set up the observables
-          let chunks$ = this.readFileChunks(scanId, result.imageToUpload.name, result.imageToUpload, chunkSize, totalChunks, beamImageRef);
-
-          // Chop out the ones that we have sent already
-          if (resp?.bytesReceived > 0) {
-            // If it's not a round number of chunks, don't chop...
-            if (resp.bytesReceived % chunkSize != 0) {
-              console.error(`Error resuming upload, server does not have a multiple of ${chunkSize} bytes, has ${resp.bytesReceived} bytes.`);
-            } else {
-              const skip = resp.bytesReceived / chunkSize;
-              chunks$ = chunks$.slice(skip);
-            }
-          }
-
-          // Subscribe on-by-one
-          concat(...chunks$).subscribe({
-              error: err => {
-                console.log(`Error uploading ${result.imageToUpload.name}: ${err}`);
-
-                this._snackService.openError(err);
-                this.setWait(this.waitUploadImage, false);
-              },
-              complete: () => {
-                console.log(`Uploading ${result.imageToUpload.name} complete, ${totalChunks} x ${chunkSize} bytes`);
-
-                this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}...`);
-                this.refreshImages();
-                this.setWait(this.waitUploadImage, false);
-              }
-            }
-          );
-        }
-      );
-    });
-  }
-
-  protected readFileChunks(scanId: string, fileName: string, file: File, chunkSize: number, totalChunks: number, beamImageRef: ImageMatchTransform | undefined): Observable<ImageUploadHttpPartialInfo>[] {
-    const chunks$: Observable<ImageUploadHttpPartialInfo>[] = [];
-
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * chunkSize;
-      const end = Math.min(start + chunkSize, file.size);
-      const chunk = file.slice(start, end); // Extract chunk
-
-      const chunkByte$ = new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(chunk);
-      });
-  
-      const obs$ = from(chunkByte$ as Promise<ArrayBuffer>);
-      chunks$.push(obs$.pipe(
-        switchMap(chunk => {
-          console.log(`Uploading ${fileName} chunk ${chunkIndex} from ${start}->${end}...`);
-          return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks);
-        })
-      ));
-    }
-
-    return chunks$;
-  }
-
-  protected sendChunk(scanId: string, fileName: string, totalSize: number, data: ArrayBuffer, beamImageRef: ImageMatchTransform | undefined, idx: number, totalChunks: number): Observable<ImageUploadHttpPartialInfo> {
-    const req = {
-      name: fileName,
-      imageData: new Uint8Array(data),
-      imageByteSize: totalSize,
-      associatedScanIds: [scanId],
-      originScanId: scanId,
-      // oneof
-      //locationPerScan
-      beamImageRef: beamImageRef,
-      partNo: idx,
-      totalParts: totalChunks
-    };
-
-    if (totalChunks > 1) {
-      this.setWait(this.waitUploadImage, true, idx == totalChunks-1 ? "Processing Upload" : `Sending part ${idx} of ${totalChunks}`);
-    }
-
-    return this._endpointsService.uploadImage(ImageUploadHttpRequest.create(req)).pipe(
-      tap(() => {
-          console.log(`Upload OK: ${fileName} chunk ${idx}!`);
-      })
     );
+              
+    imageUploader.imageUpload(this.getScanId(), "Add Image", true);
   }
 
   onAdd3DPoints() {

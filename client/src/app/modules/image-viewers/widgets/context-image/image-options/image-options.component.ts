@@ -29,20 +29,26 @@
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+
 import { Observable, Subscription, combineLatest, map, of } from "rxjs";
+
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { AnalysisLayoutService, APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ContextImagePickerComponent, ImageSelection } from "../../../components/context-image-picker/context-image-picker.component";
 import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/range-slider/range-slider.component";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { AnalysisLayoutService, APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { WidgetType } from "../../../../widget/models/widgets.model";
+import { ImageUploader } from "src/app/utils/image-upload";
+
 
 export class ImageDisplayOptions {
   constructor(
@@ -137,6 +143,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
+    protected _endpointsService: APIEndpointsService,
     private _snackService: SnackbarService,
     private _contextImageDataService: ContextImageDataService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
@@ -660,6 +667,12 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   }
 
   onImport() {
+    // NOTE: Sadly this was originally for importing directly from MarsViewer's coreg feature. We were able to ask MarsViewer
+    // to list all images that show a given image area, and it was able to warp images taken from some angle/camera to the
+    // view space of an image taken from another angle/camera. This button allowed us to import a warped image that MarsViewer
+    // generated. Unfortunately just as this feature was about to go live, it was de-funded and cancelled. So this button
+    // has now become a "image upload" button
+    /*
     const entry = prompt("Enter token provided by MarsViewer");
     if (!entry) {
       return;
@@ -676,5 +689,28 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
         this._snackService.openError(err);
       },
     });
+    */
+
+    let snackId = -1;
+    const imageUploader = new ImageUploader(
+      this._snackService,
+      this._endpointsService,
+      this.dialog,
+      (chunkProgress: number, details?: string) => {
+        if (chunkProgress == 0) {
+          // Create progress
+          snackId = this._snackService.openProgress(details || "");
+        } else if (chunkProgress < 0 && snackId > -1) {
+          // Finished, end display of progress
+          this._snackService.closeProgress(snackId, details || "");
+          snackId = -1;
+        } else {
+          // Update progress
+          this._snackService.setProgress(snackId, details || "");
+        }
+      }
+    );
+
+    imageUploader.imageUpload(this.selectedScanId, "Add Image", true);
   }
 }
