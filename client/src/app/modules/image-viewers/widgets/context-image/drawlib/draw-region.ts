@@ -1,5 +1,5 @@
 import { CanvasWorldTransform } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { ContextImageItemTransform } from "../../../models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { ContextImageRegionLayer, RegionDisplayPolygon } from "../../../models/region";
 import { drawImageOrMaskWithOptionalTransform } from "./draw-image";
 import { RGBA } from "src/app/utils/colours";

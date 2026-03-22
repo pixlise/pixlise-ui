@@ -1,4 +1,4 @@
-import { ContextImageItemTransform } from "../../../models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 
 export function drawImageOrMaskWithOptionalTransform(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,

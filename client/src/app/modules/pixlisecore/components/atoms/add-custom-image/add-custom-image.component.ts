@@ -29,7 +29,7 @@
 
 import { Component, Inject } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
+import { ImageSelection } from "../context-image-picker/context-image-picker.component";
 
 
 export class DatasetCustomImageInfo {

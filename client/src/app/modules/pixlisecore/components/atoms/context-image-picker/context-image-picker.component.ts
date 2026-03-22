@@ -28,15 +28,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
-import { Subscription } from "rxjs";
-import { SDSFields, getPathBase, invalidPMC } from "src/app/utils/utils";
-import { ContextImageItemTransform } from "../../models/image-transform";
-import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
-import { makeImageTooltip } from "src/app/utils/image-details";
-import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { environment } from "src/environments/environment";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+
+import { Subscription } from "rxjs";
+
+import { SDSFields, getPathBase, invalidPMC } from "src/app/utils/utils";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
+
+import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
+import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
+import { makeImageTooltip } from "src/app/utils/image-details";
+
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
+import { environment } from "src/environments/environment";
+
 import {
   ImagePickerDialogComponent,
   ImagePickerDialogData,

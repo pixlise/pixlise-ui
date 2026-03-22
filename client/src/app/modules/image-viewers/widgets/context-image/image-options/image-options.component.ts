@@ -34,20 +34,19 @@ import { Observable, Subscription, combineLatest, map, of } from "rxjs";
 
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { AnalysisLayoutService, APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService, ContextImageDataService, ContextImagePickerComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
-import { ContextImagePickerComponent, ImageSelection } from "../../../components/context-image-picker/context-image-picker.component";
 import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/range-slider/range-slider.component";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { WidgetType } from "../../../../widget/models/widgets.model";
 import { ImageUploader } from "src/app/utils/image-upload";
+import { ImageSelection } from "src/app/modules/pixlisecore/components/atoms/context-image-picker/context-image-picker.component";
 
 
 export class ImageDisplayOptions {

@@ -3,7 +3,7 @@ import { MatSelectChange } from "@angular/material/select";
 import { ElementRef, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
-import { ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 
 import { AnalysisLayoutService, APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -45,10 +45,11 @@ import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-l
 import { ColourRamp } from "src/app/utils/colours";
 import { getPathBase, isValidNumber, makeValidFloatString } from "src/app/utils/utils";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
-import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
 import { rgbBytesToImage } from "src/app/utils/drawing";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { ImageUploader } from "src/app/utils/image-upload";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
+import { ImageSelection } from "src/app/modules/pixlisecore/components/atoms/context-image-picker/context-image-picker.component";
 
 
 @Component({

@@ -8,7 +8,7 @@ import { BaseChartDrawModel } from "src/app/modules/scatterplots/base/model-inte
 import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
-import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { ContextImageScanDrawModel, ScanPointPolygon } from "src/app/modules/image-viewers/models/context-image-draw-model";
 import { HullPoint, Footprint } from "src/app/modules/image-viewers/models/footprint";
 import { ContextImageMapLayer, getDrawParamsForRawValue, MapPointDrawParams, MapPointState, MapPointShape } from "src/app/modules/image-viewers/models/map-layer";

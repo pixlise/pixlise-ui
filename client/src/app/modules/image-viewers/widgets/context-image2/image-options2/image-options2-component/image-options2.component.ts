@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
-import { ContextImagePickerComponent, ImageSelection } from 'src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component';
+import { ImageSelection } from 'src/app/modules/pixlisecore/components/atoms/context-image-picker/context-image-picker.component';
 import { SliderValue } from 'src/app/modules/pixlisecore/components/atoms/slider/slider.component';
+import { ContextImagePickerComponent } from 'src/app/modules/pixlisecore/pixlisecore.module';
 
 
 export class ImageDisplayOptions2 {

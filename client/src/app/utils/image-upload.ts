@@ -1,11 +1,13 @@
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { concat, from, Observable, switchMap, tap } from "rxjs";
-import { ImageMatchTransform } from "../generated-protos/image";
-import { ImageUploadHttpRequest, ImageUploadHttpPartialInfo } from "../generated-protos/image-msgs";
-import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../modules/dataset-customisation/components/add-custom-image/add-custom-image.component";
+
+import { ImageMatchTransform } from "src/app/generated-protos/image";
+import { ImageUploadHttpRequest, ImageUploadHttpPartialInfo } from "src/app/generated-protos/image-msgs";
+
+import { SnackbarService, AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+
 import { SDSFields } from "./utils";
-import { APIEndpointsService } from "../modules/pixlisecore/services/apiendpoints.service";
-import { SnackbarService } from "../modules/pixlisecore/pixlisecore.module";
 
 
 export class ImageUploader {

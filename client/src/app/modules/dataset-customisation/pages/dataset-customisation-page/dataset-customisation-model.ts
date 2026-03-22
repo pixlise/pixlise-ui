@@ -1,4 +1,5 @@
-import { ContextImageItemTransform, ContextImageModel } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageModel } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 
 export class DatasetCustomisationModel extends ContextImageModel {
   overlayBrightness: number = 1;

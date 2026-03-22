@@ -34,7 +34,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="txt-widget-title">{{ title }}</div>
   </div>
 
-  <div *ngIf="params.allowMatched" class="meta-fields">
+  @if (params.allowMatched) {
+  <div class="meta-fields">
     <div class="row">
       <span>Matched MCC image</span>
       <image-picker
@@ -47,6 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
         (selectedImage)="onChangeAlignToImage($event)"></image-picker>
     </div>
   </div>
+  }
 
   <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
     <ngx-dropzone-label>
@@ -70,10 +72,10 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </ngx-dropzone-label>
     <ngx-dropzone-preview *ngFor="let f of droppedFiles" [removable]="true" (removed)="onRemoveDroppedFile(f)">
-      <ngx-dropzone-label
-        ><div class="filename">{{ f.name }}</div>
-        <div class="filetype">({{ f.type }})</div></ngx-dropzone-label
-      >
+      <ngx-dropzone-label>
+        <div class="filename">{{ f.name }}</div>
+        <div class="filetype">({{ f.type }})</div>
+      </ngx-dropzone-label>
     </ngx-dropzone-preview>
   </div>
 

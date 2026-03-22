@@ -12,7 +12,7 @@ import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "src/ap
 import { ContextImageModelLoadedData, ContextImageScanModel, PointCluster } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { Point, Rect } from "src/app/models/Geometry";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { PMCDataValues } from "src/app/expression-language/data-values";
