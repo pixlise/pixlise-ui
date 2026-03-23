@@ -34,14 +34,16 @@
   .header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 4px;
 
-    .scan-filter {
-      margin-left: auto;
-    }
-
-    mat-select {
-      min-width: 200px !important;
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      mat-select {
+        min-width: 200px !important;
+      }
     }
   }
 

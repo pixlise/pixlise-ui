@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
 import { Observable, Subscription, combineLatest, map, of } from "rxjs";
 
@@ -45,7 +45,6 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { WidgetType } from "../../../../widget/models/widgets.model";
-import { ImageUploader } from "src/app/utils/image-upload";
 import { ImageSelection } from "src/app/modules/pixlisecore/components/atoms/context-image-picker/context-image-picker.component";
 
 
@@ -146,8 +145,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     private _snackService: SnackbarService,
     private _contextImageDataService: ContextImageDataService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
-    public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>,
-    public dialog: MatDialog
+    public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>
     //private _exportDataService: ExportDataService
   ) {
     // Copy the options so we can have "reset" buttons for eg
@@ -663,53 +661,5 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   onActiveWidgetIdsChanged(ids: string[]) {
     this.activeWidgetIds = ids;
     this.publishOptionChange();
-  }
-
-  onImport() {
-    // NOTE: Sadly this was originally for importing directly from MarsViewer's coreg feature. We were able to ask MarsViewer
-    // to list all images that show a given image area, and it was able to warp images taken from some angle/camera to the
-    // view space of an image taken from another angle/camera. This button allowed us to import a warped image that MarsViewer
-    // generated. Unfortunately just as this feature was about to go live, it was de-funded and cancelled. So this button
-    // has now become a "image upload" button
-    /*
-    const entry = prompt("Enter token provided by MarsViewer");
-    if (!entry) {
-      return;
-    }
-
-    // We base64 decode it to find the URL
-    const triggerUrl = atob(entry);
-
-    this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: triggerUrl })).subscribe({
-      next: (resp: ImportMarsViewerImageResp) => {
-        this._snackService.openSuccess(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
-      },
-      error: err => {
-        this._snackService.openError(err);
-      },
-    });
-    */
-
-    let snackId = -1;
-    const imageUploader = new ImageUploader(
-      this._snackService,
-      this._endpointsService,
-      this.dialog,
-      (chunkProgress: number, details?: string) => {
-        if (chunkProgress == 0) {
-          // Create progress
-          snackId = this._snackService.openProgress(details || "");
-        } else if (chunkProgress < 0 && snackId > -1) {
-          // Finished, end display of progress
-          this._snackService.closeProgress(snackId, details || "");
-          snackId = -1;
-        } else {
-          // Update progress
-          this._snackService.setProgress(snackId, details || "");
-        }
-      }
-    );
-
-    imageUploader.imageUpload(this.selectedScanId, "Add Image", true);
   }
 }

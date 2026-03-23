@@ -16,7 +16,7 @@ import { SnackbarDataItem, SnackbarType } from "../models/snackbar-data";
 export class SnackbarService implements OnDestroy {
   subscriptions: Subscription = new Subscription();
   history: SnackbarDataItem[] = [];
-  private _activeProgress = new Map<number, MatSnackBarRef<TextOnlySnackBar>>();
+  private _activeProgress = new Map<number, MatSnackBarRef<SnackBarPopupComponent>>();
   private _nextActiveProgressId = 1;
 
   constructor(
@@ -142,11 +142,16 @@ export class SnackbarService implements OnDestroy {
   }
 
   openProgress(message: string, action: string = "Dismiss"): number {
-    const ref = this._snackBar.open(message, action, {
+    const ref = this._snackBar.openFromComponent(SnackBarPopupComponent, {
+      data: {
+        message: message,
+        details: "",
+        action: "Dismiss",
+        type: "update"
+      },
       horizontalPosition: "left",
       panelClass: ["pixlise-message"],
     });
-
 
     const id = this._nextActiveProgressId
     this._activeProgress.set(id, ref);
@@ -161,6 +166,8 @@ export class SnackbarService implements OnDestroy {
     }
 
     const msg = this._activeProgress.get(id);
+
+    // Can't seem to edit the text, so we have to replace the notification... ugly because there's animation going on
     msg!.instance.data.message = message;
   }
 
@@ -173,7 +180,6 @@ export class SnackbarService implements OnDestroy {
     msg?.dismiss();
 
     this._activeProgress.delete(id);
-    this.addMessageToHistory(message, "", "", "info");
   }
 
   clearHistory(): void {

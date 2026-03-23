@@ -32,10 +32,14 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="dlg-border-with-backdrop image-picker-container">
   <h1 class="header">
     Image Picker
-
-    <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
-      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
-    </mat-select>
+    <div class="header-right">
+      <push-button buttonStyle="yellow" (onClick)="onImport()">Import Image</push-button>
+      @if (configuredScans.length > 0) {
+        <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
+          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+        </mat-select>
+      }
+     </div>
   </h1>
   <div class="options-container">
     <div class="image-options">

@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from "@angular/material/dialog";
 import { catchError, from, mergeMap, Subscription, tap, timer, toArray } from "rxjs";
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
@@ -40,6 +40,7 @@ import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiend
 import { makeImageTooltip } from "src/app/utils/image-details";
 import { getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
+import { ImageUploader } from "src/app/utils/image-upload";
 
 export class ImageChoice {
   constructor(
@@ -116,7 +117,8 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _endpointsService: APIEndpointsService,
     private _dataService: APIDataService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    public dialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -491,5 +493,62 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     navigator.clipboard.writeText(text).then(() => {
       this._snackService.openSuccess("Copied to clipboard!");
     });
+  }
+
+  onImport() {
+    // NOTE: This was originally on ImageOptionsComponent, moved here after the change from this being the MarsViewer importer:
+    //
+    // NOTE: Sadly this was originally for importing directly from MarsViewer's coreg feature. We were able to ask MarsViewer
+    // to list all images that show a given image area, and it was able to warp images taken from some angle/camera to the
+    // view space of an image taken from another angle/camera. This button allowed us to import a warped image that MarsViewer
+    // generated. Unfortunately just as this feature was about to go live, it was de-funded and cancelled. So this button
+    // has now become a "image upload" button
+    /*
+    const entry = prompt("Enter token provided by MarsViewer");
+    if (!entry) {
+      return;
+    }
+
+    // We base64 decode it to find the URL
+    const triggerUrl = atob(entry);
+
+    this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: triggerUrl })).subscribe({
+      next: (resp: ImportMarsViewerImageResp) => {
+        this._snackService.openSuccess(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
+      },
+      error: err => {
+        this._snackService.openError(err);
+      },
+    });
+    */
+
+    if (this._filterScanId.length <= 0) {
+      this._snackService.open("Select a scan first!");
+      return;
+    }
+
+    let snackId = -1;
+    const imageUploader = new ImageUploader(
+      this._snackService,
+      this._endpointsService,
+      this.dialog,
+      (chunkProgress: number, details?: string) => {
+        if (chunkProgress == 0) {
+          // Create progress
+          snackId = this._snackService.openProgress(details || "");
+        } else if (chunkProgress < 0 && snackId > -1) {
+          // Finished, end display of progress
+          this._snackService.closeProgress(snackId, details || "");
+          snackId = -1;
+
+          this.fetchImagesForScans([this._filterScanId]);
+        } else {
+          // Update progress
+          this._snackService.setProgress(snackId, details || "");
+        }
+      }
+    );
+
+    imageUploader.imageUpload(this._filterScanId, "Import Image", true);
   }
 }

@@ -35,7 +35,7 @@ interface SnackBarPopupData {
   message: string;
   details?: string;
   action: string;
-  type: "warning" | "error" | "success";
+  type: "warning" | "error" | "success" | "update";
 }
 
 @Component({
@@ -65,6 +65,8 @@ export class SnackBarPopupComponent {
         return "error";
       case "success":
         return "check_circle";
+      case "update":
+        return "wait";
     }
   }
 
