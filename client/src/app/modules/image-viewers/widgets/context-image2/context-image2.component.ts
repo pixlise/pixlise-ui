@@ -215,7 +215,13 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   }
 
   private load(imageName: string) {
-    console.log(`ContextImageV2 load: image "${imageName} triggered...`)
+    if (!imageName) {
+      console.log(`ContextImageV2 load: image "${imageName}" not loading`)
+      return;
+    }
+
+    console.log(`ContextImageV2 load: image "${imageName}" triggered...`);
+
     this.isWidgetDataLoading = true;
     this.imageDetails = `Loading ${imageName}...`;
 
