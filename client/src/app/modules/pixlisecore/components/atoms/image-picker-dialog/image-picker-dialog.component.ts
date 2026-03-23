@@ -552,14 +552,3 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     imageUploader.imageUpload(this._filterScanId, "Import Image", true);
   }
 }
-
-<html> <head><title>413 Request Entity Too Large</title></head>
-<body> <center><h1>413 Request Entity Too Large</h1></center>
-<hr><center>nginx/1.29.6</center> </body>
-</html>
-<!-- a padding to disable MSIE and Chrome friendly error page -->
-<!-- a padding to disable MSIE and Chrome friendly error page -->
-<!-- a padding to disable MSIE and Chrome friendly error page -->
-<!-- a padding to disable MSIE and Chrome friendly error page -->
-<!-- a padding to disable MSIE and Chrome friendly error page -->
-<!-- a padding to disable MSIE and Chrome friendly error page -->
