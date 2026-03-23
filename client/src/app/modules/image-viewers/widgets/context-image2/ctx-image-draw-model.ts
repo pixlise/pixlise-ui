@@ -517,7 +517,10 @@ export class ContextImage2DrawModel {
 
     // Add some lines that show the box corners more clearly when it's small
     if (drawCorners) {
-      const sz = Math.max(frustumWidth, frustumHeight);
+      let sz = Math.max(frustumWidth, frustumHeight);
+      if (sz > 50) {
+        sz = 50;
+      }
       const cornerVec = new Point(sz, sz);
       pts.push(
         -cornerVec.x, -cornerVec.y, 0,
