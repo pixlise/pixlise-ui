@@ -1,5 +1,5 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { Subscription, Subject, combineLatest, Observable, map, of, switchMap } from "rxjs";
+import { Subscription, Subject, combineLatest, Observable, map, of, switchMap, throwError, catchError, tap } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { CanvasSizeNotification } from "../scan-3d-view/interactive-canvas-3d.component";
 import { APICachedDataService, AnalysisLayoutService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -15,6 +15,8 @@ import { TileImageLoader } from "./tile-loader";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { ImageDisplayOptions2, ImageOptions2Component, ImagePickerParams2, ImagePickerResult2 } from "./image-options2/image-options2-component/image-options2.component";
+import { isValidNumber, SentryHelper } from "src/app/utils/utils";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 
 @Component({
   selector: "context-image2",
@@ -190,7 +192,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         if (needInit && (!state || state.contextImage.length <= 0)) {
           this.getDefaultImage().subscribe(
             (resp: string) => {
-              this.load(resp)
+              this.load(resp).subscribe(() => {
+                this.mdl.setPanZoom(new Point(state.cameraPosition!.x, state.cameraPosition!.y), state.cameraZoom);
+                this.mdl.needsDraw$.next();
+              })
             }
           )
           return;
@@ -198,7 +203,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
         // If not our first time, but we have state, and context image differs from what we have loaded... load!
         if (!needInit && state && state.contextImage != this.mdl.imageName) {
-          this.load(state.contextImage);
+          this.load(state.contextImage).subscribe(() => {
+                this.mdl.setPanZoom(new Point(state.cameraPosition!.x, state.cameraPosition!.y), state.cameraZoom);
+            this.mdl.needsDraw$.next();
+          });
         }
       }
     ));
@@ -214,10 +222,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
   }
 
-  private load(imageName: string) {
+  private load(imageName: string): Observable<void> {
     if (!imageName) {
       console.log(`ContextImageV2 load: image "${imageName}" not loading`)
-      return;
+      return throwError(() => {});
     }
 
     console.log(`ContextImageV2 load: image "${imageName}" triggered...`);
@@ -225,7 +233,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this.isWidgetDataLoading = true;
     this.imageDetails = `Loading ${imageName}...`;
 
-    this._cacheDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
+    return this._cacheDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
       switchMap((imgResp: ImageGetResp) => {
         if (!imgResp.image || !imgResp.image.pyramidId) {
           throw new Error("Error downloading image structure for: " + imageName);
@@ -251,20 +259,17 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
             this.mdl.setImage(imageName, imgResp.image!, pyramidResp.image!, layer0Texture, tileLoader);
 
             this.updateImageDetails();
-            this.mdl.needsDraw$.next();
-
-            return null;
           })
         )}
       )
-    ).subscribe({
-      next: () => {
+    ).pipe(tap(() => {
         this.isWidgetDataLoading = false;
-      },
-      error: (err) => {
+      }),
+      catchError((err) => {
         this._snackService.openError(err);
-      }
-    });
+        throw err;
+      })
+    );
   }
 
   onCanvasSize(event: CanvasSizeNotification) {
@@ -380,7 +385,9 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     }
 
     if (newIdx > -1) {
-      this.load(images[newIdx]);
+      this.load(images[newIdx]).subscribe(() => {
+        this.mdl.needsDraw$.next();
+      });
     }
   }
 
@@ -413,7 +420,9 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
       if (this.mdl.imageName != result.options.currentImage) {
         // If the image has changed, reload
-        this.load(result.options.currentImage);
+        this.load(result.options.currentImage).subscribe(() => {
+          this.mdl.needsDraw$.next();
+        });
       }
 
       if (this._shownImageOptions?.componentInstance?.loadOptions) {
@@ -454,6 +463,29 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   }
 
   protected saveState() {
+    // Ensure we don't send up garbage, we've had it fail to reload after these were NaNs or whatever
+    if (
+      !isValidNumber(this.mdl.pan.x, true) ||
+      !isValidNumber(this.mdl.pan.y, true) ||
+      !isValidNumber(this.mdl.zoom, false)
+    ) {
+      SentryHelper.logMsg(
+        true,
+        `Replacing invalid pan (${this.mdl.pan.x}, ${this.mdl.pan.y})/zoom(${this.mdl.zoom}) with defaults before saving view state`
+      );
+      this.mdl.resetPanZoom();
+    }
+
+    this.onSaveWidgetData.emit(
+      ContextImage2State.create({
+        contextImage: this.mdl.imageName,
+        cameraZoom: this.mdl.zoom,
+        cameraPosition: Coordinate3D.create({x: this.mdl.pan.x, y: this.mdl.pan.y, z: 0}),
+        // cameraPosition: Coordinate3D | undefined;
+        // cameraRotation: Coordinate4D | undefined;
+        // cameraTarget: Coordinate3D | undefined;
+      })
+    );
   }
 
   protected getDefaultImage(): Observable<string> {

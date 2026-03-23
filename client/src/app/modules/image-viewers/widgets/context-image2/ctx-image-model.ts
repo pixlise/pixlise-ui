@@ -80,9 +80,14 @@ export class ContextImage2Model {
     this.update();
   }
 
-  setPan(pan: Point) {
+  setPanZoom(pan: Point, zoom?: number) {
     this._pan = pan;
-    this.update();
+
+    if (zoom !== undefined) {
+      this.setZoom(zoom);
+    } else {
+      this.update();
+    }
   }
 
   panBy(drag: Point) {
