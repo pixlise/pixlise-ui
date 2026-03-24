@@ -12,7 +12,7 @@ export function makeImageTooltip(forImage: ScanImage): string {
   }*/
   result += `Associated Scans: ${forImage.associatedScanIds.join(",")}\n`;
   result += `Resolution: ${forImage.width} x ${forImage.height}\n`;
-  result += `File Size: ${getMB(forImage.fileSize)}\n`;
+  result += `File Size: ${getMB(forImage.fileSize64)}\n`;
 
   let lbl = scanImagePurposeToJSON(forImage.purpose);
   // Snip off the stuff at the start
