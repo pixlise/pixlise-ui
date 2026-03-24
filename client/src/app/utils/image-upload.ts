@@ -154,9 +154,10 @@ export class ImageUploader {
           // Subscribe on-by-one
           concat(...chunks$).subscribe({
             error: err => {
-              console.log(`Error uploading ${result.imageToUpload.name}: ${err}`);
+              const errMsg = `Error uploading ${result.imageToUpload.name}: ${err}`;
+              console.log(errMsg);
 
-              this._snackService.openError(err);
+              this._snackService.openError(errMsg);
               this.setWait(-1);
             },
             complete: () => {
@@ -168,9 +169,10 @@ export class ImageUploader {
           });
         },
         error: err => {
-          console.log(`Error determining resume position of ${result.imageToUpload.name}: ${err}`);
+          const errMsg = `Error determining resume position of ${result.imageToUpload.name}: ${err}`;
+          console.log(errMsg);
 
-          this._snackService.openError(err);
+          this._snackService.openError(errMsg);
           this.setWait(-1);
         }
       });
@@ -219,7 +221,7 @@ export class ImageUploader {
     };
 
     if (totalChunks > 1) {
-      this.setWait(idx+1, idx == totalChunks-1 ? "Processing Upload" : `Uploading ${fileName} (${idx / totalChunks * 100}%)...`);
+      this.setWait(idx+1, idx == totalChunks-1 ? "Processing Upload" : `Uploading ${fileName} (${Math.round(idx / totalChunks * 100)}%)...`);
     }
 
     return this._endpointsService.uploadImage(ImageUploadHttpRequest.create(req)).pipe(
