@@ -7,7 +7,7 @@ import { ImageUploadHttpRequest, ImageUploadHttpPartialInfo } from "src/app/gene
 import { SnackbarService, AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
-import { SDSFields } from "./utils";
+import { httpErrorToString, SDSFields } from "./utils";
 
 
 export class ImageUploader {
@@ -154,7 +154,7 @@ export class ImageUploader {
           // Subscribe on-by-one
           concat(...chunks$).subscribe({
             error: err => {
-              const errMsg = `Error uploading ${result.imageToUpload.name}: ${err}`;
+              const errMsg = httpErrorToString(err, `Error uploading ${result.imageToUpload.name}`);
               console.log(errMsg);
 
               this._snackService.openError(errMsg);
@@ -169,7 +169,7 @@ export class ImageUploader {
           });
         },
         error: err => {
-          const errMsg = `Error determining resume position of ${result.imageToUpload.name}: ${err}`;
+          const errMsg = httpErrorToString(err, `EError determining resume position of ${result.imageToUpload.name}:`);
           console.log(errMsg);
 
           this._snackService.openError(errMsg);
