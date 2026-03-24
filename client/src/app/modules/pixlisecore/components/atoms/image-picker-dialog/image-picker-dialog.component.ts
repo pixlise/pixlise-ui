@@ -31,7 +31,7 @@ import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@ang
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from "@angular/material/dialog";
 import { catchError, from, mergeMap, Subscription, tap, timer, toArray } from "rxjs";
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
-import { ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
+import { ImageDeleteReq, ImageDeleteResp, ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -41,6 +41,7 @@ import { makeImageTooltip } from "src/app/utils/image-details";
 import { getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 import { ImageUploader } from "src/app/utils/image-upload";
+import { LocalStorageService } from "../../../services/local-storage.service";
 
 export class ImageChoice {
   constructor(
@@ -98,6 +99,11 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   public selectedChoice: ImageChoice | null = null;
   public selectedImageDetails: string = "";
 
+  // Just temporarily remember images that were deleted, so
+  // if we re-request them we include "salt" in their URL to
+  // bypass cache, otherwise we keep loading the same image!
+  private _deletedImages = new Set<string>();
+
   @Output() onSelectedImageChange = new EventEmitter();
 
   _subs = new Subscription();
@@ -118,6 +124,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     private _endpointsService: APIEndpointsService,
     private _dataService: APIDataService,
     private _snackService: SnackbarService,
+    private _localStorageService: LocalStorageService,
     public dialog: MatDialog
   ) {}
 
@@ -176,7 +183,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
-  fetchImagesForScans(scanIds: string[]): void {
+  fetchImagesForScans(scanIds: string[], forceReload: boolean = false): void {
     if (scanIds.length === 0) {
       return;
     }
@@ -184,7 +191,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     this.loadingList = true;
     this._subs.add(
       this._cachedDataService
-        .getImageList(ImageListReq.create({ scanIds }))
+        .getImageList(ImageListReq.create({ scanIds }), forceReload)
         .pipe(
           tap(resp => {
             this.loadingList = false;
@@ -290,7 +297,9 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
         })
       );
     } else {
-      return this._endpointsService.loadImageForPath(imgChoice.path).pipe(
+      // If the image as recently deleted, force the load, because they may have uploaded a newer version of it, we want to ensure
+      // that's displayed, not something cached!
+      return this._endpointsService.loadImageForPath(imgChoice.path, this._deletedImages.has(imgChoice.name)).pipe(
         tap(img => {
           imgChoice.url = img.src;
         }),
@@ -541,7 +550,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
           this._snackService.closeProgress(snackId, details || "");
           snackId = -1;
 
-          this.fetchImagesForScans([this._filterScanId]);
+          this.fetchImagesForScans([this._filterScanId], true);
         } else {
           // Update progress
           this._snackService.setProgress(snackId, details || "");
@@ -550,5 +559,28 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     );
 
     imageUploader.imageUpload(this._filterScanId, "Import Image", true);
+  }
+
+  onDeleteImage(imagePath: string): void {
+    this._dataService.sendImageDeleteRequest(ImageDeleteReq.create({ name: imagePath })).subscribe({
+      next: (resp: ImageDeleteResp) => {
+        this._snackService.openSuccess("Image deleted", "Deleted image: " + imagePath);
+        this._deletedImages.add(imagePath);
+
+        // Delete from cache too!
+        const imageUrl = APIEndpointsService.getImageURL(imagePath);
+        this._localStorageService.deleteImage(imageUrl).then(() => {
+          this.fetchImagesForScans([this._filterScanId], true);
+        });
+
+        // If it's selected, unselect it
+        if (this.selectedChoice?.path == imagePath) {
+          this.selectedChoice = null;
+        }
+      },
+      error: err => {
+        this._snackService.openError(`Error deleting image: ${imagePath}`, err);
+      },
+    });
   }
 }

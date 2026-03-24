@@ -23,12 +23,21 @@ export class APIEndpointsService {
   ) {}
 
   // Path being the key of the image in the images DB, so scanid/filename.png for example
-  loadImageForPath(imagePath: string): Observable<HTMLImageElement> {
+  loadImageForPath(imagePath: string, forceReload: boolean = false): Observable<HTMLImageElement> {
     if (!imagePath) {
       throw new Error("No image path provided");
     }
 
-    const apiUrl = APIEndpointsService.getImageURL(imagePath);
+    let apiUrl = APIEndpointsService.getImageURL(imagePath);
+
+    if (forceReload) {
+      // This was recently deleted, to ensure we don't read from disk cache, add "salt". This is
+      // to prevent a user re-uploading a new copy of an image (with the same name) from being stuck
+      // seeing their previous copy. NOTE, this doesn't persist beyond page reloads, but by then maybe
+      // local cache won't be preventing it from loading?
+      apiUrl += "?nocache=" + Date.now();
+    }
+
     return this.loadImageFromURL(apiUrl);
   }
 

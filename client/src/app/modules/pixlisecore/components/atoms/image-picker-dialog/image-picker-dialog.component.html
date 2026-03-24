@@ -90,30 +90,37 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
     <div class="expanded-preview" *ngIf="selectedChoice">
-        @if (selectedChoice?.url === 'loading' || selectedChoice?.url === 'error') {
-          <div class="centered">
-          @if (selectedChoice?.url === 'loading') {
-            <wait-spinner #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
-          } @else {
-            <img
-              class="error"
-              src="assets/icons/error-triangle.svg"
-              [alt]="selectedChoice?.name" />
-          }
-          </div>
+      @if (selectedChoice?.url === 'loading' || selectedChoice?.url === 'error') {
+        <div class="centered">
+        @if (selectedChoice?.url === 'loading') {
+          <wait-spinner #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
         } @else {
           <img
-            class="selected-preview-image"
-            [src]="selectedChoice?.url"
+            class="error"
+            src="assets/icons/error-triangle.svg"
             [alt]="selectedChoice?.name" />
         }
-      <div class="image-option-content" *ngIf="selectedChoice">
-        <h5 class="name">{{ selectedChoice?.name }}</h5>
+        </div>
+      } @else {
+        <img
+          class="selected-preview-image"
+          [src]="selectedChoice?.url"
+          [alt]="selectedChoice?.name" />
+      }
+      @if (selectedChoice) {
+      <div class="image-option-content">
+        <div class="row">
+          <h5 class="name">{{ selectedChoice?.name }}</h5>
+          <action-button
+              [confirmText]="'Are you sure you want to delete image ' + selectedChoice?.path + '?'"
+              action="delete"
+              (onClick)="onDeleteImage(selectedChoice!.path)"></action-button>
+        </div>
         <!-- <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
           <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
         </h5> -->
         @if (selectedChoice.marsViewerURL) {
-          <h5 class="mars-viewer">
+          <h5 class="row mars-viewer">
             <b>Mars Viewer: </b>
             <a title="Open in MarsViewer" [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer">
               <img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer" />
@@ -122,6 +129,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </h5>
         }
       </div>
+      }
       <div class="details-container">
         <div class="image-details-area">{{ selectedImageDetails }}</div>
       </div>

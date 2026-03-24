@@ -655,10 +655,10 @@ export class APICachedDataService {
     return result;
   }
 
-  getImageList(req: ImageListReq): Observable<ImageListResp> {
+  getImageList(req: ImageListReq, forceReload: boolean = false): Observable<ImageListResp> {
     const cacheId = JSON.stringify(ImageListReq.toJSON(req));
     let result = this._imageListReqMap.get(cacheId);
-    if (result === undefined) {
+    if (forceReload || result === undefined) {
       // Have to request it!
       result = this._dataService.sendImageListRequest(req).pipe(shareReplay(1));
 
