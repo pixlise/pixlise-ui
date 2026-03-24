@@ -132,8 +132,8 @@ export class ImageUploader {
         originScanId: scanId,
       };
 
-      this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe(
-        (resp: ImageUploadHttpPartialInfo) => {
+      this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe({
+        next: (resp: ImageUploadHttpPartialInfo) => {
           const chunkSize = 20*1024*1024;
           const totalChunks = Math.ceil(result.imageToUpload.size / chunkSize);
 
@@ -166,7 +166,14 @@ export class ImageUploader {
               this.setWait(-1);
             }
           });
-        });
+        },
+        error: err => {
+          console.log(`Error determining resume position of ${result.imageToUpload.name}: ${err}`);
+
+          this._snackService.openError(err);
+          this.setWait(-1);
+        }
+      });
     });
   }
 
@@ -174,24 +181,24 @@ export class ImageUploader {
     const chunks$: Observable<ImageUploadHttpPartialInfo>[] = [];
 
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-    const start = chunkIndex * chunkSize;
-    const end = Math.min(start + chunkSize, file.size);
-    const chunk = file.slice(start, end); // Extract chunk
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunk = file.slice(start, end); // Extract chunk
 
-    const chunkByte$ = new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(chunk);
-    });
-  
-    const obs$ = from(chunkByte$ as Promise<ArrayBuffer>);
-    chunks$.push(obs$.pipe(
-      switchMap(chunk => {
-      console.log(`Uploading ${fileName} chunk ${chunkIndex} from ${start}->${end}...`);
-      return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks);
-      })
-    ));
+      const chunkByte$ = new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(chunk);
+      });
+    
+      const obs$ = from(chunkByte$ as Promise<ArrayBuffer>);
+      chunks$.push(obs$.pipe(
+        switchMap(chunk => {
+        console.log(`Uploading ${fileName} chunk ${chunkIndex} from ${start}->${end}...`);
+        return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks);
+        })
+      ));
     }
 
     return chunks$;
@@ -212,7 +219,7 @@ export class ImageUploader {
     };
 
     if (totalChunks > 1) {
-      this.setWait(idx+1, idx == totalChunks-1 ? "Processing Upload" : `Sending part ${idx} of ${totalChunks}`);
+      this.setWait(idx+1, idx == totalChunks-1 ? "Processing Upload" : `Uploading ${fileName} (${idx / totalChunks * 100}%)...`);
     }
 
     return this._endpointsService.uploadImage(ImageUploadHttpRequest.create(req)).pipe(
