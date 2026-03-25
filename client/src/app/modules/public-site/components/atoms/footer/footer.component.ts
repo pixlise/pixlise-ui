@@ -29,9 +29,7 @@
 
 import { Component, OnInit, Input } from "@angular/core";
 
-// import { AuthenticationService } from "src/app/services/authentication.service";
 import { Navigation } from "../../navigation";
-// import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 

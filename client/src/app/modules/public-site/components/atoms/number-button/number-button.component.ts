@@ -29,11 +29,8 @@
 
 import { Component, OnInit, Input } from "@angular/core";
 import { Router, NavigationExtras } from "@angular/router";
-// import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { environment } from "src/environments/environment";
-
-// import { AuthenticationService } from "src/app/services/authentication.service";
 
 export const LoginPrefix = "login:";
 export const SignupPrefix = "signup:";

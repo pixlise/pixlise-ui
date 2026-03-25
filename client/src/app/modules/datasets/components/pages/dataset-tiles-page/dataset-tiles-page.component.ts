@@ -38,7 +38,6 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { combineLatest, Observable, Subscription } from "rxjs";
 
-// import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 
 import {
