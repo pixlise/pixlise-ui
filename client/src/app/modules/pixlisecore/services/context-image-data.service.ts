@@ -6,7 +6,7 @@ import { WidgetError, DataSourceParams, RegionDataResults } from "src/app/module
 import { SnackbarService } from "./snackbar.service";
 import { WidgetDataService } from "./widget-data.service";
 import { MinMax } from "src/app/models/BasicTypes";
-import { ColourRamp } from "src/app/utils/colours";
+import { ColourRamp, RGBA } from "src/app/utils/colours";
 import { ContextImageScanModelGenerator } from "src/app/modules/image-viewers/widgets/context-image/context-image-scan-model-generator";
 import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "src/app/modules/image-viewers/models/map-layer";
 import { ContextImageModelLoadedData, ContextImageScanModel, PointCluster } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
@@ -34,6 +34,7 @@ import { HullPoint as protoHullPoint } from "src/app/generated-protos/scan-entry
 import { HullPoint } from "../../image-viewers/models/footprint";
 import { ScanPoint } from "../../image-viewers/models/scan-point";
 import { ScanPointPolygon } from "../../image-viewers/models/context-image-draw-model";
+import { environment } from "src/environments/environment";
 
 export type SyncedTransform = {
   scale: Point;
@@ -493,34 +494,48 @@ export class ContextImageDataService {
             throw new Error(`Failed to retrieve scan: ${scanId}`);
           }
           // Now that we know the scan's detector, we can request the rest of the stuff we want
-          const requests = [
-            this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
-            this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
-            this._cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: scanListResp.scans[0].instrumentConfig })),
+          const requests: (Observable<ScanBeamLocationsResp> | Observable<ScanEntryResp> | Observable<DetectorConfigResp> | Observable<ImageScanEntryDisplayElementsGetResp>)[] = [
             this._cachedDataService.getScanEntryDisplayPolygons(ImageScanEntryDisplayElementsGetReq.create({imageName: imageName, scanId: scanId, beamVersion: beamLocVersion}))
           ];
 
+          if (environment.comparePolygonGenerationOutput) {
+            // For debugging purposes
+            requests.push(this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })));
+            requests.push(this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })));
+            requests.push(this._cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: scanListResp.scans[0].instrumentConfig })));
+          }
+
           return combineLatest(requests).pipe(
             map((results: (ScanBeamLocationsResp | ScanEntryResp | DetectorConfigResp | ImageScanEntryDisplayElementsGetResp)[]) => {
-              const beamResp: ScanBeamLocationsResp = results[0] as ScanBeamLocationsResp;
-              const scanEntryResp: ScanEntryResp = results[1] as ScanEntryResp;
-              const detConfResp: DetectorConfigResp = results[2] as DetectorConfigResp;
-              const imgDispResp: ImageScanEntryDisplayElementsGetResp = results[3] as ImageScanEntryDisplayElementsGetResp;
+              const imgDispResp: ImageScanEntryDisplayElementsGetResp = results[0] as ImageScanEntryDisplayElementsGetResp;
 
-              if (!scanListResp.scans || scanListResp.scans.length != 1 || !scanListResp.scans[0]) {
-                throw new Error(`Failed to get scan summary for ${scanId}`);
+              if (environment.comparePolygonGenerationOutput) {
+                // For debugging purposes
+                const beamResp: ScanBeamLocationsResp = results[1] as ScanBeamLocationsResp;
+                const scanEntryResp: ScanEntryResp = results[2] as ScanEntryResp;
+                const detConfResp: DetectorConfigResp = results[3] as DetectorConfigResp;
+
+                if (!scanListResp.scans || scanListResp.scans.length != 1 || !scanListResp.scans[0]) {
+                  throw new Error(`Failed to get scan summary for ${scanId}`);
+                }
+
+                if (!detConfResp.config) {
+                  throw new Error(`Failed to get detector config: ${scanListResp.scans[0].instrumentConfig}`);
+                }
+
+                // Set beam data (this reads beams & turns it into scan points, polygons for each point and calculates a footprint)
+                const gen = new ContextImageScanModelGenerator();
+                const mdl = gen.processBeamData(imageName, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, beamLocVersion, beamIJs, detConfResp);
+                this.compareModels(mdl, imgDispResp);
               }
 
-              if (!detConfResp.config) {
-                throw new Error(`Failed to get detector config: ${scanListResp.scans[0].instrumentConfig}`);
-              }
-
-              // Set beam data (this reads beams & turns it into scan points, polygons for each point and calculates a footprint)
-              const gen = new ContextImageScanModelGenerator();
-              const mdl = gen.processBeamData(imageName, scanListResp.scans[0], scanEntryResp.entries, beamResp.beamLocations, beamLocVersion, beamIJs, detConfResp);
-
-              this.compareModels(mdl, imgDispResp);
-              const resultMdl = this.useModel(mdl, imgDispResp);
+              const resultMdl = this.useModel(
+                scanId,
+                scanListResp.scans[0].title,
+                imageName,
+                beamLocVersion,
+                imgDispResp
+              );
 
               //return mdl;
               return resultMdl;
@@ -532,7 +547,10 @@ export class ContextImageDataService {
   }
 
   private useModel(
-    generatedMdl: ContextImageScanModel,
+    scanId: string,
+    scanTitle: string,
+    imageName: string,
+    beamLocVersion: number,
     imgDispResp: ImageScanEntryDisplayElementsGetResp): ContextImageScanModel {
     const bbox: Rect = new Rect(imgDispResp.scanPointBBox!.x, imgDispResp.scanPointBBox!.y, imgDispResp.scanPointBBox!.w, imgDispResp.scanPointBBox!.h);
     const clusters: PointCluster[] = [];
@@ -585,10 +603,10 @@ export class ContextImageDataService {
     }
 
     return new ContextImageScanModel(
-      generatedMdl.scanId,
-      generatedMdl.scanTitle,
-      generatedMdl.imageName,
-      generatedMdl.beamLocVersion,
+      scanId,
+      scanTitle,
+      imageName,
+      beamLocVersion,
       clusters,
       scanPts,
       scanPointPolygons,
@@ -597,7 +615,7 @@ export class ContextImageDataService {
       imgDispResp.beamRadiusMM / imgDispResp.pixelToMMConversion,
       imgDispResp.scanPointDisplayRadius,
       bbox,
-      generatedMdl.scanPointColourOverrides
+      new Map<number, RGBA>()
     );
   }
 

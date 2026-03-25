@@ -54,6 +54,7 @@ export const environment = {
   skipMemoizeKeys: [],
   disableExpressionMemoisation: false,
   readBeamIJSwapped: true,
+  comparePolygonGenerationOutput: false
 };
 
 /*
