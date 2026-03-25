@@ -132,12 +132,12 @@ export class SnackbarService implements OnDestroy {
     });
   }
 
-  open(message: string, details: string = "", action: string = "Dismiss"): void {
+  open(message: string, details: string = "", action: string = "Dismiss", duration: number = 5000): void {
     this.addMessageToHistory(message, details, action, "info");
     this._snackBar.open(message, action, {
       horizontalPosition: "left",
       panelClass: ["pixlise-message"],
-      duration: 5000,
+      duration: duration,
     });
   }
 
