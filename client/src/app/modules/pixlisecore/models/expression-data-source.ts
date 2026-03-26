@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, share, shareReplay, switchMap } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, share, shareReplay, switchMap, of } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -44,6 +44,8 @@ export class ExpressionDataSource
   private _scanEntryIndexesRequested: number[] = [];
 
   private _scanEntries: ScanEntryResp | null = null;
+  private _scanMetaLabel: string[] = [];
+  private _scanMetaTypes: ScanMetaDataType[] = [];
 
   // Further-processed quant data for faster lookup later
   private _elementColumns = new Map<string, string[]>();
@@ -150,8 +152,12 @@ export class ExpressionDataSource
     }
 
     // Once we obtained the indexes, we can retrieve everything else required
-    return combineLatest([indexes, cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } }))]).pipe(
-      switchMap((result: [number[], ScanListResp]) => {
+    return combineLatest([
+      indexes,
+      cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId } })),
+      cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: this._scanId }))
+    ]).pipe(
+      switchMap((result: [number[], ScanListResp, ScanMetaLabelsAndTypesResp]) => {
         const idxs = result[0];
 
         this._scanEntryIndexesRequested = idxs;
@@ -163,6 +169,10 @@ export class ExpressionDataSource
         } else {
           this._instrument = scanInstrumentToJSON(scanListResp.scans[0].instrument);
         }
+
+        const meta = result[2];
+        this._scanMetaLabel = Array.from(meta.metaLabels);
+        this._scanMetaTypes = Array.from(meta.metaTypes);
 
         return cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: scanListResp.scans[0].instrumentConfig })).pipe(
           map((resp: DetectorConfigResp) => {
@@ -242,13 +252,6 @@ export class ExpressionDataSource
         }
       })
     );
-  }
-
-  private getScanMetaLabelsAndTypes(): Observable<ScanMetaLabelsAndTypesResp> {
-    if (!this._cachedDataService) {
-      return throwError(() => new Error("getScanMetaLabelsAndTypes: no data available"));
-    }
-    return this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: this._scanId }));
   }
 
   private getScanBeamLocations(): Observable<ScanBeamLocationsResp> {
@@ -738,6 +741,52 @@ export class ExpressionDataSource
     return SpectrumChannels;
   }
 
+  getMetaLabels(): string[] {
+    return this._scanMetaLabel;
+  }
+
+  getMetaData(label: string, detector: string): Promise<PMCDataValues> {
+    const labelIdx = this._scanMetaLabel.indexOf(label);
+    if (labelIdx < 0) {
+      return Promise.reject(`No data for meta label: ${label}`);
+    }
+
+    const metaType = this._scanMetaTypes[labelIdx];
+    if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
+      return Promise.reject(`Unexpected type ${metaType} meta label: ${label}`);
+    }
+
+    const result$ = this.getSpectrum().pipe(
+      map((spectrumData: SpectrumResp) => {
+        if (!spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+          throw new Error("getSpectrumRangeMapData: No data available");
+        }
+
+        const result = new PMCDataValues();
+
+        for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
+          const loc = spectrumData.spectraPerLocation[c];
+          const pmc = this._scanEntries.entries[c].id;
+
+          for (let spectrum of loc.spectra) {
+            // Only read for requested detector and is a normal spectrum
+            if (spectrum.detector != detector || spectrum.type != SpectrumType.SPECTRUM_NORMAL) {
+              continue;
+            }
+
+            let value = metaType == ScanMetaDataType.MT_FLOAT ? spectrum.meta[labelIdx].fvalue : spectrum.meta[labelIdx].ivalue;
+            result.addValue(new PMCDataValue(pmc, value || 0, value == undefined));
+          }
+        }
+
+        return result;
+      }),
+      shareReplay(1)
+    );
+
+    return lastValueFrom(result$);
+  }
+
   async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
     const cachedResult = this._spectrumDataService?.getSpectrumRangeMapData(this._scanId, channelStart, channelEnd, detectorExpr);
 
@@ -760,13 +809,9 @@ export class ExpressionDataSource
   }
 
   private calcSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Observable<PMCDataValues> {
-    return combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum() /*, this.getScanEntryMetadata()*/]).pipe(
-      map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp /*, ScanEntryMetadataResp*/]) => {
-        const scanMetaLabelsAndTypes = dataItems[0];
-        const spectrumData = dataItems[1];
-        //const scanMetaData = dataItems[2];
-
-        if (!scanMetaLabelsAndTypes || /*!scanMetaData ||*/ !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+    return this.getSpectrum().pipe(
+      map((spectrumData: SpectrumResp) => {
+        if (!spectrumData || !this._scanEntries || !this._scanEntries.entries) {
           throw new Error("getSpectrumRangeMapData: No data available");
         }
 
@@ -1006,13 +1051,9 @@ export class ExpressionDataSource
     if (this._debug) {
       this.logFunc(`getHousekeepingData(${name})`);
     }
-    return await lastValueFrom(
-      combineLatest([this.getScanMetaLabelsAndTypes(), this.getScanEntryMetadata()]).pipe(
-        map((dataItems: [ScanMetaLabelsAndTypesResp, ScanEntryMetadataResp]) => {
-          const scanMetaLabelsAndTypes = dataItems[0];
-          const scanMetaData = dataItems[1];
-
-          if (!scanMetaLabelsAndTypes || !scanMetaData || !this._scanEntries || !this._scanEntries.entries) {
+    return await lastValueFrom(this.getScanEntryMetadata().pipe(
+        map((scanMetaData: ScanEntryMetadataResp) => {
+          if (!scanMetaData || !this._scanEntries || !this._scanEntries.entries) {
             throw new Error("getHousekeepingData: No data available");
           }
 
@@ -1023,12 +1064,12 @@ export class ExpressionDataSource
           }
 
           // If it exists as a metaLabel and has a type we can return, do it
-          const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
+          const metaIdx = this._scanMetaLabel.indexOf(name);
           if (metaIdx < 0) {
             throw new Error(`Scan ${this._scanId} does not include housekeeping data with column name: "${name}"`);
           }
 
-          const metaType = scanMetaLabelsAndTypes.metaTypes[metaIdx];
+          const metaType = this._scanMetaTypes[metaIdx];
           if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
             throw new Error("Non-numeric data type for housekeeping data column: " + name);
           }
@@ -1107,33 +1148,28 @@ export class ExpressionDataSource
     );
   }
 
-  async hasHousekeepingData(name: string): Promise<boolean> {
+  hasHousekeepingData(name: string): boolean {
     if (this._debug) {
       this.logFunc(`hasHousekeepingData(${name})`);
     }
-    return await lastValueFrom(
-      this.getScanMetaLabelsAndTypes().pipe(
-        map((scanMetaLabelsAndTypes: ScanMetaLabelsAndTypesResp) => {
-          if (!scanMetaLabelsAndTypes) {
-            throw new Error("hasHousekeepingData: No scan meta data");
-          }
 
-          const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
-          if (metaIdx < 0) {
-            // Name not found
-            return false;
-          }
+    if (this._scanMetaLabel.length <= 0 || this._scanMetaLabel.length != this._scanMetaTypes.length) {
+      throw new Error("hasHousekeepingData: No scan meta data");
+    }
 
-          const metaType = scanMetaLabelsAndTypes.metaTypes[metaIdx];
-          if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
-            // We can only return floats & ints so say no
-            return false;
-          }
+    const metaIdx = this._scanMetaLabel.indexOf(name);
+    if (metaIdx < 0) {
+      // Name not found
+      return false;
+    }
 
-          return true;
-        })
-      )
-    );
+    const metaType = this._scanMetaTypes[metaIdx];
+    if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
+      // We can only return floats & ints so say no
+      return false;
+    }
+
+    return true;
   }
 
   private logFunc(call: string): void {
