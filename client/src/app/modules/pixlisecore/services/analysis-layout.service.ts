@@ -340,10 +340,15 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   fetchQuantsForScan(scanId: string, callback: (quants: QuantificationSummary[]) => void = () => {}) {
-    this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe(res => {
-      this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
-      if (callback) {
-        callback(res.quants);
+    this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe({
+      next: res => {
+        this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
+        if (callback) {
+          callback(res.quants);
+        }
+      },
+      error: err => {
+        console.error(err);
       }
     });
   }
