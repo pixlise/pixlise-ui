@@ -200,7 +200,7 @@ export function isValidPhoneNumber(phNum: string): boolean
 
     return true;
 }
-*/
+
 export function stripInvalidCharsFromPhoneNumber(phNum: string): string {
   // After a + at the start, we strip everything that's not a digit
   let result = "";
@@ -216,7 +216,7 @@ export function stripInvalidCharsFromPhoneNumber(phNum: string): string {
 
   return result;
 }
-
+*/
 // https://memory.psych.mun.ca/tech/js/correlation.shtml
 export function getPearsonCorrelation(x: any, y: any) {
   let shortestArrayLength = 0;

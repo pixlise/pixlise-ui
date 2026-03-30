@@ -140,7 +140,7 @@ describe("isValidPhoneNumber", () =>
         expect(isValidPhoneNumber("61hello1234")).toEqual(false); // + missing
     });
 });
-*/
+
 describe("stripInvalidCharsFromPhoneNumber", () => {
   it("stripInvalidCharsFromPhoneNumber strips unwanted characters from phone numbers, no validation", () => {
     expect(stripInvalidCharsFromPhoneNumber("")).toEqual("");
@@ -153,7 +153,7 @@ describe("stripInvalidCharsFromPhoneNumber", () => {
     expect(stripInvalidCharsFromPhoneNumber("61hello1234")).toEqual("611234");
   });
 });
-
+*/
 describe("isValidElementsString", () => {
   it("isValidElementsString works", () => {
     // no symbols
