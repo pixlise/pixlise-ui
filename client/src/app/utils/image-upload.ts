@@ -169,7 +169,7 @@ export class ImageUploader {
           });
         },
         error: err => {
-          const errMsg = httpErrorToString(err, `EError determining resume position of ${result.imageToUpload.name}:`);
+          const errMsg = httpErrorToString(err, `Error determining resume position of ${result.imageToUpload.name}:`);
           console.log(errMsg);
 
           this._snackService.openError(errMsg);
