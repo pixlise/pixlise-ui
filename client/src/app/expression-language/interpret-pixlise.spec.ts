@@ -132,9 +132,9 @@ class MockHousekeepingSource implements HousekeepingDataQuerierSource {
     return Promise.resolve(this.getHousekeepingData(axis));
   }
 
-  hasHousekeepingData(name: string): Promise<boolean> {
+  hasHousekeepingData(name: string): boolean {
     const value = this.data[name];
-    return Promise.resolve(value !== undefined);
+    return value !== undefined;
   }
 }
 
@@ -148,6 +148,17 @@ class MockSpectrumDataQuerierSource implements SpectrumDataQuerierSource {
   }
 
   getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues> {
+    return Promise.resolve(new PMCDataValues());
+  }
+
+  getMetaLabels(): string[] {
+    return ["LIVETIME", "OFFSET", "XPERCHAN"];
+  }
+
+  getMetaData(label: string, detector: string): Promise<PMCDataValues> {
+    if (label == "LIVETIME") {
+      return Promise.resolve(srcData["LIVETIME"]);
+    }
     return Promise.resolve(new PMCDataValues());
   }
 }
@@ -180,6 +191,8 @@ const srcData = {
 
   chisq_A: PMCDataValues.makeWithValues([new PMCDataValue(642, 200), new PMCDataValue(643, 210), new PMCDataValue(644, 300)]),
   chisq_B: PMCDataValues.makeWithValues([new PMCDataValue(642, 50), new PMCDataValue(643, 100), new PMCDataValue(644, 150)]),
+
+  "LIVETIME": PMCDataValues.makeWithValues([new PMCDataValue(642, 9.5), new PMCDataValue(643, 8.7), new PMCDataValue(644, 10.32)]),
 };
 
 const srcDataElements = ["Fe", "Ti"];
@@ -656,6 +669,10 @@ describe("data() call", () => {
 
   it("should return chisq B map", done => {
     checkResultOK(querier, dataSource, done, 'data("chisq", "B")', srcData["chisq_B"]);
+  });
+
+  it("should return spectrum meta maps", done => {
+    checkResultOK(querier, dataSource, done, 'data("LIVETIME", "A")', srcData["LIVETIME"]);
   });
 });
 

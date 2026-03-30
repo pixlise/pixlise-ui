@@ -11,7 +11,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 export class RenderData {
   constructor(
     public scene: THREE.Scene,
-    public camera: THREE.PerspectiveCamera,
+    public camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
     public orbitControl?: OrbitControls,
     public transformControl?: TransformControls
   ) {}
@@ -89,7 +89,10 @@ export class InteractiveCanvas3DComponent extends ResizingCanvasComponent {
       )
     );
 
-    this.renderData.camera.aspect = params.width / params.height;
+    if (this.renderData.camera instanceof THREE.PerspectiveCamera) {
+      (this.renderData.camera as THREE.PerspectiveCamera).aspect = params.width / params.height;
+    }
+
     this.renderData.camera.updateProjectionMatrix();
 
     this.triggerRedraw();

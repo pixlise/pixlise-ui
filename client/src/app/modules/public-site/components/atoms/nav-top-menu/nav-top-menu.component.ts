@@ -34,9 +34,9 @@ import { Navigation } from "../../navigation";
 
 import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
-// import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Subscription } from "rxjs";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
   standalone: false,
@@ -60,10 +60,14 @@ export class NavTopMenuComponent implements OnInit, OnDestroy {
   private _authService = inject(AuthService);
   isAuthenticated$ = this._authService.isAuthenticated$;
 
+  appLogo: string = "";
+
   constructor(
     private _activeRoute: ActivatedRoute,
     private _router: Router
-  ) {}
+  ) {
+    this.appLogo = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.appLogo;
+  }
 
   ngOnInit(): void {
     for (let c of this.navigation.categories) {

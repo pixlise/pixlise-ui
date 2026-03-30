@@ -30,8 +30,6 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 //import { Router } from "@angular/router";
 import { first, Subscription } from "rxjs";
-// import { AuthenticationService } from "src/app/services/authentication.service";
-// import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Router } from "@angular/router";
 

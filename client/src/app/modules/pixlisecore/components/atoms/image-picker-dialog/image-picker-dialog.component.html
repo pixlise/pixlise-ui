@@ -32,10 +32,16 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="dlg-border-with-backdrop image-picker-container">
   <h1 class="header">
     Image Picker
-
-    <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
-      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
-    </mat-select>
+    <div class="header-right">
+      @if (userCanEdit) {
+        <push-button buttonStyle="yellow" (onClick)="onImport()">Import Image</push-button>
+      }
+      @if (configuredScans.length > 0) {
+        <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
+          <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+        </mat-select>
+      }
+     </div>
   </h1>
   <div class="options-container">
     <div class="image-options">
@@ -53,12 +59,19 @@ POSSIBILITY OF SUCH DAMAGE.
         tabindex="0">
         <div [id]="'img_' + i" class="image-type-tag" class="{{ image.path === selectedImagePath ? 'selected' : '' }}">{{ image.imgType }}</div>
         <div class="preview-image">
-          <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
-          <img
-            *ngIf="image.url !== 'loading'"
-            class="{{ image.url === 'error' ? 'error' : '' }}"
-            [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url"
-            [alt]="image.name" />
+          @if (image.url === 'loading') {
+            <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
+          } @else if (image.url === 'error') {
+            <img
+              class="error"
+              src="assets/icons/error-triangle.svg"
+              [alt]="image.name" />
+          } @else {
+            <img
+              class="{{ image.url === 'error' ? 'error' : '' }}"
+              [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url"
+              [alt]="image.name" />
+          }
         </div>
         <div class="image-option-content">
           <h5 class="name" #tooltip="matTooltip" [matTooltip]="image.name" [matTooltipShowDelay]="200"><b>Image: </b>{{ image.name }}</h5>
@@ -79,29 +92,46 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
     <div class="expanded-preview" *ngIf="selectedChoice">
-      <div class="preview-image  {{ selectedChoice?.url === 'loading' ? 'loading' : '' }}">
-        <wait-spinner *ngIf="selectedChoice?.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
+      @if (selectedChoice?.url === 'loading' || selectedChoice?.url === 'error') {
+        <div class="centered">
+        @if (selectedChoice?.url === 'loading') {
+          <wait-spinner #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
+        } @else {
+          <img
+            class="error"
+            src="assets/icons/error-triangle.svg"
+            [alt]="selectedChoice?.name" />
+        }
+        </div>
+      } @else {
         <img
-          *ngIf="selectedChoice?.url !== 'loading'"
-          class="{{ selectedChoice?.url === 'error' ? 'error' : '' }}"
-          [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url"
+          class="selected-preview-image"
+          [src]="selectedChoice?.url"
           [alt]="selectedChoice?.name" />
-      </div>
-      <div class="image-option-content" *ngIf="selectedChoice">
-        <h5 class="name">
-          <b>{{ selectedChoice?.name }}</b>
-        </h5>
+      }
+      @if (selectedChoice) {
+      <div class="image-option-content">
+        <div class="row">
+          <h5 class="name">{{ selectedChoice?.name }}</h5>
+          <action-button
+              [confirmText]="'Are you sure you want to delete image ' + selectedChoice?.path + '?'"
+              action="delete"
+              (onClick)="onDeleteImage(selectedChoice!.path)"></action-button>
+        </div>
         <!-- <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
           <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
         </h5> -->
-        <h5 class="mars-viewer" *ngIf="selectedChoice.marsViewerURL">
-          <b>Mars Viewer: </b
-          ><a title="Open in MarsViewer" [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"
-            ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
-          /></a>
-          <img src="assets/button-icons/copy.svg" (click)="onCopyToClipboard(selectedChoice.path)" title="Copy file name">
-        </h5>
+        @if (selectedChoice.marsViewerURL) {
+          <h5 class="row mars-viewer">
+            <b>Mars Viewer: </b>
+            <a title="Open in MarsViewer" [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer">
+              <img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer" />
+            </a>
+            <img src="assets/button-icons/copy.svg" (click)="onCopyToClipboard(selectedChoice.path)" title="Copy file name">
+          </h5>
+        }
       </div>
+      }
       <div class="details-container">
         <div class="image-details-area">{{ selectedImageDetails }}</div>
       </div>

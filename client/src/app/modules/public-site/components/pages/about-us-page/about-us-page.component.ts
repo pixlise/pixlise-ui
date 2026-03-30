@@ -30,6 +30,7 @@
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
 import { MetaTagService } from "../../../services/meta-tag.service";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 class MissionTile {
   constructor(
@@ -75,11 +76,18 @@ export class AboutUsPageComponent implements OnInit {
 
   publications: Publication[] = [];
   title = "Out of this world geoscience, literally.";
+  aboutTopSection: string = "pixl";
+  showImpact: boolean = true;
+  showBrandingLogos: boolean = true;
 
   constructor(
     private _router: Router,
     private _metaTagService: MetaTagService
   ) {
+    this.aboutTopSection = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.aboutTopSection;
+    this.showImpact = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showImpact;
+    this.showBrandingLogos = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showPartners;
+
     // Randomise the articles
     let articles = [
       new Publication(

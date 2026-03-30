@@ -52,6 +52,8 @@ export interface SpectrumDataQuerierSource {
   getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues>;
   // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
   getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues>;
+  getMetaLabels(): string[];
+  getMetaData(label: string, detector: string): Promise<PMCDataValues>;
 }
 
 export interface DiffractionPeakQuerierSource {
@@ -62,5 +64,5 @@ export interface DiffractionPeakQuerierSource {
 export interface HousekeepingDataQuerierSource {
   getHousekeepingData(name: string): Promise<PMCDataValues>;
   getPositionData(axis: string): Promise<PMCDataValues>;
-  hasHousekeepingData(name: string): Promise<boolean>;
+  hasHousekeepingData(name: string): boolean;
 }

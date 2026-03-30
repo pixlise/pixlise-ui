@@ -91,7 +91,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <action-button action="verticalEllipsis"></action-button>
     </widget-settings-menu>
   </div>
-  <div class="mid-line">
+  <div *ngIf="scan?.description && scan?.description.length > 0" class="mid-line">
     <div class="title">Description</div>
     <div class="description">
       <markdown>{{scan.description}}</markdown>

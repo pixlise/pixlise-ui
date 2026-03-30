@@ -27,11 +27,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { AfterViewInit, Component, ElementRef, Input, OnDestroy } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, OnDestroy } from "@angular/core";
 import { ReplaySubject, Subject, Subscription } from "rxjs";
 
 import { Point, Rect } from "src/app/models/Geometry";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 
 export class CanvasParams {
   constructor(

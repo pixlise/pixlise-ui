@@ -27,11 +27,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, inject } from "@angular/core";
+import { Component, inject, OnDestroy } from "@angular/core";
 import { MonacoEditorService } from "./modules/code-editor/services/monaco-editor.service";
 import { Router } from "@angular/router";
-// import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
+import { GenericError } from "@auth0/auth0-angular";
+import { takeUntil, filter, Subject, tap } from "rxjs";
+import { SnackbarService } from "./modules/pixlisecore/pixlisecore.module";
 
 //import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
 
@@ -42,14 +44,17 @@ import { CustomAuthService as AuthService } from "src/app/services/custom-auth-s
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
   // From: https://developer.auth0.com/resources/guides/spa/angular/basic-authentication#render-components-conditionally
-  private auth = inject(AuthService);
-  isAuth0Loading$ = this.auth.isLoading$;
+  private _auth = inject(AuthService);
+  isAuth0Loading$ = this._auth.isLoading$;
+
+  private _destroy$ = new Subject<void>();
 
   constructor(
     private _monacoService: MonacoEditorService,
-    private _router: Router
+    private _router: Router,
+    private _snackService: SnackbarService
   ) {
     // We trigger loading the service once, here, right on startup. This will end up creating a monaco object tied
     // to the window, which our child components can listen for being ready and create code editor views as needed
@@ -61,6 +66,37 @@ export class AppComponent {
         this._monacoService.load();
       }, 1000);
     }
+
+    // Taken from: https://community.auth0.com/t/unknown-or-invalid-refresh-token-error/112975/5
+    // Trying to make PIXLISE go back to the main page and log out when token is dead
+    // this._auth.error$.pipe(
+    //   takeUntil(this._destroy$),
+    //   filter((e) => e instanceof GenericError && (e['error'] === 'login_required' || e['error'] === 'invalid_grant')),
+    //   mergeMap(() => {
+    //     this._snackService.open("You have been logged out", "Your session has expired, log in again to continue using PIXLISE");
+    //     const returnTo = location.protocol + "//" + location.host;
+    //     return this._auth.logout({ logoutParams: { returnTo: returnTo } });
+    //   })
+    // ).subscribe();
+
+    // This version is simpler, it just shows a notification saying you're logged out
+    this._auth.error$.pipe(
+      takeUntil(this._destroy$),
+      filter(err => err instanceof GenericError && (err["error"] === "login_required" || err["error"] === "invalid_grant")),
+      tap(() => {
+        this._snackService.open(
+          "You have been logged out",
+          "Your session has expired, log in again to continue using PIXLISE",
+          undefined,
+          30000
+        );
+      })
+    ).subscribe();
+  }
+
+  ngOnDestroy() {
+    this._destroy$.next();
+    this._destroy$.complete();
   }
 
   get isPublicPage(): boolean {

@@ -8,6 +8,7 @@ import { ScrollingModule } from "@angular/cdk/scrolling";
 import { MatMenuModule } from "@angular/material/menu";
 
 import { MaterialModule } from "../material.module";
+import { NgxDropzoneModule } from "ngx-dropzone";
 
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
 import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
@@ -79,6 +80,8 @@ import { WidgetSelectionDialogComponent } from "./components/widget-selection-di
 import { MagicLinkComponent } from "./components/pages/magiclink/magiclink.component";
 import { WidgetSelectionButtonComponent } from "./components/widget-selection-dialog/widget-selection-button/widget-selection-button.component";
 //import { AnalysisLayoutService } from "./services/analysis-layout.service";
+import { AddCustomImageComponent, AddCustomImageParameters, AddCustomImageResult } from "./components/atoms/add-custom-image/add-custom-image.component";
+import { ContextImagePickerComponent } from "./components/atoms/context-image-picker/context-image-picker.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -102,7 +105,12 @@ export {
   ReferenceCSVUploadResponse,
 } from "./components/reference-csv-upload-dialog/reference-csv-upload-dialog.component";
 export { SimpleReferencePickerComponent } from "./components/simple-reference-picker/simple-reference-picker.component";
-export { LayerVisibilityDialogComponent } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+export {
+  LayerOpacityChange,
+  LayerVisibilityChange,
+  LayerVisibilityDialogComponent,
+  LayerVisibilitySection,
+  LayerVisiblilityData } from "./components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
 export { FeedbackDialogComponent } from "./components/feedback-dialog/feedback-dialog.component";
 export { TableComponent } from "./components/atoms/table/table.component";
 export { LayoutPreviewBoxComponent } from "./components/atoms/layout-preview-box/layout-preview-box.component";
@@ -114,6 +122,8 @@ export { ShareDialogComponent } from "./components/atoms/share-ownership-item/sh
 export { ShareDialogData, ShareDialogResponse, SharingSubItem } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component"
 export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./services/analysis-layout.service";
 export { WidgetSelectionDialogComponent } from "./components/widget-selection-dialog/widget-selection-dialog.component";
+export { AddCustomImageComponent, AddCustomImageParameters, AddCustomImageResult } from "./components/atoms/add-custom-image/add-custom-image.component";
+export { ContextImagePickerComponent } from "./components/atoms/context-image-picker/context-image-picker.component";
 
 @NgModule({
   declarations: [
@@ -178,6 +188,8 @@ export { WidgetSelectionDialogComponent } from "./components/widget-selection-di
     SearchableListComponent,
     WidgetSelectionDialogComponent,
     WidgetSelectionButtonComponent,
+    AddCustomImageComponent,
+    ContextImagePickerComponent
   ],
   imports: [
     CommonModule,
@@ -187,7 +199,8 @@ export { WidgetSelectionDialogComponent } from "./components/widget-selection-di
     MatAutocompleteModule,
     DragDropModule,
     ScrollingModule,
-    MatMenuModule
+    MatMenuModule,
+    NgxDropzoneModule
   ],
   exports: [
     WaitSpinnerComponent,
@@ -247,6 +260,8 @@ export { WidgetSelectionDialogComponent } from "./components/widget-selection-di
     ScrollingModule,
     WidgetSelectionDialogComponent,
     WidgetSelectionButtonComponent,
+    AddCustomImageComponent,
+    ContextImagePickerComponent
   ],
   providers: [
     /*APICommService, APIDataService*/

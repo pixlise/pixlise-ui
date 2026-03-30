@@ -186,7 +186,7 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to delete element set: "' + item.name + '"?')) {
       // Delete it, and clear from our list if success
       this._dataService.sendElementSetDeleteRequest(ElementSetDeleteReq.create({ id: item.id })).subscribe({
-        next: (resp: ElementSetDeleteResp) => {
+        next: () => {
           this._snackBarService.openSuccess(`Element set ${item.name} deleted successfully`);
           this._rawElementSetSummaries.delete(item.id);
           this.updateElementSets();
@@ -198,7 +198,7 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
     }
   }
 
-  canDelete(id: string, creator: ObjectCreator, shared: boolean): boolean {
+  canDelete(_id: string, _creator: ObjectCreator, _shared: boolean): boolean {
     return true; //return id != SPECIAL_QUANT_ID && (!shared || creator.user_id == this._authService.getUserID());
   }
 }

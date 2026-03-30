@@ -27,16 +27,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// import { Point, Rect } from "src/app/models/Geometry";
-import { Observable, of, throwError } from "rxjs";
+import { Observable, of } from "rxjs";
 import { Point, PointWithRayLabel, Rect } from "../models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 
 ///////////////////////////////////////////////
 // Image -> PIXELS and back...
 export function getRawImageData(img: HTMLImageElement, rect: Rect | null = null): ImageData | null {
-  let canvas = document.createElement("canvas");
-  let context = canvas.getContext("2d");
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
 
   canvas.width = img.width;
   canvas.height = img.height;
@@ -257,7 +256,7 @@ export class PointDrawer {
         const ptRay = pt as PointWithRayLabel;
         if (ptRay.label && ptRay.label !== "") {
           let label = "";
-          let labelWords = ptRay.label.split(" ");
+          const labelWords = ptRay.label.split(" ");
 
           let currentSegment = "";
           labelWords.forEach((word, i) => {

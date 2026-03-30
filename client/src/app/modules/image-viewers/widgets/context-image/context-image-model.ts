@@ -5,7 +5,7 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { ClosestPoint, ColourScheme, IContextImageModel } from "./context-image-model-interface";
 
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
-import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";

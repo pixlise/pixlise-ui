@@ -64,7 +64,7 @@ export class ChartAxis {
     this._endPx = this._startPx + this._pxLength;
   }
 
-  updateAxis(viewport: CanvasParams, transform: PanZoom): void {}
+  updateAxis(_viewport: CanvasParams, _transform: PanZoom): void {}
 
   // Converts chart value (in this axis) to be a percentage of min-max value. This is implemented by derived
   // classes to calculate it in whatever way is needed, eg log/linear, etc.

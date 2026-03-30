@@ -28,7 +28,7 @@ jobs:
           show-progress: false
       - name: GitHub Slug Action
         uses: rlespinasse/github-slug-action@v4.4.0
-  feature:
+  step:
     uses: ./.github/workflows/main.yml
     needs: slug
     with:

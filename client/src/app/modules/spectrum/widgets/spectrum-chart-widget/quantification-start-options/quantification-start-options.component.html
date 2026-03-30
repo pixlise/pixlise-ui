@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <div class="label">Mode</div>
-    <mat-select [(ngModel)]="quantModeId" (selectionChange)="onQuantModeChanged($event)">
+    <mat-select [(ngModel)]="quantModeId" (selectionChange)="onQuantModeChanged()">
         <mat-option *ngFor="let mode of quantModes" [value]="mode.id">{{mode.label}}</mat-option>
     </mat-select>
 

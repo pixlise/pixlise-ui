@@ -31,17 +31,19 @@ import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayConfig, Overl
 import { ComponentPortal } from "@angular/cdk/portal";
 import { ComponentRef, Injector, ViewContainerRef } from "@angular/core";
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 export const getInitialModalPositionRelativeToTrigger = (trigger: Element | undefined, height: number, width: number) => {
   let position = {};
   if (trigger) {
-    let boundingRect = trigger.getBoundingClientRect();
+    const boundingRect = trigger.getBoundingClientRect();
 
     // Position the dialog in the middle of the trigger, but make sure it stays fully on screen
-    let top = Math.min(boundingRect.top - height / 2, window.innerHeight - height);
+    const top = Math.min(boundingRect.top - height / 2, window.innerHeight - height);
 
     // 6px is the marginLeft of the button, 8px is the grid spacing (assuming it's not a widget all the way on the left)
     // If it is all the way on the left, we want to make sure the dialog is still fully on screen (left: 0)
-    let left = Math.max(boundingRect.left - width - 6 - 8, 0);
+    const left = Math.max(boundingRect.left - width - 6 - 8, 0);
     position = {
       top: `${top}px`,
       left: `${left}px`,
@@ -86,7 +88,7 @@ export class OverlayHost {
     });
 
     this._overlayRef = this.overlay.create(config);
-    let componentRef: ComponentRef<any> = this._overlayRef.attach(
+    const componentRef: ComponentRef<any> = this._overlayRef.attach(
       new ComponentPortal(this.panelComponentClassType, this.viewContainerRef, this.createInjector(this._overlayRef))
     );
 
@@ -98,7 +100,7 @@ export class OverlayHost {
 
     // If required, set up so we close if user clicks our background
     if (this.closeIfClickedBackground) {
-      this._overlayRef.backdropClick().subscribe(event => {
+      this._overlayRef.backdropClick().subscribe(() => {
         this.hidePanel();
       });
     }

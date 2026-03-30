@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <h2>{{ title }}</h2>
     </div>
   </div>
-  <div class="flex-column story section" id="mars2020">
+  <div *ngIf="aboutTopSection=='pixl'" class="flex-column story section" id="mars2020">
     <number-button theNumber="01" theLabel="PIXL + Mars 2020" link="" colourStyle="red" [showArrow]="false"></number-button>
     <div class="flex-row img-spacer">
       <div class="flex-column">
@@ -60,7 +60,28 @@ POSSIBILITY OF SUCH DAMAGE.
       <img src="assets/images/aboutus/perseverance.jpg" />
     </div>
   </div>
-  <branding-logos></branding-logos>
+  <div *ngIf="aboutTopSection=='auscope'" class="flex-column story section" id="auscope">
+    <number-button theNumber="01" theLabel="Auscope PIXLISE" link="" colourStyle="red" [showArrow]="false"></number-button>
+    <div class="flex-row img-spacer">
+      <div class="flex-column">
+        <h3>Rock analysis <span class="red">made easy.</span></h3>
+        <p>
+          Insert text here about PIXLISE and how it came to be used for Auscope
+        </p>
+        <p class="pad-bottom">
+          Some more PIXLISE text.
+        </p>
+        <number-button
+          theNumber=""
+          theLabel="Read About PIXLISE"
+          link="https://www.pixlise.org"
+          colourStyle="red"
+          [showArrow]="true"></number-button>
+      </div>
+      <img src="assets/images/aboutus/open-cut-mine.jpg" />
+    </div>
+  </div>
+  <branding-logos *ngIf="showBrandingLogos"></branding-logos>
   <div class="flex-column mission section" id="pixlise">
     <number-button theNumber="02" theLabel="PIXLISE" link="" colourStyle="red" [showArrow]="false"></number-button>
     <div class="flex-row img-spacer">
@@ -84,7 +105,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
   </div>
-  <div class="flex-column publication section" id="impact">
+  <div *ngIf="showImpact" class="flex-column publication section" id="impact">
     <number-button theNumber="03" theLabel="Impact" link="" colourStyle="red" [showArrow]="false"></number-button>
     <div class="flex-row head-container">
       <h3>The proof is in the publication.</h3>

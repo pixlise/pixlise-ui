@@ -16,6 +16,7 @@ import { MarkdownModule } from "ngx-markdown";
 import { MatMenuModule } from "@angular/material/menu";
 import { DuplicateWorkspaceDialogComponent } from "./components/atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
 
+
 const APP_ROUTES: Routes = [
   {
     path: "",

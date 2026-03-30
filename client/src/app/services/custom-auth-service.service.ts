@@ -2,6 +2,8 @@ import { Injectable } from "@angular/core";
 import { AuthService, GetTokenSilentlyOptions, AppState, RedirectLoginOptions } from "@auth0/auth0-angular";
 import { Observable, of } from "rxjs";
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 @Injectable({
   providedIn: "root",
 })

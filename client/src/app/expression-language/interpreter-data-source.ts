@@ -175,6 +175,8 @@ export class InterpreterDataSource {
     });
   }
 
+  // data() function. This originally was for reading the quant map only, but
+  // this evolved to also reading spectrum metadata for the given detector.
   // Expects: chisq, A for example
   public async readQuantMap(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "string") {
@@ -183,6 +185,11 @@ export class InterpreterDataSource {
 
     if (!this.quantDataSource) {
       throw new Error("data() expression failed, no quantification data loaded");
+    }
+
+    if (this.spectrumDataSource && this.spectrumDataSource.getMetaLabels().indexOf(argList[0]) > -1) {
+      // We're returning spectrum metadata
+      return this.spectrumDataSource.getMetaData(argList[0], argList[1]);
     }
 
     return this.quantDataSource.getQuantifiedDataForDetector(argList[1], argList[0]);

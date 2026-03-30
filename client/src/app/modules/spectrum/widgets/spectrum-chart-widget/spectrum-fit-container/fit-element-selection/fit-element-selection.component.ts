@@ -78,8 +78,7 @@ export class FitElementSelectionComponent implements OnInit, OnDestroy {
       this.mdl.fitSelectedElementZs$.subscribe(
         () => {
           this.rebuildPeriodicTable();
-        },
-        err => {}
+        }
       )
     );
   }

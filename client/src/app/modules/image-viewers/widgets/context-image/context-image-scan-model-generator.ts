@@ -11,23 +11,28 @@ import {
   subtractVectors,
   vectorsEqual,
 } from "src/app/models/Geometry";
+import { MinMax } from "src/app/models/BasicTypes";
+import { radToDeg } from "src/app/utils/utils";
+import { RGBA } from "src/app/utils/colours";
+
 import { ScanPoint } from "../../models/scan-point";
 import { HullPoint } from "../../models/footprint";
+import { ScanPointPolygon } from "../../models/context-image-draw-model";
 
 import QuickHull from "quickhull";
 import Voronoi from "voronoi";
 import polygonClipping, { MultiPolygon, Polygon } from "polygon-clipping";
+
+import { ContextImageScanModel, PointCluster } from "./context-image-model-internals";
+import { convertLocationComponentToPixelPosition } from "./context-image-model";
+
+import { environment } from "src/environments/environment";
+
 import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { MinMax } from "src/app/models/BasicTypes";
-import { radToDeg } from "src/app/utils/utils";
 import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { RGBA } from "src/app/utils/colours";
-import { ContextImageScanModel, PointCluster } from "./context-image-model-internals";
-import { convertLocationComponentToPixelPosition } from "./context-image-model";
-import { environment } from "src/environments/environment";
 
 export class PMCClusters {
   constructor(
@@ -130,7 +135,7 @@ export class ContextImageScanModelGenerator {
     // Allocate blank polygons for each...
     const scanPointPolygons = [];
     for (let c = 0; c < scanPoints.length; c++) {
-      scanPointPolygons.push([]);
+      scanPointPolygons.push(new ScanPointPolygon([]));
     }
 
     for (const cluster of clusters) {
@@ -423,14 +428,14 @@ export class ContextImageScanModelGenerator {
       throw new Error("findMinPointDistances with no location data");
     }
 
-    const NumSamples = 100;
+    //const NumSamples = 100;
 
     // Randomly pick a few points, find the min distance to between any other point to that point
     // and then average this out
     const samples: number[] = [];
     const nearestDistanceToSamples: number[] = [];
 
-    for (let c = 0; c < NumSamples; c++) {
+    /*for (let c = 0; c < NumSamples; c++) {
       let sampleIdx = null;
 
       // Make sure it's got a location
@@ -442,12 +447,18 @@ export class ContextImageScanModelGenerator {
       }
 
       samples.push(sampleIdx);
+    }*/
+
+    for (let c = 0; c < scanEntries.length; c++) {
+      if (scanEntries[c].location) {
+        samples.push(c);
+      }
     }
 
     // Now loop through all and find the nearest point to each sample in distance-squared units
     const ExclusionBoxSize = (this._locationPointBBox.w + this._locationPointBBox.h) / 2 / 10;
 
-    for (let c = 0; c < NumSamples; c++) {
+    for (let c = 0; c < samples.length; c++) {
       const sampleIdx = samples[c];
       const samplePt = scanPoints[sampleIdx].coord!;
 
@@ -912,7 +923,7 @@ export class ContextImageScanModelGenerator {
     return boxes;
   }
 
-  static makeScanPointPolygons(bboxExpand: number, cluster: PointCluster, scanPoints: ScanPoint[], scanPointPolygons: Point[][]) {
+  static makeScanPointPolygons(bboxExpand: number, cluster: PointCluster, scanPoints: ScanPoint[], scanPointPolygons: ScanPointPolygon[]) {
     const voronoi = new Voronoi();
 
     // Create a larger bbox to ensure all polygons generated extend past the hull
@@ -994,12 +1005,21 @@ export class ContextImageScanModelGenerator {
           );
 
           // Now we convert it back to Points
-          scanPointPolygons[siteLocIdx] = [];
+          scanPointPolygons[siteLocIdx] = new ScanPointPolygon([]);
           if (clippedPolyPts.length == 1 && clippedPolyPts[0].length == 1) {
             // NOTE: we don't add the last one, because it's a repeat of the first one
             for (let ptIdx = 0; ptIdx < clippedPolyPts[0][0].length - 1; ptIdx++) {
-              const pt = clippedPolyPts[0][0][ptIdx];
-              scanPointPolygons[siteLocIdx].push(new Point(pt[0], pt[1]));
+              const ptClip = clippedPolyPts[0][0][ptIdx];
+              const pt = new Point(ptClip[0], ptClip[1]);
+
+              scanPointPolygons[siteLocIdx].points.push(pt);
+
+              if (ptIdx == 0) {
+                scanPointPolygons[siteLocIdx].bbox.x = pt.x;
+                scanPointPolygons[siteLocIdx].bbox.y = pt.y;
+              } else {
+                scanPointPolygons[siteLocIdx].bbox.expandToFitPoint(pt);
+              }
             }
           }
         }

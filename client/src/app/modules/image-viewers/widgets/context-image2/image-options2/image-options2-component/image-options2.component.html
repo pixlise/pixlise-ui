@@ -1,0 +1,43 @@
+
+<div class="image-options">
+  <header>
+    <div class="controls">
+      <h1 mat-dialog-title cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle class="title drag">Image Options</h1>
+      <!-- <push-button buttonStyle="yellow" (onClick)="onImport()">Import</push-button> -->
+      <!-- <icon-button (click)="onExport()" title="Download all images" icon="assets/button-icons/export.svg" [loading]="downloadLoading"></icon-button> -->
+    </div>
+  </header>
+  <section class="image-choice">
+    <!-- <div class="subheading-line">Image Selection</div> -->
+    <div class="ctrl-column">
+      <div class="setting-label">Selected Image:</div>
+      <image-picker
+        [initialScanId]="selectedScanId"
+        [scanIds]="data.scanIds"
+        [currentImage]="options.currentImage"
+        (selectedImage)="onSelectedImageChanged($event)"></image-picker>
+      <div *ngIf="data.warningMsg" class="warning">{{data.warningMsg}}</div>
+    </div>
+    <div class="subheading-line">Display Options</div>
+    <div class="ctrl-row">
+      <div class="setting-label">Image Smoothing:</div>
+      <switch-button [active]="options.imageSmoothing" title="Toggle smoothing of context image" (onToggle)="onToggleImageSmoothing()"></switch-button>
+    </div>
+    <div class="ctrl-row">
+      <div class="setting-label">Image Brightness:</div>
+      <div class="centered-row">
+        <input class="setting-label" type="number" step="0.1" [(ngModel)]="imageBrightnessStr" />
+        <slider title="Image Brightness" [value]="options.imageBrightness" [minValue]="0" [maxValue]="10" [pxLength]="140" (onChange)="onChangeBrightness($event)">
+        </slider>
+        <push-button title="Reset brightness to 1.0" (onClick)="onResetBrightness()">Reset</push-button>
+      </div>
+    </div>
+  </section>
+  <div class="button-container">
+    <span class="live-indicator">
+      <span class="status-indicator"></span>
+      <span class="label">Live Update</span>
+    </span>
+    <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+  </div>
+</div>

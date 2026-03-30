@@ -5,8 +5,8 @@ import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { mimeTypeForImage, Uint8ToString } from "src/app/utils/utils";
-import { ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
+import { arrayBufferToImageDataURL, mimeTypeForImage } from "src/app/utils/utils";
+import { ImageUploadHttpPartialInfo, ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
 
@@ -23,12 +23,21 @@ export class APIEndpointsService {
   ) {}
 
   // Path being the key of the image in the images DB, so scanid/filename.png for example
-  loadImageForPath(imagePath: string): Observable<HTMLImageElement> {
+  loadImageForPath(imagePath: string, forceReload: boolean = false): Observable<HTMLImageElement> {
     if (!imagePath) {
       throw new Error("No image path provided");
     }
 
-    const apiUrl = APIEndpointsService.getImageURL(imagePath);
+    let apiUrl = APIEndpointsService.getImageURL(imagePath);
+
+    if (forceReload) {
+      // This was recently deleted, to ensure we don't read from disk cache, add "salt". This is
+      // to prevent a user re-uploading a new copy of an image (with the same name) from being stuck
+      // seeing their previous copy. NOTE, this doesn't persist beyond page reloads, but by then maybe
+      // local cache won't be preventing it from loading?
+      apiUrl += "?nocache=" + Date.now();
+    }
+
     return this.loadImageFromURL(apiUrl);
   }
 
@@ -68,7 +77,8 @@ export class APIEndpointsService {
 
   private loadImageFromURL(url: string): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
-    return new Observable<HTMLImageElement>(observer => {const mime = mimeTypeForImage(url);
+    return new Observable<HTMLImageElement>(observer => {
+      const mime = mimeTypeForImage(url);
       if (mime.length <= 0) {
         const err = `Unknown mime type for image: ${url}`;
         console.error(err);
@@ -80,13 +90,13 @@ export class APIEndpointsService {
         next: (arrayBuf: ArrayBuffer) => {
           const img = new Image();
 
-          img.onload = event => {
+          img.onload = () => {
             console.log("  Loaded image: " + url + ". Dimensions: " + img.width + "x" + img.height);
             observer.next(img);
             observer.complete();
           };
 
-          img.onerror = event => {
+          img.onerror = () => {
             // event doesn't seem to provide us much, usually just says "error" inside it... found that this
             // last occurred when a bug allowed us to try to load a tif image with this function!
             const errStr = "Failed to download image: " + url;
@@ -108,11 +118,7 @@ export class APIEndpointsService {
           // by all browsers but at time of writing Angular 21 uses Typescript 5.9.3 which doesn't contain this
           // function yet. We may be able to use a polyfill.
           // TODO: Update this to use toBase64 when it's available, perhaps in Typescript 6.x?
-          const data = new Uint8Array(arrayBuf);
-          const base64 = btoa(Uint8ToString(data));
-          const dataURL = `data:${mime};base64,` + base64;
-
-          img.src = dataURL;
+          img.src = arrayBufferToImageDataURL(mime, arrayBuf);
         },
         error: err => {
           if (err instanceof HttpErrorResponse && err.status == 404) {
@@ -246,7 +252,7 @@ export class APIEndpointsService {
     return this.http.put<void>(apiUrl, imageData, httpOptions);
   }
 
-  uploadImage(req: ImageUploadHttpRequest): Observable<void> {
+  uploadImage(req: ImageUploadHttpRequest): Observable<ImageUploadHttpPartialInfo> {
     const writer = ImageUploadHttpRequest.encode(req);
     const bytes = writer.finish();
     const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
@@ -258,7 +264,7 @@ export class APIEndpointsService {
     };
 
     const apiUrl = APIPaths.getWithHost(APIPaths.api_images);
-    return this.http.put<void>(apiUrl, sendbuf, httpOptions);
+    return this.http.put<ImageUploadHttpPartialInfo>(apiUrl, sendbuf, httpOptions);
   }
 
   private isValidLocallyCachedImage(imageData: CachedImageItem | CachedRGBUImageItem | undefined, maxAgeSec: number): boolean {

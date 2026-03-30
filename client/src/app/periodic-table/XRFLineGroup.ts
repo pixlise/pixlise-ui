@@ -27,7 +27,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLine, XRFLineType } from "src/app/periodic-table/XRFLine";
 import { ElementLine } from "../generated-protos/element-set";
 import { XRFLineDatabase } from "./xrf-line-database";

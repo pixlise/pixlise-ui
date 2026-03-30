@@ -451,6 +451,10 @@ export class SourceHelp {
             }
           }
         }
+
+        // Add spectrum-related columns accessible here
+        const specCols = paramLists.get("spectrumData") || [];
+        result.push(...specCols);
       }
       return result;
     };
@@ -466,7 +470,7 @@ export class SourceHelp {
 
     const dataColumn = new FunctionParamHelp("column", "Selects a column to read, use for non-element-related columns");
     dataColumn.getPossibleValues = (paramsProvided: string[], paramLists: Map<string, string[]>) => {
-      return paramLists.get("quantColumns") || [];
+      return [...paramLists.get("quantColumns") || [], ...paramLists.get("spectrumData") || []];
     };
 
     help.addHelp(new FunctionHelp("data", "", "Reads the data column specified", OriginID, [dataColumn, detectors]));

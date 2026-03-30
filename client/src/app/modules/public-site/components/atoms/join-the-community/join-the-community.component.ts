@@ -31,6 +31,7 @@ import { Component, OnInit } from "@angular/core";
 
 import { SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
   standalone: false,
@@ -39,7 +40,13 @@ import { DefaultLoggedInLink } from "../../navigation";
   styleUrls: ["./join-the-community.component.scss"],
 })
 export class JoinTheCommunityComponent implements OnInit {
-  constructor() {}
+  joinWhat = "";
+  description = "";
+
+  constructor() {
+    this.joinWhat = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.joinSectionName;
+    this.description = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.joinSectionDescription;
+  }
 
   ngOnInit(): void {}
 

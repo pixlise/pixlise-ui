@@ -66,7 +66,116 @@ export class AppConfig {
   unassignedNewUserRoleId: string = ""; // Auth0 role ID for unassigned new user
 
   maxUsersPerOwnershipItem: number = 5; // Max number of users that can be assigned as an editor or user for an ownership item
+
+  showPIXLDevices: boolean = true; // Show PIXL-EM, JPL and Stonybrook breadboard as import option formats
+
+  // Public site settings
+  publicSiteConfig: PublicSiteConfig = {
+    imagePrefix: "",
+    aboutTopSection: "pixl",
+    landingTopText: "",
+    appLogo: "pixlise-white-logo.svg",
+    landingTopLogos: [
+      { "image": "logo_nasa_trio_colour.png", "link": "https://www.jpl.nasa.gov" }
+    ],
+    headingParts: ["Finally, a tool as ", "smart", " as the modern geoscientist."],
+    computeParts: [
+      "PIQUANT is a ",
+      "fundamental parameters",
+      "-based quantification engine, optimized for ",
+      "cloud parallelization",
+      ", yielding accurate quantification of ",
+      "thousands of scan points in minutes",
+      ". Craft compound quantifications with different element sets or matrix assumptions for ",
+      "multiple regions",
+      " of a single dataset. Rapidly visualize fully ",
+      "quantified maps",
+      " of every element in your quantification. And don't forget to ",
+      "share",
+      " them all with your lab."
+    ],
+    workflowDetailParts: [
+      "PIXLISE is an interface informed by ",
+      "thousands of hours of collaboration",
+      " between geoscientists and visualization designers. With intricately-connected features, ",
+      "colorblind-safe palettes",
+      ", and customizable plot panels, PIXLISE's ",
+      "flexible user interface",
+      " empowers the modern scientist with an ",
+      "innovative workflow"
+    ],
+    showPIQUANT: true,
+    showImageCredits: true,
+    showTeam: true,
+    showPartners: true,
+    showImpact: false,
+    footerTagline: "Experience the future of spectroscopy visualisation and analysis.",
+    footerTaglineLink: "",
+    clientNameForVersion: "",
+    joinSectionName: "discussion",
+    joinSectionDescription: "As a geoscientist, you can request an account that will give you access to more PIXLISE features, as well as a global community of researchers. We want to hear from you!",
+    menus: {
+      "Features": {
+        link: "/public/get-started",
+        items: {
+          "Workflow": "/public/workflow",
+          "Quantification": "/public/quantification",
+          "Investigation": "/public/investigation"
+        }
+      },
+      "Get Started": {
+        link: "",
+        items: {
+          "PIXLISE Options": "/public/get-started#top",
+          "Get PIXLISE": "/public/get-started#get",
+          "Links and Docs": "/public/get-started#links"
+        }
+      },
+      "About Us": {
+        link: "/public/about-us",
+        items: {
+          "PIXL + MARS 2020": "/public/about-us#mars2020",
+          "Impact": "/public/about-us#impact",
+          "Our Team": "/public/about-us#team"
+        }
+      }
+    }
+  };
 }
+
+// To control the public site and allow white-labelling
+
+export type PublicSiteMenu = {
+  link: string;
+  items: Record<string, string>;
+};
+
+export type ImageLink = {
+  link: string;
+  image: string;
+};
+
+export type PublicSiteConfig = {
+  imagePrefix: string;
+  aboutTopSection: string;
+  landingTopText: string;
+  landingTopLogos: ImageLink[];
+  appLogo: string;
+  headingParts: string[];
+  computeParts: string[];
+  workflowDetailParts: string[];
+  showPIQUANT: boolean;
+  showImageCredits: boolean;
+  showTeam: boolean;
+  showPartners: boolean;
+  showImpact: boolean;
+  footerTagline: string;
+  footerTaglineLink: string;
+  clientNameForVersion: string;
+  joinSectionName: string;
+  joinSectionDescription: string;
+  menus: Record<string, PublicSiteMenu>;
+};
 
 @Injectable({
   providedIn: "root",
@@ -79,8 +188,6 @@ export class EnvConfigurationInitService {
   // Since the app config is loaded on module init, the config should always be
   // valid by the time it's accessed... should...
   static getConfig$: BehaviorSubject<AppConfig | null> = new BehaviorSubject<AppConfig | null>(null);
-
-  constructor() {}
 
   readAppConfig(handler: HttpBackend, authConfig?: AuthClientConfig): Promise<AppConfig | null> {
     const request$ = new HttpClient(handler).get<AppConfig>(`./${environment.configName}`).pipe(take(1));

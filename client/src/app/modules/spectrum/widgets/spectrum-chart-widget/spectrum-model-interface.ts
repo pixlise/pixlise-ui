@@ -34,7 +34,6 @@ import { ChartAxis } from "src/app/modules/widget/components/interactive-canvas/
 import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
-import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
 import { XRFDatabaseService } from "src/app/services/xrf-database.service";

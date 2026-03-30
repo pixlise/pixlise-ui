@@ -29,11 +29,14 @@
 
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
+
 import { BuiltInTags, TagType } from "../../models/tag.model";
+
 import { TagService } from "../../services/tag.service";
-import { Tag } from "src/app/generated-protos/tags";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+
 import { UserDetails } from "src/app/generated-protos/user";
+import { Tag } from "src/app/generated-protos/tags";
 
 @Component({
   standalone: false,
@@ -187,6 +190,7 @@ export class TagPickerComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   focusOnInput(): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tagInput = document.querySelector(".tag-search-container input") as any;
     if (tagInput && tagInput.focus) {
       tagInput.focus({ focusVisible: true });
