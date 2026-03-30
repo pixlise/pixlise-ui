@@ -38,6 +38,7 @@ import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-sour
 
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 
 export const getWidgetOptions = (): WidgetConfiguration[] => {
   return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));

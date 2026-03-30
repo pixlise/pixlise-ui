@@ -18,7 +18,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
-import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
@@ -38,7 +38,7 @@ import { TabLinks } from "src/app/models/TabLinks";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 import { ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { createDefaultScreenConfiguration, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
+import { createDefaultScreenConfiguration, DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
 import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
@@ -143,7 +143,7 @@ export class AnalysisLayoutService implements OnDestroy {
         if (params["id"]) {
           this.fetchScreenConfiguration(params["id"]);
         } else if (params["scan_id"]) {
-          this.loadScreenConfigurationFromScan(params["scan_id"]);
+          this.fetchScreenConfiguration("", params["scan_id"], true);
           this.fetchQuantsForScan(params["scan_id"]);
         } else {
           if (this.lastLoadedScreenConfigurationId) {
@@ -340,10 +340,15 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   fetchQuantsForScan(scanId: string, callback: (quants: QuantificationSummary[]) => void = () => {}) {
-    this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe(res => {
-      this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
-      if (callback) {
-        callback(res.quants);
+    this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe({
+      next: res => {
+        this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
+        if (callback) {
+          callback(res.quants);
+        }
+      },
+      error: err => {
+        console.error(err);
       }
     });
   }
@@ -409,13 +414,24 @@ export class AnalysisLayoutService implements OnDestroy {
         // in this case we should write out a default one
         if (err instanceof WSError && (err as WSError).status == ResponseStatus.WS_NOT_FOUND && !id && scanId) {
           // No screen configuration found, create a new one for this scan
-          const newScreenConfiguration = createDefaultScreenConfiguration();
+
+          // Load scan info to see what default screen configuration to use
+          let newScreenConfiguration: ScreenConfiguration | undefined;
+          
           const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
           if (scanId && matchedScan) {
-            newScreenConfiguration.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
+            if (matchedScan.instrument == ScanInstrument.UNKNOWN_INSTRUMENT) {
+              newScreenConfiguration = JSON.parse(JSON.stringify(DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION));
+            } else {
+              newScreenConfiguration = createDefaultScreenConfiguration();
+            }
+            
+            newScreenConfiguration!.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
+          } else {
+            newScreenConfiguration = createDefaultScreenConfiguration();
           }
 
-          this.writeScreenConfiguration(newScreenConfiguration, scanId, true);
+          this.writeScreenConfiguration(newScreenConfiguration!, scanId, true);
         } else if (showSnackOnError) {
           this._snackService.openError(err);
         }
@@ -952,22 +968,22 @@ export class AnalysisLayoutService implements OnDestroy {
 
           if (widgetKey === "contextImage") {
             let contextImage = widget.data.contextImage;
-            if (contextImage) {
+            if (contextImage && contextImage.contextImage && contextImage.contextImage.length > 0) {
               imageIDs.push(contextImage.contextImage);
             }
           } else if (widgetKey === "rgbuPlot") {
             let rgbuPlot = widget.data.rgbuPlot;
-            if (rgbuPlot) {
+            if (rgbuPlot && rgbuPlot.imageName && rgbuPlot.imageName.length > 0) {
               imageIDs.push(rgbuPlot.imageName);
             }
           } else if (widgetKey === "singleAxisRGBU") {
             let singleAxisRGBU = widget.data.singleAxisRGBU;
-            if (singleAxisRGBU) {
+            if (singleAxisRGBU && singleAxisRGBU.imageName && singleAxisRGBU.imageName.length > 0) {
               imageIDs.push(singleAxisRGBU.imageName);
             }
           } else if (widgetKey === "rgbuImage") {
             let rgbuImage = widget.data.rgbuImage;
-            if (rgbuImage) {
+            if (rgbuImage && rgbuImage.imageName && rgbuImage.imageName.length > 0) {
               imageIDs.push(rgbuImage.imageName);
             }
           }

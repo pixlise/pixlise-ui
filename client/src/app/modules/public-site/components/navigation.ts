@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+
 export const DefaultLoggedInLink = "/datasets";
 
 export class NavigationItem {
@@ -37,40 +39,65 @@ export class NavigationItem {
 }
 
 export class Navigation {
-  public categories = ["Features", "Get Started", "About Us"];
+  categories: string[] = [];
 
-  private _categoryRoots = new Map<string, string>([
-    [this.categories[0], ""],
-    [this.categories[1], "/public/get-started"],
-    [this.categories[2], "/public/about-us"],
-  ]);
+  private _categoryRoots: Map<string, string> = new Map<string, string>();
+  private _categoryItems: Map<string, NavigationItem[]> = new Map<string, NavigationItem[]>();
 
-  private _categoryItems = new Map<string, NavigationItem[]>([
-    [
-      this.categories[0],
+  constructor() {
+    const menu = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.menus;
+    
+    this._categoryRoots;
+
+    const menus = Object.keys(menu);
+    for (let k of menus) {
+      const v = menu[k];
+
+      this.categories.push(k);
+      this._categoryRoots.set(k, v.link);
+
+      const navList: NavigationItem[] = [];
+
+      const menuItems = Object.keys(v.items);
+      for (let menuName of menuItems) {
+        navList.push(new NavigationItem(menuName, v.items[menuName]));
+      }
+      this._categoryItems.set(k, navList);
+    }
+/*
+    this._categoryRoots = new Map<string, string>([
+      [this.categories[0], ""],
+      [this.categories[1], "/public/get-started"],
+      [this.categories[2], "/public/about-us"],
+    ]);
+
+    this._categoryItems = new Map<string, NavigationItem[]>([
       [
-        new NavigationItem("Workflow", "/public/workflow"),
-        new NavigationItem("Quantification", "/public/quantification"),
-        new NavigationItem("Investigation", "/public/investigation"),
+        this.categories[0],
+        [
+          new NavigationItem("Workflow", "/public/workflow"),
+          new NavigationItem("Quantification", "/public/quantification"),
+          new NavigationItem("Investigation", "/public/investigation"),
+        ],
       ],
-    ],
-    [
-      this.categories[1],
       [
-        new NavigationItem("PIXLISE Options", "/public/get-started#top"),
-        new NavigationItem("Get PIXLISE", "/public/get-started#get"),
-        new NavigationItem("Links and Docs", "/public/get-started#links"),
+        this.categories[1],
+        [
+          new NavigationItem("PIXLISE Options", "/public/get-started#top"),
+          new NavigationItem("Get PIXLISE", "/public/get-started#get"),
+          new NavigationItem("Links and Docs", "/public/get-started#links"),
+        ],
       ],
-    ],
-    [
-      this.categories[2],
       [
-        new NavigationItem("PIXL + MARS 2020", "/public/about-us#mars2020"),
-        new NavigationItem("Impact", "/public/about-us#impact"),
-        new NavigationItem("Our Team", "/public/about-us#team"),
+        this.categories[2],
+        [
+          new NavigationItem("PIXL + MARS 2020", "/public/about-us#mars2020"),
+          new NavigationItem("Impact", "/public/about-us#impact"),
+          new NavigationItem("Our Team", "/public/about-us#team"),
+        ],
       ],
-    ],
-  ]);
+    ]);*/
+  }
 
   public getItems(category: string): NavigationItem[] {
     return this._categoryItems.get(category) || [];

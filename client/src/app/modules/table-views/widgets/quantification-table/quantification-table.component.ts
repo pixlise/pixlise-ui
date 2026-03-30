@@ -114,6 +114,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   ngOnInit() {
     this._subs.add(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.widgetData$.subscribe((data: any) => {
         const tableData: TableState = data as TableState;
 
@@ -162,7 +163,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     );
 
     this._subs.add(
-      this._selectionService.selection$.subscribe(selection => {
+      this._selectionService.selection$.subscribe(() => {
         this.updateTable();
       })
     );
@@ -538,8 +539,6 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
       return 0;
     });
   }
-
-  onReferences() {}
 
   private getAvailableQuants(): Observable<Map<string, QuantificationSummary[]>> {
     return this._analysisLayoutService.activeScreenConfiguration$.pipe(

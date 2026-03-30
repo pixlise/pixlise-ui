@@ -52,7 +52,7 @@ import { NewROIDialogData, NewROIDialogComponent } from "src/app/modules/roi/com
 import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 import { PixelPoint } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/selection/model";
 
-import { ContextImageItemTransform } from "src/app/modules/image-viewers/models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-internals";
 import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
@@ -693,7 +693,7 @@ export class SelectionService {
     // Transform PMC selection into a list of pixel indices that are within all PMC sub-polygons
     const selectedPixels = Array.from(locationIndexes).reduce((prevPixels: number[], location: number) => {
       // Get pixels within each polygon corresponding to selected PMCs
-      let polygonPixels = this.getPixelsInPolygon(mdl.scanPointPolygons[location], rgbuImage, imageTransform);
+      let polygonPixels = this.getPixelsInPolygon(mdl.scanPointPolygons[location].points, rgbuImage, imageTransform);
       return [...prevPixels, ...polygonPixels];
     }, []);
 

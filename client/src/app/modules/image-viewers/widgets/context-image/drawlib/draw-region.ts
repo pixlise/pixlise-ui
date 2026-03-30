@@ -1,13 +1,13 @@
 import { CanvasWorldTransform } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { ContextImageItemTransform } from "../../../models/image-transform";
+import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { ContextImageRegionLayer, RegionDisplayPolygon } from "../../../models/region";
 import { drawImageOrMaskWithOptionalTransform } from "./draw-image";
 import { RGBA } from "src/app/utils/colours";
 
 export function drawRegion(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  region: ContextImageRegionLayer,
   worldTransform: CanvasWorldTransform,
+  region: ContextImageRegionLayer,
   imageTransform: ContextImageItemTransform | null,
   colourOverride: RGBA | null,
   drawOutline: boolean

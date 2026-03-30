@@ -566,6 +566,16 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
                   return;
                 }
 
+                // Ensure we have the file name start with the scan name, they're all generated with the scan ID but that's not that useful if
+                // the user extracts all exports into one directory. We check if it starts with "scanid-" and append "title [scanid]-"
+                let pos = file.fileName.indexOf("-");
+                if (pos > -1) {
+                  let fileNameScanId = file.fileName.substring(0, pos);
+                  if (fileNameScanId == scanId) {
+                    file.fileName = `${scanName} (${scanId})` + file.fileName.substring(pos);
+                  }
+                }
+
                 (data[dataKey] as any)!.push({
                   ...file,
                   subFolder: file?.subFolder ? `${scanName}/${file.subFolder}` : scanName,

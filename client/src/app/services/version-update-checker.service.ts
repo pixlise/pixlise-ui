@@ -34,7 +34,7 @@ import { makeHeaders } from "src/app/utils/api-helpers";
 import { doesVersionDiffer } from "src/app/utils/utils";
 import { VERSION } from "src/environments/version";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
-import { NotificationsService, UINotification } from "../modules/settings/services/notifications.service";
+import { NotificationsService } from "../modules/settings/services/notifications.service";
 import { SnackbarService } from "../modules/pixlisecore/pixlisecore.module";
 import { versionUpdateNotificationID } from "../components/toolbar/notifications-menu-panel/notifications-menu-panel.component";
 
@@ -63,7 +63,7 @@ export class VersionUpdateCheckerService implements OnDestroy {
     // Start timer in a little while, don't want it rushing straight away
     const timerStartMs = 5000;
     this._subs.add(
-      timer(timerStartMs, EnvConfigurationInitService.getConfig$.value!.versionPollInterval_ms).subscribe((counter: number) => {
+      timer(timerStartMs, EnvConfigurationInitService.getConfig$.value!.versionPollInterval_ms).subscribe(() => {
         this.pollServerVersion();
       })
     );
@@ -77,6 +77,7 @@ export class VersionUpdateCheckerService implements OnDestroy {
     // Request with a different URL so doesn't get cached
     this.http.get<DeployedVersion>(EnvConfigurationInitService.getConfig$.value!.versionPollUrl + "?checktime=" + Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
       (version: DeployedVersion) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const thisBuildVersion = (VERSION as any)?.raw || "(Local build)";
         const recvVersion = version.version;
 

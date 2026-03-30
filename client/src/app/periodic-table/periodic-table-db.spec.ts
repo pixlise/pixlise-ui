@@ -27,6 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+/* eslint-disable  @typescript-eslint/no-unused-vars */
+
 import { DetectorConfig } from "../generated-protos/detector-config";
 import { PeriodicTableDB, periodicTableDB } from "./periodic-table-db";
 import { ElementLine } from "./xrf-line-data";

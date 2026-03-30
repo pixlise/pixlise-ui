@@ -113,8 +113,6 @@ export class WidgetKeyDisplayComponent implements OnInit, OnChanges {
 
   @Output() onUpdateItems = new EventEmitter<WidgetKeyItem[]>();
 
-  constructor() {}
-
   get fontPadding(): number {
     return this.fontSize < 12 ? 0 : Math.ceil(this.fontSize / 4);
   }

@@ -35,7 +35,7 @@
   justify-content: flex-start;
   align-items: stretch;
 
-  min-width: 500px;
+  min-width: 600px;
 
   .meta-fields {
     display: flex;
@@ -101,6 +101,7 @@ ngx-dropzone,
   border: $sz-half dashed $clr-gray-60;
   border-radius: $sz-half;
   font-size: 20px;
+  height: 300px;
 
   &:hover {
     background: $clr-gray-90;

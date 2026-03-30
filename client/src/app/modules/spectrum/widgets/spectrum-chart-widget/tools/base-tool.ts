@@ -72,16 +72,16 @@ export class BaseSpectrumTool implements CanvasInteractionHandler, CanvasDrawer 
   }
 
   // CanvasInteractionHandler
-  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
+  mouseEvent(_event: CanvasMouseEvent): CanvasInteractionResult {
     return CanvasInteractionResult.neither;
   }
 
-  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
+  keyEvent(_event: CanvasKeyEvent): CanvasInteractionResult {
     return CanvasInteractionResult.neither;
   }
 
   // CanvasDrawer
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
+  draw(_screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): Observable<void> {
     // Default is do nothing...
     return of(void 0);
   }

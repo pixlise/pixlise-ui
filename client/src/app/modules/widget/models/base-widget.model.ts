@@ -1,9 +1,11 @@
-import { Component, ComponentRef, EventEmitter, Output, TemplateRef, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ComponentRef, EventEmitter, Output, TemplateRef, ViewChild } from "@angular/core";
 import { WidgetControlConfiguration } from "./widgets.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { BehaviorSubject, Observable, of } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { WidgetExportData, WidgetExportDialogData, WidgetExportRequest } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 
 export type LiveExpression = {
   expressionId: string;
@@ -18,7 +20,7 @@ export type LiveExpression = {
   selector: "base-widget",
   template: "",
 })
-export class BaseWidgetModel {
+export class BaseWidgetModel implements AfterViewInit {
   _ref: ComponentRef<any> | null = null;
   _widgetControlConfiguration: WidgetControlConfiguration = {};
 
@@ -33,8 +35,10 @@ export class BaseWidgetModel {
 
   _exportMode: boolean = false;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onWidgetDataChange(widgetData: WidgetData): void {}
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   injectExpression(expression: LiveExpression): void {}
 
   @Output() public onWidgetHighlight: EventEmitter<boolean> = new EventEmitter<boolean>();
@@ -97,7 +101,7 @@ export class BaseWidgetModel {
     };
   }
 
-  onExport(request: WidgetExportRequest): Observable<WidgetExportData> {
+  onExport(_request: WidgetExportRequest): Observable<WidgetExportData> {
     return of({});
   }
 

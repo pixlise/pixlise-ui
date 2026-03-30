@@ -94,13 +94,11 @@ import {
   LayerVisibilityDialogComponent,
   LayerVisibilitySection,
   LayerVisiblilityData,
-} from "../../../pixlisecore/components/atoms/layer-visibility-dialog/layer-visibility-dialog.component";
+} from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataExpressionId } from "../../../../expression-language/expression-id";
 import { SelectionChangerImageInfo } from "src/app/modules/pixlisecore/components/atoms/selection-changer/selection-changer.component";
 import { isValidNumber, SentryHelper } from "src/app/utils/utils";
-import { SearchParams } from "../../../../generated-protos/search-params";
-import { RegionSettings, ROIDisplaySettings } from "../../../roi/models/roi-region";
 
 export type RegionMap = Map<string, ROIItem>;
 export type MapLayers = Map<string, ContextImageMapLayer[]>;

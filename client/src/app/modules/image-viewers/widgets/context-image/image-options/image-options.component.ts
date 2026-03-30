@@ -28,21 +28,25 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+
 import { Observable, Subscription, combineLatest, map, of } from "rxjs";
+
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { AnalysisLayoutService, APIDataService, ContextImageDataService, ContextImagePickerComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
-import { ContextImagePickerComponent, ImageSelection } from "../../../components/context-image-picker/context-image-picker.component";
 import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/range-slider/range-slider.component";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { AnalysisLayoutService, APIDataService, ContextImageDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { ImageBeamLocationVersionsReq, ImageBeamLocationVersionsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { WidgetType } from "../../../../widget/models/widgets.model";
+import { ImageSelection } from "src/app/modules/pixlisecore/components/atoms/context-image-picker/context-image-picker.component";
+
 
 export class ImageDisplayOptions {
   constructor(
@@ -137,11 +141,12 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
     private _dataService: APIDataService,
+    protected _endpointsService: APIEndpointsService,
     private _snackService: SnackbarService,
     private _contextImageDataService: ContextImageDataService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
-    public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>,
-    public dialog: MatDialog //private _exportDataService: ExportDataService
+    public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>
+    //private _exportDataService: ExportDataService
   ) {
     // Copy the options so we can have "reset" buttons for eg
     this.loadOptions(data.options);
@@ -656,24 +661,5 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   onActiveWidgetIdsChanged(ids: string[]) {
     this.activeWidgetIds = ids;
     this.publishOptionChange();
-  }
-
-  onImport() {
-    const entry = prompt("Enter token provided by MarsViewer");
-    if (!entry) {
-      return;
-    }
-
-    // We base64 decode it to find the URL
-    const triggerUrl = atob(entry);
-
-    this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: triggerUrl })).subscribe({
-      next: (resp: ImportMarsViewerImageResp) => {
-        this._snackService.openSuccess(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
-      },
-      error: err => {
-        this._snackService.openError(err);
-      },
-    });
   }
 }

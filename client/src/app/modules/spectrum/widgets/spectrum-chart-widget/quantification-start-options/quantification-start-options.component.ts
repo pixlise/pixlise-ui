@@ -433,7 +433,7 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
     this.ignoreArgon = !this.ignoreArgon;
   }
 
-  onQuantModeChanged(event): void {
+  onQuantModeChanged(): void {
     this.checkSingleSelectROIMode();
 
     if (this.singleSelectROI && this._roisSelected.length > 1) {

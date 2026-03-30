@@ -59,6 +59,7 @@ export const environment = {
   disableExpressionMemoisation: false,
   // disableExpressionMemoisation: true,
   readBeamIJSwapped: true,
+  comparePolygonGenerationOutput: true
 };
 
 /*

@@ -62,8 +62,6 @@ export class ElementListItemComponent implements OnInit {
 
   symbol: string = "";
 
-  constructor() {}
-
   ngOnInit(): void {
     this.symbol = this.getElementSymbol(this.item.atomicNumber);
   }

@@ -564,11 +564,13 @@ export class WidgetExportDialogComponent implements OnInit, OnChanges {
       });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onExportError(err: any): void {
     this.loading = false;
     this.errorMessage = err;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSwitchView(evt: any): void {
     // Get the key items from the preview widget
     if (this.previewWidget) {

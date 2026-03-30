@@ -1,4 +1,24 @@
-## 4.83.0 (LATEST)
+## 4.85.0 (LATEST)
+
+### New Features
+- Expression language now supports querying meta data of spectra. We previously erroneously showed that the housekeeping() function can do this, but the data() function has now been modified to allow this. XPERCHAN, OFFSET are constants so not that useful but it does contain REALTIME, LIVETIME and PMC is readable from here too.
+- Exporter now starts all generated file names with the scan title and puts the scan ID in (brackets). This should make it easier to find data in large directories of exported files.
+- If user login token has expired, we show a notification (popup in bottom-left of PIXLISE) saying so to prompt users to log in again. This is a precursor to potentially navigating back to the home page, but that needs to be treated carefully because we don't want it to be jarring to users and potentially cause data loss.
+- Polygon generation (for display of ROIs and element maps) is now done on server-side and sent down to the client. This should result in quicker load times. The polygons may differ slightly but visually should be identical to before. If you see anything weird, please reach out ASAP.
+- Users can now create a new empty scan using the "user-defined" option on the "Create/Upload New Scan" dialog. The aim of this is to allow creating user-defined scans where data can then be uploaded using the various import buttons, eg making a scan completely from images. This removes the impostition of a specific file format needing to be uploaded.
+- PIXLISE now supports large images over 4GB in size. The image picker dialog now contains an image upload button (only shown if you have edit scan permissions). All images that are over 20MB in size are now uploaded in chunks of 20MB messages. They can be resumed if the upload stops at some point. Because of this, the image size field is now a 64bit integer to describe the size correctly!
+- Added a new widget for now called "Context Image v2" which will be developed further in future but for now allows viewing large images as tiles streamed in as you zoom in further.
+
+### Bug Fixes
+- Expression picker tag selection now only shows expressions that contain all of the tags selected (and instead of or logic).
+- Code editor help shown for data() and housekeeping() functions now shows the correct list of possible field names.
+
+## 4.84.0 (2026-03-19)
+
+### Bug Fixes
+- Fixing issue with introduced by Chrome 146 update - we were not able to display images because Chromes "data URL" parsing became more strict, and now checks that we supply a full MIME type.
+
+## 4.83.0 (2026-01-15)
 
 ### New Features
 - Allow the ability to delete FM scans that have no spectra and images associated with them. This covers the case like sol 1637 and 1641 which were safety survey scans and didn't actually acquire data, or other failed scan scenarios. Previously these were deleted by hand from the DB but it makes sense to allow admins to delete them here.

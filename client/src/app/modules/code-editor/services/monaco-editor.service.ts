@@ -30,7 +30,7 @@
 // This was inspired by a post here: https://stackoverflow.com/questions/71072724/implement-monaco-editor-in-angular-13
 
 import { Injectable } from "@angular/core";
-import { Subject, ReplaySubject } from "rxjs";
+import { Subject, ReplaySubject, combineLatest } from "rxjs";
 
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
@@ -43,6 +43,7 @@ import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.s
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
 import { ScanMetaDataType } from "src/app/generated-protos/scan";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
 
 export const MONACO_LUA_LANGUAGE_NAME = "lua";
 
@@ -96,19 +97,49 @@ export class MonacoEditorService {
 
   setScanAndQuant(scanId: string, quantId: string) {
     if (scanId) {
-      this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })).subscribe((resp: ScanMetaLabelsAndTypesResp) => {
-        const hk: string[] = [];
-        for (let c = 0; c < resp.metaLabels.length; c++) {
-          const label = resp.metaLabels[c];
-          if (resp.metaTypes[c] == ScanMetaDataType.MT_FLOAT || resp.metaTypes[c] == ScanMetaDataType.MT_INT) {
-            hk.push(label);
+      const req$ = [
+        this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
+        this._cachedDataService.getScanEntryMetadata(ScanEntryMetadataReq.create({scanId: scanId})),
+      ]
+
+      combineLatest(req$).subscribe(
+        (resps: (ScanMetaLabelsAndTypesResp | ScanEntryMetadataResp)[]) => {
+          const metaLabels = resps[0] as ScanMetaLabelsAndTypesResp;
+          const metaEntries = resps[1] as ScanEntryMetadataResp;
+
+          // Find a meta entry that has actual data
+          let metaEntryIdx = -1;
+          for (let c = 0; c < metaEntries.entries.length; c++) {
+            if (Object.keys(metaEntries.entries[c].meta).length > 0) {
+              metaEntryIdx = c;
+              break;
+            }
           }
+
+          const hk: string[] = [];
+          const spectrumDataCol: string[] = [];
+          for (let c = 0; c < metaLabels.metaLabels.length; c++) {
+            const label = metaLabels.metaLabels[c];
+
+            // We can only build maps from numerical types
+            // We're also only interested in labels that actually exist in our meta data columns (housekeeping file).
+            // NOTE: Some labels end up here that originate from importing MSA files, but these cannot be queried via
+            //       the housekeeping() function, they need the data() or quant() calls to access quant data. Eg OFFSET
+            if ( metaLabels.metaTypes[c] == ScanMetaDataType.MT_FLOAT ||
+                 metaLabels.metaTypes[c] == ScanMetaDataType.MT_INT ) {
+              if (metaEntryIdx == -1 || (metaEntries.entries[metaEntryIdx].meta[c] !== undefined)) {
+                hk.push(label);
+              } else {
+                spectrumDataCol.push(label);
+              }
+            }
+          }
+
+          MonacoEditorService._activeParamLists.set("housekeeping", hk);
+          MonacoEditorService._activeParamLists.set("spectrumData", spectrumDataCol);
         }
-
-        MonacoEditorService._activeParamLists.set("housekeeping", hk);
-      });
+      );
     }
-
     if (quantId) {
       this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })).subscribe((resp: QuantGetResp) => {
         MonacoEditorService._activeParamLists.set("quantColumns", resp.data?.labels || []);

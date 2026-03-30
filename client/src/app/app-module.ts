@@ -186,8 +186,8 @@ export const authHttpInterceptorCustomFn = (
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideAnimations(),
-   // provideHttpClient(withInterceptorsFromDi()),
-   provideHttpClient(withInterceptors([authHttpInterceptorCustomFn])),
+    // provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(withInterceptors([authHttpInterceptorCustomFn])),
     /* We used to define our own HttpInterceptorService but switched to use Auth0's built in one. The "extra" things ours did were:
         - Show snack saying "You are not online" if !window.navigator.onLine
         - If getAccessTokenSilently() returned an error that contains "Login required": snackService.openError(

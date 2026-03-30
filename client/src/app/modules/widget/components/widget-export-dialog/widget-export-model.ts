@@ -1,5 +1,5 @@
 import { ElementRef } from "@angular/core";
-import { map, Observable, switchMap, tap, throwError } from "rxjs";
+import { map, Observable, throwError } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
@@ -117,6 +117,8 @@ export type WidgetExportRequest = {
 export type WidgetExportFile = {
   fileName: string;
   subFolder?: string;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
 };
 

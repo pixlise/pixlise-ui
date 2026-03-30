@@ -7,6 +7,7 @@ export const WIDGET_ICONS: Record<string, string> = {
   "ternary-plot": "assets/chart-placeholders/ternary-plot.svg",
   "chord-diagram": "assets/chart-placeholders/chord-diagram.svg",
   "context-image": "assets/chart-placeholders/context-image.svg",
+  "context-image2": "assets/chart-placeholders/context-image2.svg",
   histogram: "assets/chart-placeholders/histogram.svg",
   "spectrum-chart": "assets/chart-placeholders/spectrum-chart.svg",
   "rgbu-viewer": "assets/chart-placeholders/rgbu-viewer.svg",

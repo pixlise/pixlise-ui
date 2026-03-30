@@ -32,6 +32,7 @@ import { Component, OnInit } from "@angular/core";
 import { SectionImageListTextInputs, SectionImageItemContent } from "../../layouts/section-image-list-text/section-image-list-text.component";
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
 import { MetaTagService } from "../../../services/meta-tag.service";
+import { EnvConfigurationInitService, PublicSiteConfig } from "src/app/services/env-configuration-init.service";
 
 export const LandingRouteName = "pixlise";
 
@@ -42,52 +43,12 @@ export const LandingRouteName = "pixlise";
   styleUrls: ["./landing-page.component.scss"],
 })
 export class LandingPageComponent implements OnInit {
-  headingParts = ["Finally, a tool as ", "smart", " as the modern geoscientist."];
-
   collaborationParts = ["Unlock real-time collaboration in your lab with open-source ", "web access", " to geoscience investigation."];
 
-  piquantParts = [
-    "PIQUANT is a ",
-    "fundamental parameters",
-    "-based quantification engine, optimized for ",
-    "cloud parallelization",
-    ", yielding accurate quantification of ",
-    "thousands of scan points in minutes",
-    ". Craft compound quantifications with different element sets or matrix assumptions for ",
-    "multiple regions",
-    " of a single dataset. Rapidly visualize fully ",
-    "quantified maps",
-    " of every element in your quantification. And don't forget to ",
-    "share",
-    " them all with your lab.",
-  ];
+  computeParts: string[] = [];
+  workflowDetailParts: string[] = [];
 
-  workspaceParams = new SectionImageListTextInputs(
-    new NumberButtonParams("01", "Workflow", "yellow", true, true, "public/workflow"),
-    ["Scientific investigation at the speed of thought."],
-    true,
-    "", // If no label we don't show the list
-    [
-      // The only items info will be shown
-      new SectionImageItemContent(
-        "", // No list item to show...
-        ["Fast, Flexible, and Lab-optimized."],
-        [
-          "PIXLISE is an interface informed by ",
-          "thousands of hours of collaboration",
-          " between geoscientists and visualization designers. With intricately-connected features, ",
-          "colorblind-safe palettes",
-          ", and customizable plot panels, PIXLISE's ",
-          "flexible user interface",
-          " empowers the modern scientist with an ",
-          "innovative workflow",
-          ".",
-        ],
-        "assets/images/landing/anim-flexibility.gif",
-        ""
-      ),
-    ]
-  );
+  workspaceParams: SectionImageListTextInputs;
 
   investigationParams = new SectionImageListTextInputs(
     new NumberButtonParams("03", "Investigation", "yellow", true, true, "public/investigation"),
@@ -114,7 +75,33 @@ export class LandingPageComponent implements OnInit {
 
   quoteParts = ["This tool allows me to make new and different types of analyses ", "which I had never imagined were possible."];
 
-  constructor(private _metaTagService: MetaTagService) {}
+  computationWord = "quantification";
+
+  constructor(private _metaTagService: MetaTagService) {
+    this.computationWord = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.showPIQUANT ? "quantification" : "data processing";
+    this.computeParts = EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.computeParts;
+
+    this.workspaceParams = new SectionImageListTextInputs(
+      new NumberButtonParams("01", "Workflow", "yellow", true, true, "public/workflow"),
+      ["Scientific investigation at the speed of thought."],
+      true,
+      "", // If no label we don't show the list
+      [
+        // The only items info will be shown
+        new SectionImageItemContent(
+          "", // No list item to show...
+          ["Fast, Flexible, and Lab-optimised."],
+          EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!.workflowDetailParts,
+          "assets/images/landing/anim-flexibility.gif",
+          ""
+        ),
+      ]
+    );
+  }
+
+  get publicSiteConfig(): PublicSiteConfig {
+    return EnvConfigurationInitService.getConfig$.value!.publicSiteConfig!;
+  }
 
   ngOnInit(): void {
     // NOTE: these must be in sync with the root index.html

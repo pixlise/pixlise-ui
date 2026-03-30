@@ -401,12 +401,12 @@ export class QuantJobsComponent implements OnInit {
 
     const dialogRef = this._dialog.open(TextFileViewingDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe(
-      () => {},
-      err => {
+    dialogRef.afterClosed().subscribe({
+      next: () => {},
+      error: err => {
         console.error(err);
       }
-    );
+    });
   }
 
   onViewQuantCSV(quantId: string) {

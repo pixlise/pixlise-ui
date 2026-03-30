@@ -48,9 +48,15 @@ POSSIBILITY OF SUCH DAMAGE.
 </ng-template>
 
 <div class="snackbar {{ data.type }}">
-  <span class="icon">
-    <mat-icon>{{ icon }}</mat-icon>
-  </span>
+  @if (icon.length > 0) {
+    <span class="icon">
+      @if (icon == "wait") {
+        <wait-spinner></wait-spinner>
+      } @else {
+        <mat-icon>{{ icon }}</mat-icon>
+      }
+    </span>
+  }
   <span class="message">{{ data.message }}</span>
   <push-button *ngIf="data.details" buttonStyle="white-outline" [customDialog]="detailsPopup" #detailsModal class="details snack-btn">Details</push-button>
   <span class="close-btn snack-btn {{ data.action ? 'rounded' : '' }}" (click)="close()">

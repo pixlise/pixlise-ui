@@ -1,11 +1,15 @@
 import { Colours, RGBA } from "src/app/utils/colours";
 import { drawEmptyCircle, drawFilledCircle, drawPlusCoordinates } from "src/app/utils/drawing";
 import { ScanPoint } from "../../../models/scan-point";
+import { Point, Rect } from "src/app/models/Geometry";
+import { CanvasWorldTransform } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { makeBBox, pointInView } from "./culling";
 
 // The actual selectable locations, small circles (currently blue)
 // We draw enlarged borders around these a little faded out to not interfere too much
 export function drawScanPoints(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  worldTransform: CanvasWorldTransform,
   points: ScanPoint[],
   selectedPointPMCs: Set<number>,
   selectedPointIndexes: Set<number>,
@@ -26,6 +30,14 @@ export function drawScanPoints(
 
   let lastSetColour: RGBA | null = null;
 
+  // Make a bounding box in world space to compare points to
+  const worldBBox = makeBBox(screenContext, worldTransform);
+
+  let drawnEmpty = 0;
+  let drawnFilled = 0;
+  let drawnUnselected = 0;
+  let drawnSelected = 0;
+
   // Draw the unselected points as transparent beam sized circle with a solid small circle in the middle
   if (drawUnselectedPts) {
     // Make a list of unselected location indexes
@@ -38,9 +50,10 @@ export function drawScanPoints(
     for (let idx = 0; idx < points.length; idx++) {
       const loc = points[idx];
       if (idx != excludeIdx && loc && loc.coord) {
-        if (loc.hasMissingData) {
+        if (loc.hasMissingData && pointInView(worldBBox, loc.coord, pointRadius)) {
           // Just draw it here as an empty point
           drawEmptyCircle(screenContext, loc.coord, pointRadius);
+          drawnEmpty++;
         } else if (!selectedPointPMCs.has(loc.PMC)) {
           unselectedLocationIndexes.push(idx);
         }
@@ -52,9 +65,10 @@ export function drawScanPoints(
     // First the transparent backgrounds...
     for (const unselIdx of unselectedLocationIndexes) {
       const loc = points[unselIdx];
-      if (loc.coord) {
+      if (loc.coord && pointInView(worldBBox, loc.coord, pointRadius)) {
         lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, true, lastSetColour);
         drawFilledCircle(screenContext, loc.coord, pointRadius);
+        drawnFilled++;
       }
     }
 
@@ -65,7 +79,7 @@ export function drawScanPoints(
     for (const unselIdx of unselectedLocationIndexes) {
       const loc = points[unselIdx];
 
-      if (loc.coord) {
+      if (loc.coord && pointInView(worldBBox, loc.coord, pointRadius)) {
         lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, false, lastSetColour);
 
         if (loc.hasDwellSpectra) {
@@ -75,6 +89,8 @@ export function drawScanPoints(
         } else {
           drawFilledCircle(screenContext, loc.coord, innerRadius);
         }
+
+        drawnUnselected++;
       }
     }
   }
@@ -85,7 +101,7 @@ export function drawScanPoints(
 
     for (const selIdx of selectedPointIndexes) {
       const loc = points[selIdx];
-      if (selIdx != excludeIdx && loc && loc.coord) {
+      if (selIdx != excludeIdx && loc && loc.coord && pointInView(worldBBox, loc.coord, pointRadius)) {
         lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, false, lastSetColour);
         if (loc.hasDwellSpectra) {
           screenContext.beginPath();
@@ -94,6 +110,8 @@ export function drawScanPoints(
         } else {
           drawEmptyCircle(screenContext, loc.coord, pointRadius);
         }
+
+        drawnSelected++;
       }
     }
   }

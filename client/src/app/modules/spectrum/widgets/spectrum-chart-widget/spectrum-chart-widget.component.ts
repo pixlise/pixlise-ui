@@ -902,9 +902,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     }
 
     this._shownPiquant = this.dialog.open(SpectrumPeakIdentificationComponent, dialogConfig);
-    this._shownPiquant.componentInstance.onChange.subscribe((result: PeakIdentificationData) => {});
+    this._shownPiquant.componentInstance.onChange.subscribe(/*(result: PeakIdentificationData) => {}*/);
 
-    this._shownPiquant.afterClosed().subscribe((result: PeakIdentificationData) => {
+    this._shownPiquant.afterClosed().subscribe(() => {
       this._shownPiquant = null;
     });
   }

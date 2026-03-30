@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="add-dataset-container">
   <div class="title-area card-toolbar card-toolbar-shadow">
-    <div class="txt-widget-title">Upload New Dataset</div>
+    <div class="txt-widget-title">Create/Upload New Scan</div>
   </div>
 
   <div *ngIf="mode !== modeEntry" class="job-status">
@@ -78,19 +78,23 @@ POSSIBILITY OF SUCH DAMAGE.
         </ng-container>
       </div>
 
-      <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
-        <ngx-dropzone-label>
-            <div>
-                <h2>Drop spectrum zip file</h2>
-            </div>
-        </ngx-dropzone-label>
-        <ngx-dropzone-preview
-            *ngFor="let f of droppedFiles"
-            [removable]="true"
-            (removed)="onRemoveDroppedFile(f)">
-            <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
-        </ngx-dropzone-preview>
-      </div>
+      <ng-container *ngIf="detector=='user-defined'">
+        
+      </ng-container>
+
+      <ng-container *ngIf="detector!='user-defined'">
+        <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+          <ngx-dropzone-label>
+            <h2>{{singleZipPrompt}}</h2>
+          </ngx-dropzone-label>
+          <ngx-dropzone-preview
+              *ngFor="let f of droppedFiles"
+              [removable]="true"
+              (removed)="onRemoveDroppedFile(f)">
+              <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
+          </ngx-dropzone-preview>
+        </div>
+      </ng-container>
     </ng-container>
 
     <ng-container *ngSwitchDefault>
@@ -102,7 +106,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button *ngIf="mode !== modeEntry" buttonStyle="yellow" (onClick)="onCancel()">Close</push-button>
     <ng-container *ngIf="mode === modeEntry">
       <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-      <push-button buttonStyle="yellow" (onClick)="onOK()">Upload</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onOK()">{{uploadButtonLabel}}</push-button>
     </ng-container>
   </div>
 </div>

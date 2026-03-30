@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -198,7 +200,7 @@ export function isValidPhoneNumber(phNum: string): boolean
 
     return true;
 }
-*/
+
 export function stripInvalidCharsFromPhoneNumber(phNum: string): string {
   // After a + at the start, we strip everything that's not a digit
   let result = "";
@@ -214,7 +216,7 @@ export function stripInvalidCharsFromPhoneNumber(phNum: string): string {
 
   return result;
 }
-
+*/
 // https://memory.psych.mun.ca/tech/js/correlation.shtml
 export function getPearsonCorrelation(x: any, y: any) {
   let shortestArrayLength = 0;
@@ -272,7 +274,6 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
   }
 
   const xys: any[] = [];
-  const c = 0;
 
   for (let c = 0; c < xvalues.length; c++) {
     const xy: any = { x: xvalues[c], y: yvalues[c] };
@@ -386,13 +387,49 @@ export const UNICODE_MATHEMATICAL_F = "\ud835\udc53";
 export const UNICODE_GREEK_LOWERCASE_PSI = "\u03C8";
 export const UNICODE_ELLIPSIS = "\u2026";
 
-export function Uint8ToString(u8a: Uint8Array) {
+export function mimeTypeForImage(imageUrl: string): string {
+  let url = imageUrl.trim();
+  let mime = "";
+  let endPos = url.indexOf("?");
+  if (endPos < 0) {
+    endPos = url.length;
+  }
+
+  for (let c = endPos-1; c > 0; c--) {
+    if (url[c] == ".") {
+      mime += url.substring(c+1, endPos).toLowerCase();
+      break;
+    }
+  }
+
+  if (mime == "jpg") {
+    mime = "jpeg";
+  } else if (mime == "tif") {
+    mime = "tiff";
+  }
+  
+  // If it's not one we support in this case, stop here
+  if (mime != "jpeg" && mime != "png" && mime != "tiff") {
+    return "";
+  }
+
+  return "image/" + mime;
+}
+
+function uint8ToString(u8a: Uint8Array) {
   const CHUNK_SZ = 0x8000;
   const c = [];
   for (let i = 0; i < u8a.length; i += CHUNK_SZ) {
     c.push(String.fromCharCode.apply(null, Array.from(u8a.subarray(i, i + CHUNK_SZ))));
   }
   return c.join("");
+}
+
+export function arrayBufferToImageDataURL(mime: string, buf: ArrayBuffer): string {
+  const data = new Uint8Array(buf);
+  const base64 = btoa(uint8ToString(data));
+  const dataURL = `data:${mime};base64,` + base64;
+  return dataURL;
 }
 
 export function positionDialogNearParent(openerRect: any, ourWindowRect: any, dontCoverOpener: boolean = false): object {
