@@ -42,6 +42,8 @@ import { getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/
 import { environment } from "src/environments/environment";
 import { ImageUploader } from "src/app/utils/image-upload";
 import { LocalStorageService } from "../../../services/local-storage.service";
+import { AuthService } from "@auth0/auth0-angular";
+import { Permissions } from "src/app/utils/permissions";
 
 export class ImageChoice {
   constructor(
@@ -116,6 +118,8 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   waitingForImages: ImageChoice[] = [];
   loadingList = false;
 
+  private _userCanEdit: boolean = false;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerDialogData,
     public dialogRef: MatDialogRef<ImagePickerDialogComponent, ImagePickerDialogResponse>,
@@ -125,6 +129,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     private _dataService: APIDataService,
     private _snackService: SnackbarService,
     private _localStorageService: LocalStorageService,
+    private _authService: AuthService,
     public dialog: MatDialog
   ) {}
 
@@ -154,6 +159,21 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
     }
 
     this._subs.add(
+      this._authService.idTokenClaims$.subscribe({
+        next: (claims) => {
+          if (claims) {
+            this._userCanEdit = Permissions.hasPermissionSet(
+              claims,
+              Permissions.permissionEditDataset
+            );
+          }
+        },
+        // error: (err) => {
+        // },
+      })
+    );
+
+    this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = scans;
         if (this._analysisLayoutService.activeScreenConfiguration$.value && !this.data.noAssociatedScreenConfiguration) {
@@ -181,6 +201,10 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  get userCanEdit(): boolean {
+    return this._userCanEdit;
   }
 
   fetchImagesForScans(scanIds: string[], forceReload: boolean = false): void {

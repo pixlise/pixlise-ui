@@ -33,7 +33,9 @@ POSSIBILITY OF SUCH DAMAGE.
   <h1 class="header">
     Image Picker
     <div class="header-right">
-      <push-button buttonStyle="yellow" (onClick)="onImport()">Import Image</push-button>
+      @if (userCanEdit) {
+        <push-button buttonStyle="yellow" (onClick)="onImport()">Import Image</push-button>
+      }
       @if (configuredScans.length > 0) {
         <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
           <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
