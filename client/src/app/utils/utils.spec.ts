@@ -35,7 +35,7 @@ import {
   SDSFields,
   //getPearsonCorrelation,
   setsEqual,
-  stripInvalidCharsFromPhoneNumber,
+  //stripInvalidCharsFromPhoneNumber,
   xor_sum,
   makeValidFileName,
   decodeIndexList,
