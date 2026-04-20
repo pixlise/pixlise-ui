@@ -34,6 +34,7 @@ import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
 import { ScanItem } from "../generated-protos/scan";
+import { DatePipe } from "@angular/common";
 
 export class SentryHelper {
   // Can be called from anywhere we see a weird case or an error that we used to just log to
@@ -1165,6 +1166,16 @@ export function replaceAsDateIfTestSOL(sol: string): string {
   }
 
   return sol;
+}
+
+export function getDateTimeString(unixMs: number, format: string = "dd MMM yyyy HH:mm:ss"): string {
+  if (unixMs <= 0) {
+    return "Unknown";
+  }
+
+  const datepipe: DatePipe = new DatePipe("en-US");
+  const createTime = datepipe.transform(unixMs, format);
+  return createTime || "Unknown";
 }
 
 export function getScanTitle(scan: ScanItem): string {

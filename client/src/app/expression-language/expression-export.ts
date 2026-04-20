@@ -174,9 +174,9 @@ export class ExpressionExporter {
     const creator = expr.owner?.creatorUser?.name || "unknown";
 
     const datepipe: DatePipe = new DatePipe("en-US");
-    const createTime = datepipe.transform((expr.owner?.createdUnixSec || 0) * 1000, "dd-MMM-YYYY HH:mm:ss");
-    const modTime = datepipe.transform(expr.modifiedUnixSec * 1000, "dd-MMM-YYYY HH:mm:ss");
-    const nowTime = datepipe.transform(Date.now(), "dd-MMM-YYYY HH:mm:ss");
+    const createTime = datepipe.transform((expr.owner?.createdUnixSec || 0) * 1000, "dd-MMM-yyyy HH:mm:ss");
+    const modTime = datepipe.transform(expr.modifiedUnixSec * 1000, "dd-MMM-yyyy HH:mm:ss");
+    const nowTime = datepipe.transform(Date.now(), "dd-MMM-yyyy HH:mm:ss");
 
     return `# PIXLISE Expression: ${expr.name}
 
@@ -249,9 +249,9 @@ the expression did not generated valid output)
     const creator = expr.owner?.creatorUser?.name || "unknown";
 
     const datepipe: DatePipe = new DatePipe("en-US");
-    const createTime = datepipe.transform((expr.owner?.createdUnixSec || 0) * 1000, "dd-MMM-YYYY HH:mm:ss");
-    const modTime = datepipe.transform(expr.modifiedUnixSec * 1000, "dd-MMM-YYYY HH:mm:ss");
-    const nowTime = datepipe.transform(Date.now(), "dd-MMM-YYYY HH:mm:ss");
+    const createTime = datepipe.transform((expr.owner?.createdUnixSec || 0) * 1000, "dd-MMM-yyyy HH:mm:ss");
+    const modTime = datepipe.transform(expr.modifiedUnixSec * 1000, "dd-MMM-yyyy HH:mm:ss");
+    const nowTime = datepipe.transform(Date.now(), "dd-MMM-yyyy HH:mm:ss");
 
     let result = `-- Expression exported from PIXLISE (www.pixlise.org)
 -- Details:

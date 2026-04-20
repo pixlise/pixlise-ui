@@ -15,6 +15,7 @@ import { RGB_MIX_MODE_OPTIONS, WidgetLayerPositionConfigMap, widgetLayerPosition
 import { WidgetType } from "../../../widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 import { UserInfo } from "src/app/generated-protos/user";
+import { getDateTimeString } from "src/app/utils/utils";
 
 @Component({
   standalone: false,
@@ -322,11 +323,11 @@ export class ExpressionLayerComponent implements OnInit, OnDestroy {
   }
 
   get dateModifiedString(): string {
-    return this.modifiedDate > 0 ? new Date(this.modifiedDate).toLocaleDateString() : "Unknown";
+    return getDateTimeString(this.modifiedDate, "dd MMM yyyy");
   }
 
   get dateCreatedString(): string {
-    return this.createdDate > 0 ? new Date(this.createdDate).toLocaleDateString() : "Unknown";
+    return getDateTimeString(this.createdDate, "dd MMM yyyy");
   }
 
   get selectedTagIDs(): string[] {
