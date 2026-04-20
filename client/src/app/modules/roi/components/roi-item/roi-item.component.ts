@@ -8,6 +8,7 @@ import { ColourOption, findColourOption, generateDefaultColour } from "../../mod
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { UserInfo } from "src/app/generated-protos/user";
+import { getDateTimeString } from "src/app/utils/utils";
 
 export type SubItemOptionSection = {
   title: string;
@@ -216,7 +217,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get dateCreatedString(): string {
-    return this.createdDate > 0 ? new Date(this.createdDate).toLocaleDateString() : "Unknown";
+    return getDateTimeString(this.createdDate);
   }
 
   get mistLevels(): boolean[] {
