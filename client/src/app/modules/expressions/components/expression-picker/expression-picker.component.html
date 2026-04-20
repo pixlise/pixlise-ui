@@ -241,6 +241,7 @@ POSSIBILITY OF SUCH DAMAGE.
     >
       <div class="title active-widget-selection">
         <widget-selection-button
+          *ngIf="widgetId != 'exporter'"
           [widgetId]="widgetId"
           [widgetTypes]="widgetTypes"
           [activeWidgetIds]="activeWidgetIds"
