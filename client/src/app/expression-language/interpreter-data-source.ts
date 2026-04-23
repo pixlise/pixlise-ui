@@ -392,12 +392,12 @@ export class InterpreterDataSource {
       return await lastValueFrom(of(null));
     }
 
-    if (environment.disableExpressionGetMemoisedAPI) {
+    if (environment.disableExpressionCacheRead) {
       console.error("getMemoised() skipping retrieval of: " + argList[0]);
       return await lastValueFrom(of(null));
     }
 
-    const key = "exprcachev1_" + argList[0];
+    const key = environment.expressionCachePrefix + "_" + argList[0];
     return await lastValueFrom(
       this._exprMemoService.getExprMemoised(key, true).pipe(
         map((memItem: MemoisedItem) => {
@@ -424,7 +424,7 @@ export class InterpreterDataSource {
       return await lastValueFrom(of(false));
     }
 
-    const key = "exprcachev1_" + argList[0];
+    const key = environment.expressionCachePrefix + "_" + argList[0];
     const table = argList[1];
 
     // Make sure table "looks" like a table
