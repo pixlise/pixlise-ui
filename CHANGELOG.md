@@ -1,4 +1,4 @@
-## 4.85.0 (LATEST)
+## 4.86.0 (LATEST)
 
 ### New Features
 - Expression language now supports querying meta data of spectra. We previously erroneously showed that the housekeeping() function can do this, but the data() function has now been modified to allow this. XPERCHAN, OFFSET are constants so not that useful but it does contain REALTIME, LIVETIME and PMC is readable from here too.
