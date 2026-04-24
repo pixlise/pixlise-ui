@@ -38,6 +38,7 @@ import { PushButtonStyle } from "src/app/modules/pixlisecore/components/atoms/bu
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { TagType } from "src/app/modules/tags/models/tag.model";
 import { AnalysisLayoutService, SnackbarService } from "../../../pixlisecore/pixlisecore.module";
+import { getDateTimeString } from "src/app/utils/utils";
 
 type MajorGroupedRelease = {
   majorVersion: DataModuleVersion | null;
@@ -293,8 +294,7 @@ export class ExpressionMetadataEditorComponent implements OnInit {
 
   getVersionReleaseDate(version: DataModuleVersion): string {
     let unixTimeSec = version.timeStampUnixSec || 0;
-
-    return new Date(unixTimeSec * 1000).toLocaleDateString();
+    return getDateTimeString(unixTimeSec * 1000);
   }
 
   clearCacheForSelectedExpression(): void {

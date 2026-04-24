@@ -189,6 +189,79 @@ export class EnvConfigurationInitService {
   // valid by the time it's accessed... should...
   static getConfig$: BehaviorSubject<AppConfig | null> = new BehaviorSubject<AppConfig | null>(null);
 
+  private static readonly defaultPublicSiteConfig = {
+      "imagePrefix": "",
+      "aboutTopSection": "pixl",
+      "landingTopText": "PIXLISE is a geoscience visualization and analysis tool compatible with micro-XRF and reflectance spectroscopy instruments. Redefine your data quantification and investigative workflow with a comprehensive suite of tools validated by thousands of hours of close partnership-testing with NASA scientists.",
+      "appLogo": "pixlise-white-logo.svg",
+      "landingTopLogos": [
+          { "image": "logo_nasa_trio_colour.png", "link": "https://www.jpl.nasa.gov" }
+      ],
+      "headingParts": ["Finally, a tool as ", "smart", " as the modern geoscientist."],
+      "computeParts": [
+          "PIQUANT is a ",
+          "fundamental parameters",
+          "-based quantification engine, optimized for ",
+          "cloud parallelization",
+          ", yielding accurate quantification of ",
+          "thousands of scan points in minutes",
+          ". Craft compound quantifications with different element sets or matrix assumptions for ",
+          "multiple regions",
+          " of a single dataset. Rapidly visualize fully ",
+          "quantified maps",
+          " of every element in your quantification. And don't forget to ",
+          "share",
+          " them all with your lab."
+      ],
+      "workflowDetailParts": [
+          "PIXLISE is an interface informed by ",
+          "thousands of hours of collaboration",
+          " between geoscientists and visualization designers. With intricately-connected features, ",
+          "colorblind-safe palettes",
+          ", and customizable plot panels, PIXLISE's ",
+          "flexible user interface",
+          " empowers the modern scientist with an ",
+          "innovative workflow",
+          "."
+      ],
+      "showPIQUANT": true,
+      "showImageCredits": true,
+      "showTeam": true,
+      "showPartners": true,
+      "showImpact": false,
+      "footerTagline": "Experience the future of spectroscopy visualisation and analysis.",
+      "footerTaglineLink": "",
+      "clientNameForVersion": "PIXLISE",
+      "joinSectionName": "discussion",
+      "joinSectionDescription": "As a geoscientist, you can request an account that will give you access to more PIXLISE features, as well as a global community of researchers. We want to hear from you!",
+      "menus": {
+          "Features": {
+              "link": "/public/get-started",
+              "items": {
+                  "Workflow": "/public/workflow",
+                  "Quantification": "/public/quantification",
+                  "Investigation": "/public/investigation"
+              }
+          },
+          "Get Started": {
+              "link": "",
+              "items": {
+                  "PIXLISE Options": "/public/get-started#top",
+                  "Get PIXLISE": "/public/get-started#get",
+                  "Links and Docs": "/public/get-started#links"
+              }
+          },
+          "About Us": {
+              "link": "/public/about-us",
+              "items": {
+                  "PIXL + MARS 2020": "/public/about-us#mars2020",
+                  "Impact": "/public/about-us#impact",
+                  "Our Team": "/public/about-us#team"
+              }
+          }
+      }
+  };
+
   readAppConfig(handler: HttpBackend, authConfig?: AuthClientConfig): Promise<AppConfig | null> {
     const request$ = new HttpClient(handler).get<AppConfig>(`./${environment.configName}`).pipe(take(1));
     return firstValueFrom(request$)
@@ -237,6 +310,12 @@ export class EnvConfigurationInitService {
           // We want a default here as this file is now fixed in the UI repo
           if (config && !config?.dataCollectionAgreementVersionUrl) {
             config.dataCollectionAgreementVersionUrl = "/agreement-version.json";
+          }
+
+          // For now, while we're still using the "old" deployment methods for prod/dev, we check if the
+          // public site config has been set, and if not we substitute one here
+          if (!config.publicSiteConfig) {
+            config.publicSiteConfig = EnvConfigurationInitService.defaultPublicSiteConfig;
           }
 
           EnvConfigurationInitService.getConfig$.next(config);

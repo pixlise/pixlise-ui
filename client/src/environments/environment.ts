@@ -58,6 +58,8 @@ export const environment = {
   skipMemoizeKeys: [] as string[],
   disableExpressionMemoisation: false,
   // disableExpressionMemoisation: true,
+  disableExpressionCacheRead: false,
+  expressionCachePrefix: "exprcachev1",
   readBeamIJSwapped: true,
   comparePolygonGenerationOutput: true
 };

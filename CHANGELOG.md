@@ -8,10 +8,14 @@
 - Users can now create a new empty scan using the "user-defined" option on the "Create/Upload New Scan" dialog. The aim of this is to allow creating user-defined scans where data can then be uploaded using the various import buttons, eg making a scan completely from images. This removes the impostition of a specific file format needing to be uploaded.
 - PIXLISE now supports large images over 4GB in size. The image picker dialog now contains an image upload button (only shown if you have edit scan permissions). All images that are over 20MB in size are now uploaded in chunks of 20MB messages. They can be resumed if the upload stops at some point. Because of this, the image size field is now a 64bit integer to describe the size correctly!
 - Added a new widget for now called "Context Image v2" which will be developed further in future but for now allows viewing large images as tiles streamed in as you zoom in further.
+- Public page uses configurable content to act similar to "white labelling"
+- Extended max expression group size to 50 to help group things for export
+- Added ability to disable expression cache reading and change expression cache versioning to be used as needed
 
 ### Bug Fixes
 - Expression picker tag selection now only shows expressions that contain all of the tags selected (and instead of or logic).
 - Code editor help shown for data() and housekeeping() functions now shows the correct list of possible field names.
+- Fixed date display on expression picker so it's not ambiguous for US region vs everyone else
 
 ## 4.84.0 (2026-03-19)
 

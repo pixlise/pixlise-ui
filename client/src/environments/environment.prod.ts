@@ -53,6 +53,8 @@ export const environment = {
   marsViewerUrlRoot: "https://marsviewer.sops.m20.jpl.nasa.gov",
   skipMemoizeKeys: [],
   disableExpressionMemoisation: false,
+  disableExpressionCacheRead: false,
+  expressionCachePrefix: "exprcachev1",
   readBeamIJSwapped: true,
   comparePolygonGenerationOutput: false
 };

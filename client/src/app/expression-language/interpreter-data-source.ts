@@ -42,6 +42,7 @@ import { MemoisedItem } from "../generated-protos/memoisation";
 import { ExpressionMemoisationService } from "../modules/pixlisecore/services/expression-memoisation.service";
 import { ClientMap } from "../generated-protos/scan";
 import { httpErrorToString } from "../utils/utils";
+import { environment } from "src/environments/environment";
 
 export class InterpreterDataSource {
   constructor(
@@ -391,7 +392,12 @@ export class InterpreterDataSource {
       return await lastValueFrom(of(null));
     }
 
-    const key = "exprcachev1_" + argList[0];
+    if (environment.disableExpressionCacheRead) {
+      console.error("getMemoised() skipping retrieval of: " + argList[0]);
+      return await lastValueFrom(of(null));
+    }
+
+    const key = environment.expressionCachePrefix + "_" + argList[0];
     return await lastValueFrom(
       this._exprMemoService.getExprMemoised(key, true).pipe(
         map((memItem: MemoisedItem) => {
@@ -418,7 +424,7 @@ export class InterpreterDataSource {
       return await lastValueFrom(of(false));
     }
 
-    const key = "exprcachev1_" + argList[0];
+    const key = environment.expressionCachePrefix + "_" + argList[0];
     const table = argList[1];
 
     // Make sure table "looks" like a table
