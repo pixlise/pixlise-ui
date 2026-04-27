@@ -1,4 +1,10 @@
-## 4.86.0 (LATEST)
+## 4.87.0 (LATEST)
+
+### Bug Fixes
+- Misconfigured prod environment didn't allow EM data importing
+- Polygon generation failed when an image had no beam locations defined
+
+## 4.86.0 (2026-04-24)
 
 ### New Features
 - Expression language now supports querying meta data of spectra. We previously erroneously showed that the housekeeping() function can do this, but the data() function has now been modified to allow this. XPERCHAN, OFFSET are constants so not that useful but it does contain REALTIME, LIVETIME and PMC is readable from here too.
