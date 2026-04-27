@@ -78,7 +78,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     private _dataService: APIDataService,
     private _endpointService: APIEndpointsService
   ) {
-    if (!EnvConfigurationInitService.getConfig$.value!.showPIXLDevices) {
+    if (EnvConfigurationInitService.getConfig$.value!.hidePIXLDevices) {
       this.detectors = ["user-defined"];
 
       // In this case, this is the only option anyway...
