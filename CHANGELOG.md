@@ -1,4 +1,4 @@
-## 4.86.3 (LATEST)
+## 4.87.1 (LATEST)
 
 ### Bug Fixes
 - Misconfigured prod environment didn't allow EM data importing
