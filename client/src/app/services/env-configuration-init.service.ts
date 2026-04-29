@@ -67,7 +67,7 @@ export class AppConfig {
 
   maxUsersPerOwnershipItem: number = 5; // Max number of users that can be assigned as an editor or user for an ownership item
 
-  hidePIXLDevices: boolean = false; // Show PIXL-EM, JPL and Stonybrook breadboard as import option formats
+  hidePIXLDevices: boolean = false; // Show PIXL-EM/FM, JPL and Stonybrook breadboard as import option formats
 
   // Public site settings
   publicSiteConfig: PublicSiteConfig = {
