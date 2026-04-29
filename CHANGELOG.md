@@ -1,4 +1,9 @@
-## 4.87.1 (LATEST)
+## 4.89.1 (LATEST)
+
+### New Features
+- Ability to upload PIXL FM scans in SDF format, just like with PIXL EM
+
+## 4.87.1 (2026-04-28)
 
 ### Bug Fixes
 - Misconfigured prod environment didn't allow EM data importing
