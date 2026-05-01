@@ -16,6 +16,7 @@ import { EnergyCalibrationService } from "../modules/pixlisecore/services/energy
 import { SpectrumEnergyCalibration } from "../models/BasicTypes";
 import { SpectrumDataService } from "../modules/pixlisecore/services/spectrum-data.service";
 import { DetectorConfigReq, DetectorConfigResp } from "../generated-protos/detector-config-msgs";
+import { makeValidFileName } from "../utils/utils";
 
 export class ExpressionExporter {
   exportExpressionCode(
@@ -36,14 +37,17 @@ export class ExpressionExporter {
       return throwError(() => new Error("Only expressions written in the Lua programming language can be exported"));
     }
 
-    const req$: any[] = [loadCodeForExpression(expression, cachedDataService), energyCalibrationService.getCurrentCalibration(scanId)];
+    const req$: any[] = [
+      loadCodeForExpression(expression, cachedDataService),
+      energyCalibrationService.getCurrentCalibration(scanId),
+      cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: instrumentConfig }))
+    ];
+    const nonCodeRequestCount = req$.length;
 
     const builtInMods = DataModuleHelpers.getExportModuleNames();
     for (const lib of builtInMods) {
       req$.push(DataModuleHelpers.getBuiltInModuleSource(lib));
     }
-
-    req$.push(cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: instrumentConfig })));
 
     return combineLatest(req$).pipe(
       switchMap((resps: any[]) => {
@@ -62,8 +66,8 @@ export class ExpressionExporter {
             const intDataSource = new InterpreterDataSource(expression.id, dataSource, dataSource, dataSource, dataSource, dataSource);
 
             // Built-in modules
-            for (let c = 2; c < resps.length; c++) {
-              const name = builtInMods[c - 2];
+            for (let c = nonCodeRequestCount; c < resps.length; c++) {
+              const name = builtInMods[c - nonCodeRequestCount];
               const src = resps[c] as string;
 
               result.luas!.push({
@@ -331,7 +335,7 @@ ${builtInRequireLines}
 
 -- We read the expression code in and define a function for it so we can execute it at will
 function readAll(file)
-    local f = assert(io.open(file, "rb"))
+    local f = assert(io.open(makeValidFilename(file), "rb"))
     local content = f:read("*all")
     f:close()
     return content

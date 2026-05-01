@@ -61,8 +61,14 @@ local function parse_row(input, sep, pos)
 	end
 end
 
+function makeValidFilename(filename)
+	-- Replace filename-incompatible characters with _
+    return string.gsub(filename, "[%!%@%#%*%&%?%^%%%$%>%<%:]", "_")
+end
+
 local CSV = {}
 CSV.load = function(filename, delimiter, header)
+	filename = makeValidFilename(filename)
 	local f,err = io.open(filename)
 	if not f then
 		print(err)
