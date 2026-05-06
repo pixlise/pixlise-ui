@@ -39,7 +39,7 @@ export class ExpressionExporter {
 
     const req$: any[] = [
       loadCodeForExpression(expression, cachedDataService),
-      energyCalibrationService.getCurrentCalibration(scanId),
+      energyCalibrationService.getCurrentCalibration$(scanId),
       cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: instrumentConfig }))
     ];
     const nonCodeRequestCount = req$.length;

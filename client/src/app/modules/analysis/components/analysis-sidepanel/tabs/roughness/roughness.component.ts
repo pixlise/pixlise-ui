@@ -310,7 +310,7 @@ export class RoughnessComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._energyCalibrationService
-        .getCurrentCalibration(this.selectedScanId)
+        .getCurrentCalibration$(this.selectedScanId)
         .pipe(
           switchMap(calibrations => {
             const dataSource = new ExpressionDataSource();

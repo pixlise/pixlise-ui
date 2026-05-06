@@ -39,6 +39,7 @@ import {
 } from "../../../widget/components/widget-export-dialog/widget-export-model";
 import { SpectrumChartExporter } from "./spectrum-chart-exporter";
 import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
+import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 
 @Component({
   standalone: false,
@@ -65,6 +66,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   selectedPMC = -1;
 
   private _subs = new Subscription();
+  private _calibrationSubs = new Subscription();
   private _onBeforePrintBound = this.onBeforePrint.bind(this);
   private _onAfterPrintBound = this.onAfterPrint.bind(this);
 
@@ -267,42 +269,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this.widgetData$.subscribe((data: any) => {
         const spectrumData = data as SpectrumWidgetState;
         if (spectrumData) {
-          this.mdl.xAxisEnergyScale = spectrumData.showXAsEnergy;
-          this.mdl.yAxisCountsPerMin = spectrumData.yCountsPerMin;
-          this.mdl.yAxisCountsPerPMC = spectrumData.yCountsPerPMC;
-          this.mdl.yAxislogScale = spectrumData.logScale;
-          this.mdl.transform.pan.x = spectrumData.panX;
-          this.mdl.transform.pan.y = spectrumData.panY;
-          this.mdl.transform.scale.x = spectrumData.zoomX;
-          this.mdl.transform.scale.y = spectrumData.zoomY;
-
-          if (this.mdl.transform.scale.x <= 0) {
-            this.mdl.transform.scale.x = 1;
-          }
-
-          if (this.mdl.transform.scale.y <= 0) {
-            this.mdl.transform.scale.y = 1;
-          }
-
-          const lines = new Map<string, string[]>();
-          spectrumData.spectrumLines.forEach((line: SpectrumLines) => {
-            lines.set(line.roiID, line.lineExpressions);
-          });
-
-          // Remove any selection ROI from the list
-          const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
-          lines.delete(selectionROI);
-
-          this.mdl.setLineList(lines);
-
-          this.updateLines();
-
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            const clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
-            const offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
-            this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
+          this.loadState(spectrumData);
         } else {
           this.setInitialConfig();
         }
@@ -439,16 +406,23 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     // Listen to screen configuration changes
     this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe((screenConfiguration: ScreenConfiguration) => {
         let updated = false;
 
-        const scanIds = new Set<string>();
+        // Read settings for each scan we're associated with. We get the list of scan ids from
+        // screenConfiguration.scanConfigurations because this covers all lines that we may be showing
+        // and if a new scan is added this'll pre-fetch settings for it
+        /*const scanIds = new Set<string>();
         for (const line of this.mdl.spectrumLines) {
           scanIds.add(line.scanId);
-        }
+        }*/
 
         if (screenConfiguration) {
-          scanIds.forEach(scanId => {
+          this._calibrationSubs.unsubscribe();
+          this._calibrationSubs = new Subscription();
+
+          for (let scanId of Object.keys(screenConfiguration.scanConfigurations)) {
+            // Read line ROI settings
             if (screenConfiguration?.scanConfigurations?.[scanId]?.colour) {
               if (this._roiService.displaySettingsMap$.value[scanId]) {
                 const newColour = RGBA.fromString(screenConfiguration.scanConfigurations[scanId].colour);
@@ -468,7 +442,20 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
               this._roiService.displaySettingsMap$.next(this._roiService.displaySettingsMap$.value);
             }
-          });
+            
+            // Read spectrum calibration for this scan
+            this._calibrationSubs.add(
+              this._energyCalibrationService.getCurrentCalibration$(scanId).subscribe(
+                ((cals: SpectrumEnergyCalibration[]) => {
+                  // Update our stored calibration
+                  this.mdl.setEnergyCalibration(scanId, cals);
+
+                  // Update our lines
+                  this.updateLines();
+                })
+              )
+            );
+          }
         }
 
         if (updated) {
@@ -479,8 +466,29 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this.reDraw();
   }
+/*
+        if (this.mdl.xAxisEnergyScale) {
+          // Load calibration here!
+          //this.subscribeForCalibration(Object.keys(screenConfiguration.scanConfigurations));
+        }
+  private subscribeForCalibration(scanIds: string[]) {
+    this._calibrationSubs.unsubscribe();
+
+    for (let scanId of scanIds) {
+      this._calibrationSubs.add(
+        this._energyCalibrationService.getCurrentCalibration$(scanId).subscribe(
+          (cal: SpectrumEnergyCalibration[]) => {
+            // Set this in our model
+            this.mdl.setEnergyCalibration(scanId, cal);
+          }
+        )
+      );
+    }
+  }*/
+
   ngOnDestroy() {
     this._subs.unsubscribe();
+    this._calibrationSubs.unsubscribe();
     window.removeEventListener("beforeprint", this._onBeforePrintBound);
     window.removeEventListener("afterprint", this._onAfterPrintBound);
   }
@@ -842,7 +850,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       if (result.selectedItems.size === 0) {
         this.mdl.clearDisplayData();
       }
-      this.updateLines(true);
+      this.updateLines();
       this.saveState();
     });
 
@@ -875,6 +883,45 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     });
 
     this.onSaveWidgetData.emit(spectrumData);
+  }
+
+  private loadState(spectrumData: SpectrumWidgetState): void {
+    this.mdl.xAxisEnergyScale = spectrumData.showXAsEnergy;
+    this.mdl.yAxisCountsPerMin = spectrumData.yCountsPerMin;
+    this.mdl.yAxisCountsPerPMC = spectrumData.yCountsPerPMC;
+    this.mdl.yAxislogScale = spectrumData.logScale;
+    this.mdl.transform.pan.x = spectrumData.panX;
+    this.mdl.transform.pan.y = spectrumData.panY;
+    this.mdl.transform.scale.x = spectrumData.zoomX;
+    this.mdl.transform.scale.y = spectrumData.zoomY;
+
+    if (this.mdl.transform.scale.x <= 0) {
+      this.mdl.transform.scale.x = 1;
+    }
+
+    if (this.mdl.transform.scale.y <= 0) {
+      this.mdl.transform.scale.y = 1;
+    }
+
+    const lines = new Map<string, string[]>();
+    spectrumData.spectrumLines.forEach((line: SpectrumLines) => {
+      lines.set(line.roiID, line.lineExpressions);
+    });
+
+    // Remove any selection ROI from the list
+    const selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+    lines.delete(selectionROI);
+
+    this.mdl.setLineList(lines);
+
+    this.updateLines();
+
+    if (this.widgetControlConfiguration.topRightInsetButton) {
+      const clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+      const offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
+      this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
+      this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+    }
   }
 
   onPiquant(trigger: Element | undefined) {
@@ -948,56 +995,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     return y;
   }
 
-  private reloadScanCalibrationsAsync(
-    scanIds: string[],
-    refreshCalibrationData: boolean = false
-  ): Observable<{ scanId: string; scanCalibrations: SpectrumEnergyCalibration[] }[]> {
-    if (this.mdl.xAxisEnergyScale) {
-      const currentCalibrationRequests = scanIds.map(scanId =>
-        this._energyCalibrationService.getCurrentCalibration(scanId).pipe(
-          map((cals: SpectrumEnergyCalibration[]) => ({ scanId, cals })),
-          catchError(() => of({ scanId, cals: [] }))
-        )
-      );
-
-      return forkJoin(currentCalibrationRequests).pipe(
-        switchMap(results => {
-          const calibrationRequests = results.map(({ scanId, cals }) => {
-            let emptyCount = cals.filter(cal => cal.isEmpty()).length;
-            let hasEnergyCalibration = this.mdl.checkHasEnergyCalibrationForScanIds(scanIds);
-
-            if (refreshCalibrationData || !hasEnergyCalibration || cals.length <= 0 || emptyCount > 0) {
-              return this._energyCalibrationService.getScanCalibration(scanId).pipe(
-                map((scanCalibrations: SpectrumEnergyCalibration[]) => ({ scanId, scanCalibrations })),
-                catchError(() => of({ scanId, scanCalibrations: [] }))
-              );
-            } else {
-              return of({ scanId, scanCalibrations: cals });
-            }
-          });
-
-          return forkJoin(calibrationRequests).pipe(
-            map(calibrationResults => {
-              calibrationResults.forEach(({ scanId, scanCalibrations }) => {
-                this._energyCalibrationService.setCurrentCalibration(scanId, scanCalibrations);
-                this.mdl.setEnergyCalibration(scanId, scanCalibrations);
-              });
-
-              return calibrationResults;
-            })
-          );
-        })
-      );
-    } else {
-      return of([]);
-    }
-  }
-
-  reloadScanCalibrations(scanIds: string[], refreshCalibrationData: boolean = false) {
-    return this.reloadScanCalibrationsAsync(scanIds, refreshCalibrationData).subscribe();
-  }
-
-  private updateLines(refreshCalibrationData: boolean = false) {
+  private updateLines() {
     const lineMap = this.mdl.getLineList();
 
     if (lineMap.size <= 0) {
@@ -1006,17 +1004,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     }
 
     this.isWidgetDataLoading = true;
-
-    const roiIds = Array.from(lineMap.keys());
-    this._subs.add(
-      this._roiService.getScanIdsFromROIs(roiIds).subscribe(scanIds => {
-        // For any scans coming in that are not yet calibrated, set them to
-        // dataset calibration
-        this.reloadScanCalibrationsAsync(scanIds, refreshCalibrationData).subscribe(() => {
-          this.generateLines();
-        });
-      })
-    );
+    this.generateLines();
   }
 
   generateLines() {

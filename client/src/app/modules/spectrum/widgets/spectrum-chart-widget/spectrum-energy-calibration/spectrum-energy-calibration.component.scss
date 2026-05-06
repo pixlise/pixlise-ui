@@ -75,6 +75,7 @@
     display: flex;
     flex-direction: row;
     padding: $sz-unit;
+    gap: $sz-half;
 
     .scan-calibration:not(:first-child) {
         border-left: 1px solid $clr-gray-100;

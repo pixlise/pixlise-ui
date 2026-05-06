@@ -1,44 +1,94 @@
-<div *ngIf="calibration !== null" class="scan-calibration">
-    <h2>{{calibration.scan.title}}</h2>
-    <h3>Detector A</h3>
-    <input
-      type="text"
-      placeholder="eV Start..."
-      title='eV Start (Detector A)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVStartA"
-      (change)="onValueChanged()">
-    <input
-      type="text"
-      placeholder="eV/Channel..."
-      title='eV/Channel (Detector A)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVPerChannelA"
-      (change)="onValueChanged()">
-    <h3>Detector B</h3>
-    <input
-      type="text"
-      placeholder="eV Start..."
-      title='eV Start (Detector B)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVStartB"
-      (change)="onValueChanged()">
-    <input
-      type="text"
-      placeholder="eV/Channel..."
-      title='eV/Channel (Detector B)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVPerChannelB"
-      (change)="onValueChanged()">
-      <push-button
-        buttonStyle="outline"
-        (onClick)="onLoadCurrent()">Load Current</push-button>
-      <push-button
-        [disabled]="!hasDatasetCalibration"
-        buttonStyle="outline"
-        (onClick)="onLoadDataset()">Load From Dataset</push-button>
-      <push-button 
-        [disabled]="!hasQuantCalibration"
-        buttonStyle="outline"
-        (onClick)="onLoadQuant()">Load From Quant</push-button>
+<div *ngIf="calibration !== null" class="scan-calibration border">
+  <h2 title="Scan ID: {{calibration.scan.id}}">{{calibration.scan.title}}</h2>
+  <div class="row">
+    <div class="column border">
+      <div>Detector A</div>
+      <table>
+        <tr>
+          <td>eV Start</td>
+          <td>
+            <input
+              type="text"
+              placeholder="0"
+              title='eV Start (Detector A)'
+              [disabled]="editDisabled"
+              [(ngModel)]="eVStartA"
+              (change)="onValueChanged()">
+          </td>
+        </tr>
+        <tr>
+          <td>eV/Channel</td>
+          <td>
+            <input
+              type="text"
+              placeholder="1"
+              title='eV/Channel (Detector A)'
+              [disabled]="editDisabled"
+              [(ngModel)]="eVPerChannelA"
+              (change)="onValueChanged()">
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="column border">
+      <div>Detector B</div>
+      <table>
+        <tr>
+          <td>eV Start</td>
+          <td>
+            <input
+              type="text"
+              placeholder="0"
+              title='eV Start (Detector B)'
+              [disabled]="editDisabled"
+              [(ngModel)]="eVStartB"
+              (change)="onValueChanged()">
+          </td>
+        </tr>
+        <tr>
+          <td>eV/Channel</td>
+          <td>
+            <input
+              type="text"
+              placeholder="1"
+              title='eV/Channel (Detector B)'
+              [disabled]="editDisabled"
+              [(ngModel)]="eVPerChannelB"
+              (change)="onValueChanged()">
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
+  <table>
+    <tr>
+      <td class="btn-left">
+        <push-button
+          buttonStyle="outline"
+          (onClick)="onLoadCurrent()">Load Current</push-button>
+      </td>
+    </tr>
+    <tr>
+      <td class="btn-left">
+        <push-button
+          [disabled]="!hasDatasetCalibration"
+          buttonStyle="outline"
+          (onClick)="onLoadDataset()">Load From Dataset</push-button>
+      </td>
+      <td>
+        <wait-spinner *ngIf="loadingScan"></wait-spinner>
+      </td>
+    </tr>
+    <tr>
+      <td class="btn-left">
+        <push-button 
+          [disabled]="!hasQuantCalibration"
+          buttonStyle="outline"
+          (onClick)="onLoadQuant()">Load From Quant</push-button>
+      </td>
+      <td class="btn-right">
+        <wait-spinner *ngIf="loadingQuant"></wait-spinner>
+      </td>
+    </tr>
+  </table>
+</div>

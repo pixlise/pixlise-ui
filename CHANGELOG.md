@@ -1,4 +1,9 @@
-## 4.89.1 (LATEST)
+## 4.90.0 (LATEST)
+
+### Bug Fixes
+- Spectrum calibration customisation was being overridden by default values. Also revamped the calibration dialog to show loading states, and cleaned up UI.
+
+## 4.89.1 (2026-04-29)
 
 ### New Features
 - Ability to upload PIXL FM scans in SDF format, just like with PIXL EM
