@@ -27,6 +27,9 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
   eVStartB: string = "";
   eVPerChannelB: string = "";
 
+  loadingScan: boolean = false;
+  loadingQuant: boolean = false;
+
   // Stuff we load
   private _scanCalibration: SpectrumEnergyCalibration[] = [];
   private _originalCalibration: SpectrumEnergyCalibration[] = [];
@@ -45,8 +48,16 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
     this.onLoadCurrent();
 
     // Get the scan calibration so we can manipulate with it
-    this._energyCalibrationService.getScanCalibration(this.calibration.scan.id).subscribe(cal => {
-      this._scanCalibration = cal;
+    this.loadingScan = true;
+    this._energyCalibrationService.getScanCalibration(this.calibration.scan.id).subscribe({
+      next: cal => {
+        this.loadingScan = false;
+        this._scanCalibration = cal;
+      },
+      error: err => {
+        alert(httpErrorToString(err, "Failed to get scan data calibration data"));
+        this.loadingScan = false;
+      }
     });
   }
 
@@ -126,12 +137,15 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
       alert(`Failed to get quant id set for scan ${scanId} when loading calibration`);
     }
 
+    this.loadingQuant = true;
     this._energyCalibrationService.getQuantCalibration(scanId, quantId).subscribe({
       next: (calibration: SpectrumEnergyCalibration[]) => {
         this.setCalibration(calibration);
+        this.loadingQuant = false;
       },
       error: (err: any) => {
         alert(httpErrorToString(err, "Failed to get quant data for calibration"));
+        this.loadingQuant = false;
       },
     });
   }

@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
-import { map, catchError, shareReplay, switchMap } from "rxjs/operators";
+import { map, catchError, shareReplay, switchMap, first } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -592,11 +592,12 @@ export class WidgetDataService {
       this.unsavedExpressions.set(expression.id, expression);
     }
 
-    const calibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
+    const calibration$ = this._energyCalibrationService.getCurrentCalibration$(scanId);
     const expr$ = loadCodeForExpression(expression, this._cachedDataService);
 
     // Load both of these
     return combineLatest([calibration$, expr$, this._authService.user$]).pipe(
+      first(),
       concatMap((loadResult: [SpectrumEnergyCalibration[], LoadedSources, User | null | undefined]) => {
         const calibration = loadResult[0];
         const sources = loadResult[1];

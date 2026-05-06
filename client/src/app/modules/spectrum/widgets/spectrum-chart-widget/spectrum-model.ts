@@ -218,10 +218,20 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   checkHasEnergyCalibrationForScanIds(scanIds: string[]): boolean {
     for (const scanId of scanIds) {
-      if (!this._calibration.has(scanId)) {
+      let found = false;
+
+      for (const cal of this._calibration.keys()) {
+        if (cal.startsWith(scanId)) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
         return false;
       }
     }
+
     return true;
   }
 

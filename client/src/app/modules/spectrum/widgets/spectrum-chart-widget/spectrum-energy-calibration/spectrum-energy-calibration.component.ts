@@ -84,7 +84,7 @@ export class SpectrumEnergyCalibrationComponent implements OnInit, OnDestroy {
         for (const scan of scans) {
           const quantForScan = this.data.scanQuants.get(scan.id);
           if (quantForScan !== undefined) {
-            this._energyCalibrationService.getCurrentCalibration(scan.id).subscribe(cal => {
+            this._energyCalibrationService.getCurrentCalibration$(scan.id).subscribe(cal => {
               this.allScans.push(new SingleScanEnergyCalibration(scan, quantForScan, cal));
             });
           }

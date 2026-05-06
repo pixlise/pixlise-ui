@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { HttpClient } from "@angular/common/http";
 
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, forkJoin, map, of } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subject, Subscription, forkJoin, map, of } from "rxjs";
 
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../../analysis/models/sidebar.model";
 
@@ -84,7 +84,7 @@ export class AnalysisLayoutService implements OnDestroy {
   availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
 
-  spectrumSelectionWidgetTargetId$ = new BehaviorSubject<string>("");
+  spectrumSelectionWidgetTargetId$ = new Subject<string>();
 
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
