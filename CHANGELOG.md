@@ -1,5 +1,8 @@
 ## 4.90.0 (LATEST)
 
+### New Features
+- Client API now tries reading map without client prefix applied (if it first fails with it). This is to allow us to read maps generated and cached by expressions on the UI
+
 ### Bug Fixes
 - Spectrum calibration customisation was being overridden by default values. Also revamped the calibration dialog to show loading states, and cleaned up UI.
 
