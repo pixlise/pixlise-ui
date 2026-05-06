@@ -1,45 +1,50 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { AnalysisLayoutService, SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { SpectrumService } from "../../services/spectrum.service";
-import { Observable, Subscription, catchError, combineLatest, forkJoin, map, of, switchMap } from "rxjs";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
-import { SpectrumChartDrawer } from "./spectrum-drawer";
-import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { SpectrumChartModel } from "./spectrum-model";
-import { SpectrumChartToolHost } from "./tools/tool-host";
-import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
-import { SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
-import { SpectrumType } from "src/app/generated-protos/spectrum";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { RegionSettings } from "src/app/modules/roi/models/roi-region";
-import { Point, Rect } from "src/app/models/Geometry";
-import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
-import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { ScanListReq } from "src/app/generated-protos/scan-msgs";
-import { SpectrumToolId } from "./tools/base-tool";
-import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
-import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
-import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
-import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
-import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
-import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
-import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
-import { SpectrumExpressionDataSourceImpl } from "../../models/SpectrumRespDataSource";
-import { RGBA } from "../../../../utils/colours";
+
+import { Observable, Subscription, combineLatest } from "rxjs";
+
 import {
   WidgetExportData,
   WidgetExportDialogData,
   WidgetExportRequest,
   WidgetExportOption,
-} from "../../../widget/components/widget-export-dialog/widget-export-model";
+} from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
+import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+
+import { SpectrumChartDrawer } from "./spectrum-drawer";
+import { SpectrumChartModel } from "./spectrum-model";
+import { SpectrumChartToolHost } from "./tools/tool-host";
+import { SpectrumToolId } from "./tools/base-tool";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
+import { SpectrumType } from "src/app/generated-protos/spectrum";
+import { RegionSettings } from "src/app/modules/roi/models/roi-region";
+import { Point, Rect } from "src/app/models/Geometry";
+import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
+import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
+import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
+import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
+import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
+import { SpectrumExpressionDataSourceImpl } from "../../models/SpectrumRespDataSource";
+import { RGBA } from "src/app/utils/colours";
 import { SpectrumChartExporter } from "./spectrum-chart-exporter";
-import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+
+import { AnalysisLayoutService, SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SpectrumService } from "../../services/spectrum.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
+import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
+import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
+
 
 @Component({
   standalone: false,

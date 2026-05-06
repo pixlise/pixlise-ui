@@ -1,15 +1,19 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, Subscription, combineLatest, map, shareReplay } from "rxjs";
+
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { APICachedDataService } from "./apicacheddata.service";
-import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
-import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
-import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";
+
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
+
+import { SentryHelper } from "src/app/utils/utils";
 import { AnalysisLayoutService } from "../services/analysis-layout.service";
 import { SpectrumDataService } from "./spectrum-data.service";
-import { SentryHelper } from "src/app/utils/utils";
+import { APICachedDataService } from "./apicacheddata.service";
+
 
 @Injectable({
   providedIn: "root",
@@ -44,11 +48,24 @@ export class EnergyCalibrationService {
       for (let scanId of Object.keys(config.scanConfigurations)) {
         const scanConfig = config.scanConfigurations[scanId];
 
-        let calibrations = scanConfig.calibrations.map(
-          calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
-        );
+        if (scanConfig.calibrations.length > 0) {
+          let calibrations = scanConfig.calibrations.map(
+            calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
+          );
 
-        this.setCurrentCalibration(scanId, calibrations);
+          this.setCurrentCalibration(scanId, calibrations);
+        } else {
+          // No calibrations loaded, so use the scan calibration in this case
+          this.getScanCalibration(scanId).subscribe({
+            next: scanCal => {
+              this.setCurrentCalibration(scanId, scanCal);
+            },
+            error: err => {
+              this.setCurrentCalibration(scanId, []);
+              console.error(`Failed to load scan calibration for ${scanId}: ${err}`);
+            }
+          })
+        }
       }
     }
   }
