@@ -56,7 +56,8 @@ export const environment = {
   disableExpressionCacheRead: false,
   expressionCachePrefix: "exprcachev1",
   readBeamIJSwapped: true,
-  comparePolygonGenerationOutput: false
+  comparePolygonGenerationOutput: false,
+  runExpressionsOnBackEnd: false,
 };
 
 /*

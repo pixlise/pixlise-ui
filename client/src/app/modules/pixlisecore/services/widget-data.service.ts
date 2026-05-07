@@ -63,6 +63,8 @@ import { ExpressionMemoisationService } from "./expression-memoisation.service";
 import { AuthService, User } from "@auth0/auth0-angular";
 import { AnalysisLayoutService } from "../services/analysis-layout.service";
 import { DataModuleVersionWithRef, DataSourceParams, DataUnit, LoadedSources, RegionDataResultItem, RegionDataResults, WidgetError } from "../models/widget-data-source";
+import { ExpressionCalculateReq, ExpressionCalculateResp } from "src/app/generated-protos/expression-calculate-msgs";
+import { DataSourceParams as APIDataSourceParams, DataUnit as APIDataUnit } from "src/app/generated-protos/expression-calculate";
 
 
 @Injectable({
@@ -104,6 +106,21 @@ export class WidgetDataService {
       return of(new RegionDataResults([], "No expressions to calculate"));
     }
 
+    if (environment.runExpressionsOnBackEnd) {
+      // Check if we have any predefined expressions, if any, we run it locally
+      let predefCount = 0;
+      for (const w of what) {
+        if (DataExpressionId.isPredefinedExpression(w.exprId)) {
+          predefCount++;
+        }
+      }
+
+      if (predefCount <= 0) {
+        // Just send it off and wait for a response. Wild huh?
+        return this.runOnBackend(what);
+      }
+    }
+
     // Query each one separately and combine results at the end
     const exprResult$: Observable<DataQueryResult>[] = [];
     for (const query of what) {
@@ -130,6 +147,99 @@ export class WidgetDataService {
         // TODO: make it so getData() never throws an error!
         // return new RegionDataResults([], err);
         throw err;
+      })
+    );
+  }
+
+  private runOnBackend(what: DataSourceParams[]): Observable<RegionDataResults> {
+    // First, we convert data types to the API versions...
+    // TODO: Eventually get rid of this!
+    const reqs: APIDataSourceParams[] = [];
+    for (let item of what) {
+      let apiUnit: APIDataUnit = APIDataUnit.UNIT_DEFAULT;
+      switch(item.units) {
+        case DataUnit.UNIT_MMOL:
+          apiUnit = APIDataUnit.UNIT_MMOL;
+          break;
+        case DataUnit.UNIT_PPM:
+          apiUnit = APIDataUnit.UNIT_PPM;
+          break;
+      }
+
+      reqs.push(APIDataSourceParams.create({
+        scanId: item.scanId,
+        quantId: item.quantId,
+        expressionId: item.exprId,
+        roiId: item.roiId,
+        units: apiUnit,
+      }));
+    }
+
+    return this._dataService.sendExpressionCalculateRequest(ExpressionCalculateReq.create({requests: reqs})).pipe(
+      map((resp: ExpressionCalculateResp) => {
+        // Convert data types back to client-usable versions...
+        // TODO: Eventually get rid of this!
+        let respResultItems: RegionDataResultItem[] = [];
+
+        // Decode each item
+        if (resp.result?.queryResults && resp.result?.queryResults.length > 0) {
+          for (let item of resp.result?.queryResults) {
+            const values: PMCDataValue[] = [];
+            if (item.exprResult?.resultValues) {
+              for (const v of item.exprResult?.resultValues.values) {
+                values.push(new PMCDataValue(v.pmc, v.value, v.isUndefined, v.label));
+              }
+            }
+
+            const result = new DataQueryResult(
+              PMCDataValues.makeWithValues(values),
+              item.exprResult?.isPMCTable || true,
+              [], // dataRequired
+              0, // runtimeMs
+              "", // stdout
+              "", // stderr
+              new Map<string, PMCDataValues>(), // recordedExpressionInputs
+              new Map<string, string>(), // recorded expression values
+              "", // errorMsg
+              item.exprResult?.expression
+            );
+
+            let unit: DataUnit = DataUnit.UNIT_DEFAULT;
+            switch(item.query?.units) {
+              case APIDataUnit.UNIT_MMOL:
+                unit = DataUnit.UNIT_MMOL;
+                break;
+              case APIDataUnit.UNIT_PPM:
+                unit = DataUnit.UNIT_PPM;
+                break;
+              case APIDataUnit.UNIT_DEFAULT:
+                unit = DataUnit.UNIT_DEFAULT;
+                break;
+            }
+
+            const query = new DataSourceParams(
+              item.query?.scanId || "",
+              item.query?.expressionId || "",
+              item.query?.quantId || "",
+              item.query?.roiId || "",
+              unit,
+              null
+            );
+
+            respResultItems.push(new RegionDataResultItem(
+              result,
+              item.error.length > 0 ? new WidgetError(item.error, "") : null,
+              item.warning,
+              item.expression || null,
+              null,//item.region,
+              query,
+              item.isPMCTable,
+            ));
+          }
+        }
+
+        let respResult = new RegionDataResults(respResultItems, resp.result?.error || "");
+        return respResult;
       })
     );
   }
