@@ -775,24 +775,24 @@ msa += `#XPOSITION   : 0.000
   private fetchDiffractionData(
     scanId: string,
     quantId: string
-  ): Observable<{ manualPeaks: Map<string, ManualDiffractionPeak[]>; currentCalibrations: SpectrumEnergyCalibration[]; dataSource: ExpressionDataSource }> {
+  ): Observable<{ manualPeaks: Map<string, ManualDiffractionPeak[]>; scanCalibration: SpectrumEnergyCalibration[]; dataSource: ExpressionDataSource }> {
     const fetchManualPeaks$ = this._diffractionService.fetchManualPeaksForScanAsync(scanId);
     const fetchPeakStatuses$ = this._diffractionService.fetchPeakStatusesForScanAsync(scanId);
-    const getCurrentCalibration$ = this._energyCalibrationService.getScanCalibration(scanId);
+    const scanCalibration$ = this._energyCalibrationService.getScanCalibration(scanId);
     return forkJoin({
       manualPeaks: fetchManualPeaks$,
       peakStatuses: fetchPeakStatuses$,
-      currentCalibrations: getCurrentCalibration$,
+      scanCalibration: scanCalibration$,
     }).pipe(
-      mergeMap(({ manualPeaks, currentCalibrations }) => {
+      mergeMap(({ manualPeaks, scanCalibration }) => {
         const dataSource = new ExpressionDataSource();
         return dataSource
-          .prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), currentCalibrations)
+          .prepare(this._cachedDataService, this._spectrumDataService, scanId, quantId, PredefinedROIID.getAllPointsForScan(scanId), scanCalibration)
           .pipe(
             switchMap(() => {
               return from(dataSource.getDetectedDiffraction());
             }),
-            map(() => ({ manualPeaks, currentCalibrations, dataSource }))
+            map(() => ({ manualPeaks, scanCalibration, dataSource }))
           );
       })
     );

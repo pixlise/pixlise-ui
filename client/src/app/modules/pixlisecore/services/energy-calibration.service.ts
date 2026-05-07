@@ -1,22 +1,28 @@
 import { Injectable } from "@angular/core";
-import { Observable, combineLatest, map, of, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, combineLatest, map, shareReplay } from "rxjs";
+
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { APICachedDataService } from "./apicacheddata.service";
-import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
-import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
-import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";
+
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
+
+import { SentryHelper } from "src/app/utils/utils";
 import { AnalysisLayoutService } from "../services/analysis-layout.service";
 import { SpectrumDataService } from "./spectrum-data.service";
-import { SentryHelper } from "src/app/utils/utils";
+import { APICachedDataService } from "./apicacheddata.service";
+
 
 @Injectable({
   providedIn: "root",
 })
 export class EnergyCalibrationService {
+  private _subs = new Subscription();
+
   // The currently applied calibration
-  private _currentCalibration: Map<string, SpectrumEnergyCalibration[]> = new Map<string, SpectrumEnergyCalibration[]>();
+  private _currentCalibration$: Map<string, BehaviorSubject<SpectrumEnergyCalibration[]>> = new Map<string, BehaviorSubject<SpectrumEnergyCalibration[]>>();
 
   // For rate limiting messages about this...
   private _scanIdsComplainedAbout = new Set<string>();
@@ -26,26 +32,49 @@ export class EnergyCalibrationService {
     private _cachedDataService: APICachedDataService,
     private _spectrumDataService: SpectrumDataService
   ) {
-    if (this._currentCalibration.size === 0) {
+    this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         this.loadCalibrationFromScreenConfiguration(config);
-      });
-    }
+      })
+    );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+ 
   private loadCalibrationFromScreenConfiguration(config: ScreenConfiguration) {
     if (config.scanConfigurations) {
-      Object.entries(config.scanConfigurations).forEach(([scanId, scanConfig]) => {
-        let calibrations = scanConfig.calibrations.map(
-          calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
-        );
-        this._currentCalibration.set(scanId, calibrations);
-      });
+      for (let scanId of Object.keys(config.scanConfigurations)) {
+        const scanConfig = config.scanConfigurations[scanId];
+
+        if (scanConfig.calibrations.length > 0) {
+          let calibrations = scanConfig.calibrations.map(
+            calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
+          );
+
+          this.setCurrentCalibration(scanId, calibrations);
+        } else {
+          // No calibrations loaded, so use the scan calibration in this case
+          this.getScanCalibration(scanId).subscribe({
+            next: scanCal => {
+              this.setCurrentCalibration(scanId, scanCal);
+            },
+            error: err => {
+              this.setCurrentCalibration(scanId, []);
+              console.error(`Failed to load scan calibration for ${scanId}: ${err}`);
+            }
+          })
+        }
+      }
     }
   }
 
-  setCurrentCalibration(scanId: string, values: SpectrumEnergyCalibration[]) {
-    this._currentCalibration.set(scanId, values);
+  setCurrentCalibration(scanId: string, calibrations: SpectrumEnergyCalibration[]) {
+    // Set the current calibration - this will get notified out via behavior subject...
+    this.ensureCalibrationStored(scanId).next(calibrations);
+
+    // If this isn't in sync with the screen configuration, write it there too
     const currentConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
     if (currentConfig && currentConfig.id) {
       if (!currentConfig.scanConfigurations) {
@@ -56,37 +85,42 @@ export class EnergyCalibrationService {
         currentConfig.scanConfigurations[scanId] = ScanConfiguration.create({ id: scanId });
       }
 
-      let isNewCalibration = false;
+      let needsWrite = false;
 
       const existingCalibrations = currentConfig.scanConfigurations[scanId].calibrations;
-      const calibrations: ScanCalibrationConfiguration[] = [];
-      values.forEach(({ eVstart, eVperChannel, detector }, i) => {
+      const writeCalibrations: ScanCalibrationConfiguration[] = [];
+      calibrations.forEach(({ eVstart, eVperChannel, detector }, i) => {
         if (
           i >= existingCalibrations.length ||
           existingCalibrations[i].eVstart !== eVstart ||
           existingCalibrations[i].eVperChannel !== eVperChannel ||
           existingCalibrations[i].detector !== detector
         ) {
-          isNewCalibration = true;
+          needsWrite = true;
         }
 
-        calibrations.push(ScanCalibrationConfiguration.create({ eVstart, eVperChannel, detector }));
+        writeCalibrations.push(ScanCalibrationConfiguration.create({ eVstart, eVperChannel, detector }));
       });
 
-      if (isNewCalibration) {
-        currentConfig.scanConfigurations[scanId].calibrations = calibrations;
+      if (needsWrite) {
+        currentConfig.scanConfigurations[scanId].calibrations = writeCalibrations;
         this._analysisLayoutService.writeScreenConfiguration(currentConfig);
       }
     }
   }
 
-  getCurrentCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
-    const calibration = this._currentCalibration.get(scanId);
-    if (!calibration) {
-      return of([]);
-    }
+  getCurrentCalibration$(scanId: string): BehaviorSubject<SpectrumEnergyCalibration[]> {
+    return this.ensureCalibrationStored(scanId);
+  }
 
-    return of(calibration);
+  private ensureCalibrationStored(scanId: string): BehaviorSubject<SpectrumEnergyCalibration[]>  {
+    let cals = this._currentCalibration$.get(scanId);
+    if (!cals) {
+      cals = new BehaviorSubject<SpectrumEnergyCalibration[]>([]);
+      // Add a map entry for this scan id
+      this._currentCalibration$.set(scanId, cals);
+    }
+    return cals;
   }
 
   getScanCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
@@ -195,8 +229,8 @@ export class EnergyCalibrationService {
           // Save these (we may need them later for "reset to defaults" features)
           result.push(
             new SpectrumEnergyCalibration(
-              eVStartValues.length > 0 ? eVStartSum / eVStartValues.length : 0,
-              eVPerChannelValues.length > 0 ? eVPerChannelSum / eVPerChannelValues.length : 1,
+              eVStartValues.values.length > 0 ? eVStartSum / eVStartValues.values.length : 0,
+              eVPerChannelValues.values.length > 0 ? eVPerChannelSum / eVPerChannelValues.values.length : 1,
               detector
             )
           );

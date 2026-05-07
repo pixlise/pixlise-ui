@@ -30,21 +30,58 @@
 @import 'variables.scss';
 @import 'atoms.scss';
 
+.border {
+    border: 1px solid $clr-gray-70;
+    border-radius: $sz-unit;
+    padding: $sz-unit;
+}
+
 .scan-calibration {
     display: flex;
     flex-direction: column;
-    padding: 0px $sz-double;
+    gap: $sz-half;
+    padding: $sz-unit;
     
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: $sz-unit;
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: $sz-half;
+    }
+
+    table {
+        color: $clr-gray-40;
+    }
+
     input {
         display: block;
-        width: 128px;
+        width: 80px;
         margin-bottom: $sz-half;
         height: 19px;
     }
 
-    h3 {
-        margin: $sz-unit 0px $sz-half;
+    h2 {
+        text-transform: none;
+    }
+    
+    .column > div {
         font-size: 14px;
+        text-transform: none;
+        color: $clr-gray-40;
+        font-weight: bold;
+    }
+
+    .btn-left {
+        padding-left: 80px;
+    }
+
+    .btn-right {
+        width: 80px;
     }
     
     mat-select {

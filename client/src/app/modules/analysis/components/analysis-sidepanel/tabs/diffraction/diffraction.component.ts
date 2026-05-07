@@ -366,15 +366,15 @@ export class DiffractionTabComponent implements OnInit, OnDestroy, HistogramSele
     this.loading = true;
     const fetchManualPeaks$ = this._diffractionService.fetchManualPeaksForScanAsync(scanId);
     const fetchPeakStatuses$ = this._diffractionService.fetchPeakStatusesForScanAsync(scanId);
-    const getCurrentCalibration$ = this._energyCalibrationService.getScanCalibration(scanId);
+    const scanCalibration$ = this._energyCalibrationService.getScanCalibration(scanId);
     forkJoin({
       manualPeaks: fetchManualPeaks$,
       peakStatuses: fetchPeakStatuses$,
-      currentCalibrations: getCurrentCalibration$,
+      scanCalibration: scanCalibration$,
     })
       .pipe(
-        switchMap(({ currentCalibrations }) => {
-          this._currentCalibrations = currentCalibrations;
+        switchMap(({ scanCalibration }) => {
+          this._currentCalibrations = scanCalibration;
           const dataSource = new ExpressionDataSource();
           return dataSource
             .prepare(
@@ -383,7 +383,7 @@ export class DiffractionTabComponent implements OnInit, OnDestroy, HistogramSele
               scanId,
               this._analysisLayoutService.getQuantIdForScan(scanId),
               PredefinedROIID.getAllPointsForScan(scanId),
-              currentCalibrations
+              scanCalibration
             )
             .pipe(
               switchMap(() => {
