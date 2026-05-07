@@ -7,6 +7,7 @@
 
 ### Bug Fixes
 - Spectrum calibration customisation was being overridden by default values. Also revamped the calibration dialog to show loading states, and cleaned up UI.
+- Fixed Lua code exporter, now exported code runs properly, previously one source file was incorrectly saved.
 
 ## 4.89.1 (2026-04-29)
 
