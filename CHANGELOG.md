@@ -2,9 +2,12 @@
 
 ### New Features
 - Client API now tries reading map without client prefix applied (if it first fails with it). This is to allow us to read maps generated and cached by expressions on the UI
+- Client API now also exposes new calculateExpression() function which calls on the back-end API to run an expression. For now it only works if it can return the cached expression.
+- New python pixlise_client library version released to pip: v0.0.32. Python library users will need to run pip install pixlise_client -U (twice!)
 
 ### Bug Fixes
 - Spectrum calibration customisation was being overridden by default values. Also revamped the calibration dialog to show loading states, and cleaned up UI.
+- Fixed Lua code exporter, now exported code runs properly, previously one source file was incorrectly saved and file names with characters like % were failing to load.
 
 ## 4.89.1 (2026-04-29)
 
