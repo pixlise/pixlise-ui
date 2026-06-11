@@ -13,6 +13,10 @@ export function makeBBox(
     worldBBox.w = tmp2.x-tmp.x;
     worldBBox.h = tmp2.y-tmp.y;
 
+    // If user zooms the browser, we need to factor this in!
+    worldBBox.w /= window.devicePixelRatio;
+    worldBBox.h /= window.devicePixelRatio;
+
     return worldBBox;
 }
 
