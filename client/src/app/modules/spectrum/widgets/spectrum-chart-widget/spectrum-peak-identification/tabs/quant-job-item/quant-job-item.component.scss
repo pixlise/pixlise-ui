@@ -32,17 +32,34 @@
 .job-item {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
     
     gap: $sz-unit;
-    padding: 0px $sz-unit;
+    padding: $sz-half $sz-unit;
 
     background-color: $clr-gray-80;
     border-bottom: solid 1px black;
-    color: $clr-gray-10;
+    color: $clr-gray-30;
+    font-size: 12px;
 
     cursor: pointer;
+
+    .full {
+        flex: 1;
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: $sz-half;
+    }
+    .row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: $sz-half;
+    }
 
     .creator {
         border-radius: 6px;
@@ -81,6 +98,8 @@
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+        font-size: 14px;
+        color: $clr-gray-10;
     }
 
     &.selected {

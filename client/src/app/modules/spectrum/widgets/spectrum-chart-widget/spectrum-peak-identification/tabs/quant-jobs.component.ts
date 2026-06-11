@@ -3,7 +3,7 @@ import { TabSelectors } from "../tab-selectors";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
 import { Observable, Subscription, catchError, combineLatest, concatMap, map, switchMap, tap, throwError } from "rxjs";
-import { JobStatus, JobStatus_JobType, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
+import { JobStatus, JobType, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 import {
   QuantGetReq,
   QuantGetResp,
@@ -66,7 +66,7 @@ export class QuantJobsComponent implements OnInit {
   elapsedTime: number = 0;
   includeDwells: string = "";
   roisQuantified: string = "";
-  roiName: string = "";
+  //roiName: string = "";
   status: string = "";
 
   icon: string = "";
@@ -87,7 +87,7 @@ export class QuantJobsComponent implements OnInit {
       this._dataService.sendJobListRequest(JobListReq.create()).subscribe((jobListResp: JobListResp) => {
         // We're only interested in jobs that are quants!
         this.jobs = jobListResp.jobs.filter((job: JobStatus) => {
-          return job.jobType == JobStatus_JobType.JT_RUN_QUANT; // || job.jobType == JobStatus_JobType.JT_UNKNOWN;
+          return job.jobType == JobType.JT_RUN_QUANT; // || job.jobType == JobType.JT_UNKNOWN;
         });
       })
     );
@@ -129,7 +129,7 @@ export class QuantJobsComponent implements OnInit {
           this.selectedJob = job;
           this.status = jobStatus_StatusToJSON(job.status);
           this.displayMsg = job.message;
-          this.elapsedTime = job.endUnixTimeSec - job.startUnixTimeSec;
+          this.elapsedTime = job.endUnixTimeSec > 0 ? job.endUnixTimeSec - job.startUnixTimeSec : job.lastUpdateUnixTimeSec - job.startUnixTimeSec;
           this.setCreator(job.requestorUserId);
           return;
         } else if (job.status != JobStatus_Status.COMPLETE) {
