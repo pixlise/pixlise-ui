@@ -1,9 +1,8 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { Subscription, Subject, combineLatest, Observable, map, of, switchMap, throwError, catchError, tap } from "rxjs";
+import { Subscription, Subject, combineLatest, Observable, map, of, switchMap, throwError, catchError, tap, max } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { CanvasSizeNotification } from "../scan-3d-view/interactive-canvas-3d.component";
 import { APICachedDataService, AnalysisLayoutService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ContextImage2MouseInteraction } from "./mouse-interaction";
 import { ContextImage2Model, WheelMode } from "./ctx-image-model";
 import * as THREE from 'three';
 import { ContextImage2State } from "src/app/generated-protos/widget-data";
@@ -17,6 +16,12 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageDisplayOptions2, ImageOptions2Component, ImagePickerParams2, ImagePickerResult2 } from "./image-options2/image-options2-component/image-options2.component";
 import { isValidNumber, SentryHelper } from "src/app/utils/utils";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { ContextImageV2DataService } from "src/app/modules/pixlisecore/services/context-image-v2-data.service";
+import { CanvasMouseKeyEventHandler, ICanvasHost } from "src/app/modules/widget/components/interactive-canvas/canvas-mouse-key-event-handler";
+import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/resizing-canvas.component";
+import { ContextImageV2ToolHost, ToolState } from "./tools/tool-host";
+import { CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { ContextImageV2ToolId } from "./tools/base";
 
 @Component({
   selector: "context-image2",
@@ -24,22 +29,26 @@ import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
   templateUrl: "./context-image2.component.html",
   styleUrl: "./context-image2.component.scss"
 })
-export class ContextImage2Component extends BaseWidgetModel implements OnInit, OnDestroy {
+export class ContextImage2Component extends BaseWidgetModel implements OnInit, OnDestroy, ICanvasHost {
   private _subs = new Subscription();
 
   mdl: ContextImage2Model;
-  private _mouseInteractionHandler: ContextImage2MouseInteraction;
+  protected _toolHost: ContextImageV2ToolHost;
+  mouseKeyHandler: CanvasMouseKeyEventHandler;
 
   private _shownImageOptions: MatDialogRef<ImageOptions2Component> | null = null;
 
   configuredScanIds: string[] = [];
   cursorShown: string = "";
   scanId: string = "";
+  linkToDataset: boolean = true;
  
   private _canvasSize?: Point;
   private _canvasElem?: HTMLCanvasElement;
 
   private _canvas$: Subject<CanvasSizeNotification> = new Subject<CanvasSizeNotification>();
+  private _switchImages$: Subject<number> = new Subject<number>();
+  private _saveState$: Subject<void> = new Subject<void>();
 
   private _imageList?: ImageListResp;
 
@@ -48,15 +57,16 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   constructor(
       private _cacheDataService: APICachedDataService,
       private _analysisLayoutService: AnalysisLayoutService,
-      private _selectionService: SelectionService,
       private _snackService: SnackbarService,
       private _endpointService: APIEndpointsService,
+      private _contextImageV2DataService: ContextImageV2DataService,
       public dialog: MatDialog
     ) {
     super();
 
     this.mdl = new ContextImage2Model();
-    this._mouseInteractionHandler = new ContextImage2MouseInteraction(this._selectionService, this.mdl);
+    this._toolHost = new ContextImageV2ToolHost(this.mdl, this._switchImages$, this._saveState$, this._contextImageV2DataService);
+    this.mouseKeyHandler = new CanvasMouseKeyEventHandler(this);
 
     this.scanId = this._analysisLayoutService.defaultScanId;
     
@@ -132,6 +142,28 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         }
       ],
     };
+
+    // Add tool buttons
+    for (const tool of this._toolHost.getToolButtons()) {
+      // if (
+      //   tool.toolId === ContextImageV2ToolId.ZOOM ||
+      //   tool.toolId === ContextImageV2ToolId.SELECT_LINE
+      // ) {
+      //   this._widgetControlConfiguration.bottomToolbar?.push({
+      //     id: "divider",
+      //     type: "divider",
+      //     value: false,
+      //     onClick: () => null,
+      //   });
+      // }
+      this._widgetControlConfiguration.bottomToolbar?.push({
+        id: "tool-" + tool.toolId.toString(),
+        type: "selectable-button",
+        icon: tool.icon,
+        value: tool.state != ToolState.OFF,
+        onClick: () => this.onToolSelected(tool.toolId),
+      });
+    }
   }
 
   ngOnInit() {
@@ -141,6 +173,18 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
           this.configuredScanIds = Object.keys(screenConfiguration.scanConfigurations).map(scanId => scanId);
         }
       })
+    );
+
+    this._subs.add(
+     this._switchImages$.subscribe((dir: number) => {
+      this.switchImage(dir > 0);
+     })
+    );
+
+    this._subs.add(
+     this._saveState$.subscribe(() => {
+      this.saveState();
+     })
     );
 
     /*this._subs.add(
@@ -154,6 +198,12 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         this.updateSelection();
       })
     );*/
+/*
+    this._subs.add(
+      this._mouseInteractionHandler.panChange$.subscribe(() => {
+        this.notifyPanZoomChange();
+      })
+    );
 
     this._subs.add(
       this._mouseInteractionHandler.saveState$.subscribe(() => {
@@ -167,9 +217,22 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this._subs.add(
       this._mouseInteractionHandler.mouseWheel$.subscribe((event: WheelEvent) => {
         this.onMouseWheel(event);
+        this.notifyPanZoomChange();
       })
     );
 
+    this._subs.add(
+      this._mouseInteractionHandler.mousePt$.subscribe((pt: Point) => {
+        this._contextImageV2DataService.syncCursorForId(this.syncId, pt);
+      })
+    );
+
+    this._subs.add(
+      this._mouseInteractionHandler.mousePresent$.subscribe((present: boolean) => {
+        this.mdl.setMousePresent(present);
+      })
+    );
+*/
     this._subs.add(
       combineLatest([
         this.widgetData$,
@@ -210,16 +273,71 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         }
       }
     ));
+
+    this._subs.add(
+      this._contextImageV2DataService.syncedTransform$.subscribe((transforms) => {
+        if (!this._toolHost.linkToDataset /*|| this._exportMode*/) {
+          return;
+        }
+
+        const syncedTransform = transforms[this.syncId];
+        if (syncedTransform) {
+          this.mdl.setPanZoom(syncedTransform.pan, syncedTransform.scale.x);
+          this.mdl.needsDraw$.next();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._contextImageV2DataService.syncedCursorPos$.subscribe((points) => {
+        if (!this._toolHost.linkToDataset /*|| this._exportMode*/) {
+          return;
+        }
+
+        const syncedPt = points[this.syncId];
+        if (syncedPt) {
+          this.mdl.setOtherCursor(syncedPt);
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
-    this._mouseInteractionHandler.clearMouseEventListeners();
+    //this._mouseInteractionHandler.clearMouseEventListeners();
+  }
+
+  onToolSelected(toolId: ContextImageV2ToolId) {
+    // Set active
+    this._toolHost.setTool(toolId);
+
+    // Get the list of tool ids
+    const toolIds = [];
+    const toolStates = [];
+    for (const tool of this._toolHost.getToolButtons()) {
+      toolIds.push("tool-" + tool.toolId.toString());
+      toolStates.push(tool.state);
+    }
+
+    // Update button states
+    if (this._widgetControlConfiguration.bottomToolbar) {
+      for (const button of this._widgetControlConfiguration.bottomToolbar) {
+        const idx = toolIds.indexOf(button.id);
+        if (idx > -1) {
+          // It's a tool button, set its state!
+          button.value = toolStates[idx] != ToolState.OFF;
+        }
+      }
+    }
+  }
+
+  get syncId(): string {
+    return `${this.scanId}`;
   }
 
   private init3D(canvasEvent: CanvasSizeNotification) {
     console.log(`ContextImage v2 initialising or canvas of size: ${canvasEvent.size.x}x${canvasEvent.size.y}...`);
-    this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
+    //this._mouseInteractionHandler.setupMouseEvents(canvasEvent.canvasElement.nativeElement);
   }
 
   private load(imageName: string): Observable<void> {
@@ -235,15 +353,31 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
     return this._cacheDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
       switchMap((imgResp: ImageGetResp) => {
-        if (!imgResp.image || !imgResp.image.pyramidId) {
-          throw new Error("Error downloading image structure for: " + imageName);
+        if (!imgResp.image) {
+          throw new Error("Error downloading image details for: " + imageName);
         }
+
+        // If we don't have image pyramid info, make some up so this normal image can be used
+        let bounds = { min: { x: 0, y: 0, z: 0 }, max: { x: imgResp.image.width, y: imgResp.image.height, z: 0 } };
+        let imagePyramid$ = imgResp.image.pyramidId ?
+          this._cacheDataService.getImagePyramid(ImagePyramidGetReq.create({id: imgResp.image.pyramidId})) :
+          of(ImagePyramidGetResp.create({image: {
+            tileSize: imgResp.image.width > imgResp.image.height ? imgResp.image.width : imgResp.image.height,
+            bounds: bounds,
+            pyramid: [{
+              bounds: bounds,
+              tilesWide: 1, tilesHigh: 1,
+              tiles: [{
+                bounds: bounds, points: 0, polygons: 0
+              }]
+            }]
+          }}));
 
         // At this point we want the pyramid and the top layer image
         const tileLoader = new TileImageLoader(this._endpointService, imageName);
 
         const req$ = combineLatest([
-          this._cacheDataService.getImagePyramid(ImagePyramidGetReq.create({id: imgResp.image.pyramidId})),
+          imagePyramid$,
           tileLoader.loadTileImage(),
         ]);
 
@@ -276,6 +410,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this._canvas$.next(event);
   }
 
+  onToggleLinkToDataset() {
+    this._toolHost.toggleLinkToDataset();
+  }
+
   onSoloView() {
     if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
       this._analysisLayoutService.soloViewWidgetId$.next("");
@@ -286,18 +424,14 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
   @HostListener("document:mousemove", ["$event"])
   onGlobalMouseMoveCanvas(event: MouseEvent) {
-    if (this._mouseInteractionHandler.isMouseDown()) {
-      this._mouseInteractionHandler.onMouseMove(event);
-    }
+    this.mouseKeyHandler.onGlobalMouseMoveCanvas(event);
   }
 
   @HostListener("document:mouseup", ["$event"])
   onGlobalMouseUpCanvas(event: MouseEvent) {
-    if (this._mouseInteractionHandler.isMouseDown()) {
-      this._mouseInteractionHandler.onMouseUp(event);
-    }
+    this.mouseKeyHandler.onGlobalMouseUpCanvas(event);
   }
-
+/*
   onMouseWheel(event: WheelEvent) {
     let mode = this.mdl.wheelMode;
     
@@ -329,10 +463,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
     this.saveState();
   }
-
+*/
   private updateImageDetails() {
     
-    this.imageDetails = `${this.mdl.getDetails()}]`;
+    this.imageDetails = `${this.mdl.getDetails()}`;
   }
 
   private switchImage(next: boolean) {
@@ -526,4 +660,33 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
     this.mdl.setViewportSize(this._canvasSize.x, this._canvasSize.y);
   }
+
+  // ICanvasHost
+  canvasToWorldSpace(canvasPt: Point): Point | null {
+    if (!canvasPt) {
+      return canvasPt;
+    }
+
+    if (!this._canvasElem) {
+      return new Point(0, 0);
+    }
+
+    // Apply y-flip (due to axis difference of HTML -> OpenGL)
+    const canvasScreenRect = this._canvasElem.getBoundingClientRect();
+    return new Point(canvasPt.x, canvasScreenRect.height - canvasPt.y);
+  }
+
+  getInteractionHandler(): CanvasInteractionHandler | null {
+    return this._toolHost;
+  }
+
+  getCanvas(): HTMLCanvasElement | undefined {
+    return this._canvasElem;
+  }
+
+  viewport(): CanvasParams {
+    return new CanvasParams(this._canvasElem?.width || 0, this._canvasElem?.height || 0, window.devicePixelRatio || 0); //this._viewport;
+  }
+  
+  triggerRedraw(): void {}
 }

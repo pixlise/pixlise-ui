@@ -1,7 +1,32 @@
+<ng-template #settingsMenu>
+  <div class="widget-settings-menu">
+    <div
+      class="row link {{ linkToDataset ? 'active' : '' }}"
+      (click)="onToggleLinkToDataset()"
+      (keyup)="onToggleLinkToDataset()"
+      (keydown)="onToggleLinkToDataset()"
+      (keypress)="onToggleLinkToDataset()"
+      tabindex="0">
+      <img src="assets/button-icons/link.svg" alt="Link to dataset" />
+      <div class="row-title">Link to dataset</div>
+      <action-button class="switch" [action]="linkToDataset ? 'checkOn' : 'checkOff'"></action-button>
+    </div>
+  </div>
+</ng-template>
+
 <interactive-canvas-3d
   [renderData]="mdl.drawModel.renderData"
   (canvasSize)="onCanvasSize($event)"
-  [drawNotifier]="mdl">
+  [drawNotifier]="mdl"
+  (mousedown)="mouseKeyHandler.onMouseDownCanvas($event)"
+  (mousemove)="mouseKeyHandler.onMouseMoveCanvas($event)"
+  (mouseup)="mouseKeyHandler.onMouseUpCanvas($event)"
+  (mouseenter)="mouseKeyHandler.onMouseEnter($event)"
+  (mouseleave)="mouseKeyHandler.onMouseLeave($event)"
+  (wheel)="mouseKeyHandler.onMouseWheelCanvas($event)"
+  (keydown)="mouseKeyHandler.onKeyDown($event)"
+  (keyup)="mouseKeyHandler.onKeyUp($event)"
+  >
 </interactive-canvas-3d>
 
 <div *ngIf="imageDetails" class="overlay">{{imageDetails}}</div>

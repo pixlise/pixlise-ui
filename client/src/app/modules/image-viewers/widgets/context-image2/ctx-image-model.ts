@@ -19,7 +19,9 @@ export class ContextImage2Model {
   drawModel = new ContextImage2DrawModel();
   private _pan: Point = new Point(0, 0);
   private _zoom: number = 1;
+  private _imagePath: string = "";
   private _imageName: string = "";
+  private _imageScanId: string = "";
   private _image?: ScanImage;
   private _imageSmoothing: boolean = true;
   private _wheelMode: WheelMode = WheelMode.ZOOM;
@@ -40,7 +42,18 @@ export class ContextImage2Model {
     // NOTE: if the new image has different dimensions than the current one we reset our view
     const differentImage = img.width != this._image?.width || img.height != this._image?.height;
 
-    this._imageName = imageName;
+    this._imagePath = imageName;
+
+    // Decompose it into scan id, and image name separated
+    const bits = imageName.split("/");
+    if (bits.length == 2 && bits[0].length > 0 && bits[1].length > 0) {
+      this._imageName = bits[1];
+      this._imageScanId = bits[0];
+    } else {
+      this._imageName = this._imagePath;
+      this._imageScanId = "?";
+    }
+
     this._image = img;
     this._tileLoader = tileLoader;
 
@@ -55,7 +68,11 @@ export class ContextImage2Model {
   }
 
   get imageName(): string {
-    return this._imageName;
+    return this._imagePath;
+  }
+
+  get imageScanId(): string {
+    return this._imageScanId;
   }
 
   get imageSmoothing(): boolean {
@@ -74,6 +91,14 @@ export class ContextImage2Model {
     }
   }
 
+  private viewportToWorld(pt: Point): Point {
+      // 0,0 is the center of the camera frustum for this, but our incoming coordinate has 0,0 being bottom-left
+      // so adjust for this
+      let v = new THREE.Vector3((pt.x / this._viewportSize.x)*2-1, (pt.y/this._viewportSize.y)*2-1, 0);
+      v.unproject(this.drawModel.renderData.camera);
+      return new Point(v.x, v.y);
+  }
+
   resetPanZoom() {
     this._pan = new Point(0, 0);
     this._zoom = 1;
@@ -90,13 +115,19 @@ export class ContextImage2Model {
     }
   }
 
-  panBy(drag: Point) {
-    if (drag.x == 0 && drag.y == 0) {
+  panBy(currPos: Point, lastPos: Point) {
+    if (currPos.x-lastPos.x == 0 && currPos.y-lastPos.y == 0) {
       return;
     }
 
-    this._pan.x += drag.x * this._viewportToWorldScale;
-    this._pan.y += drag.y * this._viewportToWorldScale;
+    // this._pan.x += drag.x * this._viewportToWorldScale;
+    // this._pan.y += drag.y * this._viewportToWorldScale;
+
+    const xformCurr = this.viewportToWorld(currPos);
+    const xformLast = this.viewportToWorld(lastPos);
+
+    this._pan.x += xformCurr.x - xformLast.x;
+    this._pan.y += xformCurr.y - xformLast.y;
 
     console.log(`pan: ${this._pan.x}, ${this._pan.y}`);
 
@@ -138,6 +169,19 @@ export class ContextImage2Model {
     this._wheelMode = m;
   }
 
+  setMousePresent(present: boolean) {
+    this.drawModel.setMousePresent(present);
+  }
+
+  setOtherCursor(pt: Point) {
+    //console.log(`setOtherCursor: ${pt.x}, ${pt.y}`);
+    if (this.drawModel) {
+      const ptWorld = this.viewportToWorld(pt);
+      this.drawModel.setOtherCursorPt(ptWorld, this._zoom);
+      this.needsDraw$.next();
+    }
+  }
+
   stepBrightness(up: boolean) {
     if (up) {
       this.imageBrightness += 0.1;
@@ -160,7 +204,15 @@ export class ContextImage2Model {
   }
 
   getDetails(): string {
-    return `${this._imageName} [${this._image!.width} x ${this._image!.height}], zoom ${this._zoom.toFixed(2)} viewport ${this._viewportSize.x} x ${this._viewportSize.y} pyramid level ${this.drawModel.lastPyramidLevel} showing tiles [${Array.from(this.drawModel.lastPyramidLevelTilesVisible)}]`;
+    // For debugging pyramids/tiles:
+    //return `${this._imagePath} [${this._image!.width} x ${this._image!.height}], zoom ${this._zoom.toFixed(2)} viewport ${this._viewportSize.x} x ${this._viewportSize.y} pyramid level ${this.drawModel.lastPyramidLevel} showing tiles [${Array.from(this.drawModel.lastPyramidLevelTilesVisible)}]`;
+
+    // For nicer display
+    return `${this._imageName}, resolution: ${this._image!.width} x ${this._image!.height}`;
+  }
+
+  getViewportSize(): Point {
+    return this._viewportSize.copy();
   }
 
   private update() {
@@ -198,7 +250,7 @@ export class ContextImage2Model {
     // eg 2766x770 = ~3.59 => Viewport is landscape
     const viewportAspect = this._viewportSize.x / this._viewportSize.y;
 
-    const halfFrustumSize = new Point(1, 1);
+    const frustumSize = new Point(1, 1);
     const camCenteringOffset = new Point(0, 0);
     if (this._image) {
       // Calculate scale factor that fits the entire image into the viewport
@@ -215,18 +267,17 @@ export class ContextImage2Model {
         this._viewportToWorldScale = this._image.width / this._viewportSize.x;
       }
 
-      halfFrustumSize.x = this._viewportSize.x * this._viewportToWorldScale;
-      halfFrustumSize.y = this._viewportSize.y * this._viewportToWorldScale;
+      frustumSize.x = this._viewportSize.x * this._viewportToWorldScale;
+      frustumSize.y = this._viewportSize.y * this._viewportToWorldScale;
 
-      camCenteringOffset.x = halfFrustumSize.x * 0.5 - (halfFrustumSize.x - this._image.width) / 2;
-      camCenteringOffset.y = halfFrustumSize.y * 0.5 - (halfFrustumSize.y - this._image.height) / 2;
+      camCenteringOffset.x = this._image.width * 0.5;
+      camCenteringOffset.y = this._image.height * 0.5;
     }
 
     const scale = 0.5 / this._zoom; // For half!
-    halfFrustumSize.x *= scale;
-    halfFrustumSize.y *= scale;
+    const halfFrustumSize = new Point(frustumSize.x * scale, frustumSize.y * scale);
 
-    const cam = this.drawModel.renderData.camera as THREE.OrthographicCamera
+    const cam = this.drawModel.renderData.camera as THREE.OrthographicCamera;
     cam.left = -halfFrustumSize.x;
     cam.right = halfFrustumSize.x;
 

@@ -1,4 +1,15 @@
-## 4.90.0 (LATEST)
+## 4.91.0 (LATEST)
+
+### New Features
+- Updated UI of quant jobs list items, now they're more readable
+- Updated UI shown when clicking on a quant job, now displays better, and in error cases calculates start/end/elapsed time correctly
+- Export icon on all panels is now the same as the export tab icon for consistency
+- Context Image v2 improvements: linked pan/zoom, show mouse position on linked views, improved navigation and UI, added tools for drawing polygons/points (not functional yet)
+
+### Bug Fixes
+- When zooming in the browser tab (eg ctrl+mouse scroll) the context image was not drawing all PMCs in some cases
+
+## 4.90.0 (2026-05-08)
 
 ### New Features
 - Client API now tries reading map without client prefix applied (if it first fails with it). This is to allow us to read maps generated and cached by expressions on the UI

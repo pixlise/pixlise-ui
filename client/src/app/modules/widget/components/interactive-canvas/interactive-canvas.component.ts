@@ -28,12 +28,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, ViewChild } from "@angular/core";
-import { Observable, of } from "rxjs";
+import { Observable, of, Subject } from "rxjs";
 import { tap } from "rxjs/operators";
 
 import { addVectors, Point, } from "src/app/models/Geometry";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CanvasParams, CanvasDrawNotifier, ResizingCanvasComponent } from "./resizing-canvas.component";
+import { CanvasMouseKeyEventHandler, ICanvasHost } from "./canvas-mouse-key-event-handler";
 
 export { CanvasParams, CanvasDrawNotifier };
 
@@ -176,19 +177,22 @@ export interface CanvasWorldTransform {
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],
 })
-export class InteractiveCanvasComponent extends ResizingCanvasComponent implements AfterViewInit, OnDestroy {
+export class InteractiveCanvasComponent extends ResizingCanvasComponent implements AfterViewInit, OnDestroy, ICanvasHost {
   @Input() drawer: CanvasDrawer | null = null;
   @Input() transform: CanvasWorldTransform | null = null;
   @Input() interactionHandler: CanvasInteractionHandler | null = null;
 
   @ViewChild("InteractiveCanvas") _imgCanvas?: ElementRef;
 
+  private _triggerRedraw$: Subject<void> = new Subject<void>();
+
   private _screenContext!: CanvasRenderingContext2D;
+  mouseKeyHandler: CanvasMouseKeyEventHandler;
 
-  private _mouseDown: Point | null = null;
-  private _mouseLast: Point | null = null;
-
-  constructor(layoutService: AnalysisLayoutService) { super(layoutService); }
+  constructor(layoutService: AnalysisLayoutService) {
+    super(layoutService);
+    this.mouseKeyHandler = new CanvasMouseKeyEventHandler(this);
+  }
 
   get drawNotifier(): CanvasDrawNotifier | null {
     return this._drawNotifier;
@@ -210,14 +214,6 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     return this._imgCanvas;
   }
 
-  override triggerRedraw(): void {
-    window.requestAnimationFrame(() => {
-      if (this._screenContext && this._viewport && this.transform && this.drawer) {
-        InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer).subscribe();
-      }
-    });
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected override setTransformCanvasParams(params: CanvasParams, canvas: ElementRef<any>): void {
       this.transform?.setCanvasParams(params);
@@ -237,173 +233,14 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     }
   }
 
-  // Not using this because it's a global event, we're only interested if this canvas received it
-  //@HostListener('document:mousedown', ['$event'])
-  onMouseDownCanvas(event: MouseEvent) {
-    event.preventDefault();
-    // We only consider it a mouse down if it's the left mouse button
-    if (event.button == 0) {
-      this._mouseDown = new Point(event.clientX, event.clientY);
-      this.sendMouseEvent(this._mouseDown, 0, CanvasMouseEventId.MOUSE_DOWN, event.shiftKey, event.ctrlKey, event.metaKey);
-    }
-  }
-
-  private shouldProcessMouseEvent(event: MouseEvent): boolean {
-    // If mouse is down, we're stalking the mouse, so process it
-    if (this._mouseDown) {
-      return true;
-    }
-    return false;
-  }
-
-  onMouseEnter(event: MouseEvent): void {
-    event.preventDefault();
-    // Grab focus - so we get keyboard presses
-    if (this._imgCanvas) {
-      this._imgCanvas.nativeElement.focus();
-    }
-    const mouse = new Point(event.clientX, event.clientY);
-    this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_ENTER, event.shiftKey, event.ctrlKey, event.metaKey);
-    //this.mouseEntered = true;
-  }
-
-  onMouseLeave(event: MouseEvent): void {
-    event.preventDefault();
-    // Relinquish focus
-    if (this._imgCanvas) {
-      this._imgCanvas.nativeElement.blur();
-    }
-
-    const mouse = new Point(event.clientX, event.clientY);
-    this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_LEAVE, event.shiftKey, event.ctrlKey, event.metaKey);
-    //this.mouseEntered = false;
+  @HostListener("document:mouseup", ["$event"])
+  onGlobalMouseUpCanvas(event: MouseEvent) {
+    this.mouseKeyHandler.onGlobalMouseUpCanvas(event);
   }
 
   @HostListener("document:mousemove", ["$event"])
   onGlobalMouseMoveCanvas(event: MouseEvent) {
-    if (this.shouldProcessMouseEvent(event)) {
-      this.onMouseMoveCanvas(event);
-    }
-  }
-
-  onMouseMoveCanvas(event: MouseEvent) {
-    event.preventDefault();
-    const mouse = new Point(event.clientX, event.clientY);
-
-    let sendEvent = CanvasMouseEventId.MOUSE_MOVE;
-    if (this._mouseDown) {
-      sendEvent = CanvasMouseEventId.MOUSE_DRAG;
-    }
-    this.sendMouseEvent(mouse, 0, sendEvent, event.shiftKey, event.ctrlKey, event.metaKey);
-  }
-
-  @HostListener("document:mouseup", ["$event"])
-  onGlobalMouseUpCanvas(event: MouseEvent) {
-    if (this.shouldProcessMouseEvent(event)) {
-      this.onMouseUpCanvas(event);
-    }
-  }
-
-  onMouseUpCanvas(event: MouseEvent) {
-    event.preventDefault();
-
-    // We only consider it a mouse up if it's the left mouse button
-    if (event.button == 0) {
-      const mouse = new Point(event.clientX, event.clientY);
-      this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_UP, event.shiftKey, event.ctrlKey, event.metaKey);
-      this._mouseDown = null;
-    }
-  }
-
-  //@HostListener('document:wheel', ['$event'])
-  onMouseWheelCanvas(event: WheelEvent) {
-    // Found a whole bunch of funny stuff between browser versions/OS's...
-    // OSX: Late 2019: if user pressed shift while mouse-scrolling, deltaY was 0, deltaX was populated but 10x deltaY units
-    // Windows: Early 2021: getting +/-100 for the deltaY value, deltaX is always 0
-    // To make this always do something useful, check if deltaY is 0, if so, operate off deltaX
-    // Normalise the value (only care about the sign). We previously operated on delta=4, so maybe do that, or similar
-    // and that should provide similar functionality on all browsers/platforms.
-
-    //console.log('onMouseWheelCanvas:');
-    //console.log(event);
-    event.preventDefault();
-
-    let delta = event.deltaY;
-    if (delta == 0) {
-      delta = event.deltaX;
-    }
-
-    const deltaStep = 6;
-
-    // Found that on Windows, we were being given deltaX= +/-100, so lets standardise. On OSX we're getting about +/-4, and
-    // wrote code to handle it that way...
-    if (delta > 0) {
-      delta = deltaStep;
-    } else if (delta < 0) {
-      delta = -deltaStep;
-    }
-
-    const mouse = new Point(event.clientX, event.clientY);
-    this.sendMouseEvent(mouse, delta, CanvasMouseEventId.MOUSE_WHEEL, event.shiftKey, event.ctrlKey, event.metaKey);
-  }
-
-  onKeyDown(event: KeyboardEvent): void {
-    // Notify parent
-    this.sendKeyEvent(event.key, true);
-  }
-
-  onKeyUp(event: KeyboardEvent): void {
-    this.sendKeyEvent(event.key, false);
-  }
-
-  private sendKeyEvent(key: string, down: boolean): void {
-    if (!this.interactionHandler) {
-      console.warn("sendKeyEvent: No interaction handler defined");
-      return;
-    }
-
-    const eventResult = this.interactionHandler.keyEvent(new CanvasKeyEvent(key, down));
-    if (eventResult && eventResult.redraw) {
-      this.triggerRedraw();
-    }
-  }
-
-  private sendMouseEvent(mousePos: Point, deltaY: number, eventId: number, shiftKey: boolean, ctrlKey: boolean, metaKey: boolean): void {
-    if (!this._mouseLast) {
-      this._mouseLast = mousePos;
-    }
-
-    if (!this.interactionHandler) {
-      console.warn("sendMouseEvent: No interaction handler defined");
-    } else {
-      const eventResult = this.interactionHandler.mouseEvent(
-        new CanvasMouseEvent(
-          eventId,
-
-          mousePos ? (this.screenToWorldSpace(mousePos) as Point) : new Point(0, 0),
-          this._mouseDown ? (this.screenToWorldSpace(this._mouseDown!) as Point) : new Point(0, 0),
-          this.screenToWorldSpace(this._mouseLast) as Point,
-
-          this.screenToCanvasSpace(mousePos),
-          this._mouseDown ? this.screenToCanvasSpace(this._mouseDown!) : new Point(0, 0),
-          this.screenToCanvasSpace(this._mouseLast),
-
-          this._viewport,
-
-          deltaY,
-          shiftKey,
-          ctrlKey,
-          metaKey
-          /*, rect: this.imgCanvas.nativeElement.getBoundingClientRect()*/
-        )
-      );
-
-      if (eventResult && eventResult.redraw) {
-        this.triggerRedraw();
-      }
-    }
-
-    this._mouseLast = mousePos;
+    this.mouseKeyHandler.onGlobalMouseMoveCanvas(event);
   }
 
   public static drawFrame(
@@ -442,30 +279,32 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     );
   }
 
-  protected screenToCanvasSpace(pt: Point): Point {
-    if (!pt) {
-      return pt;
+  // ICanvasHost
+  canvasToWorldSpace(canvasPt: Point): Point | null {
+    if (!canvasPt) {
+      return canvasPt;
     }
-
-    // Make it relative to our canvas
-    if (!this._imgCanvas) {
-      return new Point(0, 0);
-    }
-
-    const canvasScreenRect = this._imgCanvas.nativeElement.getBoundingClientRect();
-
-    const canvasPt = new Point(pt.x - canvasScreenRect.left, pt.y - canvasScreenRect.top);
-    return canvasPt;
-  }
-
-  protected screenToWorldSpace(pt: Point): Point | null {
-    if (!pt) {
-      return pt;
-    }
-
-    const canvasPt = this.screenToCanvasSpace(pt);
-
     // Transform to worldspace
     return this.transform?.canvasToWorldSpace(canvasPt) || null;
+  }
+
+  getInteractionHandler(): CanvasInteractionHandler | null {
+    return this.interactionHandler;
+  }
+
+  getCanvas(): HTMLCanvasElement | undefined {
+      return this._imgCanvas?.nativeElement;
+  }
+
+  viewport(): CanvasParams {
+    return this._viewport;
+  }
+
+  override triggerRedraw(): void {
+    window.requestAnimationFrame(() => {
+      if (this._screenContext && this._viewport && this.transform && this.drawer) {
+        InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer).subscribe();
+      }
+    });
   }
 }

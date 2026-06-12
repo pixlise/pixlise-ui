@@ -28,6 +28,9 @@ export class ContextImage2DrawModel {
   protected _lastPyramidLevel = -1;
   protected _lastPyramidLevelTilesVisible = new Set<number>();
 
+  private _otherCursorPt?: THREE.Object3D;
+  private _mousePresent: boolean = false;
+
   renderData: RenderData;
 
   private WHITE = new THREE.Color(1,1,1);
@@ -110,6 +113,35 @@ export class ContextImage2DrawModel {
 
   get lastPyramidLevel(): number { return this._lastPyramidLevel; }
   get lastPyramidLevelTilesVisible(): Set<number> { return this._lastPyramidLevelTilesVisible; }
+
+  setOtherCursorPt(pt: Point, zoom: number) {
+    if (this._mousePresent) {
+      return;
+    }
+
+    if(!this._otherCursorPt) {
+      const geometry = new THREE.CircleGeometry( 3, 8 );
+      const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+      this._otherCursorPt = new THREE.Mesh( geometry, material );
+      this.renderData.scene.add(this._otherCursorPt);
+    }
+    this._otherCursorPt.scale.set(1/zoom, 1/zoom, 1);
+    this._otherCursorPt.position.set(pt.x, pt.y, 0);
+  }
+
+  clearOtherCursorPt() {
+    if(this._otherCursorPt) {
+      this.renderData.scene.remove(this._otherCursorPt);
+      this._otherCursorPt = undefined;
+    }
+  }
+
+  setMousePresent(present: boolean) {
+    this._mousePresent = present;
+    if (this._mousePresent) {
+      this.clearOtherCursorPt();
+    }
+  }
 
   private generateTileBBoxes() {
     this._tileBBoxes = [];
@@ -471,7 +503,7 @@ export class ContextImage2DrawModel {
     const frustumWidth = right-left;
     const frustumHeight = top-bottom;
 
-    const scale = 0.1;
+    const scale = 0.16;
 
     const pipWidth = this._image.width * scale;
     const pipHeight = this._image.height * scale;
@@ -489,14 +521,29 @@ export class ContextImage2DrawModel {
     this._pipView.add(pipBG);
 
     // Draw a border
+    let borderPts = this.makeRectPoints(0, 0, pipWidth, pipHeight);
     this._pipView.add(
       this.makeLines(
-        this.makeRectPoints(pipWidth, pipHeight),
+        borderPts,
         0, 0,
         new THREE.LineBasicMaterial({
           color: this.BLACK,
-          linewidth: 6,
-          opacity: 0.3,
+          linewidth: 1,
+          opacity: 1,
+          transparent: true,
+        })
+      )
+    );
+    
+    borderPts = this.makeRectPoints(1, 1, pipWidth-2, pipHeight-2);
+    this._pipView.add(
+      this.makeLines(
+        borderPts,
+        0, 0,
+        new THREE.LineBasicMaterial({
+          color: this.WHITE,
+          linewidth: 1,
+          opacity: 1,
           transparent: true,
         })
       )
@@ -505,7 +552,7 @@ export class ContextImage2DrawModel {
     // Draw the frustum we're seeing - if it's too small change it into a cross-hair of constant size
     let frustumViewScale = scale;
     let drawCorners = false;
-    if ((frustumWidth * requestedTexPerScreenPixel) < 800) {
+    if ((frustumWidth * requestedTexPerScreenPixel) < 10) {
       //frustumViewScale = 5;
       drawCorners = true;
     }
@@ -518,8 +565,8 @@ export class ContextImage2DrawModel {
     // Add some lines that show the box corners more clearly when it's small
     if (drawCorners) {
       let sz = Math.max(frustumWidth, frustumHeight);
-      if (sz > 50) {
-        sz = 50;
+      if (sz > 8) {
+        sz = 8;
       }
       const cornerVec = new Point(sz, sz);
       pts.push(
@@ -532,9 +579,8 @@ export class ContextImage2DrawModel {
         cornerVec.x+viewWidth, cornerVec.y + viewHeight, 0,
         viewWidth, viewHeight, 0
       );
-    } else {
-      pts = this.makeRectPoints(viewWidth, viewHeight);
     }
+    pts.push(...this.makeRectPoints(0, 0, viewWidth, viewHeight));
 
     this._pipView.add(
       this.makeLines(
@@ -553,7 +599,7 @@ export class ContextImage2DrawModel {
 
     // Move the pip view to the top-right
     //this._pipView.position.set(right - 100, top - frustumHeight, 0);
-    this._pipView.position.set(left + frustumWidth * (1-scale*1.5), bottom + frustumHeight * (scale*0.5), 0);
+    this._pipView.position.set(right-frustumWidth*(scale+0.01), bottom+frustumHeight*0.01, 0); //left + frustumWidth * (1-scale-0.01), bottom + frustumHeight * (scale*0.5), 0);
 
     // Position it so it's always visible in the top-right of the view frustum
     // NOTE it's currently located at 0,0 relative to the image itself
@@ -561,16 +607,16 @@ export class ContextImage2DrawModel {
     this._sceneAttachment.add(this._pipView)
   }
 
-  private makeRectPoints(width: number, height: number) {
+  private makeRectPoints(x: number, y: number, width: number, height: number) {
     return [
-      0, 0, 0,
-      0, height, 0,
-      0, height, 0,
-      width, height, 0,
-      width, height, 0,
-      width, 0, 0,
-      width, 0, 0,
-      0, 0, 0,
+      x, y, 0,
+      x, y+height, 0,
+      x, y+height, 0,
+      x+width, y+height, 0,
+      x+width, y+height, 0,
+      x+width, y, 0,
+      x+width, y, 0,
+      x, y, 0,
     ];
   }
 
