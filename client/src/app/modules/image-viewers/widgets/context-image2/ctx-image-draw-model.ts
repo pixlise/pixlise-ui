@@ -4,8 +4,7 @@ import { ScanImage } from 'src/app/generated-protos/image';
 import { ImagePyramid, ImagePyramidLayer } from 'src/app/generated-protos/image-pyramid';
 import { TileImageLoader } from './tile-loader';
 import { map, Observable, of, Subject, Subscription } from 'rxjs';
-import { Point } from 'src/app/models/Geometry';
-import { P } from 'node_modules/@angular/cdk/portal-directives.d-DbeNrI5D';
+import { Point, Rect } from 'src/app/models/Geometry';
 
 
 export class ContextImage2DrawModel {
@@ -22,6 +21,8 @@ export class ContextImage2DrawModel {
   protected _tile?: THREE.BufferGeometry;
   protected _tileSize = 1;
   protected _pipView?: THREE.Object3D;
+  protected _pipViewBoxWorldspace: Rect = new Rect(0,0,0,0);
+  protected _worldspacePixelSize: number = 1;
 
   protected _tileBBoxes: THREE.Box3[][] = [];
 
@@ -111,21 +112,26 @@ export class ContextImage2DrawModel {
     this.renderData.scene.add(this._sceneAttachment);
   }
 
+  getPIPViewBoxWorldspace() {
+    return this._pipViewBoxWorldspace;
+  }
+
   get lastPyramidLevel(): number { return this._lastPyramidLevel; }
   get lastPyramidLevelTilesVisible(): Set<number> { return this._lastPyramidLevelTilesVisible; }
 
-  setOtherCursorPt(pt: Point, zoom: number) {
+  setOtherCursorPt(pt: Point) {
     if (this._mousePresent) {
       return;
     }
 
     if(!this._otherCursorPt) {
-      const geometry = new THREE.CircleGeometry( 3, 8 );
+      const geometry = new THREE.CircleGeometry(0.5, 8 );
       const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
       this._otherCursorPt = new THREE.Mesh( geometry, material );
       this.renderData.scene.add(this._otherCursorPt);
     }
-    this._otherCursorPt.scale.set(1/zoom, 1/zoom, 1);
+
+    this._otherCursorPt.scale.set(this._worldspacePixelSize * 3, this._worldspacePixelSize * 3, 1);
     this._otherCursorPt.position.set(pt.x, pt.y, 0);
   }
 
@@ -190,7 +196,9 @@ export class ContextImage2DrawModel {
   }
 
   // Needs to be called if pan, zoom or viewport size changes
-  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, drawPIPMap: boolean, redrawHook$: Subject<void>) {
+  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, worldspacePixelSize: number, drawPIPMap: boolean, redrawHook$: Subject<void>) {
+    this._worldspacePixelSize = worldspacePixelSize;
+
     if (!this._image ||
       !this._pyramid || this._pyramid.pyramid.length <= 0 || this._pyramid.pyramid[0].tiles.length <= 0 ||
       !this._tile) {
@@ -474,7 +482,8 @@ export class ContextImage2DrawModel {
 
     // Rebuild it all
     if (this._pipView) {
-      this._sceneAttachment.remove(this._pipView)
+      this._sceneAttachment.remove(this._pipView);
+      this._pipViewBoxWorldspace = new Rect(0,0,0,0);
     }
 
     // Update the PIP
@@ -503,10 +512,10 @@ export class ContextImage2DrawModel {
     const frustumWidth = right-left;
     const frustumHeight = top-bottom;
 
-    const scale = 0.16;
+    const frustumViewScale = 0.16;
 
-    const pipWidth = this._image.width * scale;
-    const pipHeight = this._image.height * scale;
+    const pipWidth = this._image.width * frustumViewScale;
+    const pipHeight = this._image.height * frustumViewScale;
 
     // Draw the level 0 image into a PIP view
     let mat = new THREE.MeshBasicMaterial({
@@ -550,13 +559,10 @@ export class ContextImage2DrawModel {
     );
 
     // Draw the frustum we're seeing - if it's too small change it into a cross-hair of constant size
-    let frustumViewScale = scale;
-    let drawCorners = false;
-    if ((frustumWidth * requestedTexPerScreenPixel) < 10) {
-      //frustumViewScale = 5;
-      drawCorners = true;
-    }
 
+    const pipScale = frustumWidth / this._image.width;
+    let drawCorners = pipScale < 0.1; // If the frustum is < this % of the width of the entire image (and we've shrunk
+                                       // it into a PIP view) we must be quite small, so draw the corner arrows!
     const viewWidth = frustumWidth * frustumViewScale;
     const viewHeight = frustumHeight * frustumViewScale;
 
@@ -564,10 +570,8 @@ export class ContextImage2DrawModel {
 
     // Add some lines that show the box corners more clearly when it's small
     if (drawCorners) {
-      let sz = Math.max(frustumWidth, frustumHeight);
-      if (sz > 8) {
-        sz = 8;
-      }
+      let sz = Math.min(frustumWidth, frustumHeight) / requestedTexPerScreenPixel;
+
       const cornerVec = new Point(sz, sz);
       pts.push(
         -cornerVec.x, -cornerVec.y, 0,
@@ -585,26 +589,27 @@ export class ContextImage2DrawModel {
     this._pipView.add(
       this.makeLines(
         pts,
-        left * scale, bottom * scale,
+        left * frustumViewScale, bottom * frustumViewScale,
         new THREE.LineBasicMaterial({
           color: this.PURPLE,
-          linewidth: 3,
+          linewidth: 1,
         })
       )
     );
 
     // Scale pip view to be independent of zoom level
-    const pipScale = frustumWidth / this._image.width;
     this._pipView.scale.set(pipScale, pipScale, 1);
 
     // Move the pip view to the top-right
     //this._pipView.position.set(right - 100, top - frustumHeight, 0);
-    this._pipView.position.set(right-frustumWidth*(scale+0.01), bottom+frustumHeight*0.01, 0); //left + frustumWidth * (1-scale-0.01), bottom + frustumHeight * (scale*0.5), 0);
+    this._pipViewBoxWorldspace = new Rect(right-frustumWidth*(frustumViewScale+0.01), bottom+frustumHeight*0.01, viewWidth, viewHeight);
+
+    this._pipView.position.set(this._pipViewBoxWorldspace.x, this._pipViewBoxWorldspace.y, 0); //left + frustumWidth * (1-scale-0.01), bottom + frustumHeight * (scale*0.5), 0);
 
     // Position it so it's always visible in the top-right of the view frustum
     // NOTE it's currently located at 0,0 relative to the image itself
 
-    this._sceneAttachment.add(this._pipView)
+    this._sceneAttachment.add(this._pipView);
   }
 
   private makeRectPoints(x: number, y: number, width: number, height: number) {

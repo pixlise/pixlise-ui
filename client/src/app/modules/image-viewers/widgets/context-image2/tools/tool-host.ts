@@ -236,7 +236,7 @@ export class ContextImageV2ToolHost implements CanvasInteractionHandler, IContex
               zoomPct = 1 - zoomPctChange;
             }
 
-            this._ctx.setZoom(this._ctx.zoom * zoomPct);
+            this._ctx.setZoom(this._ctx.zoom * zoomPct, event.point);
           }
           break;
       }
