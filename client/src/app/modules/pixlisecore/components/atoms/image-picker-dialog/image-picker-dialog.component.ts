@@ -31,7 +31,7 @@ import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@ang
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from "@angular/material/dialog";
 import { catchError, from, mergeMap, Subscription, tap, timer, toArray } from "rxjs";
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
-import { ImageDeleteReq, ImageDeleteResp, ImageGetReq, ImageListReq } from "src/app/generated-protos/image-msgs";
+import { ImageDeleteReq, ImageDeleteResp, ImageGetReq, ImageListReq, ImageSetDefaultReq, ImageSetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -604,6 +604,22 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this._snackService.openError(`Error deleting image: ${imagePath}`, err);
+      },
+    });
+  }
+
+  onSetDefaultImage(image: ImageChoice): void {
+    if (image.scanIds.length != 1) {
+        this._snackService.openError(`Failed to set default image, unexpected number of scans associated: ${image.scanIds.length}`);
+        return;
+    }
+
+    this._dataService.sendImageSetDefaultRequest(ImageSetDefaultReq.create({ scanId: image.scanIds[0], defaultImageFileName: image.path })).subscribe({
+      next: (resp: ImageSetDefaultResp) => {
+        this._snackService.openSuccess("Default image changed", `Dataset ${image.scanIds[0]} now has default image set to: ${image.path}`);
+      },
+      error: err => {
+        this._snackService.openError(err);
       },
     });
   }

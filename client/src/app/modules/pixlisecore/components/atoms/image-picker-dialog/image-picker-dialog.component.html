@@ -141,6 +141,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="loading">
       <wait-spinner *ngIf="waitingForImages.length > 0" #tooltip="matTooltip" [matTooltip]="waitingForImagesTooltip"></wait-spinner>
     </div>
+    <push-button *ngIf="selectedChoice" title="Set this as the default image for the scan" buttonStyle="outline" (onClick)="onSetDefaultImage(selectedChoice)">Set Default</push-button>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button *ngIf="data.multipleSelection" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
     <push-button
