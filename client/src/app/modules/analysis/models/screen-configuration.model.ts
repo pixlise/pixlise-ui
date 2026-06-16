@@ -1,5 +1,6 @@
 import { ScanDataType, ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { FullScreenLayout, ScreenConfiguration, ScreenConfigurationCSS, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { scanHasXRF } from "src/app/utils/utils";
 
 export type WidgetReference = {
   widget: WidgetLayoutConfiguration;
@@ -188,14 +189,7 @@ export const createEmptyScreenConfiguration = (): ScreenConfiguration => {
 };
 
 export function selectDefaultScreenConfigurationForScan(scan: ScanItem): ScreenConfiguration {
-  let hasXRF = false;
-  for (let dt of scan.dataTypes) {
-    if (dt.dataType == ScanDataType.SD_XRF && dt.count > 0) {
-      hasXRF = true;
-      break;
-    }
-  }
-  
+  let hasXRF = scanHasXRF(scan);
   if (scan.instrument == ScanInstrument.PIXL_FM || scan.instrument == ScanInstrument.PIXL_EM || hasXRF) {
     return createDefaultScreenConfiguration()
   }

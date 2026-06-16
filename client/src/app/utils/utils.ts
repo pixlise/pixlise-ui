@@ -33,7 +33,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
-import { ScanItem } from "../generated-protos/scan";
+import { ScanDataType, ScanItem } from "../generated-protos/scan";
 import { DatePipe } from "@angular/common";
 
 export class SentryHelper {
@@ -1247,4 +1247,15 @@ export function makeValidFloatString(num: string | number): string {
     return num.replaceAll(".", "").replaceAll(",", ".");
   }
   return num;
+}
+
+export function scanHasXRF(scan: ScanItem) {
+  let hasXRF = false;
+  for (let dt of scan.dataTypes) {
+    if (dt.dataType == ScanDataType.SD_XRF && dt.count > 0) {
+      hasXRF = true;
+      break;
+    }
+  }
+  return hasXRF;
 }
