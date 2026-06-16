@@ -184,6 +184,9 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     this._subs.add(
      this._saveState$.subscribe(() => {
       this.saveState();
+
+      // If the state changed enough, we may need to re-display our image info
+      this.updateImageDetails();
      })
     );
 
@@ -198,41 +201,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         this.updateSelection();
       })
     );*/
-/*
-    this._subs.add(
-      this._mouseInteractionHandler.panChange$.subscribe(() => {
-        this.notifyPanZoomChange();
-      })
-    );
 
-    this._subs.add(
-      this._mouseInteractionHandler.saveState$.subscribe(() => {
-        this.saveState();
-
-        // If the state changed enough, we may need to re-display our image info
-        this.updateImageDetails();
-      })
-    );
-
-    this._subs.add(
-      this._mouseInteractionHandler.mouseWheel$.subscribe((event: WheelEvent) => {
-        this.onMouseWheel(event);
-        this.notifyPanZoomChange();
-      })
-    );
-
-    this._subs.add(
-      this._mouseInteractionHandler.mousePt$.subscribe((pt: Point) => {
-        this._contextImageV2DataService.syncCursorForId(this.syncId, pt);
-      })
-    );
-
-    this._subs.add(
-      this._mouseInteractionHandler.mousePresent$.subscribe((present: boolean) => {
-        this.mdl.setMousePresent(present);
-      })
-    );
-*/
     this._subs.add(
       combineLatest([
         this.widgetData$,
@@ -631,12 +600,21 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
     }
 
     return this._cacheDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).pipe(
-      map((resp: ImageGetDefaultResp) => {
+      switchMap((resp: ImageGetDefaultResp) => {
         let img = resp.defaultImagesPerScanId[scanId];
-        if (!img) {
-          img = "";
+        if (img && img.length > 0) {
+          return of(img);
         }
-        return img;
+
+        // No default image, so read the first one
+        return this._cacheDataService.getImageList(ImageListReq.create({ scanIds: [this.scanId] })).pipe(
+          map((resp: ImageListResp) => {
+            if (resp.images.length > 0) {
+              return resp.images[0].imagePath;
+            }
+            return "";
+          })
+        );
       }
     ));
   }
