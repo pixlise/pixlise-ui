@@ -60,7 +60,14 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
         this.onConnected();
       })
       .subscribe({
-        next: (wsmsg: WSMessage) => {
+        next: (result: any) => {
+          if (result === "login-again") {
+            // Login failed, so redirect to a login page
+            console.error("Ending login attempt loop to allow redirection of user to log in again");
+            return;
+          }
+
+          let wsmsg = result as WSMessage;
           this.dispatchMessage(wsmsg);
         },
         error: err => {
