@@ -190,6 +190,13 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
      })
     );
 
+    this._subs.add(
+      this._toolHost.activeCursor$.subscribe((cursor: string) => {
+        // Something changed, refresh our tools
+        this.cursorShown = cursor;
+      })
+    );
+
     /*this._subs.add(
       this._selectionService.selection$.subscribe((currSel: SelectionHistoryItem) => {
         this.updateSelection();

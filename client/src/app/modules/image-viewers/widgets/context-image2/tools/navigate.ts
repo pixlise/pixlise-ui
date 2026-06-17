@@ -21,10 +21,13 @@ export class CtxV2Navigate extends CtxV2ToolBase {
       // Work out if we clicked on the PIP view, if so we drag based on that
       const pipPos = ctx.getPIPPosition(event.point);
       if (pipPos) {
-        ctx.setPanZoom(pipPos, ctx.zoom);
+        host.setCursor(CursorId.crosshairCursor);
       } else {
-        ctx.panBy(event.point, event.mouseLast);
+        host.setCursor(CursorId.defaultPointer);
       }
+    }
+    if (event.eventId == CanvasMouseEventId.MOUSE_LEAVE) {
+      host.setCursor(CursorId.defaultPointer);
     }
 
     return CanvasInteractionResult.neither;
