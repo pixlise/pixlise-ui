@@ -19,6 +19,20 @@ export class CtxV2Navigate extends CtxV2ToolBase {
   public static panZoomMouseMove(event: CanvasMouseEvent, ctx: ContextImage2Model, host: IContextImageV2ToolHost) {
     if (event.eventId == CanvasMouseEventId.MOUSE_DRAG || (event.eventId == CanvasMouseEventId.MOUSE_UP && event.mouseDown != null)) {
       // Work out if we clicked on the PIP view, if so we drag based on that
+      const downPipPos = ctx.getPIPPosition(event.mouseDown);
+      if (downPipPos) {
+        // Started on the PIP thing, so handle it there
+        const pipPos = ctx.getPIPPosition(event.point);
+        if (pipPos) {
+          ctx.setPanZoom(pipPos, ctx.zoom);
+        }
+      } else {
+        // User is dragging the image itself
+        ctx.panBy(event.point, event.mouseLast);
+      }
+    }
+
+    if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
       const pipPos = ctx.getPIPPosition(event.point);
       if (pipPos) {
         host.setCursor(CursorId.crosshairCursor);

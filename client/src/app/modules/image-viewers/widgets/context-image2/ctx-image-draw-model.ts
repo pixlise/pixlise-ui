@@ -119,19 +119,73 @@ export class ContextImage2DrawModel {
   get lastPyramidLevel(): number { return this._lastPyramidLevel; }
   get lastPyramidLevelTilesVisible(): Set<number> { return this._lastPyramidLevelTilesVisible; }
 
+  private makePlus(thickness: number, size: number, z: number, colour: THREE.Color, borderColour: THREE.Color): THREE.Object3D {
+    const plus = new THREE.BufferGeometry();
+    const halfThickness = thickness/2;
+    const radius = size/2;
+
+    const xyz = new Float32Array([
+      // left
+      -radius, -halfThickness, z,
+      -radius, halfThickness, z,
+
+      -halfThickness, halfThickness, z,
+
+      // top
+      -halfThickness, radius, z,
+      halfThickness, radius, z,
+
+      halfThickness, halfThickness, z,
+
+      // right
+      radius, halfThickness, z,
+      radius, -halfThickness, z,
+      
+      halfThickness, -halfThickness, z,
+
+      // bottom
+      halfThickness, -radius, z,
+      -halfThickness, -radius, z,
+
+      -halfThickness, -halfThickness, z,
+    ]);
+
+    plus.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
+    plus.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 0,11,2, 2,4,3, 2,5,4, 5,8,6, 8,7,6, 11,10,8, 10,9,8]), 1));
+
+    const material = new THREE.MeshBasicMaterial( { color: colour } );
+    const inner = new THREE.Mesh(plus, material);
+
+    const lineMat = new THREE.LineBasicMaterial({
+      color: borderColour,
+      linewidth: 1,
+      // opacity: 1,
+      // transparent: true,
+    });
+
+    const plusOuter = new THREE.BufferGeometry();
+    plusOuter.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
+    const outer = new THREE.LineLoop(plusOuter, lineMat);
+    const result = new THREE.Object3D();
+
+    result.add(inner);
+    result.add(outer);
+    return result;
+  }
+
   setOtherCursorPt(pt: Point) {
     if (this._mousePresent) {
       return;
     }
 
     if(!this._otherCursorPt) {
-      const geometry = new THREE.CircleGeometry(0.5, 8 );
-      const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-      this._otherCursorPt = new THREE.Mesh( geometry, material );
+      // Make a + shape with 2 colours so it's always contrasted to the background
+      this._otherCursorPt = this.makePlus(2, 15, 0, this.WHITE, this.BLACK);
       this.renderData.scene.add(this._otherCursorPt);
     }
+    const scale = 1;
 
-    this._otherCursorPt.scale.set(this._worldspacePixelSize * 3, this._worldspacePixelSize * 3, 1);
+    this._otherCursorPt.scale.set(this._worldspacePixelSize * scale, this._worldspacePixelSize * scale, 1);
     this._otherCursorPt.position.set(pt.x, pt.y, 0);
   }
 
@@ -560,7 +614,7 @@ export class ContextImage2DrawModel {
 
     // Draw the frustum we're seeing - if it's too small change it into a cross-hair of constant size
 
-    const pipScale = frustumWidth / this._image.width;
+    const pipScale = this._image.width > this._image.height ? frustumWidth / this._image.width : frustumHeight / this._image.height;
     let drawCorners = pipScale < 0.1; // If the frustum is < this % of the width of the entire image (and we've shrunk
                                        // it into a PIP view) we must be quite small, so draw the corner arrows!
     const viewWidth = frustumWidth * frustumViewScale;
@@ -602,7 +656,12 @@ export class ContextImage2DrawModel {
 
     // Move the pip view to the top-right
     //this._pipView.position.set(right - 100, top - frustumHeight, 0);
-    this._pipViewBoxWorldspace = new Rect(right-frustumWidth*(frustumViewScale+0.01), bottom+frustumHeight*0.01, viewWidth, viewHeight);
+    this._pipViewBoxWorldspace = new Rect(
+      right-frustumWidth*(frustumViewScale+0.01) + Math.abs(pipWidth*pipScale-viewWidth)*0.5,
+      bottom+frustumHeight*0.01,
+      pipWidth*pipScale,
+      pipHeight*pipScale,
+    );
 
     this._pipView.position.set(this._pipViewBoxWorldspace.x, this._pipViewBoxWorldspace.y, 0); //left + frustumWidth * (1-scale-0.01), bottom + frustumHeight * (scale*0.5), 0);
 
