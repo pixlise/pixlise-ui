@@ -10,6 +10,7 @@
   - Show mouse position on linked views
   - Improved navigation and UI
   - Added tools for drawing polygons/points (not functional yet)
+  - Allow setting/changing mouse cursor
 - PIXLISE now automatically tries to redirect to the login page if it detects that your session has expired
 - When opening a scan that has no XRF data the side-bar is no longer forced-open to prompt the user to select a quantification
 - Sometimes scans were loaded and the scan was not configured in the side-bar, this has now been fixed
@@ -17,6 +18,8 @@
 
 ### Bug Fixes
 - When zooming in the browser tab (eg ctrl+mouse scroll) the context image was not drawing all PMCs in some cases
+- Fixing error display when error msg is an ArrayBuffer, it was just coming up as [Object]
+- Fix sharing workspaces that have no quants/rois/expressions/expression groups in them - in this case sharing didn't show the share dialog!
 
 ## 4.90.0 (2026-05-08)
 

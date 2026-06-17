@@ -32,10 +32,10 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 
-import { combineLatest, map, of, Subscription, switchMap } from "rxjs";
+import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 
 import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { ObjectType, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
+import { ObjectType, OwnershipItem, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
 import { GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
@@ -503,20 +503,10 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const workspaceId = this.screenConfig?.id || "";
       const roiIds = this._analysisLayoutService.getLoadedROIIDsFromActiveScreenConfiguration();
       const expressionIds = this._analysisLayoutService.getLoadedExpressionIDsFromActiveScreenConfiguration();
       const expressionGroupIds = this._analysisLayoutService.getLoadedExpressionGroupIDsFromActiveScreenConfiguration();
       const quantIds = this._analysisLayoutService.getLoadedQuantificationIDsFromActiveScreenConfiguration();
-
-      const workspaceSubItem: SharingSubItem = {
-        id: workspaceId,
-        type: ObjectType.OT_SCREEN_CONFIG,
-        typeName: "Workspace",
-        name: this.workspaceName || this.placeholderName || "",
-        ownershipSummary: ownershipSummary,
-        ownershipItem: workspaceOwnershipResp.ownership,
-      };
 
       const roiRequests = roiIds.map(roiId => {
         const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: roiId, objectType: ObjectType.OT_ROI }));
@@ -545,117 +535,152 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       });
 
       const requests = [...roiRequests, ...expressionRequests, ...expressionGroupRequests, ...quantRequests];
-      combineLatest(requests).subscribe(res => {
-        let subItems: SharingSubItem[] = res.map(({ ownership, item }, i) => {
-          if (!ownership || !item) {
-            return {
-              id: "",
-              type: ObjectType.OT_SCREEN_CONFIG,
-              typeName: "Workspace",
-              name: "",
-              ownershipSummary: OwnershipSummary.create({}),
-            } as SharingSubItem;
-          }
-
-          if (i < roiRequests.length) {
-            const roiResp = item as RegionOfInterestGetResp;
-            return {
-              id: roiResp.regionOfInterest?.id || "",
-              type: ObjectType.OT_ROI,
-              typeName: "Region of Interest",
-              name: roiResp.regionOfInterest?.name || "",
-              ownershipSummary: roiResp.regionOfInterest?.owner,
-              ownershipItem: ownership,
-            } as SharingSubItem;
-          } else if (i < roiRequests.length + expressionGroupRequests.length) {
-            const expressionGroupResp = item as ExpressionGroupGetResp;
-            return {
-              id: expressionGroupResp.group?.id || "",
-              type: ObjectType.OT_EXPRESSION_GROUP,
-              typeName: "Expression Group",
-              name: expressionGroupResp.group?.name || "",
-              ownershipSummary: expressionGroupResp.group?.owner,
-              ownershipItem: ownership,
-            } as SharingSubItem;
-          } else if (i < roiRequests.length + expressionGroupRequests.length + expressionRequests.length) {
-            const expressionResp = item as ExpressionGetResp;
-            return {
-              id: expressionResp.expression?.id || "",
-              type: ObjectType.OT_EXPRESSION,
-              typeName: "Expression",
-              name: expressionResp.expression?.name || "",
-              ownershipSummary: expressionResp.expression?.owner,
-              ownershipItem: ownership,
-            } as SharingSubItem;
-          } else {
-            const quantResp = item as QuantGetResp;
-            return {
-              id: quantResp.summary?.id || "",
-              type: ObjectType.OT_QUANTIFICATION,
-              typeName: "Quantification",
-              name: quantResp.summary?.params?.userParams?.name || quantResp.summary?.id || "",
-              ownershipSummary: quantResp.summary?.owner,
-              ownershipItem: ownership,
-            } as SharingSubItem;
-          }
+      if (requests.length == 0) {
+        // Nothing to request, simple share of a workspace without user created data yet... we didn't have this condition before and were skipping this case!
+        this.shareSnapshot(objectId, existingSnapshot, isReviewerSnapshot, ownershipSummary, workspaceOwnershipResp, roiRequests, expressionRequests, expressionGroupRequests, []);
+      } else {
+        // Wait for all the bits!
+        combineLatest(requests).subscribe(res => {
+          this.shareSnapshot(objectId, existingSnapshot, isReviewerSnapshot, ownershipSummary, workspaceOwnershipResp, roiRequests, expressionRequests, expressionGroupRequests, res);
         });
+      }
+    });
+  }
 
-        subItems = subItems.filter(item => item?.id) as SharingSubItem[];
+  private shareSnapshot(
+    objectId: string,
+    existingSnapshot: ScreenConfiguration | null,
+    isReviewerSnapshot: boolean,
+    ownershipSummary: OwnershipSummary,
+    workspaceOwnershipResp: GetOwnershipResp,
+    roiRequests: Observable<{ownership: OwnershipItem | undefined; item: RegionOfInterestGetResp;}>[],
+    expressionRequests: Observable<{ownership: OwnershipItem | undefined; item: ExpressionGetResp;}>[],
+    expressionGroupRequests: Observable<{ownership: OwnershipItem | undefined; item: ExpressionGroupGetResp;}>[],
+    res: (
+      {ownership: OwnershipItem | undefined; item: RegionOfInterestGetResp;} |
+      {ownership: OwnershipItem | undefined; item: ExpressionGetResp;} |
+      {ownership: OwnershipItem | undefined; item: ExpressionGroupGetResp;} |
+      {ownership: OwnershipItem | undefined; item: QuantGetResp;})[]
+    ) {
+    const workspaceId = this.screenConfig?.id || "";
 
-        if (!workspaceOwnershipResp?.ownership) {
-          return;
+    const workspaceSubItem: SharingSubItem = {
+      id: workspaceId,
+      type: ObjectType.OT_SCREEN_CONFIG,
+      typeName: "Workspace",
+      name: this.workspaceName || this.placeholderName || "",
+      ownershipSummary: ownershipSummary,
+      ownershipItem: workspaceOwnershipResp.ownership,
+    };
+
+    let subItems: SharingSubItem[] = res.map(({ ownership, item }, i) => {
+      if (!ownership || !item) {
+        return {
+          id: "",
+          type: ObjectType.OT_SCREEN_CONFIG,
+          typeName: "Workspace",
+          name: "",
+          ownershipSummary: OwnershipSummary.create({}),
+        } as SharingSubItem;
+      }
+
+      if (i < roiRequests.length) {
+        const roiResp = item as RegionOfInterestGetResp;
+        return {
+          id: roiResp.regionOfInterest?.id || "",
+          type: ObjectType.OT_ROI,
+          typeName: "Region of Interest",
+          name: roiResp.regionOfInterest?.name || "",
+          ownershipSummary: roiResp.regionOfInterest?.owner,
+          ownershipItem: ownership,
+        } as SharingSubItem;
+      } else if (i < roiRequests.length + expressionGroupRequests.length) {
+        const expressionGroupResp = item as ExpressionGroupGetResp;
+        return {
+          id: expressionGroupResp.group?.id || "",
+          type: ObjectType.OT_EXPRESSION_GROUP,
+          typeName: "Expression Group",
+          name: expressionGroupResp.group?.name || "",
+          ownershipSummary: expressionGroupResp.group?.owner,
+          ownershipItem: ownership,
+        } as SharingSubItem;
+      } else if (i < roiRequests.length + expressionGroupRequests.length + expressionRequests.length) {
+        const expressionResp = item as ExpressionGetResp;
+        return {
+          id: expressionResp.expression?.id || "",
+          type: ObjectType.OT_EXPRESSION,
+          typeName: "Expression",
+          name: expressionResp.expression?.name || "",
+          ownershipSummary: expressionResp.expression?.owner,
+          ownershipItem: ownership,
+        } as SharingSubItem;
+      } else {
+        const quantResp = item as QuantGetResp;
+        return {
+          id: quantResp.summary?.id || "",
+          type: ObjectType.OT_QUANTIFICATION,
+          typeName: "Quantification",
+          name: quantResp.summary?.params?.userParams?.name || quantResp.summary?.id || "",
+          ownershipSummary: quantResp.summary?.owner,
+          ownershipItem: ownership,
+        } as SharingSubItem;
+      }
+    });
+
+    subItems = subItems.filter(item => item?.id) as SharingSubItem[];
+
+    if (!workspaceOwnershipResp?.ownership) {
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig<ShareDialogData>();
+    dialogConfig.data = {
+      ownershipSummary: ownershipSummary || null,
+      ownershipItem: workspaceOwnershipResp.ownership,
+      typeName: "Workspace Snapshot",
+      title: isReviewerSnapshot ? "Create reviewer snapshot" : existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
+      subItems: [workspaceSubItem, ...subItems],
+      excludeSubIds: [objectId || ""],
+      preventSelfAssignment: true,
+      restrictSubItemSharingToViewer: true,
+      isReviewerSnapshot: isReviewerSnapshot,
+      description: isReviewerSnapshot
+        ? "Create a snapshot with a permanent link for reviewers. Anyone with the link will be able to access tabs, datasets, ROIs, and expressions currently used in the workspace. Future changes won’t be shared."
+        : "",
+    };
+
+    const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((sharingChangeResponse: ShareDialogResponse) => {
+      if (!sharingChangeResponse) {
+        return;
+      }
+
+      // At this point, we've shared all sub-items, now we need to create the new workspace snapshot and share it
+      if (existingSnapshot) {
+        this.updateSnapshotPermissions(objectId, sharingChangeResponse, workspaceOwnershipResp);
+      } else {
+        // Create a new snapshot
+        const newScreenConfig = ScreenConfiguration.create(this.screenConfig!);
+        newScreenConfig.snapshotParentId = this.screenConfig!.id;
+        newScreenConfig.name = this.workspaceName || this.placeholderName || "";
+        newScreenConfig.id = "";
+        if (isReviewerSnapshot) {
+          newScreenConfig.reviewerId = sharingChangeResponse.reviewerId || "";
+          if (sharingChangeResponse.reviewerAccessTime) {
+            // Actual expiration time for auth purposes is calculated in the API,
+            // but this is a "close enough" approximation for displaying in the UI without making another API call
+            const currentTimeMS = new Date().getTime();
+            newScreenConfig.reviewerExpirationDateUnixSec = sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000;
+          }
         }
-
-        const dialogConfig = new MatDialogConfig<ShareDialogData>();
-        dialogConfig.data = {
-          ownershipSummary: ownershipSummary || null,
-          ownershipItem: workspaceOwnershipResp.ownership,
-          typeName: "Workspace Snapshot",
-          title: isReviewerSnapshot ? "Create reviewer snapshot" : existingSnapshot ? `Edit Snapshot (${existingSnapshot.name})` : undefined,
-          subItems: [workspaceSubItem, ...subItems],
-          excludeSubIds: [objectId || ""],
-          preventSelfAssignment: true,
-          restrictSubItemSharingToViewer: true,
-          isReviewerSnapshot: isReviewerSnapshot,
-          description: isReviewerSnapshot
-            ? "Create a snapshot with a permanent link for reviewers. Anyone with the link will be able to access tabs, datasets, ROIs, and expressions currently used in the workspace. Future changes won’t be shared."
-            : "",
-        };
-
-        const dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);
-        dialogRef.afterClosed().subscribe((sharingChangeResponse: ShareDialogResponse) => {
-          if (!sharingChangeResponse) {
+        this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
+          if (!newScreenConfig.id) {
             return;
           }
 
-          // At this point, we've shared all sub-items, now we need to create the new workspace snapshot and share it
-          if (existingSnapshot) {
-            this.updateSnapshotPermissions(objectId, sharingChangeResponse, workspaceOwnershipResp);
-          } else {
-            // Create a new snapshot
-            const newScreenConfig = ScreenConfiguration.create(this.screenConfig!);
-            newScreenConfig.snapshotParentId = this.screenConfig!.id;
-            newScreenConfig.name = this.workspaceName || this.placeholderName || "";
-            newScreenConfig.id = "";
-            if (isReviewerSnapshot) {
-              newScreenConfig.reviewerId = sharingChangeResponse.reviewerId || "";
-              if (sharingChangeResponse.reviewerAccessTime) {
-                // Actual expiration time for auth purposes is calculated in the API,
-                // but this is a "close enough" approximation for displaying in the UI without making another API call
-                const currentTimeMS = new Date().getTime();
-                newScreenConfig.reviewerExpirationDateUnixSec = sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000;
-              }
-            }
-            this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
-              if (!newScreenConfig.id) {
-                return;
-              }
-
-              this.updateSnapshotPermissions(newScreenConfig.id, sharingChangeResponse, workspaceOwnershipResp);
-            });
-          }
+          this.updateSnapshotPermissions(newScreenConfig.id, sharingChangeResponse, workspaceOwnershipResp);
         });
-      });
+      }
     });
   }
 
