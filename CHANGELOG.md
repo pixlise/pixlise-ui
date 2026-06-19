@@ -19,6 +19,7 @@
 ### Bug Fixes
 - When zooming in the browser tab (eg ctrl+mouse scroll) the context image was not drawing all PMCs in some cases
 - Fixing error display when error msg is an ArrayBuffer, it was just coming up as [Object]
+- Fixed restore PIXLISE db issue, backups are now saved differently and restore failed to detect it
 - Fix sharing workspaces that have no quants/rois/expressions/expression groups in them - in this case sharing didn't show the share dialog!
 
 ## 4.90.0 (2026-05-08)

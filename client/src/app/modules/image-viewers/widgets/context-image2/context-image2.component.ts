@@ -41,7 +41,6 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   configuredScanIds: string[] = [];
   cursorShown: string = "";
   scanId: string = "";
-  linkToDataset: boolean = true;
  
   private _canvasSize?: Point;
   private _canvasElem?: HTMLCanvasElement;
@@ -384,6 +383,10 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
   onCanvasSize(event: CanvasSizeNotification) {
     this._canvas$.next(event);
+  }
+
+  get linkToDataset(): boolean {
+    return this._toolHost.linkToDataset;
   }
 
   onToggleLinkToDataset() {
