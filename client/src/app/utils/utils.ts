@@ -982,6 +982,18 @@ export class SDSFields {
   }
 }
 
+export function clearSDSFileNameVersionField(filePath: string): string {
+  if (SDSFields.makeFromFileName(getPathBase(filePath)) != null) {
+    // YES it is an SDS type path, so clear the right characters...
+    const pos = filePath.lastIndexOf(".");
+    if (pos >= 2) {
+      filePath = filePath.substring(0, pos-2) + "__" + filePath.substring(pos);
+    }
+  }
+
+  return filePath;
+}
+
 export function getScanIdFromImagePath(imagePath: string): string {
   const match = imagePath.match(/^(?<scanId>\d+)\//);
   return match ? match.groups!["scanId"] : "";

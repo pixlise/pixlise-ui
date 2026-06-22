@@ -85,6 +85,9 @@ POSSIBILITY OF SUCH DAMAGE.
               ><img src="assets/button-icons/open-external.svg" alt="Open in Mars Viewer"
             /></a>
           </h5>
+          @if (isDefault(image.path)) {
+            <h5><b>NOTE: This is the default image</b></h5>
+          }
         </div>
         <div class="selection">
           <mat-checkbox class="image-option-checkbox" [checked]="checkSelected(image)"></mat-checkbox>
@@ -141,7 +144,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="loading">
       <wait-spinner *ngIf="waitingForImages.length > 0" #tooltip="matTooltip" [matTooltip]="waitingForImagesTooltip"></wait-spinner>
     </div>
-    <push-button *ngIf="selectedChoice" title="Set this as the default image for the scan" buttonStyle="outline" (onClick)="onSetDefaultImage(selectedChoice)">Set Default</push-button>
+    <push-button *ngIf="selectedChoice" title="Changes the default image for the scan" buttonStyle="outline" (onClick)="onSetDefaultImage(selectedChoice)">{{selectedChoiceIsDefault ? "Unset" : "Set"}} Default</push-button>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button *ngIf="data.multipleSelection" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
     <push-button

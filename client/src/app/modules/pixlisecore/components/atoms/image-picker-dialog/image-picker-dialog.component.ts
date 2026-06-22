@@ -31,14 +31,14 @@ import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@ang
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from "@angular/material/dialog";
 import { catchError, from, mergeMap, Subscription, tap, timer, toArray } from "rxjs";
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
-import { ImageDeleteReq, ImageDeleteResp, ImageGetReq, ImageListReq, ImageSetDefaultReq, ImageSetDefaultResp } from "src/app/generated-protos/image-msgs";
+import { ImageDeleteReq, ImageDeleteResp, ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageListReq, ImageSetDefaultReq, ImageSetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { makeImageTooltip } from "src/app/utils/image-details";
-import { getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
+import { clearSDSFileNameVersionField, getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 import { ImageUploader } from "src/app/utils/image-upload";
 import { LocalStorageService } from "../../../services/local-storage.service";
@@ -100,6 +100,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   public selectedImagePath: string = "";
   public selectedChoice: ImageChoice | null = null;
   public selectedImageDetails: string = "";
+  public selectedChoiceIsDefault: boolean = false;
 
   // Just temporarily remember images that were deleted, so
   // if we re-request them we include "salt" in their URL to
@@ -114,6 +115,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   configuredScans: ScanItem[] = [];
 
   private _filterScanId: string = "";
+  private _defaultImages = new Map<string, string>();
 
   waitingForImages: ImageChoice[] = [];
   loadingList = false;
@@ -178,6 +180,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
         this.allScans = scans;
         if (this._analysisLayoutService.activeScreenConfiguration$.value && !this.data.noAssociatedScreenConfiguration) {
           this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
+          this.updateDefaultImages();
           if (this.configuredScans && this.configuredScans.length > 0 && (!this.data.scanIds || this.data.scanIds.length === 0)) {
             if (!this.filterScanId) {
               this.filterScanId = this.configuredScans[0].id;
@@ -190,6 +193,8 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
           } else {
             this.configuredScans = scans;
           }
+
+          this.updateDefaultImages();
         }
       })
     );
@@ -253,6 +258,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
 
           if (this.selectedImagePath === img.imagePath) {
             this.selectedChoice = imageChoice;
+            this.selectedChoiceIsDefault = this.selectedChoice ? this.isDefault(this.selectedChoice.path) : false;
           }
 
           return this.loadImagePreview(imageChoice);
@@ -452,10 +458,12 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
         if (this.selectedPaths.size > 0) {
           this.selectedImagePath = Array.from(this.selectedPaths)[this.selectedPaths.size - 1];
           this.selectedChoice = this.imageChoices.find(img => img.path === this.selectedImagePath) || null;
+          this.selectedChoiceIsDefault = this.selectedChoice ? this.isDefault(this.selectedChoice.path) : false;
           this.loadSelectedImageDetails();
         } else {
           this.selectedImagePath = "";
           this.selectedChoice = null;
+          this.selectedChoiceIsDefault = false;
           this.selectedImageDetails = "";
         }
       }
@@ -463,11 +471,13 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
       else {
         this.selectedImagePath = "";
         this.selectedChoice = null;
+        this.selectedChoiceIsDefault = false;
         this.selectedImageDetails = "";
       }
     } else if (this.selectedImagePath !== image.path) {
       this.selectedImagePath = image.path;
       this.selectedChoice = image;
+      this.selectedChoiceIsDefault = this.selectedChoice ? this.isDefault(this.selectedChoice.path) : false;
 
       this.loadSelectedImageDetails();
       if (this.data.liveUpdate) {
@@ -614,13 +624,66 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
         return;
     }
 
-    this._dataService.sendImageSetDefaultRequest(ImageSetDefaultReq.create({ scanId: image.scanIds[0], defaultImageFileName: image.path })).subscribe({
+    // Check if it's already the default, because we needto un-set it in that case
+    let isDefault = false;
+    for (let scanId of image.scanIds) {
+      if (this._defaultImages) {
+        const defImg = this._defaultImages.get(scanId);
+        if (defImg && defImg == image.path) {
+          isDefault = true;
+          break;
+        }
+      }
+    }
+
+    this._dataService.sendImageSetDefaultRequest(ImageSetDefaultReq.create({ scanId: image.scanIds[0], defaultImageFileName: isDefault ? "" : image.path })).subscribe({
       next: (resp: ImageSetDefaultResp) => {
-        this._snackService.openSuccess("Default image changed", `Dataset ${image.scanIds[0]} now has default image set to: ${image.path}`);
+        this._snackService.openSuccess(isDefault ? `Dataset ${image.scanIds[0]} now has no default image` : `Dataset ${image.scanIds[0]} now has default image set to: ${image.path}`);
+        this.updateDefaultImages(false);
       },
       error: err => {
         this._snackService.openError(err);
       },
     });
+  }
+
+  private updateDefaultImages(useCache = true) {
+    const scanIds: string[] = this.configuredScans.map((s: ScanItem) => { return s.id; })
+
+    const handler = {
+      next: (resp: ImageGetDefaultResp) => {
+        this._defaultImages.clear();
+        for (let key of Object.keys(resp.defaultImagesPerScanId)) {
+          this._defaultImages.set(key, clearSDSFileNameVersionField(resp.defaultImagesPerScanId[key]));
+        }
+
+        this.selectedChoiceIsDefault = this.selectedChoice ? this.isDefault(this.selectedChoice.path) : false;
+      },
+      error: () => {
+        this.selectedChoiceIsDefault = false;
+      }
+    };
+
+    const req = ImageGetDefaultReq.create({ scanIds });
+
+    if (useCache) {
+      this._cachedDataService.getDefaultImage(req).subscribe(handler);
+    } else {
+      this._dataService.sendImageGetDefaultRequest(req).subscribe(handler);
+    }
+  }
+
+  public isDefault(imagePath: string) {
+    // Strip version
+    const imagePathSansVersion = clearSDSFileNameVersionField(imagePath);
+
+    // Check if it's one of our default images
+    for (let img of this._defaultImages.values()) {
+      if (imagePathSansVersion == img) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
