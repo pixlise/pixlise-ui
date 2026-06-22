@@ -21,6 +21,7 @@
 - Fixing error display when error msg is an ArrayBuffer, it was just coming up as [Object]
 - Fixed restore PIXLISE db issue, backups are now saved differently and restore failed to detect it
 - Fix sharing workspaces that have no quants/rois/expressions/expression groups in them - in this case sharing didn't show the share dialog!
+- Login error screens "Go to Home" button was not correctly redirecting to the home page
 
 ## 4.90.0 (2026-05-08)
 
