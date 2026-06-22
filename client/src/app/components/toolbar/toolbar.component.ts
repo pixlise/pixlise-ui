@@ -728,9 +728,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   //     }
   // }
 
-  get discussLink(): string {
-    return "https://discuss." + EnvConfigurationInitService.getConfig$.value!.appDomain;
-  }
 
   closeChangeLogDialog(): void {
     if (this.changeLogBtn && this.changeLogBtn instanceof PushButtonComponent) {
