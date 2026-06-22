@@ -3,6 +3,7 @@
 ### New Features
 - Updated UI of quant jobs list items, now they're more readable
 - Updated UI shown when clicking on a quant job, now displays better, and in error cases calculates start/end/elapsed time correctly
+- Image picker dialog now allows users to set the selected image as the default image (or clear it)
 - Export icon on all panels is now the same as the export tab icon for consistency
 - Context Image v2 improvements:
   - Load default/first image if none are selected
@@ -22,6 +23,7 @@
 - Fixed restore PIXLISE db issue, backups are now saved differently and restore failed to detect it
 - Fix sharing workspaces that have no quants/rois/expressions/expression groups in them - in this case sharing didn't show the share dialog!
 - Login error screens "Go to Home" button was not correctly redirecting to the home page
+- Fixed issue with reviewer link creation - if setting a time limit on the link it would fail to send to the server due to fractional seconds being computed
 
 ## 4.90.0 (2026-05-08)
 

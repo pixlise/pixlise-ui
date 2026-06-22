@@ -670,7 +670,7 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
             // Actual expiration time for auth purposes is calculated in the API,
             // but this is a "close enough" approximation for displaying in the UI without making another API call
             const currentTimeMS = new Date().getTime();
-            newScreenConfig.reviewerExpirationDateUnixSec = sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000;
+            newScreenConfig.reviewerExpirationDateUnixSec = Math.round(sharingChangeResponse.reviewerAccessTime + currentTimeMS / 1000);
           }
         }
         this._analysisLayoutService.writeScreenConfiguration(newScreenConfig, "", false, (newScreenConfig: ScreenConfiguration) => {
