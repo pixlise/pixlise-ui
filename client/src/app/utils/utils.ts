@@ -33,7 +33,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
-import { ScanItem } from "../generated-protos/scan";
+import { ScanDataType, ScanItem } from "../generated-protos/scan";
 import { DatePipe } from "@angular/common";
 
 export class SentryHelper {
@@ -982,6 +982,18 @@ export class SDSFields {
   }
 }
 
+export function clearSDSFileNameVersionField(filePath: string): string {
+  if (SDSFields.makeFromFileName(getPathBase(filePath)) != null) {
+    // YES it is an SDS type path, so clear the right characters...
+    const pos = filePath.lastIndexOf(".");
+    if (pos >= 2) {
+      filePath = filePath.substring(0, pos-2) + "__" + filePath.substring(pos);
+    }
+  }
+
+  return filePath;
+}
+
 export function getScanIdFromImagePath(imagePath: string): string {
   const match = imagePath.match(/^(?<scanId>\d+)\//);
   return match ? match.groups!["scanId"] : "";
@@ -1247,4 +1259,15 @@ export function makeValidFloatString(num: string | number): string {
     return num.replaceAll(".", "").replaceAll(",", ".");
   }
   return num;
+}
+
+export function scanHasXRF(scan: ScanItem) {
+  let hasXRF = false;
+  for (let dt of scan.dataTypes) {
+    if (dt.dataType == ScanDataType.SD_XRF && dt.count > 0) {
+      hasXRF = true;
+      break;
+    }
+  }
+  return hasXRF;
 }

@@ -18,7 +18,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
-import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
+import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
@@ -38,7 +38,7 @@ import { TabLinks } from "src/app/models/TabLinks";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 import { ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { createDefaultScreenConfiguration, DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
+import { createDefaultScreenConfiguration, createEmptyScreenConfiguration, selectDefaultScreenConfigurationForScan, WidgetReference } from "src/app/modules/analysis/models/screen-configuration.model";
 import { WIDGETS, WidgetType } from "src/app/modules/widget/models/widgets.model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
@@ -87,7 +87,7 @@ export class AnalysisLayoutService implements OnDestroy {
   spectrumSelectionWidgetTargetId$ = new Subject<string>();
 
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
-  activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
+  activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createEmptyScreenConfiguration());
   activeScreenConfigurationTabs$ = new BehaviorSubject<NavigationTab[]>([]);
   activeScreenConfigWidgetReferences$ = new BehaviorSubject<WidgetReference[]>([]);
 
@@ -107,7 +107,7 @@ export class AnalysisLayoutService implements OnDestroy {
 
   widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 
-  lastLoadedScreenConfigurationId: string = "";
+  private _lastLoadedScreenConfigurationId: string = "";
 
   // Track if the user can edit (any) screen configuration
   readOnlyMode = true;
@@ -126,6 +126,9 @@ export class AnalysisLayoutService implements OnDestroy {
     private _memoService: MemoisationService
   ) {
     this.fetchAvailableScans();
+    // TODO: Not sure why we have this feature - attempted commenting it and no obvious errors happened. Maybe it's for an edge-case or some optimisation
+    //       but ideally it shouldn't be needed! If it's an edge-case then we probably have a race condition in the code and something should be waiting
+    //       on an Observable instead anyway! Left it in for now to not disturb the beast too much
     this.fetchLastLoadedScreenConfigurationId();
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
@@ -146,22 +149,22 @@ export class AnalysisLayoutService implements OnDestroy {
           this.fetchScreenConfiguration("", params["scan_id"], true);
           this.fetchQuantsForScan(params["scan_id"]);
         } else {
-          if (this.lastLoadedScreenConfigurationId) {
-            this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId, "", true, false); // Don't show snack for fail in this case, the last loaded screen config might not make sense any more
+          if (this._lastLoadedScreenConfigurationId) {
+            this.fetchScreenConfiguration(this._lastLoadedScreenConfigurationId, "", true, false); // Don't show snack for fail in this case, the last loaded screen config might not make sense any more
             // Add id back to query params
             const queryParams = { ...this._route.snapshot.queryParams };
-            let defaultScanId = getScanIdFromWorkspaceId(this.lastLoadedScreenConfigurationId);
+            let defaultScanId = getScanIdFromWorkspaceId(this._lastLoadedScreenConfigurationId);
             if (defaultScanId) {
               queryParams["scan_id"] = defaultScanId;
             } else {
-              queryParams["id"] = this.lastLoadedScreenConfigurationId;
+              queryParams["id"] = this._lastLoadedScreenConfigurationId;
             }
             if ((queryParams["id"] || queryParams["scan_id"]) && (this._route?.snapshot?.url || []).length > 0) {
               this._router.navigate([this._route.snapshot.url], { queryParams });
             }
           }
           this.activeScreenConfigurationId$.next("");
-          this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+          this.activeScreenConfiguration$.next(createEmptyScreenConfiguration());
         }
       })
     );
@@ -365,19 +368,19 @@ export class AnalysisLayoutService implements OnDestroy {
   fetchLastLoadedScreenConfigurationId() {
     const id = localStorage?.getItem("lastLoadedScreenConfigurationId");
     if (id) {
-      this.lastLoadedScreenConfigurationId = id;
+      this._lastLoadedScreenConfigurationId = id;
     }
   }
 
   cacheScreenConfigurationId(id: string) {
-    this.lastLoadedScreenConfigurationId = id;
+    this._lastLoadedScreenConfigurationId = id;
     localStorage?.setItem("lastLoadedScreenConfigurationId", id);
   }
 
   clearScreenConfigurationCache() {
-    this.lastLoadedScreenConfigurationId = "";
+    this._lastLoadedScreenConfigurationId = "";
     localStorage?.removeItem("lastLoadedScreenConfigurationId");
-    this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+    this.activeScreenConfiguration$.next(createEmptyScreenConfiguration());
     this.activeScreenConfigurationId$.next("");
   }
 
@@ -420,15 +423,14 @@ export class AnalysisLayoutService implements OnDestroy {
           
           const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
           if (scanId && matchedScan) {
-            if (matchedScan.instrument == ScanInstrument.UNKNOWN_INSTRUMENT) {
-              newScreenConfiguration = JSON.parse(JSON.stringify(DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION));
-            } else {
-              newScreenConfiguration = createDefaultScreenConfiguration();
-            }
-            
+            newScreenConfiguration = selectDefaultScreenConfigurationForScan(matchedScan);
             newScreenConfiguration!.description = `Default Workspace for ${matchedScan.title}`; //. ${matchedScan.description}`;
           } else {
             newScreenConfiguration = createDefaultScreenConfiguration();
+          }
+
+          if (scanId) {
+            newScreenConfiguration.scanConfigurations = { [scanId]: { id: scanId, quantId: "", calibrations: [], colour: "" } };
           }
 
           this.writeScreenConfiguration(newScreenConfiguration!, scanId, true);
@@ -525,7 +527,7 @@ export class AnalysisLayoutService implements OnDestroy {
         if (this.activeScreenConfigurationId$.value === id) {
           this.activeScreenConfigurationId$.next("");
           this.cacheScreenConfigurationId("");
-          this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+          this.activeScreenConfiguration$.next(createEmptyScreenConfiguration());
         }
 
         callback();

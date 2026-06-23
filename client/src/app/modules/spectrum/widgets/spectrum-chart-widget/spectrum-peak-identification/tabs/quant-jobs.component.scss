@@ -43,6 +43,10 @@
 
     box-sizing: border-box;
 
+    h3 {
+        text-transform: none;
+    }
+
     .left-panel {
         display: flex;
         flex-direction: column;
@@ -74,9 +78,13 @@
         }
         
         .footer {
-            height: 42px;
+            height: 40px;
             background-color: $clr-gray-80;
             padding: 0px $sz-unit;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
         }
     }
 

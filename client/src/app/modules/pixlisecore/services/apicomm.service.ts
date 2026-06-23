@@ -2,12 +2,13 @@ import { Injectable, OnDestroy } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
-import { Observable, switchMap, map, retry, catchError } from "rxjs";
+import { Observable, switchMap, map, retry, catchError, of } from "rxjs";
 
 import { environment } from "src/environments/environment";
 
-import { WSMessage } from "../../../generated-protos/websocket";
-import { BeginWSConnectionResponse } from "../../../generated-protos/restmsgs";
+import { WSMessage } from "src/app/generated-protos/websocket";
+import { BeginWSConnectionResponse } from "src/app/generated-protos/restmsgs";
+
 import { APIPaths } from "src/app/utils/api-helpers";
 import { SentryHelper, isFirefox, randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
 import { getMessageName } from "./wsMessageHandler";
@@ -76,22 +77,6 @@ export class APICommService implements OnDestroy {
         const arr = new Uint8Array(resp);
         const res = BeginWSConnectionResponse.decode(arr);
         return res.connToken;
-      }),
-      catchError(err => {
-        // For some reason Firefox seems to (mostly locally, but seen it on prod too) end up failing to login somehow, and it
-        // then sits in a loop saying error: Login required. To break this cycle, we navigate to the root page, because our token
-        // must've failed to renew or something. Not getting a useful error message back from auth0 makes this hard to diagnose!
-        const errMsg = `${err?.message || err}`;
-        if (errMsg != "Login required" && !errMsg.startsWith("Missing Refresh Token")) {
-          console.error(`APICommService [${this._id}] beginConnect error: ${errMsg}`);
-          this._snackService.openError(
-            `Failed to connect to PIXLISE server. Retrying...`,
-            `You may need to refresh this tab to try to reconnect. Error details: ${errMsg}`
-          );
-        }
-
-        this.isConnected = false;
-        throw err;
       })
     );
   }
@@ -207,6 +192,26 @@ export class APICommService implements OnDestroy {
         });
 
         return this.connection$;
+      }),
+      catchError(err => {
+        const errMsg = `${err?.message || err}`;
+        console.error(`APICommService [${this._id}] beginConnect error: ${errMsg}`);
+        
+        if (errMsg == "Unknown or invalid refresh token." || errMsg == "Login required") {
+          return of("login-again");
+        }
+
+        // This happens on login for some reason with current Auth0 implementation in 2026 June, ignore it
+        if (!errMsg.startsWith("Missing Refresh Token")) {
+          // Don't know what's going on
+          this._snackService.openError(
+            `Failed to connect to PIXLISE server. Retrying...`,
+            `You may need to refresh this tab to try to reconnect. Error details: ${errMsg}`
+          );
+        }
+
+        this.isConnected = false;
+        throw err;
       }),
       retry({ count: this.WS_RETRY_ATTEMPTS, delay: this.WS_RETRY_DELAY_MS })
     );

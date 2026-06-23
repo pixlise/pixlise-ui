@@ -38,7 +38,7 @@ import { APIDataService } from "./apidata.service";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionWriteExecStatReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { DataQuerier } from "src/app/expression-language/expression-language";
+import { DataQuerier, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { APICachedDataService } from "./apicacheddata.service";
@@ -719,7 +719,9 @@ export class WidgetDataService {
         }
 
         const userId = user?.sub || "";
-        if (!userId) {
+        // NOTE: the only known scenario for this happening is if the user is a Reviewer. For some reason at that point user$ returns null
+        if (!userId && expression.sourceLanguage != EXPR_LANGUAGE_PIXLANG) {
+          // Only complaining if this is Lua, the old expression language doesn't care
           throw new Error("No user id loaded for expression runner");
         }
 

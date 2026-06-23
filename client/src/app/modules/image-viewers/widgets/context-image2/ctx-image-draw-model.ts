@@ -4,8 +4,7 @@ import { ScanImage } from 'src/app/generated-protos/image';
 import { ImagePyramid, ImagePyramidLayer } from 'src/app/generated-protos/image-pyramid';
 import { TileImageLoader } from './tile-loader';
 import { map, Observable, of, Subject, Subscription } from 'rxjs';
-import { Point } from 'src/app/models/Geometry';
-import { P } from 'node_modules/@angular/cdk/portal-directives.d-DbeNrI5D';
+import { Point, Rect } from 'src/app/models/Geometry';
 
 
 export class ContextImage2DrawModel {
@@ -22,11 +21,16 @@ export class ContextImage2DrawModel {
   protected _tile?: THREE.BufferGeometry;
   protected _tileSize = 1;
   protected _pipView?: THREE.Object3D;
+  protected _pipViewBoxWorldspace: Rect = new Rect(0,0,0,0);
+  protected _worldspacePixelSize: number = 1;
 
   protected _tileBBoxes: THREE.Box3[][] = [];
 
   protected _lastPyramidLevel = -1;
   protected _lastPyramidLevelTilesVisible = new Set<number>();
+
+  private _otherCursorPt?: THREE.Object3D;
+  private _mousePresent: boolean = false;
 
   renderData: RenderData;
 
@@ -108,8 +112,96 @@ export class ContextImage2DrawModel {
     this.renderData.scene.add(this._sceneAttachment);
   }
 
+  getPIPViewBoxWorldspace() {
+    return this._pipViewBoxWorldspace;
+  }
+
   get lastPyramidLevel(): number { return this._lastPyramidLevel; }
   get lastPyramidLevelTilesVisible(): Set<number> { return this._lastPyramidLevelTilesVisible; }
+
+  private makePlus(thickness: number, size: number, z: number, colour: THREE.Color, borderColour: THREE.Color): THREE.Object3D {
+    const plus = new THREE.BufferGeometry();
+    const halfThickness = thickness/2;
+    const radius = size/2;
+
+    const xyz = new Float32Array([
+      // left
+      -radius, -halfThickness, z,
+      -radius, halfThickness, z,
+
+      -halfThickness, halfThickness, z,
+
+      // top
+      -halfThickness, radius, z,
+      halfThickness, radius, z,
+
+      halfThickness, halfThickness, z,
+
+      // right
+      radius, halfThickness, z,
+      radius, -halfThickness, z,
+      
+      halfThickness, -halfThickness, z,
+
+      // bottom
+      halfThickness, -radius, z,
+      -halfThickness, -radius, z,
+
+      -halfThickness, -halfThickness, z,
+    ]);
+
+    plus.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
+    plus.setIndex(new THREE.BufferAttribute(new Uint32Array([0,2,1, 0,11,2, 2,4,3, 2,5,4, 5,8,6, 8,7,6, 11,10,8, 10,9,8]), 1));
+
+    const material = new THREE.MeshBasicMaterial( { color: colour } );
+    const inner = new THREE.Mesh(plus, material);
+
+    const lineMat = new THREE.LineBasicMaterial({
+      color: borderColour,
+      linewidth: 1,
+      // opacity: 1,
+      // transparent: true,
+    });
+
+    const plusOuter = new THREE.BufferGeometry();
+    plusOuter.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
+    const outer = new THREE.LineLoop(plusOuter, lineMat);
+    const result = new THREE.Object3D();
+
+    result.add(inner);
+    result.add(outer);
+    return result;
+  }
+
+  setOtherCursorPt(pt: Point) {
+    if (this._mousePresent) {
+      return;
+    }
+
+    if(!this._otherCursorPt) {
+      // Make a + shape with 2 colours so it's always contrasted to the background
+      this._otherCursorPt = this.makePlus(2, 15, 0, this.WHITE, this.BLACK);
+      this.renderData.scene.add(this._otherCursorPt);
+    }
+    const scale = 1;
+
+    this._otherCursorPt.scale.set(this._worldspacePixelSize * scale, this._worldspacePixelSize * scale, 1);
+    this._otherCursorPt.position.set(pt.x, pt.y, 0);
+  }
+
+  clearOtherCursorPt() {
+    if(this._otherCursorPt) {
+      this.renderData.scene.remove(this._otherCursorPt);
+      this._otherCursorPt = undefined;
+    }
+  }
+
+  setMousePresent(present: boolean) {
+    this._mousePresent = present;
+    if (this._mousePresent) {
+      this.clearOtherCursorPt();
+    }
+  }
 
   private generateTileBBoxes() {
     this._tileBBoxes = [];
@@ -158,7 +250,9 @@ export class ContextImage2DrawModel {
   }
 
   // Needs to be called if pan, zoom or viewport size changes
-  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, drawPIPMap: boolean, redrawHook$: Subject<void>) {
+  updateTiles(requestedTexPerScreenPixel: number, camFrustum: THREE.Frustum, worldspacePixelSize: number, drawPIPMap: boolean, redrawHook$: Subject<void>) {
+    this._worldspacePixelSize = worldspacePixelSize;
+
     if (!this._image ||
       !this._pyramid || this._pyramid.pyramid.length <= 0 || this._pyramid.pyramid[0].tiles.length <= 0 ||
       !this._tile) {
@@ -442,7 +536,8 @@ export class ContextImage2DrawModel {
 
     // Rebuild it all
     if (this._pipView) {
-      this._sceneAttachment.remove(this._pipView)
+      this._sceneAttachment.remove(this._pipView);
+      this._pipViewBoxWorldspace = new Rect(0,0,0,0);
     }
 
     // Update the PIP
@@ -471,10 +566,10 @@ export class ContextImage2DrawModel {
     const frustumWidth = right-left;
     const frustumHeight = top-bottom;
 
-    const scale = 0.1;
+    const frustumViewScale = 0.16;
 
-    const pipWidth = this._image.width * scale;
-    const pipHeight = this._image.height * scale;
+    const pipWidth = this._image.width * frustumViewScale;
+    const pipHeight = this._image.height * frustumViewScale;
 
     // Draw the level 0 image into a PIP view
     let mat = new THREE.MeshBasicMaterial({
@@ -489,27 +584,39 @@ export class ContextImage2DrawModel {
     this._pipView.add(pipBG);
 
     // Draw a border
+    let borderPts = this.makeRectPoints(0, 0, pipWidth, pipHeight);
     this._pipView.add(
       this.makeLines(
-        this.makeRectPoints(pipWidth, pipHeight),
+        borderPts,
         0, 0,
         new THREE.LineBasicMaterial({
           color: this.BLACK,
-          linewidth: 6,
-          opacity: 0.3,
+          linewidth: 1,
+          opacity: 1,
+          transparent: true,
+        })
+      )
+    );
+    
+    borderPts = this.makeRectPoints(1, 1, pipWidth-2, pipHeight-2);
+    this._pipView.add(
+      this.makeLines(
+        borderPts,
+        0, 0,
+        new THREE.LineBasicMaterial({
+          color: this.WHITE,
+          linewidth: 1,
+          opacity: 1,
           transparent: true,
         })
       )
     );
 
     // Draw the frustum we're seeing - if it's too small change it into a cross-hair of constant size
-    let frustumViewScale = scale;
-    let drawCorners = false;
-    if ((frustumWidth * requestedTexPerScreenPixel) < 800) {
-      //frustumViewScale = 5;
-      drawCorners = true;
-    }
 
+    const pipScale = this._image.width > this._image.height ? frustumWidth / this._image.width : frustumHeight / this._image.height;
+    let drawCorners = pipScale < 0.1; // If the frustum is < this % of the width of the entire image (and we've shrunk
+                                       // it into a PIP view) we must be quite small, so draw the corner arrows!
     const viewWidth = frustumWidth * frustumViewScale;
     const viewHeight = frustumHeight * frustumViewScale;
 
@@ -517,10 +624,8 @@ export class ContextImage2DrawModel {
 
     // Add some lines that show the box corners more clearly when it's small
     if (drawCorners) {
-      let sz = Math.max(frustumWidth, frustumHeight);
-      if (sz > 50) {
-        sz = 50;
-      }
+      let sz = Math.min(frustumWidth, frustumHeight) / requestedTexPerScreenPixel;
+
       const cornerVec = new Point(sz, sz);
       pts.push(
         -cornerVec.x, -cornerVec.y, 0,
@@ -532,45 +637,50 @@ export class ContextImage2DrawModel {
         cornerVec.x+viewWidth, cornerVec.y + viewHeight, 0,
         viewWidth, viewHeight, 0
       );
-    } else {
-      pts = this.makeRectPoints(viewWidth, viewHeight);
     }
+    pts.push(...this.makeRectPoints(0, 0, viewWidth, viewHeight));
 
     this._pipView.add(
       this.makeLines(
         pts,
-        left * scale, bottom * scale,
+        left * frustumViewScale, bottom * frustumViewScale,
         new THREE.LineBasicMaterial({
           color: this.PURPLE,
-          linewidth: 3,
+          linewidth: 1,
         })
       )
     );
 
     // Scale pip view to be independent of zoom level
-    const pipScale = frustumWidth / this._image.width;
     this._pipView.scale.set(pipScale, pipScale, 1);
 
     // Move the pip view to the top-right
     //this._pipView.position.set(right - 100, top - frustumHeight, 0);
-    this._pipView.position.set(left + frustumWidth * (1-scale*1.5), bottom + frustumHeight * (scale*0.5), 0);
+    this._pipViewBoxWorldspace = new Rect(
+      right-frustumWidth*(frustumViewScale+0.01) + Math.abs(pipWidth*pipScale-viewWidth)*0.5,
+      bottom+frustumHeight*0.01,
+      pipWidth*pipScale,
+      pipHeight*pipScale,
+    );
+
+    this._pipView.position.set(this._pipViewBoxWorldspace.x, this._pipViewBoxWorldspace.y, 0); //left + frustumWidth * (1-scale-0.01), bottom + frustumHeight * (scale*0.5), 0);
 
     // Position it so it's always visible in the top-right of the view frustum
     // NOTE it's currently located at 0,0 relative to the image itself
 
-    this._sceneAttachment.add(this._pipView)
+    this._sceneAttachment.add(this._pipView);
   }
 
-  private makeRectPoints(width: number, height: number) {
+  private makeRectPoints(x: number, y: number, width: number, height: number) {
     return [
-      0, 0, 0,
-      0, height, 0,
-      0, height, 0,
-      width, height, 0,
-      width, height, 0,
-      width, 0, 0,
-      width, 0, 0,
-      0, 0, 0,
+      x, y, 0,
+      x, y+height, 0,
+      x, y+height, 0,
+      x+width, y+height, 0,
+      x+width, y+height, 0,
+      x+width, y, 0,
+      x+width, y, 0,
+      x, y, 0,
     ];
   }
 

@@ -197,7 +197,7 @@ export class ImageUploader {
       const obs$ = from(chunkByte$ as Promise<ArrayBuffer>);
       chunks$.push(obs$.pipe(
         switchMap(chunk => {
-        console.log(`Uploading ${fileName} chunk ${chunkIndex} from ${start}->${end}...`);
+        console.log(`Uploading ${fileName} chunk ${chunkIndex}/${totalChunks} from ${start}->${end}...`);
         return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks);
         })
       ));

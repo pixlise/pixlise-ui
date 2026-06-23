@@ -1,10 +1,11 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
 import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
-import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
+import { createDefaultScreenConfiguration, selectDefaultScreenConfigurationForScan } from "../../models/screen-configuration.model";
 import { combineLatest, distinctUntilChanged, map, of, Subscription, switchMap } from "rxjs";
 import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActivatedRoute } from "@angular/router";
+
 
 export type ScreenConfigurationCSS = {
   templateColumns: string;
@@ -60,13 +61,29 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
           map(params => String(params?.["ml"] || "")),
           distinctUntilChanged()
         ),
+        this._route.queryParams.pipe(
+          map(params => String(params?.["scan_id"] || "")),
+          distinctUntilChanged()
+        ),
       ])
         .pipe(
-          switchMap(([screen, id, soloViewWidgetId, tabNumber, magicLink]) => {
+          switchMap(([screen, id, soloViewWidgetId, tabNumber, magicLink, scanIdQueryParam]) => {
             if (magicLink && magicLink !== this.activeMagicLink) {
               this.activeMagicLink = magicLink;
               this._analysisLayoutService.loginWithMagicLink(magicLink);
             } else if (!screen || !id || screen.id !== id) {
+              // At this point, if we have a scan that has NO spectra, only images, we show the auscope-style default configuration
+              if (scanIdQueryParam && scanIdQueryParam.length > 0) {
+                // Check what kind of scan we have loaded as the first scan, and if it's a non-XRF scan use a different layout - otherwise go all defaults
+                for (const scan of this._analysisLayoutService.availableScans$.value) {
+                  if (scan.id == scanIdQueryParam) {
+                    this.loadedScreenConfiguration = selectDefaultScreenConfigurationForScan(scan);
+                    return of(null);
+                  }
+                }
+              }
+
+              // At this point we don't know what's coming, so go with the default for PIXL
               this.loadedScreenConfiguration = createDefaultScreenConfiguration();
               return of(null);
             }

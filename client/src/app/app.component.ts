@@ -85,11 +85,17 @@ export class AppComponent implements OnDestroy {
       filter(err => err instanceof GenericError && (err["error"] === "login_required" || err["error"] === "invalid_grant")),
       tap(() => {
         this._snackService.open(
-          "You have been logged out",
-          "Your session has expired, log in again to continue using PIXLISE",
+          "You have been logged out, log in again to continue using PIXLISE",
+          "Your session has expired, you are being redirected to log in again.",
           undefined,
-          30000
+          10000
         );
+
+        this._auth.loginWithRedirect({
+          appState: {
+            redirectUri: this._router.url,
+          },
+        });
       })
     ).subscribe();
   }

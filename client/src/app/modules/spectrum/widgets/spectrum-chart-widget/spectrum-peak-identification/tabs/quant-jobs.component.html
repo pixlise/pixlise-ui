@@ -51,6 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="selection-header">
                 <h3>Selected Quantification Details</h3>
                 <div class="row">
+                    <push-button *ngIf="summary.status?.endUnixTimeSec" buttonStyle="outline" (onClick)="onViewQuantCSV(summary.id)">View Quant CSV</push-button>
                     <push-button buttonStyle="outline" (onClick)="onUseQuant(summary.id)">Use in Workspace</push-button>
                     <icon-button title="Export" (onClick)="onExport(summary.id)" icon="assets/button-icons/export.svg"> </icon-button>
                 </div>
@@ -76,9 +77,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     </div>
 
                     <ng-container *ngIf="summary.status?.endUnixTimeSec">
-                        <div class="row">
-                            <push-button buttonStyle="outline" (onClick)="onViewQuantCSV(summary.id)">View Quant CSV</push-button>
-                        </div>
                         <h3>Completion Info</h3>
                         <div class="row"><span class="varname">End Time</span><span>{{(summary.status?.endUnixTimeSec||0) * 1000|date:'d MMM y, HH:mm:ss'}}</span></div>
                         <div *ngIf="summary.status?.outputFilePath" class="row">
@@ -89,7 +87,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </ng-container>
 
                     <h3>Quantification Parameters</h3>
-                    <div class="row"><span class="varname">Region of interest</span><span>{{roiName}}</span></div>
+                    <!-- <div class="row"><span class="varname">Region of interest</span><span>{{roiName}}</span></div> -->
                     <div class="row"><span class="varname">Quantification Mode</span><span>{{quantMode}}</span></div>
                     <div class="row"><span class="varname">Include Dwells</span><span>{{includeDwells}}</span></div>
                     <div class="row"><span class="varname">Regions quantified</span><span>{{roisQuantified}}</span></div>
@@ -142,7 +140,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     <div class="row"><span class="varname">Elements</span><span>{{selectedJob.elements}}</span></div>
             
                     <h3>Run time details</h3>
-                    <div class="row"><span class="varname">Start Time</span><span>{{(selectedJob.endUnixTimeSec||0)*1000|date:'d MMM y, HH:mm:ss'}}</span></div>
+                    <div class="row"><span class="varname">Start Time</span><span>{{(selectedJob.startUnixTimeSec||0)*1000|date:'d MMM y, HH:mm:ss'}}</span></div>
                     <div class="row"><span class="varname">Elapsed Time</span><span>{{elapsedTime*1000|date:'HH:mm:ss':'UTC'}}</span></div>
                 </div>
             </div>

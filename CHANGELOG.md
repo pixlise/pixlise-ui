@@ -1,4 +1,32 @@
-## 4.90.0 (LATEST)
+## 4.91.0 (LATEST)
+
+### New Features
+- Updated UI of quant jobs list items, now they're more readable
+- Updated UI shown when clicking on a quant job, now displays better, and in error cases calculates start/end/elapsed time correctly
+- Image picker dialog now allows users to set the selected image as the default image (or clear it)
+- Export icon on all panels is now the same as the export tab icon for consistency
+- Context Image v2 improvements:
+  - Load default/first image if none are selected
+  - Linked pan/zoom
+  - Show mouse position on linked views
+  - Improved navigation and UI
+  - Added tools for drawing polygons/points (not functional yet)
+  - Allow setting/changing mouse cursor
+- PIXLISE now automatically tries to redirect to the login page if it detects that your session has expired
+- When opening a scan that has no XRF data the side-bar is no longer forced-open to prompt the user to select a quantification
+- Sometimes scans were loaded and the scan was not configured in the side-bar, this has now been fixed
+- Public landing page no longer attempts to log in unexpectedly
+
+### Bug Fixes
+- When zooming in the browser tab (eg ctrl+mouse scroll) the context image was not drawing all PMCs in some cases
+- Fixing error display when error msg is an ArrayBuffer, it was just coming up as [Object]
+- Fixed restore PIXLISE db issue, backups are now saved differently and restore failed to detect it
+- Fix sharing workspaces that have no quants/rois/expressions/expression groups in them - in this case sharing didn't show the share dialog!
+- Login error screens "Go to Home" button was not correctly redirecting to the home page
+- Fixed issue with reviewer link creation - if setting a time limit on the link it would fail to send to the server due to fractional seconds being computed
+- Reviewer links weren't loading due to checking for a permission that no longer exists
+
+## 4.90.0 (2026-05-08)
 
 ### New Features
 - Client API now tries reading map without client prefix applied (if it first fails with it). This is to allow us to read maps generated and cached by expressions on the UI
