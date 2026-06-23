@@ -25,6 +25,7 @@
 - Login error screens "Go to Home" button was not correctly redirecting to the home page
 - Fixed issue with reviewer link creation - if setting a time limit on the link it would fail to send to the server due to fractional seconds being computed
 - Reviewer links weren't loading due to checking for a permission that no longer exists
+- Fixed tab copying was not clearing widget panel ids, so they were linked, changing a setting on the original or new tab changed the corresponding setting on both
 
 ## 4.90.0 (2026-05-08)
 
