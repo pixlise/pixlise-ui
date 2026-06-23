@@ -61,7 +61,12 @@ export class SnackbarService implements OnDestroy {
       newDetails = (message as WSError).errorText;
     } else if (message instanceof HttpErrorResponse) {
       const httpError = message as HttpErrorResponse;
-      messageText = httpError.error;
+      if (httpError.error instanceof ArrayBuffer) {
+        const decoder = new TextDecoder('utf-8');
+        messageText = decoder.decode(httpError.error);
+      } else {
+        messageText = httpError.error;
+      }
       if (messageText.length <= 0) {
         messageText = httpError.message;
       }

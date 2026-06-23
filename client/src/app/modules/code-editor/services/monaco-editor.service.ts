@@ -58,7 +58,10 @@ export class MonacoEditorService {
 
   private static _activeParamLists: Map<string, string[]> = new Map<string, string[]>();
 
-  constructor(private _cachedDataService: APICachedDataService) {}
+  constructor(
+    // Took this out so we don't log in on public page on app start, as App component contains this service!
+    //private _cachedDataService: APICachedDataService
+  ) {}
 
   load() {
     // load the assets
@@ -95,11 +98,11 @@ export class MonacoEditorService {
     this._helpLUA.buildHelpForSource(originID, sourceCode);
   }
 
-  setScanAndQuant(scanId: string, quantId: string) {
+  setScanAndQuant(scanId: string, quantId: string, cachedDataService: APICachedDataService) {
     if (scanId) {
       const req$ = [
-        this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
-        this._cachedDataService.getScanEntryMetadata(ScanEntryMetadataReq.create({scanId: scanId})),
+        cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
+        cachedDataService.getScanEntryMetadata(ScanEntryMetadataReq.create({scanId: scanId})),
       ]
 
       combineLatest(req$).subscribe(
@@ -141,7 +144,7 @@ export class MonacoEditorService {
       );
     }
     if (quantId) {
-      this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })).subscribe((resp: QuantGetResp) => {
+      cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })).subscribe((resp: QuantGetResp) => {
         MonacoEditorService._activeParamLists.set("quantColumns", resp.data?.labels || []);
         MonacoEditorService._activeParamLists.set("quantElements", resp.summary?.elements || []);
         //resp.summary?.params?.userParams?.quantMode == 

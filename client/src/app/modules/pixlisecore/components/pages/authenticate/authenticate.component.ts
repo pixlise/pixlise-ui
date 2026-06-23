@@ -32,6 +32,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { first, Subscription } from "rxjs";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Router } from "@angular/router";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 // The purpose of this page is to process the auth0 code/state that comes in. This is why we have an auth service
 // injected here - if the application is brought to this page and it has the code/state the auth service will see
@@ -106,6 +107,7 @@ export class AuthenticateComponent implements OnInit, OnDestroy {
   }
 
   onHome() {
-    this.authService.logout();
+    const returnTo = location.protocol + "//" + location.host;
+    return this.authService.logout({ logoutParams: { returnTo: returnTo } });
   }
 }

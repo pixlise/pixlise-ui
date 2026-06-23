@@ -49,6 +49,6 @@ export class CustomAuthGuard extends AuthGuard {
     }
 
     // Make sure it's a semi-well-formed token
-    return payload?.["permissions"]?.includes("read:data-analysis") || false;
+    return payload?.["permissions"]?.includes("EDIT_OWN_USER") || false;
   }
 }

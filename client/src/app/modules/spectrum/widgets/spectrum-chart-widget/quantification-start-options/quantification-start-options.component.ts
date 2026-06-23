@@ -375,7 +375,7 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
           elements: elements.split(","),
           detectorConfig: this.selectedDetectorConfig,
           parameters: parameters,
-          runTimeSec: 60,
+          runTimeSec: 300,
           quantMode: quantMode,
           roiIDs: selectedROIs, // useful for quantMode==*Bulk, where we need to sum PMCs in an ROI before quantifying them
           includeDwells: this.includeDwells,

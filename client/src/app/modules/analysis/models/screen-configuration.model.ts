@@ -1,4 +1,6 @@
+import { ScanDataType, ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
 import { FullScreenLayout, ScreenConfiguration, ScreenConfigurationCSS, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { scanHasXRF } from "src/app/utils/utils";
 
 export type WidgetReference = {
   widget: WidgetLayoutConfiguration;
@@ -15,175 +17,185 @@ export type ScreenTemplate = {
   screenConfiguration: ScreenConfigurationCSS;
 };
 
-export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
-  id: "",
-  snapshotParentId: "",
-  reviewerId: "",
-  reviewerExpirationDateUnixSec: 0,
-  name: "",
-  description: "",
-  tags: [],
-  modifiedUnixSec: 0,
-  owner: undefined,
-  scanConfigurations: {},
-  browseTabHidden: false,
-  codeEditorTabHidden: false,
-  elementMapsTabHidden: false,
-  layouts: [
-    {
-      tabId: "",
-      tabName: "",
-      tabDescription: "Standard Layout",
-      hidden: false,
-      tags: [],
-      rows: [{ height: 3 }, { height: 2 }],
-      columns: [{ width: 3 }, { width: 2 }, { width: 2 }, { width: 2 }],
-      widgets: [
-        {
-          id: "",
-          type: "context-image",
-          startRow: 1,
-          startColumn: 1,
-          endRow: 2,
-          endColumn: 2,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "spectrum-chart",
-          startRow: 1,
-          startColumn: 2,
-          endRow: 2,
-          endColumn: 5,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "histogram",
-          startRow: 2,
-          startColumn: 1,
-          endRow: 3,
-          endColumn: 2,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "chord-diagram",
-          startRow: 2,
-          startColumn: 2,
-          endRow: 3,
-          endColumn: 3,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "ternary-plot",
-          startRow: 2,
-          startColumn: 3,
-          endRow: 3,
-          endColumn: 4,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "binary-plot",
-          startRow: 2,
-          startColumn: 4,
-          endRow: 3,
-          endColumn: 5,
-          data: undefined,
-        },
-      ],
-    },
-  ],
-};
-
-export const DEFAULT_NON_SPECTRUM_SCREEN_CONFIGURATION: ScreenConfiguration = {
-  id: "",
-  snapshotParentId: "",
-  reviewerId: "",
-  reviewerExpirationDateUnixSec: 0,
-  name: "",
-  description: "",
-  tags: [],
-  modifiedUnixSec: 0,
-  owner: undefined,
-  scanConfigurations: {},
-  browseTabHidden: false,
-  codeEditorTabHidden: false,
-  elementMapsTabHidden: false,
-  layouts: [
-    {
-      tabId: "",
-      tabName: "",
-      tabDescription: "Non-XRF Standard Layout",
-      hidden: false,
-      tags: [],
-      rows: [{ height: 3 }, { height: 2 }],
-      columns: [{ width: 3 }, { width: 2 }, { width: 2 }, { width: 2 }],
-      widgets: [
-        {
-          id: "",
-          type: "binary-plot",
-          startRow: 1,
-          startColumn: 1,
-          endRow: 2,
-          endColumn: 2,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "context-image",
-          startRow: 1,
-          startColumn: 2,
-          endRow: 2,
-          endColumn: 5,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "ternary-plot",
-          startRow: 2,
-          startColumn: 1,
-          endRow: 3,
-          endColumn: 2,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "ternary-plot",
-          startRow: 2,
-          startColumn: 2,
-          endRow: 3,
-          endColumn: 3,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "ternary-plot",
-          startRow: 2,
-          startColumn: 3,
-          endRow: 3,
-          endColumn: 4,
-          data: undefined,
-        },
-        {
-          id: "",
-          type: "ternary-plot",
-          startRow: 2,
-          startColumn: 4,
-          endRow: 3,
-          endColumn: 5,
-          data: undefined,
-        },
-      ],
-    },
-  ],
-};
-
 export const createDefaultScreenConfiguration = (): ScreenConfiguration => {
-  return JSON.parse(JSON.stringify(DEFAULT_SCREEN_CONFIGURATION));
+  const config = {
+    id: "",
+    snapshotParentId: "",
+    reviewerId: "",
+    reviewerExpirationDateUnixSec: 0,
+    name: "",
+    description: "",
+    tags: [],
+    modifiedUnixSec: 0,
+    owner: undefined,
+    scanConfigurations: {},
+    browseTabHidden: false,
+    codeEditorTabHidden: false,
+    elementMapsTabHidden: false,
+    layouts: [
+      {
+        tabId: "",
+        tabName: "",
+        tabDescription: "Standard Layout",
+        hidden: false,
+        tags: [],
+        rows: [{ height: 3 }, { height: 2 }],
+        columns: [{ width: 3 }, { width: 2 }, { width: 2 }, { width: 2 }],
+        widgets: [
+          {
+            id: "",
+            type: "context-image",
+            startRow: 1,
+            startColumn: 1,
+            endRow: 2,
+            endColumn: 2,
+            data: undefined,
+          },
+          {
+            id: "",
+            type: "spectrum-chart",
+            startRow: 1,
+            startColumn: 2,
+            endRow: 2,
+            endColumn: 5,
+            data: undefined,
+          },
+          {
+            id: "",
+            type: "histogram",
+            startRow: 2,
+            startColumn: 1,
+            endRow: 3,
+            endColumn: 2,
+            data: undefined,
+          },
+          {
+            id: "",
+            type: "chord-diagram",
+            startRow: 2,
+            startColumn: 2,
+            endRow: 3,
+            endColumn: 3,
+            data: undefined,
+          },
+          {
+            id: "",
+            type: "ternary-plot",
+            startRow: 2,
+            startColumn: 3,
+            endRow: 3,
+            endColumn: 4,
+            data: undefined,
+          },
+          {
+            id: "",
+            type: "binary-plot",
+            startRow: 2,
+            startColumn: 4,
+            endRow: 3,
+            endColumn: 5,
+            data: undefined,
+          },
+        ],
+      },
+    ],
+  };
+
+  return JSON.parse(JSON.stringify(config));
 };
+
+export const createDefaultImageScanScreenConfiguration = (): ScreenConfiguration => {
+  const config = {
+    id: "",
+    snapshotParentId: "",
+    reviewerId: "",
+    reviewerExpirationDateUnixSec: 0,
+    name: "",
+    description: "",
+    tags: [],
+    modifiedUnixSec: 0,
+    owner: undefined,
+    scanConfigurations: {},
+    browseTabHidden: false,
+    codeEditorTabHidden: false,
+    elementMapsTabHidden: false,
+    layouts: [
+      {
+        tabId: "",
+        tabName: "",
+        tabDescription: "Image Analysis",
+        hidden: false,
+        tags: [],
+        rows: [{ height: 1 }],
+        columns: [{ width: 1 }, { width: 1 }],
+        widgets: [
+          {
+            id: "",
+            type: "context-image2",
+            startRow: 1,
+            startColumn: 1,
+            endRow: 2,
+            endColumn: 1,
+            data: undefined,
+          },
+          {
+            id: "",
+            type: "context-image2",
+            startRow: 1,
+            startColumn: 2,
+            endRow: 2,
+            endColumn: 2,
+            data: undefined,
+          },
+        ],
+      },
+    ],
+  };
+
+  return JSON.parse(JSON.stringify(config));
+};
+
+
+export const createEmptyScreenConfiguration = (): ScreenConfiguration => {
+  const config = {
+    id: "",
+    snapshotParentId: "",
+    reviewerId: "",
+    reviewerExpirationDateUnixSec: 0,
+    name: "",
+    description: "",
+    tags: [],
+    modifiedUnixSec: 0,
+    owner: undefined,
+    scanConfigurations: {},
+    browseTabHidden: false,
+    codeEditorTabHidden: false,
+    elementMapsTabHidden: false,
+    layouts: [
+      {
+        tabId: "",
+        tabName: "",
+        tabDescription: "Empty Layout",
+        hidden: false,
+        tags: [],
+        rows: [],
+        columns: [],
+        widgets: [],
+      },
+    ],
+  };
+
+  return JSON.parse(JSON.stringify(config));
+};
+
+export function selectDefaultScreenConfigurationForScan(scan: ScanItem): ScreenConfiguration {
+  let hasXRF = scanHasXRF(scan);
+  if (scan.instrument == ScanInstrument.PIXL_FM || scan.instrument == ScanInstrument.PIXL_EM || hasXRF) {
+    return createDefaultScreenConfiguration()
+  }
+
+  return createDefaultImageScanScreenConfiguration();
+}
 
 const ANALYSIS_STANDARD_LAYOUT = createDefaultScreenConfiguration().layouts[0];
 const ANALYSIS_LAYOUT_2: FullScreenLayout = {

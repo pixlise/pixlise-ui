@@ -282,7 +282,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy, OnChang
       return;
     }
 
-    this._monacoService.setScanAndQuant(this.scanId, this.quantId);
+    this._monacoService.setScanAndQuant(this.scanId, this.quantId, this._apiCachedDataService);
 
     // Create the model the editor will use
     let mdl /*: ITextModel*/ = this.monaco.editor.createModel(this._expr.sourceCode, this.isLua ? MONACO_LUA_LANGUAGE_NAME : this._expr.sourceLanguage);

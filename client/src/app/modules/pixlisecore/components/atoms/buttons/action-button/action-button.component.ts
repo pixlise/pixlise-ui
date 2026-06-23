@@ -38,7 +38,7 @@ export const matActionIcons = {
   add: "add",
   edit: "edit",
   image: "image",
-  duplicate: "content_copy",
+  duplicate: "content_copy", // TODO: Not sure why we have copy and duplicate!
 };
 
 const customActionIcons = {
@@ -67,7 +67,7 @@ const customActionIcons = {
   zoomIn: "assets/button-icons/zoom-in.svg",
   zoomOut: "assets/button-icons/zoom-out.svg",
   share: "assets/button-icons/share.svg",
-  copy: "assets/button-icons/copy.svg",
+  copy: "assets/button-icons/copy.svg", // TODO: Not sure why we have copy and duplicate!
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;

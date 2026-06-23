@@ -50,6 +50,7 @@ import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/
 
 import { TabLinks } from "src/app/models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
+import { scanHasXRF } from "src/app/utils/utils";
 
 class TabNav {
   constructor(
@@ -189,7 +190,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
           if (screenConfig?.scanConfigurations) {
             for (const key in screenConfig.scanConfigurations) {
               this.hasScanConfigured = true;
-              if (screenConfig.scanConfigurations[key].quantId) {
+
+              // NOTE: if this scan has no spectra, there's no point in forcing people to set a quant, so we can
+              // check for that here and skip if not needed
+              let hasXRF = false;
+              for (let scan of this._analysisLayoutService.availableScans$.value) {
+                if (scan.id == key) {
+                  if (scanHasXRF(scan)) {
+                    hasXRF = true;
+                    break;
+                  }
+                }
+              }
+
+              if (!hasXRF || screenConfig.scanConfigurations[key].quantId) {
                 this.hasQuantConfiguredScan = true;
                 break;
               }
@@ -714,9 +728,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   //     }
   // }
 
-  get discussLink(): string {
-    return "https://discuss." + EnvConfigurationInitService.getConfig$.value!.appDomain;
-  }
 
   closeChangeLogDialog(): void {
     if (this.changeLogBtn && this.changeLogBtn instanceof PushButtonComponent) {

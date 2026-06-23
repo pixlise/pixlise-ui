@@ -10,7 +10,7 @@ import {
 import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantCreateUpd } from "src/app/generated-protos/quantification-create";
-import { JobStatus_JobType, JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
+import { JobStatus_Status, jobStatus_StatusToJSON, JobType } from "src/app/generated-protos/job";
 
 // NOTE: This is scoped to the spectrum widget (and its children) ONLY!
 
@@ -38,7 +38,7 @@ export class SpectrumService implements OnDestroy {
           }
         } else {
           // Only show quant map jobs which are long-lived, not quant fit/other short jobs
-          if (upd.status.jobType == JobStatus_JobType.JT_RUN_QUANT) {
+          if (upd.status.jobType == JobType.JT_RUN_QUANT) {
             const msg = `Quantification ${jobStatus_StatusToJSON(upd.status.status)}: ${upd.status.message}`;
             const detail = `Job Id is: ${upd.status.jobId}`;
 
