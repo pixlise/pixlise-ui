@@ -24,6 +24,7 @@
 - Fix sharing workspaces that have no quants/rois/expressions/expression groups in them - in this case sharing didn't show the share dialog!
 - Login error screens "Go to Home" button was not correctly redirecting to the home page
 - Fixed issue with reviewer link creation - if setting a time limit on the link it would fail to send to the server due to fractional seconds being computed
+- Reviewer links weren't loading due to checking for a permission that no longer exists
 
 ## 4.90.0 (2026-05-08)
 
