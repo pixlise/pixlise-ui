@@ -227,6 +227,16 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     let screenLayout = this.getLayoutFromTab(tab);
     if (screenLayout) {
       let newScreenLayout = { ...screenLayout };
+
+      // Replace ids with new ones, we want this to be a copy but not linked to the original.
+      // NOTE: This fixes a bug where if a tab was copied, and say the original tab had a context image on it, the new tab looked the same
+      //       but when a user changed either context image, they both changed! Users found this to be unexpected behaviour so we now ensure
+      //       all ids are unique to the new copied tab
+      newScreenLayout.tabId = ""
+      for (let widget of newScreenLayout.widgets) {
+        widget.id = "";
+      }
+
       newScreenLayout.tabName = newTab.label;
 
       // Insert the new layout after the current layout
