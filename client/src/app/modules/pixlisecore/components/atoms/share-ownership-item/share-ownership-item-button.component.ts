@@ -29,17 +29,21 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ShareDialogComponent, ShareDialogData, ShareDialogResponse, SharingSubItem } from "./share-dialog/share-dialog.component";
-import { ObjectType, OwnershipSummary, objectTypeToJSON } from "src/app/generated-protos/ownership-access";
-import { APIDataService } from "../../../services/apidata.service";
-import { SnackbarService } from "../../../services/snackbar.service";
-import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
 import { catchError, combineLatest, map, Observable, of, switchMap } from "rxjs";
-import { ExpressionGroupGetReq } from "../../../../../generated-protos/expression-group-msgs";
-import { APICachedDataService } from "../../../services/apicacheddata.service";
-import { ExpressionGetReq, ExpressionGetResp } from "../../../../../generated-protos/expression-msgs";
-import { DataExpression } from "../../../../../generated-protos/expressions";
-import { DataExpressionId } from "../../../../../expression-language/expression-id";
+
+
+import { ShareDialogComponent, ShareDialogData, ShareDialogResponse, SharingSubItem } from "./share-dialog/share-dialog.component";
+
+import { APIDataService } from "src/app/modules/pixlisecore/services/apidata.service";
+import { SnackbarService } from "src/app/modules/pixlisecore/services/snackbar.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+
+import { ObjectType, OwnershipSummary, objectTypeToJSON } from "src/app/generated-protos/ownership-access";
+import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
+import { ExpressionGroupGetReq } from "src/app/generated-protos/expression-group-msgs";
+import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
+import { DataExpression } from "src/app/generated-protos/expressions";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
   standalone: false,
@@ -180,6 +184,7 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
                     type: ObjectType.OT_EXPRESSION,
                     typeName: "Expression",
                     ownershipSummary: expression.owner,
+                    queryError: "",
                   });
                 });
               }
