@@ -54,6 +54,7 @@ export type SharingSubItem = {
   name: string;
   ownershipSummary: OwnershipSummary;
   ownershipItem?: OwnershipItem;
+  queryError: string;
 };
 
 export type ShareDialogData = {
@@ -98,6 +99,7 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
 
   private _isSearchingGroups: boolean = true;
   private _searchField: string = "";
+  private _hasQueryErrors: boolean = false;
 
   groupEditors: string[] = [];
   newGroupEditors: Set<string> = new Set();
@@ -174,6 +176,13 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
 
     if (this.data?.subItems && this.data.subItems.length > 0) {
       this.subItems = this.data.subItems;
+      // If any have query errors, set our flag
+      for (let s of this.subItems) {
+        if (s.queryError) {
+          this._hasQueryErrors = true;
+          break;
+        }
+      }
     }
 
     this._subs.add(
@@ -334,6 +343,26 @@ export class ShareDialogComponent implements OnInit, OnDestroy {
   set searchField(value: string) {
     this._searchField = value;
     this.filterSearch();
+  }
+
+  get hasQueryErrors(): boolean {
+    return this._hasQueryErrors;
+  }
+
+  makeSubItemTooltip(subItem: SharingSubItem): string {
+    if (subItem.queryError) {
+      let userInfo = "";
+      if (subItem.ownershipSummary?.creatorUser?.name) {
+        userInfo = `. Creator user: ${subItem.ownershipSummary?.creatorUser?.name}`;
+      } else if (subItem.ownershipSummary?.creatorUser?.id) {
+        userInfo = `. Creator user id: ${subItem.ownershipSummary?.creatorUser?.id}`;
+      }
+
+      return subItem.queryError + userInfo;
+    }
+    
+    return `You don't have edit permission on this expression to update sharing settings.
+Please make a copy of it or ask the owner (${subItem.ownershipSummary?.creatorUser?.name || 'N/A'}) to make you an editor to share this group with others.`;
   }
 
   filterSearch() {

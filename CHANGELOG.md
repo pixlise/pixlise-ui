@@ -1,4 +1,13 @@
-## 4.91.0 (LATEST)
+## 4.92.0 (LATEST)
+
+### New Features
+- Context image now shows better error messages for issues related to displaying maps/expressions (directly on the context image, not just a "pop-up" message in bottom-left corner)
+
+### Bug Fixes
+- Share workspace dialog now shows up if there are items that the user has no permissions for - previously it would just not show. Now it shows what objects had those errors and provides some guidance. It also queries the objects name/creator and recommends who to talk to to get access before sharing the workspace.
+- Variogram no longer requests to run a blank expression if one is not configured.
+
+## 4.91.0 (2026-06-23)
 
 ### New Features
 - Updated UI of quant jobs list items, now they're more readable

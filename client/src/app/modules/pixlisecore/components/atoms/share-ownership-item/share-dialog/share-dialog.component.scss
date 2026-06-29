@@ -30,6 +30,17 @@
 @import "variables.scss";
 @import "atoms.scss";
 
+.bottom-section {
+  display: flex;
+  flex-direction: column;
+
+  .user-help {
+    padding: $sz-unit;
+
+    color: $clr-orange;
+  }
+}
+
 .button-container {
   margin-top: $sz-double;
 

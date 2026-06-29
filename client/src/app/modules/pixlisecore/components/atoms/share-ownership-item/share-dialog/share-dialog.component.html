@@ -166,20 +166,15 @@ POSSIBILITY OF SUCH DAMAGE.
         <div *ngFor="let subItem of subItems" class="sub-item">
           <div class="icon">
             <img
-              *ngIf="subItemSharingErrorMap.get(subItem.id)"
+              *ngIf="subItemSharingErrorMap.get(subItem.id) || subItem.queryError"
               #tooltip="matTooltip"
-              [matTooltip]="
-                'You don\'t have edit permission on this expression to update sharing settings.\n' +
-                'Please make a copy of it or ask the owner (' +
-                (subItem.ownershipSummary?.creatorUser?.name || 'N/A') +
-                ') to make you an editor to share this group with others.'
-              "
+              [matTooltip]="makeSubItemTooltip(subItem)"
               class="sharing-warning"
               src="assets/icons/error-triangle.svg"
               alt="Error Icon" />
             <user-icon [userId]="subItem.ownershipSummary.creatorUser?.id || ''" size="32px"></user-icon>
           </div>
-          <div class="details {{ subItemSharingErrorMap.get(subItem.id) ? 'error-state' : '' }}">
+          <div class="details {{ subItem.queryError || subItemSharingErrorMap.get(subItem.id) ? 'error-state' : '' }}">
             <h2>{{ subItem.name }}</h2>
             <h5>{{ subItem.typeName }}</h5>
           </div>
@@ -198,24 +193,30 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
       </div>
     </div>
-    <div class="gap-separated-horizontal-elements button-container">
-      <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-      <push-button
-        *ngIf="validShareCount > 0 && shareWithSubItems"
-        buttonStyle="yellow"
-        (onClick)="onConfirm()"
-        #tooltip="matTooltip"
-        [matTooltip]="canEdit ? confirmButtonTooltip : 'NOTE: You only have permission to add viewers.'"
-        >Share {{ validShareCount }} items</push-button
-      >
-      <push-button
-        *ngIf="validShareCount === 0 || !shareWithSubItems"
-        buttonStyle="yellow"
-        (onClick)="onConfirm()"
-        #tooltip="matTooltip"
-        [matTooltip]="canEdit ? confirmButtonTooltip : 'NOTE: You only have permission to add viewers.'"
-        >{{ data.isReviewerSnapshot ? "Create reviewer snapshot" : "Confirm" }}</push-button
-      >
+    <div class="bottom-section">
+      @if (hasQueryErrors) {
+        <div class="user-help">One or more items were not able to be queried: You likely don't have permissions to access them. Resolve this with the item owner/creator first.</div>
+      }
+      @if (canEdit && confirmButtonTooltip) {
+        <div class="user-help">{{confirmButtonTooltip}}</div>
+      }
+      @if (!canEdit) {
+        <div class="user-help">NOTE: You only have permission to add viewers.</div>
+      }
+      <div class="gap-separated-horizontal-elements button-container">
+        <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+        @if (validShareCount > 0 && shareWithSubItems) {
+          <push-button
+            buttonStyle="yellow"
+            (onClick)="onConfirm()">Share {{ validShareCount }} items</push-button>
+        }
+        @if (validShareCount === 0 || !shareWithSubItems) {
+          <push-button
+            buttonStyle="yellow"
+            (onClick)="onConfirm()"
+            [disabled]="hasQueryErrors">{{ data.isReviewerSnapshot ? "Create reviewer snapshot" : "Confirm" }}</push-button>
+        }
+      </div>
     </div>
   </div>
 </div>

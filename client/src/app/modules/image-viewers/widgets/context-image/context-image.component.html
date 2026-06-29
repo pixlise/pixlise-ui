@@ -38,3 +38,7 @@
 
 <interactive-canvas [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
+
+@if (widgetErrorMessage) {
+  <div class="error-overlay">{{widgetErrorMessage}}</div>
+}

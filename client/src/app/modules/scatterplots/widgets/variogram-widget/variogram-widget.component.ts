@@ -283,15 +283,13 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           }
 
           this.setDrawMode(this.drawModeVector ? "Vector" : "Isotropic");
-          this.rebuildScanModel().subscribe(metadata => {
-            this.update();
-          });
         } else {
           this.setInitialConfig();
-          this.rebuildScanModel().subscribe(metadata => {
-            this.update();
-          });
         }
+
+        this.rebuildScanModel().subscribe(metadata => {
+          this.update();
+        });
       })
     );
 
@@ -662,6 +660,15 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   update(): void {
+    // Validate - eg check if we have valid algorithms selected
+    const algs = this.formComparisonAlgorithms();
+    for (let alg of algs) {
+      if (alg.length <= 0) {
+        this._snackService.openError("Variogram: No custom algorithm selected");
+        return;
+      }
+    }
+
     this.updateAsync().subscribe();
   }
 
@@ -706,6 +713,10 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
       if (this.crossCombiningAlgorithms.includes(algorithm)) {
         return of(algorithm);
       } else {
+        if (algorithm.length <= 0) {
+          //return of("");
+          throw new Error("No algorithm selected");
+        }
         return this._expressionsService.fetchCachedExpressionHash(algorithm);
       }
     });
