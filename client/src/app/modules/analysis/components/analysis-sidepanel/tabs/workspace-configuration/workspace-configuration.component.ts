@@ -32,11 +32,11 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 
-import { combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
+import { catchError, combineLatest, map, Observable, of, Subscription, switchMap } from "rxjs";
 
 import { FullScreenLayout, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ObjectType, OwnershipItem, OwnershipSummary, UserGroupList } from "src/app/generated-protos/ownership-access";
-import { GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
+import { GetOwnershipDescriptionReq, GetOwnershipDescriptionResp, GetOwnershipReq, GetOwnershipResp, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
@@ -59,7 +59,19 @@ import { WorkspaceService } from "src/app/modules/analysis/services/workspaces.s
 
 import { encodeUrlSafeBase64, getScanIdFromWorkspaceId } from "src/app/utils/utils";
 import { TabLinks } from "src/app/models/TabLinks";
+import { UserInfo } from "src/app/generated-protos/user";
 
+class OwnershipInfo {
+  constructor(
+    public id: string,
+    public objectType: ObjectType,
+    public ownership: OwnershipItem | undefined,
+    public item: RegionOfInterestGetResp | ExpressionGetResp | ExpressionGroupGetResp | QuantGetResp | undefined,
+    public error: any = undefined,
+    public name: string = "",
+    public creatorUser?: UserInfo,
+  ) {}
+}
 
 @Component({
   standalone: false,
@@ -518,43 +530,44 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       const expressionGroupIds = this._analysisLayoutService.getLoadedExpressionGroupIDsFromActiveScreenConfiguration();
       const quantIds = this._analysisLayoutService.getLoadedQuantificationIDsFromActiveScreenConfiguration();
 
-      const roiRequests = roiIds.map(roiId => {
-        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: roiId, objectType: ObjectType.OT_ROI }));
-        const itemReq = this._apiCachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId }));
-        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
-      });
-
-      const expressionRequests = expressionIds.map(expressionId => {
-        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: expressionId, objectType: ObjectType.OT_EXPRESSION }));
-        const itemReq = this._apiCachedDataService.getExpression(ExpressionGetReq.create({ id: expressionId }));
-        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
-      });
-
-      const expressionGroupRequests = expressionGroupIds.map(expressionGroupId => {
-        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(
-          GetOwnershipReq.create({ objectId: expressionGroupId, objectType: ObjectType.OT_EXPRESSION_GROUP })
-        );
-        const itemReq = this._apiCachedDataService.getExpressionGroup(ExpressionGetReq.create({ id: expressionGroupId }));
-        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
-      });
-
-      const quantRequests = quantIds.map(quantId => {
-        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(GetOwnershipReq.create({ objectId: quantId, objectType: ObjectType.OT_QUANTIFICATION }));
-        const itemReq = this._apiCachedDataService.getQuant(QuantGetReq.create({ quantId }));
-        return ownershipReq.pipe(switchMap(ownershipRes => itemReq.pipe(map(itemRes => ({ ownership: ownershipRes.ownership, item: itemRes })))));
-      });
+      const roiRequests: Observable<OwnershipInfo>[] = this.makeOwnershipItem(roiIds, ObjectType.OT_ROI, (id) => this._apiCachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id })));
+      const expressionRequests: Observable<OwnershipInfo>[] = this.makeOwnershipItem(expressionIds, ObjectType.OT_EXPRESSION, (id) => this._apiCachedDataService.getExpression(ExpressionGetReq.create({ id })));
+      const expressionGroupRequests: Observable<OwnershipInfo>[] = this.makeOwnershipItem(expressionGroupIds, ObjectType.OT_EXPRESSION_GROUP, (id) => this._apiCachedDataService.getExpressionGroup(ExpressionGetReq.create({ id })));
+      const quantRequests: Observable<OwnershipInfo>[] = this.makeOwnershipItem(quantIds, ObjectType.OT_QUANTIFICATION, (id) => this._apiCachedDataService.getQuant(QuantGetReq.create({ quantId: id })));
 
       const requests = [...roiRequests, ...expressionRequests, ...expressionGroupRequests, ...quantRequests];
+
       if (requests.length == 0) {
         // Nothing to request, simple share of a workspace without user created data yet... we didn't have this condition before and were skipping this case!
-        this.shareSnapshot(objectId, existingSnapshot, isReviewerSnapshot, ownershipSummary, workspaceOwnershipResp, roiRequests, expressionRequests, expressionGroupRequests, []);
+        this.shareSnapshot(objectId, existingSnapshot, isReviewerSnapshot, ownershipSummary, workspaceOwnershipResp, []);
       } else {
         // Wait for all the bits!
         combineLatest(requests).subscribe(res => {
-          this.shareSnapshot(objectId, existingSnapshot, isReviewerSnapshot, ownershipSummary, workspaceOwnershipResp, roiRequests, expressionRequests, expressionGroupRequests, res);
+          this.shareSnapshot(objectId, existingSnapshot, isReviewerSnapshot, ownershipSummary, workspaceOwnershipResp, res);
         });
       }
     });
+  }
+
+  private makeOwnershipItem(ids: string[], objType: ObjectType, makeReqFunc: (id: string) => Observable<any>): Observable<OwnershipInfo>[] {
+      return  ids.map(id => {
+        const ownershipReq = this._apiDataService.sendGetOwnershipRequest(
+          GetOwnershipReq.create({ objectId: id, objectType: objType })
+        );
+        return ownershipReq.pipe(
+          switchMap(ownershipRes => makeReqFunc(id).pipe(map(itemRes => new OwnershipInfo(id, objType, ownershipRes.ownership, itemRes)))),
+          catchError(err => {
+            return this._apiDataService.sendGetOwnershipDescriptionRequest(GetOwnershipDescriptionReq.create({objectId: id, objectType: objType})).pipe(
+              map(desc => {
+                return new OwnershipInfo(id, objType, undefined, undefined, err, desc.name, desc.creatorUser);
+              }),
+              catchError(() => {
+                return of(new OwnershipInfo(id, objType, undefined, undefined, err, `${objType.toString()} (${id})`));
+              })
+            );
+          })
+        );
+      });
   }
 
   private shareSnapshot(
@@ -563,15 +576,13 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     isReviewerSnapshot: boolean,
     ownershipSummary: OwnershipSummary,
     workspaceOwnershipResp: GetOwnershipResp,
-    roiRequests: Observable<{ownership: OwnershipItem | undefined; item: RegionOfInterestGetResp;}>[],
-    expressionRequests: Observable<{ownership: OwnershipItem | undefined; item: ExpressionGetResp;}>[],
-    expressionGroupRequests: Observable<{ownership: OwnershipItem | undefined; item: ExpressionGroupGetResp;}>[],
-    res: (
-      {ownership: OwnershipItem | undefined; item: RegionOfInterestGetResp;} |
-      {ownership: OwnershipItem | undefined; item: ExpressionGetResp;} |
-      {ownership: OwnershipItem | undefined; item: ExpressionGroupGetResp;} |
-      {ownership: OwnershipItem | undefined; item: QuantGetResp;})[]
+    ownerships: OwnershipInfo[]
     ) {
+    if (!workspaceOwnershipResp?.ownership) {
+      this._snackbarService.openError("Failed to get ownership information for workspace");
+      return;
+    }
+
     const workspaceId = this.screenConfig?.id || "";
 
     const workspaceSubItem: SharingSubItem = {
@@ -581,66 +592,94 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
       name: this.workspaceName || this.placeholderName || "",
       ownershipSummary: ownershipSummary,
       ownershipItem: workspaceOwnershipResp.ownership,
+      queryError: ""
     };
 
-    let subItems: SharingSubItem[] = res.map(({ ownership, item }, i) => {
-      if (!ownership || !item) {
-        return {
-          id: "",
-          type: ObjectType.OT_SCREEN_CONFIG,
-          typeName: "Workspace",
-          name: "",
-          ownershipSummary: OwnershipSummary.create({}),
-        } as SharingSubItem;
+    let subItems: SharingSubItem[] = [];
+
+    for (let ownershipItem of ownerships) {
+      let objTypeName = ownershipItem.objectType.toString();
+      switch(ownershipItem.objectType) {
+        case ObjectType.OT_ROI:
+          objTypeName = "Region of Interest";
+          break;
+        case ObjectType.OT_EXPRESSION:
+          objTypeName = "Expression";
+          break;
+        case ObjectType.OT_EXPRESSION_GROUP:
+          objTypeName = "Expression Group";
+          break;
+        case ObjectType.OT_QUANTIFICATION:
+          objTypeName = "Quantification";
+          break;
       }
 
-      if (i < roiRequests.length) {
-        const roiResp = item as RegionOfInterestGetResp;
-        return {
-          id: roiResp.regionOfInterest?.id || "",
-          type: ObjectType.OT_ROI,
-          typeName: "Region of Interest",
-          name: roiResp.regionOfInterest?.name || "",
-          ownershipSummary: roiResp.regionOfInterest?.owner,
-          ownershipItem: ownership,
-        } as SharingSubItem;
-      } else if (i < roiRequests.length + expressionGroupRequests.length) {
-        const expressionGroupResp = item as ExpressionGroupGetResp;
-        return {
-          id: expressionGroupResp.group?.id || "",
-          type: ObjectType.OT_EXPRESSION_GROUP,
-          typeName: "Expression Group",
-          name: expressionGroupResp.group?.name || "",
-          ownershipSummary: expressionGroupResp.group?.owner,
-          ownershipItem: ownership,
-        } as SharingSubItem;
-      } else if (i < roiRequests.length + expressionGroupRequests.length + expressionRequests.length) {
-        const expressionResp = item as ExpressionGetResp;
-        return {
-          id: expressionResp.expression?.id || "",
-          type: ObjectType.OT_EXPRESSION,
-          typeName: "Expression",
-          name: expressionResp.expression?.name || "",
-          ownershipSummary: expressionResp.expression?.owner,
-          ownershipItem: ownership,
-        } as SharingSubItem;
-      } else {
-        const quantResp = item as QuantGetResp;
-        return {
-          id: quantResp.summary?.id || "",
-          type: ObjectType.OT_QUANTIFICATION,
-          typeName: "Quantification",
-          name: quantResp.summary?.params?.userParams?.name || quantResp.summary?.id || "",
-          ownershipSummary: quantResp.summary?.owner,
-          ownershipItem: ownership,
-        } as SharingSubItem;
+      if (ownershipItem.error || !ownershipItem.ownership || !ownershipItem.item) {
+        // We somehow failed to retrieve the object or don't have permissions for
+        // it, so display it as an error that can be fixed
+        subItems.push({
+          id: ownershipItem.id,
+          type: ownershipItem.objectType,
+          typeName: objTypeName,
+          name: ownershipItem.name,
+          ownershipSummary: OwnershipSummary.create({creatorUser: ownershipItem?.creatorUser}),
+          ownershipItem: ownershipItem.ownership,
+          queryError: ownershipItem.error ? ownershipItem.error : "Lookup failed"
+        } as SharingSubItem);
+      } else if (ownershipItem.ownership && ownershipItem.item) {
+        switch (ownershipItem.objectType) {
+          case ObjectType.OT_ROI:
+            const roiResp = ownershipItem.item as RegionOfInterestGetResp;
+            subItems.push({
+              id: roiResp.regionOfInterest?.id || "",
+              type: ownershipItem.objectType,
+              typeName: objTypeName,
+              name: roiResp.regionOfInterest?.name || "",
+              ownershipSummary: roiResp.regionOfInterest?.owner,
+              ownershipItem: ownershipItem.ownership,
+              queryError: "",
+            } as SharingSubItem);
+            break;
+          case ObjectType.OT_EXPRESSION:
+            const expressionResp = ownershipItem.item as ExpressionGetResp;
+            subItems.push({
+              id: expressionResp.expression?.id || "",
+              type: ownershipItem.objectType,
+              typeName: objTypeName,
+              name: expressionResp.expression?.name || "",
+              ownershipSummary: expressionResp.expression?.owner,
+              ownershipItem: ownershipItem.ownership,
+              queryError: "",
+            } as SharingSubItem);
+            break;
+          case ObjectType.OT_EXPRESSION_GROUP:
+            const expressionGroupResp = ownershipItem.item as ExpressionGroupGetResp;
+            subItems.push({
+              id: expressionGroupResp.group?.id || "",
+              type: ownershipItem.objectType,
+              typeName: objTypeName,
+              name: expressionGroupResp.group?.name || "",
+              ownershipSummary: expressionGroupResp.group?.owner,
+              ownershipItem: ownershipItem.ownership,
+              queryError: "",
+            } as SharingSubItem);
+            break;
+          case ObjectType.OT_QUANTIFICATION:
+            const quantResp = ownershipItem.item as QuantGetResp;
+            subItems.push({
+              id: quantResp.summary?.id || "",
+              type: ownershipItem.objectType,
+              typeName: objTypeName,
+              name: quantResp.summary?.params?.userParams?.name || quantResp.summary?.id || "",
+              ownershipSummary: quantResp.summary?.owner,
+              ownershipItem: ownershipItem.ownership,
+              queryError: "",
+            } as SharingSubItem);
+            break;
+          default:
+            throw new Error(`Unexpected type: ${ownershipItem.objectType}`);
+        }
       }
-    });
-
-    subItems = subItems.filter(item => item?.id) as SharingSubItem[];
-
-    if (!workspaceOwnershipResp?.ownership) {
-      return;
     }
 
     const dialogConfig = new MatDialogConfig<ShareDialogData>();
@@ -692,10 +731,6 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
         });
       }
     });
-  }
-
-  idToBase64(id: string): string {
-    return btoa(id);
   }
 
   onCopy(link: string): void {

@@ -1,0 +1,14 @@
+@import "variables.scss";
+@import "atoms.scss";
+
+.error-overlay {
+    bottom: 70%;
+    display: block;
+    position: relative;
+    border-radius: $sz-unit;
+
+    background: $clr-gray-90;
+    margin: $sz-unit;
+    padding: $sz-unit;
+    color: $clr-orange;
+}
