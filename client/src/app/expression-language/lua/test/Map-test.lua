@@ -270,7 +270,7 @@ TestMap = {}
 
     function TestMap:testNotMap()
         local m1 = {{3,4,7},{1,0,1.3}}
-        local result = Map.NOT(m1)
+        local result = Map.Not(m1)
         local expected = {{3,4,7},{0,1,0}}
 
         lu.assertItemsEquals(result, expected)
@@ -278,14 +278,14 @@ TestMap = {}
 
     function TestMap:testAndScalarMap()
         local m2 = {{3,4,7},{11.1,12.1,0}}
-        local result = Map.AND(1, m2)
+        local result = Map.And(1, m2)
         local expected = {{3,4,7},{1,1,0}}
 
         lu.assertItemsEquals(result, expected)
     end
     function TestMap:testAndMapScalar()
         local m1 = {{3,4,7},{0,15.5,1.3}}
-        local result = Map.AND(m1, 1)
+        local result = Map.And(m1, 1)
         local expected = {{3,4,7},{0,1,1}}
 
         lu.assertItemsEquals(result, expected)
@@ -293,7 +293,7 @@ TestMap = {}
     function TestMap:testAnd2Maps()
         local m1 = {{3,4,7},{0,15.5,1.3}}
         local m2 = {{3,4,7},{11.1,12.1,0}}
-        local result = Map.AND(m1, m2)
+        local result = Map.And(m1, m2)
         local expected = {{3,4,7},{0,1,0}}
 
         lu.assertItemsEquals(result, expected)
@@ -302,21 +302,21 @@ TestMap = {}
     function TestMap:testOr2Maps()
         local m1 = {{3,4,7},{0,15.5,0}}
         local m2 = {{3,4,7},{11.1,0,0}}
-        local result = Map.OR(m1, m2)
+        local result = Map.Or(m1, m2)
         local expected = {{3,4,7},{1,1,0}}
 
         lu.assertItemsEquals(result, expected)
     end
     function TestMap:testOrScalarMap()
         local m2 = {{3,4,7},{11.1,1,0}}
-        local result = Map.OR(0, m2)
+        local result = Map.Or(0, m2)
         local expected = {{3,4,7},{1,1,0}}
 
         lu.assertItemsEquals(result, expected)
     end
     function TestMap:testOrMapScalar()
         local m1 = {{3,4,7},{1,15.5,0}}
-        local result = Map.OR(m1, 0)
+        local result = Map.Or(m1, 0)
         local expected = {{3,4,7},{1,1,0}}
 
         lu.assertItemsEquals(result, expected)
