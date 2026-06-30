@@ -296,6 +296,64 @@
   //   }
   // }
 
+  .failed-items-list {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+
+    span {
+      color: $clr-orange;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .failed-item {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      gap: 8px;
+
+      color: $clr-gray-10;
+      background-color: $clr-gray-80;
+
+      .failed-item-desc {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .error {
+          color: $clr-orange;
+          font-size: 10px;
+        }
+      }
+
+      .creator {
+        margin-right: 8px;
+        border-radius: 6px;
+        display: flex;
+
+        img {
+          width: 28px;
+          border-radius: 4px;
+        }
+
+        .name-abbreviation {
+          width: 28px;
+          border-radius: 4px;
+          height: 28px;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: $clr-gray-60;
+        }
+      }
+    }
+  }
+
   .rgbmix-row {
     display: flex;
     flex-direction: column;
