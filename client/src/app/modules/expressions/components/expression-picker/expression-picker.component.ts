@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { AnalysisLayoutService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { combineLatest, filter, firstValueFrom, map, of, Subscription, switchMap, take } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
@@ -52,6 +52,8 @@ import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { setsEqual } from "src/app/utils/utils";
 import { EXPORT_PREVIEW_ID_PREFIX } from "../../../widget/components/widget-export-dialog/widget-export-model";
+import { UserInfo } from "src/app/generated-protos/user";
+import { GetOwnershipDescriptionReq } from "src/app/generated-protos/ownership-access-msgs";
 
 export type ExpressionPickerResponse = {
   selectedGroup?: ExpressionGroup;
@@ -85,6 +87,15 @@ export type ExpressionPickerData = {
   onlyShowItemsWithTag?: string[];
 };
 
+class FailedItem {
+  constructor(
+    public id: string,
+    public name?: string,
+    public owner?: UserInfo,
+    public error?: string
+  ) {}
+}
+
 @Component({
   standalone: false,
   selector: "expression-picker",
@@ -113,6 +124,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _pseudoIntensities: Record<string, DataExpression> = {};
 
   private _unmatchedExpressions: boolean = false;
+
+  failedItems: FailedItem[] = [];
 
   widgetTypes: WidgetType[] = [];
 
@@ -166,6 +179,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   constructor(
     private _cachedDataSerivce: APICachedDataService,
+    private _dataSerivce: APIDataService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackBarService: SnackbarService,
     private _userOptionsService: UserOptionsService,
@@ -422,11 +436,47 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   fetchAndLoadGroupAsRGBMix(groupId: string): void {
-    this._cachedDataSerivce.getExpressionGroup(ExpressionGroupGetReq.create({ id: groupId })).subscribe(group => {
-      if (group?.group) {
-        this.loadGroupAsRGBMix(group.group);
+    this._cachedDataSerivce.getExpressionGroup(ExpressionGroupGetReq.create({ id: groupId })).subscribe({
+      next: group => {
+        if (group?.group) {
+          this.loadGroupAsRGBMix(group.group);
+        }
+      },
+      error: err => {
+        // We have a failed item! Something is preventing us from reading it, so show it as something that
+        // the user can delete
+        const fItem = new FailedItem(groupId, undefined, undefined, err);
+        this.failedItems.push(fItem);
+
+        // Try to obtain more info about it
+        this._dataSerivce.sendGetOwnershipDescriptionRequest(
+          GetOwnershipDescriptionReq.create({objectId: groupId, objectType: ObjectType.OT_EXPRESSION_GROUP})
+        ).subscribe(
+          resp => {
+            if (resp && resp.name) {
+              // Replace the item!
+              fItem.name = resp.name;
+              fItem.owner = resp.creatorUser;
+
+              // Remove & replace to ensure it triggers stuff
+              this.failedItems = this.removeFailedItem(this.failedItems, groupId);
+              this.failedItems.push(fItem);
+            }
+          }
+        );
       }
     });
+  }
+
+  private removeFailedItem(list: FailedItem[], removeId: string): FailedItem[] {
+    // Form a new list that excludes the one specified...
+    let newList: FailedItem[] = [];
+    for (let c = 0; c < this.failedItems.length; c++) {
+      if (this.failedItems[c].id != removeId) {
+        newList.push(this.failedItems[c]);
+      }
+    }
+    return newList;
   }
 
   get selectedExpressionIdOrder(): string[] {
@@ -877,7 +927,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     if (expressionGroup) {
       this.selectedGroup = expressionGroup;
     } else {
-      this.selectedGroup = ExpressionGroup.create();
+      this.selectedGroup = ExpressionGroup.create({id});
     }
   }
 
@@ -1305,5 +1355,18 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._selectedRGBMixExpressionIdOrder = [];
 
     this.overwriteExistingExpressionGroup = false;
+  }
+
+  onClearFailedItem(id: string) {
+    // Often if the user sees a failed item there's not a lot they can do about it, besides
+    // deleting it. Here we simply delete and refresh
+    this.failedItems = this.removeFailedItem(this.failedItems, id);
+
+    // If it's the selected group, clear it
+    if (this._selectedRGBMixGroup.id == id) {
+      this._selectedRGBMixGroup = ExpressionGroup.create();
+    } else if (this._selectedExpressionGroup.id == id) {
+      this._selectedExpressionGroup = ExpressionGroup.create();
+    }
   }
 }

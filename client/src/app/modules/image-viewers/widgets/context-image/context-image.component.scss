@@ -2,9 +2,10 @@
 @import "atoms.scss";
 
 .error-overlay {
-    bottom: 70%;
-    display: block;
-    position: relative;
+    bottom: 10%;
+    //display: block;
+    z-index: 1;
+    position: absolute;
     border-radius: $sz-unit;
 
     background: $clr-gray-90;
