@@ -276,6 +276,29 @@ POSSIBILITY OF SUCH DAMAGE.
           (onClick)="onClearRGBMix()"
         ></action-button>
       </div>
+      <div class="failed-items-list" *ngIf="failedItems.length > 0">
+        <span>Layers With Errors</span>
+        <div *ngFor="let fItem of failedItems" class="failed-item">
+          <div
+            class="creator"
+            #tooltip="matTooltip"
+            matTooltip="Creator: {{ fItem.owner?.name || 'N/A' }}"
+            tabindex="0"
+            role="button">
+            <img *ngIf="fItem.owner?.iconURL" [src]="fItem.owner?.iconURL" alt="Creator" />
+            <span *ngIf="!fItem.owner?.iconURL" class="name-abbreviation">{{ fItem.owner?.name || "N/A" }}</span>
+          </div>
+
+          <div class="failed-item-desc">
+            <div>{{fItem.name ? fItem.name : fItem.id}}</div>
+            <div class="error">{{fItem.error}}</div>
+          </div>
+          <action-button
+            action="delete"
+            (onClick)="onClearFailedItem(fItem.id)"
+          ></action-button>
+        </div>
+      </div>
       <div class="rgbmix-row" *ngIf="showRGBMixMode">
         <multi-switch-button
           class="rgbmix-toggle"

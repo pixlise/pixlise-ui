@@ -1,4 +1,12 @@
-## 4.92.0 (LATEST)
+## 4.93.0 (LATEST)
+
+### New Features
+- Expression picker now shows expression groups that were not able to load (eg because user has no permissions for that group) in a new list called "Layers with Errors" where they can be removed if needed. Note that expressions that the user has no permissions for will continue to be shown as "Loading (expression-id)" like previously.
+
+### Bug Fixes
+- Fixed context image error display was preventing clicking on Layers button
+
+## 4.92.0 (2026-06-29)
 
 ### New Features
 - Context image now shows better error messages for issues related to displaying maps/expressions (directly on the context image, not just a "pop-up" message in bottom-left corner)

@@ -1296,6 +1296,9 @@ export class ContextImageComponent
           if (err instanceof WidgetError) {
             //this._snackService.openError("Context image failed to display an expression", err);
             this.widgetErrorMessage = err.message;
+            if (err.description) {
+              this.widgetErrorMessage += `. Reason: ${err.description}`;
+            }
           } else {
             //this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
             this.widgetErrorMessage = `Error displaying layer: ${err} for image ${this.mdl.imageName}`;
