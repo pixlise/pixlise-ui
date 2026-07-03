@@ -3,7 +3,7 @@
 ### New Features
 - Clear memoisation cache items named: exprcachev1_GeoAndDiff_*<scan-id> when user clicks "Clear Workspace Cache"
 
-## 4.93.0 (LATEST)
+## 4.93.0 (2026-06-30)
 
 ### New Features
 - Expression picker now shows expression groups that were not able to load (eg because user has no permissions for that group) in a new list called "Layers with Errors" where they can be removed if needed. Note that expressions that the user has no permissions for will continue to be shown as "Loading (expression-id)" like previously.
