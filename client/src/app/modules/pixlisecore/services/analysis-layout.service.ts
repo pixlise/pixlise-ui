@@ -2,9 +2,14 @@ import { Injectable, OnDestroy } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { HttpClient } from "@angular/common/http";
 
-import { BehaviorSubject, Observable, ReplaySubject, Subject, Subscription, forkJoin, map, of } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subject, Subscription, forkJoin, map, of, switchMap } from "rxjs";
 
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../../analysis/models/sidebar.model";
+
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 import { APICachedDataService } from "./apicacheddata.service";
 import { APIDataService } from "./apidata.service";
@@ -12,10 +17,6 @@ import { SelectionService } from "./selection.service";
 import { SnackbarService } from "./snackbar.service";
 import { APIEndpointsService } from "./apiendpoints.service";
 import { MemoisationService } from "./memoisation.service";
-
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-
-import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -123,7 +124,8 @@ export class AnalysisLayoutService implements OnDestroy {
     private _snackService: SnackbarService,
     private _selectionService: SelectionService,
     private _userOptionsService: UserOptionsService,
-    private _memoService: MemoisationService
+    private _memoService: MemoisationService,
+    private _expressionService: ExpressionsService
   ) {
     this.fetchAvailableScans();
     // TODO: Not sure why we have this feature - attempted commenting it and no obvious errors happened. Maybe it's for an edge-case or some optimisation
@@ -1213,12 +1215,43 @@ export class AnalysisLayoutService implements OnDestroy {
     );
   }
 
-  clearExpressionCacheForScan(expressionId: string, scanId: string): Observable<number> {
-    let pattern = `{"scanId":"${scanId}","exprId":"${expressionId}".*`;
+  private clearExpressionCacheForScan(expressionId: string, scanId: string): Observable<number> {
+    // Check if the expression is using any modules - if so, we clear any exprcachev1 labelled items for it also
+    const scanExprPattern = `{"scanId":"${scanId}","exprId":"${expressionId}".*`;
+    const memReq$ = [this._memoService.deleteByRegex(scanExprPattern)];
+    const apiReq$ = [this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern: scanExprPattern }))];
 
-    return forkJoin([this._memoService.deleteByRegex(pattern), this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern }))]).pipe(
-      map(res => res[1]?.numDeleted || 0)
-    );
+    let expr = this._expressionService.expressions$.value[expressionId];
+    if (!expr) {
+      console.warn(`clearExpressionCacheForScan: Failed to check expression ${expressionId} modules before clearing, only clearing for expression...`)
+    } else {
+      // Check what modules are assigned, we auto-clear for geo and diff correction
+      // The items we're looking to clear are named like:
+      // exprcachev1_GeoAndDiff_3_5_3_geometry_717226499
+      // exprcachev1_GeoAndDiff_3_5_3_Al2O3_717226499_quant-8ryzgznb8u4cb6h6
+      for (let modRef of expr.moduleReferences) {
+        const mod = this._expressionService.modules$.value[modRef.moduleId];
+        if (mod.name == "GeoAndDiffCorrection" && modRef.version) {
+          // Add geo diff correction (for this version) to the list
+          const pattern = `exprcachev1_GeoAndDiff_${modRef.version.major}_${modRef.version.minor}_${modRef.version.patch}_.*_${scanId}`;
+
+          memReq$.push(this._memoService.deleteByRegex(pattern));
+          apiReq$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern})));
+        }
+      }
+    }
+
+    return forkJoin(memReq$).pipe(
+      switchMap(() => forkJoin(apiReq$).pipe(
+        map(apiResps => {
+          let count = 0;
+          for (let resp of apiResps) {
+            count += resp.numDeleted;
+          }
+          return count;
+        })
+      )
+    ));
   }
 
   clearExpressionCacheForWorkspace(expressionId: string) {
