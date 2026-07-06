@@ -31,7 +31,7 @@ import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-proto
 import { QuantDeleteReq } from "src/app/generated-protos/quantification-management-msgs";
 import { ScanImage } from "src/app/generated-protos/image";
 import { ReviewerMagicLinkLoginReq } from "src/app/generated-protos/user-management-msgs";
-import { MemoiseDeleteByRegexReq } from "src/app/generated-protos/memoisation-msgs";
+import { MemoiseDeleteByRegexReq, MemoiseDeleteByRegexResp, MemoiseDeleteReq, MemoiseDeleteResp } from "src/app/generated-protos/memoisation-msgs";
 
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
@@ -47,6 +47,7 @@ import { HighlightedROIs } from "src/app/modules/analysis/components/analysis-si
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 
 import { WSError } from "./wsMessageHandler";
+import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 
 
 export class DefaultExpressions {
@@ -1216,10 +1217,11 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   private clearExpressionCacheForScan(expressionId: string, scanId: string): Observable<number> {
+    console.log(`clearExpressionCacheForScan called for expression: ${expressionId}, scan: ${scanId}`);
+
     // Check if the expression is using any modules - if so, we clear any exprcachev1 labelled items for it also
-    const scanExprPattern = `{"scanId":"${scanId}","exprId":"${expressionId}".*`;
-    const memReq$ = [this._memoService.deleteByRegex(scanExprPattern)];
-    const apiReq$ = [this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern: scanExprPattern }))];
+    const modReq$: Observable<DataModuleGetResp>[] = [of(DataModuleGetResp.create({}))]; // Start off with an empty one, this will trigger clearing the non-module-dependent ones...
+    const nameToCheck = "GeoAndDiffCorrection";
 
     let expr = this._expressionService.expressions$.value[expressionId];
     if (!expr) {
@@ -1231,37 +1233,113 @@ export class AnalysisLayoutService implements OnDestroy {
       // exprcachev1_GeoAndDiff_3_5_3_Al2O3_717226499_quant-8ryzgznb8u4cb6h6
       for (let modRef of expr.moduleReferences) {
         const mod = this._expressionService.modules$.value[modRef.moduleId];
-        if (mod.name == "GeoAndDiffCorrection" && modRef.version) {
-          // Add geo diff correction (for this version) to the list
-          const pattern = `exprcachev1_GeoAndDiff_${modRef.version.major}_${modRef.version.minor}_${modRef.version.patch}_.*_${scanId}`;
-
-          memReq$.push(this._memoService.deleteByRegex(pattern));
-          apiReq$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern})));
+        if (mod.name == nameToCheck && modRef.version) {
+          // We'll need to query this to get the variable name that is saved as part of its memoisation key
+          modReq$.push(this._cachedDataService.getDataModule(DataModuleGetReq.create({ id: modRef.moduleId, version: modRef.version })));
         }
       }
     }
 
-    return forkJoin(memReq$).pipe(
-      switchMap(() => forkJoin(apiReq$).pipe(
-        map(apiResps => {
-          let count = 0;
-          for (let resp of apiResps) {
-            count += resp.numDeleted;
+    return forkJoin(modReq$).pipe(
+      switchMap((resps: DataModuleGetResp[]) => {
+        // If we have a module, look up its var and clear based on that, otherwise clear the default one
+        const memReq$: Observable<void>[] = [];
+        const apiReq$: Subject<MemoiseDeleteByRegexResp>[] = [];
+        const apiIdReq$: Subject<MemoiseDeleteResp>[] = [];
+
+        for (let resp of resps) {
+          if (resp.module) {
+            // Look up the var name - there should be a source code field attached to the one we requested...
+            let src = "";
+            for (let ver of resp.module.versions) {
+              if (ver.sourceCode) {
+                src = ver.sourceCode;
+                break;
+              }
+            }
+
+            if (!src) {
+              throw new Error("Failed to download module source for: " + nameToCheck);
+            }
+
+            const lines = src.split("\n");
+            let found = false;
+            for (let line of lines) {
+              const idx = line.indexOf("GeoAndDiff_");
+              if (idx > -1) {
+                found = true;
+                const endIdx = line.indexOf("\"", idx+1);
+                if (endIdx > -1) {
+                  const tag = line.substring(idx, endIdx);
+                  // Now we know what else to query!
+                  const pattern = `exprcachev1_${tag}_.*_${scanId}`;
+
+                  console.log(` -> memoService.deleteByRegex: ${pattern}`);
+                  memReq$.push(this._memoService.deleteByRegex(pattern));
+
+                  console.log(` -> dataService.sendMemoiseDeleteByRegexRequest: ${pattern}`);
+                  apiReq$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern})));
+
+                  // And add the exact id request too
+                  const key = `exprcachev1_${tag}_geometry_${scanId}`;
+                  console.log(` -> dataService.sendMemoiseDeleteRequest: ${key}`);
+                  apiIdReq$.push(this._dataService.sendMemoiseDeleteRequest(MemoiseDeleteReq.create({key})));
+                } else {
+                  throw new Error("Failed to determine end of cache key tag for: " + nameToCheck);
+                }
+                break;
+              }
+            }
+
+            if (!found) {
+              throw new Error("Failed to find cache key tag for: " + nameToCheck);
+            }
+          } else {
+            // Default one
+            const scanExprPattern = `{"scanId":"${scanId}","exprId":"${expressionId}".*`;
+
+            console.log(` -> memoService.deleteByRegex: ${scanExprPattern}`);
+            memReq$.push(this._memoService.deleteByRegex(scanExprPattern));
+
+            console.log(` -> dataService.sendMemoiseDeleteByRegexRequest: ${scanExprPattern}`);
+            apiReq$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern: scanExprPattern })));
           }
-          return count;
-        })
-      )
-    ));
+        }
+
+        // Now we query what we have to
+        return forkJoin(memReq$).pipe(
+          switchMap(() => forkJoin(apiReq$).pipe(
+            map(apiResps => {
+              let count = 0;
+              for (let resp of apiResps) {
+                count += resp.numDeleted;
+              }
+
+              if (apiIdReq$.length > 0) {
+                // Send these off separately too
+                forkJoin(apiIdReq$).subscribe();
+              }
+              return count;
+            })
+          )
+        ));
+      }
+    )); 
   }
 
   clearExpressionCacheForWorkspace(expressionId: string) {
     let scanIds = this.activeScreenConfiguration$.value?.scanConfigurations ? Object.keys(this.activeScreenConfiguration$.value.scanConfigurations) : [];
-    forkJoin(scanIds.map(scanId => this.clearExpressionCacheForScan(expressionId, scanId))).subscribe(res => {
-      console.log(`Cleared ${res.reduce((acc, curr) => acc + curr, 0)} items from remote expression cache for expression: ${expressionId}`);
-      this._snackService.openSuccess(
-        `Cleared ${res.reduce((acc, curr) => acc + curr || 0, 0)} items from remote expression cache`,
-        `Expression: ${expressionId}, Scans: ${scanIds.join(", ")}`
-      );
+    forkJoin(scanIds.map(scanId => this.clearExpressionCacheForScan(expressionId, scanId))).subscribe({
+      next: res => {
+        console.log(`Cleared ${res.reduce((acc, curr) => acc + curr, 0)} items from remote expression cache for expression: ${expressionId}`);
+        this._snackService.openSuccess(
+          `Cleared ${res.reduce((acc, curr) => acc + curr || 0, 0)} items from remote expression cache`,
+          `Expression: ${expressionId}, Scans: ${scanIds.join(", ")}`
+        );
+      },
+      error: err => {
+        this._snackService.openError("Failed to clear cache", err);
+      }
     });
   }
 }
