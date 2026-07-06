@@ -1244,7 +1244,7 @@ export class AnalysisLayoutService implements OnDestroy {
       switchMap((resps: DataModuleGetResp[]) => {
         // If we have a module, look up its var and clear based on that, otherwise clear the default one
         const memReq$: Observable<void>[] = [];
-        const apiReq$: Subject<MemoiseDeleteByRegexResp>[] = [];
+        const apiReqs: MemoiseDeleteByRegexReq[] = [];
         const apiIdReq$: Subject<MemoiseDeleteResp>[] = [];
 
         for (let resp of resps) {
@@ -1277,8 +1277,7 @@ export class AnalysisLayoutService implements OnDestroy {
                   console.log(` -> memoService.deleteByRegex: ${pattern}`);
                   memReq$.push(this._memoService.deleteByRegex(pattern));
 
-                  console.log(` -> dataService.sendMemoiseDeleteByRegexRequest: ${pattern}`);
-                  apiReq$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern})));
+                  apiReqs.push(MemoiseDeleteByRegexReq.create({ pattern}));
 
                   // And add the exact id request too
                   const key = `exprcachev1_${tag}_geometry_${scanId}`;
@@ -1301,28 +1300,40 @@ export class AnalysisLayoutService implements OnDestroy {
             console.log(` -> memoService.deleteByRegex: ${scanExprPattern}`);
             memReq$.push(this._memoService.deleteByRegex(scanExprPattern));
 
-            console.log(` -> dataService.sendMemoiseDeleteByRegexRequest: ${scanExprPattern}`);
-            apiReq$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern: scanExprPattern })));
+            apiReqs.push(MemoiseDeleteByRegexReq.create({ pattern: scanExprPattern }));
           }
         }
 
-        // Now we query what we have to
-        return forkJoin(memReq$).pipe(
-          switchMap(() => forkJoin(apiReq$).pipe(
-            map(apiResps => {
-              let count = 0;
-              for (let resp of apiResps) {
-                count += resp.numDeleted;
-              }
+        // Now we delete what we have to - start with local deletion, then sure deletion (specific id), then finally regex style deletes as these may take a long time
+        let sureQueries$ = [];
+        for (let req$ of apiIdReq$) {
+          sureQueries$.push(req$.pipe(map(() => { return; })));
+        }
+        sureQueries$ = [...sureQueries$, ...memReq$];
 
-              if (apiIdReq$.length > 0) {
-                // Send these off separately too
-                forkJoin(apiIdReq$).subscribe();
+        return forkJoin(sureQueries$).pipe(
+          switchMap(() => {
+            if (apiReqs.length <= 0) {
+              return of(0);
+            }
+
+            const resp$ = [];
+            for(let req of apiReqs) {
+              console.log(` -> dataService.sendMemoiseDeleteByRegexRequest: ${req.pattern}`);
+              resp$.push(this._dataService.sendMemoiseDeleteByRegexRequest(MemoiseDeleteByRegexReq.create({ pattern: req.pattern })));
+            }
+
+            return forkJoin(resp$).pipe(
+              map(apiResps => {
+                let count = 0;
+                for (let resp of apiResps) {
+                  count += resp.numDeleted;
+                }
+                return count;
               }
-              return count;
-            })
-          )
-        ));
+            ));
+          })
+        );
       }
     )); 
   }
