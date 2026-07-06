@@ -1,4 +1,4 @@
-## 4.94.0 (LATEST)
+## 4.95.0 (LATEST)
 
 ### New Features
 - Clear memoisation cache items named: exprcachev1_GeoAndDiff_*<scan-id> when user clicks "Clear Workspace Cache"
