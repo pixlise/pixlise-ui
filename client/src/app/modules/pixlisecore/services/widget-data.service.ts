@@ -135,6 +135,7 @@ export class WidgetDataService {
         for (let c = 0; c < results.length; c++) {
           resultItems.push(this.processGetDataResult(results[c], what[c], allowAnyResponse));
         }
+        
         return new RegionDataResults(resultItems, "");
       }),
       catchError(err => {
@@ -694,6 +695,12 @@ export class WidgetDataService {
     maxTimeoutMs: number = environment.luaTimeoutMs,
     injectedFunctions: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
+    if (!scanId) {
+      throw new Error(
+        `runExpression No scanId specified for expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
+      );
+    }
+
     console.log(
       `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
     );

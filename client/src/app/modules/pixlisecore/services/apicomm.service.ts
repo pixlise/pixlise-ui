@@ -10,7 +10,7 @@ import { WSMessage } from "src/app/generated-protos/websocket";
 import { BeginWSConnectionResponse } from "src/app/generated-protos/restmsgs";
 
 import { APIPaths } from "src/app/utils/api-helpers";
-import { SentryHelper, isFirefox, randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
+import { SentryHelper, httpErrorToString, isFirefox, randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
 import { getMessageName } from "./wsMessageHandler";
 
 import * as Sentry from "@sentry/browser";
@@ -195,8 +195,8 @@ export class APICommService implements OnDestroy {
       }),
       catchError(err => {
         const errMsg = `${err?.message || err}`;
-        console.error(`APICommService [${this._id}] beginConnect error: ${errMsg}`);
-        
+        httpErrorToString(err, `APICommService [${this._id}] beginConnect`);
+
         if (errMsg == "Unknown or invalid refresh token." || errMsg == "Login required") {
           return of("login-again");
         }
