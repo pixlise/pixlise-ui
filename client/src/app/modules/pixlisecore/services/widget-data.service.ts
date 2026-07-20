@@ -108,14 +108,14 @@ export class WidgetDataService {
 
     if (environment.runExpressionsOnBackEnd) {
       // Check if we have any predefined expressions, if any, we run it locally
-      let predefCount = 0;
+      let cantRunOnBackEnd = 0;
       for (const w of what) {
-        if (DataExpressionId.isPredefinedExpression(w.exprId)) {
-          predefCount++;
+        if (DataExpressionId.isPredefinedExpression(w.exprId) || DataExpressionId.isUnsavedExpressionId(w.exprId)) {
+          cantRunOnBackEnd++;
         }
       }
 
-      if (predefCount <= 0) {
+      if (cantRunOnBackEnd <= 0) {
         // Just send it off and wait for a response. Wild huh?
         return this.runOnBackend(what);
       }
@@ -135,6 +135,7 @@ export class WidgetDataService {
         for (let c = 0; c < results.length; c++) {
           resultItems.push(this.processGetDataResult(results[c], what[c], allowAnyResponse));
         }
+        
         return new RegionDataResults(resultItems, "");
       }),
       catchError(err => {
@@ -694,6 +695,12 @@ export class WidgetDataService {
     maxTimeoutMs: number = environment.luaTimeoutMs,
     injectedFunctions: Map<string, any> | null = null
   ): Observable<DataQueryResult> {
+    if (!scanId) {
+      throw new Error(
+        `runExpression No scanId specified for expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
+      );
+    }
+
     console.log(
       `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
     );
