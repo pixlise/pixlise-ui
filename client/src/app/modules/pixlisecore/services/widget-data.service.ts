@@ -63,8 +63,9 @@ import { ExpressionMemoisationService } from "./expression-memoisation.service";
 import { AuthService, User } from "@auth0/auth0-angular";
 import { AnalysisLayoutService } from "../services/analysis-layout.service";
 import { DataModuleVersionWithRef, DataSourceParams, DataUnit, LoadedSources, RegionDataResultItem, RegionDataResults, WidgetError } from "../models/widget-data-source";
-import { ExpressionCalculateReq, ExpressionCalculateResp } from "src/app/generated-protos/expression-calculate-msgs";
 import { DataSourceParams as APIDataSourceParams, DataUnit as APIDataUnit } from "src/app/generated-protos/expression-calculate";
+import { ExpressionOutputReq } from "src/app/generated-protos/expression-calculate-msgs";
+import { JobStatus_Status } from "src/app/generated-protos/job";
 
 
 @Injectable({
@@ -106,21 +107,6 @@ export class WidgetDataService {
       return of(new RegionDataResults([], "No expressions to calculate"));
     }
 
-    if (environment.runExpressionsOnBackEnd) {
-      // Check if we have any predefined expressions, if any, we run it locally
-      let cantRunOnBackEnd = 0;
-      for (const w of what) {
-        if (DataExpressionId.isPredefinedExpression(w.exprId) || DataExpressionId.isUnsavedExpressionId(w.exprId)) {
-          cantRunOnBackEnd++;
-        }
-      }
-
-      if (cantRunOnBackEnd <= 0) {
-        // Just send it off and wait for a response. Wild huh?
-        return this.runOnBackend(what);
-      }
-    }
-
     // Query each one separately and combine results at the end
     const exprResult$: Observable<DataQueryResult>[] = [];
     for (const query of what) {
@@ -148,99 +134,6 @@ export class WidgetDataService {
         // TODO: make it so getData() never throws an error!
         // return new RegionDataResults([], err);
         throw err;
-      })
-    );
-  }
-
-  private runOnBackend(what: DataSourceParams[]): Observable<RegionDataResults> {
-    // First, we convert data types to the API versions...
-    // TODO: Eventually get rid of this!
-    const reqs: APIDataSourceParams[] = [];
-    for (let item of what) {
-      let apiUnit: APIDataUnit = APIDataUnit.UNIT_DEFAULT;
-      switch(item.units) {
-        case DataUnit.UNIT_MMOL:
-          apiUnit = APIDataUnit.UNIT_MMOL;
-          break;
-        case DataUnit.UNIT_PPM:
-          apiUnit = APIDataUnit.UNIT_PPM;
-          break;
-      }
-
-      reqs.push(APIDataSourceParams.create({
-        scanId: item.scanId,
-        quantId: item.quantId,
-        expressionId: item.exprId,
-        roiId: item.roiId,
-        units: apiUnit,
-      }));
-    }
-
-    return this._dataService.sendExpressionCalculateRequest(ExpressionCalculateReq.create({requests: reqs})).pipe(
-      map((resp: ExpressionCalculateResp) => {
-        // Convert data types back to client-usable versions...
-        // TODO: Eventually get rid of this!
-        let respResultItems: RegionDataResultItem[] = [];
-
-        // Decode each item
-        if (resp.result?.queryResults && resp.result?.queryResults.length > 0) {
-          for (let item of resp.result?.queryResults) {
-            const values: PMCDataValue[] = [];
-            if (item.exprResult?.resultValues) {
-              for (const v of item.exprResult?.resultValues.values) {
-                values.push(new PMCDataValue(v.pmc, v.value, v.isUndefined, v.label));
-              }
-            }
-
-            const result = new DataQueryResult(
-              PMCDataValues.makeWithValues(values),
-              item.exprResult?.isPMCTable || true,
-              [], // dataRequired
-              0, // runtimeMs
-              "", // stdout
-              "", // stderr
-              new Map<string, PMCDataValues>(), // recordedExpressionInputs
-              new Map<string, string>(), // recorded expression values
-              "", // errorMsg
-              item.exprResult?.expression
-            );
-
-            let unit: DataUnit = DataUnit.UNIT_DEFAULT;
-            switch(item.query?.units) {
-              case APIDataUnit.UNIT_MMOL:
-                unit = DataUnit.UNIT_MMOL;
-                break;
-              case APIDataUnit.UNIT_PPM:
-                unit = DataUnit.UNIT_PPM;
-                break;
-              case APIDataUnit.UNIT_DEFAULT:
-                unit = DataUnit.UNIT_DEFAULT;
-                break;
-            }
-
-            const query = new DataSourceParams(
-              item.query?.scanId || "",
-              item.query?.expressionId || "",
-              item.query?.quantId || "",
-              item.query?.roiId || "",
-              unit,
-              null
-            );
-
-            respResultItems.push(new RegionDataResultItem(
-              result,
-              item.error.length > 0 ? new WidgetError(item.error, "") : null,
-              item.warning,
-              item.expression || null,
-              null,//item.region,
-              query,
-              item.isPMCTable,
-            ));
-          }
-        }
-
-        let respResult = new RegionDataResults(respResultItems, resp.result?.error || "");
-        return respResult;
       })
     );
   }
@@ -353,6 +246,66 @@ export class WidgetDataService {
   }
 
   private getDataSingle(query: DataSourceParams, allowAnyResponse: boolean): Observable<DataQueryResult> {
+    if (!environment.runExpressionsOnBackEnd || DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+      return this.getMemoisedData(query, allowAnyResponse);
+    }
+
+    console.warn(`getDataSingle for expression: ${query.exprId}...`);
+    // We go straight to the back-end for these - it gives us a cache key and tells us if it's available yet
+    return this._dataService.sendExpressionOutputRequest(ExpressionOutputReq.create({
+      request: {
+        scanId: query.scanId,
+        quantId: query.quantId,
+        expressionId: query.exprId,
+        roiId: query.roiId,
+        units: query.units, 
+      }
+    })).pipe(
+      switchMap(resp => {
+        console.info(`  >> Expression output request for ${query.exprId} returned key=${resp.key}, jobId=${resp.jobId}`);
+
+        if (!resp.jobId || resp.jobId.length <= 0) {
+          console.info(`  >> Expression output was available, queried right away`);
+
+          // Query it right away
+          const obs = this.getDataWithMemoisation(query, allowAnyResponse, resp.key);
+
+          // Add to our in-flux cache
+          this._inFluxSingleQueryResultCache.set(resp.key, obs); // Make sure any obs going in here has shareReplay in its pipe
+          return obs;
+        }
+
+        // It's not available, so it's being calculated. We need to wait for an update message saying the job with the given key has completed!
+        // Here we wait for that and query when that's happened...
+        console.info(`  >> Expression output was NOT available, waiting for job ${resp.jobId} to complete...`);
+        return this._dataService.waitForJobCompletion(resp.jobId).pipe(
+          switchMap(jobStatus => {
+            console.info(`  >> Expression output job ${resp.jobId} completed, querying memoised output...`);
+            if (jobStatus.jobId != resp.jobId) {
+              throw new Error(`Received incorrect job id when waiting on expression outputs. Expected ${resp.jobId}, got ${jobStatus.jobId}`)
+            }
+
+            if (jobStatus.status != JobStatus_Status.COMPLETE) {
+              throw new Error("Job failed to complete: " + jobStatus.message)
+            }
+
+            return this.getDataWithMemoisation(query, allowAnyResponse, resp.key).pipe(
+              catchError(err => {
+                console.error(httpErrorToString(err, "Failed to retrieve memoised expression output"));
+                throw err;
+              })
+            );
+          }),
+          catchError(err => {
+            console.error(httpErrorToString(err, "Error requesting expression output after notification that it's available"));
+            throw err;
+          })
+        )
+      }
+    ));
+  }
+
+  private getMemoisedData(query: DataSourceParams, allowAnyResponse: boolean): Observable<DataQueryResult> {
     // Here we have our first level of caching. This is because a widget can be re-inited/updated due to many things
     // such as UI refresh/colours or settings loading, etc. We don't want each to trigger a whole new run of an
     // expression, so check if we already have an observable we can return for this
