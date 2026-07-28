@@ -7,8 +7,10 @@ import { getMessageName, WSError, WSMessageHandler, WSOustandingReq } from "./ws
 import { randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
-import { Subject, Subscription, interval } from "rxjs";
+import { Observable, Subject, Subscriber, Subscription, interval, map, throwError, timeout } from "rxjs";
 import { environment } from "src/environments/environment";
+import { L } from "node_modules/@angular/cdk/a11y-module.d--J1yhM7R";
+import { JobStatus, JobStatus_Status } from "src/app/generated-protos/job";
 
 const TIMEOUT_CHECK_INTERVAL_MS = 3000;
 const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
@@ -34,6 +36,8 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   // doesnt have to restart). If it overflows MAX_INT, it loops around, that's ok! We just make sure our counter
   // also restarts at MAX_INT
   private _lastMsgId = 0;
+
+  private _jobWaiters = new Map<string, Subscriber<JobStatus>[]>();
 
   protected nextMsgId() {
     this._lastMsgId++;
@@ -84,6 +88,23 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
           this.stopTimeoutChecks();
         },
       });
+
+    this.jobListUpd$.subscribe(upd => {
+        if (upd && upd.job && (upd.job.status == JobStatus_Status.COMPLETE || upd.job.status == JobStatus_Status.ERROR)) {
+          // See who's waiting for it to complete (or error)
+          const waiters = this._jobWaiters.get(upd.job.jobId);
+          if (waiters) {
+            // Notify everyone!
+            for (let waiter of waiters) {
+              waiter.next(upd.job);
+            }
+
+            // No longer waiting on this
+            this._jobWaiters.delete(upd.job.jobId);
+          }
+        }
+      }
+    );
   }
 
   private stopTimeoutChecks() {
@@ -269,5 +290,21 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       this.outstandingRequests$.next(msg);
       this._lastOutstandingRequestInfo = msg;
     }
+  }
+
+  // Assists with listening for expression job completion
+  waitForJobCompletion(id: string): Observable<JobStatus> {
+    return new Observable<JobStatus>(observer => {
+      if (!this._jobWaiters.get(id)) {
+        this._jobWaiters.set(id, []);
+      }
+
+      const waiters = this._jobWaiters.get(id)!;
+
+      // Add a waiter for it
+      waiters.push(observer);
+    }).pipe(
+      timeout({ each: environment.wsTimeout, with: () => throwError(()=>new Error(`expression job ${id} did not complete within ${environment.wsTimeout/1000}sec`))})
+    );
   }
 }
