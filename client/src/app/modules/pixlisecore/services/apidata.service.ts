@@ -304,7 +304,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       // Add a waiter for it
       waiters.push(observer);
     }).pipe(
-      timeout({ each: environment.wsTimeout, with: () => throwError(()=>new Error(`expression job ${id} did not complete within ${environment.wsTimeout/1000}sec`))})
+      timeout({ each: environment.luaTimeoutMs, with: () => throwError(()=>new Error(`expression job ${id} did not complete within ${environment.luaTimeoutMs/1000}sec`))})
     );
   }
 }
