@@ -1,0 +1,40 @@
+<div class="job-summary row">
+    <table>
+        <tr>
+            <td>Name</td>
+            <td>{{name}}</td>
+        </tr>
+        <tr>
+            <td>Job Id</td>
+            <td>{{job.jobId}}</td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td>{{status}}</td>
+        </tr>
+        <tr>
+            <td>Job Type</td>
+            <td>{{jobType}}</td>
+        </tr>
+        <tr>
+            <td>Message</td>
+            <td>{{job.message}}</td>
+        </tr>
+        <tr *ngIf="job.startUnixTimeSec">
+            <td>Start Time</td>
+            <td>{{job.startUnixTimeSec*1000|date:'d MMM y, HH:mm:ss'}}</td>
+        </tr>
+        <tr *ngIf="job.endUnixTimeSec">
+            <td>End Time</td>
+            <td>{{job.endUnixTimeSec*1000|date:'d MMM y, HH:mm:ss'}}</td>
+        </tr>
+        <tr *ngIf="job.outputFilePath">
+            <td>Output File</td>
+            <td>{{job.outputFilePath}}</td>
+        </tr>
+    </table>
+    <user-icon
+        *ngIf="job.requestorUserId && job.requestorUserId.indexOf('PIXLISE') < 0"
+        [userId]="job.requestorUserId"
+        size="64px" />
+</div>

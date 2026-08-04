@@ -1,0 +1,21 @@
+@import "variables.scss";
+
+.job-summary {
+    color: $clr-gray-10;
+    padding: $sz-unit;
+
+    table {
+        tr {
+            td:nth-child(1) {
+                font-weight: bold;
+                min-width: 100px;
+                color: $clr-gray-30;
+            }
+        }
+    }
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}

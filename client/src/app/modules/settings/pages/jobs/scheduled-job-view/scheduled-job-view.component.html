@@ -1,0 +1,44 @@
+<div class="job-summary">
+    <h3>Scheduled Job</h3>
+    <table>
+        <tr>
+            <td>Name</td>
+            <td>{{job.name}}</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>{{job.description}}</td>
+        </tr>
+        <tr>
+            <td>Schedule Type</td>
+            <td>{{scheduleType}}</td>
+        </tr>
+        <tr>
+            <td>Instrument</td>
+            <td>{{instrument}}</td>
+        </tr>
+        <tr>
+            <td>Job Type</td>
+            <td>{{jobType}}</td>
+        </tr>
+        @if (!isAfterImport()) {
+            <tr>
+                <td>Job Run Interval</td>
+                <td>{{job.intervalSec}} seconds</td>
+            </tr>
+        } @else {
+            <tr>
+                <td>Job Order</td>
+                <td>{{job.jobOrder}}</td>
+            </tr>
+        }
+    </table>
+
+    <h3 class="divider">Job Parameters</h3>
+    <table>
+        <tr *ngFor="let k of paramKeys">
+            <td>{{k}}</td>
+            <td>{{job.jobParameters[k]}}</td>
+        </tr>
+    </table>
+</div>
