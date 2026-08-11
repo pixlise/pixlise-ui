@@ -34,4 +34,18 @@ export class GeneralJobComponent {
   get jobType(): string {
     return getPrintableJobType(this.job.jobType);
   }
+
+  get isError(): boolean {
+    return this.job.status == JobStatus_Status.ERROR;
+  }
+
+  get isComplete(): boolean {
+    return this.job.status == JobStatus_Status.COMPLETE;
+  }
+
+  get showUserIcon(): boolean {
+    return this.job.requestorUserId.length > 0 && this.job.requestorUserId.indexOf('PIXLISE') < 0;
+  }
+
+  // TODO: Looks like we don't always have an end time set - should we show last updated time as a fallback?
 }

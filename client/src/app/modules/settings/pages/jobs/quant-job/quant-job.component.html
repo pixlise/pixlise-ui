@@ -1,8 +1,65 @@
 <div class="job-summary">
+    <h3>Quant Job Parameters</h3>
     <table>
+        @if (config) {
+            <tr title="Scan Id: {{config.associatedScanId}}">
+                <td>Scan</td>
+                <td>{{scanForJob}}</td>
+            </tr>
+        }
         <tr>
-            <td>Name</td>
-            <td>{{job.name}}</td>
+            <td>Requested Elements</td>
+            <td>{{requestedElements}}</td>
         </tr>
+        @if (quantSummary) {
+            <tr title="PIQUANT returned elements: {{quantifiedElements}}">
+                <td>Output Elements</td>
+                <td>{{outputElements}}</td>
+            </tr>
+            <tr>
+                <td>Quantification Mode</td>
+                <td>{{quantMode}}</td>
+            </tr>
+            <tr>
+                <td>Include Dwells</td>
+                <td>{{includeDwells}}</td>
+            </tr>
+            <tr>
+                <td>Regions quantified</td>
+                <td>{{regionsQuantified}}</td>
+            </tr>
+            <tr>
+                <td>Oxide/Carbonate</td>
+                <td>{{elementStateType}}</td>
+            </tr>
+            <tr>
+                <td>Ignore Argon</td>
+                <td>{{ignoreAr}}</td>
+            </tr>
+            <tr>
+                <td>PMC Count</td>
+                <td>{{quantSummary.params?.pmcCount}}</td>
+            </tr>
+            <tr>
+                <td>Detector Config</td>
+                <td>{{quantSummary.params?.userParams?.detectorConfig}}</td>
+            </tr>
+            <tr>
+                <td>Piquant Extra Parameters</td>
+                <td>{{extraParams}}</td>
+            </tr>
+        }
     </table>
 </div>
+
+<!-- Was used in old quant job item viewer to show piquant log file links
+<ng-container *ngIf="hasLogs">
+    <h3>PIQUANT Logs</h3>
+    <span class="varname" *ngIf="logMissingReason.length > 0">{{logMissingReason}}</span>
+    <ng-container *ngIf="!logMissingReason">
+        <div *ngFor="let log of summary.status?.otherLogFiles" class="row indent">
+            <a class="clickable" (click)="onClickLog(log)">{{getLogName(log)}}</a>
+        </div>
+    </ng-container>
+</ng-container>
+-->

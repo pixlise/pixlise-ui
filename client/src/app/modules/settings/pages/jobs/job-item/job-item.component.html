@@ -1,21 +1,21 @@
 <div class="job-item {{selected ? 'selected' : '' }}">
-    <div
-        class="creator"
-        #tooltip="matTooltip"
-        [matTooltipShowDelay]="200"
-        matTooltip="Creator: {{ creatorName || 'N/A' }}">
-        <img *ngIf="icon" [src]="icon" />
-        <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
-    </div>
+    <user-icon
+        [userId]="job.requestorUserId"
+        size="32px" />
     <div class="column full">
         <div class="row">
             <span title="Job Name: {{name}}" class="name">{{name}}</span>
-            <span *ngIf="status !== 'RUNNING'" [title]="job.message">{{status}}</span>
-            <wait-spinner *ngIf="status === 'RUNNING'"></wait-spinner>
+            @if (status === 'RUNNING') {
+                <wait-spinner></wait-spinner>
+            } @else {
+                <span [title]="job.message">{{status}}</span>
+            }
         </div>
         <div class="row">
             <span title="Job started: {{(job.startUnixTimeSec || job.endUnixTimeSec) * 1000 | date: 'd MMM y, HH:mm:ss'}}">{{(job.startUnixTimeSec || job.endUnixTimeSec) * 1000 | date: "d MMM y"}}</span>
-            <span *ngIf="elapsedTimeMs > 0" title="Job elapsed time">{{elapsedTimeMs | date: "mm:ss"}}</span>
+            @if (elapsedTimeMs > 0) {
+                <span title="Job elapsed time">{{elapsedTimeMs | date: "mm:ss"}}</span>
+            }
         </div>
     </div>
 </div>

@@ -29,7 +29,7 @@ const jobParamAndHelp = new Map<JobType, Map<string, string>>([
       ["elements", `If using an element set: "set:element-set-id-123" otherwise list of elements eg "list:Fe,Ca,Ti"`],
       ["quantName", "What to name the create quantification"],
       ["configName", "The PIQUANT configuration to use, eg PIXL/v7"],
-      ["combined", "Set to true for a combined quant or false to quantify each detector spectra separately"]
+      ["quantMode", "Quant mode string to set - supports: Combined or AB"]
     ])
   ]
 ]);
@@ -62,7 +62,7 @@ export class SetScheduledJobComponent implements OnInit, OnDestroy {
     public dialog: MatDialog
   ) {
     // Set up our internal job var
-    this.job = data && data.job ? data.job : ScheduledJob.create({
+    this.job = data && data.job ? ScheduledJob.create(data.job) : ScheduledJob.create({
       id: "",
       name: "",
       description: "",

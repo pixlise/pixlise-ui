@@ -2,12 +2,14 @@ import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
-import { JobStatus, JobType, jobTypeFromJSON, jobTypeToJSON, ScheduledJob, ScheduledJob_ScheduleType, scheduledJob_ScheduleTypeToJSON } from 'src/app/generated-protos/job';
-import { DeleteScheduledJobReq, JobListReq, ScheduledJobListReq, SetScheduledJobReq } from 'src/app/generated-protos/job-msgs';
+import { JobGroupConfig, JobStatus, JobStatus_Status, JobType, jobTypeFromJSON, jobTypeToJSON, ScheduledJob, ScheduledJob_ScheduleType, scheduledJob_ScheduleTypeToJSON } from 'src/app/generated-protos/job';
+import { DeleteScheduledJobReq, JobGetReq, JobListReq, ScheduledJobListReq, SetScheduledJobReq } from 'src/app/generated-protos/job-msgs';
 import { ExpressionPickerResponse } from 'src/app/modules/expressions/components/expression-picker/expression-picker.component';
-import { AnalysisLayoutService, APIDataService, SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
+import { AnalysisLayoutService, APICachedDataService, APIDataService, SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
 import { httpErrorToString } from 'src/app/utils/utils';
-import { getScheduledJobParamKeys, SetScheduledJobComponent, SetScheduledJobData, SetScheduledJobResult } from './set-scheduled-job/set-scheduled-job.component';
+import { SetScheduledJobComponent, SetScheduledJobData, SetScheduledJobResult } from './set-scheduled-job/set-scheduled-job.component';
+import { QuantGetReq, QuantGetResp } from 'src/app/generated-protos/quantification-retrieval-msgs';
+import { QuantificationSummary } from 'src/app/generated-protos/quantification-meta';
 
 @Component({
   selector: 'app-jobs',
@@ -27,7 +29,11 @@ export class JobsComponent implements OnInit, OnDestroy {
   totalJobCount = 0;
 
   selectedJob?: JobStatus;
+  selectedJobConfig?: JobGroupConfig;
+  selectedJobConfigError = "";
   selectedScheduledJob?: ScheduledJob;
+  selectedJobQuantSummary?: QuantificationSummary;
+  selectedJobQuantSummaryError = "";
 
   private _filteredJobTypes: string[] = ["RUN_FIT", "RUN_QUANT", "RUN_EXPRESSION"];
   jobTypes: string[] = [];
@@ -39,8 +45,11 @@ export class JobsComponent implements OnInit, OnDestroy {
   private _jobPage: number = 0; // 0 being the most recent jobs
   private _jobPageSize = 100;
 
+  private _updSubscribed = false;
+
   constructor(
-    private _dataService: APIDataService, 
+    //private _cachedDataService: APICachedDataService,
+    private _dataService: APIDataService,
     private _snackbarService: SnackbarService,
     private _analysisLayoutService: AnalysisLayoutService,
     public dialog: MatDialog
@@ -113,9 +122,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     const types: JobType[] = [];
     for (let t of this._filteredJobTypes) {
       const jt = fromPrintableJobType(t);
-      if (jt) {
-        types.push(jt);
-      }
+      types.push(jt);
     } 
 
     const req = JobListReq.create({skipJobs: this._jobPage * this._jobPageSize, jobCount: this._jobPageSize});
@@ -151,27 +158,56 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   private listenForJobUpdates() {
+    if (this._updSubscribed) {
+      return;
+    }
+
+    this._updSubscribed = true;
+
     this._subs.add(
       this._dataService.jobListUpd$.subscribe(upd => {
         if (upd.job) {
-          let found = false;
+          // Check if we've got this one selected, and update if so
+          if (this.selectedJob?.jobId == upd.job.jobId) {
+            this.selectedJob = upd.job;
+
+            this.refreshSelectedJobConfig();
+          }
+
           for (let c = 0; c < this.activeJobs.length; c++) {
             const job = this.activeJobs[c];
             if (job.jobId == upd.job.jobId) {
-              this.activeJobs[c] = upd.job;
-              found = true;
-              break;
+              // At this point, we've found it, but if it's no longer active, we need to put it on our
+              // completed list. We'd expect a page refresh to put it in that list too...
+              if (this.isActiveJob(upd.job)) {
+                this.activeJobs[c] = upd.job;
+              } else {
+                // Remove it from the active list, add to the top of the inactive one
+                this.activeJobs.splice(c, 1);
+                this.jobs.unshift(upd.job);
+              }
+
+              // We've handled, nothing more to do here!
+              return;
             }
           }
 
-          if (!found) {
-            for (let c = 0; c < this.jobs.length; c++) {
-              const job = this.jobs[c];
-              if (job.jobId == upd.job.jobId) {
-                this.jobs[c] = upd.job;
-                break;
-              }
+          // If we find it in the inactive list, overwrite
+          for (let c = 0; c < this.jobs.length; c++) {
+            const job = this.jobs[c];
+            if (job.jobId == upd.job.jobId) {
+              this.jobs[c] = upd.job;
+
+              // Stop here, nothing more to do
+              return;
             }
+          }
+
+          // If we're still running, this job isn't in either list, so add it to the appropriate one now
+          if (this.isActiveJob(upd.job)) {
+            this.activeJobs.push(upd.job);
+          } else {
+            this.jobs.push(upd.job);
           }
 
           // setTimeout(() => {
@@ -182,14 +218,71 @@ export class JobsComponent implements OnInit, OnDestroy {
     );
   }
 
+  private isActiveJob(job: JobStatus): boolean {
+    return job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR;
+  }
+
   onClickJob(job: JobStatus) {
     this.selectedJob = job;
     this.selectedScheduledJob = undefined;
+
+    this.refreshSelectedJobConfig();
   }
 
   onClickScheduledJob(job: ScheduledJob) {
     this.selectedScheduledJob = job;
     this.selectedJob = undefined;
+    this.selectedJobConfig = undefined;
+    this.selectedJobQuantSummary = undefined;
+    this.selectedJobConfigError = "";
+    this.selectedJobQuantSummaryError = "";
+  }
+
+  private refreshSelectedJobConfig() {
+    this.selectedJobConfig = undefined;
+    this.selectedJobQuantSummary = undefined;
+    this.selectedJobConfigError = "";
+    this.selectedJobQuantSummaryError = "";
+    if (!this.selectedJob) {
+      return;
+    }
+    
+    this._subs.add(
+      this._dataService.sendJobGetRequest(JobGetReq.create({jobId: this.selectedJob.jobId})).subscribe({
+        next: resp => {
+          if (resp.config) {
+            this.selectedJobConfig = resp.config;
+          }
+        },
+        error: err => {
+          if (err["status"] == 2) {
+            this.selectedJobConfigError = "Failed to load job config - perhaps this job was run before the PIXLISE job manager was created"
+          } else {
+            this.selectedJobConfigError = err;
+          }
+        }
+      })
+    );
+
+    // If the job is a quant, we can get the quant details too
+    if (this.selectedJob.jobType == JobType.JT_RUN_QUANT && this.selectedJob.status == JobStatus_Status.COMPLETE) {
+      this._subs.add(
+        this._dataService.sendQuantGetRequest(QuantGetReq.create({ quantId: this.selectedJob.jobItemId, summaryOnly: true })).subscribe({
+          next: (resp: QuantGetResp) => {
+            if (resp.summary) {
+              this.selectedJobQuantSummary = resp.summary;
+            }
+          },
+          error: err => {
+            if (err["status"] == 4) {
+              this.selectedJobQuantSummaryError = "You don't have permission to view the quantification details";
+            } else {
+              this.selectedJobQuantSummaryError = err;
+            }
+          }
+        })
+      );
+    }
   }
 
   onActivePastJobs() {
@@ -278,7 +371,12 @@ export class JobsComponent implements OnInit, OnDestroy {
     });
   }
 
-  onDeleteScheduledJob(id: string) {
+  onDeleteScheduledJob(job: ScheduledJob) {
+    if (!confirm(`Are you sure you want to delete scheduled job: "${job.name}" (id: ${job.id})"?`)) {
+      return;
+    }
+
+    const id = job.id;
     this._dataService.sendDeleteScheduledJobRequest(DeleteScheduledJobReq.create({id})).subscribe({
       next: resp => {
         this._snackbarService.openSuccess("Deleted scheduled job: " + id);

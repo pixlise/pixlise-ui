@@ -39,7 +39,9 @@
             text-transform: uppercase;
 
             .tab {
-                padding: $sz-unit $sz-double;
+                display: flex;
+                flex-direction: row;
+                padding: $sz-unit $sz-double $sz-half;
 
                 border-top-left-radius: $sz-half;
                 border-top-right-radius: $sz-half;
@@ -174,5 +176,14 @@
     .info-pane {
         flex: 1;
         background-color: $clr-gray-90;
+
+        overflow-y: scroll;
+        height: calc( 100vh - 55px);
+
+        .req-error {
+            color: $clr-orange;
+            text-align: center;
+            padding: $sz-unit;
+        }
     }
 }

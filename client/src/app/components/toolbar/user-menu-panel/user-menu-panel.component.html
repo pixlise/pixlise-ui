@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
       }}</push-button>
       <push-button *ngIf="backupEnabled" buttonStyle="hover-yellow" (onClick)="onBackupData()">Backup Data</push-button>
       <push-button *ngIf="restoreEnabled" buttonStyle="hover-yellow" (onClick)="onRestoreData()">Restore Data</push-button>
-      <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onJobs()">Jobs</push-button>
+      <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onJobs()">Manage Jobs</push-button>
     </ng-container>
     <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
     <push-button *ngIf="!isReadOnlyUser" buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>

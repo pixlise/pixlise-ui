@@ -4,7 +4,12 @@
     } @else {
         <div class="list-pane">
             <div class="top-tabs">
-                <div class="tab clickable" [ngClass]="{'selected': !showScheduledJobs}" (click)="onActivePastJobs()">Active/Past Jobs</div>
+                <div class="tab clickable" [ngClass]="{'selected': !showScheduledJobs}" (click)="onActivePastJobs()">
+                    <span>Active/Past Jobs</span>
+                    @if (activeJobs.length > 0) {
+                        <wait-spinner></wait-spinner>
+                    }
+                </div>
                 <div class="tab clickable" [ngClass]="{'selected': showScheduledJobs}" (click)="onScheduledJobs()">Scheduled Jobs</div>
             </div>
             @if (showScheduledJobs) {
@@ -30,7 +35,7 @@
                             </div>
                             <div class="scheduled-job-item-buttons">
                                 <action-button action="edit" tooltipTitle="Edit scheduled job" (onClick)="onEditScheduledJob(job)"></action-button>
-                                <action-button action="delete" #tooltip="matTooltip" matTooltip="Delete scheduled job" (onClick)="onDeleteScheduledJob(job.id)"></action-button>
+                                <action-button action="delete" #tooltip="matTooltip" matTooltip="Delete scheduled job" (onClick)="onDeleteScheduledJob(job)"></action-button>
                             </div>
                         </div>
                     </div>
@@ -57,8 +62,8 @@
                     <div class="section-header">
                         <h3>Past jobs ({{jobStartIdx}}-{{jobEndIdx}} / {{totalJobCount}})</h3>
                         <div class="controls">
-                            <push-button buttonStyle="gray" (onClick)="onPage(1)">Next</push-button>
                             <push-button buttonStyle="gray" (onClick)="onPage(-1)">Prev</push-button>
+                            <push-button buttonStyle="gray" (onClick)="onPage(1)">Next</push-button>
                         </div>
                     </div>
                     <wait-spinner *ngIf="waiting" class="waiting"></wait-spinner>
@@ -81,12 +86,31 @@
             @if (selectedJob) {
                 <general-job-view [job]="selectedJob"/>
                 @if (isQuantJob(selectedJob)) {
-                    <quant-job-view [job]="selectedJob"></quant-job-view>
+                    <quant-job-view
+                        [job]="selectedJob"
+                        [config]="selectedJobConfig"
+                        [quantSummary]="selectedJobQuantSummary">
+                    </quant-job-view>
                 } @else if (isExpressionJob(selectedJob)) {
-                    <expression-job-view [job]="selectedJob"></expression-job-view>
+                    <expression-job-view
+                        [job]="selectedJob"
+                        [config]="selectedJobConfig">
+                    </expression-job-view>
+                }
+
+                @if (selectedJobConfigError) {
+                    <div class="req-error">Job Config Error: {{selectedJobConfigError}}</div>
+                }
+                @if (selectedJobQuantSummaryError) {
+                    <div class="req-error">Quant Summary Error: {{selectedJobQuantSummaryError}}</div>
                 }
             } @else if (selectedScheduledJob) {
-                <scheduled-job-view [job]="selectedScheduledJob"></scheduled-job-view>
+                <scheduled-job-view
+                    [job]="selectedScheduledJob"
+                    (onDelete)="onDeleteScheduledJob($event)"
+                    (onEdit)="onEditScheduledJob($event)">
+                <!-- (onRunJob)="onRunScheduledJob($event)" -->
+                </scheduled-job-view>
             } @else {
                 <div>Select a job!</div>
             }
