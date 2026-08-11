@@ -150,6 +150,10 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
     this._router.navigate(["/groups"], { queryParams: this._route.snapshot.queryParams });
   }
 
+  onJobs(): void {
+    this._router.navigate(["/jobs"], { queryParams: this._route.snapshot.queryParams });
+  }
+
   onSettings(): void {
     this._userOptionsService.toggleSidebar();
     this.onHidePanel();

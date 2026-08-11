@@ -1,0 +1,189 @@
+@import "variables.scss";
+
+.page {
+    display: flex;
+    flex-direction: row;
+    gap: $sz-unit;
+
+    min-height: 100%;
+    min-width: 100%;
+    width: 100%;
+
+    height: calc(100vh - 55px);
+
+    .list-pane {
+        display: flex;
+        flex-direction: column;
+        //justify-content: space-between;
+        //justify-content: flex-end;
+        
+        overflow-y: auto;
+        height: calc(100vh - 55px);
+        width: 30vw;
+        min-width: 350px !important;
+
+        //height: 100%;
+    
+        // flex-grow: 1;
+        // flex-shrink: 1;
+        // flex-basis: 1e-9px;
+
+        .top-tabs {
+            display: flex;
+            flex-direction: row;
+            gap: $sz-half;
+
+            color: $clr-gray-30;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+
+            .tab {
+                display: flex;
+                flex-direction: row;
+                padding: $sz-unit $sz-double $sz-half;
+
+                border-top-left-radius: $sz-half;
+                border-top-right-radius: $sz-half;
+                border-color: $clr-gray-60;
+                border-width: 1px;
+                border-style: solid;
+                border-bottom: transparent;
+            }
+
+            .selected {
+                color: $clr-gray-10;
+                background-color: $clr-gray-80;
+            }
+        }
+
+        .upper-section {
+            flex: 1;
+            //min-height: 100px;
+        }
+
+        .bottom-section {
+            flex: 3;
+        }
+
+        .job-list-section {
+            background-color: $clr-gray-90;
+            border-radius: $sz-half;
+            padding: $sz-half;
+
+            .section-header {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+
+                padding: $sz-unit;
+
+                .controls {
+                    display: flex;
+                    flex-direction: row;
+                    gap: $sz-unit;
+                }
+
+                .job-type-filter {
+                    height: 19px;
+                    width: 180px !important;
+
+                    background: #454c50 !important;
+                    border-radius: 4px !important;
+                    border: 2px solid rgb(var(--clr-gray-60));
+
+                    display: flex;
+                    align-items: center;
+                }
+
+            }
+
+            .job-list {
+                display: flex;
+                flex-direction: column;
+                gap: $sz-half;
+
+                height: 100%;
+
+                // flex-grow: 1;
+                // flex-shrink: 1;
+                // flex-basis: 1e-9px;
+                
+                background-color: $clr-gray-100;
+
+                .scheduled-job-item {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+
+                    padding: $sz-unit;
+                    background-color: $clr-gray-80;
+                    margin: 1px;
+
+                    .scheduled-job-item-data {
+                        display: flex;
+                        flex-direction: column;
+                        flex: 1;
+
+                        .name {
+                            display: flex;
+                            flex-direction: row;
+                            justify-content: space-between;
+
+                            color: $clr-gray-10;
+
+                            .sched-type {
+                                color: $clr-orange;
+                            }
+                        }
+
+                        .description {
+                            color: $clr-gray-30;
+                        }
+                    }
+
+                    .scheduled-job-item-buttons {
+                        display: flex;
+                        flex-direction: row;
+                    }
+                }
+
+                .selected {
+                    background-color: $clr-gray-70;
+                }
+
+                .jobs-viewport {
+                    height: 100%;
+                    min-width: 350px;
+            
+                    flex-grow: 1;
+                    flex-shrink: 1;
+                    flex-basis: 1e-9px;
+                }
+                
+                /*.job-item {
+                    background-color: $clr-gray-90;
+                    min-width: 250px;
+                }*/
+            }
+
+            .waiting {
+                margin-top: 32px;
+            }
+        }
+    }
+
+    .info-pane {
+        flex: 1;
+        background-color: $clr-gray-90;
+
+        overflow-y: scroll;
+        height: calc( 100vh - 55px);
+
+        .req-error {
+            color: $clr-orange;
+            text-align: center;
+            padding: $sz-unit;
+        }
+    }
+}

@@ -1,0 +1,73 @@
+<ng-template #runJobDialog>
+  <div class="run-job-dialog">
+    <header>
+      <h1>Run Job</h1>
+      <span>Are you sure you want to run job: "{{job.name}}" (id: {{job.id}})" now?</span>
+    </header>
+    @if (requiresScanIdToRun) {
+        <section class="content">
+        <h2>Required Parameters</h2>
+        <span class="label">Scan Id</span>
+        <input type="text" [(ngModel)]="runJobScanId" placeholder="..." />
+        </section>
+    }
+    <div class="button-container">
+        <push-button buttonStyle="outline" (onClick)="onCloseRun(false)">Cancel</push-button>
+        <push-button buttonStyle="yellow" [disabled]="!isRunValid()" (onClick)="onCloseRun(true)">Run</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<div class="job-summary">
+    <h3>Scheduled Job</h3>
+    <table>
+        <tr>
+            <td>Name</td>
+            <td>{{job.name}}</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>{{job.description}}</td>
+        </tr>
+        <tr>
+            <td>Schedule Type</td>
+            <td>{{scheduleType}}</td>
+        </tr>
+        <tr>
+            <td>Instrument</td>
+            <td>{{instrument}}</td>
+        </tr>
+        <tr>
+            <td>Job Type</td>
+            <td>{{jobType}}</td>
+        </tr>
+        @if (!isAfterImport()) {
+            <tr>
+                <td>Job Run Interval</td>
+                <td>{{job.intervalSec}} seconds</td>
+            </tr>
+        } @else {
+            <tr>
+                <td>Job Order</td>
+                <td>{{job.jobOrder}}</td>
+            </tr>
+        }
+    </table>
+
+    <h3 class="divider">Job Parameters</h3>
+    <table>
+        <tr *ngFor="let k of paramKeys">
+            <td>{{k}}</td>
+            <td>{{job.jobParameters[k]}}</td>
+        </tr>
+    </table>
+
+    <div class="row buttons">
+        <push-button buttonStyle="outline" (click)="onBtnEdit()">Edit</push-button>
+        <push-button buttonStyle="outline" (click)="onBtnDelete()">Delete</push-button>
+        <push-button buttonStyle="outline" #runJobModal [customDialog]="runJobDialog">Run Job</push-button>
+        <!-- (click)="onBtnRunJob()" -->
+    </div>
+
+    <div class="message">{{message}}</div>
+</div>

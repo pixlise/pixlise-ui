@@ -1,0 +1,21 @@
+<div class="job-item {{selected ? 'selected' : '' }}">
+    <user-icon
+        [userId]="job.requestorUserId"
+        size="32px" />
+    <div class="column full">
+        <div class="row">
+            <span title="Job Name: {{name}}" class="name">{{name}}</span>
+            @if (status === 'RUNNING') {
+                <wait-spinner></wait-spinner>
+            } @else {
+                <span [title]="job.message">{{status}}</span>
+            }
+        </div>
+        <div class="row">
+            <span title="Job started: {{(job.startUnixTimeSec || job.endUnixTimeSec) * 1000 | date: 'd MMM y, HH:mm:ss'}}">{{(job.startUnixTimeSec || job.endUnixTimeSec) * 1000 | date: "d MMM y"}}</span>
+            @if (elapsedTimeMs > 0) {
+                <span title="Job elapsed time">{{elapsedTimeMs | date: "mm:ss"}}</span>
+            }
+        </div>
+    </div>
+</div>

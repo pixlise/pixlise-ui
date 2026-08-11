@@ -1,0 +1,13 @@
+<div class="job-summary">
+    <h3>Expression Job Parameters</h3>
+    <table>
+        <tr>
+            <td>Expression Name</td>
+            <td>{{job.name}}</td>
+        </tr>
+        <tr *ngFor="let arg of args">
+            <td>{{getArgName(arg)}}</td>
+            <td>{{getArgValue(arg)}}</td>
+        </tr>
+    </table>
+</div>

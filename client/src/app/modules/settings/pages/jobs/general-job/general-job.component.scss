@@ -1,0 +1,47 @@
+@import "variables.scss";
+
+.job-summary {
+    color: $clr-gray-10;
+    padding: 32px $sz-double $sz-double $sz-double;
+    //padding: $sz-unit 20vw;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    //align-content: space-between;
+
+    h3 {
+        margin-bottom: $sz-double;
+    }
+
+    table {
+        tr {
+            td {
+                padding: $sz-qtr $sz-double;
+                max-width: 500px;
+            }
+            td:nth-child(1) {
+                font-weight: bold;
+                min-width: 100px;
+                color: $clr-gray-30;
+            }
+        }
+    }
+}
+
+.error {
+    color: $clr-orange;
+    font-weight: bold;
+}
+
+.complete {
+    color: $clr-gray-30;
+    font-weight: bold;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    gap: $sz-unit;
+}

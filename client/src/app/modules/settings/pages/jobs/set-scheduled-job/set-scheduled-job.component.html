@@ -1,0 +1,73 @@
+<div class="set-scheduled-job-dialog">
+    <div class="header">
+        <h1>{{title}}</h1>
+    </div>
+
+    <h3 class="divider">Scheduled Job</h3>
+    <table class="fields">
+        <tr>
+            <td>Name</td>
+            <td><input type="text" [(ngModel)]="job.name" placeholder="..." /></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td><input type="text" [(ngModel)]="job.description" placeholder="..." /></td>
+        </tr>
+        <tr>
+            <td>Instrument</td>
+            <td>
+                <mat-select [(ngModel)]="instrument" placeholder="Scan Instrument">
+                    <mat-option *ngFor="let i of instruments" [value]="i">{{i}}</mat-option>
+                </mat-select>
+            </td>
+        </tr>
+        <tr>
+            <td>Job Type</td>
+            <td>
+                <mat-select [(ngModel)]="jobType" placeholder="Job Type">
+                    <mat-option *ngFor="let i of jobTypes" [value]="i">{{i}}</mat-option>
+                </mat-select>
+            </td>
+        </tr>
+        <tr>
+            <td>Schedule Type</td>
+            <td>
+                <mat-select [(ngModel)]="scheduleType" placeholder="Schedule Types">
+                    <mat-option *ngFor="let i of scheduleTypes" [value]="i">{{i}}</mat-option>
+                </mat-select>
+            </td>
+        </tr>
+        @if (!isAfterImport()) {
+            <tr>
+                <td>Job Run Interval (min 900)</td>
+                <td><input type="text" [(ngModel)]="job.intervalSec" placeholder="..." /> sec</td>
+            </tr>
+        } @else {
+            <tr>
+                <td>Job Order</td>
+                <td><input type="text" [(ngModel)]="job.jobOrder" placeholder="..." /></td>
+            </tr>
+        }
+    </table>
+
+    <h3 class="divider">Job Parameters</h3>
+    <table>
+        <tr *ngFor="let k of paramKeys" title="{{paramHelp(job.jobType, k)}}">
+            <td>{{k}}</td>
+            <td></td>
+            <td class="row">
+                @if (k != 'expressionId') {
+                    <input type="text" [(ngModel)]="job.jobParameters[k]" placeholder="..." />
+                } @else {
+                    <span *ngIf="expressionDisplayName.length > 0">{{expressionDisplayName}}</span>
+                    <push-button (click)="onSelectExpression()">Select...</push-button>
+                }
+            </td>
+        </tr>
+    </table>
+
+    <div class="button-container">
+        <push-button buttonStyle="outline" (onClick)="onClose(true)">Cancel</push-button>
+        <push-button buttonStyle="yellow" [disabled]="!isJobValid()" (onClick)="onClose(false)">{{job.id ? "Edit" : "Add"}}</push-button>
+    </div>
+</div>

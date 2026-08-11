@@ -1,0 +1,41 @@
+@import "variables.scss";
+
+.divider {
+    margin-top: $sz-double;
+}
+
+.buttons {
+    margin-top: $sz-double;
+}
+
+.run-job-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: $sz-unit;
+    padding: $sz-double;
+    color: $clr-gray-10;
+
+    max-width: 400px;
+
+    h1 {
+        font-size: 18px;
+        font-weight: 900;
+        font-family: "Roboto";
+    }
+
+    h2 {
+        font-size: 14px;
+        font-weight: 900;
+        font-family: "Roboto";
+    }
+
+    .label {
+        margin-right: $sz-unit;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+}
