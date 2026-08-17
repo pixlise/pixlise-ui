@@ -30,8 +30,14 @@ const jobParamAndHelp = new Map<JobType, Map<string, string>>([
       ["quantName", "What to name the create quantification"],
       ["configName", "The PIQUANT configuration to use, eg PIXL/v7"],
       ["quantMode", "Quant mode string to set - supports: Combined or AB"]
-    ])
-  ]
+    ])],
+  [JobType.JT_RUN_PYTHON_SCRIPT,
+    new Map<string, string>([
+      ["scanId", `"imported" (if using AFTER_IMPORT - this means use the one that just imported) or the scan id`],
+      ["repositoryId", `Which defined repository to use to download python source to run`],
+      ["scriptName", `Name of script within repository to run`],
+      ["quant", `If using an id: "id:quant-123", otherwise "name:AutoQuant PIXL (AB)"`]
+    ])],
 ]);
 
 
@@ -87,7 +93,7 @@ export class SetScheduledJobComponent implements OnInit, OnDestroy {
       this.instruments.push(getPrintableScheduledJobInstrument(item));
     }
 
-    for (let item of [JobType.JT_RUN_EXPRESSION, JobType.JT_RUN_QUANT]) {
+    for (let item of jobParamAndHelp.keys()) {
       this.jobTypes.push(getPrintableJobType(item));
     }
 
