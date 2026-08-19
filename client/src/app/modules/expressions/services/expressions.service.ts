@@ -162,14 +162,14 @@ export class ExpressionsService {
     );
   }
 
-  fetchExpressions() {
-    this._cacheService.getExpressionList(ExpressionListReq.create({})).subscribe(res => {
+  fetchExpressions(force: boolean) {
+    this._cacheService.getExpressionList(ExpressionListReq.create({}), force).subscribe(res => {
       this.expressions$.next(res.expressions);
     });
   }
 
-  fetchExpressionsAsync(): Observable<Record<string, DataExpression>> {
-    return this._cacheService.getExpressionList(ExpressionListReq.create({})).pipe(
+  fetchExpressionsAsync(force: boolean): Observable<Record<string, DataExpression>> {
+    return this._cacheService.getExpressionList(ExpressionListReq.create({}), force).pipe(
       map(res => {
         this.expressions$.next(res.expressions);
         return res.expressions;

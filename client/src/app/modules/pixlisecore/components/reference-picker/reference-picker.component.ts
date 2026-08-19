@@ -103,7 +103,7 @@ export class ReferencePickerComponent implements OnDestroy {
   }
 
   fetchLatestExpressions(): void {
-    this._expressionsService.fetchExpressionsAsync().subscribe({
+    this._expressionsService.fetchExpressionsAsync(false).subscribe({
       next: expressions => {
         Object.values(expressions).forEach(expr => {
           this._allExpressions[expr.name] = [...(this._allExpressions[expr.name] || []), expr];

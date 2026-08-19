@@ -173,7 +173,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this._syncExpressionTimeoutMsOptions();
 
-    this._expressionsService.fetchExpressions();
+    this._expressionsService.fetchExpressions(false);
     this._expressionsService.fetchModules();
 
     this._subscriptions.add(
@@ -455,7 +455,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   private _loadScreenConfiguration() {
     this._subscriptions.add(
-      combineLatest([this._expressionsService.fetchExpressionsAsync(), this._analysisLayoutService.activeScreenConfiguration$]).subscribe(([expressions, config]) => {
+      combineLatest([this._expressionsService.fetchExpressionsAsync(false), this._analysisLayoutService.activeScreenConfiguration$]).subscribe(([expressions, config]) => {
         if (config && config.scanConfigurations) {
           const scanIds = Object.keys(config.scanConfigurations);
           if (scanIds.length > 0) {
@@ -1638,7 +1638,6 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       expressionIds: exprIds
     })).subscribe({
       next: resp => {
-        this.waitingForBulkApply = false;
         if (resp && resp.errors) {
           if (Object.keys(resp.errors).length > 0) {
             let err = "The following errors occurred:\n";
@@ -1647,20 +1646,23 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
             }
 
             this._snackbarService.openError(
-              `Bulk-application of module references succeeded with ${Object.keys(resp.errors).length} errors`, err);
+              `Bulk-application of module references succeeded with ${Object.keys(resp.errors).length} issues`, err);
           } else {
             this._snackbarService.openSuccess(`Bulk-application of module references for ${this.applyToExpressions.length} expressions succeeded`);
           }
         } else {
           this._snackbarService.openError(`Bulk-application of module references got unexpected response`);
         }
-
-        this.closeApplyToExpressionsDialog();
       },
       error: err => {
-        this.waitingForBulkApply = false;
         this._snackbarService.openError(err);
-        this.closeApplyToExpressionsDialog();
+      },
+      complete: () => {
+        // Refresh everything!
+        this._expressionsService.fetchExpressionsAsync(true).subscribe(() => {
+          this.waitingForBulkApply = false;
+          this.closeApplyToExpressionsDialog();
+        });
       }
     });
   }
