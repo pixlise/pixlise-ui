@@ -1660,7 +1660,9 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
       complete: () => {
         // Refresh everything!
         this._expressionsService.fetchExpressionsAsync(true).subscribe(() => {
+          // Stop wait animation
           this.waitingForBulkApply = false;
+          // Now we can close
           this.closeApplyToExpressionsDialog();
         });
       }
