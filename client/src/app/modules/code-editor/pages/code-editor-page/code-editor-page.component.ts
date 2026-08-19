@@ -34,7 +34,7 @@ import { combineLatest, Subscription } from "rxjs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { AnalysisLayoutService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
   ExpressionPickerComponent,
   ExpressionPickerData,
@@ -58,6 +58,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { WidgetType } from "src/app/modules/widget/models/widgets.model";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { environment } from "src/environments/environment";
+import { BulkReplaceExpressionModuleReferenceReq } from "src/app/generated-protos/expression-msgs";
 
 @Component({
   standalone: false,
@@ -69,6 +70,7 @@ import { environment } from "src/environments/environment";
 export class CodeEditorPageComponent implements OnInit, OnDestroy {
   @ViewChild("preview", { read: ViewContainerRef }) previewContainer: any;
   @ViewChild("newModuleDialogBtn") newModuleDialog!: ElementRef;
+  @ViewChild("applyToExpressionsDialogBtn") applyToExpressionsDialogBtn!: ElementRef;
 
   private _subscriptions = new Subscription();
   private _keyPresses: Set<string> = new Set<string>();
@@ -146,6 +148,17 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   public canMountWidgets: boolean = false;
 
+  applyToExpressions: DataExpression[] = [];
+  applyToExpressionsExclMostCommon: DataExpression[] = [];
+  applyToExpressionTagIDs: string[] = [];
+
+  private _loadedExpressions: DataExpression[] = [];
+  applyExprVersionLookup = new Map<string, string>();
+
+  mostCommonVersionReference = "";
+  hideMostCommonVersionReference = false;
+  waitingForBulkApply = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -153,6 +166,7 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _expressionsService: ExpressionsService,
     private _widgetDataService: WidgetDataService,
+    private _dataService: APIDataService,
     public dialog: MatDialog
   ) {}
 
@@ -254,6 +268,9 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
     this._subscriptions.add(
       this._expressionsService.expressions$.subscribe(expressions => {
+        this._loadedExpressions = Object.values(expressions);
+        this.filterApplyToExpressions();
+
         let topExpressionId = this.queryParams[EditorConfig.topExpressionId];
         if (this.isTopModule || (topExpressionId && topExpressionId !== ExpressionsService.NewExpressionId && this.topExpression)) {
           // If the top expression is a module or is already loaded, don't overwrite it
@@ -330,6 +347,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
               this.loadedModuleVersions = this.getVisibleModuleVersions(module);
               this.topExpression = this.moduleToExpression(module, moduleVersion);
               this.topExpressionChanged = false;
+
+              this.updateSelectedApplyToExpressionVersions(this.loadedModule?.id);
             }
           }
         } else {
@@ -374,6 +393,8 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
               tags: moduleVersion.tags,
             });
             this.bottomExpressionChanged = false;
+
+            this.updateSelectedApplyToExpressionVersions(this.loadedModule?.id);
           }
         }
 
@@ -1520,5 +1541,163 @@ export class CodeEditorPageComponent implements OnInit, OnDestroy {
 
   trackByModuleId(index: number, module: DataModule): string {
     return module.id;
+  }
+
+  private closeApplyToExpressionsDialog(): void {
+    if (this.applyToExpressionsDialogBtn && this.applyToExpressionsDialogBtn instanceof PushButtonComponent) {
+      (this.applyToExpressionsDialogBtn as PushButtonComponent).closeDialog();
+    }
+  }
+
+  onApplyToExpressionsTagFilterChanged(tagIDs: string[]): void {
+    this.applyToExpressionTagIDs = tagIDs;
+    this.filterApplyToExpressions();
+  }
+
+  private filterApplyToExpressions() {
+    // Get all expressions, filter to the ones which contain the specified tags
+    let expressions = this._loadedExpressions;
+    this.applyToExpressions = [];
+    for (let expr of expressions) {
+      if (
+        (this.applyToExpressionTagIDs.length > 0 && this.applyToExpressionTagIDs.every(tagID => expr.tags.includes(tagID)))
+      ) {
+        this.applyToExpressions.push(expr);
+      }
+    }
+
+    this.updateSelectedApplyToExpressionVersions(this.loadedModule?.id);
+  }
+
+  private updateSelectedApplyToExpressionVersions(moduleId?: string) {
+    // Run through and build a lookup for expression -> version applied
+    this.applyExprVersionLookup.clear();
+    this.mostCommonVersionReference = "";
+
+    if (!moduleId) {
+      return;
+    }
+
+    let verCount = new Map<string, number>();
+    for (let expr of this.applyToExpressions) {
+      // Find the ref, if there is one
+      let verPrint = "No reference to module!";
+      let ver: string|undefined;
+
+      for (let ref of expr.moduleReferences) {
+        if (ref.moduleId == moduleId) {
+          ver = this.getPrintableVersionString(ref.version);
+          verPrint = ver || "No version defined";
+          break;
+        }
+      }
+
+      this.applyExprVersionLookup.set(expr.id, verPrint);
+
+      if (ver) {
+        let count = verCount.get(ver) || 0;
+        verCount.set(ver, count+1);
+      }
+    }
+
+    // Find the version we have the most often, all other versions get a visual indicator
+    let maxVerCount = 0;
+    for (let [ver, count] of verCount.entries()) {
+      if (count > maxVerCount) {
+        maxVerCount = count;
+        this.mostCommonVersionReference = ver;
+      }
+    }
+  }
+
+  onCancelApplyToExpressions() {
+    this.closeApplyToExpressionsDialog();
+  }
+
+  onApplyToExpressions() {
+    if (!this.loadedModule?.id || !this.loadedModuleVersion?.version) {
+      this._snackbarService.openError("No module or version loaded to bulk-apply to selected expressions");
+      return;
+    }
+
+    if (this.applyToExpressions.length <= 0) {
+      this._snackbarService.openError("No expressions selected to bulk-apply module reference to");
+      return;
+    }
+
+    let exprIds: string[] = [];
+    for (let expr of this.applyToExpressions) {
+      exprIds.push(expr.id);
+    }
+
+    // Apply the version to all expression ids we have selected
+    this.waitingForBulkApply = true;
+    this._dataService.sendBulkReplaceExpressionModuleReferenceRequest(BulkReplaceExpressionModuleReferenceReq.create({
+      moduleId: this.loadedModule.id,
+      version: this.loadedModuleVersion.version,
+      expressionIds: exprIds
+    })).subscribe({
+      next: resp => {
+        this.waitingForBulkApply = false;
+        if (resp && resp.errors) {
+          if (Object.keys(resp.errors).length > 0) {
+            let err = "The following errors occurred:\n";
+            for (let id of Object.keys(resp.errors)) {
+              err += `Expression ${id}: ${resp.errors[id]}\n`
+            }
+
+            this._snackbarService.openError(
+              `Bulk-application of module references succeeded with ${Object.keys(resp.errors).length} errors`, err);
+          } else {
+            this._snackbarService.openSuccess(`Bulk-application of module references for ${this.applyToExpressions.length} expressions succeeded`);
+          }
+        } else {
+          this._snackbarService.openError(`Bulk-application of module references got unexpected response`);
+        }
+
+        this.closeApplyToExpressionsDialog();
+      },
+      error: err => {
+        this.waitingForBulkApply = false;
+        this._snackbarService.openError(err);
+        this.closeApplyToExpressionsDialog();
+      }
+    });
+  }
+
+  getExistingReference(expr: DataExpression): string {
+    return this.applyExprVersionLookup.get(expr.id) || "No version defined";
+  }
+
+  isUncommonReference(expr: DataExpression): boolean {
+    const ver = this.applyExprVersionLookup.get(expr.id);
+    if (!ver) {
+      return false;
+    }
+    
+    return ver != this.mostCommonVersionReference;
+  }
+
+  getPrintableVersionString(ver?: SemanticVersion): string|undefined {
+    if (!ver) {
+      return undefined;
+    }
+    return `${ver.major}.${ver.minor}.${ver.patch}`;
+  }
+
+  onToggleHideMostCommonVersionReference() {
+    this.hideMostCommonVersionReference = !this.hideMostCommonVersionReference;
+
+    // Rebuild the list that excludes the most common ones
+    if (this.hideMostCommonVersionReference) {
+      this.applyToExpressionsExclMostCommon = [];
+
+      for (let expr of this.applyToExpressions) {
+        const ver = this.applyExprVersionLookup.get(expr.id);
+        if (!ver || ver != this.mostCommonVersionReference) {
+          this.applyToExpressionsExclMostCommon.push(expr);
+        }
+      }
+    }
   }
 }

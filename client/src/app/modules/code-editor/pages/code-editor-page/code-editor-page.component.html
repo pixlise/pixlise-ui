@@ -53,6 +53,61 @@
   </div>
 </ng-template>
 
+<ng-template #applyToExpressionsDialog>
+  <div class="apply-to-expressions-dialog">
+    <h1>Apply Module To Expressions</h1>
+    <div>Select expressions to apply module version {{getPrintableVersionString(loadedModuleVersion.version) || "UNKNOWN"}} to using tags</div>
+    <tag-picker
+      type="expression"
+      buttonStyle="button"
+      [selectedTagIDs]="applyToExpressionTagIDs"
+      [showCurrentTagsSection]="false"
+      [allowAdminBuiltin]="true"
+      (onTagSelectionChanged)="onApplyToExpressionsTagFilterChanged($event)">
+    </tag-picker>
+
+    <h3>Selected Expressions ({{applyToExpressions.length}})</h3>
+
+    <div class="row">
+      <div>Hide most common version reference</div>
+      <two-state-icon-button
+        activeIcon="assets/button-icons/check-on.svg"
+        inactiveIcon="assets/button-icons/check-off.svg"
+        [active]="hideMostCommonVersionReference"
+        (onToggle)="onToggleHideMostCommonVersionReference()" ></two-state-icon-button>
+    </div>
+
+    @if (hideMostCommonVersionReference) {
+      <div>(Not showing {{applyToExpressions.length - applyToExpressionsExclMostCommon.length}} with reference: {{mostCommonVersionReference}})</div>
+    }
+
+    <div class="expr-list">
+      <div *ngFor="let expr of (hideMostCommonVersionReference ? applyToExpressionsExclMostCommon : applyToExpressions)" class="item" title="Expression id: {{expr.id}}">
+        <div>{{expr.name}}</div>
+        <div class="description">{{expr.comments}}</div>
+        <div class="ref">
+          <div>Current version: {{getExistingReference(expr)}}</div>
+          @if (isUncommonReference(expr)) {
+            <img title="This reference is uncommon, potentially out of date compared to the rest in the list" src="assets/icons/error-triangle.svg">
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (waitingForBulkApply) {
+      <div class="wait-spinner">
+        <wait-spinner></wait-spinner>
+      </div>
+    }
+
+    <div class="button-container">
+      <push-button buttonStyle="yellow" (onClick)="onCancelApplyToExpressions()">Cancel</push-button>
+      <push-button buttonStyle="yellow" [disabled]="applyToExpressions.length <= 0" (onClick)="onApplyToExpressions()">Apply</push-button>
+    </div>
+  </div>
+</ng-template>
+
+
 <div class="code-editor" aria-label="CodeEditor">
   <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}" aria-label="CodeEditorExplorer">
     <div class="top-header">
@@ -95,11 +150,13 @@
               *ngIf="topExpression"
               [isSelectable]="false"
               [expression]="topExpression"
+              [selectAuthorToFilter]="false"
               [module]="isTopModule ? loadedModule : null"></expression-layer>
             <expression-layer
               *ngIf="bottomExpression"
               [isSelectable]="false"
               [expression]="bottomExpression"
+              [selectAuthorToFilter]="false"
               [module]="!isTopModule ? loadedModule : null"></expression-layer>
           </div>
         </div>
@@ -121,6 +178,7 @@
               [isSelectable]="true"
               [selected]="topModuleIds.includes(module.id)"
               (onSelect)="onSelectModule(module)"
+              [selectAuthorToFilter]="false"
               [module]="module"></expression-layer>
           </div>
         </div>
@@ -282,12 +340,16 @@
       </mat-select>
       <push-button
         *ngIf="hasVisibleModule"
-        class="release-btn"
+        buttonStyle="yellow"
+        [disabled]="!hasVisibleModule || !loadedModuleVersion"
+        [customDialog]="applyToExpressionsDialog"
+        title="Use this to bulk-set module references in expressions"
+        #applyToExpressionsDialogBtn>Apply To Expressions</push-button>
+      <push-button
+        *ngIf="hasVisibleModule"
         buttonStyle="yellow"
         [disabled]="!isVisibleModuleEditable || !isVisibleModuleVersionLatest"
-        (onClick)="onRelease()"
-        >Release Module
-      </push-button>
+        (onClick)="onRelease()">Release Module</push-button>
       <push-button buttonStyle="yellow" (onClick)="onSave()" [disabled]="!activeExpressionChanged" class="save-btn">Save</push-button>
     </div>
   </section>
