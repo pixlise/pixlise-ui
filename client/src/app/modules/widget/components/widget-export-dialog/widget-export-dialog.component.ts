@@ -48,6 +48,8 @@ import { makeValidFileName } from "src/app/utils/utils";
 import { WidgetLayoutConfiguration } from "../../../../generated-protos/screen-configuration";
 import { WidgetComponent } from "../widget/widget.component";
 import html2canvas from "html2canvas";
+import C2S from "f2-canvas2svg";
+import { CanvasParams } from "../interactive-canvas/resizing-canvas.component";
 
 @Component({
   standalone: false,
@@ -512,6 +514,66 @@ export class WidgetExportDialogComponent implements OnInit, OnChanges {
 
   onDownloadPNG(): void {
     this.handlePNGAction("download");
+  }
+
+  private async handleSVGAction(action: "copy" | "download"): Promise<void> {
+    let canvas: HTMLCanvasElement | null = null;
+
+    if (this.chartView) {
+      canvas = this.getPreviewCanvas();
+    } else {
+      canvas = await this.getKeyCanvas();
+    }
+
+    if (!canvas) {
+      return;
+    }
+
+    var ctx = new C2S(canvas.width, canvas.height);
+    if (!this.previewWidget) {
+      this._snackBarService.openError("Failed to create SVG render context");
+      return;
+    }
+
+    const widget = this.previewWidget as unknown as WidgetComponent;
+    // Not all widgets support this!
+    const viewport = new CanvasParams(canvas.width, canvas.height, 1);
+    widget.drawTo(ctx, viewport).subscribe(() => {
+      const svg = ctx.getSerializedSvg();
+      if (!svg) {
+        return;
+      }
+
+      if (action === "copy") {
+        var blob = new Blob([svg], { type: "image/svg+xml" });
+        navigator.clipboard
+          .write([
+            new ClipboardItem({
+              "image/svg+xml": blob,
+            }),
+          ])
+          .then(() => {
+            this._snackBarService.openSuccess("Copied image to clipboard");
+          })
+          .catch(error => {
+            console.error(error);
+            this._snackBarService.openError("Failed to copy image to clipboard");
+          });
+      } else {
+        const fileName = this.chartView ? "Plot Image.svg" : "Widget Key.svg";
+
+        var blob = new Blob([svg], { type: "image/svg+xml" });
+        saveAs(blob, fileName);
+      }
+    });
+  }
+
+  onCopySVG(): void {
+    this.handleSVGAction("copy");
+  }
+
+  onDownloadSVG(): void {
+    this.handleSVGAction("download");
   }
 
   async onDownload(data: WidgetExportData): Promise<void> {

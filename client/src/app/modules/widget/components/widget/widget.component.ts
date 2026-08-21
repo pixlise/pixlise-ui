@@ -37,6 +37,7 @@ import { AnalysisLayoutService, WidgetSettingsMenuComponent } from "src/app/modu
 import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+import { CanvasParams, InteractiveCanvasComponent } from "../interactive-canvas/interactive-canvas.component";
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
@@ -497,8 +498,16 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
     return "";
   }
-  
 
+  drawTo(ctx: CanvasRenderingContext2D, viewport: CanvasParams): Observable<void> {
+    if (this._currentWidgetRef?.instance?.drawer && this._currentWidgetRef.instance?.transform) {
+      return InteractiveCanvasComponent.drawFrame(ctx, viewport, this._currentWidgetRef.instance?.transform, this._currentWidgetRef.instance?.drawer, [], true);
+    }
+
+    //console.log(this._currentWidgetRef.instance);
+    return throwError(() => new Error("Widget does not support SVG rendering"));
+  }
+  
   loadWidget() {
     if (this._currentWidgetRef) {
       this._currentWidgetRef.destroy();

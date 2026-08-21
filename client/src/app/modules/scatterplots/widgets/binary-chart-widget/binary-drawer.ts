@@ -92,7 +92,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
   }
 
   drawData(
-    screenContext: OffscreenCanvasRenderingContext2D,
+    screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     drawParams: CanvasDrawParameters
   ): void {
     // Shut up transpiler... the null check has already actually happened...
@@ -102,7 +102,11 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
 
     // Don't allow drawing over the axis now - clip to the axis boundaries
     const drawData = this._mdl.drawModel;
-    if (drawData.xAxis && drawData.yAxis) {
+    if (drawData.xAxis && drawData.yAxis &&
+      // For some reason, when drawing using canvas2svg this incorrectly sets all points drawn after it
+      // to be in a clipped "group" so none are visible. Here we disable this clipping to ensure we get
+      // a usable binary chart exported in .svg format!
+      !drawParams.disableCache) {
       screenContext.save();
       screenContext.beginPath();
       screenContext.rect(

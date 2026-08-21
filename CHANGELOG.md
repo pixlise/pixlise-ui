@@ -1,4 +1,12 @@
-## 4.95.0 (LATEST)
+## 4.98.0 (LATEST)
+- Added SVG exporting. Tested to work on Context Image, Ternary, Binary and Spectrum chart.
+
+## 4.97.0 (2026-08-19)
+
+### New features
+- Added "Apply To Expressions" button on code editor to allow batch expression module reference changes. Previously 100s of expressions had to be modified by hand to ensure they are using the latest version of a module.
+
+## 4.95.0 (2026-07-06)
 
 ### New Features
 - Clear memoisation cache items named: exprcachev1_GeoAndDiff_*<scan-id> when user clicks "Clear Workspace Cache"

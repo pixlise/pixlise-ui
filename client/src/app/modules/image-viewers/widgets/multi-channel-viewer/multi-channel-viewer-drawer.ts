@@ -20,7 +20,7 @@ export class MultiChannelViewerDrawer extends CachedCanvasChartDrawer {
 
   drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
 
   drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     if (!this._mdl || !this._mdl.raw) {
