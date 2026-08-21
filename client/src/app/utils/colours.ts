@@ -106,18 +106,18 @@ export class RGBA {
 */
   asString(): string {
     let a = this.a / 255;
-    return `rgba(${this.r},${this.g},${this.b},${a})`;
+    return `rgba(${Math.round(this.r)},${Math.round(this.g)},${Math.round(this.b)},${Math.round(a)})`;
   }
 
   asStringWithA(alphaPercent0to1: number): string {
     let a = (this.a / 255) * alphaPercent0to1;
-    return `rgba(${this.r},${this.g},${this.b},${a})`;
+    return `rgba(${Math.round(this.r)},${Math.round(this.g)},${Math.round(this.b)},${Math.round(a)})`;
   }
-
+/*
   asStringSlower(): string {
     return "rgba(" + this.r.toString() + "," + this.g.toString() + "," + this.b.toString() + "," + this.a / 255 + ")";
   }
-
+*/
   // TODO: turn this into a unit test that ensures that we're calling the fastest one!!!
 
   /* Running chrom 76, 6/Sep/2019 we got:

@@ -122,7 +122,7 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
     }
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D): void {
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): void {
     // Shut up transpiler... the null check has already actually happened...
     if (!this._mdl.raw) {
       return;

@@ -45,7 +45,9 @@ export class CanvasDrawParameters {
     public drawViewport: CanvasParams,
     // If not drawing for export, set to null/empty...
     //public exportChoices: ExportDataChoice[],
-    public exportItemIDs: string[]
+    public exportItemIDs: string[],
+    // Allows signalling to disable all draw-caching, forcing everything to be drawn to canvas fresh
+    public disableCache: boolean
   ) {}
 }
 
@@ -248,7 +250,8 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     viewport: CanvasParams,
     transform: CanvasWorldTransform,
     drawer: CanvasDrawer,
-    exportItemIDs: string[] = []
+    exportItemIDs: string[] = [],
+    disableCache: boolean = false
   ): Observable<void> {
     //let t0 = performance.now();
     if (!screenContext || !viewport || !transform || !drawer) {
@@ -269,7 +272,7 @@ export class InteractiveCanvasComponent extends ResizingCanvasComponent implemen
     // points by 2, and it still looks the same but is at native resolution.
     screenContext.setTransform(viewport.dpi, 0, 0, viewport.dpi, 0, 0);
 
-    const drawParams = new CanvasDrawParameters(transform, viewport, exportItemIDs);
+    const drawParams = new CanvasDrawParameters(transform, viewport, exportItemIDs, disableCache);
 
     screenContext.save();
     return drawer.draw(screenContext, drawParams).pipe(
