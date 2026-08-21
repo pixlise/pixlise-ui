@@ -79,12 +79,12 @@ export class SingleAxisRGBUDrawer extends CachedCanvasChartDrawer {
     this.drawHoveredMineral(screenContext, this._mdl.drawModel);
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Draw data
     this.drawPlot(screenContext, this._mdl.drawModel, drawParams);
   }
 
-  private drawPlot(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel, drawParams: CanvasDrawParameters): void {
+  private drawPlot(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel, drawParams: CanvasDrawParameters): void {
     if (!this._mdl?.raw || !this._mdl?.plotData || !this._mdl?.plotData?.points || !this._mdl?.plotData?.yRange?.max || this._mdl.plotData.yRange.max <= 0) {
       return;
     }

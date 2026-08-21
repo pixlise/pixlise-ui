@@ -316,6 +316,7 @@ $display-height: calc(100vh - 43px - 40px);
 
     .bottom-toolbar {
       display: flex;
+      gap: 8px;
       align-items: center;
       height: 38px;
       background-color: #2a3036;
@@ -595,5 +596,73 @@ $display-height: calc(100vh - 43px - 40px);
     line-height: 16px;
     color: white;
     text-transform: uppercase;
+  }
+}
+
+.apply-to-expressions-dialog {
+  display: flex;
+  //align-items: center;
+  //justify-content: center;
+  flex-direction: column;
+  gap: $sz-unit;
+
+  padding: $sz-double;
+
+  .expr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    max-height: 600px;
+    overflow-y: auto;
+
+    color: $clr-gray-10;
+
+    .item {
+      background-color: $clr-gray-90;
+      padding: $sz-unit $sz-double;
+      max-width: 500px;
+
+      &:hover {
+        background-color: $clr-gray-70;
+      }
+
+      .description {
+        color: $clr-gray-30;
+      }
+
+      .ref {
+        display: flex;
+        flex-direction: row;
+        gap: $sz-unit;
+
+        padding-top: $sz-half;
+        padding-left: $sz-double;
+        color: $clr-gray-30;
+
+        img {
+          width: 12px;
+        }
+      }
+    }
+  }
+
+  .row {
+    display: flex;
+    flex-direction: row;
+    gap: $sz-unit;
+    align-items: center;
+  }
+
+  .wait-spinner {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: $sz-unit;
+    padding-top: $sz-unit;
   }
 }

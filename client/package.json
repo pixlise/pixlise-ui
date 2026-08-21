@@ -48,6 +48,7 @@
     "delaunator": "^5.0.1",
     "dexie": "^4.0.0",
     "dropzone": "^6.0.0-beta.2",
+    "f2-canvas2svg": "^1.0.19",
     "file-saver": "^2.0.5",
     "geotiff": "^2.0.7",
     "git-describe": "^4.1.1",

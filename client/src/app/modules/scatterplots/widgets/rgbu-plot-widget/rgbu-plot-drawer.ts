@@ -61,7 +61,7 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
     axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, "", this._mdl.yAxis, "");
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Draw data
     this.drawPlot(screenContext, this._mdl.drawModel);
 
@@ -89,7 +89,7 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
     this.drawHoveredMineral(screenContext, this._mdl.drawModel);
   }
 
-  private drawPlot(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
+  private drawPlot(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
     // We draw the points as little rectangles at the specified coordinates
     for (let c = 0; c < drawData.points.length; c++) {
       screenContext.fillStyle = /*Colours.GRAY_30.asString();*/ drawData.colours[c];

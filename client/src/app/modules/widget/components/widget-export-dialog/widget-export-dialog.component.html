@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #downloadMenu>
   <div class="download-menu-container">
     <push-button buttonStyle="yellow" (onClick)="onDownloadPNG()">Download .png</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onDownloadSVG()">Download .svg</push-button>
     <push-button buttonStyle="yellow" (onClick)="onConfirm()" [disabled]="!chartView">Download .zip</push-button>
   </div>
 </ng-template>
@@ -186,7 +187,10 @@ POSSIBILITY OF SUCH DAMAGE.
           >Export</push-button
         >
         <!-- <push-button *ngIf="data.showPreview" buttonStyle="outline" (onClick)="onConfirm()" [disabled]="!chartView">Download .zip</push-button> -->
-        <push-button *ngIf="data.showPreview" buttonStyle="yellow" (onClick)="onCopyPNG()">Copy .png</push-button>
+        @if (data.showPreview) {
+          <push-button buttonStyle="yellow" (onClick)="onCopySVG()">Copy .svg</push-button>
+          <push-button buttonStyle="yellow" (onClick)="onCopyPNG()">Copy .png</push-button>
+        }
         <widget-settings-menu *ngIf="data.showPreview" [settingsDialog]="downloadMenu" #downloadMenuButton>
           <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
         </widget-settings-menu>

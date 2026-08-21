@@ -4,7 +4,7 @@ import { PointDrawer, PLOT_POINTS_SIZE } from "src/app/utils/drawing";
 import { DrawModelWithPointGroup, NaryChartDataGroup } from "./model";
 
 export function drawScatterPoints(
-  screenContext: OffscreenCanvasRenderingContext2D,
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   mdl: DrawModelWithPointGroup,
   lightMode: boolean,
   pointGroups: NaryChartDataGroup[]
