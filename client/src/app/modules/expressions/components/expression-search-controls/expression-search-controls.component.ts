@@ -89,7 +89,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 
     this.refreshAnomalyMaps();
 
-    this._expressionsService.fetchExpressions();
+    this._expressionsService.fetchExpressions(false);
     this._expressionsService.fetchModules();
 
     this._subs.add(

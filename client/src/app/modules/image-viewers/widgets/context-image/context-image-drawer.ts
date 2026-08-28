@@ -45,7 +45,7 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
     screenContext.restore();
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Set the transform as needed
     screenContext.save();
     drawParams.worldTransform.applyTransform(screenContext);

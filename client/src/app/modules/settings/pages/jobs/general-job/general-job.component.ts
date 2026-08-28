@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { JobStatus, JobStatus_Status, jobStatus_StatusToJSON, JobType, jobTypeToJSON } from 'src/app/generated-protos/job';
 import { makeJobName } from '../job-item/job-item.component';
-import { getPrintableJobType } from '../jobs.component';
+import { getPrintableJobType } from '../../../models/jobs.model';
 
 @Component({
   selector: 'general-job-view',

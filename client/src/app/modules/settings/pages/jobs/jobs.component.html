@@ -1,119 +1,59 @@
 <div class="page">
-    @if (errorString) {
-        <div>{{errorString}}</div>
-    } @else {
-        <div class="list-pane">
-            <div class="top-tabs">
-                <div class="tab clickable" [ngClass]="{'selected': !showScheduledJobs}" (click)="onActivePastJobs()">
-                    <span>Active/Past Jobs</span>
-                    @if (activeJobs.length > 0) {
-                        <wait-spinner></wait-spinner>
-                    }
-                </div>
-                <div class="tab clickable" [ngClass]="{'selected': showScheduledJobs}" (click)="onScheduledJobs()">Scheduled Jobs</div>
+    <div class="list-pane">
+        <div class="top-tabs">
+            <div class="tab clickable" [ngClass]="{'selected': !showScheduledJobs}" (click)="onTabActivePastJobs()">
+                <span>Active/Past Jobs</span>
+                @if (activeJobCount > 0) {
+                    <wait-spinner></wait-spinner>
+                }
             </div>
-            @if (showScheduledJobs) {
-                <div class="job-list-section upper-section">
-                    <div class="section-header">
-                        <h3>Scheduled jobs</h3>
-                        <push-button buttonStyle="outline" #newScheduleDialogBtn (click)="onAddScheduledJob()">Add</push-button>
-                    </div>
-                    <div class="job-list">
-                        <div
-                            *ngFor="let job of scheduledJobs"
-                            class="scheduled-job-item clickable"
-                            [ngClass]="{'selected': selectedScheduledJob && selectedScheduledJob.id == job.id}"
-                            (click)="onClickScheduledJob(job)">
-                            <div class="scheduled-job-item-data">
-                                <div class="name">
-                                    <span>{{job.name}}</span>
-                                    <div class="sched-type" title="Shows the schedule type and order they will run in">
-                                        {{getPrintableJobScheduleType(job.scheduleType)}}{{getJobScheduleParam(job)}}
-                                    </div>
-                                </div>
-                                <div class="description">{{job.description}}</div>
-                            </div>
-                            <div class="scheduled-job-item-buttons">
-                                <action-button action="edit" tooltipTitle="Edit scheduled job" (onClick)="onEditScheduledJob(job)"></action-button>
-                                <action-button action="delete" #tooltip="matTooltip" matTooltip="Delete scheduled job" (onClick)="onDeleteScheduledJob(job)"></action-button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            } @else {
-                <div class="job-list-section upper-section">
-                    <div class="section-header">
-                        <h3>Active jobs</h3>
-                        <div class="controls">
-                            <mat-select multiple [(ngModel)]="filteredJobTypes" class="job-type-filter" placeholder="Job Type">
-                                <mat-option *ngFor="let jt of jobTypes" [value]="jt">{{jt}}</mat-option>
-                            </mat-select>
-                        </div>
-                    </div>
-                    <wait-spinner *ngIf="waiting" class="waiting"></wait-spinner>
-                    <div class="job-list">
-                        <job-item *ngFor="let job of activeJobs"
-                            [job]="job"
-                            [selected]="selectedJob && job.jobId === selectedJob.jobId"
-                            (click)="onClickJob(job)" />
-                    </div>
-                </div>
-                <div class="job-list-section bottom-section">
-                    <div class="section-header">
-                        <h3>Past jobs ({{jobStartIdx}}-{{jobEndIdx}} / {{totalJobCount}})</h3>
-                        <div class="controls">
-                            <push-button buttonStyle="gray" (onClick)="onPage(-1)">Prev</push-button>
-                            <push-button buttonStyle="gray" (onClick)="onPage(1)">Next</push-button>
-                        </div>
-                    </div>
-                    <wait-spinner *ngIf="waiting" class="waiting"></wait-spinner>
-                    <div class="job-list">
-                        <!-- <cdk-virtual-scroll-viewport *ngIf="jobs.length > 0" [itemSize]="46" class="jobs-viewport">
-                            <job-item *cdkVirtualFor="let job of jobs"
-                                [job]="job"
-                                [selected]="selectedJob && job.jobId === selectedJob.jobId"
-                                (click)="onClickJob(job)" />
-                        </cdk-virtual-scroll-viewport> -->
-                        <job-item *ngFor="let job of jobs"
-                            [job]="job"
-                            [selected]="selectedJob && job.jobId === selectedJob.jobId"
-                            (click)="onClickJob(job)" />
-                    </div>
-                </div>
-            }
+            <div class="tab clickable" [ngClass]="{'selected': showScheduledJobs}" (click)="onTabScheduledJobs()">Scheduled Jobs</div>
         </div>
-        <div class="info-pane">
-            @if (selectedJob) {
-                <general-job-view [job]="selectedJob"/>
-                @if (isQuantJob(selectedJob)) {
-                    <quant-job-view
-                        [job]="selectedJob"
-                        [config]="selectedJobConfig"
-                        [quantSummary]="selectedJobQuantSummary">
-                    </quant-job-view>
-                } @else if (isExpressionJob(selectedJob)) {
-                    <expression-job-view
-                        [job]="selectedJob"
-                        [config]="selectedJobConfig">
-                    </expression-job-view>
-                }
+        @if (showScheduledJobs) {
+            <scheduled-job-list
+                [selectedScheduledJobId]="selectedScheduledJob?.id || ''"
+                (onUpdateScheduledJob)="onUpdateScheduledJob($event)"
+                (onDeleteScheduledJob)="onDeleteScheduledJob($event)"
+                (onSelectScheduledJob)="onSelectScheduledJob($event)"></scheduled-job-list>
+        } @else {
+            <job-list
+                [selectedJobId]="selectedJob?.jobId || ''"
+                (onActiveJobCountChanged)="onActiveJobCountChanged($event)"
+                (onUpdateSelectJob)="onUpdateSelectJob($event)"
+                (onSelectJob)="onSelectJob($event)"></job-list>
+        }
+    </div>
+    <div class="info-pane">
+        @if (selectedJob) {
+            <general-job-view [job]="selectedJob"/>
+            @if (isQuantJob(selectedJob)) {
+                <quant-job-view
+                    [job]="selectedJob"
+                    [config]="selectedJobConfig"
+                    [quantSummary]="selectedJobQuantSummary">
+                </quant-job-view>
+            } @else if (isExpressionJob(selectedJob)) {
+                <expression-job-view
+                    [job]="selectedJob"
+                    [config]="selectedJobConfig">
+                </expression-job-view>
+            }
 
-                @if (selectedJobConfigError) {
-                    <div class="req-error">Job Config Error: {{selectedJobConfigError}}</div>
-                }
-                @if (selectedJobQuantSummaryError) {
-                    <div class="req-error">Quant Summary Error: {{selectedJobQuantSummaryError}}</div>
-                }
-            } @else if (selectedScheduledJob) {
-                <scheduled-job-view
-                    [job]="selectedScheduledJob"
-                    (onDelete)="onDeleteScheduledJob($event)"
-                    (onEdit)="onEditScheduledJob($event)">
-                <!-- (onRunJob)="onRunScheduledJob($event)" -->
-                </scheduled-job-view>
-            } @else {
-                <div>Select a job!</div>
+            @if (selectedJobConfigError) {
+                <div class="req-error">Job Config Error: {{selectedJobConfigError}}</div>
             }
-        </div>
-    }
+            @if (selectedJobQuantSummaryError) {
+                <div class="req-error">Quant Summary Error: {{selectedJobQuantSummaryError}}</div>
+            }
+        } @else if (selectedScheduledJob) {
+            <scheduled-job-view
+                [job]="selectedScheduledJob">
+            <!-- (onEdit)="onEditScheduledJob($event)"
+                (onDelete)="onDeleteScheduledJob($event)" -->
+            <!-- (onRunJob)="onRunScheduledJob($event)" -->
+            </scheduled-job-view>
+        } @else {
+            <div>Select a job!</div>
+        }
+    </div>
 </div>

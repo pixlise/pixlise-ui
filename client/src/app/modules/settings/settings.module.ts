@@ -27,6 +27,9 @@ import { ExpressionJobComponent } from './pages/jobs/expression-job/expression-j
 import { GeneralJobComponent } from './pages/jobs/general-job/general-job.component';
 import { SetScheduledJobComponent } from './pages/jobs/set-scheduled-job/set-scheduled-job.component';
 import { ScheduledJobViewComponent } from './pages/jobs/scheduled-job-view/scheduled-job-view.component';
+import { ManageRepositoriesComponent } from './pages/jobs/manage-repositories/manage-repositories.component';
+import { ScheduledJobListComponent } from './pages/jobs/scheduled-job-list/scheduled-job-list.component';
+import { JobListComponent } from './pages/jobs/job-list/job-list.component';
 
 export { UserOptionsService } from "./services/user-options.service";
 export { GroupsService } from "./services/groups.service";
@@ -59,6 +62,9 @@ const APP_ROUTES: Routes = [
     GeneralJobComponent,
     SetScheduledJobComponent,
     ScheduledJobViewComponent,
+    ManageRepositoriesComponent,
+    ScheduledJobListComponent,
+    JobListComponent,
   ],
   imports: [
     CommonModule,

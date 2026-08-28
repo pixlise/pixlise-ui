@@ -5,8 +5,8 @@ import { ScheduledJob_ScheduleType, JobType, ScheduledJob, scheduledJob_Schedule
 import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON } from 'src/app/generated-protos/scan';
 import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from 'src/app/modules/expressions/components/expression-picker/expression-picker.component';
 import { AnalysisLayoutService, APIDataService, SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { fromPrintableJobType, getPrintableJobType } from '../jobs.component';
 import { SetScheduledJobReq } from 'src/app/generated-protos/job-msgs';
+import { fromPrintableJobType, getPrintableJobType } from '../../../models/jobs.model';
 
 export class SetScheduledJobData {
   constructor(public job?: ScheduledJob) {}
@@ -30,8 +30,15 @@ const jobParamAndHelp = new Map<JobType, Map<string, string>>([
       ["quantName", "What to name the create quantification"],
       ["configName", "The PIQUANT configuration to use, eg PIXL/v7"],
       ["quantMode", "Quant mode string to set - supports: Combined or AB"]
-    ])
-  ]
+    ])],
+  [JobType.JT_RUN_PYTHON_SCRIPT,
+    new Map<string, string>([
+      ["scanId", `"none", or "imported" (if using AFTER_IMPORT - this means use the one that just imported) or the scan id`],
+      ["repositoryId", `Which defined repository to use to download python source to run`],
+      ["branch", `Branch of repository to run`],
+      ["scriptName", `Name of script within repository to run`],
+      ["quant", `"none" or if using an id: "id:quant-123", otherwise "name:AutoQuant PIXL (AB)"`]
+    ])],
 ]);
 
 
@@ -87,7 +94,7 @@ export class SetScheduledJobComponent implements OnInit, OnDestroy {
       this.instruments.push(getPrintableScheduledJobInstrument(item));
     }
 
-    for (let item of [JobType.JT_RUN_EXPRESSION, JobType.JT_RUN_QUANT]) {
+    for (let item of jobParamAndHelp.keys()) {
       this.jobTypes.push(getPrintableJobType(item));
     }
 

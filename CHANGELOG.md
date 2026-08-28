@@ -1,4 +1,26 @@
-## 4.95.0 (LATEST)
+## 4.99.0 (LATEST)
+
+### New features
+- At long last we've now got a generic "job runner" capability to the PIXLISE back-end. Jobs can be scheduled to run periodically or on downlink. Users who have access will now see a new "Job Manager" menu item on their user menu (top-right of PIXLISE once logged in). All job running functionality has been converted to use this and the job management page will be the primary way to make sense of what is being run. Going forward, auto-quants now need to be configured as scheduled jobs, so if they are misconfigured we won't see them generated! The job runner is able to calculate quantifications using PIQUANT, calculate and "memoise" Lua expression outputs (thereby removing that burden from the PIXLISE client and running it single-threaded in the browser!) and the newest addition:
+- PIXLISE back-end job runner can run Python scripts! Any script written that uses the pixlise_client Python library can now be configured to run automatically in the PIXLISE back-end. For this to run, you'll need to:
+- Configure source code repositories - currently only tested with Github, but you can configure a private repository containing your Python code. The id generated can be added to a scheduled Python job.
+- Scheduled jobs can be run manually using the Run Job button, and it will ask for any required parameters
+- Jobs are run on separate EC2 virtual machines in the PIXLISE back-end so as not to hold up processing of requests of users logged in to PIXLISE. These virtual machines run for a configurable period then shut down to save costs. This is done differently to how PIQUANT previously ran, and they start up slower, but this new method should eliminate a lot of other overheads to running PIXLISE. This is part of the long term goal of significantly reducing monthly running costs.
+
+### Bug Fixes
+- User icons (displayed on various parts of PIXLISE) could go hay-wire and download the list of users in an endless loop if one of the user ids wasn't recognised
+
+## 4.98.0 (2026-08-21)
+
+### New features
+- Added SVG exporting. Tested to work on Context Image, Ternary, Binary and Spectrum chart.
+
+## 4.97.0 (2026-08-19)
+
+### New features
+- Added "Apply To Expressions" button on code editor to allow batch expression module reference changes. Previously 100s of expressions had to be modified by hand to ensure they are using the latest version of a module.
+
+## 4.95.0 (2026-07-06)
 
 ### New Features
 - Clear memoisation cache items named: exprcachev1_GeoAndDiff_*<scan-id> when user clicks "Clear Workspace Cache"

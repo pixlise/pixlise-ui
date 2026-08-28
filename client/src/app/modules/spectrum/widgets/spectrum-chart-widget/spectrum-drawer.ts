@@ -98,7 +98,7 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
     axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, this._mdl.xAxisLabel, this._mdl.yAxis, this._mdl.yAxisLabel);
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     if (!this._mdl.xAxis || !this._mdl.yAxis) {
       return;
     }

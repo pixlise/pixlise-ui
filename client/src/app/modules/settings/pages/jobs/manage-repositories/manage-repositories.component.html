@@ -1,0 +1,51 @@
+
+<ng-template #addRepository>
+  <div class="dlg">
+    <h1>Add Repository</h1>
+    <span>Generally we test with Github only - type the details to continue</span>
+
+    <table>
+        <tr>
+            <td>Name</td>
+            <td><input [(ngModel)]="addName"></td>
+        </tr>
+        <tr>
+            <td>URL</td>
+            <td><input [(ngModel)]="addURL"></td>
+        </tr>
+        <tr>
+            <td>User Name</td>
+            <td><input [(ngModel)]="addUser"></td>
+        </tr>
+        <tr>
+            <td>Secret</td>
+            <td><input [(ngModel)]="addSecret"></td>
+        </tr>
+    </table>
+
+    <div class="buttons">
+      <push-button buttonStyle="yellow" (onClick)="onCancelAdd()">Cancel</push-button>
+      <push-button buttonStyle="yellow" [disabled]="!isAddValid" (onClick)="onAddRepo()">Add</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<div class="dlg">
+    <h1>Source Repositories</h1>
+    <span>Here you can define/edit source code repositories to run Python
+        scripts from. We only really test with github at the moment.</span>
+    <div class="row">
+        <h3>Existing Repositories</h3>
+        <push-button buttonStyle="gray-title" [customDialog]="addRepository" #addRepositoryBtn>Add</push-button>
+    </div>
+    <div class="repo-list">
+        <div *ngFor="let repo of repositories" class="repo row" [title]="repo.id">
+            <div class="column">
+                <div class="name">{{repo.name}}, id: {{repo.id}}</div>
+                <div class="details">User: {{repo.user}}</div>
+                <div class="details">URL: {{repo.url}}</div>
+            </div>
+            <action-button class="del-btn" action="delete" #tooltip="matTooltip" matTooltip="Delete source repository reference" (onClick)="onDeleteRepo(repo.id)"></action-button>
+        </div>
+    </div>
+</div>

@@ -54,7 +54,7 @@ export class HistogramDrawer extends CachedCanvasChartDrawer {
     axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.drawModel.xAxis, "", this._mdl.drawModel.yAxis, this._mdl.yAxisLabel);
   }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  drawData(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     if (!this._mdl.drawModel.xAxis || !this._mdl.drawModel.yAxis) {
       return;
     }
@@ -156,7 +156,7 @@ max: ${hoverBar.bar.valueRange.max !== null && hoverBar.bar.valueRange.max !== u
     }
   }
 
-  private drawDistributionBars(screenContext: OffscreenCanvasRenderingContext2D, bar: HistogramDrawBar): void {
+  private drawDistributionBars(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, bar: HistogramDrawBar): void {
     if (bar.rect.h === 0) {
       return;
     }
