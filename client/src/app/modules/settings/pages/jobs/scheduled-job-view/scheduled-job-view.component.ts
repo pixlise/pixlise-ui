@@ -1,11 +1,14 @@
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { ScheduledJob, ScheduledJob_ScheduleType } from 'src/app/generated-protos/job';
-import { getPrintableJobScheduleType, getPrintableJobType } from '../jobs.component';
-import { getPrintableScheduledJobInstrument } from '../set-scheduled-job/set-scheduled-job.component';
+
 import { APIDataService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { TriggerScheduledJobReq } from 'src/app/generated-protos/job-msgs';
 import { PushButtonComponent } from 'src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component';
+
+import { TriggerScheduledJobReq } from 'src/app/generated-protos/job-msgs';
+import { ScheduledJob, ScheduledJob_ScheduleType } from 'src/app/generated-protos/job';
+
+import { getPrintableJobScheduleType, getPrintableJobType } from '../../../models/jobs.model';
+import { getPrintableScheduledJobInstrument } from '../set-scheduled-job/set-scheduled-job.component';
 
 @Component({
   selector: 'scheduled-job-view',
@@ -19,8 +22,8 @@ export class ScheduledJobViewComponent {
   private _subs = new Subscription();
   @Input() job!: ScheduledJob;
 
-  @Output() onDelete = new EventEmitter();
-  @Output() onEdit = new EventEmitter();
+  // @Output() onDelete = new EventEmitter();
+  // @Output() onEdit = new EventEmitter();
   @Output() onRunJob = new EventEmitter();
 
   message = "";
@@ -81,7 +84,7 @@ export class ScheduledJobViewComponent {
   isAfterImport(): boolean {
     return this.job.scheduleType == ScheduledJob_ScheduleType.AFTER_IMPORT;
   }
-
+/*
   onBtnEdit() {
     this.onEdit.emit(this.job);
   }
@@ -89,7 +92,7 @@ export class ScheduledJobViewComponent {
   onBtnDelete() {
     this.onDelete.emit(this.job);
   }
-
+*/
   onCloseRun(runJob: boolean) {
     if (runJob) {
       const params = {};

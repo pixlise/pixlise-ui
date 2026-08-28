@@ -1,0 +1,33 @@
+<div class="job-list-section upper-section">
+    <div class="section-header">
+        <h3>Scheduled jobs</h3>
+            <div class="controls">
+            <push-button buttonStyle="outline" (click)="onManageRepos()">Repositories</push-button>
+            <push-button buttonStyle="outline" (click)="onAddScheduledJob()">Add Scheduled Job</push-button>
+        </div>
+    </div>
+    @if (waitForScheduledJobs) {
+        <wait-spinner class="waiting"></wait-spinner>
+    }
+    <div class="job-list">
+        <div
+            *ngFor="let job of scheduledJobs"
+            class="scheduled-job-item clickable"
+            [ngClass]="{'selected': selectedScheduledJobId == job.id}"
+            (click)="onClickScheduledJob(job)">
+            <div class="scheduled-job-item-data">
+                <div class="name">
+                    <span>{{job.name}}</span>
+                    <div class="sched-type" title="Shows the schedule type and order they will run in">
+                        {{getPrintableJobScheduleType(job.scheduleType)}}{{getJobScheduleParam(job)}}
+                    </div>
+                </div>
+                <div class="description">{{job.description}}</div>
+            </div>
+            <div class="scheduled-job-item-buttons">
+                <action-button action="edit" tooltipTitle="Edit scheduled job" (onClick)="onEditScheduledJob(job)"></action-button>
+                <action-button action="delete" #tooltip="matTooltip" matTooltip="Delete scheduled job" (onClick)="onClickDeleteScheduledJob(job)"></action-button>
+            </div>
+        </div>
+    </div>
+</div>

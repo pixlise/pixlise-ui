@@ -5,8 +5,8 @@ import { ScheduledJob_ScheduleType, JobType, ScheduledJob, scheduledJob_Schedule
 import { ScanInstrument, scanInstrumentFromJSON, scanInstrumentToJSON } from 'src/app/generated-protos/scan';
 import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from 'src/app/modules/expressions/components/expression-picker/expression-picker.component';
 import { AnalysisLayoutService, APIDataService, SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { fromPrintableJobType, getPrintableJobType } from '../jobs.component';
 import { SetScheduledJobReq } from 'src/app/generated-protos/job-msgs';
+import { fromPrintableJobType, getPrintableJobType } from '../../../models/jobs.model';
 
 export class SetScheduledJobData {
   constructor(public job?: ScheduledJob) {}
