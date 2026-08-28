@@ -2,10 +2,8 @@ import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@
 import { Subscription } from 'rxjs';
 import { ScheduledJob, ScheduledJob_ScheduleType } from 'src/app/generated-protos/job';
 import { getPrintableJobScheduleType, getPrintableJobType } from '../jobs.component';
-import { scanInstrumentToJSON } from 'src/app/generated-protos/scan';
 import { getPrintableScheduledJobInstrument } from '../set-scheduled-job/set-scheduled-job.component';
 import { APIDataService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { ScanTriggerJobReq } from 'src/app/generated-protos/scan-msgs';
 import { TriggerScheduledJobReq } from 'src/app/generated-protos/job-msgs';
 import { PushButtonComponent } from 'src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component';
 
@@ -26,7 +24,7 @@ export class ScheduledJobViewComponent {
   @Output() onRunJob = new EventEmitter();
 
   message = "";
-  runJobScanId = "";
+  runParams = new Map<string, string>();
 
   constructor(private _dataService: APIDataService) {}
 
@@ -53,6 +51,33 @@ export class ScheduledJobViewComponent {
     return Object.keys(this.job.jobParameters).sort();
   }
 
+  get paramKeysForRun(): string[] {
+    // Run through and only allow editing ones that allow editing
+    if (this.runParams.size <= 0) {
+      // If it's the first time, construct the list of options!
+      const keys = Object.keys(this.job.jobParameters).sort();
+      let hasQuant = false;
+      for (let key of keys) {
+        if (key == "quant") {
+          hasQuant = true;
+        } else {
+          const val = this.job.jobParameters[key];
+          if (val == "none" || val == "imported") {
+            this.runParams.set(key, val);
+            //result.push(key);
+          }
+        }
+      }
+
+      // If we have a user-definable scan, and quant, make sure quant is in the list
+      if (this.runParams.has("scanId") && hasQuant && !this.runParams.has("quant")) {
+        this.runParams.set("quant", "");
+      }
+    }
+    
+    return Array.from(this.runParams.keys()).sort();
+  }
+
   isAfterImport(): boolean {
     return this.job.scheduleType == ScheduledJob_ScheduleType.AFTER_IMPORT;
   }
@@ -65,43 +90,19 @@ export class ScheduledJobViewComponent {
     this.onDelete.emit(this.job);
   }
 
-  onBtnRunJob() {
-    if (!confirm(`Are you sure you want to run job: "${this.job.name}" (id: ${this.job.id})" now?`)) {
-      return;
-    }
-
-    // They're running it - we need to simulate the situation when this job would run by itself, so we have to ask for some user parameters
-    let scanId: string|null = this.job.jobParameters["scanId"]
-    if (scanId == "imported") {
-      // Ask for scan id
-      scanId = prompt("Enter scan id");
-      if (!scanId) {
-        this.message = "No scan entered, job not run.";
-        return;
-      }
-    }
-
-    
-    //this._dataService.sendScanTriggerJobRequest(ScanTriggerJobReq.create())
-  }
-
-  get requiresScanIdToRun(): boolean {
-    const scanId = this.job.jobParameters["scanId"];
-    return !!scanId && scanId == "imported";
-  }
-
   onCloseRun(runJob: boolean) {
     if (runJob) {
       const params = {};
-      if (this.runJobScanId) {
-        params["scanId"] = this.runJobScanId;
+      for (let [k, v] of this.runParams.entries()) {
+        params[k] = v;
       }
+
       this._dataService.sendTriggerScheduledJobRequest(TriggerScheduledJobReq.create({
         scheduledJobId: this.job.id,
         jobParameters: params
       }));
 
-      this.runJobScanId = "";
+      this.runParams.clear();
     }
 
     if (this.runJobModal && this.runJobModal instanceof PushButtonComponent) {
@@ -110,6 +111,11 @@ export class ScheduledJobViewComponent {
   }
 
   isRunValid() {
-    return this.runJobScanId.length > 0;
+    for (let [k, v] of this.runParams.entries()) {
+      if (!v) {
+        return false;
+      }
+    }
+    return true;
   }
 }

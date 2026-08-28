@@ -10,6 +10,7 @@ import { httpErrorToString } from 'src/app/utils/utils';
 import { SetScheduledJobComponent, SetScheduledJobData, SetScheduledJobResult } from './set-scheduled-job/set-scheduled-job.component';
 import { QuantGetReq, QuantGetResp } from 'src/app/generated-protos/quantification-retrieval-msgs';
 import { QuantificationSummary } from 'src/app/generated-protos/quantification-meta';
+import { ManageRepositoriesComponent, ManageRepositoriesData, ManageRepositoriesResult } from './manage-repositories/manage-repositories.component';
 
 @Component({
   selector: 'app-jobs',
@@ -21,7 +22,6 @@ export class JobsComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
-  @ViewChild("newScheduleDialogBtn") newScheduleDialogBtn!: ElementRef;
 
   activeJobs: JobStatus[] = [];
   jobs: JobStatus[] = [];
@@ -39,8 +39,10 @@ export class JobsComponent implements OnInit, OnDestroy {
   jobTypes: string[] = [];
 
   errorString = "";
-  waiting: boolean = false;
   showScheduledJobs: boolean = false;
+
+  waitForScheduledJobs = false;
+  waitForJobs: boolean = false;
 
   private _jobPage: number = 0; // 0 being the most recent jobs
   private _jobPageSize = 100;
@@ -77,6 +79,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   private refreshScheduledJobs() {
+    this.waitForScheduledJobs = true;
     this._dataService.sendScheduledJobListRequest(ScheduledJobListReq.create()).subscribe({
       next: resp => {
         if (resp.jobs) {
@@ -112,12 +115,15 @@ export class JobsComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this._snackbarService.openError("Failed to refresh scheduled job list", err)
+      },
+      complete: () => {
+        this.waitForScheduledJobs = false;
       }
     });
   }
 
   private refreshJobList() {
-    this.waiting = true;
+    this.waitForJobs = true;
 
     const types: JobType[] = [];
     for (let t of this._filteredJobTypes) {
@@ -152,7 +158,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         this.errorString = httpErrorToString(err, "Failed to query jobs");    
       },
       complete: () => {
-        this.waiting = false;
+        this.waitForJobs = false;
       }
     });
   }
@@ -405,6 +411,17 @@ export class JobsComponent implements OnInit, OnDestroy {
     }
 
     return "";
+  }
+
+  onManageRepos() {
+    const dialogConfig = new MatDialogConfig<ManageRepositoriesData|undefined>();
+    dialogConfig.hasBackdrop = true;
+    //dialogConfig.disableClose = true;
+    dialogConfig.data = new ManageRepositoriesData();
+
+    const dlg = this.dialog.open(ManageRepositoriesComponent, dialogConfig);
+
+    dlg.afterClosed().subscribe((resp?: ManageRepositoriesResult) => {});
   }
 }
 

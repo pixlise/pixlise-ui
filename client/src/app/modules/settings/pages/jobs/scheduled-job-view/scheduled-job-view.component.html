@@ -4,13 +4,19 @@
       <h1>Run Job</h1>
       <span>Are you sure you want to run job: "{{job.name}}" (id: {{job.id}})" now?</span>
     </header>
-    @if (requiresScanIdToRun) {
-        <section class="content">
-        <h2>Required Parameters</h2>
-        <span class="label">Scan Id</span>
-        <input type="text" [(ngModel)]="runJobScanId" placeholder="..." />
-        </section>
-    }
+    <section class="content">
+        <h2>Parameters</h2>
+
+        <table>
+            <tr *ngFor="let k of paramKeysForRun">
+                <td>{{k}}</td>
+                <td>
+                    <input type="text" [ngModel]="runParams.get(k)" (ngModelChange)="runParams.set(k, $event)" placeholder="..." />
+                </td>
+            </tr>
+        </table>
+    </section>
+
     <div class="button-container">
         <push-button buttonStyle="outline" (onClick)="onCloseRun(false)">Cancel</push-button>
         <push-button buttonStyle="yellow" [disabled]="!isRunValid()" (onClick)="onCloseRun(true)">Run</push-button>
@@ -66,7 +72,6 @@
         <push-button buttonStyle="outline" (click)="onBtnEdit()">Edit</push-button>
         <push-button buttonStyle="outline" (click)="onBtnDelete()">Delete</push-button>
         <push-button buttonStyle="outline" #runJobModal [customDialog]="runJobDialog">Run Job</push-button>
-        <!-- (click)="onBtnRunJob()" -->
     </div>
 
     <div class="message">{{message}}</div>

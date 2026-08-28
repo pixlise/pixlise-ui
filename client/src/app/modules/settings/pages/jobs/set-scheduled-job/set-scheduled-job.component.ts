@@ -33,10 +33,11 @@ const jobParamAndHelp = new Map<JobType, Map<string, string>>([
     ])],
   [JobType.JT_RUN_PYTHON_SCRIPT,
     new Map<string, string>([
-      ["scanId", `"imported" (if using AFTER_IMPORT - this means use the one that just imported) or the scan id`],
+      ["scanId", `"none", or "imported" (if using AFTER_IMPORT - this means use the one that just imported) or the scan id`],
       ["repositoryId", `Which defined repository to use to download python source to run`],
+      ["branch", `Branch of repository to run`],
       ["scriptName", `Name of script within repository to run`],
-      ["quant", `If using an id: "id:quant-123", otherwise "name:AutoQuant PIXL (AB)"`]
+      ["quant", `"none" or if using an id: "id:quant-123", otherwise "name:AutoQuant PIXL (AB)"`]
     ])],
 ]);
 
