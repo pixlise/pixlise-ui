@@ -1,15 +1,17 @@
 import { Component, HostListener, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { ScreenConfiguration } from "../../../../../generated-protos/screen-configuration";
 import { Subscription } from "rxjs";
-import { ScanListReq } from "../../../../../generated-protos/scan-msgs";
-import { ScanItem } from "../../../../../generated-protos/scan";
+
 import { AnalysisLayoutService, APICachedDataService, APIDataService, SnackbarService } from "../../../../pixlisecore/pixlisecore.module";
 import { ROIService } from "../../../../roi/services/roi.service";
 import { SearchableListItem } from "../../../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
 import { sortScans } from "../../../../../utils/search";
-import { ScanImage } from "../../../../../generated-protos/image";
 import { DuplicateDatasetProducts, WorkspaceService } from "../../../../analysis/services/workspaces.service";
+
+import { ScanImage } from "src/app/generated-protos/image";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
+import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 
 export interface DuplicateWorkspaceDialogData {
   workspace: ScreenConfiguration;
@@ -69,7 +71,7 @@ export class DuplicateWorkspaceDialogComponent {
     this.loading = true;
 
     this._subs.add(
-      this._cachedDataService.getScanList(ScanListReq.create()).subscribe(scanList => {
+      this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(scanList => {
         this.allScans = sortScans(scanList.scans);
         this.allScanSearchableItems = [
           ...WorkspaceService.DEFAULT_DUPLICATE_OPTIONS,

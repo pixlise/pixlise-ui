@@ -5,9 +5,11 @@
         <div class="section-header">
             <h3>Active jobs</h3>
             <div class="controls">
-                <mat-select multiple [(ngModel)]="filteredJobTypes" class="job-type-filter" placeholder="Job Type">
-                    <mat-option *ngFor="let jt of jobTypes" [value]="jt">{{jt}}</mat-option>
-                </mat-select>
+                @if (showJobTypePicker) {
+                    <mat-select multiple [(ngModel)]="filteredJobTypes" class="job-type-filter" placeholder="Job Type">
+                        <mat-option *ngFor="let jt of jobTypes" [value]="jt">{{jt}}</mat-option>
+                    </mat-select>
+                }
             </div>
         </div>
         @if (waitForJobs) {

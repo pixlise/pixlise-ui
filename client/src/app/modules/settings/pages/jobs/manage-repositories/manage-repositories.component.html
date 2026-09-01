@@ -2,7 +2,14 @@
 <ng-template #addRepository>
   <div class="dlg">
     <h1>Add Repository</h1>
-    <span>Generally we test with Github only - type the details to continue</span>
+    <span>Specify source repository (eg Github) or PIXLISE client library authentication to continue</span>
+    <h3>Github repositories</h3>
+    <span>You need to specify the URL of the repository, Github user name and a classic token for the secret. This can be created via your Github settings page via: Developer settings, Personal access tokens, Tokens (classic)</span>
+    <h3>PIXLISE client library authentication</h3>
+    <span>The URL specified needs to be the PIXLISE domain you use (eg https://www.pixlise.org) along with the username and password you use to log in to PIXLISE</span>
+
+    <span>Name can be anything that helps you remember what this is for</span>
+    <span>NOTE: You will be using the generated id when defining jobs!</span>
 
     <table>
         <tr>

@@ -1,14 +1,16 @@
 import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
+
 import { DuplicateDatasetProducts, WorkspaceService } from "../../../../../../services/workspaces.service";
 import { AnalysisLayoutService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ScreenConfiguration } from "../../../../../../../../generated-protos/screen-configuration";
-import { SearchableListItem } from "../../../../../../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
-import { ScanImage } from "../../../../../../../../generated-protos/image";
 import { APICachedDataService } from "../../../../../../../pixlisecore/services/apicacheddata.service";
-import { ScanListReq } from "../../../../../../../../generated-protos/scan-msgs";
-import { ScanItem } from "../../../../../../../../generated-protos/scan";
+
+import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { SearchableListItem } from "../../../../../../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
+import { ScanImage } from "src/app/generated-protos/image";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 export type ReplaceScanDialogData = {
   scanId: string;
@@ -49,7 +51,7 @@ export class ReplaceScanDialogComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._subs.add(
-      this._cachedDataService.getScanList(ScanListReq.create()).subscribe(scanList => {
+      this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(scanList => {
         this.allScans = scanList.scans;
         this.allScanSearchableItems = [
           ...WorkspaceService.DEFAULT_DUPLICATE_OPTIONS,
