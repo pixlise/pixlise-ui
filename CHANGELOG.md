@@ -1,4 +1,11 @@
-## 4.98.0 (LATEST)
+## 4.99.0 (LATEST)
+
+### Bug Fixes
+- Fixed issue with drawing introduced with SVG export change - RGBA alpha values were being rounded to 0 (transparent), causing scenarios where points wouldn't draw on certain charts.
+
+## 4.98.0 (2026-08-21)
+
+### New features
 - Added SVG exporting. Tested to work on Context Image, Ternary, Binary and Spectrum chart.
 
 ## 4.97.0 (2026-08-19)
