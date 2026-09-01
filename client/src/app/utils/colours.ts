@@ -106,12 +106,12 @@ export class RGBA {
 */
   asString(): string {
     let a = this.a / 255;
-    return `rgba(${Math.round(this.r)},${Math.round(this.g)},${Math.round(this.b)},${Math.round(a)})`;
+    return `rgba(${Math.round(this.r)},${Math.round(this.g)},${Math.round(this.b)},${a})`;
   }
 
   asStringWithA(alphaPercent0to1: number): string {
     let a = (this.a / 255) * alphaPercent0to1;
-    return `rgba(${Math.round(this.r)},${Math.round(this.g)},${Math.round(this.b)},${Math.round(a)})`;
+    return `rgba(${Math.round(this.r)},${Math.round(this.g)},${Math.round(this.b)},${a})`;
   }
 /*
   asStringSlower(): string {
