@@ -102,6 +102,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
 
     // Don't allow drawing over the axis now - clip to the axis boundaries
     const drawData = this._mdl.drawModel;
+    let isClipping = false;
     if (drawData.xAxis && drawData.yAxis &&
       // For some reason, when drawing using canvas2svg this incorrectly sets all points drawn after it
       // to be in a clipped "group" so none are visible. Here we disable this clipping to ensure we get
@@ -116,6 +117,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
         drawParams.drawViewport.height - drawData.yAxis.startPx
       );
       screenContext.clip();
+      isClipping = true;
     }
 
     drawScatterPoints(
@@ -125,7 +127,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       this._mdl.raw.pointGroups
     );
 
-    if (drawData.xAxis && drawData.yAxis) {
+    if (isClipping) {
       screenContext.restore();
     }
   }
