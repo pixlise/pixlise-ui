@@ -18,6 +18,8 @@ export class JobListComponent implements OnInit, OnDestroy {
   private _subs: Subscription = new Subscription();
 
   @Input() selectedJobId: string = "";
+  @Input() showJobTypePicker: boolean = true;
+  @Input() initialJobTypeFilter: string[] = ["RUN_FIT", "RUN_QUANT", "RUN_EXPRESSION", "RUN_PYTHON_SCRIPT"];
 
   @Output() onSelectJob = new EventEmitter();
   @Output() onUpdateSelectJob = new EventEmitter();
@@ -30,7 +32,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
   totalJobCount = 0;
 
-  private _filteredJobTypes: string[] = ["RUN_FIT", "RUN_QUANT", "RUN_EXPRESSION"];
+  private _filteredJobTypes: string[] = [];
   jobTypes: string[] = [];
 
   private _jobPage: number = 0; // 0 being the most recent jobs
@@ -53,6 +55,8 @@ export class JobListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this._filteredJobTypes = Array.from(this.initialJobTypeFilter);
+
     this.refreshJobList();
 
     this._subs.add(

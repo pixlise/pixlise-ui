@@ -24,15 +24,15 @@ export class MemoisationService {
 
   constructor(
     private _httpClient: HttpClient,
-    private _dataService: APIDataService,
+    //private _dataService: APIDataService,
     private _localStorageService: LocalStorageService
   ) {
-    this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
-      next: (notificationResp: NotificationResp) => {
-        // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
-        console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
-      },
-    });
+    // this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
+    //   next: (notificationResp: NotificationResp) => {
+    //     // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+    //     console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
+    //   },
+    // });
   }
 
   // Call this to check if the notification update contains anything relevant to be cleared from memoisation

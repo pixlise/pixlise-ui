@@ -1280,7 +1280,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // TODO: we don't actually use the filtering stuff, search string needs to change for API
     // because we have multiple fields we can specify now...
     this.loading = true;
-    this._dataService.sendScanListRequest(ScanListReq.create({})).subscribe({
+    this._cachedDataService.getScanList(ScanListReq.create({}), 10).subscribe({
       next: (resp: ScanListResp) => {
         this.loading = false;
         this.errorString = "";

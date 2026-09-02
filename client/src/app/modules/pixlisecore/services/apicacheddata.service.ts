@@ -66,7 +66,7 @@ export class APICachedDataService {
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
   private _detectedDiffractionStatusReqMap = new Map<string, Observable<DiffractionPeakStatusListResp>>();
-  private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
+  private _scanListReqMap = new Map<string, [number, Observable<ScanListResp>]>();
   private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
   private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
   private _defaultImageReqMap = new Map<string, Observable<ImageGetDefaultResp>>();
@@ -102,12 +102,12 @@ export class APICachedDataService {
     private _memoisationService: MemoisationService,
     private _objChangeService: ObjectChangeMonitorService
   ) {
-    this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
-      next: (notificationResp: NotificationResp) => {
-        // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
-        console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
-      },
-    });
+    // this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
+    //   next: (notificationResp: NotificationResp) => {
+    //     // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+    //     console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
+    //   },
+    // });
   }
 
   handleSysDataChangedNotification(upd: NotificationUpd) {
@@ -492,18 +492,35 @@ export class APICachedDataService {
     return result;
   }
 
-  getScanList(req: ScanListReq): Observable<ScanListResp> {
+  // Retrieves the given request, but if it's older than maxAge, it'll be re-requested from the back-end
+  getScanList(req: ScanListReq, maxAgeSec: number = 86400): Observable<ScanListResp> {
+    const now = Date.now();
+
     const cacheId = JSON.stringify(ScanListReq.toJSON(req));
-    let result = this._scanListReqMap.get(cacheId);
-    if (result === undefined) {
+    let cached = this._scanListReqMap.get(cacheId);
+    if (cached === undefined || ((now-cached[0])/1000 > maxAgeSec)) {
       // Have to request it!
-      result = this._dataService.sendScanListRequest(req).pipe(shareReplay(1));
+      const result = this._dataService.sendScanListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this.addToCache(cacheId, "scanListReqMap", result, this._scanListReqMap);
+      const autoRemove = result.pipe(
+        catchError(err => {
+          // Remove from cache if it encountered an error
+          console.log(`Response cache cleared for ${cacheId}, type: scanListReqMap due to error: ${err}`);
+          this._scanListReqMap.delete(cacheId);
+          throw err;
+        })
+      );
+
+      cached = [now, result];
+
+      // Used to call:
+      //this.addToCache(cacheId, "scanListReqMap", cached, this._scanListReqMap);
+      // But now that we're storing time stamps with it, we define it here:
+      this._scanListReqMap.set(cacheId, [now, autoRemove]);
     }
 
-    return result;
+    return cached[1];
   }
 
   getDetectorConfig(req: DetectorConfigReq): Observable<DetectorConfigResp> {

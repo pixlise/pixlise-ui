@@ -19,12 +19,16 @@
         tr {
             td {
                 padding: $sz-qtr $sz-double;
-                max-width: 500px;
+                max-width: 600px;
             }
             td:nth-child(1) {
                 font-weight: bold;
                 min-width: 100px;
                 color: $clr-gray-30;
+            }
+
+            .multiline {
+                white-space: pre-wrap;
             }
         }
     }

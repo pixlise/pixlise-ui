@@ -1,4 +1,4 @@
-## 4.99.0 (LATEST)
+## 4.100.0 (LATEST)
 
 ### New features
 - At long last we've now got a generic "job runner" capability to the PIXLISE back-end. Jobs can be scheduled to run periodically or on downlink. Users who have access will now see a new "Job Manager" menu item on their user menu (top-right of PIXLISE once logged in). All job running functionality has been converted to use this and the job management page will be the primary way to make sense of what is being run. Going forward, auto-quants now need to be configured as scheduled jobs, so if they are misconfigured we won't see them generated! The job runner is able to calculate quantifications using PIQUANT, calculate and "memoise" Lua expression outputs (thereby removing that burden from the PIXLISE client and running it single-threaded in the browser!) and the newest addition:
@@ -9,6 +9,11 @@
 
 ### Bug Fixes
 - User icons (displayed on various parts of PIXLISE) could go hay-wire and download the list of users in an endless loop if one of the user ids wasn't recognised
+
+## 4.99.0 (2026-09-01)
+
+### Bug Fixes
+- Fixed issue with drawing introduced with SVG export change - RGBA alpha values were being rounded to 0 (transparent), causing scenarios where points wouldn't draw on certain charts.
 
 ## 4.98.0 (2026-08-21)
 

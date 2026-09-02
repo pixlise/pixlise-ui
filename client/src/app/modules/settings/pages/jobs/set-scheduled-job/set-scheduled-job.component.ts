@@ -34,10 +34,11 @@ const jobParamAndHelp = new Map<JobType, Map<string, string>>([
   [JobType.JT_RUN_PYTHON_SCRIPT,
     new Map<string, string>([
       ["scanId", `"none", or "imported" (if using AFTER_IMPORT - this means use the one that just imported) or the scan id`],
-      ["repositoryId", `Which defined repository to use to download python source to run`],
+      ["repositoryId", `Id of the repository defined that contains the repository url/user/token allowing PIXLISE back-end to download source code to run`],
       ["branch", `Branch of repository to run`],
       ["scriptName", `Name of script within repository to run`],
-      ["quant", `"none" or if using an id: "id:quant-123", otherwise "name:AutoQuant PIXL (AB)"`]
+      ["quant", `"none" or if using an id: "id:quant-123", otherwise "name:AutoQuant PIXL (AB)"`],
+      ["clientAuthId", `Id of the repository defined that has the url/user/password of the PIXLISE account the client library should use when running the script`]
     ])],
 ]);
 

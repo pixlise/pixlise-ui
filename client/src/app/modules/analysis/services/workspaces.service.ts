@@ -1,20 +1,23 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { Router } from "@angular/router";
 import { catchError, combineLatest, forkJoin, map, Observable, of, Subscription, switchMap } from "rxjs";
+
 import { AnalysisLayoutService, APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
-import { ScanConfiguration, ScreenConfiguration } from "../../../generated-protos/screen-configuration";
-import { ScreenConfigurationGetReq, ScreenConfigurationListReq } from "../../../generated-protos/screen-configuration-msgs";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
-import { ROIItem, ROIItemSummary } from "../../../generated-protos/roi";
-import { QuantGetReq, QuantGetResp } from "../../../generated-protos/quantification-retrieval-msgs";
-import { QuantificationSummary } from "../../../generated-protos/quantification-meta";
-import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "../../../generated-protos/image-msgs";
-import { ScanImage } from "../../../generated-protos/image";
-import { ScanItem } from "../../../generated-protos/scan";
-import { ScanListReq } from "../../../generated-protos/scan-msgs";
-import { SearchParams } from "../../../generated-protos/search-params";
 import { ROIService } from "../../roi/services/roi.service";
+
+import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
+import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
+import { ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { ScanImage } from "src/app/generated-protos/image";
+import { ScanItem } from "src/app/generated-protos/scan";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { SearchParams } from "src/app/generated-protos/search-params";
+import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScreenConfigurationGetReq, ScreenConfigurationListReq } from "src/app/generated-protos/screen-configuration-msgs";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+
 import { SearchableListItem } from "../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
 import { levenshteinDistance } from "src/app/utils/search";
 import { SDSFields } from "src/app/utils/utils";
@@ -132,7 +135,7 @@ export class WorkspaceService implements OnDestroy {
           quantRequests.push(of(null));
         }
 
-        return this._cachedDataService.getScanList(ScanListReq.create()).pipe(
+        return this._cachedDataService.getScanList(ScanListReq.create({})).pipe(
           switchMap(scanList => {
             let scanItems = scanList.scans;
 
