@@ -9,6 +9,7 @@ import { ScheduledJob, ScheduledJob_ScheduleType } from 'src/app/generated-proto
 
 import { getPrintableJobScheduleType, getPrintableJobType } from '../../../models/jobs.model';
 import { getPrintableScheduledJobInstrument } from '../set-scheduled-job/set-scheduled-job.component';
+import { httpErrorToString } from 'src/app/utils/utils';
 
 @Component({
   selector: 'scheduled-job-view',
@@ -94,6 +95,7 @@ export class ScheduledJobViewComponent {
   }
 */
   onCloseRun(runJob: boolean) {
+    this.message = "";
     if (runJob) {
       const params = {};
       for (let [k, v] of this.runParams.entries()) {
@@ -103,7 +105,18 @@ export class ScheduledJobViewComponent {
       this._dataService.sendTriggerScheduledJobRequest(TriggerScheduledJobReq.create({
         scheduledJobId: this.job.id,
         jobParameters: params
-      }));
+      })).subscribe({
+        next: resp => {
+          if (resp.jobId.length <= 0) {
+            this.message = "No job id returned when starting job";
+          } else {
+            this.message = "Job started, id: " + resp.jobId;
+          }
+        },
+        error: err => {
+          this.message = httpErrorToString(err, "Failed to run job");
+        }
+      });
 
       this.runParams.clear();
     }
