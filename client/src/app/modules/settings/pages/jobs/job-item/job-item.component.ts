@@ -2,6 +2,7 @@ import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { Subscription, interval } from "rxjs";
 import { JobStatus, JobStatus_Status, jobStatus_StatusToJSON, JobType } from "src/app/generated-protos/job";
 import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { isJobStatusActive } from "src/app/utils/utils";
 
 @Component({
   standalone: false,
@@ -37,7 +38,7 @@ export class JobItemComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (this.job.status != JobStatus_Status.COMPLETE && this.job.status != JobStatus_Status.ERROR) {
+    if (isJobStatusActive(this.job.status)) {
       // start a timer to update the elapsed time
       this._subs.add(
         interval(1000).subscribe(() => {

@@ -34,7 +34,7 @@ import { Subscription } from "rxjs";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanCreateUserDefinedReq, ScanUploadReq, ScanUploadResp, ScanUploadUpd } from "src/app/generated-protos/scan-msgs";
 
-import { httpErrorToString } from "src/app/utils/utils";
+import { httpErrorToString, isJobStatusActive } from "src/app/utils/utils";
 import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
@@ -97,7 +97,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
           }
 
           this.setStatus(upd.status.status, upd.status.message);
-          this.complete = upd.status.status == JobStatus_Status.COMPLETE || upd.status.status == JobStatus_Status.ERROR;
+          this.complete = !isJobStatusActive(upd.status.status);
         }
       })
     );

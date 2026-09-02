@@ -43,6 +43,7 @@ import { JobListReq, JobListResp } from "src/app/generated-protos/job-msgs";
 // import { AuthService } from "@auth0/auth0-angular";
 import { CustomAuthService as AuthService } from "src/app/services/custom-auth-service.service";
 import { Permissions } from "src/app/utils/permissions";
+import { isJobStatusActive } from "src/app/utils/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -120,7 +121,7 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy, A
       this.jobsRunning = 0;
 
       for (const job of jobListResp.jobs) {
-        if (job.jobType == JobType.JT_RUN_QUANT && job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR) {
+        if (job.jobType == JobType.JT_RUN_QUANT && isJobStatusActive(job.status)) {
           this.jobsRunning++;
         }
       }
