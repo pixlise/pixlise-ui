@@ -3,7 +3,7 @@
         <div class="top-tabs">
             <div class="tab clickable" [ngClass]="{'selected': !showScheduledJobs}" (click)="onTabActivePastJobs()">
                 <span>Active/Past Jobs</span>
-                @if (activeJobCount > 0) {
+                @if (activeJobs) {
                     <wait-spinner></wait-spinner>
                 }
             </div>

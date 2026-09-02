@@ -9,6 +9,7 @@ import { QuantificationSummary } from 'src/app/generated-protos/quantification-m
 
 import { ExpressionPickerResponse } from 'src/app/modules/expressions/components/expression-picker/expression-picker.component';
 import { AnalysisLayoutService, APIDataService } from 'src/app/modules/pixlisecore/pixlisecore.module';
+import { isJobStatusActive } from 'src/app/utils/utils';
 
 
 @Component({
@@ -31,6 +32,9 @@ export class JobsComponent implements OnInit, OnDestroy {
   showScheduledJobs: boolean = false;
 
   activeJobCount: number = 0;
+  activeJobs: boolean = false;
+
+  private _activeJobsSeen: Set<string> = new Set<string>();
 
   constructor(
     private _dataService: APIDataService,
@@ -45,6 +49,25 @@ export class JobsComponent implements OnInit, OnDestroy {
         (result: ExpressionPickerResponse | null) => {
         }
       )
+    );
+
+    this._subs.add(
+      this._dataService.jobListUpd$.subscribe(upd => {
+        if (upd.job) {
+          //const had = this._activeJobsSeen.has(upd.job.jobId);
+          const isActive = isJobStatusActive(upd.job.status);
+
+          // Add to our list of active jobs if it's active
+          if (isActive) {
+            this._activeJobsSeen.add(upd.job.jobId);
+          } else {
+            // Make sure it's not in our active list
+            this._activeJobsSeen.delete(upd.job.jobId);
+          }
+
+          this.activeJobs = this._activeJobsSeen.size > 0;
+        }
+      })
     );
   }
 
