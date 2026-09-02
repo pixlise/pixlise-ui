@@ -23,7 +23,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
   @Output() onSelectJob = new EventEmitter();
   @Output() onUpdateSelectJob = new EventEmitter();
-  @Output() onActiveJobCountChanged = new EventEmitter();
+  @Output() onActiveJobs = new EventEmitter();
   
   waitForJobs: boolean = false;
 
@@ -97,7 +97,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
         this.totalJobCount = resp.totalJobCount;
 
-        this.onActiveJobCountChanged.emit(this.activeJobs.length);
+        this.onActiveJobs.emit(this.activeJobs);
 
         // setTimeout(() => {
         //   this.viewport.checkViewportSize();
@@ -191,7 +191,7 @@ export class JobListComponent implements OnInit, OnDestroy {
                 this.activeJobs.splice(c, 1);
                 this.jobs.unshift(upd.job);
 
-                this.onActiveJobCountChanged.emit(this.activeJobs.length);
+                this.onActiveJobs.emit(this.activeJobs);
               }
 
               // We've handled, nothing more to do here!
@@ -213,7 +213,7 @@ export class JobListComponent implements OnInit, OnDestroy {
           // If we're still running, this job isn't in either list, so add it to the appropriate one now
           if (isJobStatusActive(upd.job.status)) {
             this.activeJobs.push(upd.job);
-            this.onActiveJobCountChanged.emit(this.activeJobs.length);
+            this.onActiveJobs.emit(this.activeJobs);
           } else {
             this.jobs.push(upd.job);
           }

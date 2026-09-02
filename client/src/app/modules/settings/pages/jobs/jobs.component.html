@@ -18,7 +18,7 @@
         } @else {
             <job-list
                 [selectedJobId]="selectedJob?.jobId || ''"
-                (onActiveJobCountChanged)="onActiveJobCountChanged($event)"
+                (onActiveJobs)="onActiveJobs($event)"
                 (onUpdateSelectJob)="onUpdateSelectJob($event)"
                 (onSelectJob)="onSelectJob($event)"></job-list>
         }

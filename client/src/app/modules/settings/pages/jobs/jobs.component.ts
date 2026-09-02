@@ -75,8 +75,11 @@ export class JobsComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
-  onActiveJobCountChanged(count: number) {
-    this.activeJobCount = count;
+  onActiveJobs(activeJobs: JobStatus[]) {
+    for (let j of activeJobs) {
+      this._activeJobsSeen.add(j.jobId);
+    }
+    this.activeJobs = this._activeJobsSeen.size > 0;
   }
 
   onUpdateSelectJob(job: JobStatus) {
