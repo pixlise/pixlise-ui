@@ -4,7 +4,7 @@ import { Subscription } from 'rxjs';
 import { JobStatus, JobStatus_Status, JobType } from 'src/app/generated-protos/job';
 import { JobListReq } from 'src/app/generated-protos/job-msgs';
 import { APIDataService, AnalysisLayoutService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { httpErrorToString } from 'src/app/utils/utils';
+import { httpErrorToString, isJobStatusActive } from 'src/app/utils/utils';
 import { getPrintableJobType, fromPrintableJobType } from '../../../models/jobs.model';
 import { ExpressionPickerResponse } from 'src/app/modules/expressions/components/expression-picker/expression-picker.component';
 
@@ -23,7 +23,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
   @Output() onSelectJob = new EventEmitter();
   @Output() onUpdateSelectJob = new EventEmitter();
-  @Output() onActiveJobCountChanged = new EventEmitter();
+  @Output() onActiveJobs = new EventEmitter();
   
   waitForJobs: boolean = false;
 
@@ -97,7 +97,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
         this.totalJobCount = resp.totalJobCount;
 
-        this.onActiveJobCountChanged.emit(this.activeJobs.length);
+        this.onActiveJobs.emit(this.activeJobs);
 
         // setTimeout(() => {
         //   this.viewport.checkViewportSize();
@@ -166,10 +166,6 @@ export class JobListComponent implements OnInit, OnDestroy {
     this.refreshJobList();
   }
 
-  private isActiveJob(job: JobStatus): boolean {
-    return job.status != JobStatus_Status.COMPLETE && job.status != JobStatus_Status.ERROR;
-  }
-
   private listenForJobUpdates() {
     if (this._updSubscribed) {
       return;
@@ -188,14 +184,14 @@ export class JobListComponent implements OnInit, OnDestroy {
             if (job.jobId == upd.job.jobId) {
               // At this point, we've found it, but if it's no longer active, we need to put it on our
               // completed list. We'd expect a page refresh to put it in that list too...
-              if (this.isActiveJob(upd.job)) {
+              if (isJobStatusActive(upd.job.status)) {
                 this.activeJobs[c] = upd.job;
               } else {
                 // Remove it from the active list, add to the top of the inactive one
                 this.activeJobs.splice(c, 1);
                 this.jobs.unshift(upd.job);
 
-                this.onActiveJobCountChanged.emit(this.activeJobs.length);
+                this.onActiveJobs.emit(this.activeJobs);
               }
 
               // We've handled, nothing more to do here!
@@ -215,9 +211,9 @@ export class JobListComponent implements OnInit, OnDestroy {
           }
 
           // If we're still running, this job isn't in either list, so add it to the appropriate one now
-          if (this.isActiveJob(upd.job)) {
+          if (isJobStatusActive(upd.job.status)) {
             this.activeJobs.push(upd.job);
-            this.onActiveJobCountChanged.emit(this.activeJobs.length);
+            this.onActiveJobs.emit(this.activeJobs);
           } else {
             this.jobs.push(upd.job);
           }

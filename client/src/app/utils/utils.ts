@@ -35,6 +35,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
 import { ScanDataType, ScanItem } from "../generated-protos/scan";
 import { DatePipe } from "@angular/common";
+import { JobStatus_Status } from "../generated-protos/job";
 
 export class SentryHelper {
   // Can be called from anywhere we see a weird case or an error that we used to just log to
@@ -1270,4 +1271,7 @@ export function scanHasXRF(scan: ScanItem) {
     }
   }
   return hasXRF;
+}
+export function isJobStatusActive(jobStatus: JobStatus_Status) {
+  return jobStatus != JobStatus_Status.COMPLETE && jobStatus != JobStatus_Status.ERROR;
 }

@@ -4,7 +4,7 @@ import { APICommService } from "./apicomm.service";
 
 import { ResponseStatus, WSMessage } from "../../../generated-protos/websocket";
 import { getMessageName, WSError, WSMessageHandler, WSOustandingReq } from "./wsMessageHandler";
-import { randomString } from "src/app/utils/utils";
+import { isJobStatusActive, randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
 import { Observable, Subject, Subscriber, Subscription, interval, map, throwError, timeout } from "rxjs";
@@ -90,7 +90,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       });
 
     this.jobListUpd$.subscribe(upd => {
-        if (upd && upd.job && (upd.job.status == JobStatus_Status.COMPLETE || upd.job.status == JobStatus_Status.ERROR)) {
+        if (upd && upd.job && !isJobStatusActive(upd.job.status)) {
           // See who's waiting for it to complete (or error)
           const waiters = this._jobWaiters.get(upd.job.jobId);
           if (waiters) {
