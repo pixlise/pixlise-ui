@@ -1,43 +1,45 @@
 @if (errorString) {
-        <div>{{errorString}}</div>
-    } @else {
-    <div class="job-list-section upper-section">
-        <div class="section-header">
-            <h3>Active jobs</h3>
-            <div class="controls">
-                @if (showJobTypePicker) {
-                    <mat-select multiple [(ngModel)]="filteredJobTypes" class="job-type-filter" placeholder="Job Type">
-                        <mat-option *ngFor="let jt of jobTypes" [value]="jt">{{jt}}</mat-option>
-                    </mat-select>
-                }
+    <div>{{errorString}}</div>
+} @else {
+    <div class="job-list-list">
+        <div class="job-list-section upper-section">
+            <div class="section-header">
+                <h3>Active jobs</h3>
+                <div class="controls">
+                    @if (showJobTypePicker) {
+                        <mat-select multiple [(ngModel)]="filteredJobTypes" class="job-type-filter" placeholder="Job Type">
+                            <mat-option *ngFor="let jt of jobTypes" [value]="jt">{{jt}}</mat-option>
+                        </mat-select>
+                    }
+                </div>
+            </div>
+            @if (waitForJobs) {
+                <wait-spinner class="waiting"></wait-spinner>
+            }
+            <div class="job-list">
+                <job-item *ngFor="let job of activeJobs"
+                    [job]="job"
+                    [selected]="job.jobId === selectedJobId"
+                    (click)="onClickJob(job)" />
             </div>
         </div>
-        @if (waitForJobs) {
-            <wait-spinner class="waiting"></wait-spinner>
-        }
-        <div class="job-list">
-            <job-item *ngFor="let job of activeJobs"
-                [job]="job"
-                [selected]="job.jobId === selectedJobId"
-                (click)="onClickJob(job)" />
-        </div>
-    </div>
-    <div class="job-list-section bottom-section">
-        <div class="section-header">
-            <h3>Past jobs ({{jobStartIdx}}-{{jobEndIdx}} / {{totalJobCount}})</h3>
-            <div class="controls">
-                <push-button buttonStyle="gray" (onClick)="onPage(-1)">Prev</push-button>
-                <push-button buttonStyle="gray" (onClick)="onPage(1)">Next</push-button>
+        <div class="job-list-section bottom-section">
+            <div class="section-header">
+                <h3>Past jobs ({{jobStartIdx}}-{{jobEndIdx}} / {{totalJobCount}})</h3>
+                <div class="controls">
+                    <push-button buttonStyle="gray" (onClick)="onPage(-1)">Prev</push-button>
+                    <push-button buttonStyle="gray" (onClick)="onPage(1)">Next</push-button>
+                </div>
             </div>
-        </div>
-        @if (waitForJobs) {
-            <wait-spinner class="waiting"></wait-spinner>
-        }
-        <div class="job-list">
-            <job-item *ngFor="let job of jobs"
-                [job]="job"
-                [selected]="job.jobId === selectedJobId"
-                (click)="onClickJob(job)" />
+            @if (waitForJobs) {
+                <wait-spinner class="waiting"></wait-spinner>
+            }
+            <div class="job-list">
+                <job-item *ngFor="let job of jobs"
+                    [job]="job"
+                    [selected]="job.jobId === selectedJobId"
+                    (click)="onClickJob(job)" />
+            </div>
         </div>
     </div>
 }

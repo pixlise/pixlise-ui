@@ -50,6 +50,20 @@
             </tr>
         }
     </table>
+
+    @if (nodeConfigs.length > 0) {
+        <h3>Output Files</h3>
+        <table>
+            @for (cfg of nodeConfigs; track $index; let idx = $index) {
+                <tr>
+                    <td>Node {{idx}}</td>
+                    @for (out of cfg.outputFiles; track $index) {
+                        <td><a class="clickable" title="Full Path: {{out.remotePath}}" (click)="onViewFile(idx, out)">{{printableFileName(out.remotePath)}}</a></td>
+                    }
+                </tr>
+            }
+        </table>
+    }
 </div>
 
 <!-- Was used in old quant job item viewer to show piquant log file links

@@ -37,6 +37,7 @@ import { VariogramPoint } from "src/app/modules/scatterplots/widgets/variogram-w
 import { Image3DModelPointsReq, Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
 import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
 import { ImageScanEntryDisplayElementsGetReq, ImageScanEntryDisplayElementsGetResp } from "src/app/generated-protos/scan-entry-polygon-msgs";
+import { JobOutputGetReq, JobOutputGetResp } from "src/app/generated-protos/job-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -55,6 +56,7 @@ export class APICachedDataService {
   // With these, we request the whole thing, so they're easy to cache for future...
   private _quantReqMap = new Map<string, Observable<QuantGetResp>>();
   private _quantLogReqMap = new Map<string, Observable<QuantLogGetResp>>();
+  private _jobOutputGetReqMap = new Map<string, Observable<JobOutputGetResp>>();
   private _quantRawCSVReqMap = new Map<string, Observable<QuantRawDataGetResp>>();
   private _scanMetaLabelsReqMap = new Map<string, Observable<ScanMetaLabelsAndTypesResp>>();
   private _manualDiffractionReqMap = new Map<string, Observable<DiffractionPeakManualListResp>>();
@@ -253,6 +255,7 @@ export class APICachedDataService {
     return result;
   }
 
+  // TODO: remove
   getQuantLog(req: QuantLogGetReq): Observable<QuantLogGetResp> {
     const cacheId = JSON.stringify(QuantLogGetReq.toJSON(req));
     let result = this._quantLogReqMap.get(cacheId);
@@ -268,6 +271,21 @@ export class APICachedDataService {
     return result;
   }
 
+  getJobOutputFile(req: JobOutputGetReq): Observable<JobOutputGetResp> {
+    const cacheId = JSON.stringify(JobOutputGetReq.toJSON(req));
+    let result = this._jobOutputGetReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendJobOutputGetRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this.addToCache(cacheId, "jobOutputGetReqMap", result, this._jobOutputGetReqMap);
+    }
+
+    return result;
+  }
+
+  // TODO: remove
   getQuantRawCSV(req: QuantRawDataGetReq): Observable<QuantRawDataGetResp> {
     const cacheId = JSON.stringify(QuantRawDataGetReq.toJSON(req));
     let result = this._quantRawCSVReqMap.get(cacheId);

@@ -35,10 +35,14 @@
     flex-direction: column;
     gap: $sz-unit;
     padding: $sz-unit;
-    min-width: 50vw;
+    min-width: 70vw;
+
+    h1 {
+        text-transform: unset;
+    }
 
     .file-contents {
-        height: 400px;
+        height: 70vh;
         overflow-y: auto;
 
         display: flex;
@@ -53,6 +57,7 @@
             align-items: center;
         }
         .content {
+            font-family: monospace;
             white-space: pre;
         }
         .content-table {
