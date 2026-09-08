@@ -9,12 +9,15 @@ import { isJobStatusActive, randomString } from "src/app/utils/utils";
 import * as _m0 from "protobufjs/minimal";
 import { Observable, Subject, Subscriber, Subscription, interval, map, throwError, timeout } from "rxjs";
 import { environment } from "src/environments/environment";
-import { L } from "node_modules/@angular/cdk/a11y-module.d--J1yhM7R";
-import { JobStatus, JobStatus_Status } from "src/app/generated-protos/job";
+import { JobStatus } from "src/app/generated-protos/job";
 
 const TIMEOUT_CHECK_INTERVAL_MS = 3000;
 const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
 const MAX_OUTSTANDING_REQ = environment.maxOutstandingAPIRequests;
+
+export class OutstandingRequestSummary {
+  constructor(public summary: string, public details: string) {}
+}
 
 @Injectable({
   providedIn: "root",
@@ -24,8 +27,8 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
 
   private _id = randomString(6);
 
-  outstandingRequests$: Subject<string> = new Subject<string>();
-  private _lastOutstandingRequestInfo = "";
+  outstandingRequests$: Subject<OutstandingRequestSummary> = new Subject<OutstandingRequestSummary>();
+  private _lastOutstandingRequestInfo = new OutstandingRequestSummary("", "");
 
   // These are requests we haven't sent yet, because we have too many outstanding requests to the server anyway
   private _queuedRequests: Map<number, WSOustandingReq> = new Map<number, WSOustandingReq>();
@@ -260,6 +263,7 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       msgs.push(`${this._queuedRequests.size} queued`);
     }
 
+    let details = "";
     if (this._outstandingRequests.size > 0) {
       let msgCount = 0;
       let spectrumCount = 0;
@@ -270,6 +274,8 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
         } else {
           msgCount++;
         }
+
+        details += `${req.req.msgId}: ${getMessageName(req.req)}\n`;
       }
 
       if (msgCount > 0) {
@@ -280,16 +286,43 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       }
     }
 
-    let msg = "";
+    let summary = "";
     if (msgs.length > 0) {
-      msg = "Waiting for: " + msgs.join(", ");
+      summary = "Waiting for: " + msgs.join(", ");
+    }
+
+    if (details.length > 0) {
+      details = "\nOutstanding requests (most recent to oldest):\n" + details;
+    }
+
+    if (this._queuedRequests.size) {
+      details = details + "\n\nQueued (not yet sent) requests:\n";
+
+      for (let [k, v] of this._queuedRequests.entries()) {
+        details = details + `${k}: ${getMessageName(v.req)}\n`;
+      }
     }
 
     // Only update if this message is any different
-    if (msg != this._lastOutstandingRequestInfo) {
-      this.outstandingRequests$.next(msg);
-      this._lastOutstandingRequestInfo = msg;
+    if (summary != this._lastOutstandingRequestInfo.summary) {
+      const info = new OutstandingRequestSummary(summary, details);
+      this.outstandingRequests$.next(info);
+      this._lastOutstandingRequestInfo = info;
     }
+  }
+
+  private getMessageName(m: WSMessage): string {
+    const j = WSMessage.toJSON(m);
+    if (j) {
+      const keys = Object.keys(j);
+      for (let k of keys) {
+        if (k != "msgId" && k != "errorText" && k != "status") {
+          return k;
+        }
+      }
+    }
+
+    return "";
   }
 
   // Assists with listening for expression job completion

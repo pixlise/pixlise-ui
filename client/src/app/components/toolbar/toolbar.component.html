@@ -147,7 +147,11 @@ POSSIBILITY OF SUCH DAMAGE.
       <div *ngIf="readOnlyMode" class="read-only-container">
         <span class="read-only">Read Only</span>
       </div>
-      <wait-spinner *ngIf="outstandingInfo" #tooltip="matTooltip" [matTooltip]="outstandingInfo"></wait-spinner>
+      @if (outstandingInfo && outstandingInfo?.summary) {
+        <wait-spinner
+          [title]="outstandingInfo.summary+'\n'+outstandingInfo.details">
+        </wait-spinner>
+      }
       <push-button
         title="PIXLISE Version Information"
         *ngIf="uiVersionLastCommitDate > 0"

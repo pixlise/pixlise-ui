@@ -51,6 +51,7 @@ import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/
 import { TabLinks } from "src/app/models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
 import { scanHasXRF } from "src/app/utils/utils";
+import { OutstandingRequestSummary } from "src/app/modules/pixlisecore/services/apidata.service";
 
 class TabNav {
   constructor(
@@ -147,7 +148,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   editingTabIndex: number | null = null;
   newTabName: string = "";
 
-  outstandingInfo: string = "";
+  outstandingInfo: OutstandingRequestSummary = new OutstandingRequestSummary("", "");
 
   constructor(
     private router: Router,
@@ -253,7 +254,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     );
 
     this._subs.add(
-      this._dataService.outstandingRequests$.subscribe((outstandingInfo: string) => {
+      this._dataService.outstandingRequests$.subscribe((outstandingInfo: OutstandingRequestSummary) => {
         this.outstandingInfo = outstandingInfo;
       })
     );
