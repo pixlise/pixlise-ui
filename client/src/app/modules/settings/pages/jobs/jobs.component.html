@@ -39,6 +39,8 @@
                 </expression-job-view>
             }
 
+            <job-outputs [job]="selectedJob" [config]="selectedJobConfig"></job-outputs>
+
             @if (selectedJobConfigError) {
                 <div class="req-error">Job Config Error: {{selectedJobConfigError}}</div>
             }

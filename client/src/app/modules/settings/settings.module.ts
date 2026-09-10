@@ -30,6 +30,7 @@ import { ScheduledJobViewComponent } from './pages/jobs/scheduled-job-view/sched
 import { ManageRepositoriesComponent } from './pages/jobs/manage-repositories/manage-repositories.component';
 import { ScheduledJobListComponent } from './pages/jobs/scheduled-job-list/scheduled-job-list.component';
 import { JobListComponent } from './pages/jobs/job-list/job-list.component';
+import { JobOutputsComponent } from './pages/jobs/job-outputs/job-outputs.component';
 
 export { UserOptionsService } from "./services/user-options.service";
 export { GroupsService } from "./services/groups.service";
@@ -65,6 +66,7 @@ const APP_ROUTES: Routes = [
     ManageRepositoriesComponent,
     ScheduledJobListComponent,
     JobListComponent,
+    JobOutputsComponent,
   ],
   imports: [
     CommonModule,
