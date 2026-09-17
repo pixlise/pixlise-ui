@@ -25,7 +25,7 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
@@ -44,6 +44,7 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
+import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
 
 
 @Component({
@@ -513,22 +514,43 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this.scanId = this._analysisLayoutService.defaultScanId;
 
     if (this.scanId.length > 0) {
-      const items = new Map<string, string[]>();
-      items.set(PredefinedROIID.getAllPointsForScan(this.scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
-      // items.set(PredefinedROIID.getSelectedPointsForScan(this.scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
+      // We were previously just hard-coding this to show A and B, but if the scan has no B, we looked broken. Lets request
+      // some scan info and decide what to actually show
+        this._cachedDataService.getScanList(ScanListReq.create({
+          searchFilters: { scanId: this.scanId },
+        })).subscribe(
+        (scans: ScanListResp) => {
+          if (!scans.scans || scans.scans.length != 1) {
+            return;
+          }
 
-      // Set the calibration
-      this._subs.add(
-        this._energyCalibrationService.getScanCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
-          this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
-          this.mdl.setEnergyCalibration(this.scanId, cal);
-          this.mdl.xAxisEnergyScale = true;
+          const items = new Map<string, string[]>();
+          const lines = [SpectrumChartModel.lineExpressionBulkA];
+
+          // Work out how many detectors there are - find how many bulk sums and assume it has 1 per detector!
+          const detectorCount = scans.scans[0].contentCounts["BulkSpectra"];
+
+          if (detectorCount > 1) {
+            lines.push(SpectrumChartModel.lineExpressionBulkB);
+          }
+
+          items.set(PredefinedROIID.getAllPointsForScan(this.scanId), lines);
+          // items.set(PredefinedROIID.getSelectedPointsForScan(this.scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
+
+          // Set the calibration
+          this._subs.add(
+            this._energyCalibrationService.getScanCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
+              this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
+              this.mdl.setEnergyCalibration(this.scanId, cal);
+              this.mdl.xAxisEnergyScale = true;
+              this.updateLines();
+            })
+          );
+
+          this.mdl.setLineList(items);
           this.updateLines();
-        })
+        }
       );
-
-      this.mdl.setLineList(items);
-      this.updateLines();
     }
   }
 
