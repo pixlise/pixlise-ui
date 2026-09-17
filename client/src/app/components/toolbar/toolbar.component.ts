@@ -52,6 +52,7 @@ import { TabLinks } from "src/app/models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
 import { scanHasXRF } from "src/app/utils/utils";
 import { OutstandingRequestSummary } from "src/app/modules/pixlisecore/services/apidata.service";
+import { ScanInstrument } from "src/app/generated-protos/scan";
 
 class TabNav {
   constructor(
@@ -243,8 +244,17 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             this._analysisLayoutService.availableScans$.subscribe(scans => {
               let scan = scans.find(s => s.id === scanId);
               if (scan) {
-                let sol = scan?.meta?.["Sol"] || "N/A";
-                this._dataSetLoadedName = `Sol ${sol}: ${scan?.title || "N/A"}`;
+                let sol = scan?.meta?.["Sol"] || "";
+
+                if (!sol && (scan?.instrument == ScanInstrument.PIXL_EM || scan?.instrument == ScanInstrument.PIXL_FM)) {
+                  sol = "N/A"
+                }
+
+                if (sol) {
+                  sol = "Sol " + sol + ": ";
+                }
+
+                this._dataSetLoadedName = `${sol}${scan?.title || "N/A"}`;
                 this.updateToolbar();
               }
             })
