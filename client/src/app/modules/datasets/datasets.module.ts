@@ -8,6 +8,7 @@ import { DatasetTilesPageComponent } from "./components/pages/dataset-tiles-page
 import { DataSetSummaryComponent } from "./components/atoms/data-set-summary/data-set-summary.component";
 import { AddDatasetDialogComponent } from "./components/atoms/add-dataset-dialog/add-dataset-dialog.component";
 import { FilterDialogComponent } from "./components/atoms/filter-dialog/filter-dialog.component";
+import { DatasetFilterMenuComponent } from "./components/atoms/dataset-filter-menu/dataset-filter-menu.component";
 import { LogViewerComponent } from "./components/atoms/log-viewer/log-viewer.component";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 import { NgxDropzoneModule } from "ngx-dropzone";
@@ -46,6 +47,7 @@ const APP_ROUTES: Routes = [
     DataSetSummaryComponent,
     AddDatasetDialogComponent,
     FilterDialogComponent,
+    DatasetFilterMenuComponent,
     LogViewerComponent,
     DuplicateWorkspaceDialogComponent,
   ],

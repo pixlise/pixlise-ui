@@ -105,16 +105,48 @@ input {
       .search-box-group {
         display: flex;
         flex-direction: row;
+        align-items: center;
 
         .search-btn-container {
           display: flex;
           align-items: center;
+          justify-content: center;
           padding: 4px 6px;
+          flex-shrink: 0;
 
           cursor: pointer;
 
           &:hover {
             img {
+              filter: saturate(0) brightness(100);
+            }
+          }
+        }
+
+        .search-box {
+          flex: 1 1 auto;
+          min-width: 0;
+          width: 376px;
+        }
+
+        .search-filter-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          margin: 0;
+          border-left: 1px solid rgb(var(--clr-gray-60));
+          padding: 0 2px;
+
+          ::ng-deep .icon-btn {
+            padding: 0 !important;
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 0;
+          }
+
+          &:hover {
+            ::ng-deep img {
               filter: saturate(0) brightness(100);
             }
           }
@@ -411,8 +443,7 @@ input {
     padding: 4px;
   }
 
-  .edit-btn {
-  }
+  .edit-btn {}
 }
 
 .workspaces-listing {
@@ -479,6 +510,7 @@ input {
     }
 
     cursor: pointer;
+
     &:hover {
       background: #444c50;
     }

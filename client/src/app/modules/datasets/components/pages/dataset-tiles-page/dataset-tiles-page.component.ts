@@ -42,7 +42,6 @@ import { CustomAuthService as AuthService } from "src/app/services/custom-auth-s
 
 import {
   APIDataService,
-  PickerDialogComponent,
   SnackbarService,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
@@ -70,10 +69,6 @@ import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlise
 import { HelpMessage } from "src/app/utils/help-message";
 import { httpErrorToString, replaceAsDateIfTestSOL } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
-import {
-  PickerDialogItem,
-  PickerDialogData,
-} from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import {
   ImageGetDefaultReq,
@@ -107,7 +102,18 @@ import {
   DuplicateWorkspaceDialogData,
   DuplicateWorkspaceDialogResult,
 } from "../../atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
-import { filterScans, sortScans } from "src/app/utils/search";
+import {
+  filterScans,
+  ScanSortField,
+  sortScans,
+} from "src/app/utils/search";
+import {
+  DEFAULT_SCAN_SORT_ASC,
+  DEFAULT_SCAN_SORT_FIELD,
+  DatasetFilterMenuChange,
+  DatasetFilterMenuComponent,
+  DatasetFilterMenuData,
+} from "../../atoms/dataset-filter-menu/dataset-filter-menu.component";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { DatasetsService } from "../../../services/datasets.service";
 import { GroupsService } from "src/app/modules/settings/settings.module";
@@ -240,6 +246,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   ];
   public sortWorkspacesBy: string = "Last Updated";
   public sortWorkspacesAsc: boolean = false;
+
+  public sortScansBy: ScanSortField = DEFAULT_SCAN_SORT_FIELD;
+  public sortScansAsc: boolean = DEFAULT_SCAN_SORT_ASC;
+  public selectedDataTypes: ScanDataType[] = [];
 
   public publicOnlyUser: boolean = false;
 
@@ -892,15 +902,29 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       this._searchString,
       instr,
       this.filterTags,
-      this.scans
+      this.scans,
+      this.selectedDataTypes
     );
-    this.filteredScans = sortScans(this.filteredScans);
+    this.filteredScans = sortScans(
+      this.filteredScans,
+      this.sortScansBy,
+      this.sortScansAsc
+    );
 
     this.searchResultSummary = this.filteredScans.length + " items";
   }
 
-  get selectedInstrumentCount(): number {
-    return this._tilesService.selectedInstruments.length;
+  get activeFilterCount(): number {
+    const nonDefaultSort =
+      this.sortScansBy !== DEFAULT_SCAN_SORT_FIELD ||
+      this.sortScansAsc !== DEFAULT_SCAN_SORT_ASC
+        ? 1
+        : 0;
+    return (
+      this._tilesService.selectedInstruments.length +
+      this.selectedDataTypes.length +
+      nonDefaultSort
+    );
   }
 
   getWorkspaceSnapshotNames(workspace: ScreenConfiguration): string[] {
@@ -1338,34 +1362,29 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 */
   onFilterMenu(event: MouseEvent) {
+    event.stopPropagation();
+
     const dialogConfig = new MatDialogConfig();
     dialogConfig.backdropClass = "empty-overlay-backdrop";
+    dialogConfig.autoFocus = false;
 
-    const items: PickerDialogItem[] = [];
-    items.push(new PickerDialogItem("", "Instrument Filter", "", true));
-
-    for (const instr of this.possibleInstruments) {
-      items.push(new PickerDialogItem(instr, instr, "", true));
-    }
-
-    dialogConfig.data = new PickerDialogData(
-      true,
-      true,
-      false,
-      false,
-      items,
+    dialogConfig.data = new DatasetFilterMenuData(
+      this.possibleInstruments,
       this._tilesService.selectedInstruments,
-      "",
+      this.selectedDataTypes,
+      this.sortScansBy,
+      this.sortScansAsc,
       new ElementRef(event.currentTarget)
     );
 
-    const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
-    dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
-      (ids: string[]) => {
-        if (ids) {
-          this._tilesService.selectedInstruments = ids;
-          this.onSearch();
-        }
+    const dialogRef = this.dialog.open(DatasetFilterMenuComponent, dialogConfig);
+    dialogRef.componentInstance.onFilterChanged.subscribe(
+      (change: DatasetFilterMenuChange) => {
+        this._tilesService.selectedInstruments = change.selectedInstruments;
+        this.selectedDataTypes = change.selectedDataTypes;
+        this.sortScansBy = change.sortBy;
+        this.sortScansAsc = change.sortAsc;
+        this.filterScans();
       }
     );
   }

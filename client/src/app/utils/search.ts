@@ -1,4 +1,4 @@
-import { ScanInstrument, ScanItem } from "../generated-protos/scan";
+import { ScanDataType, ScanInstrument, ScanItem } from "../generated-protos/scan";
 
 /**
  * Calculate the number of operations required to transform string a into string b
@@ -62,11 +62,27 @@ function getDatasetSearchFields(scan: ScanItem): string[] {
   ];
 }
 
-export function filterScans(searchString: string, instruments: ScanInstrument[], filterTags: string[], scans: ScanItem[]): ScanItem[] {
+function scanHasDataType(scan: ScanItem, dataType: ScanDataType): boolean {
+  return (scan.dataTypes || []).some(dt => dt.dataType === dataType && dt.count > 0);
+}
+
+export function filterScans(
+  searchString: string,
+  instruments: ScanInstrument[],
+  filterTags: string[],
+  scans: ScanItem[],
+  dataTypes: ScanDataType[] = []
+): ScanItem[] {
   let filtered: ScanItem[] = [];
 
   const searchStringLower = searchString.toLowerCase();
-  if (searchString.length === 0 && filterTags.length === 0 && instruments.length === 0) {
+  const hasFilters =
+    searchString.length > 0 ||
+    filterTags.length > 0 ||
+    instruments.length > 0 ||
+    dataTypes.length > 0;
+
+  if (!hasFilters) {
     filtered = Array.from(scans);
   } else {
     filtered = scans.filter(scan => {
@@ -78,18 +94,29 @@ export function filterScans(searchString: string, instruments: ScanInstrument[],
         return false;
       }
 
+
+      if (dataTypes.length > 0 && !dataTypes.some(dt => scanHasDataType(scan, dt))) {
+        return false;
+      }
+
+      if (searchString.length === 0) {
+        return true;
+      }
+
       const searchFields = getDatasetSearchFields(scan);
       const searchInFields = searchFields.some(field => field.toLowerCase().includes(searchStringLower));
-      
+
       // Also search in tags
       const searchInTags = scan.tags?.some(tag => tag.toLowerCase().includes(searchStringLower)) || false;
-      
+
       return searchInFields || searchInTags;
     });
   }
 
   return filtered;
 }
+
+export type ScanSortField = "RTT" | "Sol" | "Name";
 
 export function readSol(sol: string): number {
   if (sol === undefined) {
@@ -108,24 +135,55 @@ export function readSol(sol: string): number {
   return iSol || 0;
 }
 
-export function sortScans(scans: ScanItem[]): ScanItem[] {
-  // Sort by Sol then by time stamps
-  return scans.sort((scanA, scanB) => {
-    const scanASol = readSol(scanA.meta["Sol"]);
-    const scanBSol = readSol(scanB.meta["Sol"]);
+export function readRTT(rtt: string | undefined): number {
+  if (!rtt) {
+    return 0;
+  }
 
-    if (scanASol == 0 && scanBSol != 0) {
-      // The one with 0 goes later
-      return 1;
-    } else if (scanASol != 0 && scanBSol == 0) {
-      return -1;
-    } else if (scanASol != 0 && scanBSol != 0) {
-      // Compare the sols
-      const result = scanBSol - scanASol;
-      if (result != 0) {
-        return result;
-      }
-      // Otherwise Sols are equal so wefall through and rely on titles
+  const parsed = Number.parseInt(rtt, 10);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function compareNumericMeta(a: number, b: number, ascending: boolean): number {
+  if (a === 0 && b !== 0) {
+    return 1;
+  } else if (a !== 0 && b === 0) {
+    return -1;
+  } else if (a !== 0 && b !== 0) {
+    return ascending ? a - b : b - a;
+  }
+  return 0;
+}
+
+export function sortScans(
+  scans: ScanItem[],
+  sortBy: ScanSortField = "RTT",
+  ascending: boolean = false
+): ScanItem[] {
+  return scans.sort((scanA, scanB) => {
+    let result = 0;
+
+    if (sortBy === "RTT") {
+      result = compareNumericMeta(
+        readRTT(scanA.meta?.["RTT"]),
+        readRTT(scanB.meta?.["RTT"]),
+        ascending
+      );
+    } else if (sortBy === "Sol") {
+      result = compareNumericMeta(
+        readSol(scanA.meta?.["Sol"]),
+        readSol(scanB.meta?.["Sol"]),
+        ascending
+      );
+    } else if (sortBy === "Name") {
+      result = ascending
+        ? scanA.title.localeCompare(scanB.title)
+        : scanB.title.localeCompare(scanA.title);
+      return result;
+    }
+
+    if (result !== 0) {
+      return result;
     }
 
     return scanA.title.localeCompare(scanB.title);
