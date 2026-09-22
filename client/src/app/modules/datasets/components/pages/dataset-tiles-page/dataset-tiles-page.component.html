@@ -131,23 +131,26 @@ POSSIBILITY OF SUCH DAMAGE.
           <img src="assets/button-icons/search.svg" />
         </div>
         <input [(ngModel)]="searchString" class="search-box" type="text" placeholder="Search by title or metadata..." (keyup.enter)="onSearch()" />
-        <icon-button
-          *ngIf="datasetsMode"
-          class="search-filter-btn"
-          title="Sort & Filter"
-          (onClick)="onFilterMenu($event)"
-          type="filter"
-          [hasBackground]="false"
-          [hoverYellow]="true"
-          [size]="24"
-          [notificationCount]="activeFilterCount"
-          badgeText="filters active"></icon-button>
+        <div class="filter-btn-container">
+          <icon-button
+            *ngIf="datasetsMode"
+            class="search-filter-btn"
+            title="Sort & Filter"
+            (onClick)="onFilterMenu($event)"
+            type="filter"
+            [hasBackground]="false"
+            [hoverYellow]="true"
+            [size]="24"
+            [notificationCount]="activeFilterCount"
+            badgeText="filters active"></icon-button>
+            <tag-picker
+              [type]="datasetsMode ? 'scan' : 'workspace'"
+              [selectedTagIDs]="filterTags"
+              [showCurrentTagsSection]="false"
+              (onTagSelectionChanged)="onFilterTagChange($event)">
+            </tag-picker>
+        </div>
       </div>
-      <tag-picker
-        [type]="datasetsMode ? 'scan' : 'workspace'"
-        [selectedTagIDs]="filterTags"
-        [showCurrentTagsSection]="false"
-        (onTagSelectionChanged)="onFilterTagChange($event)"></tag-picker>
       <div class="dim">{{ searchResultSummary }}</div>
       <push-button *ngIf="publicOnlyUser" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
     </div>
