@@ -347,10 +347,10 @@ input {
     min-height: 0;
     overflow: hidden;
 
-    > .meta-image-container,
-    > .meta-open-row,
-    > .tag-expand-area,
-    > .tab-switcher {
+    >.meta-image-container,
+    >.meta-open-row,
+    >.tag-expand-area,
+    >.tab-switcher {
       flex-shrink: 0;
     }
 
@@ -372,7 +372,7 @@ input {
           overflow: hidden;
 
           .markdown-container,
-          > .text-field {
+          >.text-field {
             flex: 1;
             min-height: 0;
             overflow: auto;
@@ -381,7 +381,6 @@ input {
 
           .markdown-container .text-field {
             max-height: none;
-            height: 100%;
           }
         }
       }
