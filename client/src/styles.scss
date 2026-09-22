@@ -508,6 +508,17 @@ mat-option {
   }*/
 }
 
+.dataset-search-type-panel {
+  .mat-pseudo-checkbox {
+    --mat-pseudo-checkbox-minimal-selected-checkmark-color: rgb(var(--clr-yellow));
+  }
+
+  .mat-pseudo-checkbox-minimal.mat-pseudo-checkbox-checked::after,
+  .mat-pseudo-checkbox-minimal.mat-pseudo-checkbox-indeterminate::after {
+    color: rgb(var(--clr-yellow)) !important;
+  }
+}
+
 /* Replaces:
 .mdc-menu-surface {
   --mdc-theme-surface: $clr-gray-80-plus;

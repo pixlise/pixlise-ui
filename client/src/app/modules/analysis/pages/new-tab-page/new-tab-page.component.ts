@@ -125,19 +125,19 @@ export class NewTabPageComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe((response) => {
       if (response && response.layout) {
         const screenConfig =
-          this._analysisLayoutService.activeScreenConfiguration$.value;
-        // Update the layout in the screen configuration
-        if (screenConfig) {
-          screenConfig.layouts.push(response.layout);
-          this._analysisLayoutService.writeScreenConfiguration(screenConfig);
-
-          const lastTabId = screenConfig.layouts.length - 1;
-          this.queryParam["tab"] = lastTabId.toString();
-
-          this._router.navigateByUrl(
-            `${TabLinks.analysis}?${this.getQueryParamString()}`
+          this._analysisLayoutService.addScreenConfigurationLayout(
+            response.layout
           );
+        if (!screenConfig) {
+          return;
         }
+
+        const lastTabId = screenConfig.layouts.length - 1;
+        this.queryParam["tab"] = lastTabId.toString();
+
+        this._router.navigateByUrl(
+          `${TabLinks.analysis}?${this.getQueryParamString()}`
+        );
       }
     });
   }

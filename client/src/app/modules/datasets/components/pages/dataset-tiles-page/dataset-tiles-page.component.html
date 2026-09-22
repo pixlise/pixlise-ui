@@ -121,7 +121,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="search-panel">
     <div *ngIf="datasetListingAllowed" class="gap-separated-horizontal-elements dataset-search">
       <!-- <h2>Search</h2> -->
-      <mat-select class="search-selector" [(value)]="searchType">
+      <mat-select class="search-selector" panelClass="dataset-search-type-panel" [(value)]="searchType">
         <mat-option value="datasets">Datasets</mat-option>
         <mat-option value="workspaces">Workspaces</mat-option>
       </mat-select>
@@ -138,6 +138,7 @@ POSSIBILITY OF SUCH DAMAGE.
           (onClick)="onFilterMenu($event)"
           type="filter"
           [hasBackground]="false"
+          [hoverYellow]="true"
           [size]="24"
           [notificationCount]="activeFilterCount"
           badgeText="filters active"></icon-button>

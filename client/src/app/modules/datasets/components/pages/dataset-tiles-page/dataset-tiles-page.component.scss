@@ -147,8 +147,13 @@ input {
 
           &:hover {
             ::ng-deep img {
-              filter: saturate(0) brightness(100);
+              filter: brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(3201%);
             }
+          }
+
+          ::ng-deep .icon-btn .notifications {
+            top: -4.5px;
+            right: -4.5px;
           }
         }
       }
@@ -200,8 +205,9 @@ input {
     background: $clr-gray-100;
     width: 25vw;
     min-width: 250px;
-    overflow-y: auto;
+    overflow: hidden;
 
+    height: calc(100vh - 103px);
     max-height: calc(100vh - 103px);
 
     .meta-title {
@@ -338,15 +344,45 @@ input {
 .meta-summary {
   .info-panel {
     flex: 1;
+    min-height: 0;
+    overflow: hidden;
+
+    > .meta-image-container,
+    > .meta-open-row,
+    > .tag-expand-area,
+    > .tab-switcher {
+      flex-shrink: 0;
+    }
 
     .tab {
       flex: 1;
+      min-height: 0;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+
+      &.details {
+        overflow-y: auto;
+      }
 
       &.description {
         .meta-area {
           flex: 1;
+          min-height: 0;
+          overflow: hidden;
+
+          .markdown-container,
+          > .text-field {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            max-height: none;
+          }
+
+          .markdown-container .text-field {
+            max-height: none;
+            height: 100%;
+          }
         }
       }
 
@@ -366,13 +402,9 @@ input {
 
           .text-field {
             border-radius: 4px;
-
             overflow: auto;
-            max-height: calc(100vh - 522px);
-
-            &.no-edit {
-              max-height: calc(100vh - 494px);
-            }
+            min-height: 0;
+            max-height: none;
           }
         }
       }
@@ -591,7 +623,8 @@ input {
     .snapshots-container {
       display: flex;
       flex-direction: column;
-      max-height: calc(100vh - 445px);
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
 
       .snapshot {
