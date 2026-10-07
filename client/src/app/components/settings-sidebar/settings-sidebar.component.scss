@@ -154,6 +154,29 @@
         }
       }
 
+      .feature-list {
+        margin: 0 16px 8px 32px;
+
+        .feature-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin: 4px 0;
+
+          &.muted two-state-icon-button {
+            opacity: 0.4;
+          }
+
+          .feature-title {
+            cursor: pointer;
+
+            &:hover {
+              color: $clr-yellow;
+            }
+          }
+        }
+      }
+
       .user-info {
         display: flex;
         margin-top: 8px;

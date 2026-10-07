@@ -1,5 +1,3 @@
-export const WALKTHROUGH_FEATURE = "walkthrough";
-
 export type WalkthroughPlacement = "top" | "bottom" | "left" | "right";
 
 export type WalkthroughAdvanceOn = "next" | "click";
@@ -14,6 +12,8 @@ export type WalkthroughStepDefinition = {
 
 export type WalkthroughFeature = {
   title?: string;
+  url?: string | string[];
+  hidden?: boolean;
   steps: WalkthroughStepDefinition[];
 };
 

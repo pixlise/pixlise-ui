@@ -1,9 +1,10 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { BehaviorSubject } from "rxjs";
+import { Router, NavigationEnd } from "@angular/router";
+import { BehaviorSubject, filter } from "rxjs";
 import { load } from "js-yaml";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { ActiveWalkthroughStep, WALKTHROUGH_FEATURE, WalkthroughAnchor, WalkthroughFeature } from "../models/walkthrough";
+import { ActiveWalkthroughStep, WalkthroughAnchor, WalkthroughFeature } from "../models/walkthrough";
 
 @Injectable({
   providedIn: "root",
@@ -18,15 +19,18 @@ export class WalkthroughService {
   private _triggers = new Map<string, number>();
   private _feature = "";
   private _forced = false;
+  private _pendingLaunch = "";
   private _stepIdx = 0;
   private _clearPending: (() => void) | null = null;
 
   constructor(
     private _http: HttpClient,
+    private _router: Router,
     private _userOptionsService: UserOptionsService
   ) {
     this.loadDefinitions();
     this._userOptionsService.userOptionsChanged$.subscribe(() => this.refresh());
+    this._router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => this.onNavigated());
   }
 
   registerAnchor(anchor: WalkthroughAnchor) {
@@ -73,6 +77,32 @@ export class WalkthroughService {
     }
   }
 
+  get listedFeatures(): { id: string; title: string }[] {
+    return Object.entries(this._features)
+      .filter(([, feature]) => !feature.hidden)
+      .map(([id, feature]) => ({ id, title: feature.title || id }));
+  }
+
+  isFeatureEnabled(feature: string): boolean {
+    return !this._userOptionsService.guidance.seenFeatureIds.includes(feature);
+  }
+
+  setFeatureEnabled(feature: string, enabled: boolean) {
+    const others = this._userOptionsService.guidance.seenFeatureIds.filter(id => id !== feature);
+    this._userOptionsService.updateGuidance({ seenFeatureIds: enabled ? others : [...others, feature] });
+  }
+
+  // Opens the feature, going to its page first if we're not on it
+  launch(feature: string) {
+    if (this.isOnPage(feature)) {
+      this.open(feature);
+      return;
+    }
+
+    this._pendingLaunch = feature;
+    this._router.navigate([this.getUrls(feature)[0]], { queryParamsHandling: "preserve" });
+  }
+
   next() {
     this.activeStep$.value?.anchors.forEach(anchor => anchor.onNext?.());
     this.advance();
@@ -95,11 +125,7 @@ export class WalkthroughService {
     this._feature = "";
     this._forced = false;
 
-    if (feature === WALKTHROUGH_FEATURE) {
-      if (guidance.showWalkthrough) {
-        this._userOptionsService.updateGuidance({ showWalkthrough: false });
-      }
-    } else if (feature && !guidance.seenFeatureIds.includes(feature)) {
+    if (feature && !guidance.seenFeatureIds.includes(feature)) {
       this._userOptionsService.updateGuidance({ seenFeatureIds: [...guidance.seenFeatureIds, feature] });
     }
     this.refresh();
@@ -109,12 +135,33 @@ export class WalkthroughService {
     return !!this._userOptionsService.userDetails.info?.id;
   }
 
-  private isEligible(feature: string): boolean {
-    const guidance = this._userOptionsService.guidance;
-    if (feature === WALKTHROUGH_FEATURE) {
-      return guidance.showWalkthrough;
+  private getUrls(feature: string): string[] {
+    const url = this._features[feature]?.url || [];
+    return typeof url === "string" ? [url] : url;
+  }
+
+  private isOnPage(feature: string): boolean {
+    const urls = this.getUrls(feature);
+    const path = this._router.url.split(/[?#]/)[0].replace(/\/$/, "");
+    return urls.length === 0 || urls.some(url => url.replace(/\/$/, "") === path);
+  }
+
+  private onNavigated() {
+    const feature = this._pendingLaunch;
+    this._pendingLaunch = "";
+    if (feature && this.isOnPage(feature)) {
+      this.open(feature);
     }
-    return !guidance.showWalkthrough && !guidance.tipsDisabled && !guidance.seenFeatureIds.includes(feature);
+    this.refresh();
+  }
+
+  private isEligible(feature: string): boolean {
+    if (!this.isOnPage(feature)) {
+      return false;
+    }
+
+    const guidance = this._userOptionsService.guidance;
+    return !guidance.tipsDisabled && !guidance.seenFeatureIds.includes(feature);
   }
 
   private advance() {
@@ -126,8 +173,9 @@ export class WalkthroughService {
     this._clearPending?.();
     this._clearPending = null;
 
-    if (this._feature && !this._forced && !(this.userLoaded && this.isEligible(this._feature))) {
+    if (this._feature && (!this.isOnPage(this._feature) || (!this._forced && !(this.userLoaded && this.isEligible(this._feature))))) {
       this._feature = "";
+      this._forced = false;
     }
 
     if (!this._feature && this.userLoaded) {
@@ -152,7 +200,7 @@ export class WalkthroughService {
     const anchors = this._anchors.get(step.id) || [];
 
     if (anchors.length <= 0) {
-      if (this._stepIdx > 0 || this._forced) {
+      if (this._stepIdx > 0) {
         const timer = setTimeout(() => this.advance(), 1000);
         this._clearPending = () => clearTimeout(timer);
       }

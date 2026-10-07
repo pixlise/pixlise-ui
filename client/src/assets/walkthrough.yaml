@@ -1,9 +1,10 @@
 walkthrough:
+  url: /datasets
   title: Welcome to PIXLISE
   steps:
     - id: datasets-search
       title: Find a dataset
-      text: Search by title or metadata, or use the filter button to sort and narrow the list by instrument and tags.
+      text: The datasets you have access to are listed here. Search by title or metadata, or use the filter button to sort and narrow the list by instrument and tags.
       placement: bottom
     - id: datasets-first-tile
       title: Select a dataset
@@ -12,23 +13,122 @@ walkthrough:
         Cmd/Ctrl+click to select several datasets at once.
       placement: right
       advanceOn: click
-    - id: datasets-open
-      title: Open the dataset
-      text: Open the dataset in its own dedicated workspace.
+    - id: datasets-info-pane
+      title: Dataset info
+      text: Details about the selected dataset show up here, including its description, metadata and tags.
       placement: left
-    - id: datasets-create
-      title: Upload and combine
-      text: Upload a new scan, or create a new workspace with multiple datasets and a custom layout.
+    - id: toolbar-user-menu
+      title: Your account
+      text: Click your user icon to open the account menu.
+      placement: bottom
+      advanceOn: click
+    - id: user-menu-settings
+      title: User settings
+      text: Choose Settings to change your account details and manage your groups.
+      placement: left
+      advanceOn: click
+    - id: settings-user-name
+      title: Change your user name
+      text: Type a new user name here, then click the check mark to confirm.
+      placement: left
+    - id: settings-manage-groups
+      title: Join groups
+      text: Datasets are shared through user groups. Click Manage Groups (or Request Access) to request to join more groups. A group admin will need to accept your request.
+      placement: left
+    - id: toolbar-builtin-tabs
+      title: Tabs
+      text: Tabs along the top switch between tools. Code Editor is where you write and manage expressions and modules, and Element Maps is where you browse element maps. Your open workspaces get their own tabs here too.
+      placement: bottom
+    - id: datasets-open
+      title: Open a dataset
+      text: Click Open to load the selected dataset in its own workspace and start exploring.
+      placement: left
+      advanceOn: click
+
+public-user-walkthrough:
+  url: /datasets
+  title: Welcome to PIXLISE
+  hidden: true
+  steps:
+    - id: datasets-join-groups
+      title: Get started
+      text: You don't have access to any datasets yet. Click Join User Groups to request access to a group. Once a group admin accepts your request, its datasets will show up here.
+      placement: bottom
+      advanceOn: click
+
+analysis:
+  url: /datasets/analysis
+  title: Analysis Workspace
+  steps:
+    - id: analysis-chart
+      title: Charts
+      text: Each panel in the workspace is a chart. Charts can be context images, spectra, binary and ternary plots, histograms, tables and more, and you can interact with them to explore your data.
+      placement: bottom
+    - id: analysis-chart-switcher
+      title: Change the chart
+      text: Click the chart name to open the chart picker, then choose a different type of chart for the panel.
+      placement: bottom
+      advanceOn: click
+    - id: analysis-chart-edit
+      title: Name and description
+      text: Click the pencil to give the chart your own name and description. The description shows when you hover over the chart name.
+      placement: right
+    - id: analysis-chart-settings
+      title: Chart settings
+      text: Use the settings menu to adjust how the chart looks and behaves. Settings are saved with the workspace for each chart type, so if you switch to another chart and back, it remembers how you last configured it.
+      placement: bottom
+    - id: analysis-sidepanel
+      title: Side panel
+      text: The side panel is for workspace specific tasks, like adding datasets, configuring and sharing the workspace, managing regions of interest, and exporting data.
+      placement: right
+    - id: analysis-tabs-edit
+      title: Edit your tabs
+      text: Tab names can be edited, reordered and hidden. Use the pencil to rename the current tab, or open the Workspaces tab in the side panel to manage all of them.
+      placement: bottom
+    - id: toolbar-new-tab
+      title: Create a new tab
+      text: Click + to create a new tab with a different layout.
+      placement: bottom
+      advanceOn: click
+
+new-tab:
+  url: /datasets/analysis/new
+  title: New Tab
+  steps:
+    - id: new-tab-presets
+      title: Choose a layout
+      text: Pick a preset layout for your new tab, or choose Custom Layout to arrange the charts yourself.
       placement: bottom
 
 code-editor:
+  url: /datasets/code-editor
   title: Code Editor
   steps:
     - id: code-editor-explorer-actions
       title: Create or find expressions
-      text: Create a new expression or module with New, or find existing ones to add with Browse.
+      text: Expressions are calculations that can be used on charts in your workspaces. Modules are reusable code blocks that can be used in expressions. Click "New" to create one or "Browse" to find an existing one.
       placement: bottom
     - id: code-editor-open
       title: What's open
       text: Expressions and modules you have open are listed here.
       placement: right
+    - id: code-editor-modules
+      title: Modules
+      text: Modules are shared pieces of code that are visible to everyone, so they can be reused across expressions.
+      placement: right
+    - id: code-editor-versions
+      title: Module versions
+      text: Every module has a version number. The creator can increment the version and test it, and only releasing it makes the new version available to everyone.
+      placement: bottom
+    - id: code-editor-text
+      title: Write your code
+      text: Write your expressions in the code editor in either Lua or PIXLang, and choose the language with the dropdown below it.
+      placement: right
+    - id: code-editor-viz
+      title: Visualization
+      text: The visualization shows the result of running your code.
+      placement: left
+    - id: code-editor-output
+      title: Output and logs
+      text: The table shows the raw values your code produced, and you can scrub over it and select values. Switch between Output and Logs to see what your code printed.
+      placement: left

@@ -31,6 +31,8 @@
     <widget-switcher
       *ngIf="!disableSwitch"
       [widgetId]="widgetLayoutConfig.id"
+      [walkthroughId]="walkthroughPrefix ? walkthroughPrefix + '-chart-switcher' : ''"
+      (walkthroughNext)="widgetSwitcher.openOverlay()"
       [widgetOptions]="allWidgetOptions"
       [activeWidgetType]="activeWidget"
       [description]="widgetConfiguration?.description"
@@ -66,6 +68,7 @@
       </div>
       <widget-settings-menu
         class="settings-menu-trigger-btn"
+        [walkthroughId]="walkthroughPrefix ? walkthroughPrefix + '-chart-settings' : ''"
         *ngIf="settingsMenu || isOverflowed"
         [settingsDialog]="settingsMenu || defaultOverflowSection"
         [noPadding]="true"

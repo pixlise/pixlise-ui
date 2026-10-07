@@ -115,18 +115,20 @@
         Explorer
         <icon-button icon="assets/button-icons/info.svg" walkthroughOpen="code-editor" title="Show the code editor guide" [hasBackground]="false" [hoverYellow]="true" [size]="20"></icon-button>
         <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
-        <push-button walkthroughId="code-editor-explorer-actions" buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">
-          <widget-settings-menu [settingsDialog]="newEditorDialog" #newEditorDialogBtn>
-            <div class="new-btn-container">
-              <img class="icon" src="assets/button-icons/plus-white.svg" />
-              <span class="label">New</span>
-            </div>
-          </widget-settings-menu>
-        </push-button>
-        <push-button walkthroughId="code-editor-explorer-actions" buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn" [customStyle]="{ padding: '4px 8px' }">
-          <img class="icon" src="assets/button-icons/search.svg" />
-          <span class="label">Browse</span>
-        </push-button>
+        <div class="explorer-actions" walkthroughId="code-editor-explorer-actions">
+          <push-button buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">
+            <widget-settings-menu [settingsDialog]="newEditorDialog" #newEditorDialogBtn>
+              <div class="new-btn-container">
+                <img class="icon" src="assets/button-icons/plus-white.svg" />
+                <span class="label">New</span>
+              </div>
+            </widget-settings-menu>
+          </push-button>
+          <push-button buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn" [customStyle]="{ padding: '4px 8px' }">
+            <img class="icon" src="assets/button-icons/search.svg" />
+            <span class="label">Browse</span>
+          </push-button>
+        </div>
       </h2>
       <div class="sidebar-header-toggle-btn" (click)="onToggleSidebar()">
         <img src="assets/button-icons/double-arrow-left.svg" class="{{ isSidebarOpen ? 'open' : 'closed' }}" />
@@ -161,7 +163,7 @@
               [module]="!isTopModule ? loadedModule : null"></expression-layer>
           </div>
         </div>
-        <div class="group currently-open">
+        <div class="group currently-open" walkthroughId="code-editor-modules">
           <div class="header">
             <h1>All Modules ({{ modules.length }})</h1>
             <two-state-icon-button
@@ -197,7 +199,7 @@
         [value]="topExpression?.name || ''"
         (change)="onTopNameChangeEvent($event)"
         [disabled]="(isTopModule && !isTopModuleIdNew) || !isTopEditable" />
-      <mat-select *ngIf="topExpression && isTopModule && !isTopModuleIdNew" class="versions-select" [(ngModel)]="selectedModuleVersion">
+      <mat-select *ngIf="topExpression && isTopModule && !isTopModuleIdNew" class="versions-select" walkthroughId="code-editor-versions" [(ngModel)]="selectedModuleVersion">
         <mat-option *ngFor="let version of loadedModuleVersions" [value]="version">{{ version }}</mat-option>
       </mat-select>
       <status-indicator
@@ -254,7 +256,7 @@
           </div>
         </widget-settings-menu>
       </section>
-      <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}" aria-label="CodeEditorTopEdit">
+      <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}" aria-label="CodeEditorTopEdit" walkthroughId="code-editor-text">
         <expression-text-editor
           *ngIf="topExpression"
           class="top-expression {{ isTopEditorActive && isSplitScreen ? 'active' : '' }}"
@@ -335,7 +337,7 @@
       </section>
     </section>
     <div class="bottom-toolbar">
-      <mat-select *ngIf="topExpression" [(ngModel)]="topExpression.sourceLanguage">
+      <mat-select *ngIf="topExpression" walkthroughId="code-editor-text" [(ngModel)]="topExpression.sourceLanguage">
         <mat-option value="LUA">Lua</mat-option>
         <mat-option value="PIXLANG">PIXLang</mat-option>
       </mat-select>
@@ -348,6 +350,7 @@
         #applyToExpressionsDialogBtn>Apply To Expressions</push-button>
       <push-button
         *ngIf="hasVisibleModule"
+        walkthroughId="code-editor-versions"
         buttonStyle="yellow"
         [disabled]="!isVisibleModuleEditable || !isVisibleModuleVersionLatest"
         (onClick)="onRelease()">Release Module</push-button>
@@ -366,7 +369,7 @@
         </mat-select>
       </div>
     </div>
-    <section class="widget-container">
+    <section class="widget-container" walkthroughId="code-editor-viz">
       <widget
         *ngIf="canMountWidgets && idsLoaded"
         [liveExpression]="liveExpressionConfig"
@@ -389,7 +392,7 @@
         </div>
       </div>
     </section>
-    <section class="output-container" aria-label="CodeEditorOutput">
+    <section class="output-container" aria-label="CodeEditorOutput" walkthroughId="code-editor-output">
       <expression-console
         [scanId]="scanId"
         [expression]="topExpression"

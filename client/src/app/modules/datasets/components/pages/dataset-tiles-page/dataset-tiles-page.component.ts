@@ -252,6 +252,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   public selectedDataTypes: ScanDataType[] = [];
 
   public publicOnlyUser: boolean = false;
+  private _scansLoaded: boolean = false;
 
   constructor(
     private _router: Router,
@@ -748,6 +749,16 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   get showOpenOptions(): boolean {
     return this._userCanEdit; // NOTE: this used to look at wether the user is a "public" user
+  }
+
+  get walkthroughFeature(): string {
+    if (!this._scansLoaded) {
+      return "";
+    }
+    if (this.scans.length > 0) {
+      return "walkthrough";
+    }
+    return this.publicOnlyUser ? "public-user-walkthrough" : "";
   }
 
   get userCanEdit(): boolean {
@@ -1310,6 +1321,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.errorString = "";
 
         this.scans = resp.scans;
+        this._scansLoaded = true;
         this.filterScans();
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;

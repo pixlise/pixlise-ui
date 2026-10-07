@@ -76,6 +76,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
 
   @Input() widgetLayoutConfig!: WidgetLayoutConfiguration;
   @Input() layoutIndex: number = 0;
+  @Input() walkthroughPrefix: string = "";
   @Input() disableSwitch: boolean = false;
   @Input() title: string = "";
 

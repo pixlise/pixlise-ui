@@ -65,6 +65,7 @@ export type NavigationTab = {
   params?: Record<string, string>;
   active?: boolean;
   passQueryParams?: boolean;
+  walkthroughId?: string;
 };
 
 @Injectable({
