@@ -236,6 +236,27 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     this._userOptionsService.acceptDataCollectionAgreement(!this.dataCollectionActive);
   }
 
+  get showWalkthrough(): boolean {
+    return this._userOptionsService.guidance.showWalkthrough;
+  }
+
+  get showTips(): boolean {
+    return !this._userOptionsService.guidance.tipsDisabled;
+  }
+
+  onToggleWalkthrough(): void {
+    this._userOptionsService.updateGuidance({ showWalkthrough: !this.showWalkthrough });
+  }
+
+  onToggleTips(): void {
+    this._userOptionsService.updateGuidance(this.showTips ? { tipsDisabled: true } : { tipsDisabled: false, seenFeatureIds: [] });
+  }
+
+  onResetTips(): void {
+    this._userOptionsService.updateGuidance({ seenFeatureIds: [] });
+    this._snackBar.openSuccess("Walkthrough tips reset");
+  }
+
   openDataCollectionDialog(event: Event): void {
     event.stopPropagation();
 

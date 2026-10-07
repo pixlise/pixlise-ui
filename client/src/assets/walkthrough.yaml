@@ -1,0 +1,34 @@
+walkthrough:
+  title: Welcome to PIXLISE
+  steps:
+    - id: datasets-search
+      title: Find a dataset
+      text: Search by title or metadata, or use the filter button to sort and narrow the list by instrument and tags.
+      placement: bottom
+    - id: datasets-first-tile
+      title: Select a dataset
+      text: |-
+        Click a dataset to see its details.
+        Cmd/Ctrl+click to select several datasets at once.
+      placement: right
+      advanceOn: click
+    - id: datasets-open
+      title: Open the dataset
+      text: Open the dataset in its own dedicated workspace.
+      placement: left
+    - id: datasets-create
+      title: Upload and combine
+      text: Upload a new scan, or create a new workspace with multiple datasets and a custom layout.
+      placement: bottom
+
+code-editor:
+  title: Code Editor
+  steps:
+    - id: code-editor-explorer-actions
+      title: Create or find expressions
+      text: Create a new expression or module with New, or find existing ones to add with Browse.
+      placement: bottom
+    - id: code-editor-open
+      title: What's open
+      text: Expressions and modules you have open are listed here.
+      placement: right

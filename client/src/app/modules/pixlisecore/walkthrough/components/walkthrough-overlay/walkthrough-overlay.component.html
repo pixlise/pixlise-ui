@@ -1,0 +1,25 @@
+<ng-container *ngIf="step">
+  <svg class="backdrop" [class.hidden]="!visible">
+    <path class="dim" fill-rule="evenodd" [attr.d]="backdropPath" />
+    <rect class="outline" *ngFor="let hole of holes" [attr.x]="hole.left" [attr.y]="hole.top" [attr.width]="hole.width"
+      [attr.height]="hole.height" rx="4" />
+    <ng-container *ngFor="let arrow of arrows">
+      <line class="arrow" [attr.x1]="arrow.x1" [attr.y1]="arrow.y1" [attr.x2]="arrow.x2" [attr.y2]="arrow.y2" />
+      <polygon class="arrow-head" [attr.points]="arrow.head" />
+    </ng-container>
+  </svg>
+  <div #card class="walkthrough-card" [class.hidden]="!visible" [ngStyle]="cardStyle">
+    <action-button class="dismiss-btn" action="close" color="rgb(var(--clr-gray-30))" tooltipTitle="Dismiss"
+      (onClick)="onDismiss()"></action-button>
+    <div class="feature-title" *ngIf="step.featureTitle">{{ step.featureTitle }}</div>
+    <div class="title" *ngIf="step.title">{{ step.title }}</div>
+    <div class="text">{{ step.text }}</div>
+    <div class="footer">
+      <span class="progress" *ngIf="step.total > 1">{{ step.position + 1 }}/{{ step.total }}</span>
+      <span class="spacer"></span>
+      <push-button *ngIf="step.total > 1" buttonStyle="gray" [disabled]="step.position === 0"
+        (onClick)="onBack()">Back</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onNext()">{{ step.isLast ? "Done" : "Next" }}</push-button>
+    </div>
+  </div>
+</ng-container>

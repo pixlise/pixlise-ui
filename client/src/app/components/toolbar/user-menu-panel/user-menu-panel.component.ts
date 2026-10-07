@@ -60,6 +60,7 @@ export class UserMenuPanelComponent implements OnInit, OnDestroy {
       nonSecretPassword: "",
     },
     dataCollectionVersion: "",
+    guidance: undefined,
     permissions: [],
   };
 

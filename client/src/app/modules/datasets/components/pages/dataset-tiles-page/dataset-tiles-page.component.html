@@ -115,7 +115,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 </ng-template>
 
-<div class="datasets-container" aria-label="Datasets">
+<div class="datasets-container" aria-label="Datasets" walkthroughFeature="walkthrough">
   <!-- <app-toolbar titleToShow="Select Dataset"></app-toolbar> -->
 
   <div class="search-panel">
@@ -126,7 +126,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <mat-option value="workspaces">Workspaces</mat-option>
       </mat-select>
 
-      <div class="search-box-group">
+      <div class="search-box-group" walkthroughId="datasets-search">
         <div (click)="onSearch()" class="search-btn-container">
           <img src="assets/button-icons/search.svg" />
         </div>
@@ -155,9 +155,17 @@ POSSIBILITY OF SUCH DAMAGE.
       <push-button *ngIf="publicOnlyUser" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
     </div>
     <div class="right-header-btns">
-      <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload or create a new scan">Upload Scan</push-button>
+      <push-button
+        *ngIf="userCanEdit"
+        walkthroughId="datasets-create"
+        (onClick)="onAddScan()"
+        buttonStyle="gray"
+        title="Upload or create a new scan"
+        >Upload Scan</push-button
+      >
       <push-button
         #newWorkspaceButton
+        walkthroughId="datasets-create"
         [notificationCount]="newWorkspaceScans.length"
         badgeText="scans selected"
         [customDialog]="newWorkspaceDialog"
@@ -172,7 +180,9 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="!errorString && !loading && datasetsMode" class="scrollable">
       <div class="tiles" (onClick)="onClickTileArea()">
         <data-set-summary
-          *ngFor="let item of filteredScans; trackBy: trackScansBy"
+          *ngFor="let item of filteredScans; let i = index; trackBy: trackScansBy"
+          [walkthroughId]="i === 0 ? 'datasets-first-tile' : ''"
+          (walkthroughNext)="onSelect(item)"
           [summary]="item"
           [defaultImage]="scanDefaultImages.get(item.id)"
           [selected]="selectedScan"
@@ -457,6 +467,7 @@ POSSIBILITY OF SUCH DAMAGE.
               (onTagSelectionChanged)="onTagChange($event)">
             </tag-picker>
             <push-button
+              walkthroughId="datasets-open"
               (onClick)="onOpen($event, false)"
               buttonStyle="yellow"
               title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!"

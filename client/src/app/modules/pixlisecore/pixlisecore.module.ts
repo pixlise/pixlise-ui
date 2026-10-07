@@ -82,6 +82,10 @@ import { WidgetSelectionButtonComponent } from "./components/widget-selection-di
 //import { AnalysisLayoutService } from "./services/analysis-layout.service";
 import { AddCustomImageComponent, AddCustomImageParameters, AddCustomImageResult } from "./components/atoms/add-custom-image/add-custom-image.component";
 import { ContextImagePickerComponent } from "./components/atoms/context-image-picker/context-image-picker.component";
+import { WalkthroughOverlayComponent } from "./walkthrough/components/walkthrough-overlay/walkthrough-overlay.component";
+import { WalkthroughTextDirective } from "./walkthrough/directives/walkthrough-text.directive";
+import { WalkthroughFeatureDirective } from "./walkthrough/directives/walkthrough-feature.directive";
+import { WalkthroughOpenDirective } from "./walkthrough/directives/walkthrough-open.directive";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -124,6 +128,10 @@ export { AnalysisLayoutService, DefaultExpressions, NavigationTab } from "./serv
 export { WidgetSelectionDialogComponent } from "./components/widget-selection-dialog/widget-selection-dialog.component";
 export { AddCustomImageComponent, AddCustomImageParameters, AddCustomImageResult } from "./components/atoms/add-custom-image/add-custom-image.component";
 export { ContextImagePickerComponent } from "./components/atoms/context-image-picker/context-image-picker.component";
+export { WalkthroughService } from "./walkthrough/services/walkthrough.service";
+export { WalkthroughTextDirective } from "./walkthrough/directives/walkthrough-text.directive";
+export { WalkthroughFeatureDirective } from "./walkthrough/directives/walkthrough-feature.directive";
+export { WalkthroughOpenDirective } from "./walkthrough/directives/walkthrough-open.directive";
 
 @NgModule({
   declarations: [
@@ -189,7 +197,8 @@ export { ContextImagePickerComponent } from "./components/atoms/context-image-pi
     WidgetSelectionDialogComponent,
     WidgetSelectionButtonComponent,
     AddCustomImageComponent,
-    ContextImagePickerComponent
+    ContextImagePickerComponent,
+    WalkthroughOverlayComponent
   ],
   imports: [
     CommonModule,
@@ -200,7 +209,10 @@ export { ContextImagePickerComponent } from "./components/atoms/context-image-pi
     DragDropModule,
     ScrollingModule,
     MatMenuModule,
-    NgxDropzoneModule
+    NgxDropzoneModule,
+    WalkthroughTextDirective,
+    WalkthroughFeatureDirective,
+    WalkthroughOpenDirective
   ],
   exports: [
     WaitSpinnerComponent,
@@ -261,7 +273,11 @@ export { ContextImagePickerComponent } from "./components/atoms/context-image-pi
     WidgetSelectionDialogComponent,
     WidgetSelectionButtonComponent,
     AddCustomImageComponent,
-    ContextImagePickerComponent
+    ContextImagePickerComponent,
+    WalkthroughOverlayComponent,
+    WalkthroughTextDirective,
+    WalkthroughFeatureDirective,
+    WalkthroughOpenDirective
   ],
   providers: [
     /*APICommService, APIDataService*/

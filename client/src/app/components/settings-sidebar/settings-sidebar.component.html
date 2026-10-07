@@ -35,6 +35,19 @@
         <a (click)="openDataCollectionDialog($event)" tabindex="-1" role="button" (keydown)="openDataCollectionDialog($event)">User Data Collection:</a>
         <switch-button [active]="dataCollectionActive"></switch-button>
       </div>
+      <div class="data-collection-row" (click)="onToggleWalkthrough()" tabindex="0" role="button" (keydown)="onToggleWalkthrough()">
+        <span>Show New User Walkthrough</span>
+        <two-state-icon-button activeIcon="assets/button-icons/check-on.svg" inactiveIcon="assets/button-icons/check-off.svg" [active]="showWalkthrough">
+        </two-state-icon-button>
+      </div>
+      <div class="data-collection-row" (click)="onToggleTips()" tabindex="0" role="button" (keydown)="onToggleTips()">
+        <span>Show Helpful Tips</span>
+        <two-state-icon-button activeIcon="assets/button-icons/check-on.svg" inactiveIcon="assets/button-icons/check-off.svg" [active]="showTips">
+        </two-state-icon-button>
+      </div>
+      <div class="data-collection-row">
+        <push-button buttonStyle="gray" (onClick)="onResetTips()">Reset Walkthrough Tips</push-button>
+      </div>
     </section>
     <section class="group-membership">
       <h2>

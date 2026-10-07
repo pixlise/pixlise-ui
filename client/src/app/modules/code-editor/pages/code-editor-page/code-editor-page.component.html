@@ -108,13 +108,14 @@
 </ng-template>
 
 
-<div class="code-editor" aria-label="CodeEditor">
+<div class="code-editor" aria-label="CodeEditor" walkthroughFeature="code-editor">
   <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}" aria-label="CodeEditorExplorer">
     <div class="top-header">
       <h2 *ngIf="isSidebarOpen" class="explorer-header">
         Explorer
+        <icon-button icon="assets/button-icons/info.svg" walkthroughOpen="code-editor" title="Show the code editor guide" [hasBackground]="false" [hoverYellow]="true" [size]="20"></icon-button>
         <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
-        <push-button buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">
+        <push-button walkthroughId="code-editor-explorer-actions" buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">
           <widget-settings-menu [settingsDialog]="newEditorDialog" #newEditorDialogBtn>
             <div class="new-btn-container">
               <img class="icon" src="assets/button-icons/plus-white.svg" />
@@ -122,7 +123,7 @@
             </div>
           </widget-settings-menu>
         </push-button>
-        <push-button buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn" [customStyle]="{ padding: '4px 8px' }">
+        <push-button walkthroughId="code-editor-explorer-actions" buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn" [customStyle]="{ padding: '4px 8px' }">
           <img class="icon" src="assets/button-icons/search.svg" />
           <span class="label">Browse</span>
         </push-button>
@@ -133,7 +134,7 @@
     </div>
     <section class="expressions" aria-label="CodeEditorExpressions">
       <div class="layers">
-        <div class="group currently-open">
+        <div class="group currently-open" walkthroughId="code-editor-open">
           <div class="header">
             <h1>Currently Open ({{ currentlyOpenCount }})</h1>
             <two-state-icon-button
