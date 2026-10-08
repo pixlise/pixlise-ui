@@ -115,7 +115,7 @@ POSSIBILITY OF SUCH DAMAGE.
       @if (selectedChoice) {
       <div class="image-option-content">
         <div class="row">
-          <h5 class="name">{{ selectedChoice?.name }}</h5>
+          <h5 class="name" #tooltip="matTooltip" [matTooltip]="selectedChoice?.name">{{ selectedChoice?.name }}</h5>
           <action-button
               [confirmText]="'Are you sure you want to delete image ' + selectedChoice?.path + '?'"
               action="delete"

@@ -605,6 +605,8 @@ export function getPathBase(path: string): string {
     const idx = path.lastIndexOf("/");
     if (idx > -1) {
       return path.substring(idx + 1);
+    } else {
+      return path;
     }
   }
   return "";
@@ -637,6 +639,7 @@ export class SDSFields {
   ) // EXT
   {}
 
+  // NOTE: name must be a file name only, not a path - so we must remove the prefixed scanid/ before calling this!!!
   static makeFromFileName(name: string): SDSFields | null {
     if (name.length !== 58) {
       return null;

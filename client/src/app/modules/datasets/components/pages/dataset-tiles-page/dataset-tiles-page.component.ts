@@ -46,6 +46,7 @@ import {
   SnackbarService,
 } from "src/app/modules/pixlisecore/pixlisecore.module";
 import {
+  ScanCloneReq,
   ScanListReq,
   ScanListResp,
   ScanListUpd,
@@ -830,6 +831,35 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       this._router.navigate(["edit-scan"], {
         relativeTo: this._route,
         queryParams: { scan_id: this.selectedScan.id },
+      });
+    }
+  }
+
+  onDuplicate(): void {
+    this.closeOpenOptionsMenu();
+
+    // Switch to the editing tab
+    if (this.selectedScan) {
+      const theScan = this.selectedScan;
+      let prefix = prompt("Enter id prefix for duplicate copy of scan", "duplicated");
+      if (!prefix) {
+        this._snackService.openWarning("Scan not duplicated - no prefix specified");
+        return;
+      }
+
+      // Do the job
+      this._dataService.sendScanCloneRequest(
+        ScanCloneReq.create({id: theScan.id, clonedIdPrefix: prefix})
+      ).subscribe({
+        next: (resp: ScanDeleteResp) => {
+          this._snackService.openSuccess(
+            `Scan "${theScan.title}" cloned successfully`
+          );
+          this.clearSelection();
+        },
+        error: (err) => {
+          this._snackService.openError(err);
+        },
       });
     }
   }

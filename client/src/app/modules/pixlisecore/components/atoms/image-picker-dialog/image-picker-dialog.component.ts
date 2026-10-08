@@ -313,7 +313,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
 
   private loadImagePreview(imgChoice: ImageChoice) {
     // Check if it's RGBU - in this case we need to load the data in a specific way to be able to display the 4 channel float tiff
-    let sdsName = SDSFields.makeFromFileName(imgChoice.name);
+    let sdsName = SDSFields.makeFromFileName(getPathBase(imgChoice.name));
 
     if (sdsName && (sdsName.prodType == "MSA" || sdsName.prodType == "VIS")) {
       return this._endpointsService.loadRGBUImageTIFPreview(imgChoice.path).pipe(
@@ -390,7 +390,7 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
   private makeMarsViewerURL(path: string): string {
     // If this is not a valid file name, don't try
     let mvName = path.toUpperCase();
-    const fields = SDSFields.makeFromFileName(mvName);
+    const fields = SDSFields.makeFromFileName(getPathBase(mvName));
     if (!fields) {
       return "";
     }

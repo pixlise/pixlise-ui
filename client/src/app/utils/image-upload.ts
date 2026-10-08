@@ -7,7 +7,7 @@ import { ImageUploadHttpRequest, ImageUploadHttpPartialInfo } from "src/app/gene
 import { SnackbarService, AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
-import { httpErrorToString, SDSFields } from "./utils";
+import { getPathBase, httpErrorToString, SDSFields } from "./utils";
 
 
 export class ImageUploader {
@@ -55,7 +55,7 @@ export class ImageUploader {
           errs.push("Must end in .tif");
         } else {
           // Check that the file name conforms to the iSDS name standard, otherwise import will fail
-          const fields = SDSFields.makeFromFileName(result.imageToUpload.name);
+          const fields = SDSFields.makeFromFileName(getPathBase(result.imageToUpload.name));
 
           // Expecting it to parse, and expecting:
           // - prodType to be VIS (visualisation image) or MSA (multi-spectral analysis... NOT to be confused with MSA spectrum files)
