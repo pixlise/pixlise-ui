@@ -113,7 +113,7 @@
     <div class="top-header">
       <h2 *ngIf="isSidebarOpen" class="explorer-header">
         Explorer
-        <icon-button icon="assets/button-icons/info.svg" walkthroughOpen="code-editor" title="Show the code editor guide" [hasBackground]="false" [hoverYellow]="true" [size]="20"></icon-button>
+        <walkthrough-info-button feature="code-editor"></walkthrough-info-button>
         <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
         <div class="explorer-actions" walkthroughId="code-editor-explorer-actions">
           <push-button buttonStyle="gray" [flexBtn]="true" class="new-btn" [customStyle]="{ padding: '4px 8px' }">

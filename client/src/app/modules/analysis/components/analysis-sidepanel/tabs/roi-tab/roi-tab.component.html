@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <section class="roi-container">
   <header>
     <h5>Regions of Interest</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-regions-of-interest"></walkthrough-info-button>
   </header>
   <div class="roi-list-container" [ngClass]="{'list-hidden': showDetailsForROIId }">
     <div class="panel-row">
@@ -45,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
         fxFlex="100%"
         (onClick)="onNewROI()"
         #newROIButton
+        walkthroughId="sidebar-roi-new"
         >New ROI from Selection</push-button
       >
     </div>
@@ -53,6 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [(ngModel)]="selectedContextImage"
         class="scan-filter"
         placeholder="Open a Context Image ..."
+        walkthroughId="sidebar-roi-image"
         #tooltip="matTooltip"
         matTooltip="Choose a context image to display the ROIs on"
         [matTooltipShowDelay]="500">
@@ -66,7 +69,7 @@ POSSIBILITY OF SUCH DAMAGE.
       (onFilterChanged)="onFilterChanged($event)"
       [showBuiltin]="false"
       [manualFilters]="manualFilters"></roi-search-controls>
-    <section class="bulk-controls">
+    <section class="bulk-controls" walkthroughId="sidebar-roi-bulk">
       <span class="count">{{ highlightedROIIds.length }} ROIs highlighted</span>
       <action-button
         class="visible-toggle"
@@ -79,7 +82,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
       <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
         <roi-item
-          *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
+          *cdkVirtualFor="let item of filteredSummaries; let i = index; trackBy: trackBySummaryId"
+          [walkthroughId]="i === 0 ? 'sidebar-roi-item' : ''"
           [summary]="item"
           [selectAuthorToFilter]="showSearch"
           (onFilterAuthor)="onFilterAuthor($event)"

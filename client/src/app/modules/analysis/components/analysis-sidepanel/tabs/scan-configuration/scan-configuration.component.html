@@ -88,6 +88,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="scan-configuration-container">
   <header>
     <h5>Datasets</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-scan-configuration"></walkthrough-info-button>
   </header>
   <widget-settings-menu
     [settingsDialog]="addScanMenu"
@@ -96,6 +97,7 @@ POSSIBILITY OF SUCH DAMAGE.
   >
     <push-button
       class="add-scan-btn"
+      walkthroughId="sidebar-add-dataset"
       buttonStyle="gray-title"
       [flexBtn]="true"
       [customStyle]="{ justifyContent: 'center', flex: '1' }"
@@ -109,11 +111,12 @@ POSSIBILITY OF SUCH DAMAGE.
       [scan]="idToScan[config.id]"
       (updateConfig)="updateConfig($event)"
       (removeConfiguration)="onRemoveConfiguration(config.id)"
-      *ngFor="let config of scanConfigurations"
+      *ngFor="let config of scanConfigurations; let first = first"
+      [walkthroughId]="first ? 'sidebar-dataset-item' : ''"
     >
     </scan-configuration-item>
   </section>
-  <div class="button-container">
+  <div class="button-container" walkthroughId="sidebar-save-reset">
     <push-button
       #tootip="matTooltip"
       [matTooltip]="hasConfigChanged ? 'Reset scans' : 'No changes to reset'"

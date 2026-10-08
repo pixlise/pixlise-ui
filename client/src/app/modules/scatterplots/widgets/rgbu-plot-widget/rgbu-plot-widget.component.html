@@ -84,12 +84,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="axis-container">
   <div *ngIf="mdl.hasRawData()" class="axis y-axis">
-    <h5 class="axis-label" (click)="onAxisClick('Y')" (keyup)="onAxisClick('Y')" (keydown)="onAxisClick('Y')" (keypress)="onAxisClick('Y')" tabindex="0">
+    <h5 class="axis-label" walkthroughId="chart-axis" [walkthroughScope]="_widgetId" (click)="onAxisClick('Y')" (keyup)="onAxisClick('Y')" (keydown)="onAxisClick('Y')" (keypress)="onAxisClick('Y')" tabindex="0">
       <span class="clickable-axis-btn"><img alt="Y Axis Options" src="assets/icons/clickable.svg" /></span>
       {{ mdl.drawModel.yAxisUnitLabel }}
     </h5>
     <span>
       <range-slider
+        walkthroughId="chart-zoom"
+        [walkthroughScope]="_widgetId"
         [minValue]="yRangeMin"
         [selectedMinValue]="yRangeSelectedMin"
         [maxValue]="yRangeMax"
@@ -103,6 +105,8 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="canvas-container">
     <interactive-canvas
       #interactiveCanvas
+      [walkthroughId]="['chart-canvas', 'chart-zoom']"
+      [walkthroughScope]="_widgetId"
       *ngIf="!errorMsg"
       [ngClass]="mdl.cursorShown"
       [drawer]="drawer"
@@ -112,12 +116,14 @@ POSSIBILITY OF SUCH DAMAGE.
     </interactive-canvas>
 
     <div *ngIf="mdl.hasRawData()" class="axis x-axis">
-      <h5 class="axis-label" (click)="onAxisClick('X')" (keyup)="onAxisClick('X')" (keydown)="onAxisClick('X')" (keypress)="onAxisClick('X')" tabindex="0">
+      <h5 class="axis-label" walkthroughId="chart-axis" [walkthroughScope]="_widgetId" (click)="onAxisClick('X')" (keyup)="onAxisClick('X')" (keydown)="onAxisClick('X')" (keypress)="onAxisClick('X')" tabindex="0">
         <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg" /></span>
         {{ mdl.drawModel.xAxisUnitLabel }}
       </h5>
       <span>
         <range-slider
+        walkthroughId="chart-zoom"
+        [walkthroughScope]="_widgetId"
           [minValue]="xRangeMin"
           [selectedMinValue]="xRangeSelectedMin"
           [maxValue]="xRangeMax"

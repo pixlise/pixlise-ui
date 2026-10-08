@@ -40,6 +40,7 @@
       #widgetSwitcher
     >
     </widget-switcher>
+    <walkthrough-info-button *ngIf="!disableSwitch" [feature]="'chart-' + activeWidget" [scope]="widgetLayoutConfig.id"></walkthrough-info-button>
     <div
       class="widget-title"
       *ngIf="disableSwitch && title.length > 0"
@@ -58,7 +59,7 @@
       >
         <widget-configuration-button
           *ngFor="let button of topToolbarButtons"
-          [location]="'top-toolbar'"
+          [location]="'top-toolbar'" [walkthroughScope]="widgetLayoutConfig.id"
           [buttonConfiguration]="button"
           [ngStyle]="{
             display: button._overflowed ? 'none' : 'block',
@@ -68,7 +69,10 @@
       </div>
       <widget-settings-menu
         class="settings-menu-trigger-btn"
-        [walkthroughId]="walkthroughPrefix ? walkthroughPrefix + '-chart-settings' : ''"
+        (walkthroughEnter)="settingsButton.open()"
+        (walkthroughLeave)="settingsButton.close()"
+        [walkthroughId]="['chart-settings', walkthroughPrefix ? `${walkthroughPrefix}-chart-settings` : '']"
+        [walkthroughScope]="widgetLayoutConfig.id"
         *ngIf="settingsMenu || isOverflowed"
         [settingsDialog]="settingsMenu || defaultOverflowSection"
         [noPadding]="true"
@@ -101,7 +105,7 @@
 
     <widget-configuration-button
       *ngIf="!exportMode"
-      [location]="'top-left'"
+      [location]="'top-left'" [walkthroughScope]="widgetLayoutConfig.id"
       class="inset-button top-left"
       [ngStyle]="
         topLeftInsetButton?.margin ? { margin: topLeftInsetButton?.margin } : {}
@@ -110,7 +114,7 @@
     ></widget-configuration-button>
     <widget-configuration-button
       *ngIf="!exportMode"
-      [location]="'top-center'"
+      [location]="'top-center'" [walkthroughScope]="widgetLayoutConfig.id"
       class="inset-button top-center"
       [ngStyle]="
         topCenterInsetButton?.margin
@@ -121,7 +125,7 @@
     ></widget-configuration-button>
     <widget-configuration-button
       *ngIf="!exportMode"
-      class="inset-button top-right"
+      class="inset-button top-right" [walkthroughScope]="widgetLayoutConfig.id"
       [ngStyle]="
         topRightInsetButton?.margin
           ? { margin: topRightInsetButton?.margin }
@@ -134,7 +138,7 @@
 
     <widget-configuration-button
       *ngIf="!exportMode"
-      [location]="'bottom-left'"
+      [location]="'bottom-left'" [walkthroughScope]="widgetLayoutConfig.id"
       class="inset-button bottom-left"
       [ngStyle]="
         bottomLeftInsetButton?.margin
@@ -145,7 +149,7 @@
     ></widget-configuration-button>
     <widget-configuration-button
       *ngIf="!exportMode"
-      [location]="'bottom-right'"
+      [location]="'bottom-right'" [walkthroughScope]="widgetLayoutConfig.id"
       class="inset-button bottom-right"
       [ngStyle]="
         bottomRightInsetButton?.margin
@@ -162,7 +166,7 @@
   >
     <widget-configuration-button
       *ngFor="let button of bottomToolbarButtons"
-      [location]="'bottom-toolbar'"
+      [location]="'bottom-toolbar'" [walkthroughScope]="widgetLayoutConfig.id"
       [ngClass]="{ 'bottom-toolbar-button': button.type !== 'divider' }"
       [buttonConfiguration]="button"
       [ngStyle]="{ margin: button.margin }"

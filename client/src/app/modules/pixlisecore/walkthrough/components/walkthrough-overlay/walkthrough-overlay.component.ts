@@ -96,9 +96,11 @@ export class WalkthroughOverlayComponent implements OnInit, OnDestroy {
   }
 
   private measure(step: ActiveWalkthroughStep): Layout {
-    const holes = step.anchors.map(anchor => padBox(toBox(anchor.element.getBoundingClientRect()), WalkthroughOverlayComponent.SPOTLIGHT_PADDING));
-    const cardEl = this.card?.nativeElement;
-    const cardSize = { width: cardEl?.offsetWidth || 0, height: cardEl?.offsetHeight || 0 };
+    const boxes = step.anchors.map(anchor => toBox(anchor.element.getBoundingClientRect()));
+    const shown = boxes.filter(box => box.width > 0 || box.height > 0);
+    const holes = (shown.length > 0 ? shown : boxes).map(box => padBox(box, WalkthroughOverlayComponent.SPOTLIGHT_PADDING));
+    const cardElement = this.card?.nativeElement;
+    const cardSize = { width: cardElement?.offsetWidth || 0, height: cardElement?.offsetHeight || 0 };
     const card = getCardBox(holes, cardSize, step.placement, WalkthroughOverlayComponent.CARD_GAP, WalkthroughOverlayComponent.VIEWPORT_MARGIN);
     return { holes, card };
   }

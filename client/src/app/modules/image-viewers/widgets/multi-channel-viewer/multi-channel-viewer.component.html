@@ -1,5 +1,5 @@
 <ng-template #settingsMenu>
-  <div class="widget-settings-menu">
+  <div class="widget-settings-menu" walkthroughId="chart-settings" [walkthroughScope]="_widgetId">
     <div class="row above-title slider-container-row">
       <div class="row-title">
         <span class="option-title">Image Brightness</span>
@@ -35,5 +35,5 @@
   </div>
 </ng-template>
 
-<interactive-canvas [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
+<interactive-canvas walkthroughId="chart-canvas" [walkthroughScope]="_widgetId" [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>

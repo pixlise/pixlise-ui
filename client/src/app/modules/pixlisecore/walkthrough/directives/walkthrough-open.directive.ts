@@ -7,11 +7,12 @@ import { WalkthroughService } from "../services/walkthrough.service";
 })
 export class WalkthroughOpenDirective {
   @Input() walkthroughOpen: string = "";
+  @Input() walkthroughOpenScope: string = "";
 
   constructor(private _walkthroughService: WalkthroughService) {}
 
   @HostListener("click")
   onClick() {
-    this._walkthroughService.open(this.walkthroughOpen);
+    this._walkthroughService.open(this.walkthroughOpen, this.walkthroughOpenScope);
   }
 }

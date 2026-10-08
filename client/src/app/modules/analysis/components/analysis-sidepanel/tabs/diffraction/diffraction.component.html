@@ -75,8 +75,9 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="tab-container">
   <header>
     <h5>Diffraction</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-diffraction"></walkthrough-info-button>
   </header>
-  <div class="outer-panel histogram">
+  <div class="outer-panel histogram" walkthroughId="sidebar-diffraction-histogram">
     <interactive-canvas class="histogram" [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interaction" [transform]="transform">
     </interactive-canvas>
 
@@ -87,7 +88,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
     </mat-select>
   </div>
-  <div class="widget-selectors">
+  <div class="widget-selectors" walkthroughId="sidebar-diffraction-targets">
     <mat-select
       [(ngModel)]="selectedContextImage"
       class="scan-filter"
@@ -107,7 +108,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <mat-option *ngFor="let chart of allSpectrumCharts" [value]="chart.widget.id">{{ chart.name }} </mat-option>
     </mat-select>
   </div>
-  <div class="diff-count-btn unit-padding light-background">
+  <div class="diff-count-btn unit-padding light-background" walkthroughId="sidebar-diffraction-map">
     <span class="light-label">Diffraction Count Map</span>
     <div class="gap-separated-horizontal-elements buttons-container">
       <two-state-icon-button
@@ -119,7 +120,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </two-state-icon-button>
     </div>
   </div>
-  <div class="save-btns unit-padding light-background">
+  <div class="save-btns unit-padding light-background" walkthroughId="sidebar-diffraction-actions">
     <action-button class="save-button" action="export" (onClick)="onExport()"> </action-button>
     <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline">Select PMCs</push-button>
     <push-button
@@ -131,7 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
     >
   </div>
   <div class="scrollable">
-    <div class="mode">
+    <div class="mode" walkthroughId="sidebar-diffraction-list">
       <multi-switch-button [options]="[userPeaksLabel, detectedPeaksLabel]" [value]="activeList" (onChange)="onSwitchList($event)"></multi-switch-button>
       <action-button class="new-peak" action="add" [customDialog]="newPeakDialog" #newPeakDialogBtn></action-button>
     </div>

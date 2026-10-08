@@ -82,6 +82,7 @@ import { WidgetSelectionButtonComponent } from "./components/widget-selection-di
 //import { AnalysisLayoutService } from "./services/analysis-layout.service";
 import { AddCustomImageComponent, AddCustomImageParameters, AddCustomImageResult } from "./components/atoms/add-custom-image/add-custom-image.component";
 import { ContextImagePickerComponent } from "./components/atoms/context-image-picker/context-image-picker.component";
+import { WalkthroughInfoButtonComponent } from "./walkthrough/components/walkthrough-info-button/walkthrough-info-button.component";
 import { WalkthroughOverlayComponent } from "./walkthrough/components/walkthrough-overlay/walkthrough-overlay.component";
 import { WalkthroughTextDirective } from "./walkthrough/directives/walkthrough-text.directive";
 import { WalkthroughFeatureDirective } from "./walkthrough/directives/walkthrough-feature.directive";
@@ -198,7 +199,8 @@ export { WalkthroughOpenDirective } from "./walkthrough/directives/walkthrough-o
     WidgetSelectionButtonComponent,
     AddCustomImageComponent,
     ContextImagePickerComponent,
-    WalkthroughOverlayComponent
+    WalkthroughOverlayComponent,
+    WalkthroughInfoButtonComponent
   ],
   imports: [
     CommonModule,
@@ -275,6 +277,7 @@ export { WalkthroughOpenDirective } from "./walkthrough/directives/walkthrough-o
     AddCustomImageComponent,
     ContextImagePickerComponent,
     WalkthroughOverlayComponent,
+    WalkthroughInfoButtonComponent,
     WalkthroughTextDirective,
     WalkthroughFeatureDirective,
     WalkthroughOpenDirective

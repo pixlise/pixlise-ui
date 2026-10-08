@@ -1,5 +1,7 @@
 <div
   class="button"
+  [walkthroughId]="walkthroughId"
+  [walkthroughScope]="walkthroughScope"
   [ngStyle]="buttonConfiguration?.style || {}"
   [ngClass]="{
     'toolbar-button-active': buttonConfiguration?.type === 'selectable-button' && buttonConfiguration?.value === true,

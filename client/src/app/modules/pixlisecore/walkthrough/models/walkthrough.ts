@@ -14,6 +14,7 @@ export type WalkthroughFeature = {
   title?: string;
   url?: string | string[];
   hidden?: boolean;
+  manual?: boolean;
   steps: WalkthroughStepDefinition[];
 };
 
@@ -24,7 +25,10 @@ export class WalkthroughAnchor {
     public title: string,
     public text: string,
     public placement?: WalkthroughPlacement,
-    public onNext?: () => void
+    public onNext?: () => void,
+    public scope: string = "",
+    public onEnter?: () => void,
+    public onLeave?: () => void
   ) {}
 }
 

@@ -50,10 +50,11 @@ POSSIBILITY OF SUCH DAMAGE.
 <section class="mq-container-outer">
     <header>
         <h5>Multi-Quant</h5>
+        <walkthrough-info-button [alignRight]="true" feature="sidebar-multi-quant"></walkthrough-info-button>
     </header>
     <div class="mq-container">
         <div class="mq-column">
-            <div class="scan-selector">
+            <div class="scan-selector" walkthroughId="sidebar-mq-scan">
             <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
                 <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
             </mat-select>
@@ -66,18 +67,19 @@ this used to replace the panel under the context image with a special quant comp
                 <push-button buttonStyle='outline' (onClick)="onShowUI()" title="Show panels to help with multi-quantification">Show UI for Multi-Quant</push-button>
             </div>
 -->
-            <div class="panel-row top-shadow">
+            <div class="panel-row top-shadow" walkthroughId="sidebar-mq-regions">
                 <push-button buttonStyle='outline' (onClick)="onReset()" title="Clears regions" fxFlex="50%">Clear Regions</push-button>
                 <push-button buttonStyle='outline' (onClick)="onRegions()" title="Choose regions to include" fxFlex="50%">Add Regions</push-button>
             </div>
 
             <quant-combine-zstack
+                walkthroughId="sidebar-mq-stack"
                 [items]="zStack"
                 (onZStackChanged)="onZStackChanged()">
                 <push-button (onClick)="onMakeROIFromRemainingPoints()" remainingArea>Make ROI</push-button>
             </quant-combine-zstack>
 
-            <div class="panel-row gray-background">
+            <div class="panel-row gray-background" walkthroughId="sidebar-mq-assemble">
                 <push-button buttonStyle='yellow' [customDialog]="createMQPopup" #createMQModal [disabled]="zStack.length <= 0">Assemble Multi-Quant</push-button>
             </div>
 

@@ -19,9 +19,14 @@ export class WalkthroughService {
   private _triggers = new Map<string, number>();
   private _feature = "";
   private _forced = false;
+  private _scope = "";
   private _pendingLaunch = "";
   private _stepIdx = 0;
   private _clearPending: (() => void) | null = null;
+  private _skipTimer: ReturnType<typeof setTimeout> | null = null;
+  private _stepKey = "";
+  private _enteredAnchors: WalkthroughAnchor[] = [];
+  private _refreshQueued = false;
 
   constructor(
     private _http: HttpClient,
@@ -29,14 +34,14 @@ export class WalkthroughService {
     private _userOptionsService: UserOptionsService
   ) {
     this.loadDefinitions();
-    this._userOptionsService.userOptionsChanged$.subscribe(() => this.refresh());
+    this._userOptionsService.userOptionsChanged$.subscribe(() => this.scheduleRefresh());
     this._router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => this.onNavigated());
   }
 
   registerAnchor(anchor: WalkthroughAnchor) {
     const others = (this._anchors.get(anchor.stepId) || []).filter(item => item.element !== anchor.element);
     this._anchors.set(anchor.stepId, [...others, anchor]);
-    this.refresh();
+    this.scheduleRefresh();
   }
 
   unregisterAnchor(stepId: string, element: HTMLElement) {
@@ -46,12 +51,12 @@ export class WalkthroughService {
     } else {
       this._anchors.delete(stepId);
     }
-    this.refresh();
+    this.scheduleRefresh();
   }
 
   registerTrigger(feature: string) {
     this._triggers.set(feature, (this._triggers.get(feature) || 0) + 1);
-    this.refresh();
+    this.scheduleRefresh();
   }
 
   unregisterTrigger(feature: string) {
@@ -65,13 +70,18 @@ export class WalkthroughService {
     if (this._feature === feature && !this._forced) {
       this._feature = "";
     }
-    this.refresh();
+    this.scheduleRefresh();
   }
 
-  open(feature: string) {
+  hasFeature(feature: string): boolean {
+    return !!this._features[feature];
+  }
+
+  open(feature: string, scope = "") {
     if (this._features[feature]) {
       this._feature = feature;
       this._forced = true;
+      this._scope = scope;
       this._stepIdx = 0;
       this.refresh();
     }
@@ -79,7 +89,7 @@ export class WalkthroughService {
 
   get listedFeatures(): { id: string; title: string }[] {
     return Object.entries(this._features)
-      .filter(([, feature]) => !feature.hidden)
+      .filter(([, feature]) => !feature.hidden && !feature.manual)
       .map(([id, feature]) => ({ id, title: feature.title || id }));
   }
 
@@ -92,7 +102,6 @@ export class WalkthroughService {
     this._userOptionsService.updateGuidance({ seenFeatureIds: enabled ? others : [...others, feature] });
   }
 
-  // Opens the feature, going to its page first if we're not on it
   launch(feature: string) {
     if (this.isOnPage(feature)) {
       this.open(feature);
@@ -111,7 +120,7 @@ export class WalkthroughService {
   back() {
     const steps = this._features[this._feature]?.steps || [];
     for (let idx = this._stepIdx - 1; idx >= 0; idx--) {
-      if (this._anchors.has(steps[idx].id)) {
+      if (this.getAnchors(steps[idx].id).length > 0) {
         this._stepIdx = idx;
         break;
       }
@@ -124,8 +133,9 @@ export class WalkthroughService {
     const guidance = this._userOptionsService.guidance;
     this._feature = "";
     this._forced = false;
+    this._scope = "";
 
-    if (feature && !guidance.seenFeatureIds.includes(feature)) {
+    if (feature && !this._features[feature]?.manual && !guidance.seenFeatureIds.includes(feature)) {
       this._userOptionsService.updateGuidance({ seenFeatureIds: [...guidance.seenFeatureIds, feature] });
     }
     this.refresh();
@@ -169,6 +179,29 @@ export class WalkthroughService {
     this.refresh();
   }
 
+  private scheduleRefresh() {
+    if (!this._refreshQueued) {
+      this._refreshQueued = true;
+      Promise.resolve().then(() => {
+        this._refreshQueued = false;
+        this.refresh();
+      });
+    }
+  }
+
+  private clearSkipTimer() {
+    if (this._skipTimer) {
+      clearTimeout(this._skipTimer);
+      this._skipTimer = null;
+    }
+  }
+
+  private leaveStep() {
+    this._enteredAnchors.forEach(anchor => anchor.onLeave?.());
+    this._enteredAnchors = [];
+    this.clearSkipTimer();
+  }
+
   private refresh() {
     this._clearPending?.();
     this._clearPending = null;
@@ -176,6 +209,7 @@ export class WalkthroughService {
     if (this._feature && (!this.isOnPage(this._feature) || (!this._forced && !(this.userLoaded && this.isEligible(this._feature))))) {
       this._feature = "";
       this._forced = false;
+      this._scope = "";
     }
 
     if (!this._feature && this.userLoaded) {
@@ -183,6 +217,7 @@ export class WalkthroughService {
       if (feature) {
         this._feature = feature;
         this._forced = false;
+        this._scope = "";
         this._stepIdx = 0;
       }
     }
@@ -192,19 +227,38 @@ export class WalkthroughService {
       return;
     }
 
+    const stepKey = this._feature ? `${this._feature}:${this._scope}:${this._stepIdx}` : "";
+    if (stepKey !== this._stepKey) {
+      this.leaveStep();
+      this._stepKey = stepKey;
+    }
+
     this.activeStep$.next(this._feature ? this.getStep(this._features[this._feature]) : null);
+  }
+
+  private getAnchors(stepId: string): WalkthroughAnchor[] {
+    const anchors = (this._anchors.get(stepId) || []).filter(anchor => anchor.element.isConnected && anchor.element.getClientRects().length > 0);
+    return this._scope ? anchors.filter(anchor => anchor.scope === this._scope) : anchors;
   }
 
   private getStep(feature: WalkthroughFeature): ActiveWalkthroughStep | null {
     const step = feature.steps[this._stepIdx];
-    const anchors = this._anchors.get(step.id) || [];
+    const anchors = this.getAnchors(step.id);
 
     if (anchors.length <= 0) {
-      if (this._stepIdx > 0) {
-        const timer = setTimeout(() => this.advance(), 1000);
-        this._clearPending = () => clearTimeout(timer);
+      if (this._stepIdx > 0 && !this._skipTimer) {
+        this._skipTimer = setTimeout(() => {
+          this._skipTimer = null;
+          this.advance();
+        }, 1000);
       }
       return null;
+    }
+
+    this.clearSkipTimer();
+    if (this._enteredAnchors.length === 0) {
+      this._enteredAnchors = anchors;
+      anchors.forEach(anchor => anchor.onEnter?.());
     }
 
     if (step.advanceOn === "click") {
@@ -229,7 +283,7 @@ export class WalkthroughService {
     this._http.get(WalkthroughService.WALKTHROUGH_YAML, { responseType: "text" }).subscribe({
       next: yaml => {
         this._features = (load(yaml) as Record<string, WalkthroughFeature>) || {};
-        this.refresh();
+        this.scheduleRefresh();
       },
       error: err => console.error("Failed to load walkthrough definitions", err),
     });

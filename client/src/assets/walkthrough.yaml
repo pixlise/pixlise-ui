@@ -132,3 +132,535 @@ code-editor:
       title: Output and logs
       text: The table shows the raw values your code produced, and you can scrub over it and select values. Switch between Output and Logs to see what your code printed.
       placement: left
+
+chart-spectrum-chart:
+  title: Spectrum Chart
+  manual: true
+  steps:
+    - id: chart-btn-spectra
+      title: Spectra
+      text: Choose which spectra to display.
+      placement: top
+    - id: chart-btn-fit
+      title: Fit
+      text: Show the PIQUANT fit, which breaks the modelled line into its components and lets you quickly quantify the elements in the spectrum.
+      placement: top
+    - id: chart-piquant
+      title: PIQUANT
+      text: Calibrate the x-axis, then choose elements and run PIQUANT to generate a quantification.
+      placement: top
+    - id: chart-zoom
+      title: Zoom and pan
+      text: Use the zoom tool to click or draw a box, the pan tool to drag, or the buttons to zoom in, zoom out or fit everything.
+      placement: bottom
+    - id: chart-btn-spectrum-range
+      title: Range tool
+      text: Select a range of the spectrum to see it as maps on the context image.
+      placement: bottom
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of PMCs, and to scans, which are all the PMCs in a scan. Use the key to show or hide them.
+      placement: bottom
+
+chart-binary-plot:
+  title: Binary Plot
+  manual: true
+  steps:
+    - id: chart-axis
+      title: Axes
+      text: Click an axis label to choose an expression or quantified element to plot.
+      placement: right
+    - id: chart-zoom
+      title: Zoom
+      text: Scroll over the chart to zoom, or drag the axis sliders to zoom each axis. Reset zoom shows all the data again.
+      placement: bottom
+    - id: chart-btn-refs
+      title: Reference minerals
+      text: Overlay reference minerals on the chart to get an idea of what the scan could be looking at.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to plot.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of PMCs, and to scans, which are all the PMCs in a scan. Use the key to show or hide them.
+      placement: bottom
+    - id: chart-settings
+      title: Settings
+      text: Open the settings to switch between Weight% and mmol, and to change the selection mode.
+      placement: bottom
+
+chart-ternary-plot:
+  title: Ternary Plot
+  manual: true
+  steps:
+    - id: chart-axis
+      title: Corners
+      text: Click a corner label to choose an expression or quantified element for it.
+      placement: right
+    - id: chart-btn-refs
+      title: Reference minerals
+      text: Overlay reference minerals on the chart to get an idea of what the scan could be looking at.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to plot.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of PMCs, and to scans, which are all the PMCs in a scan. Use the key to show or hide them.
+      placement: bottom
+    - id: chart-settings
+      title: Settings
+      text: Open the settings to switch the display units and to change the selection mode.
+      placement: bottom
+
+chart-histogram:
+  title: Histogram
+  manual: true
+  steps:
+    - id: chart-btn-refs
+      title: Bars
+      text: Choose the expressions to calculate bars from.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to display.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of PMCs, and to scans, which are all the PMCs in a scan. Use the key to show or hide them.
+      placement: bottom
+    - id: chart-settings
+      title: Settings
+      text: Open the settings to change the scale, show whiskers, configure whether std deviation or std error is shown, and to change the auto Y axis scaling.
+      placement: bottom
+
+chart-chord-diagram:
+  title: Chord Diagram
+  manual: true
+  steps:
+    - id: chart-btn-nodes
+      title: Nodes
+      text: Choose the expressions to calculate nodes from.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to display.
+      placement: top
+
+chart-context-image:
+  title: Context Image
+  manual: true
+  steps:
+    - id: chart-zoom
+      title: Zoom and pan
+      text: Zoom in or out, or jump to the whole image or the experiment area. You can also pan around the image.
+      placement: bottom
+    - id: chart-tools
+      title: Selection tools
+      text: Select pixels or PMCs with the lasso, line, point or paintbrush tools.
+      placement: top
+    - id: chart-btn-selection-mode
+      title: Selection mode
+      text: Switch between adding to and subtracting from your selection.
+      placement: top
+    - id: chart-btn-layers
+      title: Layers
+      text: Layers control the expressions and quantified elements drawn on top of the scan footprint area.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Regions are groups of PMCs or pixels that can be drawn on the image.
+      placement: top
+    - id: chart-btn-image
+      title: Images
+      text: Change the base image shown in the context image.
+      placement: top
+
+chart-context-image2:
+  title: Context Image v2
+  manual: true
+  steps:
+    - id: chart-canvas
+      title: High resolution
+      text: Context Image v2 is for viewing extra high resolution imagery.
+      placement: bottom
+    - id: chart-btn-wheel-mode
+      title: Mouse wheel
+      text: Choose whether the mouse wheel zooms, swaps the image or changes brightness.
+      placement: bottom
+    - id: chart-zoom
+      title: Reset
+      text: Reset the zoom and pan.
+      placement: bottom
+    - id: chart-tools
+      title: Selection tools
+      text: Select pixels or PMCs with the selection tools.
+      placement: top
+    - id: chart-btn-image
+      title: Images
+      text: Change the base image shown.
+      placement: top
+
+chart-scan-3d-view:
+  title: 3D View
+  manual: true
+  steps:
+    - id: chart-btn-layers
+      title: Layers
+      text: Layers control the expressions drawn on top of the PMCs, just like the context image.
+      placement: top
+    - id: chart-btn-image
+      title: Image
+      text: Choose the image to convert into the 3D view.
+      placement: top
+    - id: chart-3d-view-controls
+      title: View controls
+      text: Open the View Controls to change how the 3D model is drawn, tilted and lit.
+      placement: left
+
+chart-multi-channel-image:
+  title: RGBU Viewer
+  manual: true
+  steps:
+    - id: chart-canvas
+      title: Channels
+      text: Each channel is shown at the same time, with panning and zooming synchronised between them.
+      placement: bottom
+    - id: chart-btn-image-picker
+      title: Image
+      text: Choose the image to view.
+      placement: top
+    - id: chart-settings
+      title: Settings
+      text: Open the settings to change the image brightness.
+      placement: bottom
+
+chart-rgbu-plot:
+  title: RGBU Plot
+  manual: true
+  steps:
+    - id: chart-canvas
+      title: Pixels
+      text: Pixels are bucketed by their channel values and plotted here.
+      placement: bottom
+    - id: chart-axis
+      title: Axes
+      text: Click an axis label to change which channels are compared, such as Near-IR vs Green.
+      placement: right
+    - id: chart-zoom
+      title: Zoom
+      text: Zoom on a point in the chart to zoom both axes. Zoom on an axis to zoom only that axis and keep the other fixed.
+      placement: bottom
+    - id: chart-btn-minerals
+      title: Reference minerals
+      text: Overlay reference minerals to get an idea of what the scan could be looking at.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to plot.
+      placement: top
+    - id: chart-btn-image-picker
+      title: Image
+      text: Choose the image to plot.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of pixels, and to scans, which are all the pixels in a scan. Use the key to show or hide them.
+      placement: bottom
+
+chart-single-axis-rgbu-plot:
+  title: Single Axis RGBU
+  manual: true
+  steps:
+    - id: chart-canvas
+      title: Pixels
+      text: Pixels are bucketed by their channel values along a single axis. Selecting works along that axis too, so you select a range of values.
+      placement: bottom
+    - id: chart-axis
+      title: Axis
+      text: Click the axis label to change which channels are compared.
+      placement: top
+    - id: chart-zoom
+      title: Zoom
+      text: Use the axis slider to zoom in.
+      placement: top
+    - id: chart-btn-minerals
+      title: Reference minerals
+      text: Overlay reference minerals to get an idea of what the scan could be looking at.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to plot.
+      placement: top
+    - id: chart-btn-image-picker
+      title: Image
+      text: Choose the image to plot.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of pixels, and to scans, which are all the pixels in a scan. Use the key to show or hide them.
+      placement: bottom
+
+chart-parallel-coordinates-plot:
+  title: Parallel Coordinates Plot
+  manual: true
+  steps:
+    - id: chart-btn-minerals
+      title: Reference minerals
+      text: Overlay reference minerals to get an idea of what the scan could be looking at.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to plot.
+      placement: top
+    - id: chart-stats
+      title: Statistics
+      text: Set the sigma level, switch between mean and median, and choose whether to exclude zeros.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of pixels, and to scans, which are all the pixels in a scan. Use the key to show or hide them.
+      placement: bottom
+
+chart-quant-table:
+  title: Quantification Table
+  manual: true
+  steps:
+    - id: chart-canvas
+      title: Compare
+      text: The table shows element weight percentages across your configured scans and ROIs so you can compare them.
+      placement: bottom
+    - id: chart-btn-quants
+      title: Quantifications
+      text: Choose which quantifications to display.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to display.
+      placement: top
+
+chart-text-view:
+  title: Text View
+  manual: true
+  steps:
+    - id: chart-canvas
+      title: Content
+      text: Your text is shown here as rendered Markdown. Use it to annotate your workspace.
+      placement: bottom
+    - id: chart-btn-edit
+      title: Edit
+      text: Switch between editing and viewing the text.
+      placement: bottom
+
+chart-variogram:
+  title: Variogram
+  manual: true
+  steps:
+    - id: chart-btn-expressions
+      title: Elements
+      text: Choose the elements to display.
+      placement: top
+    - id: chart-btn-regions
+      title: Regions
+      text: Choose which regions of interest to display.
+      placement: top
+    - id: chart-btn-key
+      title: Key
+      text: Colours are given to ROIs, which are groupings of PMCs, and to scans, which are all the PMCs in a scan. Use the key to show or hide them.
+      placement: bottom
+
+sidebar-scan-configuration:
+  title: Datasets
+  manual: true
+  steps:
+    - id: sidebar-add-dataset
+      title: Add a dataset
+      text: Add another dataset to this workspace.
+      placement: right
+    - id: sidebar-dataset-item
+      title: Scan settings
+      text: Each scan has its own colour and quantification. Its menu lets you set the calibration, remove it, or replace it. Replacing a scan allows you to replace it, and everything associated with it such as its ROIs and quantifications, everywhere it is used in the workspace with equivalent products from the new scan.
+      placement: right
+    - id: sidebar-save-reset
+      title: Save changes
+      text: Save applies your changes to the workspace, and Reset discards them.
+      placement: right
+
+sidebar-workspaces:
+  title: Workspaces
+  manual: true
+  steps:
+    - id: sidebar-workspace-info
+      title: Name and description
+      text: Name and describe your workspace, and add tags to find it later.
+      placement: right
+    - id: sidebar-workspace-tabs
+      title: Tabs
+      text: Drag a tab from the left handle to reorder it. You can also rename it, configure its layout, duplicate it, hide the tab, or delete it.
+      placement: right
+    - id: sidebar-workspace-sharing
+      title: Sharing
+      text: You can share multiple snapshots of your workspace. Use this tab to create new snapshots, manage who has access to them, or to delete them.
+      placement: right
+    - id: sidebar-workspace-review
+      title: Review
+      text: You can create multiple review links too. Use this tab to create a new review link, manage who has access to them, or to delete them.
+      placement: right
+
+sidebar-regions-of-interest:
+  title: Regions of Interest
+  manual: true
+  steps:
+    - id: sidebar-roi-new
+      title: New region
+      text: Create a new region of interest (ROI) from your current selection.
+      placement: right
+    - id: sidebar-roi-image
+      title: Context image
+      text: Choose the context image to display the ROIs on.
+      placement: right
+    - id: sidebar-roi-bulk
+      title: Show or hide
+      text: Show or hide all highlighted ROIs at once.
+      placement: right
+    - id: sidebar-roi-item
+      title: Regions of Interest
+      text: Each ROI has its own name, tags, colour and shape that's shown in different charts. An ROI's name can't be edited after creation, but you can edit tags of ROIs you have access to with the tag picker. Colour, shape, and selection can be edited by clicking on the gear icon.
+      placement: right
+
+sidebar-mist-rois:
+  title: MIST ROIs
+  manual: true
+  steps:
+    - id: sidebar-mist-upload
+      title: Upload
+      text: Only admin approved users can upload MIST ROIs.
+      placement: right
+    - id: sidebar-mist-filters
+      title: Filter and display
+      text: Filter to a scan, and choose the context image to display the ROIs on.
+      placement: right
+    - id: sidebar-mist-selection
+      title: Selected ROIs
+      text: Only admin approved users can delete MIST ROIs. Any user can use Convert Selected to copy MIST ROIs into regular ROIs of their own.
+      placement: right
+    - id: sidebar-mist-identifications
+      title: Identifications
+      text: Mineral Species Identifications are fully identified minerals, while Mineral Group Identifications are not fully identified.
+      placement: right
+
+sidebar-selection:
+  title: Selection
+  manual: true
+  steps:
+    - id: sidebar-selection-history
+      title: Undo and redo
+      text: Step back and forward through changes to your selection.
+      placement: right
+    - id: sidebar-selection-tools
+      title: Select
+      text: Select all points or dwells, clear the selection, or enter PMCs directly.
+      placement: right
+    - id: sidebar-selection-roi
+      title: Save as ROI
+      text: Save your current selection as a region of interest.
+      placement: right
+    - id: sidebar-selection-averages
+      title: RGBU averages
+      text: RGBU Averages shows statistics for the selected pixels.
+      placement: right
+    - id: sidebar-selection-pmcs
+      title: PMC list
+      text: PMC List shows every PMC currently selected across your scans.
+      placement: right
+
+sidebar-diffraction:
+  title: Diffraction
+  manual: true
+  steps:
+    - id: sidebar-diffraction-histogram
+      title: Histogram
+      text: Select bars to choose the diffraction peaks you are interested in. Reset clears your selection.
+      placement: right
+    - id: sidebar-diffraction-targets
+      title: Display
+      text: Choose a context image to show the diffraction map on, and a spectrum chart to view peaks on.
+      placement: right
+    - id: sidebar-diffraction-map
+      title: Count map
+      text: Show or hide the diffraction count map on the context image.
+      placement: right
+    - id: sidebar-diffraction-actions
+      title: Actions
+      text: Select the PMCs with diffraction, save the selection as an expression, or export.
+      placement: right
+    - id: sidebar-diffraction-list
+      title: Peaks
+      text: Switch between your peaks and the detected peaks, and add a peak with the plus button.
+      placement: right
+
+sidebar-roughness:
+  title: Roughness
+  manual: true
+  steps:
+    - id: sidebar-roughness-targets
+      title: Display
+      text: Choose a context image to show the roughness map on, and a spectrum chart to view peaks on.
+      placement: right
+    - id: sidebar-roughness-map
+      title: Roughness map
+      text: Show or hide the roughness map on the context image.
+      placement: right
+    - id: sidebar-roughness-select
+      title: Select
+      text: Select the PMCs with roughness.
+      placement: right
+    - id: sidebar-roughness-list
+      title: PMCs
+      text: Switch between your PMCs and the detected ones, and add a PMC with the plus button.
+      placement: right
+
+sidebar-multi-quant:
+  title: Multi-Quant
+  manual: true
+  steps:
+    - id: sidebar-mq-scan
+      title: Scan
+      text: Choose the scan to build a multi-quant for.
+      placement: right
+    - id: sidebar-mq-regions
+      title: Regions
+      text: Add regions so you can choose a different quantification for each one.
+      placement: right
+    - id: sidebar-mq-stack
+      title: Stack
+      text: Your regions are stacked here. Make ROI creates a region from the remaining points.
+      placement: right
+    - id: sidebar-mq-assemble
+      title: Assemble
+      text: Assemble Multi-Quant joins the stack into a single multi-quant, with a name and description.
+      placement: right
+
+sidebar-export:
+  title: Export
+  manual: true
+  steps:
+    - id: sidebar-export-options
+      title: Options
+      text: Choose which scans to include in the export. For each scan, choose which quantification, regions and expressions to include.
+      placement: right
+    - id: sidebar-export-products
+      title: Data products
+      text: Choose the data products to export. Some are greyed out until the options above are configured.
+      placement: right
+    - id: sidebar-export-zip
+      title: Zip file
+      text: Name the zip file the export is saved in.
+      placement: right
+    - id: sidebar-export-button
+      title: Export
+      text: Download everything you selected.
+      placement: right
