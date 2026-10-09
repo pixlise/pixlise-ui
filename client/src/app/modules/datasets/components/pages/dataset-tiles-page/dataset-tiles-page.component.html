@@ -115,36 +115,44 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 </ng-template>
 
-<div class="datasets-container" aria-label="Datasets">
+<div class="datasets-container" aria-label="Datasets" [walkthroughFeature]="walkthroughFeature">
   <!-- <app-toolbar titleToShow="Select Dataset"></app-toolbar> -->
 
   <div class="search-panel">
     <div *ngIf="datasetListingAllowed" class="gap-separated-horizontal-elements dataset-search">
       <!-- <h2>Search</h2> -->
-      <mat-select class="search-selector" [(value)]="searchType">
+      <mat-select class="search-selector" panelClass="dataset-search-type-panel" [(value)]="searchType">
         <mat-option value="datasets">Datasets</mat-option>
         <mat-option value="workspaces">Workspaces</mat-option>
       </mat-select>
 
-      <div class="search-box-group">
+      <div class="search-box-group" walkthroughId="datasets-search">
         <div (click)="onSearch()" class="search-btn-container">
           <img src="assets/button-icons/search.svg" />
         </div>
         <input [(ngModel)]="searchString" class="search-box" type="text" placeholder="Search by title or metadata..." (keyup.enter)="onSearch()" />
+        <div class="filter-btn-container">
+          <icon-button
+            *ngIf="datasetsMode"
+            class="search-filter-btn"
+            title="Sort & Filter"
+            (onClick)="onFilterMenu($event)"
+            type="filter"
+            [hasBackground]="false"
+            [hoverYellow]="true"
+            [size]="24"
+            [notificationCount]="activeFilterCount"
+            badgeText="filters active"></icon-button>
+            <tag-picker
+              [type]="datasetsMode ? 'scan' : 'workspace'"
+              [selectedTagIDs]="filterTags"
+              [showCurrentTagsSection]="false"
+              (onTagSelectionChanged)="onFilterTagChange($event)">
+            </tag-picker>
+        </div>
       </div>
-      <tag-picker
-        [type]="datasetsMode ? 'scan' : 'workspace'"
-        [selectedTagIDs]="filterTags"
-        [showCurrentTagsSection]="false"
-        (onTagSelectionChanged)="onFilterTagChange($event)"></tag-picker>
-      <icon-button
-        title="Instrument Filter"
-        (click)="onFilterMenu($event)"
-        type="filter"
-        [notificationCount]="selectedInstrumentCount"
-        badgeText="instruments selected"></icon-button>
       <div class="dim">{{ searchResultSummary }}</div>
-      <push-button *ngIf="publicOnlyUser" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
+      <push-button *ngIf="publicOnlyUser" walkthroughId="datasets-join-groups" (onClick)="onManageGroups()" buttonStyle="yellow" title="You only are a member of a single group - click this button to join other groups so you can access more datasets. Admins of those groups will have to accept your request to join.">Join User Groups</push-button>
     </div>
     <div class="right-header-btns">
       <push-button *ngIf="userCanEdit" (onClick)="onAddScan()" buttonStyle="gray" title="Upload or create a new scan">Upload Scan</push-button>
@@ -164,7 +172,9 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="!errorString && !loading && datasetsMode" class="scrollable">
       <div class="tiles" (onClick)="onClickTileArea()">
         <data-set-summary
-          *ngFor="let item of filteredScans; trackBy: trackScansBy"
+          *ngFor="let item of filteredScans; let i = index; trackBy: trackScansBy"
+          [walkthroughId]="i === 0 ? 'datasets-first-tile' : ''"
+          (walkthroughNext)="onSelect(item)"
           [summary]="item"
           [defaultImage]="scanDefaultImages.get(item.id)"
           [selected]="selectedScan"
@@ -400,7 +410,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="datasetListingAllowed && datasetsMode" class="meta-summary" aria-label="DatasetMetaSummary">
       <app-widget-display-message *ngIf="!selectedScan" [message]="noSelectedScanMsg"> </app-widget-display-message>
 
-      <div class="info-panel" *ngIf="selectedScan !== null">
+      <div class="info-panel" *ngIf="selectedScan !== null" walkthroughId="datasets-info-pane">
         <div class="meta-image-container">
           <ng-container [ngSwitch]="selectedScanContextImage.length">
             <ng-container *ngSwitchCase="0">
@@ -449,6 +459,7 @@ POSSIBILITY OF SUCH DAMAGE.
               (onTagSelectionChanged)="onTagChange($event)">
             </tag-picker>
             <push-button
+              walkthroughId="datasets-open"
               (onClick)="onOpen($event, false)"
               buttonStyle="yellow"
               title="Open the dataset with views as you last used them. NOTE: Hold down ctrl (Windows) or cmd (Mac) to open in a new tab!"

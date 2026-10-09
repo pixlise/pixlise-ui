@@ -9,7 +9,7 @@
   }"
   aria-label="Sidebar"
 >
-  <section class="button-container">
+  <section class="button-container" walkthroughId="analysis-sidepanel">
     <div class="tab-btn-wrapper">
       <span
         class="clickable open-btn"
@@ -46,6 +46,8 @@
           sidepanelOpen && activeTab?.title === tab.title ? 'active' : ''
         }}"
         (click)="onToggleTab(tab)"
+        [walkthroughId]="tab.walkthroughId || ''"
+        (walkthroughNext)="onShowTab(tab)"
         *ngFor="let tab of tabs"
       >
         <img

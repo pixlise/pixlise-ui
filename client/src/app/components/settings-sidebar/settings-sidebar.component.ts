@@ -10,7 +10,7 @@ import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/u
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DataCollectionDialogComponent } from "src/app/modules/settings/components/data-collection-dialog/data-collection-dialog.component";
 import { NotificationSetting, NotificationSubscriptions, NotificationTopic } from "src/app/modules/settings/models/notification.model";
-import { PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { PIXLISECoreModule, SnackbarService, WalkthroughService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImageUploaderDialogComponent } from "src/app/modules/settings/components/image-uploader-dialog/image-uploader-dialog.component";
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
@@ -42,6 +42,7 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
     private _userOptionsService: UserOptionsService,
     private _groupsService: GroupsService,
     private _snackBar: SnackbarService,
+    private _walkthroughService: WalkthroughService,
     private dialog: MatDialog
   ) {}
 
@@ -234,6 +235,38 @@ export class SettingsSidebarComponent implements OnInit, OnDestroy {
 
   onToggleDataCollection(): void {
     this._userOptionsService.acceptDataCollectionAgreement(!this.dataCollectionActive);
+  }
+
+  get showTips(): boolean {
+    return !this._userOptionsService.guidance.tipsDisabled;
+  }
+
+  onToggleTips(): void {
+    this._userOptionsService.updateGuidance(this.showTips ? { tipsDisabled: true } : { tipsDisabled: false, seenFeatureIds: [] });
+  }
+
+  featuresExpanded: boolean = false;
+
+  onResetTips(): void {
+    this._userOptionsService.updateGuidance({ seenFeatureIds: [] });
+    this._snackBar.openSuccess("All tips reset");
+  }
+
+  get walkthroughFeatures(): { id: string; title: string }[] {
+    return this._walkthroughService.listedFeatures;
+  }
+
+  isFeatureEnabled(feature: string): boolean {
+    return this._walkthroughService.isFeatureEnabled(feature);
+  }
+
+  onToggleFeature(feature: string): void {
+    this._walkthroughService.setFeatureEnabled(feature, !this.isFeatureEnabled(feature));
+  }
+
+  onLaunchFeature(feature: string): void {
+    this._walkthroughService.launch(feature);
+    this.onCloseSidebar();
   }
 
   openDataCollectionDialog(event: Event): void {

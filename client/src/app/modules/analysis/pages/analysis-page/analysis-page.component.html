@@ -1,4 +1,4 @@
-<section class="page analysis-container">
+<section class="page analysis-container" walkthroughFeature="analysis">
   <analysis-sidepanel></analysis-sidepanel>
   @if (
     loadedScreenConfiguration &&
@@ -17,10 +17,13 @@
       >
         @for (
           widget of activeLayout.widgets;
-          track trackByWidgetId($index, widget)
+          track trackByWidgetId($index, widget);
+          let first = $first
         ) {
           <widget
             [widgetLayoutConfig]="widget"
+            [walkthroughId]="first ? 'analysis-chart' : ''"
+            [walkthroughPrefix]="first ? 'analysis' : ''"
             [layoutIndex]="activeLayoutIndex"
             [initWidget]="widget.type"
             [ngStyle]="{

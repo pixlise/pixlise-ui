@@ -119,8 +119,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   builtInTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
-    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
-    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
+    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL, walkthroughId: "toolbar-builtin-tabs" },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL, walkthroughId: "toolbar-builtin-tabs" },
   ];
 
   allTabs: NavigationTab[] = [];

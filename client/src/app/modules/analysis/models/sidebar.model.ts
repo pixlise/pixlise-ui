@@ -16,6 +16,7 @@ export interface SidebarTabItem {
   tooltip?: string;
   shortcut?: string[];
   showSearchButton?: boolean;
+  walkthroughId?: string;
 }
 
 export interface SidebarViewShortcut {
@@ -44,6 +45,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     tooltip: "Configure the workspace metadata",
     shortcut: ["Cmd", "Shift", "2"],
     showSearchButton: true,
+    walkthroughId: "analysis-tabs-edit",
   },
   {
     title: "Regions of Interest",

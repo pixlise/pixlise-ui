@@ -34,7 +34,7 @@ import { ReviewerMagicLinkLoginReq } from "src/app/generated-protos/user-managem
 import { MemoiseDeleteByRegexReq, MemoiseDeleteByRegexResp, MemoiseDeleteReq, MemoiseDeleteResp } from "src/app/generated-protos/memoisation-msgs";
 
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
+import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox, makeGUID } from "src/app/utils/utils";
 import { TabLinks } from "src/app/models/TabLinks";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
@@ -65,6 +65,7 @@ export type NavigationTab = {
   params?: Record<string, string>;
   active?: boolean;
   passQueryParams?: boolean;
+  walkthroughId?: string;
 };
 
 @Injectable({
@@ -300,6 +301,16 @@ export class AnalysisLayoutService implements OnDestroy {
     }
   }
 
+  prepareFreshLayout(layout: FullScreenLayout): FullScreenLayout {
+    const cloned = FullScreenLayout.create(JSON.parse(JSON.stringify(layout)));
+    cloned.tabId = "";
+    for (const widget of cloned.widgets) {
+      widget.id = makeGUID();
+      widget.data = undefined;
+    }
+    return cloned;
+  }
+
   addScreenConfigurationLayout(layout: FullScreenLayout): ScreenConfiguration | undefined {
     if (!layout) {
       return undefined;
@@ -310,7 +321,7 @@ export class AnalysisLayoutService implements OnDestroy {
       screenConfiguration = createDefaultScreenConfiguration();
     }
 
-    screenConfiguration.layouts.push(layout);
+    screenConfiguration.layouts.push(this.prepareFreshLayout(layout));
     this.activeScreenConfiguration$.next(screenConfiguration);
 
     this.writeScreenConfiguration(screenConfiguration);
@@ -476,6 +487,15 @@ export class AnalysisLayoutService implements OnDestroy {
   ) {
     if (!screenConfiguration || screenConfiguration.layouts.length === 0) {
       return;
+    }
+
+    for (const layout of screenConfiguration.layouts) {
+      for (const widget of layout.widgets) {
+        if (!widget.id) {
+          widget.id = makeGUID();
+          widget.data = undefined;
+        }
+      }
     }
 
     if (this.readOnlyMode) {

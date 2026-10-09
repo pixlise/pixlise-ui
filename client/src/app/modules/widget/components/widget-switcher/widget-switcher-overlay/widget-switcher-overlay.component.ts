@@ -20,6 +20,7 @@ export class WidgetSwitcherOverlayComponent implements OnInit, OnDestroy {
   @Input() metadataEditable: boolean = true;
   
   @Output() widgetSelected = new EventEmitter<WidgetType>();
+  @Output() closeRequested = new EventEmitter<void>();
 
   private _subs = new Subscription();
 

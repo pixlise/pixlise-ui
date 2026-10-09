@@ -235,6 +235,7 @@ export class ContextImageComponent
         },
         {
           id: "zoom-in",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-in.svg",
           tooltip: "Zoom In",
@@ -244,6 +245,7 @@ export class ContextImageComponent
         },
         {
           id: "zoom-out",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-out.svg",
           tooltip: "Zoom Out",
@@ -253,6 +255,7 @@ export class ContextImageComponent
         },
         {
           id: "zoom-all",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-all.svg",
           tooltip: "Show Whole Image",
@@ -262,6 +265,7 @@ export class ContextImageComponent
         },
         {
           id: "zoom-experiment",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-experiment.svg",
           tooltip: "Show Experiment Area",
@@ -435,6 +439,7 @@ export class ContextImageComponent
       }
       this._widgetControlConfiguration.bottomToolbar?.push({
         id: "tool-" + tool.toolId.toString(),
+        walkthroughId: "chart-tools",
         type: "selectable-button",
         icon: tool.icon,
         value: tool.state != ToolState.OFF,

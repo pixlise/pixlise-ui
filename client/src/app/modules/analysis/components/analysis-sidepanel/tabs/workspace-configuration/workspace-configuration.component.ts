@@ -238,23 +238,38 @@ export class WorkspaceConfigurationTabComponent implements OnInit, OnDestroy {
     newTab.label = `${newTab.label} (Copy)`;
     let screenLayout = this.getLayoutFromTab(tab);
     if (screenLayout) {
-      let newScreenLayout = { ...screenLayout };
-
-      // Replace ids with new ones, we want this to be a copy but not linked to the original.
-      // NOTE: This fixes a bug where if a tab was copied, and say the original tab had a context image on it, the new tab looked the same
-      //       but when a user changed either context image, they both changed! Users found this to be unexpected behaviour so we now ensure
-      //       all ids are unique to the new copied tab
-      newScreenLayout.tabId = ""
-      for (let widget of newScreenLayout.widgets) {
-        widget.id = "";
-      }
-
+      const newScreenLayout = this._analysisLayoutService.prepareFreshLayout(screenLayout);
       newScreenLayout.tabName = newTab.label;
+
+      const copiedWidgetData = new Map<string, NonNullable<(typeof newScreenLayout.widgets)[number]["data"]>>();
+      const sourceWidgets = FullScreenLayout.create(JSON.parse(JSON.stringify(screenLayout))).widgets;
+      newScreenLayout.widgets.forEach((widget, widgetIndex) => {
+        const sourceData = sourceWidgets[widgetIndex]?.data;
+        if (sourceData) {
+          sourceData.id = widget.id;
+          widget.data = sourceData;
+          copiedWidgetData.set(widget.id, sourceData);
+        }
+      });
 
       // Insert the new layout after the current layout
       let tabIndex = this.screenConfig.layouts.indexOf(screenLayout);
       this.screenConfig.layouts.splice(tabIndex + 1, 0, newScreenLayout);
-      this._analysisLayoutService.writeScreenConfiguration(this.screenConfig);
+      this._analysisLayoutService.writeScreenConfiguration(this.screenConfig, "", false, saved => {
+        const savedLayout = saved.layouts[tabIndex + 1];
+        if (!savedLayout) {
+          return;
+        }
+
+        for (const widget of savedLayout.widgets) {
+          const copied = copiedWidgetData.get(widget.id);
+          if (copied) {
+            widget.data = copied;
+            this._analysisLayoutService.writeWidgetData(copied);
+          }
+        }
+        this._analysisLayoutService.activeScreenConfiguration$.next(saved);
+      });
     }
   }
 

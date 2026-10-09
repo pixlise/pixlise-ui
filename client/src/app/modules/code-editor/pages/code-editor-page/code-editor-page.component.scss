@@ -43,6 +43,7 @@ $display-height: calc(100vh - 43px - 40px);
   &::-webkit-scrollbar {
     display: none;
   }
+
   -ms-overflow-style: none;
   scrollbar-width: none;
 
@@ -105,6 +106,7 @@ $display-height: calc(100vh - 43px - 40px);
         }
 
         width: calc(100% - 8px);
+
         expression-metadata-editor {
           margin-left: auto;
           margin-right: 8px;
@@ -367,6 +369,7 @@ $display-height: calc(100vh - 43px - 40px);
         background-color: black;
         border-radius: 8px;
         border: 1px solid #444c50;
+
         .skeleton-header {
           height: 40px;
           width: 100%;
@@ -414,6 +417,7 @@ $display-height: calc(100vh - 43px - 40px);
   overflow-y: auto;
 
   border-right: 1px solid rgb(var(--clr-gray-100));
+
   .group {
     .header {
       display: flex;
@@ -665,4 +669,9 @@ $display-height: calc(100vh - 43px - 40px);
     gap: $sz-unit;
     padding-top: $sz-unit;
   }
+}
+
+.explorer-actions {
+  display: flex;
+  align-items: center;
 }

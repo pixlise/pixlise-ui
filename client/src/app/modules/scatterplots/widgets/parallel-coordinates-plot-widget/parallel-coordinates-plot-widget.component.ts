@@ -187,6 +187,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
       bottomToolbar: [
         {
           id: "sigma-level",
+          walkthroughId: "chart-stats",
           type: "multi-state-button",
           options: [SIGMA_LEVEL.NONE, SIGMA_LEVEL.ONE, SIGMA_LEVEL.TWO],
           tooltip: "Set the sigma level for the data",
@@ -205,6 +206,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         },
         {
           id: "mean-median",
+          walkthroughId: "chart-stats",
           type: "multi-state-button",
           tooltip: "Toggle between mean and median",
           value: AVERAGE_MODE.MEAN,
@@ -217,6 +219,7 @@ export class ParallelCoordinatesPlotWidgetComponent extends BaseWidgetModel impl
         },
         {
           id: "exclude-zero",
+          walkthroughId: "chart-stats",
           type: "toggle-button",
           tooltip: "Toggle exclude zero",
           title: "Exclude Zero",

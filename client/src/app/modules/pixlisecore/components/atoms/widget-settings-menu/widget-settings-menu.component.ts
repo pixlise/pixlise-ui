@@ -91,6 +91,10 @@ export class WidgetSettingsMenuComponent implements OnDestroy {
     }
   }
 
+  open(): void {
+    this.showPanel();
+  }
+
   close(): void {
     this.hidePanel();
   }
