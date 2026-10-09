@@ -1,4 +1,18 @@
-## 4.99.0 (LATEST)
+## 4.100.0 (LATEST)
+
+### Bug Fixes
+- Fixes bug where if a workspace tab was deleted and then recreated, the old chart configurations would come back instead of starting blank
+- Fixes sort order of scans to be by RTT instead of Sol
+- Fixes scrolling overflow issue in scan details
+
+### New Features
+- New walkthrough system that introduces users to Pixlise
+  - Simple walkthroughs for browse, code-editor, analysis, and new tab pages
+  - Each chart and each left sidepanel now also has an info icon next to it to trigger a feature walkthrough explaining how to use the chart/sidepanel
+  - Walkthroughs can be toggled fully off or reset from the user settings menu found by clicking your user icon in the top right
+- More sorting and filtering options for scans from the browse page
+
+## 4.99.0 (2026-08-31)
 
 ### Bug Fixes
 - Fixed issue with drawing introduced with SVG export change - RGBA alpha values were being rounded to 0 (transparent), causing scenarios where points wouldn't draw on certain charts.
