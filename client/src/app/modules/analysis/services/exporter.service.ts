@@ -601,14 +601,22 @@ msa += `#XPOSITION   : 0.000
     };
   }
 
-  getBeamLocationsForScan(scanId: string): Observable<WidgetExportData> {
-    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<Map<string, Map<number, Coordinate2D[]>>>] = [
+  getBeamLocationsForScan(scanId: string, roiIds: string[] = []): Observable<WidgetExportData> {
+    let roiRequests: Observable<RegionOfInterestGetResp | null>[] = roiIds.map(id =>
+      PredefinedROIID.isPredefined(id) ? of(null) : this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id }))
+    );
+    if (roiRequests.length === 0) {
+      roiRequests = [of(null)];
+    }
+
+    const requests: [Observable<ScanBeamLocationsResp>, Observable<ScanEntryResp>, Observable<Map<string, Map<number, Coordinate2D[]>>>, Observable<(RegionOfInterestGetResp | null)[]>] = [
       this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId })),
       this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })),
       this.getAllImagesIJ(scanId),
+      combineLatest(roiRequests),
     ];
     return combineLatest(requests).pipe(
-      map(([beamLocations, scanEntries, imageIJs]) => {
+      map(([beamLocations, scanEntries, imageIJs, rois]) => {
         const csvs: WidgetExportFile[] = [];
         if (beamLocations.beamLocations && scanEntries.entries && imageIJs.size > 0) {
           if (scanEntries.entries.length !== beamLocations.beamLocations.length) {
@@ -617,49 +625,63 @@ msa += `#XPOSITION   : 0.000
             return { csvs };
           }
 
+          const exportSets: { roiName: string; pmcs: Set<number> | null }[] = [{ roiName: "", pmcs: null }];
+          rois.forEach((roi, i) => {
+            if (roi) {
+              const roiName = (roi.regionOfInterest?.name || roiIds[i]).replace("/", "_");
+              exportSets.push({ roiName, pmcs: new Set(decodeIndexList(roi.regionOfInterest?.scanEntryIndexesEncoded || [])) });
+            }
+          });
+
           for (const imageKey of imageIJs.keys()) {
             const imageName = getPathBase(imageKey);
 
-            // Export all coordinates for this image name
-            let data = "PMC,X,Y,Z";
+            for (const exportSet of exportSets) {
+              // Export all coordinates for this image name
+              let data = "PMC,X,Y,Z";
 
-            const verMap = imageIJs.get(imageKey);
-            if (verMap) {
-              for (const ver of verMap.keys()) {
-                data += `,${imageName}_v${ver}_i,${imageName}_v${ver}_j`;
-              }
-            }
-
-            for (let i = 0; i < beamLocations.beamLocations.length; i++) {
-              const entry = scanEntries.entries[i];
-              if (!entry.location) {
-                continue;
-              }
-
-              // Round to 5 decimal places
-              const location = beamLocations.beamLocations[i];
-              const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
-              data += `\n${entry.id},${x},${y},${z}`;
-
-              // Add image coordinate headers
               const verMap = imageIJs.get(imageKey);
-              let wrote = false;
               if (verMap) {
-                for (const coords of verMap.values()) {
-                  if (coords) {
-                    const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
-                    data += `,${roundedI},${roundedJ}`;
-                    wrote = true;
+                for (const ver of verMap.keys()) {
+                  data += `,${imageName}_v${ver}_i,${imageName}_v${ver}_j`;
+                }
+              }
+
+              for (let i = 0; i < beamLocations.beamLocations.length; i++) {
+                const entry = scanEntries.entries[i];
+                if (!entry.location || (exportSet.pmcs && !exportSet.pmcs.has(entry.id))) {
+                  continue;
+                }
+
+                // Round to 5 decimal places
+                const location = beamLocations.beamLocations[i];
+                const [x, y, z] = [location.x, location.y, location.z].map(coord => Math.round(coord * 1e5) / 1e5);
+                data += `\n${entry.id},${x},${y},${z}`;
+
+                // Add image coordinate headers
+                const verMap = imageIJs.get(imageKey);
+                let wrote = false;
+                if (verMap) {
+                  for (const coords of verMap.values()) {
+                    if (coords) {
+                      const [roundedI, roundedJ] = [coords[i].i, coords[i].j].map(coord => Math.round(coord * 1e5) / 1e5);
+                      data += `,${roundedI},${roundedJ}`;
+                      wrote = true;
+                    }
+                  }
+
+                  if (!wrote) {
+                    data += ",,";
                   }
                 }
-
-                if (!wrote) {
-                  data += ",,";
-                }
               }
-            }
 
-            csvs.push({ fileName: `${scanId}-${imageName}-beam-locations.csv`, data });
+              csvs.push({
+                fileName: `${scanId}-${imageName}-beam-locations${exportSet.roiName ? "-" + exportSet.roiName : ""}.csv`,
+                data,
+                subFolder: exportSet.roiName ? "Beam Locations/ROIs" : "Beam Locations",
+              });
+            }
           }
         } else {
           console.error("Missing data for beam locations export");

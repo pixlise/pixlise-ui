@@ -100,7 +100,7 @@ export class AnalysisLayoutService implements OnDestroy {
 
   targetWidgetIds$ = new BehaviorSubject<Set<string>>(new Set());
   highlightedWidgetIds$ = new BehaviorSubject<string[]>([]);
-  expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
+  expressionPickerResponse$ = new Subject<ExpressionPickerResponse | null>();
 
   highlightedDiffractionWidget$ = new BehaviorSubject<HighlightedDiffraction | null>(null);
   highlightedContextImageDiffractionWidget$ = new BehaviorSubject<HighlightedContextImageDiffraction | null>(null);
@@ -222,6 +222,10 @@ export class AnalysisLayoutService implements OnDestroy {
   get isMapsPage(): boolean {
     let strippedURL = this._router.url.split("?")[0];
     return strippedURL.endsWith("/datasets/maps");
+  }
+
+  get currentTabParam(): string {
+    return this._route.snapshot.queryParams["tab"] || "0";
   }
 
   getCurrentTabId(): number {

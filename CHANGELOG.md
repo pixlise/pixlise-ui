@@ -1,4 +1,14 @@
-## 4.100.0 (LATEST)
+## 4.101.0 (LATEST)
+
+### New Features
+- Chart ROIs are now reorderable via dragging their row in their respective key
+- Export Beam Locations now includes Beam locations per ROI in a new subfolder
+
+### Bug Fixes
+- Fixes bug where context images were being linked and synced across tabs leading to un-intended changes
+- Fixes bug where panning/zooming one context image wouldn't save the linked context image's state until that context image was interacted with
+
+## 4.100.0 (2026-10-09)
 
 ### Bug Fixes
 - Fixes bug where if a workspace tab was deleted and then recreated, the old chart configurations would come back instead of starting blank

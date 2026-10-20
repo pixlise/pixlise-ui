@@ -587,6 +587,7 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterContentInit {
               const data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
               if (this.widgetConfiguration?.dataKey) {
                 data[this.widgetConfiguration.dataKey] = widgetData;
+                this.widgetLayoutConfig.data = data;
                 this._analysisLayoutService.writeWidgetData(data);
               }
             })
