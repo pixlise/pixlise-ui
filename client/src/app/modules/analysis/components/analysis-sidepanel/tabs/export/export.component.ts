@@ -306,11 +306,18 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
           id: "beamLocations",
           name: "Beam Locations .csv",
           type: "checkbox",
-          description: "Export the beam locations as a CSV",
+          description: "Export the beam locations as a CSV for all points and each selected ROI",
           selected: false,
           updateCounts: (selection, selected) => {
+            let countMap: Record<string, number> = { beamLocations: 0 };
+
             let scanOptions = Object.values(selection.options).filter(option => option.id.startsWith("scan-") && option.selected);
-            let countMap: Record<string, number> = { beamLocations: scanOptions.length };
+            scanOptions.forEach(scanOption => {
+              let scanId = scanOption.id.replace("scan-", "");
+              let roiIds = scanOption.subOptions?.find(subOption => subOption.id === scanId + "_rois")?.selectedRegions?.map(roi => roi.id) || [];
+              // Adding 1 for All Points
+              countMap["beamLocations"] += roiIds.length + 1;
+            });
 
             return countMap;
           },
@@ -518,7 +525,7 @@ export class ExportTabComponent extends WidgetExportDialogComponent implements O
     }
 
     if (request.dataProducts["beamLocations"]?.selected) {
-      exportRequests.push(this._exporterService.getBeamLocationsForScan(scanId));
+      exportRequests.push(this._exporterService.getBeamLocationsForScan(scanId, roiIds));
     }
 
     if (request.dataProducts["unquantifiedWeightPercent"]?.selected) {
