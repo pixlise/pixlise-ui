@@ -118,6 +118,28 @@
   }
 }
 
+.drag-handle {
+  width: 12px;
+  height: 12px;
+  margin-right: 2px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.key-drag-preview {
+  display: flex;
+  align-items: center;
+  padding: $sz-half $sz-unit;
+  background-color: $clr-gray-100;
+  border-radius: 4px;
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14);
+  white-space: pre;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
 .main-label-clickable {
   @extend .clickable;
 
@@ -202,7 +224,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 4px;
+    padding: 0 4px;
 
     .key-group-header {
       width: 100%;
@@ -224,6 +246,12 @@
 
       action-button {
       }
+    }
+
+    &.grouped .item-container {
+      margin-left: 4px;
+      padding-left: 4px;
+      border-left: 2px solid $clr-gray-80;
     }
 
     .item-container {

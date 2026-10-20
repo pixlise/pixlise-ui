@@ -4,6 +4,11 @@ export class WidgetKeyItem {
   colour: string;
 
   public layerOrder: number = -1;
+  public isSelected: boolean = false;
+
+  get drawRank(): number {
+    return this.isSelected ? -Infinity : this.layerOrder;
+  }
 
   constructor(
     public id: string,

@@ -910,7 +910,7 @@ export class VariogramWidgetComponent extends BaseWidgetModel implements OnInit,
           } else if (keyItemB === undefined) {
             return -1;
           } else {
-            return keyItemB.layerOrder - keyItemA.layerOrder;
+            return keyItemB.drawRank - keyItemA.drawRank;
           }
         });
 
