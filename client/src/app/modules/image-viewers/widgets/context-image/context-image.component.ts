@@ -932,7 +932,7 @@ export class ContextImageComponent
   get syncId(): string {
     return `${this.scanId}-${
       this._analysisLayoutService.isMapsPage ? "maps" : "analysis"
-    }`;
+    }-${this._analysisLayoutService.currentTabParam}`;
   }
 
   onToggleLinkToDataset() {
