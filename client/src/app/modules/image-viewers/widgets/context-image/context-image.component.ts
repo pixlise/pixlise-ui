@@ -141,6 +141,7 @@ export class ContextImageComponent
   private _quantOverrideForScan: Record<string, string> = {};
 
   private _subs = new Subscription();
+  private _syncedSaveTimer: any;
 
   private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
 
@@ -623,8 +624,11 @@ export class ContextImageComponent
       })
     );
 
+    let initialSyncEmission = true;
     this._subs.add(
       this._contextDataService.syncedTransform$.subscribe((transforms) => {
+        const isInitial = initialSyncEmission;
+        initialSyncEmission = false;
         if (!this.linkToDataset || this._exportMode) {
           return;
         }
@@ -644,6 +648,12 @@ export class ContextImageComponent
           }
 
           this.reDraw("syncedTransform$");
+
+          // Save linked widget's state when transform changes
+          if (!isInitial) {
+            clearTimeout(this._syncedSaveTimer);
+            this._syncedSaveTimer = setTimeout(() => this.saveState(), 500);
+          }
         }
       })
     );
@@ -922,6 +932,7 @@ export class ContextImageComponent
   }
 
   ngOnDestroy() {
+    clearTimeout(this._syncedSaveTimer);
     this._subs.unsubscribe();
   }
 
