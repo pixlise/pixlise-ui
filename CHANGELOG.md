@@ -7,6 +7,7 @@
 ### Bug Fixes
 - Fixes bug where context images were being linked and synced across tabs leading to un-intended changes
 - Fixes bug where panning/zooming one context image wouldn't save the linked context image's state until that context image was interacted with
+- Fixes issue with workspace duplication/scan replacement where new layouts ended up with default widget configurations
 
 ## 4.100.0 (2026-10-09)
 

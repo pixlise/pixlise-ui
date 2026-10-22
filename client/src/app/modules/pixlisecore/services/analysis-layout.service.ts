@@ -496,8 +496,14 @@ export class AnalysisLayoutService implements OnDestroy {
     for (const layout of screenConfiguration.layouts) {
       for (const widget of layout.widgets) {
         if (!widget.id) {
-          widget.id = makeGUID();
-          widget.data = undefined;
+          // widget.id = makeGUID();
+          // widget.data = undefined;
+          // Instead of making the data undefined and fixing it elsewhere - we want this data
+          // saved, but it should be a deep copy so we aren't intertwining things...
+          if(widget.data) {
+            widget.data = WidgetData.create(JSON.parse(JSON.stringify(widget.data)));
+            widget.data.id = ""; // Ensure it's the same as the outer id!
+          }
         }
       }
     }
