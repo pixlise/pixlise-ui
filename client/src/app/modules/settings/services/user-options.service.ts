@@ -14,7 +14,7 @@ import {
   UserNotificationSettingsWriteResp,
 } from "src/app/generated-protos/user-notification-setting-msgs";
 import { UserDetailsReq, UserDetailsResp, UserDetailsWriteReq, UserDetailsWriteResp } from "src/app/generated-protos/user-msgs";
-import { UserDetails, UserInfo } from "src/app/generated-protos/user";
+import { UserDetails, UserGuidance, UserInfo } from "src/app/generated-protos/user";
 
 import { FeatureRequest, PermissionsModel } from "src/app/modules/settings/models/permissions.model";
 import {
@@ -47,6 +47,7 @@ export class UserOptionsService {
       nonSecretPassword: "",
     },
     dataCollectionVersion: "",
+    guidance: undefined,
     permissions: [],
   };
   private _userOptionsChanged$ = new ReplaySubject<void>(1);
@@ -82,6 +83,23 @@ export class UserOptionsService {
 
   get userDetails(): UserDetails {
     return this._userDetails;
+  }
+
+  get guidance(): UserGuidance {
+    return this._userDetails.guidance || UserGuidance.create({});
+  }
+
+  updateGuidance(changes: Partial<UserGuidance>): void {
+    const guidance = UserGuidance.create({ ...this.guidance, ...changes });
+    this._userDetails.guidance = guidance;
+    this._userOptionsChanged$.next();
+
+    this._dataService.sendUserDetailsWriteRequest(UserDetailsWriteReq.create({ guidance })).subscribe({
+      error: err => {
+        this._snackBar.openError("Error updating user guidance settings");
+        console.error("Error sendUserDetailsWriteRequest Guidance", err);
+      },
+    });
   }
 
   get currentDataCollectionAgreementAccepted(): boolean {

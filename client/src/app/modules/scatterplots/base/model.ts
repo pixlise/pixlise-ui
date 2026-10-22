@@ -457,7 +457,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
       } else if (keyItemB === undefined) {
         return -1;
       } else {
-        return keyItemB.layerOrder - keyItemA.layerOrder;
+        return keyItemB.drawRank - keyItemA.drawRank;
       }
     });
 
@@ -466,6 +466,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
       const existingKeyItem = previousKeyItems.find(key => key.id == keyItem.id);
       if (existingKeyItem) {
         keyItem.layerOrder = existingKeyItem.layerOrder;
+        keyItem.isSelected = existingKeyItem.isSelected;
       } else {
         keyItem.layerOrder = -1;
       }

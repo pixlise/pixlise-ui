@@ -51,7 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <push-button *ngIf="restoreEnabled" buttonStyle="hover-yellow" (onClick)="onRestoreData()">Restore Data</push-button>
     </ng-container>
     <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Group Admin</push-button>
-    <push-button *ngIf="!isReadOnlyUser" buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
+    <push-button *ngIf="!isReadOnlyUser" walkthroughId="user-menu-settings" (walkthroughNext)="onSettings()" buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
     <div *ngIf="user.info?.expirationDateUnixSec">
       <div class="gap-separated-horizontal-elements user-field">
         <div>Account Expires:</div>

@@ -1,5 +1,5 @@
 <ng-template #settingsMenu>
-  <div class="widget-settings-menu">
+  <div class="widget-settings-menu" walkthroughId="chart-settings" [walkthroughScope]="_widgetId">
     <div class="row above-title">
       <div class="row-title">Display</div>
       <multi-switch-button
@@ -32,6 +32,8 @@
 <div class="axis-container">
   <div *ngIf="mdl.raw && !_exportMode" class="axis y-axis">
     <h5
+      walkthroughId="chart-axis"
+      [walkthroughScope]="_widgetId"
       class="axis-label"
       (click)="onAxisClick('Y')"
       (keyup)="onAxisClick('Y')"
@@ -46,6 +48,8 @@
     </h5>
     <span>
       <range-slider
+        walkthroughId="chart-zoom"
+        [walkthroughScope]="_widgetId"
         [minValue]="yRangeMin"
         [selectedMinValue]="yRangeSelectedMin"
         [maxValue]="yRangeMax"
@@ -59,6 +63,8 @@
   </div>
   <div class="canvas-container">
     <interactive-canvas
+      walkthroughId="chart-zoom"
+      [walkthroughScope]="_widgetId"
       [ngClass]="mdl.cursorShown"
       [drawer]="drawer"
       [drawNotifier]="mdl"
@@ -69,6 +75,8 @@
 
     <div *ngIf="mdl.raw && !_exportMode" class="axis x-axis">
       <h5
+        walkthroughId="chart-axis"
+        [walkthroughScope]="_widgetId"
         class="axis-label"
         (click)="onAxisClick('X')"
         (keyup)="onAxisClick('X')"
@@ -83,6 +91,8 @@
       </h5>
       <span>
         <range-slider
+        walkthroughId="chart-zoom"
+        [walkthroughScope]="_widgetId"
           [minValue]="xRangeMin"
           [selectedMinValue]="xRangeSelectedMin"
           [maxValue]="xRangeMax"
@@ -99,6 +109,8 @@
 <scatter-plot-axis-switcher
   *ngIf="!_exportMode && !mdl.raw"
   class="x-switcher"
+  walkthroughId="chart-axis"
+  [walkthroughScope]="_widgetId"
   [info]="xAxisSwitcher"
   (click)="onAxisClick('X')"
 >
@@ -106,6 +118,8 @@
 <scatter-plot-axis-switcher
   *ngIf="!_exportMode && !mdl.raw"
   class="y-switcher"
+  walkthroughId="chart-axis"
+  [walkthroughScope]="_widgetId"
   [info]="yAxisSwitcher"
   (click)="onAxisClick('Y')"
 >

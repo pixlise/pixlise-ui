@@ -102,6 +102,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       topToolbar: [
         {
           id: "pan",
+          walkthroughId: "chart-zoom",
           type: "selectable-button",
           icon: "assets/button-icons/tool-pan.svg",
           tooltip: "Pan Tool (Shift)\nClick and drag to move the context image in the viewport",
@@ -110,6 +111,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "zoom",
+          walkthroughId: "chart-zoom",
           type: "selectable-button",
           icon: "assets/button-icons/tool-zoom.svg",
           tooltip: "Zoom Tool (Shift)\nClick to zoom, or draw a box around area of interest",
@@ -133,6 +135,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "zoom-in",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-in.svg",
           tooltip: "Zoom In",
@@ -142,6 +145,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "zoom-out",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-out.svg",
           tooltip: "Zoom Out",
@@ -151,6 +155,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "zoom-all",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-all-arrows.svg",
           tooltip: "Zoom To Fit Whole Spectrum",
@@ -211,6 +216,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "piquant",
+          walkthroughId: "chart-piquant",
           type: "button",
           title: "Run PIQUANT",
           //disabled: !this._showingPiquant,
@@ -221,6 +227,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "calibration",
+          walkthroughId: "chart-piquant",
           type: "button",
           title: "Calibration",
           tooltip: "Allows calibration of x-axis",

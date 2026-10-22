@@ -196,6 +196,7 @@ export class RGBUPlotWidgetComponent
         },
         {
           id: "reset-zoom",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-all-arrows.svg",
           tooltip: "Reset Zoom\nResets zoom to show all data",
