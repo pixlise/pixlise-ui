@@ -249,6 +249,8 @@ export interface SpectrumExpressionDataSource {
 }
 
 export class SpectrumExpressionParser {
+  constructor(public detectors: string[]) {}
+
   getSpectrumValues(
     spectrumSource: SpectrumExpressionDataSource,
     locationIndexes: number[],
@@ -415,11 +417,15 @@ export class SpectrumExpressionParser {
     countsPerMinWhenReading: boolean
   ): SpectrumValues | null {
     let detector = "";
-    if (exprTerm.indexOf("(A)") >= 0) {
-      detector = "A";
-    } else if (exprTerm.indexOf("(B)") >= 0) {
-      detector = "B";
-    } else {
+
+    for (const det of this.detectors) {
+      const term = "(" + det + ")";
+      if (exprTerm.indexOf(term) >= 0) {
+        detector = det;
+      }
+    }
+
+    if (detector.length <= 0) {
       throw new Error('getExpressionTerms: bad term: "' + exprTerm + '" in expression: ' + lineExpression);
     }
 
@@ -487,7 +493,12 @@ export class SpectrumExpressionParser {
   private getTerms(lineExpression: string): string[] {
     const result = [];
 
-    const toCheck = ["bulk(A)", "bulk(B)", "max(A)", "max(B)"];
+    const toCheck = [];
+    for (const det of this.detectors) {
+      toCheck.push("bulk("+det+")");
+      toCheck.push("max("+det+")");
+    }
+
     for (const check of toCheck) {
       const idx = lineExpression.indexOf(check);
       if (idx >= 0) {

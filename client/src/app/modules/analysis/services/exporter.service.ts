@@ -14,7 +14,7 @@ import {
   ImageBeamLocationVersionsReq,
   ImageBeamLocationVersionsResp,
 } from "../../../generated-protos/image-beam-location-msgs";
-import { SpectrumResp } from "../../../generated-protos/spectrum-msgs";
+import { SpectrumDetectorsReq, SpectrumDetectorsResp, SpectrumResp } from "../../../generated-protos/spectrum-msgs";
 import { Spectrum, SpectrumType } from "../../../generated-protos/spectrum";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
 import { decodeIndexList, getPathBase } from "src/app/utils/utils";
@@ -492,7 +492,8 @@ msa += `#XPOSITION   : 0.000
   }
 
   getBulkSumMaxSpectra(scanId: string, roiIds: string[]): Observable<WidgetExportData> {
-    const requests: Observable<ScanMetaLabelsAndTypesResp | SpectrumResp | RegionOfInterestGetResp>[] = [
+    const requests: Observable<SpectrumDetectorsResp | ScanMetaLabelsAndTypesResp | SpectrumResp | RegionOfInterestGetResp>[] = [
+      this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: scanId})),
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
       this._spectrumDataService.getSpectra(scanId, roiIds.length > 0 ? null : [], true, true),
     ];
@@ -505,8 +506,9 @@ msa += `#XPOSITION   : 0.000
 
     return combineLatest(requests).pipe(
       map((resps: any[]) => {
-        const scanMeta = resps[0] as ScanMetaLabelsAndTypesResp;
-        const spectrumResp = resps[1] as SpectrumResp;
+        const scanDetectors = resps[0] as SpectrumDetectorsResp;
+        const scanMeta = resps[1] as ScanMetaLabelsAndTypesResp;
+        const spectrumResp = resps[2] as SpectrumResp;
 
         const metaLiveTimeIdx = scanMeta.metaLabels.indexOf("LIVETIME");
         if (metaLiveTimeIdx < 0) {
@@ -517,10 +519,10 @@ msa += `#XPOSITION   : 0.000
         if (scanMeta && spectrumResp) {
           // For any ROIs, we bulk and max the spectra
           for (let c = 0; c < roiIds.length; c++) {
-            const roiResp = resps[c + 2] as RegionOfInterestGetResp;
+            const roiResp = resps[c + 3] as RegionOfInterestGetResp;
             if (roiResp.regionOfInterest && roiResp.regionOfInterest.scanEntryIndexesEncoded.length > 0) {
               const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-              const parser = new SpectrumExpressionParser();
+              const parser = new SpectrumExpressionParser(scanDetectors.detectorId);
 
               const specExprs = ["bulk(A)", "bulk(B)", "max(A)", "max(B)"];
               const spectraMap = new Map<string, SpectrumValues>();

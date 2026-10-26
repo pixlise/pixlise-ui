@@ -44,6 +44,8 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
+import { SpectrumDetectorsReq } from "src/app/generated-protos/spectrum-msgs";
+import { SubItemOptionItem } from "src/app/modules/roi/components/roi-item/roi-item.component";
 
 
 @Component({
@@ -832,42 +834,67 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       return;
     }
 
-    const dialogConfig = new MatDialogConfig<ROIPickerData>();
-    // Pass data to dialog
-    dialogConfig.data = {
-      requestFullROIs: false,
-      draggable: true,
-      liveUpdate: true,
-      selectableSubItemOptions: SpectrumChartModel.allLineChoiceOptions,
-      subItemButtonName: "Select Spectra",
-      selectedItems: this.mdl.getLineList(),
-      scanId: this.scanId,
-      title: "Spectrum Lines To Display",
-      showSelectedPoints: true,
-    };
+    this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: this.scanId})).subscribe({
+      next: resp => {
+        const options = JSON.parse(JSON.stringify(SpectrumChartModel.allLineChoiceOptions));
 
-    dialogConfig.hasBackdrop = false;
-    dialogConfig.disableClose = true;
-    dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, ROIPickerComponent.HEIGHT, ROIPickerComponent.WIDTH);
+        // Add a bulk and max line for each detector we have
+        const bulkOptions: SubItemOptionItem[] = [];
+        const maxOptions: SubItemOptionItem[] = [];
+        for (const det of resp.detectorId) {
+          bulkOptions.push(new SubItemOptionItem(det, "bulk(" + det + ")"));
+          maxOptions.push(new SubItemOptionItem(det, "max(" + det + ")"));
+        }
 
-    this._shownDisplaySpectra = this.dialog.open(ROIPickerComponent, dialogConfig);
-    this._shownDisplaySpectra.componentInstance.onChange.subscribe((result: ROIPickerResponse) => {
-      if (result?.selectedItems === undefined) {
-        return;
+        if (resp.detectorId.indexOf("A") >= 0 && resp.detectorId.indexOf("B") >= 0) {
+          bulkOptions.push(...SpectrumChartModel.lineChoicesABSum);
+          maxOptions.push(...SpectrumChartModel.lineChoicesABMax);
+        }
+
+        options[0].options = bulkOptions;
+        options[1].options = maxOptions;
+
+        const dialogConfig = new MatDialogConfig<ROIPickerData>();
+        // Pass data to dialog
+        dialogConfig.data = {
+          requestFullROIs: false,
+          draggable: true,
+          liveUpdate: true,
+          selectableSubItemOptions: options,
+          subItemButtonName: "Select Spectra",
+          selectedItems: this.mdl.getLineList(),
+          scanId: this.scanId,
+          title: "Spectrum Lines To Display",
+          showSelectedPoints: true,
+        };
+
+        dialogConfig.hasBackdrop = false;
+        dialogConfig.disableClose = true;
+        dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, ROIPickerComponent.HEIGHT, ROIPickerComponent.WIDTH);
+
+        this._shownDisplaySpectra = this.dialog.open(ROIPickerComponent, dialogConfig);
+        this._shownDisplaySpectra.componentInstance.onChange.subscribe((result: ROIPickerResponse) => {
+          if (result?.selectedItems === undefined) {
+            return;
+          }
+
+          // Get the region/display settings and spectra, then add
+          // a line for each to the chart.
+          this.mdl.setLineList(result.selectedItems);
+          if (result.selectedItems.size === 0) {
+            this.mdl.clearDisplayData();
+          }
+          this.updateLines();
+          this.saveState();
+        });
+
+        this._shownDisplaySpectra.afterClosed().subscribe(() => {
+          this._shownDisplaySpectra = null;
+        });
+      },
+      error: err => {
+        this._snackService.openError("Failed to query spectrum detector list", err)
       }
-
-      // Get the region/display settings and spectra, then add
-      // a line for each to the chart.
-      this.mdl.setLineList(result.selectedItems);
-      if (result.selectedItems.size === 0) {
-        this.mdl.clearDisplayData();
-      }
-      this.updateLines();
-      this.saveState();
-    });
-
-    this._shownDisplaySpectra.afterClosed().subscribe(() => {
-      this._shownDisplaySpectra = null;
     });
   }
 
@@ -1046,6 +1073,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           }
 
           combineLatest([
+            this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: roi.region.scanId})),
             this._spectrumDataService.getSpectra(roi.region.scanId, idxs, true, true),
             this._cachedDataService.getScanList(
               ScanListReq.create({
@@ -1056,7 +1084,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             // ROIs deliver PMCs in the badly named field
             this._scanIdConverterService.convertScanEntryPMCToIndex(roi.region.scanId, roi.region.scanEntryIndexesEncoded)
           ]).subscribe({
-            next: ([spectrumResp, scanListResp, pmcToIdxResult]) => {
+            next: ([scanDetectorResp, spectrumResp, scanListResp, pmcToIdxResult]) => {
               if (pmcToIdxResult.failedPMCs.length > 0) {
                 throw new Error(`Spectrum generateLines failed due to bad PMC in ROI - couldn't look up PMCs: ${pmcToIdxResult.failedPMCs}`);
               }
@@ -1070,7 +1098,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               let values = new Map<string, SpectrumValues>();
 
               const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-              const parser = new SpectrumExpressionParser();
+              const parser = new SpectrumExpressionParser(scanDetectorResp.detectorId);
 
               for (const lineExpr of options) {
                 // Find the title
