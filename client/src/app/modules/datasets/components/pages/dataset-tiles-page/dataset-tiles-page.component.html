@@ -97,6 +97,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button *ngIf="userCanEdit" (onClick)="onOpen(null, true)" buttonStyle="gray">Open In New Tab</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onCreateNewWorkspaceFromScan()" buttonStyle="gray">New Workspace From Scan</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="gray">Edit</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onDuplicate()" buttonStyle="gray">Duplicate</push-button>
     <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="gray">Delete</push-button>
   </div>
 </ng-template>

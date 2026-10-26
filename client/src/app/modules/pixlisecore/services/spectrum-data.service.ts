@@ -34,7 +34,11 @@ export class SpectrumDataService {
         // Clear all our caches for this notification
         if (upd.notification.scanIds) {
           for (const scanId of upd.notification.scanIds) {
+            // Clear from in-memory cache
             this._spectrumCache.delete(scanId);
+
+            // Clear from local storage
+            this._localStorageService.deleteSpectraForKey(scanId);
           }
 
           // Find all cached range data that starts with this scan id

@@ -3,10 +3,14 @@
 ### New Features
 - Chart ROIs are now reorderable via dragging their row in their respective key
 - Export Beam Locations now includes Beam locations per ROI in a new subfolder
+- Added "Duplicate" option to scan opening drop-down on browse page. Users with edit permissions can now make a copy of a scan if they wish to do potentially destructive/disruptive things with it (disruption of other uses). This is primarily for anyone wanting to upload new edited spectra:
+- Users can now upload spectra! This can only be done from the python client library at the moment. Note that if a spectrum is uploaded named A or B, it will end up being called A' or B' as we don't allow "overwriting" the original spectra from the scan. When spectra are uploaded, they appear as "Normal" spectra and we expect a spectrum defined for each PMC that originally had a Normal spectrum. If there are gaps, the upload will fail. Once uploaded, the back-end generates a bulk-sum spectrum which is expected to be present by the PIXLISE UI.
+- Added ability to view all spectra not just the "expected" A/B ones. This is done by querying what spectra are available, so if a scan has extra spectra uploaded, eg spectra that have been processed with diffraction removal algorithms, this can be viewed using the Display Spectra button and selecting the named spectrum. 
 
 ### Bug Fixes
 - Fixes bug where context images were being linked and synced across tabs leading to un-intended changes
 - Fixes bug where panning/zooming one context image wouldn't save the linked context image's state until that context image was interacted with
+- Fixes issue with workspace duplication/scan replacement where new layouts ended up with default widget configurations, losing all settings like layers/expressions selected.
 
 ## 4.100.0 (2026-10-09)
 

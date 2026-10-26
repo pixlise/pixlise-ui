@@ -1272,6 +1272,7 @@ export class ContextImageComponent
     }
 
     this.isWidgetDataLoading = true;
+    this.widgetErrorMessage = "";
 
     const obs: Observable<ContextImageModelLoadedData> =
       this.mdl.imageName.length <= 0 && this.scanId.length > 0
