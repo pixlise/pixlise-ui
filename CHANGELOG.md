@@ -1,4 +1,9 @@
-## 4.101.0 (LATEST)
+## 4.103.0 (LATEST)
+
+### Bug Fixes
+- MIST ROI CSV uploading looked incorrect because ROI index list was not decompressed. Refreshing the page loaded new list that was correctly decompressed but we now ensure even after upload the list is decompressed.
+
+## 4.102.0 (2026-10-26)
 
 ### New Features
 - Chart ROIs are now reorderable via dragging their row in their respective key
