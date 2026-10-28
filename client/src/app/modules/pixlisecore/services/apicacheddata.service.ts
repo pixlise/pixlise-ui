@@ -443,6 +443,7 @@ export class APICachedDataService {
         map((resp: RegionOfInterestGetResp) => {
           if (resp.regionOfInterest) {
             resp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(resp.regionOfInterest.scanEntryIndexesEncoded);
+            resp.regionOfInterest.pixelIndexesEncoded = decodeIndexList(resp.regionOfInterest.pixelIndexesEncoded);
           }
           return resp;
         }),
