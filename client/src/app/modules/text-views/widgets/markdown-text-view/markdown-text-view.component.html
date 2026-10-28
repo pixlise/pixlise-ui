@@ -2,7 +2,7 @@
   <div class="widget-settings-menu"></div>
 </ng-template>
 
-<div class="widget-area">
+<div class="widget-area" walkthroughId="chart-canvas" [walkthroughScope]="_widgetId">
   <div class="markdown-container" [style]="{ height: widgetContentHeight + 'px', width: widgetContentWidth + 'px' }" *ngIf="!editMode">
     <markdown [lineOffset]="5" [data]="content || '## Editable Text Panel'"> </markdown>
   </div>

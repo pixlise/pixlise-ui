@@ -8,6 +8,7 @@ import { InteractiveCanvasComponent } from "../widget/components/interactive-can
 import { WidgetKeyDisplayComponent } from "../widget/components/widget-key-display/widget-key-display.component";
 import { WidgetConfigurationButtonComponent } from "../widget/components/widget-configuration-button/widget-configuration-button.component";
 import { CdkAccordionModule } from "@angular/cdk/accordion";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ROIModule } from "src/app/modules/roi/roi.module";
 import { WidgetExportDialogComponent } from "src/app/modules/widget/components/widget-export-dialog/widget-export-dialog.component";
@@ -30,7 +31,7 @@ import { MarkdownModule } from "ngx-markdown";
     WidgetSwitcherComponent,
     WidgetSwitcherOverlayComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, ScrollingModule, ColorPickerDirective, ROIModule, FormsModule, OverlayModule, MarkdownModule],
+  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, DragDropModule, ScrollingModule, ColorPickerDirective, ROIModule, FormsModule, OverlayModule, MarkdownModule],
   exports: [
     WidgetComponent,
     BaseWidgetModel,

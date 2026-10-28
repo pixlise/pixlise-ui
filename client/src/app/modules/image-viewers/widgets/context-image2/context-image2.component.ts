@@ -93,6 +93,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         },
         {
           id: "reset",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/reset.svg",
           tooltip: "Reset Zoom and Pan",
@@ -157,6 +158,7 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
       // }
       this._widgetControlConfiguration.bottomToolbar?.push({
         id: "tool-" + tool.toolId.toString(),
+        walkthroughId: "chart-tools",
         type: "selectable-button",
         icon: tool.icon,
         value: tool.state != ToolState.OFF,

@@ -11,6 +11,7 @@ import { WidgetKeyItem } from "../../../pixlisecore/pixlisecore.module";
 export class WidgetConfigurationButtonComponent {
   @Input() buttonConfiguration?: WidgetToolbarButtonConfiguration;
   @Input() rowMode = false;
+  @Input() walkthroughScope = "";
   @Input() location: "top-toolbar" | "bottom-toolbar" | "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-right" | "" = "";
   constructor() {}
 
@@ -36,5 +37,14 @@ export class WidgetConfigurationButtonComponent {
     if (this.buttonConfiguration && this.buttonConfiguration.onUpdateKeyItems) {
       this.buttonConfiguration.onUpdateKeyItems(keyItems);
     }
+  }
+
+  get walkthroughId(): string {
+    const config = this.buttonConfiguration;
+    if (!config || this.rowMode || config.type === "divider") {
+      return "";
+    }
+    
+    return config.walkthroughId || `chart-btn-${config.id}`;
   }
 }

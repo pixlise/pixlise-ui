@@ -34,7 +34,7 @@ import { ReviewerMagicLinkLoginReq } from "src/app/generated-protos/user-managem
 import { MemoiseDeleteByRegexReq, MemoiseDeleteByRegexResp, MemoiseDeleteReq, MemoiseDeleteResp } from "src/app/generated-protos/memoisation-msgs";
 
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox } from "src/app/utils/utils";
+import { decodeUrlSafeBase64, getScanIdFromWorkspaceId, isFirefox, makeGUID } from "src/app/utils/utils";
 import { TabLinks } from "src/app/models/TabLinks";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
@@ -65,6 +65,7 @@ export type NavigationTab = {
   params?: Record<string, string>;
   active?: boolean;
   passQueryParams?: boolean;
+  walkthroughId?: string;
 };
 
 @Injectable({
@@ -99,7 +100,7 @@ export class AnalysisLayoutService implements OnDestroy {
 
   targetWidgetIds$ = new BehaviorSubject<Set<string>>(new Set());
   highlightedWidgetIds$ = new BehaviorSubject<string[]>([]);
-  expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
+  expressionPickerResponse$ = new Subject<ExpressionPickerResponse | null>();
 
   highlightedDiffractionWidget$ = new BehaviorSubject<HighlightedDiffraction | null>(null);
   highlightedContextImageDiffractionWidget$ = new BehaviorSubject<HighlightedContextImageDiffraction | null>(null);
@@ -223,6 +224,10 @@ export class AnalysisLayoutService implements OnDestroy {
     return strippedURL.endsWith("/datasets/maps");
   }
 
+  get currentTabParam(): string {
+    return this._route.snapshot.queryParams["tab"] || "0";
+  }
+
   getCurrentTabId(): number {
     let index = this.activeScreenConfigurationTabs$.value.findIndex(tab => tab.active);
     return index >= 0 ? index : 0;
@@ -300,6 +305,16 @@ export class AnalysisLayoutService implements OnDestroy {
     }
   }
 
+  prepareFreshLayout(layout: FullScreenLayout): FullScreenLayout {
+    const cloned = FullScreenLayout.create(JSON.parse(JSON.stringify(layout)));
+    cloned.tabId = "";
+    for (const widget of cloned.widgets) {
+      widget.id = makeGUID();
+      widget.data = undefined;
+    }
+    return cloned;
+  }
+
   addScreenConfigurationLayout(layout: FullScreenLayout): ScreenConfiguration | undefined {
     if (!layout) {
       return undefined;
@@ -310,7 +325,7 @@ export class AnalysisLayoutService implements OnDestroy {
       screenConfiguration = createDefaultScreenConfiguration();
     }
 
-    screenConfiguration.layouts.push(layout);
+    screenConfiguration.layouts.push(this.prepareFreshLayout(layout));
     this.activeScreenConfiguration$.next(screenConfiguration);
 
     this.writeScreenConfiguration(screenConfiguration);
@@ -476,6 +491,21 @@ export class AnalysisLayoutService implements OnDestroy {
   ) {
     if (!screenConfiguration || screenConfiguration.layouts.length === 0) {
       return;
+    }
+
+    for (const layout of screenConfiguration.layouts) {
+      for (const widget of layout.widgets) {
+        if (!widget.id) {
+          // widget.id = makeGUID();
+          // widget.data = undefined;
+          // Instead of making the data undefined and fixing it elsewhere - we want this data
+          // saved, but it should be a deep copy so we aren't intertwining things...
+          if(widget.data) {
+            widget.data = WidgetData.create(JSON.parse(JSON.stringify(widget.data)));
+            widget.data.id = ""; // Ensure it's the same as the outer id!
+          }
+        }
+      }
     }
 
     if (this.readOnlyMode) {

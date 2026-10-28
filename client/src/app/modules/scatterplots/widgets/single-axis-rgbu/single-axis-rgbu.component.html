@@ -94,16 +94,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="axis-container">
   <div class="canvas-container">
-    <interactive-canvas *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
+    <interactive-canvas walkthroughId="chart-canvas" [walkthroughScope]="_widgetId" *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
     </interactive-canvas>
 
     <div *ngIf="mdl.hasRawData()" class="axis x-axis">
-      <h5 class="axis-label" (click)="onAxisClick()" (keyup)="onAxisClick()" (keydown)="onAxisClick()" (keypress)="onAxisClick()" tabindex="0">
+      <h5 class="axis-label" walkthroughId="chart-axis" [walkthroughScope]="_widgetId" (click)="onAxisClick()" (keyup)="onAxisClick()" (keydown)="onAxisClick()" (keypress)="onAxisClick()" tabindex="0">
         <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg" /></span>
         {{ mdl.drawModel.xAxisUnitLabel }}
       </h5>
       <span>
         <range-slider
+          walkthroughId="chart-zoom"
+          [walkthroughScope]="_widgetId"
           [minValue]="xRangeMin"
           [selectedMinValue]="xRangeSelectedMin"
           [maxValue]="xRangeMax"

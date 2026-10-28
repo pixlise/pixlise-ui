@@ -47,31 +47,43 @@ POSSIBILITY OF SUCH DAMAGE.
     </span>
     <img *ngIf="!exportMode" class="clickable" src="assets/button-icons/close-cross.svg" alt="Toggle key" (click)="onToggleShowKey()" />
   </div>
-  <div class="key-items {{ exportMode ? 'export-mode' : '' }}">
-    <div class="key-item-group" *ngFor="let group of groupedItems">
+  <div class="key-items {{ exportMode ? 'export-mode' : '' }}" cdkDropList [cdkDropListDisabled]="exportMode" (cdkDropListDropped)="onDrop($event)">
+    <div
+      class="key-item-group {{ row.group.title ? 'grouped' : '' }}"
+      *ngFor="let row of rows"
+      cdkDrag
+      cdkDragLockAxis="y"
+      [cdkDragDisabled]="exportMode || row.isHeader || !row.item.canBeReordered || !(!row.group.title || row.group.isOpen || maxKey)">
+      <div *cdkDragPreview class="key-drag-preview" [ngStyle]="{ color: row.item.colour, 'font-size': fontSize + 'px' }">{{ getTruncatedLabel(row.item) }}</div>
       <div
-        *ngIf="group.title"
+        *ngIf="row.isHeader"
         class="key-group-header"
         #tooltip="matTooltip"
-        [matTooltip]="group.title"
-        [matTooltipDisabled]="group.title.length <= maxTitleCharacters">
-        <action-button *ngIf="!exportMode" (onClick)="onToggleGroupVisibility(group, $event)" [action]="group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
+        [matTooltip]="row.group.title"
+        [matTooltipDisabled]="row.group.title.length <= maxTitleCharacters">
+        <action-button *ngIf="!exportMode" (onClick)="onToggleGroupVisibility(row.group, $event)" [action]="row.group.isVisible ? 'checkOn' : 'checkOff'"></action-button>
         <span
-          (click)="onToggleGroupVisibility(group, $event)"
-          class="key-group-title {{ group.isVisible ? '' : 'region-hidden' }}"
-          [ngStyle]="{ color: group.colour, 'max-width': maxTitleCharacters + 'ch' }"
-          >{{ group.title }}</span
+          (click)="onToggleGroupVisibility(row.group, $event)"
+          class="key-group-title {{ row.group.isVisible ? '' : 'region-hidden' }}"
+          [ngStyle]="{ color: row.group.colour, 'max-width': maxTitleCharacters + 'ch' }"
+          >{{ row.group.title }}</span
         >
         <action-button
           *ngIf="!maxKey && !exportMode"
-          (onClick)="group.isOpen = !group.isOpen"
-          [action]="group.isOpen || maxKey ? 'closeAccordion' : 'openAccordion'"></action-button>
+          (onClick)="row.group.isOpen = !row.group.isOpen"
+          [action]="row.group.isOpen || maxKey ? 'closeAccordion' : 'openAccordion'"></action-button>
       </div>
-      <div *ngIf="!group.title || group.isOpen || maxKey || exportMode" class="item-container">
-        <div *ngFor="let item of group.items" class="key-item">
+      <div *ngIf="!row.isHeader && (!row.group.title || row.group.isOpen || maxKey || exportMode)" class="item-container">
+        <div *ngFor="let item of [row.item]" class="key-item">
+          <img
+            *ngIf="!exportMode && item.canBeReordered"
+            cdkDragHandle
+            class="drag-handle"
+            src="assets/button-icons/drag-handle.svg"
+            alt="Drag to reorder" />
           <action-button
             *ngIf="item.isToggleable && !exportMode"
-            (onClick)="onToggleItemVisibility(item, group, $event)"
+            (onClick)="onToggleItemVisibility(item, row.group, $event)"
             [action]="item.isVisible ? 'checkOn' : 'checkOff'"></action-button>
           <div *ngIf="item.dashPattern !== null" class="dash-pattern">
             <svg width="58" height="12" xmlns="http://www.w3.org/2000/svg">
@@ -87,7 +99,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [ngClass]="{ 'main-label-clickable': !exportMode && item.id.length > 0 && item.canBeReordered }"
             [style]="{ color: item.colour, 'font-size': fontSize + 'px', padding: fontPadding + 'px 8px' }"
             (click)="onClickLabel(item, $event)"
-            [title]="item.id.length > 0 ? 'Bring to front' : ''">
+            [title]="item.id.length > 0 ? 'Show on top' : ''">
             <roi-shape [scale]="1" [color]="item.colour" [shape]="item.shape"></roi-shape>
             <span
               class="key-label"

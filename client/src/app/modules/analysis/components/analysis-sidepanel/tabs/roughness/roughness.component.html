@@ -104,13 +104,14 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="tab-container roughness">
   <header>
     <h5>Roughness</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-roughness"></walkthrough-info-button>
   </header>
   <div class="scan-selector">
     <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
       <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
     </mat-select>
   </div>
-  <div class="widget-selectors">
+  <div class="widget-selectors" walkthroughId="sidebar-roughness-targets">
     <mat-select [(ngModel)]="selectedContextImage" class="scan-filter" placeholder="Open a Context Image ...">
       <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
     </mat-select>
@@ -118,7 +119,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <mat-option *ngFor="let chart of allSpectrumCharts" [value]="chart.widget.id">{{ chart.name }} </mat-option>
     </mat-select>
   </div>
-  <div class="diff-count-btn unit-padding light-background">
+  <div class="diff-count-btn unit-padding light-background" walkthroughId="sidebar-roughness-map">
     <span class="light-label">Roughness Map</span>
     <div class="gap-separated-horizontal-elements buttons-container">
       <two-state-icon-button
@@ -130,11 +131,11 @@ POSSIBILITY OF SUCH DAMAGE.
       </two-state-icon-button>
     </div>
   </div>
-  <div class="save-btns unit-padding light-background">
+  <div class="save-btns unit-padding light-background" walkthroughId="sidebar-roughness-select">
     <push-button (onClick)="onSelectPMCsWithRoughness()" buttonStyle="outline">Select PMCs</push-button>
   </div>
   <div class="scrollable">
-    <div class="mode">
+    <div class="mode" walkthroughId="sidebar-roughness-list">
       <multi-switch-button [options]="[userRoughnessLabel, detectedRoughnessLabel]" [value]="activeList" (onChange)="onSwitchList($event)"></multi-switch-button>
       <action-button class="new-peak" action="add" [customDialog]="newPeakDialog" #newPeakDialogBtn></action-button>
     </div>

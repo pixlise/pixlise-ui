@@ -25,6 +25,11 @@
     display: flex;
     align-items: center;
 
+    walkthrough-info-button {
+      display: flex;
+      margin-left: 4px;
+    }
+
     .widget-title {
       display: flex;
       white-space: pre;

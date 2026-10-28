@@ -471,6 +471,7 @@ export class BinaryChartWidgetComponent
         },
         {
           id: "zoom-reset",
+          walkthroughId: "chart-zoom",
           type: "button",
           icon: "assets/button-icons/zoom-all-arrows.svg",
           tooltip: "Reset Zoom",

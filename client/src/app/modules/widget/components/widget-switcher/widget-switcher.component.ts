@@ -172,6 +172,8 @@ export class WidgetSwitcherComponent implements OnInit, OnDestroy {
     componentRef.instance.activeWidget = this.activeWidget;
     componentRef.instance.metadataEditable = this.metadataEditable;
 
+    this.subscription.add(componentRef.instance.closeRequested.subscribe(() => this.closeOverlay()));
+
     this.subscription.add(
       componentRef.instance.widgetSelected.subscribe((widget: WidgetType) => {
         this.onWidgetChange(widget);

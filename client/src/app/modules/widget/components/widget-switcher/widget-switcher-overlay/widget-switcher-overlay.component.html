@@ -12,6 +12,8 @@
       <action-button
         *ngIf="metadataEditable && (mode === 'view' || mode === 'new')"
         action="edit-pencil"
+        walkthroughId="analysis-chart-edit"
+        (walkthroughNext)="closeRequested.emit()"
         (click)="onOpenEditMode()"
       ></action-button>
       <action-button

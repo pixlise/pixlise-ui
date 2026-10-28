@@ -40,6 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="export-dialog {{ data.showPreview ? 'interactive' : '' }}">
   <h1>
     {{ title }}
+    <walkthrough-info-button *ngIf="!dialogRef" [alignRight]="true" feature="sidebar-export"></walkthrough-info-button>
     <action-button *ngIf="data.showPreview" class="close-btn" action="close" (onClick)="onCancel()" color="#F8F8F8"></action-button>
   </h1>
   <div class="data-container">
@@ -66,11 +67,11 @@ POSSIBILITY OF SUCH DAMAGE.
       <div class="bottom-bar"></div>
     </div>
     <div class="fields">
-      <div class="zip-options">
+      <div class="zip-options" walkthroughId="sidebar-export-zip">
         <h5 class="zip-label">Zip File Name</h5>
         <input type="text" [(ngModel)]="zipFileName" [placeholder]="data.defaultZipName.replace('.zip', '') + '.zip'" />
       </div>
-      <div *ngIf="chartView && options && options.length > 0" class="export-options options">
+      <div *ngIf="chartView && options && options.length > 0" class="export-options options" walkthroughId="sidebar-export-options">
         <span class="options-label-container">
           <h5 class="options-label">Options</h5>
         </span>
@@ -110,7 +111,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </widget-export-button>
         </div>
       </div>
-      <div *ngIf="chartView && dataProducts && dataProducts.length > 0" class="export-options data-products">
+      <div *ngIf="chartView && dataProducts && dataProducts.length > 0" class="export-options data-products" walkthroughId="sidebar-export-products">
         <span class="options-label-container">
           <h5 class="options-label">Data Products ({{ selectedDataProductsCount }})</h5>
           <action-button [action]="allDataProductsSelected ? 'checkOn' : 'checkOff'" (onClick)="toggleAllDataProducts()"></action-button>
@@ -178,6 +179,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <push-button *ngIf="!dialogRef" buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
         <push-button
           *ngIf="!data.showPreview"
+          walkthroughId="sidebar-export-button"
           buttonStyle="yellow"
           [disabled]="selectedDataProductsCount === 0"
           #tooltip="matTooltip"
