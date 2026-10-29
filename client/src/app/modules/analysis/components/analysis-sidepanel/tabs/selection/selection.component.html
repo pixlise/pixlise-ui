@@ -32,33 +32,34 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="selection-tab">
   <header>
     <h5>Selection</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-selection"></walkthrough-info-button>
   </header>
   <!-- <push-button (onClick)="onDriftCorrection()" buttonStyle="outline" fxFlex="50%">Correct Drift?</push-button> -->
 
   <div class="summary panel-row">
     <span class="summary-text">{{ summary }}</span>
 
-    <div class="summary-buttons">
+    <div class="summary-buttons" walkthroughId="sidebar-selection-history">
       <push-button (onClick)="onUndo()" [disabled]="!canUndo" buttonStyle="outline">Undo</push-button>
       <push-button (onClick)="onRedo()" [disabled]="!canRedo" buttonStyle="outline">Redo</push-button>
     </div>
   </div>
 
   <div class="selection-buttons panel-row">
-    <div class="selection-button-row">
+    <div class="selection-button-row" walkthroughId="sidebar-selection-tools">
       <push-button (onClick)="onSelectAll()" buttonStyle="outline" class="half">Select All</push-button>
       <push-button (onClick)="onClearSelection()" buttonStyle="outline" class="half">Clear</push-button>
     </div>
-    <div class="selection-button-row">
+    <div class="selection-button-row" walkthroughId="sidebar-selection-tools">
       <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" class="half">Select Dwells</push-button>
       <push-button (onClick)="onEnterSelection()" buttonStyle="outline" class="half">Enter PMCs</push-button>
     </div>
     <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline">All Points for Dataset: {{ id }}</push-button>
-    <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="!hasEditAccess">Save selection as ROI</push-button>
+    <push-button walkthroughId="sidebar-selection-roi" (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="!hasEditAccess">Save selection as ROI</push-button>
   </div>
 
   <cdk-accordion class="selection-accordion">
-    <cdk-accordion-item class="averages-container" role="button" tabindex="0">
+    <cdk-accordion-item class="averages-container" role="button" tabindex="0" walkthroughId="sidebar-selection-averages">
       <div class="accordion-title" (click)="onToggleExpand(0)">
         <span>RGBU Averages</span>
         <mat-icon aria-hidden="false" aria-label="Toggle RGBU Averages">{{ expandedIndices.includes(0) ? "arrow_drop_up" : "arrow_drop_down" }}</mat-icon>
@@ -73,6 +74,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <cdk-accordion-item
       role="button"
       tabindex="1"
+      walkthroughId="sidebar-selection-pmcs"
       class="pmcs-container {{ expandedIndices.includes(0) && averageRGBURatios.length > 0 ? 'split-pmcs' : 'full-pmcs' }}">
       <div class="accordion-title" (click)="onToggleExpand(1)">
         <span>PMC List</span>

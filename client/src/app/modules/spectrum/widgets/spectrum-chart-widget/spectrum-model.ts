@@ -41,7 +41,7 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { SpectrumValues } from "../../models/Spectrum";
 import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
-import { SubItemOptionSection } from "src/app/modules/roi/components/roi-item/roi-item.component";
+import { SubItemOptionItem, SubItemOptionSection } from "src/app/modules/roi/components/roi-item/roi-item.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { XRFDatabaseService } from "src/app/services/xrf-database.service";
 import { XRFLineDatabase } from "src/app/periodic-table/xrf-line-database";
@@ -1115,26 +1115,17 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   public static readonly fitBackgroundCalc = "Background Calc";
   public static readonly fitBackgroundSNIP = "Background SNIP";
 
-  public static readonly allLineChoiceOptions: SubItemOptionSection[] = [
-    {
-      title: "Summed Across an Area",
-      options: [
-        { title: "A", value: SpectrumChartModel.lineExpressionBulkA },
-        { title: "B", value: SpectrumChartModel.lineExpressionBulkB },
-        { title: "Sum of A + B", value: "sum(bulk(A),bulk(B))" },
-        { title: "Difference A - B", value: "diff(bulk(A),bulk(B))" },
-        { title: "Difference B - A", value: "diff(bulk(B),bulk(A))" },
-        { title: "Min of A and B", value: "minOf(bulk(A),bulk(B))" },
-        { title: "Max of A and B", value: "maxOf(bulk(A),bulk(B))" },
-        { title: "A without Diffraction", value: "removeDiffraction(bulk(A),bulk(B))" },
-        { title: "B without Diffraction", value: "removeDiffraction(bulk(B),bulk(A))" },
-      ],
-    },
-    {
-      title: "Max Value in an Area",
-      options: [
-        { title: "A", value: SpectrumChartModel.lineExpressionMaxA },
-        { title: "B", value: "max(B)" },
+  public static lineChoicesABSum: SubItemOptionItem[] = [
+    { title: "Sum of A + B", value: "sum(bulk(A),bulk(B))" },
+    { title: "Difference A - B", value: "diff(bulk(A),bulk(B))" },
+    { title: "Difference B - A", value: "diff(bulk(B),bulk(A))" },
+    { title: "Min of A and B", value: "minOf(bulk(A),bulk(B))" },
+    { title: "Max of A and B", value: "maxOf(bulk(A),bulk(B))" },
+    { title: "A without Diffraction", value: "removeDiffraction(bulk(A),bulk(B))" },
+    { title: "B without Diffraction", value: "removeDiffraction(bulk(B),bulk(A))" },
+  ];
+
+  public static lineChoicesABMax: SubItemOptionItem[] = [
         { title: "Sum of A + B", value: "sum(max(A),max(B))" },
         { title: "Difference A - B", value: "diff(max(A),max(B))" },
         { title: "Difference B - A", value: "diff(max(B),max(A))" },
@@ -1142,18 +1133,41 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         { title: "Max of A and B", value: "maxOf(max(A),max(B))" },
         { title: "A without Diffraction", value: "removeDiffraction(max(A),max(B))" },
         { title: "B without Diffraction", value: "removeDiffraction(max(B),max(A))" },
-      ],
+  ];
+
+  public static readonly allLineChoiceOptions: SubItemOptionSection[] = [
+    {
+      title: "Summed Across an Area",
+      options: [],
+    },
+    {
+      title: "Max Value in an Area",
+      options: [],
     },
   ];
 
   static getTitleForLineExpression(expr: string): string {
-    for (const optSec of SpectrumChartModel.allLineChoiceOptions) {
-      for (const opt of optSec.options) {
-        if (opt.value == expr) {
-          return opt.title;
-        }
+    // Loop through predefined options, if it's not one of those, try interpreting the string
+    for (const opt of SpectrumChartModel.lineChoicesABSum) {
+      if (opt.value == expr) {
+        return opt.title;
       }
     }
+
+    for (const opt of SpectrumChartModel.lineChoicesABMax) {
+      if (opt.value == expr) {
+        return opt.title;
+      }
+    }
+
+    if (expr.endsWith(")") && (expr.startsWith("bulk(") || expr.startsWith("max(")) ) {
+      let p = 5;
+      if (expr[0] == "m") {
+        p--;
+      }
+      return expr.substring(p, expr.length-1);
+    }
+
     return expr;
   }
 }

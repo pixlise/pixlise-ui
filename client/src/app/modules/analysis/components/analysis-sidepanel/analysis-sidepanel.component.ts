@@ -143,6 +143,12 @@ export class AnalysisSidepanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  onShowTab(tab: SidebarTabItem) {
+    if (!this.sidepanelOpen || this.activeTab?.title !== tab.title) {
+      this.onToggleTab(tab);
+    }
+  }
+
   onOpenView(view: SidebarViewShortcut) {}
 
   onToggleSidePanel() {

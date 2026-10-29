@@ -28,11 +28,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output } from "@angular/core";
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export interface WidgetKeyDisplayData {
   items: WidgetKeyItem[];
   showKey: boolean;
+}
+
+export interface WidgetKeyRow {
+  item: WidgetKeyItem;
+  group: WidgetKeyGroup;
+  isHeader: boolean;
 }
 
 export class WidgetKeyGroup {
@@ -104,6 +111,7 @@ export class WidgetKeyDisplayComponent implements OnInit, OnChanges {
   @Input() fontSize: number = 14;
 
   public groupedItems: WidgetKeyGroup[] = [];
+  public rows: WidgetKeyRow[] = [];
   previewItems: WidgetKeyItem[] = [];
 
   public keyShowing: boolean = false;
@@ -154,34 +162,34 @@ export class WidgetKeyDisplayComponent implements OnInit, OnChanges {
     return overflowsHeight || this.checkIfAnyLabelsTruncated();
   }
 
-  sendItemToTop(item: WidgetKeyItem): void {
+  selectItem(item: WidgetKeyItem): void {
     if (!item.canBeReordered) {
       return;
     }
 
-    const currentPosition = item.layerOrder;
-    let topItem = this.items.find(i => i.layerOrder === 0);
-    if (!topItem) {
-      this.groupItems(this.items);
-      topItem = this.items.find(i => i.layerOrder === 0);
-      if (!topItem) {
-        // Something went wrong, just return
-        return;
-      }
-    }
-
-    item.layerOrder = 0;
-    topItem.layerOrder = currentPosition;
+    const select = !item.isSelected;
+    this.items.forEach(i => (i.isSelected = false));
+    item.isSelected = select;
 
     this.onUpdateItems.emit(this.items);
   }
 
-  getItemsFromGroups(): WidgetKeyItem[] {
-    const newItems = this.groupedItems.reduce((acc, group) => {
-      return acc.concat(group.items);
-    }, [] as WidgetKeyItem[]);
+  onDrop(event: CdkDragDrop<WidgetKeyRow[]>): void {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
 
-    return newItems;
+    const movedRows = this.rows.slice();
+    moveItemInArray(movedRows, event.previousIndex, event.currentIndex);
+    const ordered = movedRows.filter(row => !row.isHeader).map(row => row.item);
+    ordered.forEach((item, i) => (item.layerOrder = i));
+
+    this.groupedItems = this.groupItems(ordered);
+    this.onUpdateItems.emit(ordered);
+  }
+
+  getItemsFromGroups(): WidgetKeyItem[] {
+    return this.rows.filter(row => !row.isHeader).map(row => row.item);
   }
 
   onToggleItemVisibility(item: WidgetKeyItem, group: WidgetKeyGroup | null, event: MouseEvent): void {
@@ -266,33 +274,52 @@ export class WidgetKeyDisplayComponent implements OnInit, OnChanges {
   }
 
   isItemOnTop(item: WidgetKeyItem): boolean {
-    return item.canBeReordered && item.layerOrder === 0;
+    return item.canBeReordered && item.isSelected;
   }
 
   groupItems(items: WidgetKeyItem[]): WidgetKeyGroup[] {
-    const isOrdered = items.every(item => item.layerOrder > -1);
-
-    const groups = new Map<string, WidgetKeyItem[]>();
-    items.forEach((item, i) => {
-      const groupLabel = item.group || "";
-      if (!groups.has(groupLabel)) {
-        groups.set(groupLabel, []);
-      }
-      groups.get(groupLabel)!.push(item);
-      if (!isOrdered) {
-        item.layerOrder = i;
+    const groupOrder: string[] = [];
+    items.forEach(item => {
+      if (!groupOrder.includes(item.group)) {
+        groupOrder.push(item.group);
       }
     });
 
-    const groupArray: WidgetKeyGroup[] = [];
-    groups.forEach((items, key) => {
-      const currentOpenStatus = this.groupedItems.find(group => group.title === key)?.isOpen ?? groups.size < 2;
-      const newGroup = new WidgetKeyGroup(key, items, currentOpenStatus);
-      const isAllSameColour = items.every(item => item.colour && item.colour === items[0].colour);
-      if (isAllSameColour) {
-        newGroup.colour = items[0].colour;
+    const unorderedRank = Number.MAX_SAFE_INTEGER;
+    const ordered = items.slice().sort((a, b) => {
+      if (a.layerOrder < 0 && b.layerOrder < 0) {
+        return groupOrder.indexOf(a.group) - groupOrder.indexOf(b.group);
       }
-      groupArray.push(newGroup);
+
+      return (a.layerOrder < 0 ? unorderedRank : a.layerOrder) - (b.layerOrder < 0 ? unorderedRank : b.layerOrder);
+    });
+    ordered.forEach((item, i) => (item.layerOrder = i));
+
+    const groupArray: WidgetKeyGroup[] = [];
+    this.rows = [];
+    ordered.forEach(item => {
+      const groupLabel = item.group || "";
+      let group = groupArray[groupArray.length - 1];
+      const showHeader = !group || group.title !== groupLabel;
+      if (showHeader) {
+        const previousGroup = this.groupedItems.find(existing => existing.title === groupLabel);
+        group = new WidgetKeyGroup(groupLabel, [], previousGroup?.isOpen ?? new Set(ordered.map(i => i.group || "")).size < 2);
+        groupArray.push(group);
+      }
+
+      if (showHeader && group.title) {
+        this.rows.push({ item, group, isHeader: true });
+      }
+
+      group.items = group.items.concat(item);
+      this.rows.push({ item, group, isHeader: false });
+    });
+
+    groupArray.forEach(group => {
+      const isAllSameColour = group.items.every(item => item.colour && item.colour === group.items[0].colour);
+      if (isAllSameColour) {
+        group.colour = group.items[0].colour;
+      }
     });
 
     return groupArray;
@@ -313,7 +340,7 @@ export class WidgetKeyDisplayComponent implements OnInit, OnChanges {
       }
     } else {
       if (item?.id && item.id.length > 0) {
-        this.sendItemToTop(item);
+        this.selectItem(item);
       }
     }
   }

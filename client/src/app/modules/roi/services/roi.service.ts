@@ -786,6 +786,8 @@ export class ROIService implements OnDestroy {
       newROI.owner = undefined;
       if (newROI.scanEntryIndexesEncoded && newROI.scanEntryIndexesEncoded.length > 0) {
         newROI.scanEntryIndexesEncoded = encodeIndexList(newROI.scanEntryIndexesEncoded);
+        // not relevant for MIST, will be a no-op, but call just so we know we're consistant with scan entry index encoding
+        newROI.pixelIndexesEncoded = encodeIndexList(newROI.pixelIndexesEncoded);
       }
 
       return newROI;
@@ -813,7 +815,20 @@ export class ROIService implements OnDestroy {
               }
             });
 
+            // At this point, we've sent the ROIs up as encoded indexes but if we operate on them
+            // any further or store them we need to ensure they are now decoded indexes
+            for (let c = 0; c < writableROIs.length; c++) {
+              writableROIs[c].scanEntryIndexesEncoded = decodeIndexList(writableROIs[c].scanEntryIndexesEncoded);
+              // not relevant for MIST, will be a no-op, but call just so we know we're consistant with scan entry index encoding
+              writableROIs[c].pixelIndexesEncoded = decodeIndexList(writableROIs[c].pixelIndexesEncoded);
+            }
+
             res.regionsOfInterest.forEach((roi, i) => {
+              // No matter what, at this point we have to decode the index list returned
+              roi.scanEntryIndexesEncoded = decodeIndexList(roi.scanEntryIndexesEncoded);
+              // not relevant for MIST, will be a no-op, but call just so we know we're consistant with scan entry index encoding
+              roi.pixelIndexesEncoded = decodeIndexList(roi.pixelIndexesEncoded);
+
               if (isMIST) {
                 const matchingROI = writableROIs[i];
 

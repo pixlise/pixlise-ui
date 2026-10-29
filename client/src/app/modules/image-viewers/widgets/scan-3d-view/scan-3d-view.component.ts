@@ -3,7 +3,15 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { catchError, combineLatest, map, mergeMap, Observable, of, scan, Subject, Subscription, switchMap, tap, throwError, toArray } from "rxjs";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Scan3DViewModel } from "./scan-3d-view-model";
-import { AnalysisLayoutService, APICachedDataService, ContextImageDataService, SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  AnalysisLayoutService,
+  APICachedDataService,
+  ContextImageDataService,
+  SelectionService,
+  SnackbarService,
+  WalkthroughService,
+} from "src/app/modules/pixlisecore/pixlisecore.module";
+import { WalkthroughAnchor } from "src/app/modules/pixlisecore/walkthrough/models/walkthrough";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { CanvasSizeNotification } from "./interactive-canvas-3d.component";
 import { Point } from "src/app/models/Geometry";
@@ -44,6 +52,7 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   mdl: Scan3DViewModel;
   private _mouseInteractionHandler: Scan3DMouseInteraction;
   private _tweakPane?: Pane;
+  private _paneContainer?: HTMLElement;
 
   cursorShown: string = "";
 
@@ -70,7 +79,8 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
     private _snackService: SnackbarService,
     private _roiService: ROIService,
     public dialog: MatDialog,
-    private _elementRef: ElementRef
+    private _elementRef: ElementRef,
+    private _walkthroughService: WalkthroughService
   ) {
     super();
 
@@ -282,6 +292,10 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
   ngOnDestroy() {
     this._subs.unsubscribe();
     this._mouseInteractionHandler.clearMouseEventListeners();
+    if (this._paneContainer) {
+      this._walkthroughService.unregisterAnchor("chart-3d-view-controls", this._paneContainer);
+    }
+
     if (this._tweakPane) {
       this._tweakPane.dispose();
     }
@@ -819,6 +833,21 @@ export class Scan3DViewComponent extends BaseWidgetModel implements OnInit, OnDe
       title: 'View Controls',
       expanded: false
     });
+
+    this._paneContainer = paneContainer;
+    this._walkthroughService.registerAnchor(
+      new WalkthroughAnchor(
+        "chart-3d-view-controls",
+        paneContainer,
+        "",
+        "",
+        undefined,
+        undefined,
+        this._widgetId,
+        () => (this._tweakPane!.expanded = true),
+        () => (this._tweakPane!.expanded = false)
+      )
+    );
 
     // Add controls for the 3D view settings
     const viewFolder = this._tweakPane.addFolder({

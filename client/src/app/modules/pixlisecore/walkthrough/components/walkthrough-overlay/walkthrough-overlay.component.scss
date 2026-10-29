@@ -1,0 +1,103 @@
+@import "variables.scss";
+
+$card-width: 300px;
+
+:host {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 10000;
+}
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  transition: opacity 0.2s;
+
+  &.hidden {
+    opacity: 0;
+  }
+
+  .dim {
+    fill: rgba(0, 0, 0, 0.6);
+  }
+
+  .outline {
+    fill: none;
+    stroke: $clr-yellow;
+    stroke-width: 2;
+  }
+
+  .arrow {
+    stroke: $clr-yellow;
+    stroke-width: 2;
+  }
+
+  .arrow-head {
+    fill: $clr-yellow;
+  }
+}
+
+.walkthrough-card {
+  position: fixed;
+  width: $card-width;
+  padding: 12px;
+  background: $clr-gray-100;
+  border: 1px solid $clr-yellow;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  color: $clr-gray-10;
+  transition: opacity 0.2s;
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .dismiss-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+  }
+
+  .feature-title {
+    margin-bottom: 4px;
+    padding-right: 24px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: $clr-gray-30;
+  }
+
+  .title {
+    margin-bottom: 6px;
+    padding-right: 24px;
+    font-weight: bold;
+    color: $clr-yellow;
+  }
+
+  .text {
+    white-space: pre-line;
+    line-height: 1.4;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+
+    .progress {
+      color: $clr-gray-30;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+  }
+}

@@ -32,8 +32,9 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="workspace-configuration-container">
   <header>
     <h5>Workspace</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-workspaces"></walkthrough-info-button>
   </header>
-  <div class="workspace-info">
+  <div class="workspace-info" walkthroughId="sidebar-workspace-info">
     <div class="workspace-field">
       <div class="field-label">Name</div>
       <span class="name-line">
@@ -87,6 +88,8 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="configuration-tabs">
     <h5
       (click)="activeConfigurationTab = 'workspace'"
+      walkthroughId="sidebar-workspace-tabs"
+      (walkthroughEnter)="activeConfigurationTab = 'workspace'"
       class="tabs-label tab {{
         activeConfigurationTab === 'workspace' ? 'active' : ''
       }}"
@@ -98,6 +101,8 @@ POSSIBILITY OF SUCH DAMAGE.
     </h5>
     <h5
       (click)="activeConfigurationTab = 'snapshots'"
+      walkthroughId="sidebar-workspace-sharing"
+      (walkthroughEnter)="activeConfigurationTab = 'snapshots'"
       class="sharing-label tab {{
         activeConfigurationTab === 'snapshots' ? 'active' : ''
       }}"
@@ -110,6 +115,8 @@ POSSIBILITY OF SUCH DAMAGE.
     </h5>
     <h5
       (click)="activeConfigurationTab = 'review'"
+      walkthroughId="sidebar-workspace-review"
+      (walkthroughEnter)="activeConfigurationTab = 'review'"
       class="sharing-label tab {{
         activeConfigurationTab === 'review' ? 'active' : ''
       }}"
@@ -120,7 +127,7 @@ POSSIBILITY OF SUCH DAMAGE.
       Review
     </h5>
   </div>
-  <div *ngIf="activeConfigurationTab === 'workspace'" class="tabs-container">
+  <div *ngIf="activeConfigurationTab === 'workspace'" class="tabs-container" walkthroughId="sidebar-workspace-tabs">
     <div class="user-tabs" cdkDropList (cdkDropListDropped)="dropTab($event)">
       <div
         class="tab {{ tab.active ? 'active' : '' }} {{
@@ -249,6 +256,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div
     *ngIf="activeConfigurationTab === 'snapshots'"
     class="snapshots-container"
+    walkthroughId="sidebar-workspace-sharing"
   >
     <push-button
       class="share-btn"
@@ -298,7 +306,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
   </div>
 
-  <div *ngIf="activeConfigurationTab === 'review'" class="snapshots-container">
+  <div *ngIf="activeConfigurationTab === 'review'" class="snapshots-container" walkthroughId="sidebar-workspace-review">
     <push-button
       [tooltipTitle]="
         reviewerSnapshots.length >= 1
