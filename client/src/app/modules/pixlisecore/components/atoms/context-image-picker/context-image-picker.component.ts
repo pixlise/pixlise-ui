@@ -78,7 +78,7 @@ class DisplayContextImageItem {
   private makeMarsViewerURL(): string {
     // If this is not a valid file name, don't try
     let mvName = this.item.path.toUpperCase();
-    const fields = SDSFields.makeFromFileName(mvName);
+    const fields = SDSFields.makeFromFileName(getPathBase(mvName));
     if (!fields) {
       return "";
     }

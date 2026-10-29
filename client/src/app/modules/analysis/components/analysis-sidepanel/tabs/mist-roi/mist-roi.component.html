@@ -30,9 +30,10 @@ POSSIBILITY OF SUCH DAMAGE. -->
 <div class="scrollable-container mist-roi">
   <header>
     <h5>MIST Regions of Interest</h5>
+    <walkthrough-info-button [alignRight]="true" feature="sidebar-mist-rois"></walkthrough-info-button>
   </header>
   <div class="summary panel-row gap-separated-horizontal-elements">
-    <div class="upload-btn">
+    <div class="upload-btn" walkthroughId="sidebar-mist-upload">
       <push-button
         matTooltip="You don't have permission to upload MIST ROIs"
         [matTooltipDisabled]="!isPublicUser && (canEditAllMIST || mistROIs.length === 0)"
@@ -43,7 +44,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
         Upload ROI Set From CSV
       </push-button>
     </div>
-    <div class="widget-selectors">
+    <div class="widget-selectors" walkthroughId="sidebar-mist-filters">
       <mat-select
         [(ngModel)]="visibleScanId"
         class="scan-filter"
@@ -64,7 +65,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
       </mat-select>
     </div>
 
-    <div class="selection">
+    <div class="selection" walkthroughId="sidebar-mist-selection">
       <push-button
         class="option"
         confirmText="Are you sure you want to delete {{ selectionCount }} ROIs?"
@@ -91,7 +92,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
     </action-button>
   </section>
   <cdk-accordion class="mist-roi-accordion">
-    <cdk-accordion-item role="button" tabindex="0">
+    <cdk-accordion-item role="button" tabindex="0" walkthroughId="sidebar-mist-identifications">
       <div class="accordion-title">
         <two-state-icon-button
           toolTip="Toggle Mineral Species Identifications"
@@ -132,7 +133,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
         <!-- </cdk-virtual-scroll-viewport> -->
       </div>
     </cdk-accordion-item>
-    <cdk-accordion-item role="button" tabindex="1" class="pmcs-container">
+    <cdk-accordion-item role="button" tabindex="1" class="pmcs-container" walkthroughId="sidebar-mist-identifications">
       <div class="accordion-title">
         <two-state-icon-button
           toolTip="Toggle Mineral Group Identifications"

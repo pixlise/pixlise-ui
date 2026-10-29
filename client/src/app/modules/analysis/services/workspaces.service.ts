@@ -20,7 +20,7 @@ import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generat
 
 import { SearchableListItem } from "../../pixlisecore/components/atoms/searchable-list/searchable-list.component";
 import { levenshteinDistance } from "src/app/utils/search";
-import { SDSFields } from "src/app/utils/utils";
+import { getPathBase, SDSFields } from "src/app/utils/utils";
 
 export type DatasetProducts = {
   workspaceROIs: ROIItem[];
@@ -400,7 +400,7 @@ export class WorkspaceService implements OnDestroy {
             // Also check ROIs to see if any have pixels/associated scans that overlap with the image
             // SDSFields.makeFromFileName()
             else {
-              let existingSDS = SDSFields.makeFromFileName(existingBaseName);
+              let existingSDS = SDSFields.makeFromFileName(getPathBase(existingBaseName));
               let existingExtension = existingBaseName.split(".").pop() || "";
               let bestSDSMatch: string = "";
               let bestPMCCount = 0;
@@ -428,7 +428,7 @@ export class WorkspaceService implements OnDestroy {
               }
 
               imagesWithMatchingExtension.forEach(image => {
-                let sds = SDSFields.makeFromFileName(image.name);
+                let sds = SDSFields.makeFromFileName(getPathBase(image.name));
                 if (!sds) {
                   return;
                 }

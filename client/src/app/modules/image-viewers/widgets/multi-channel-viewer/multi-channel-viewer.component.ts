@@ -169,7 +169,7 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
   }
 
   get syncId(): string {
-    return `${this.currentScanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}`;
+    return `${this.currentScanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}-${this._analysisLayoutService.currentTabParam}`;
   }
 
   private setInitialConfig() {

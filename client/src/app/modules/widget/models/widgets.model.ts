@@ -31,6 +31,7 @@ export type WidgetToolbarButtonTypes =
 
 export type WidgetToolbarButtonConfiguration = {
   id: string;
+  walkthroughId?: string;
   type: WidgetToolbarButtonTypes;
   title?: string;
   settingTitle?: string;

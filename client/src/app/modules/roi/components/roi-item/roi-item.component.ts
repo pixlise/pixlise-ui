@@ -10,9 +10,13 @@ import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { UserInfo } from "src/app/generated-protos/user";
 import { getDateTimeString } from "src/app/utils/utils";
 
+export class SubItemOptionItem {
+  constructor(public title: string, public value: string) {}
+}
+
 export type SubItemOptionSection = {
   title: string;
-  options: { title: string; value: string }[]; // { title, value }
+  options: SubItemOptionItem[]; // { title, value }
 };
 
 @Component({

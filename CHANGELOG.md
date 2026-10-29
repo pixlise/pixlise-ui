@@ -1,4 +1,4 @@
-## 4.100.0 (LATEST)
+## 4.104.0 (LATEST)
 
 ### New features
 - At long last we've now got a generic "job runner" capability to the PIXLISE back-end. Jobs can be scheduled to run periodically or on downlink. Users who have access will now see a new "Job Manager" menu item on their user menu (top-right of PIXLISE once logged in). All job running functionality has been converted to use this and the job management page will be the primary way to make sense of what is being run. Going forward, auto-quants now need to be configured as scheduled jobs, so if they are misconfigured we won't see them generated! The job runner is able to calculate quantifications using PIQUANT, calculate and "memoise" Lua expression outputs (thereby removing that burden from the PIXLISE client and running it single-threaded in the browser!) and the newest addition:
@@ -10,7 +10,40 @@
 ### Bug Fixes
 - User icons (displayed on various parts of PIXLISE) could go hay-wire and download the list of users in an endless loop if one of the user ids wasn't recognised
 
-## 4.99.0 (2026-09-01)
+## 4.103.0 (2026-10-28)
+
+### Bug Fixes
+- MIST ROI CSV uploading looked incorrect because ROI index list was not decompressed. Refreshing the page loaded new list that was correctly decompressed but we now ensure even after upload the list is decompressed.
+
+## 4.102.0 (2026-10-26)
+
+### New Features
+- Chart ROIs are now reorderable via dragging their row in their respective key
+- Export Beam Locations now includes Beam locations per ROI in a new subfolder
+- Added "Duplicate" option to scan opening drop-down on browse page. Users with edit permissions can now make a copy of a scan if they wish to do potentially destructive/disruptive things with it (disruption of other uses). This is primarily for anyone wanting to upload new edited spectra:
+- Users can now upload spectra! This can only be done from the python client library at the moment. Note that if a spectrum is uploaded named A or B, it will end up being called A' or B' as we don't allow "overwriting" the original spectra from the scan. When spectra are uploaded, they appear as "Normal" spectra and we expect a spectrum defined for each PMC that originally had a Normal spectrum. If there are gaps, the upload will fail. Once uploaded, the back-end generates a bulk-sum spectrum which is expected to be present by the PIXLISE UI.
+- Added ability to view all spectra not just the "expected" A/B ones. This is done by querying what spectra are available, so if a scan has extra spectra uploaded, eg spectra that have been processed with diffraction removal algorithms, this can be viewed using the Display Spectra button and selecting the named spectrum. 
+
+### Bug Fixes
+- Fixes bug where context images were being linked and synced across tabs leading to un-intended changes
+- Fixes bug where panning/zooming one context image wouldn't save the linked context image's state until that context image was interacted with
+- Fixes issue with workspace duplication/scan replacement where new layouts ended up with default widget configurations, losing all settings like layers/expressions selected.
+
+## 4.100.0 (2026-10-09)
+
+### Bug Fixes
+- Fixes bug where if a workspace tab was deleted and then recreated, the old chart configurations would come back instead of starting blank
+- Fixes sort order of scans to be by RTT instead of Sol
+- Fixes scrolling overflow issue in scan details
+
+### New Features
+- New walkthrough system that introduces users to Pixlise
+  - Simple walkthroughs for browse, code-editor, analysis, and new tab pages
+  - Each chart and each left sidepanel now also has an info icon next to it to trigger a feature walkthrough explaining how to use the chart/sidepanel
+  - Walkthroughs can be toggled fully off or reset from the user settings menu found by clicking your user icon in the top right
+- More sorting and filtering options for scans from the browse page
+
+## 4.99.0 (2026-08-31)
 
 ### Bug Fixes
 - Fixed issue with drawing introduced with SVG export change - RGBA alpha values were being rounded to 0 (transparent), causing scenarios where points wouldn't draw on certain charts.
