@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@ang
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 
-import { Observable, Subscription, combineLatest } from "rxjs";
+import { Observable, Subscription, combineLatest, switchMap } from "rxjs";
 
 import {
   WidgetExportData,
@@ -14,7 +14,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 
 import { SpectrumChartDrawer } from "./spectrum-drawer";
-import { SpectrumChartModel } from "./spectrum-model";
+import { SpectrumChartModel, spectrumLines } from "./spectrum-model";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { SpectrumToolId } from "./tools/base-tool";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
@@ -25,7 +25,7 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq } from "src/app/generated-protos/scan-msgs";
 import { SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
@@ -36,7 +36,7 @@ import { RGBA } from "src/app/utils/colours";
 import { SpectrumChartExporter } from "./spectrum-chart-exporter";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 
-import { AnalysisLayoutService, SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService, SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -44,8 +44,10 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
-import { SpectrumDetectorsReq } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumAggregateReq, SpectrumDetectorsReq } from "src/app/generated-protos/spectrum-msgs";
 import { SubItemOptionItem } from "src/app/modules/roi/components/roi-item/roi-item.component";
+import { decompressZeroRunLengthEncoding, SpectrumChannels } from "src/app/utils/utils";
+import { environment } from "src/environments/environment";
 
 
 @Component({
@@ -89,6 +91,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _energyCalibrationService: EnergyCalibrationService,
     private _selectionService: SelectionService,
     public _widgetDataService: WidgetDataService,
+    private _dataService: APIDataService,
     private _scanIdConverterService: ScanIdConverterService,
     public dialog: MatDialog,
     public clipboard: Clipboard
@@ -1072,74 +1075,228 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             }
           }
 
-          combineLatest([
-            this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: roi.region.scanId})),
-            this._spectrumDataService.getSpectra(roi.region.scanId, idxs, true, true),
-            this._cachedDataService.getScanList(
-              ScanListReq.create({
-                searchFilters: { scanId: roi.region.scanId },
-              }),
-            ),
-            // NOTE that getSpectrumValues requires location indexes not PMCs, but
-            // ROIs deliver PMCs in the badly named field
-            this._scanIdConverterService.convertScanEntryPMCToIndex(roi.region.scanId, roi.region.scanEntryIndexesEncoded)
-          ]).subscribe({
-            next: ([scanDetectorResp, spectrumResp, scanListResp, pmcToIdxResult]) => {
-              if (pmcToIdxResult.failedPMCs.length > 0) {
-                throw new Error(`Spectrum generateLines failed due to bad PMC in ROI - couldn't look up PMCs: ${pmcToIdxResult.failedPMCs}`);
-              }
+          // If it can be handled server-side, do that
+          let serverSpectrumQueries: string[] = [];
+          for (const lineExpr of options) {
+            if (lineExpr.startsWith("bulk(") && lineExpr.endsWith(")") && lineExpr.length <= 10) {
+              // It's likely to be something we can just request from the server!
+              serverSpectrumQueries.push(lineExpr);
+            } else if (lineExpr.startsWith("max(") && lineExpr.endsWith(")") && lineExpr.length <= 9) {
+              // It's likely to be something we can just request from the server!
+              serverSpectrumQueries.push(lineExpr);
+            }
+          }
 
-              let scanName = roi.region.scanId;
-              if (scanListResp.scans.length > 0) {
-                scanName = scanListResp.scans[0].title;
-              }
-
-              // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
-              let values = new Map<string, SpectrumValues>();
-
-              const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-              const parser = new SpectrumExpressionParser(scanDetectorResp.detectorId);
-
-              for (const lineExpr of options) {
-                // Find the title
-                const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
-
-                // Normal line data retrieval
-                values = parser.getSpectrumValues(
-                  dataSrc,
-                  pmcToIdxResult.result,
-                  lineExpr,
-                  title,
-                  readType,
-                  this.mdl.yAxisCountsPerMin,
-                  this.mdl.yAxisCountsPerPMC
-                );
-
-                this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
-              }
-
-              // Add any fit lines we may need
-              this.mdl.clearLines(true);
-              if (this.mdl.showFitLines) {
-                this.addFitLines();
-              }
-
-              this.mdl.updateRangesAndKey();
-              if (this.widgetControlConfiguration.topRightInsetButton) {
-                this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-              }
-
-              this.mdl.clearDisplayData(); // This should trigger a redraw
-              this.isWidgetDataLoading = false;
-            },
-            error: err => {
-              console.error("Failed to load spectra for ROI: ", roiId, err);
-              this.isWidgetDataLoading = false;
-            },
-          });
+          if (environment.readAggregateSpectraFromBackEnd && serverSpectrumQueries.length == options.length) {
+            // Service the whole thing out of back-end request!
+            this.serverSpectrumQuery(roiId, idxs, roi, options, readType);
+          } else {
+            this.localSpectrumQuery(roiId, idxs, roi, options, readType);
+          }
         })
       );
     }
+  }
+
+  private serverSpectrumQuery(roiId: string, idxs: number[] | null, roi: RegionSettings, options: string[], readType: SpectrumType) {
+    // Loop through options and pick out bulk and max calls. We can run the spectrum expression parser after that to calculate the rest
+    let detectors = new Set<string>();
+    let bulkSum = false;
+    let maxValue = false;
+
+    class LineDetails {
+      constructor(public detector: string, public isBulk: boolean) {}
+    }
+    let decodedLine = new Map<string, LineDetails>();
+
+    for (let lineExpr of options) {
+      if (lineExpr.startsWith("bulk(") && lineExpr.endsWith(")") && lineExpr.length <= 10) {
+        const detector = lineExpr.substring(5, lineExpr.length-1);
+        detectors.add(detector);
+        bulkSum = true;
+        decodedLine.set(lineExpr, new LineDetails(detector, true));
+      } else if (lineExpr.startsWith("max(") && lineExpr.endsWith(")") && lineExpr.length <= 9) {
+        const detector = lineExpr.substring(4, lineExpr.length-1);
+        detectors.add(detector);
+        maxValue = true;
+        decodedLine.set(lineExpr, new LineDetails(detector, false));
+      }
+    }
+
+    let scanName = roi.region.scanId;
+    let liveTimeMetaIdx = -1;
+
+    // Query the stuff we need to be able to request the spectra we're after!
+    combineLatest([
+      this._cachedDataService.getScanList(
+        ScanListReq.create({
+          searchFilters: { scanId: roi.region.scanId },
+        }),
+      ),
+      this._cachedDataService.getScanMetaLabelsAndTypes(
+        ScanMetaLabelsAndTypesReq.create({scanId: roi.region.scanId})
+      ),
+      // NOTE that getSpectrumValues requires location indexes not PMCs, but
+      // ROIs deliver PMCs in the badly named field
+      this._scanIdConverterService.convertScanEntryPMCToIndex(roi.region.scanId, roi.region.scanEntryIndexesEncoded),
+    ]).pipe(
+      switchMap(resps => {
+        const scanListResp = resps[0];
+        if (scanListResp.scans.length > 0) {
+          scanName = scanListResp.scans[0].title;
+        }
+
+        for (let c = 0; c < resps[1].metaLabels.length; c++) {
+          if (resps[1].metaLabels[c] == "LIVETIME") {
+            liveTimeMetaIdx = c;
+            break;
+          }
+        }
+
+        return this._dataService.sendSpectrumAggregateRequest(
+          SpectrumAggregateReq.create({
+            scanId: roi.region.scanId,
+            entries: {
+              indexes: resps[2].result || [],
+            },
+            detectors: Array.from(detectors.values()),
+            readType: readType,
+            bulkSum: bulkSum,
+            maxValue: maxValue,
+          })
+        );
+      }
+    )).subscribe({
+      next: (spectrumAggregateResp) => {
+        // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
+        for (const lineExpr of options) {
+          let values = new Map<string, SpectrumValues>();
+
+          // Find the title
+          const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
+
+          const line = decodedLine.get(lineExpr);
+          if (line) {
+            const spectra = line.isBulk ? spectrumAggregateResp.bulkSpectra : spectrumAggregateResp.maxSpectra;
+
+            for (const s of spectra) {
+              if (s.detector == line.detector) {
+                const v = new SpectrumValues(
+                  // DONT FORGET TO DECODE THE ARRAY!
+                  new Float32Array(decompressZeroRunLengthEncoding(s.counts, SpectrumChannels)),
+                  s.maxCount,
+                  s.detector,
+                  0
+                );
+
+                // Find the live time in metadata
+                if (liveTimeMetaIdx > -1) {
+                  for (let [k, m] of Object.entries(s.meta)) {
+                    if (parseInt(k) == liveTimeMetaIdx && m.fvalue) {
+                      // We've found it!
+                      v.liveTimeSec = m.fvalue;
+                      break;
+                    }
+                  }
+                }
+
+                values.set(title, v);
+              }
+            }
+          }
+
+          if (values.size > 0) {
+            this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+          }
+        }
+
+        // Add any fit lines we may need
+        this.mdl.clearLines(true);
+        if (this.mdl.showFitLines) {
+          this.addFitLines();
+        }
+
+        this.mdl.updateRangesAndKey();
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.mdl.clearDisplayData(); // This should trigger a redraw
+        this.isWidgetDataLoading = false;
+      },
+      error: err => {
+        console.error("Failed to load spectra for ROI: ", roiId, err);
+        this.isWidgetDataLoading = false;
+      },
+    });
+  }
+
+  private localSpectrumQuery(roiId: string, idxs: number[] | null, roi: RegionSettings, options: string[], readType: SpectrumType) {
+    combineLatest([
+      this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: roi.region.scanId})),
+      this._spectrumDataService.getSpectra(roi.region.scanId, idxs, true, true),
+      this._cachedDataService.getScanList(
+        ScanListReq.create({
+          searchFilters: { scanId: roi.region.scanId },
+        }),
+      ),
+      // NOTE that getSpectrumValues requires location indexes not PMCs, but
+      // ROIs deliver PMCs in the badly named field
+      this._scanIdConverterService.convertScanEntryPMCToIndex(roi.region.scanId, roi.region.scanEntryIndexesEncoded)
+    ]).subscribe({
+      next: ([scanDetectorResp, spectrumResp, scanListResp, pmcToIdxResult]) => {
+        if (pmcToIdxResult.failedPMCs.length > 0) {
+          throw new Error(`Spectrum generateLines failed due to bad PMC in ROI - couldn't look up PMCs: ${pmcToIdxResult.failedPMCs}`);
+        }
+
+        let scanName = roi.region.scanId;
+        if (scanListResp.scans.length > 0) {
+          scanName = scanListResp.scans[0].title;
+        }
+
+        // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
+        let values = new Map<string, SpectrumValues>();
+
+        const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
+        const parser = new SpectrumExpressionParser(scanDetectorResp.detectorId);
+
+        for (const lineExpr of options) {
+          // Find the title
+          const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
+
+          // Normal line data retrieval
+          values = parser.getSpectrumValues(
+            dataSrc,
+            pmcToIdxResult.result,
+            lineExpr,
+            title,
+            readType,
+            this.mdl.yAxisCountsPerMin,
+            this.mdl.yAxisCountsPerPMC
+          );
+
+          this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+        }
+
+        // Add any fit lines we may need
+        this.mdl.clearLines(true);
+        if (this.mdl.showFitLines) {
+          this.addFitLines();
+        }
+
+        this.mdl.updateRangesAndKey();
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
+
+        this.mdl.clearDisplayData(); // This should trigger a redraw
+        this.isWidgetDataLoading = false;
+      },
+      error: err => {
+        console.error("Failed to load spectra for ROI: ", roiId, err);
+        this.isWidgetDataLoading = false;
+      },
+    });
   }
 
   private addFitLines() {
