@@ -1086,18 +1086,18 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               serverSpectrumQueries.push(lineExpr);
             }
           }
-
+/*
           if (environment.readAggregateSpectraFromBackEnd && serverSpectrumQueries.length == options.length) {
             // Service the whole thing out of back-end request!
             this.serverSpectrumQuery(roiId, idxs, roi, options, readType);
-          } else {
+          } else {*/
             this.localSpectrumQuery(roiId, idxs, roi, options, readType);
-          }
+          //}
         })
       );
     }
   }
-
+/*
   private serverSpectrumQuery(roiId: string, idxs: number[] | null, roi: RegionSettings, options: string[], readType: SpectrumType) {
     // Loop through options and pick out bulk and max calls. We can run the spectrum expression parser after that to calculate the rest
     let detectors = new Set<string>();
@@ -1230,7 +1230,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       },
     });
   }
-
+*/
   private localSpectrumQuery(roiId: string, idxs: number[] | null, roi: RegionSettings, options: string[], readType: SpectrumType) {
     combineLatest([
       this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: roi.region.scanId})),
@@ -1258,39 +1258,51 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         let values = new Map<string, SpectrumValues>();
 
         const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-        const parser = new SpectrumExpressionParser(scanDetectorResp.detectorId);
+        const parser = new SpectrumExpressionParser(
+          roi.region.scanId,
+          pmcToIdxResult.result,
+          readType,
+          this.mdl.yAxisCountsPerMin,
+          this.mdl.yAxisCountsPerPMC,
+          scanDetectorResp.detectorId,
+          options,
+          this._dataService,
+          this._cachedDataService,
+          dataSrc
+        );
+
+        const reqs$: Observable<Map<string, SpectrumValues>>[] = [];
 
         for (const lineExpr of options) {
-          // Find the title
-          const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
-
           // Normal line data retrieval
-          values = parser.getSpectrumValues(
-            dataSrc,
-            pmcToIdxResult.result,
+          reqs$.push(parser.getSpectrumValues(
             lineExpr,
-            title,
-            readType,
-            this.mdl.yAxisCountsPerMin,
-            this.mdl.yAxisCountsPerPMC
-          );
-
-          this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+            SpectrumChartModel.getTitleForLineExpression(lineExpr),
+          ));
         }
 
-        // Add any fit lines we may need
-        this.mdl.clearLines(true);
-        if (this.mdl.showFitLines) {
-          this.addFitLines();
-        }
+        combineLatest(reqs$).subscribe(results => {
+          for(let i = 0; i < results.length; i++) {
+            const values = results[i];
+            const lineExpr = options[i];
 
-        this.mdl.updateRangesAndKey();
-        if (this.widgetControlConfiguration.topRightInsetButton) {
-          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-        }
+            this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+          }
 
-        this.mdl.clearDisplayData(); // This should trigger a redraw
-        this.isWidgetDataLoading = false;
+          // Add any fit lines we may need
+          this.mdl.clearLines(true);
+          if (this.mdl.showFitLines) {
+            this.addFitLines();
+          }
+
+          this.mdl.updateRangesAndKey();
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+
+          this.mdl.clearDisplayData(); // This should trigger a redraw
+          this.isWidgetDataLoading = false;
+        });
       },
       error: err => {
         console.error("Failed to load spectra for ROI: ", roiId, err);
