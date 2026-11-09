@@ -198,7 +198,7 @@ export class ImageUploader {
       chunks$.push(obs$.pipe(
         switchMap(chunk => {
         console.log(`Uploading ${fileName} chunk ${chunkIndex}/${totalChunks} from ${start}->${end}...`);
-        return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks);
+        return this.sendChunk(scanId, fileName, file.size, chunk, beamImageRef, chunkIndex, totalChunks, chunkSize);
         })
       ));
     }
@@ -206,7 +206,7 @@ export class ImageUploader {
     return chunks$;
   }
 
-  private sendChunk(scanId: string, fileName: string, totalSize: number, data: ArrayBuffer, beamImageRef: ImageMatchTransform | undefined, idx: number, totalChunks: number): Observable<ImageUploadHttpPartialInfo> {
+  private sendChunk(scanId: string, fileName: string, totalSize: number, data: ArrayBuffer, beamImageRef: ImageMatchTransform | undefined, idx: number, totalChunks: number, chunkSize: number): Observable<ImageUploadHttpPartialInfo> {
     const req = {
       name: fileName,
       imageData: new Uint8Array(data),
@@ -216,8 +216,10 @@ export class ImageUploader {
       // oneof
       //locationPerScan
       beamImageRef: beamImageRef,
-      partNo: idx,
-      totalParts: totalChunks
+      // Removed
+      // partNo: idx,
+      // totalParts: totalChunks,
+      bytesUploadedSoFar: idx * chunkSize
     };
 
     if (totalChunks > 1) {
