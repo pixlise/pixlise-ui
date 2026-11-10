@@ -236,13 +236,7 @@ export class APIEndpointsService {
   }
 
   public static getImageURL(imagePath: string): string {
-    // In case of special characters or spaces in the path...
-    const fileName = getPathBase(imagePath);
-    const filePath = imagePath.substring(0, imagePath.length-fileName.length);
-    const correctedPath = filePath + encodeURIComponent(fileName);
-
-    const apiUrl = APIPaths.getWithHost(APIPaths.api_imagedownload + correctedPath);
-    return apiUrl;
+    return APIPaths.getFileNameCorrectedURL(APIPaths.api_imagedownload, imagePath);
   }
 
   uploadScanZip(scanId: string, zipName: string, imageData: ArrayBuffer): Observable<void> {
