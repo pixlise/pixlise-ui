@@ -51,6 +51,7 @@ import { PushButtonComponent } from "../../modules/pixlisecore/components/atoms/
 import { TabLinks } from "src/app/models/TabLinks";
 import { CdkDragDrop, DragDropModule, moveItemInArray } from "@angular/cdk/drag-drop";
 import { scanHasXRF } from "src/app/utils/utils";
+import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 
 class TabNav {
   constructor(
@@ -148,6 +149,11 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   newTabName: string = "";
 
   outstandingInfo: string = "";
+
+  uploads: string = "";
+  uploadItems: string[] = [];
+
+  @ViewChild("uploadProgressBtn") uploadProgressBtn!: ElementRef;
 
   constructor(
     private router: Router,
@@ -256,6 +262,22 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this._dataService.outstandingRequests$.subscribe((outstandingInfo: string) => {
         this.outstandingInfo = outstandingInfo;
       })
+    );
+
+    this._subs.add(
+      this._snackService.inProgressJobs$.subscribe(
+        activeJobs => {
+          // Get all jobs and show an overall percentage
+          this.uploadItems = this._snackService.getProgress();
+
+          if (this.uploadItems.length <= 0) {
+            this.uploads = "";
+            this.onCloseUploadProgressDialog();
+          } else {
+            this.uploads = `${this.uploadItems.length} upload(s)`;
+          }
+        }
+      )
     );
   }
 
@@ -766,5 +788,19 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
       this._analysisLayoutService.loadActiveLayoutAnalysisTabs();
     });
+  }
+  
+  onCloseUploadProgressDialog() {
+    if (this.uploadProgressBtn && this.uploadProgressBtn instanceof PushButtonComponent) {
+      (this.uploadProgressBtn as PushButtonComponent).closeDialog();
+    }
+  }
+
+  onStopUpload(idx: number) {
+    if (idx < 0 || idx >= this.uploadItems.length) {
+      return;
+    }
+
+    // TODO: Stop this upload somehow
   }
 }

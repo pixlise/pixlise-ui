@@ -36,7 +36,7 @@ export class ImageUploader {
     //dialogConfig.autoFocus = true;
     //dialogConfig.width = '1200px';
 
-    dialogConfig.data = new AddCustomImageParameters(acceptTypes, showMatchedOption, title, scanId);
+    dialogConfig.data = new AddCustomImageParameters(acceptTypes, showMatchedOption, title, scanId, true);
     const dialogRef = this._dialog.open(AddCustomImageComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((result: AddCustomImageResult) => {
@@ -45,137 +45,143 @@ export class ImageUploader {
         return;
       }
 
-      const nameToSave = result.imageToUpload.name;
+      for (let f of result.imagesToUpload) {
+        this.uploadImage(scanId, f, result.imageToMatch);
+      }
+    });
+  }
 
-      if (nameToSave.toUpperCase().endsWith(".TIF") || nameToSave.toUpperCase().endsWith(".TIFF")) {
-        const errs = [];
+  private uploadImage(scanId: string, imageToUpload: File, imageToMatch: string) {
+    const nameToSave = imageToUpload.name;
 
-        // Check that the file name is not too long because of file extension. We expect it to just be TIF not TIFF
-        if (!nameToSave.toUpperCase().endsWith(".TIF")) {
-          errs.push("Must end in .tif");
+    if (nameToSave.toUpperCase().endsWith(".TIF") || nameToSave.toUpperCase().endsWith(".TIFF")) {
+      const errs = [];
+
+      // Check that the file name is not too long because of file extension. We expect it to just be TIF not TIFF
+      if (!nameToSave.toUpperCase().endsWith(".TIF")) {
+        errs.push("Must end in .tif");
+      } else {
+        // Check that the file name conforms to the iSDS name standard, otherwise import will fail
+        const fields = SDSFields.makeFromFileName(getPathBase(imageToUpload.name));
+
+        // Expecting it to parse, and expecting:
+        // - prodType to be VIS (visualisation image) or MSA (multi-spectral analysis... NOT to be confused with MSA spectrum files)
+        // - instrument to be PC (PIXL MCC)
+        // - colour filter to be C (special field for 4-channel RGBU TIF images)
+        // - sol is non-zero length
+        // - rtt is non-zero length
+        // - sclk is non-zero length
+        // - version is >= 1
+        if (!fields) {
+          // Previously we only allowed TIF images that were RGBU - now we say here if we failed to parse it with the SDS file name
+          // convention, we just allow it through
+          //errs.push("invalid length, should be 58 chars (including .tif)");
         } else {
-          // Check that the file name conforms to the iSDS name standard, otherwise import will fail
-          const fields = SDSFields.makeFromFileName(getPathBase(result.imageToUpload.name));
-
-          // Expecting it to parse, and expecting:
-          // - prodType to be VIS (visualisation image) or MSA (multi-spectral analysis... NOT to be confused with MSA spectrum files)
-          // - instrument to be PC (PIXL MCC)
-          // - colour filter to be C (special field for 4-channel RGBU TIF images)
-          // - sol is non-zero length
-          // - rtt is non-zero length
-          // - sclk is non-zero length
-          // - version is >= 1
-          if (!fields) {
-            // Previously we only allowed TIF images that were RGBU - now we say here if we failed to parse it with the SDS file name
-            // convention, we just allow it through
-            //errs.push("invalid length, should be 58 chars (including .tif)");
-          } else {
-            if (["VIS", "MSA"].indexOf(fields.prodType) < 0) {
-              errs.push("Bad prod type: " + fields.prodType);
-            }
-
-            if (fields.instrument != "PC") {
-              errs.push("Bad instrument: " + fields.instrument);
-            }
-
-            if (fields.colourFilter != "C") {
-              errs.push("Bad colour filter: " + fields.colourFilter);
-            }
-
-            if (fields.getSolNumber() <= 0) {
-              errs.push("Bad sol: " + fields.primaryTimestamp);
-            }
-
-            if (fields.RTT <= 0) {
-              errs.push("Bad RTT: " + fields.seqRTT);
-            }
-
-            if (fields.SCLK <= 0) {
-              errs.push("Bad SCLK: " + fields.secondaryTimestamp);
-            }
-
-            if (fields.version < 1) {
-              errs.push("Bad version: " + fields.version);
-            }
+          if (["VIS", "MSA"].indexOf(fields.prodType) < 0) {
+            errs.push("Bad prod type: " + fields.prodType);
           }
-        }
 
-        if (errs.length > 0) {
-          alert(`Invalid file name: "${result.imageToUpload.name}'\nErrors encountered:\n${errs.join("\n")}`);
-          return;
+          if (fields.instrument != "PC") {
+            errs.push("Bad instrument: " + fields.instrument);
+          }
+
+          if (fields.colourFilter != "C") {
+            errs.push("Bad colour filter: " + fields.colourFilter);
+          }
+
+          if (fields.getSolNumber() <= 0) {
+            errs.push("Bad sol: " + fields.primaryTimestamp);
+          }
+
+          if (fields.RTT <= 0) {
+            errs.push("Bad RTT: " + fields.seqRTT);
+          }
+
+          if (fields.SCLK <= 0) {
+            errs.push("Bad SCLK: " + fields.secondaryTimestamp);
+          }
+
+          if (fields.version < 1) {
+            errs.push("Bad version: " + fields.version);
+          }
         }
       }
 
-      this._snackService.open(`Uploading ${result.imageToUpload.name}...`);
-      this.setWait(0, "Checking Resume");
-
-      // Do the actual upload
-      let beamImageRef: ImageMatchTransform | undefined = undefined;
-      if (result.imageToMatch) {
-        // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
-        // is a matched image that _can_ be edited in this way
-        beamImageRef = ImageMatchTransform.create({
-          beamImageFileName: result.imageToMatch,
-          xOffset: 0,
-          yOffset: 0,
-          xScale: 1,
-          yScale: 1,
-        });
+      if (errs.length > 0) {
+        alert(`Invalid file name: "${imageToUpload.name}'\nErrors encountered:\n${errs.join("\n")}`);
+        return;
       }
+    }
 
-      // First, see if we can resume it from a previous attempt
-      const imagePutResumeCheckReq = {
-        name: result.imageToUpload.name,
-        imageData: new Uint8Array(),
-        imageByteSize: result.imageToUpload.size,
-        associatedScanIds: [scanId],
-        originScanId: scanId,
-      };
+    this._snackService.open(`Uploading ${imageToUpload.name}...`);
+    this.setWait(0, `Checking resume for ${imageToUpload.name}...`);
 
-      this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe({
-        next: (resp: ImageUploadHttpPartialInfo) => {
-          const chunkSize = 20*1024*1024;
-          const totalChunks = Math.ceil(result.imageToUpload.size / chunkSize);
-
-          // Set up the observables
-          let chunks$ = this.readFileChunks(scanId, result.imageToUpload.name, result.imageToUpload, chunkSize, totalChunks, beamImageRef);
-
-          // Chop out the ones that we have sent already
-          if (resp?.bytesReceived > 0) {
-            // If it's not a round number of chunks, don't chop...
-            if (resp.bytesReceived % chunkSize != 0) {
-              console.error(`Error resuming upload, server does not have a multiple of ${chunkSize} bytes, has ${resp.bytesReceived} bytes.`);
-            } else {
-              const skip = resp.bytesReceived / chunkSize;
-              chunks$ = chunks$.slice(skip);
-            }
-          }
-
-          // Subscribe on-by-one
-          concat(...chunks$).subscribe({
-            error: err => {
-              const errMsg = httpErrorToString(err, `Error uploading ${result.imageToUpload.name}`);
-              console.log(errMsg);
-
-              this._snackService.openError(errMsg);
-              this.setWait(-1);
-            },
-            complete: () => {
-              console.log(`Uploading ${result.imageToUpload.name} complete, ${totalChunks} x ${chunkSize} bytes`);
-
-              this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}...`);
-              this.setWait(-1);
-            }
-          });
-        },
-        error: err => {
-          const errMsg = httpErrorToString(err, `Error determining resume position of ${result.imageToUpload.name}:`);
-          console.log(errMsg);
-
-          this._snackService.openError(errMsg);
-          this.setWait(-1);
-        }
+    // Do the actual upload
+    let beamImageRef: ImageMatchTransform | undefined = undefined;
+    if (imageToMatch) {
+      // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
+      // is a matched image that _can_ be edited in this way
+      beamImageRef = ImageMatchTransform.create({
+        beamImageFileName: imageToMatch,
+        xOffset: 0,
+        yOffset: 0,
+        xScale: 1,
+        yScale: 1,
       });
+    }
+
+    // First, see if we can resume it from a previous attempt
+    const imagePutResumeCheckReq = {
+      name: imageToUpload.name,
+      imageData: new Uint8Array(),
+      imageByteSize: imageToUpload.size,
+      associatedScanIds: [scanId],
+      originScanId: scanId,
+    };
+
+    this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe({
+      next: (resp: ImageUploadHttpPartialInfo) => {
+        const chunkSize = 20*1024*1024;
+        const totalChunks = Math.ceil(imageToUpload.size / chunkSize);
+
+        // Set up the observables
+        let chunks$ = this.readFileChunks(scanId, imageToUpload.name, imageToUpload, chunkSize, totalChunks, beamImageRef);
+
+        // Chop out the ones that we have sent already
+        if (resp?.bytesReceived > 0) {
+          // If it's not a round number of chunks, don't chop...
+          if (resp.bytesReceived % chunkSize != 0) {
+            console.error(`Error resuming upload, server does not have a multiple of ${chunkSize} bytes, has ${resp.bytesReceived} bytes.`);
+          } else {
+            const skip = resp.bytesReceived / chunkSize;
+            chunks$ = chunks$.slice(skip);
+          }
+        }
+
+        // Subscribe on-by-one
+        concat(...chunks$).subscribe({
+          error: err => {
+            const errMsg = httpErrorToString(err, `Error uploading ${imageToUpload.name}`);
+            console.log(errMsg);
+
+            this._snackService.openError(errMsg);
+            this.setWait(-1);
+          },
+          complete: () => {
+            console.log(`Uploading ${imageToUpload.name} complete, ${totalChunks} x ${chunkSize} bytes`);
+
+            this._snackService.openSuccess(`Successfully uploaded ${imageToUpload.name}...`);
+            this.setWait(-1);
+          }
+        });
+      },
+      error: err => {
+        const errMsg = httpErrorToString(err, `Error determining resume position of ${imageToUpload.name}:`);
+        console.log(errMsg);
+
+        this._snackService.openError(errMsg);
+        this.setWait(-1);
+      }
     });
   }
 

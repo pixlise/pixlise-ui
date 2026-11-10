@@ -49,13 +49,14 @@ export class AddCustomImageParameters {
     public acceptTypes: string = "*",
     public allowMatched: boolean = false,
     public title: string = "Add Images",
-    public scanIdForMatching: string = ""
+    public scanIdForMatching: string = "",
+    public allowMultiple: boolean = false
   ) {}
 }
 
 export class AddCustomImageResult {
   constructor(
-    public imageToUpload: File,
+    public imagesToUpload: File[],
     public imageToMatch: string
   ) {}
 }
@@ -76,10 +77,11 @@ export class AddCustomImageComponent {
   ) {}
 
   onOK() {
-    if (this.droppedFiles.length != 1) {
+    if (!this.allowMultiple && this.droppedFiles.length != 1) {
       alert("Please drop one image to upload");
       return;
     }
+
     /*
     if (this.params.allowMatched) {
       // Validate that fields were entered
@@ -89,7 +91,7 @@ export class AddCustomImageComponent {
       }
     }
 */
-    this.dialogRef.close(new AddCustomImageResult(this.droppedFiles[0], this._alignToImage));
+    this.dialogRef.close(new AddCustomImageResult(this.droppedFiles, this._alignToImage));
   }
 
   get title(): string {
@@ -100,12 +102,16 @@ export class AddCustomImageComponent {
     return this.params.acceptTypes;
   }
 
+  get allowMultiple(): boolean {
+    return this.params.allowMultiple;
+  }
+
   onCancel() {
     this.dialogRef.close(null);
   }
 
   onDropFile(event: any) {
-    if (this.droppedFiles.length >= 1) {
+    if (!this.allowMultiple && this.droppedFiles.length >= 1) {
       return;
     }
 

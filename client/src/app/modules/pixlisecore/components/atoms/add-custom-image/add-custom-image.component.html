@@ -50,7 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   }
 
-  <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+  <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="allowMultiple" (change)="onDropFile($event)">
     <ngx-dropzone-label>
       <div class="dropzone-label-container">
         <h2>Drop image to upload</h2>

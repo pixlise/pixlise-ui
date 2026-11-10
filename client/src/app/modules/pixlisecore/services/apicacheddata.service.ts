@@ -151,6 +151,11 @@ export class APICachedDataService {
     }
   }
 
+  clearScanListCache() {
+    this._scanListReqMap.clear();
+    this._defaultImageReqMap.clear(); // Clear all default scans because we tend to request one for each scan id
+  }
+
   private clearCacheForScanId(scanId: string) {
     // Clear all item caches relevant to this scan id
     const ids = this._scanIdCacheKeys.get(scanId);

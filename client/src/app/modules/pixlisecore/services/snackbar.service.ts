@@ -5,7 +5,7 @@ import { LocalStorageService } from "./local-storage.service";
 import { WSError } from "./wsMessageHandler";
 import { WidgetError } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { httpErrorToString } from "src/app/utils/utils";
-import { Subscription } from "rxjs";
+import { BehaviorSubject, Subscription } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
 import { SnackbarDataItem, SnackbarType } from "../models/snackbar-data";
 
@@ -16,8 +16,11 @@ import { SnackbarDataItem, SnackbarType } from "../models/snackbar-data";
 export class SnackbarService implements OnDestroy {
   subscriptions: Subscription = new Subscription();
   history: SnackbarDataItem[] = [];
-  private _activeProgress = new Map<number, MatSnackBarRef<SnackBarPopupComponent>>();
+  //private _activeProgress = new Map<number, MatSnackBarRef<SnackBarPopupComponent>>();
+  private _activeProgressSnapshot = new Map<number, string>();
   private _nextActiveProgressId = 1;
+
+  inProgressJobs$ = new BehaviorSubject<number>(0);
 
   constructor(
     private _snackBar: MatSnackBar,
@@ -32,7 +35,13 @@ export class SnackbarService implements OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
-    this._activeProgress.clear();
+    //this._activeProgress.clear();
+    this._activeProgressSnapshot.clear();
+    //this.inProgressJobs$.next(0);
+  }
+
+  getProgress(): string[] {
+    return Array.from(this._activeProgressSnapshot.values());
   }
 
   addMessageToHistory(message: string, details: string, action: string, type: SnackbarType): void {
@@ -147,6 +156,11 @@ export class SnackbarService implements OnDestroy {
   }
 
   openProgress(message: string, action: string = "Dismiss"): number {
+    const id = this._nextActiveProgressId
+    this._activeProgressSnapshot.set(id, message);
+    this._nextActiveProgressId++;
+    this.inProgressJobs$.next(this._activeProgressSnapshot.size);
+/*
     const ref = this._snackBar.openFromComponent(SnackBarPopupComponent, {
       data: {
         message: message,
@@ -162,10 +176,19 @@ export class SnackbarService implements OnDestroy {
     this._activeProgress.set(id, ref);
     this._nextActiveProgressId++;
 
+    this.inProgressJobs$.next(this._activeProgress.size);*/
+
     return id;
   }
 
   setProgress(id: number, message: string): void {
+    if(!this._activeProgressSnapshot.has(id)) {
+      return;
+    }
+    this._activeProgressSnapshot.set(id, message);
+    this.inProgressJobs$.next(this._activeProgressSnapshot.size);
+
+/*
     if (!this._activeProgress.has(id)) {
       return; // Ignore
     }
@@ -173,18 +196,23 @@ export class SnackbarService implements OnDestroy {
     const msg = this._activeProgress.get(id);
 
     // Can't seem to edit the text, so we have to replace the notification... ugly because there's animation going on
-    msg!.instance.data.message = message;
+    msg!.instance.data.message = message;*/
   }
 
   closeProgress(id: number, message: string): void {
-    if (!this._activeProgress.has(id)) {
-      return; // Ignore
+    if(!this._activeProgressSnapshot.has(id)) {
+      return;
     }
+    //if (!this._activeProgress.has(id)) {
+    //  return; // Ignore
+    //}
 
-    const msg = this._activeProgress.get(id);
-    msg?.dismiss();
+    // const msg = this._activeProgress.get(id);
+    // msg?.dismiss();
 
-    this._activeProgress.delete(id);
+    // this._activeProgress.delete(id);
+    this._activeProgressSnapshot.delete(id);
+    this.inProgressJobs$.next(this._activeProgressSnapshot.size);
   }
 
   clearHistory(): void {
