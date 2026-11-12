@@ -48,7 +48,6 @@ export class SpectrumExpressionDataSourceImpl implements SpectrumExpressionDataS
         }
       }
     } else {
-      // Must be bulk or max
       if (readType != SpectrumType.SPECTRUM_NORMAL && readType != SpectrumType.SPECTRUM_DWELL) {
         throw new Error("getSpectrum readType must be Normal or Dwell if locationIndex is specified");
       }
