@@ -1,3 +1,8 @@
+## 4.106.0 (LATEST)
+
+### New Features
+- Spectrum data was still being downloaded for some obscure cases and the exporter was broken by the last release. Now there is no toggle switch left: all code related to displaying spectra, getting a spectrum calibration or exporting bulk/max spectra uses the new server-side aggregation feature. All spectra are still downloaded for local expression running and exporting all spectra cases, but these will be addressed next.
+
 ## 4.104.0 (LATEST)
 
 ### New Features
