@@ -23,3 +23,21 @@
   padding: 8px;
   // border-radius: 8px;
 }
+
+.error-overlay {
+    bottom: 10%;
+    max-width: 500px;
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+
+    //display: block;
+    z-index: 1;
+    position: absolute;
+    border-radius: $sz-unit;
+
+    background: $clr-gray-90;
+    margin: $sz-unit;
+    padding: $sz-unit;
+    color: $clr-orange;
+}

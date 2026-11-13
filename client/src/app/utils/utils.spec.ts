@@ -45,6 +45,7 @@ import {
   doesVersionDiffer,
   makeValidFloatString,
   mimeTypeForImage,
+  getPathBase,
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation
@@ -596,3 +597,12 @@ describe("makeValidFloatString", () => {
     expect(makeValidFloatString("1,000")).toEqual("1.000");
   });
 });
+
+describe("getPathBase", () => {
+  it("getPathBase works", () => {
+    expect(getPathBase("path/to/file.jpg")).toEqual("file.jpg");
+    expect(getPathBase("/path/to/file.jpg")).toEqual("file.jpg");
+    expect(getPathBase("http://path/to/file.jpg")).toEqual("file.jpg");
+  });
+});
+
