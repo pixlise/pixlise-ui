@@ -34,7 +34,7 @@ export function readTerms(spectrumLineExprs: string[], possibleDetectors: string
         if (idx >= 0) {
           bulkSum = true;
           detectorsToRequest.add(det);
-          break;
+          // break;
         }
       }
 
@@ -46,13 +46,13 @@ export function readTerms(spectrumLineExprs: string[], possibleDetectors: string
         if (idx >= 0) {
           maxValue = true;
           detectorsToRequest.add(det);
-          break;
+          // break;
         }
       }
 
-      if (bulkSum && maxValue) {
-        break;
-      }
+      // if (bulkSum && maxValue) {
+      //   break;
+      // }
     }
 
     return new SpectrumExpressionTerms(Array.from(detectorsToRequest.keys()), bulkSum, maxValue);

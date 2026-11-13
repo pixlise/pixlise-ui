@@ -58,7 +58,7 @@ export const environment = {
   readBeamIJSwapped: true,
   comparePolygonGenerationOutput: false,
   runExpressionsOnBackEnd: false,
-  readAggregateSpectraFromBackEnd: true,
+  readAggregateSpectraFromBackEnd: false,
 };
 
 /*
