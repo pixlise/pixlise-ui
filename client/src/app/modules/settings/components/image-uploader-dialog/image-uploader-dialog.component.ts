@@ -11,6 +11,8 @@ import { UserOptionsService } from "../../services/user-options.service";
   templateUrl: "./image-uploader-dialog.component.html",
   styleUrls: ["./image-uploader-dialog.component.scss"],
 })
+// NOTE: THIS IS FOR USER PROFILE IMAGE UPLOADING!!
+// This is different from the general image uploader
 export class ImageUploaderDialogComponent implements OnInit {
   acceptTypes: string = "image/jpeg,image/png";
   uploadedImage: File | undefined = undefined;

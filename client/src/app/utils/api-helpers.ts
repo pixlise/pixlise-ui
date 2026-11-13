@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { HttpHeaders } from "@angular/common/http";
+import { getPathBase } from "./utils";
 //import { throwError, of } from 'rxjs';
 
 export function makeHeaders(): { headers: HttpHeaders } {
@@ -62,5 +63,27 @@ export class APIPaths {
     }
     url += path;
     return url;
+  }
+
+  public static getFileNameCorrectedURL(pathRoot: string, imagePath: string): string {
+    // In case of special characters or spaces in the path...
+    let fileName = getPathBase(imagePath);
+    const filePath = imagePath.substring(0, imagePath.length-fileName.length);
+    // NOTE: It may have query params after it already!
+    let queryParams = "";
+    let pos = fileName.indexOf("?");
+    if (pos > -1) {
+      queryParams = fileName.substring(pos);
+      fileName = fileName.substring(0, pos);
+    }
+    const correctedPath = filePath + encodeURIComponent(fileName) + queryParams;
+
+    let fullPath = pathRoot;
+    if (!fullPath.endsWith("/")) {
+      fullPath += "/";
+    }
+    fullPath += correctedPath;
+    const apiUrl = APIPaths.getWithHost(fullPath);
+    return apiUrl;
   }
 }

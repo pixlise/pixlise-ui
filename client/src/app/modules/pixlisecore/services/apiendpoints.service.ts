@@ -5,7 +5,7 @@ import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { arrayBufferToImageDataURL, mimeTypeForImage } from "src/app/utils/utils";
+import { arrayBufferToImageDataURL, getPathBase, mimeTypeForImage } from "src/app/utils/utils";
 import { ImageUploadHttpPartialInfo, ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
@@ -236,8 +236,7 @@ export class APIEndpointsService {
   }
 
   public static getImageURL(imagePath: string): string {
-    const apiUrl = APIPaths.getWithHost(APIPaths.api_imagedownload + imagePath);
-    return apiUrl;
+    return APIPaths.getFileNameCorrectedURL(APIPaths.api_imagedownload, imagePath);
   }
 
   uploadScanZip(scanId: string, zipName: string, imageData: ArrayBuffer): Observable<void> {
