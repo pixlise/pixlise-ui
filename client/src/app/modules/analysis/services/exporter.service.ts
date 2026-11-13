@@ -1,22 +1,32 @@
 import { Injectable } from "@angular/core";
-import { catchError, combineLatest, forkJoin, from, map, mergeMap, Observable, of, switchMap, throwError } from "rxjs";
-import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
+import { catchError, combineLatest, forkJoin, from, map, mergeMap, Observable, of, switchMap, tap, throwError } from "rxjs";
 import { APIDataService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { WidgetExportData, WidgetExportFile } from "src/app/modules/widget/components/widget-export-dialog/widget-export-model";
-import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "../../../generated-protos/scan-beam-location-msgs";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
-import { ScanEntryReq, ScanEntryResp } from "../../../generated-protos/scan-entry-msgs";
-import { ImageListReq } from "../../../generated-protos/image-msgs";
-import { Coordinate2D } from "../../../generated-protos/image-beam-location";
+
+import { ExportDataType, ExportFilesReq } from "src/app/generated-protos/export-msgs";
+import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
+import { ImageListReq } from "src/app/generated-protos/image-msgs";
+import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import {
   ImageBeamLocationsReq,
   ImageBeamLocationsResp,
   ImageBeamLocationVersionsReq,
   ImageBeamLocationVersionsResp,
-} from "../../../generated-protos/image-beam-location-msgs";
-import { SpectrumDetectorsReq, SpectrumDetectorsResp, SpectrumResp } from "../../../generated-protos/spectrum-msgs";
-import { Spectrum, SpectrumType } from "../../../generated-protos/spectrum";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "../../../generated-protos/roi-msgs";
+} from "src/app/generated-protos/image-beam-location-msgs";
+import { SpectrumDetectorsReq, SpectrumDetectorsResp, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { Spectrum, SpectrumType } from "src/app/generated-protos/spectrum";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
+import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
+import { QuantGetReq, QuantGetResp, QuantListReq, QuantListResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { Quantification } from "src/app/generated-protos/quantification";
+import { ScanMetaDataItem } from "src/app/generated-protos/scan";
+import { ImageMatchTransform } from "src/app/generated-protos/image";
+import { DataExpression } from "src/app/generated-protos/expressions";
+
 import { decodeIndexList, getPathBase } from "src/app/utils/utils";
 import { DiffractionExporter } from "../components/analysis-sidepanel/tabs/diffraction/diffraction-exporter";
 import { DiffractionService } from "../../spectrum/services/diffraction.service";
@@ -24,21 +34,13 @@ import { EnergyCalibrationService } from "../../pixlisecore/services/energy-cali
 import { PredefinedROIID } from "../../../models/RegionOfInterest";
 import { ExpressionDataSource } from "../../pixlisecore/models/expression-data-source";
 import { SpectrumEnergyCalibration } from "../../../models/BasicTypes";
-import { ManualDiffractionPeak } from "../../../generated-protos/diffraction-data";
-import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "../../../generated-protos/scan-msgs";
-import { ExpressionGetReq, ExpressionGetResp } from "../../../generated-protos/expression-msgs";
-import { QuantGetReq, QuantGetResp, QuantListReq, QuantListResp } from "../../../generated-protos/quantification-retrieval-msgs";
 import { DataExpressionId } from "../../../expression-language/expression-id";
 import { PMCDataValues } from "../../../expression-language/data-values";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { SpectrumDataService } from "../../pixlisecore/services/spectrum-data.service";
-import { Quantification } from "src/app/generated-protos/quantification";
-import { SpectrumExpressionDataSourceImpl } from "../../spectrum/models/SpectrumRespDataSource";
-import { SpectrumExpressionParser, SpectrumValues } from "../../spectrum/models/Spectrum";
-import { ScanMetaDataItem } from "src/app/generated-protos/scan";
-import { ImageMatchTransform } from "src/app/generated-protos/image";
+import { SpectrumValues } from "../../spectrum/models/Spectrum";
 import { ExpressionExporter } from "src/app/expression-language/expression-export";
-import { DataExpression } from "src/app/generated-protos/expressions";
+import { SpectrumDataRemoteService, SpectrumExpressionTerms } from "../../pixlisecore/services/spectrum-data-remote.service";
 
 @Injectable({
   providedIn: "root",
@@ -52,7 +54,8 @@ export class DataExporterService {
     private _endpointsService: APIEndpointsService,
     private _widgetDataService: WidgetDataService,
     private _diffractionService: DiffractionService,
-    private _energyCalibrationService: EnergyCalibrationService
+    private _energyCalibrationService: EnergyCalibrationService,
+    private _spectrumRemoteSvc: SpectrumDataRemoteService
   ) {}
 
   getPiquantMapForScan(scanId: string, quantId: string, quantName: string): Observable<WidgetExportData> {
@@ -495,8 +498,8 @@ msa += `#XPOSITION   : 0.000
     const requests: Observable<SpectrumDetectorsResp | ScanMetaLabelsAndTypesResp | SpectrumResp | RegionOfInterestGetResp>[] = [
       this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: scanId})),
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId })),
-      this._spectrumDataService.getSpectra(scanId, roiIds.length > 0 ? null : [], true, true),
     ];
+    const firstROIReqIdx = requests.length;
 
     for (const roiId of roiIds) {
       if (!PredefinedROIID.isPredefined(roiId)) {
@@ -505,93 +508,131 @@ msa += `#XPOSITION   : 0.000
     }
 
     return combineLatest(requests).pipe(
-      map((resps: any[]) => {
-        const scanDetectors = resps[0] as SpectrumDetectorsResp;
-        const scanMeta = resps[1] as ScanMetaLabelsAndTypesResp;
-        const spectrumResp = resps[2] as SpectrumResp;
+      switchMap(
+        (resps: any[]) => {
+          const scanDetectors = resps[0] as SpectrumDetectorsResp;
+          const scanMeta = resps[1] as ScanMetaLabelsAndTypesResp;
 
-        const metaLiveTimeIdx = scanMeta.metaLabels.indexOf("LIVETIME");
-        if (metaLiveTimeIdx < 0) {
-          throw new Error("Failed to get LIVETIME meta index from scan: " + scanId);
-        }
+          // Get the indexes as needed. Seed with the strings, attach indexes as we find them
+          const metaFields = ["LIVETIME", "REALTIME", "OFFSET", "XPERCHAN", "NPOINTS"];
+          const metaIdxs = new Map<string, number>();
+          for (let f of metaFields) {
+            const idx = scanMeta.metaLabels.indexOf(f);
+            if (idx < 0) {
+              throw new Error(`Failed to get ${f} meta index from scan: ${scanId}`);
+            }
+            metaIdxs.set(f, idx);
+          }
 
-        const msas: WidgetExportFile[] = [];
-        if (scanMeta && spectrumResp) {
+          const reqs$: Observable<Map<string, SpectrumValues>>[] = [];
+          const msas: WidgetExportFile[] = [];
+
+          if (!scanMeta) {
+            console.error("Missing data for spectra metadata export");
+            this._snackService.openError("Error exporting spectra metadata", "Failed to get metadata for the scan");
+          }
+
           // For any ROIs, we bulk and max the spectra
           for (let c = 0; c < roiIds.length; c++) {
-            const roiResp = resps[c + 3] as RegionOfInterestGetResp;
+            const roiResp = resps[c + firstROIReqIdx] as RegionOfInterestGetResp;
             if (roiResp.regionOfInterest && roiResp.regionOfInterest.scanEntryIndexesEncoded.length > 0) {
-              const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-              const parser = new SpectrumExpressionParser(scanDetectors.detectorId);
+              const roiName = roiResp.regionOfInterest.name;
 
-              const specExprs = ["bulk(A)", "bulk(B)", "max(A)", "max(B)"];
-              const spectraMap = new Map<string, SpectrumValues>();
-
-              for (const e of specExprs) {
-                // NOTE that getSpectrumValues requires location indexes not PMCs, but
-                // ROIs deliver PMCs in the badly named field
-                const spectrumVals = parser.getSpectrumValues(
-                  dataSrc,
-                  roiResp.regionOfInterest.scanEntryIndexesEncoded,
-                  e,
-                  e,
+              reqs$.push(
+                this._spectrumRemoteSvc.getAggregateSpectra(
+                  roiResp.regionOfInterest.scanId,
+                  new SpectrumExpressionTerms(scanDetectors.detectorId, true, true),
                   SpectrumType.SPECTRUM_NORMAL,
-                  false,
-                  false
-                );
+                  roiResp.regionOfInterest.scanEntryIndexesEncoded
+                ).pipe(
+                  tap(
+                    spectraMap => {
+                      // If we have enough for a bulk
+                      let spectrumA = spectraMap.get("bulk(A)");
+                      let spectrumB = spectraMap.get("bulk(B)");
+                      if (spectrumA !== undefined && spectrumB !== undefined) {
+                        const spectra = [this.makeSpectrum(spectrumA, metaIdxs), this.makeSpectrum(spectrumB, metaIdxs)];
 
-                for (const [k, v] of spectrumVals.entries()) {
-                  spectraMap.set(k, v);
-                }
-              }
+                        const roiBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiName} bulk sum`, spectra, scanMeta);
+                        if (roiBulkMSA) {
+                          msas.push({ fileName: `${scanId}-BulkSum-${roiName}.msa`, data: roiBulkMSA });
+                        }
+                      }
 
-              // If we have enough for a bulk
-              if (spectraMap.get("bulk(A)") !== undefined && spectraMap.get("bulk(B)") !== undefined) {
-                const spectra = [this.makeSpectrum(spectraMap!.get("bulk(A)"), metaLiveTimeIdx), this.makeSpectrum(spectraMap!.get("bulk(B)"), metaLiveTimeIdx)];
+                      spectrumA = spectraMap.get("max(A)");
+                      spectrumB = spectraMap.get("max(B)");
+                      if (spectrumA !== undefined && spectrumB !== undefined) {
+                        const spectra = [this.makeSpectrum(spectrumA, metaIdxs), this.makeSpectrum(spectrumB, metaIdxs)];
 
-                const roiBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} bulk sum`, spectra, scanMeta);
-                if (roiBulkMSA) {
-                  msas.push({ fileName: `${scanId}-BulkSum-${roiResp.regionOfInterest.name}.msa`, data: roiBulkMSA });
-                }
-              }
-
-              if (spectraMap.get("max(A)") !== undefined && spectraMap.get("max(B)") !== undefined) {
-                const spectra = [this.makeSpectrum(spectraMap!.get("max(A)"), metaLiveTimeIdx), this.makeSpectrum(spectraMap!.get("max(B)"), metaLiveTimeIdx)];
-
-                const roiMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiResp.regionOfInterest.name} max value`, spectra, scanMeta);
-                if (roiMaxMSA) {
-                  msas.push({ fileName: `${scanId}-MaxValue-${roiResp.regionOfInterest.name}.msa`, data: roiMaxMSA });
-                }
-              }
+                        const roiMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, ROI: ${roiName} max value`, spectra, scanMeta);
+                        if (roiMaxMSA) {
+                          msas.push({ fileName: `${scanId}-MaxValue-${roiName}.msa`, data: roiMaxMSA });
+                        }
+                      }
+                    }
+                  )
+                )
+              );
             }
           }
 
-          // All Points bulk sum
-          const allPointsBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points bulk sum`, spectrumResp.bulkSpectra, scanMeta);
-          if (allPointsBulkMSA) {
-            msas.push({ fileName: `${scanId}-BulkSum-AllPoints.msa`, data: allPointsBulkMSA });
-          }
+          // Also request for "all points" - we're expecting the server to return the pre-stored bulk sum/max value
+          // for this request if the scan contains one (eg PIXL scans)
+          reqs$.push(
+            this._spectrumRemoteSvc.getAggregateSpectra(
+              scanId,
+              new SpectrumExpressionTerms(scanDetectors.detectorId, true, true),
+              SpectrumType.SPECTRUM_NORMAL,
+              [] // "all points"
+            ).pipe(
+              tap(
+                spectraMap => {
+                  // All Points bulk sum
+                  let spectrumA = spectraMap.get("bulk(A)");
+                  let spectrumB = spectraMap.get("bulk(B)");
+                  if (spectrumA !== undefined && spectrumB !== undefined) {
+                    const spectra = [this.makeSpectrum(spectrumA, metaIdxs), this.makeSpectrum(spectrumB, metaIdxs)];
 
-          // All Points max value
-          const allPointsMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points max value`, spectrumResp.maxSpectra, scanMeta);
-          if (allPointsMaxMSA) {
-            msas.push({ fileName: `${scanId}-MaxValue-AllPoints.msa`, data: allPointsMaxMSA });
-          }
-        } else {
-          console.error("Missing data for spectra metadata export");
-          this._snackService.openError("Error exporting spectra metadata", "Failed to get metadata for the scan");
+                    const allPointsBulkMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points bulk sum`, spectra, scanMeta);
+                    if (allPointsBulkMSA) {
+                      msas.push({ fileName: `${scanId}-BulkSum-AllPoints.msa`, data: allPointsBulkMSA });
+                    }
+                  }
+
+                    // All Points max value
+                  spectrumA = spectraMap.get("max(A)");
+                  spectrumB = spectraMap.get("max(B)");
+                  if (spectrumA !== undefined && spectrumB !== undefined) {
+                    const spectra = [this.makeSpectrum(spectrumA, metaIdxs), this.makeSpectrum(spectrumB, metaIdxs)];
+
+                    const allPointsMaxMSA = this.makeMSAFileWithAllDetectors(`Scan: ${scanId}, All Points max value`, spectra, scanMeta);
+                    if (allPointsMaxMSA) {
+                      msas.push({ fileName: `${scanId}-MaxValue-AllPoints.msa`, data: allPointsMaxMSA });
+                    }
+                  }
+                }
+              )
+            )
+          );
+
+          return combineLatest(reqs$).pipe(
+            map(() => {
+              return { msas };
+            })
+          );
         }
-
-        return { msas };
-      })
+      )
     );
   }
 
-  private makeSpectrum(from: SpectrumValues, LIVETIMEidx: number): Spectrum {
+  private makeSpectrum(from: SpectrumValues, metaIdxs: Map<string, number>): Spectrum {
     const meta: {
       [key: number]: ScanMetaDataItem;
     } = {
-      [LIVETIMEidx]: ScanMetaDataItem.create({ fvalue: from.liveTimeSec }),
+      [metaIdxs.get("LIVETIME")!]: ScanMetaDataItem.create({ fvalue: from.liveTimeSec }),
+      [metaIdxs.get("REALTIME")!]: ScanMetaDataItem.create({ fvalue: from.realTimeSec }),
+      [metaIdxs.get("OFFSET")!]: ScanMetaDataItem.create({ fvalue: from.offset }),
+      [metaIdxs.get("XPERCHAN")!]: ScanMetaDataItem.create({ fvalue: from.xPerChan }),
     };
 
     return {

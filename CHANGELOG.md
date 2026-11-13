@@ -10,6 +10,16 @@
 ### Bug Fixes
 - User icons (displayed on various parts of PIXLISE) could go hay-wire and download the list of users in an endless loop if one of the user ids wasn't recognised
 
+## 4.106.0 (2026-11-13)
+
+### New Features
+- Spectrum data was still being downloaded for some obscure cases and the exporter was broken by the last release. Now there is no toggle switch left: all code related to displaying spectra, getting a spectrum calibration or exporting bulk/max spectra uses the new server-side aggregation feature. All spectra are still downloaded for local expression running and exporting all spectra cases, but these will be addressed next.
+
+## 4.104.0 (2026-11-13)
+
+### New Features
+- Spectrum data for the entire scan is no longer required to be downloaded from the server. This is to allow viewing larger scans in future. This was enabled by adding the ability to run expressions on the back-end (which is not yet enabled!), and adding a new spectrum query that can return the sum of any spectra requested (by index, read type, detector name). When viewing the spectrum chart PIXLISE will no longer download and add the spectra up in the browser, but will download an added-up spectrum from the back-end instead. Until expressions are enabled to run on the back-end however, we will still download spectra for that purpose. This is a feature that can be toggled off if required.
+
 ## 4.103.0 (2026-10-28)
 
 ### Bug Fixes

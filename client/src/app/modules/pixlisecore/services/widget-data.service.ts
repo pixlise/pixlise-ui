@@ -201,14 +201,6 @@ export class WidgetDataService {
       // data, not a time stamp
 
       scanIdIdx = queryList.length;
-      queryList.push(
-        // Really we don't need the bulk sum, but lets get it because other functionality is caching that kind of request!
-        this._spectrumDataService.getSpectra(query.scanId, [], true, true).pipe(
-          catchError(err => {
-            throw new Error(`Failed to load scan: ${query.scanId} - ${err}`);
-          })
-        )
-      );
     }
 
     if (queryList.length <= 0) {
