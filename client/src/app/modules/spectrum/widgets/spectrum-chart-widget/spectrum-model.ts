@@ -762,7 +762,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       }
     }
 
-    return new SpectrumValues(vals, maxVal, "", 0);
+    // TODO: add energy calibration back??
+    return new SpectrumValues(vals, maxVal, "", 0, 0, 0, 1);
   }
 
   getLineList(): Map<string, string[]> {

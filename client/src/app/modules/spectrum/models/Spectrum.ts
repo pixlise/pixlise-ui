@@ -28,13 +28,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { SpectrumType } from "src/app/generated-protos/spectrum";
+import { map, Observable, of } from "rxjs";
+import { readTerms, SpectrumTermFetcherRemote } from "./SpectrumFetch";
+import { SpectrumDataRemoteService } from "../../pixlisecore/services/spectrum-data-remote.service";
 
 export class SpectrumValues {
   constructor(
-    public values: Float32Array,
-    public maxValue: number,
+    public values: Float32Array, // Counts (as float in case we're doing some weird log display stuff)
+    public maxValue: number, // The max value that appears in values array
     public sourceDetectorID: string,
-    public liveTimeSec: number
+    public liveTimeSec: number, // Integration time
+    public realTimeSec: number, // Integration time
+    public offset: number, // Energy calibration
+    public xPerChan: number // Energy calibration
   ) {}
 
   // Returns the sum of all spectra passed in
@@ -49,7 +55,16 @@ export class SpectrumValues {
     if (!firstSpectra) {
       return null;
     }
-    const result = new SpectrumValues(new Float32Array(firstSpectra.values), firstSpectra.maxValue, firstSpectra.sourceDetectorID, firstSpectra.liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(firstSpectra.values),
+      firstSpectra.maxValue,
+      firstSpectra.sourceDetectorID,
+      firstSpectra.liveTimeSec,
+      firstSpectra.realTimeSec,
+      firstSpectra.offset,
+      firstSpectra.xPerChan
+    );
+
     for (let c = 1; c < spectra.length; c++) {
       const spectraPoints = spectra[c];
       if (!spectraPoints) {
@@ -79,8 +94,19 @@ export class SpectrumValues {
       return null;
     }
 
-    const result = new SpectrumValues(new Float32Array(spectra[0].values), spectra[0].maxValue, spectra[0].sourceDetectorID, spectra[0].liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(spectra[0].values),
+      spectra[0].maxValue,
+      spectra[0].sourceDetectorID,
+      spectra[0].liveTimeSec,
+      spectra[0].realTimeSec,
+      spectra[0].offset,
+      spectra[0].xPerChan
+    );
+
     let totalLiveTime = spectra[0].liveTimeSec;
+    let totalOffset = spectra[0].offset;
+    let totalXPerChan = spectra[0].xPerChan;
 
     for (let c = 1; c < spectra.length; c++) {
       for (let i = 0; i < spectra[c].values.length; i++) {
@@ -94,10 +120,14 @@ export class SpectrumValues {
       }
 
       totalLiveTime += spectra[c].liveTimeSec;
+      totalOffset += spectra[c].offset;
+      totalXPerChan += spectra[c].xPerChan;
     }
 
     // Work out average live time
     result.liveTimeSec = totalLiveTime / spectra.length;
+    result.offset = totalOffset / spectra.length;
+    result.xPerChan = totalXPerChan / spectra.length;
 
     // Now that we have all the values decided, we can find the max value again
     result.maxValue = result.values[0];
@@ -117,8 +147,19 @@ export class SpectrumValues {
       return null;
     }
 
-    const result = new SpectrumValues(new Float32Array(spectra[0].values), spectra[0].maxValue, spectra[0].sourceDetectorID, spectra[0].liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(spectra[0].values),
+      spectra[0].maxValue,
+      spectra[0].sourceDetectorID,
+      spectra[0].liveTimeSec,
+      spectra[0].realTimeSec,
+      spectra[0].offset,
+      spectra[0].xPerChan
+    );
+
     let totalLiveTime = spectra[0].liveTimeSec;
+    let totalOffset = spectra[0].offset;
+    let totalXPerChan = spectra[0].xPerChan;
 
     for (let c = 1; c < spectra.length; c++) {
       for (let i = 0; i < spectra[c].values.length; i++) {
@@ -137,10 +178,14 @@ export class SpectrumValues {
       }
 
       totalLiveTime += spectra[c].liveTimeSec;
+      totalOffset += spectra[c].offset;
+      totalXPerChan += spectra[c].xPerChan;
     }
 
     // Work out average live time
     result.liveTimeSec = totalLiveTime / spectra.length;
+    result.offset = totalOffset / spectra.length;
+    result.xPerChan = totalXPerChan / spectra.length;
 
     return result;
   }
@@ -155,7 +200,11 @@ export class SpectrumValues {
       new Float32Array(A.values.length),
       0,
       A.sourceDetectorID == B.sourceDetectorID ? A.sourceDetectorID : "", // TODO: use Combined in this case?
-      (A.liveTimeSec + B.liveTimeSec) / 2
+      (A.liveTimeSec + B.liveTimeSec) / 2,
+      (A.realTimeSec + B.realTimeSec) / 2,
+      // TODO: Do we have anything better to do for the calibration??
+      A.offset,
+      A.xPerChan
     );
 
     for (let c = 0; c < B.values.length; c++) {
@@ -178,7 +227,11 @@ export class SpectrumValues {
       new Float32Array(checkDetector.values.length),
       0,
       checkDetector.sourceDetectorID, // Return check detector
-      checkDetector.liveTimeSec // Returns check detector livetime
+      checkDetector.liveTimeSec, // Returns check detector livetime
+      checkDetector.realTimeSec, // Returns check detector realtime
+      // TODO: Do we have anything better to do for the calibration??
+      checkDetector.offset,
+      checkDetector.xPerChan
     );
 
     for (let c = 0; c < checkDetector.values.length; c++) {
@@ -210,7 +263,10 @@ export class SpectrumValues {
       new Float32Array(this.values),
       Math.floor((sec * this.maxValue) / this.liveTimeSec),
       this.sourceDetectorID,
-      sec /*by definition*/
+      sec, /*livetime by definition*/
+      sec, /*realtime by definition*/
+      this.offset, // Not affected by integration time
+      this.xPerChan // Not affected by integration time
     );
 
     for (let c = 0; c < result.values.length; c++) {
@@ -228,7 +284,15 @@ export class SpectrumValues {
       return spectrum;
     }
 
-    const result = new SpectrumValues(new Float32Array(spectrum.values), spectrum.maxValue / denominator, spectrum.sourceDetectorID, spectrum.liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(spectrum.values),
+      spectrum.maxValue / denominator,
+      spectrum.sourceDetectorID,
+      spectrum.liveTimeSec,
+      spectrum.realTimeSec,
+      spectrum.offset,
+      spectrum.xPerChan
+    );
 
     // Divide each count
     for (let c = 0; c < result.values.length; c++) {
@@ -244,41 +308,53 @@ export interface SpectrumExpressionDataSource {
   // if it's bulk or max. Anything else should fail in this case.
   // If locationIndex is >= 0 then we assume it's just requesting a specific spectrum, in which case
   // readType should be normal or dwell, anything else should fail
-  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): SpectrumValues;
+  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): Observable<SpectrumValues>;
   locationsWithNormalSpectra: number;
 }
 
 export class SpectrumExpressionParser {
-  constructor(public detectors: string[]) {}
+  private _exprTerms: Map<string, SpectrumValues> = new Map<string, SpectrumValues>();
 
-  getSpectrumValues(
-    spectrumSource: SpectrumExpressionDataSource,
+  constructor(
+    private _scanId: string,
+    private _locationIndexes: number[],
+    private _readType: SpectrumType,
+    private _countsPerMin: boolean,
+    private _countsPerPMC: boolean,
+    private _detectors: string[],
+    private _allLines: string[],
+    private _spectrumRemoteSvc: SpectrumDataRemoteService) {}
+
+  getSpectrumValues(lineExpression: string, lineLabel: string): Observable<Map<string, SpectrumValues>> {
+    // If we have pre-loaded terms, just process the expression now
+    if (this._exprTerms.size > 0) {
+      return of(this.processLineExpression(this._exprTerms, this._locationIndexes, lineExpression, lineLabel, this._countsPerMin, this._countsPerPMC));
+    }
+
+    return this.preLoadTerms().pipe(
+      map(exprTerms => {
+        this._exprTerms = exprTerms;
+        return this.processLineExpression(this._exprTerms, this._locationIndexes, lineExpression, lineLabel, this._countsPerMin, this._countsPerPMC);
+      })
+    )
+  }
+
+  private preLoadTerms(): Observable<Map<string, SpectrumValues>> {
+    const terms = readTerms(this._allLines, this._detectors);
+
+    const fetcher = new SpectrumTermFetcherRemote(this._spectrumRemoteSvc);
+    return fetcher.fetch(this._scanId, terms, this._readType, this._locationIndexes);
+  }
+
+  // Build it based on the expression... we're pretty tight in what we can interpret, this is not at the moment a general purpose expression evaluator!!
+  // This can return multiple lines, depending on the expression
+  private processLineExpression(
+    exprTerms: Map<string, SpectrumValues>,
     locationIndexes: number[],
     lineExpression: string,
     lineLabel: string,
-    readType: SpectrumType,
     countsPerMin: boolean,
-    countsPerPMC: boolean
-  ): Map<string, SpectrumValues> {
-    // Build it based on the expression... we're pretty tight in what we can interpret, this is not at the moment a general purpose expression evaluator!!
-    // This can return multiple lines, depending on the expression
-    const exprTerms: Map<string, SpectrumValues> = new Map<string, SpectrumValues>();
-
-    for (const exprTerm of this.getTerms(lineExpression)) {
-      if (exprTerm.startsWith("max(")) {
-        const spectrum = this.getMaxTerm(spectrumSource, locationIndexes, lineExpression, exprTerm, readType);
-        if (spectrum) {
-          exprTerms.set(exprTerm, spectrum);
-        }
-      } else if (exprTerm.startsWith("bulk(")) {
-        const spectrum = this.getBulkTerm(spectrumSource, locationIndexes, lineExpression, exprTerm, readType);
-        if (spectrum) {
-          exprTerms.set(exprTerm, spectrum);
-        }
-      }
-      // No need for an error case, getTerms is a hack :) If this becomes a real general purpose parser this will have to change...
-    }
-
+    countsPerPMC: boolean) {
     // Getting back nothing is an error...
     if (exprTerms.size == 0) {
       return exprTerms;
@@ -300,14 +376,12 @@ export class SpectrumExpressionParser {
         spectrum = spectrum.getAsCountsPerMin();
       }
     } else {
-      // Here we expect a single spectrum to have come back, because no outer "combining" functions were found
-      // Fail if this is not the case
-      if (exprTerms.size != 1) {
-        throw new Error("getSpectrumValues ended up with multiple spectra to return");
+      // Here we aren't expecting any of the above complex functionality - we just should find the requested
+      // spectrum in the expression terms we parsed already
+      spectrum = exprTerms.get(lineExpression) || null;
+      if (!spectrum) {
+        throw new Error(`getSpectrumValues did not find spectrum: ${lineExpression}`);
       }
-
-      // The expression must just be pretty basic, eg "bulk(A)" so just return what we have in the terms
-      spectrum = Array.from(exprTerms.values())[0];
 
       if (countsPerMin) {
         spectrum = spectrum.getAsCountsPerMin();
@@ -316,7 +390,7 @@ export class SpectrumExpressionParser {
 
     // Apply counts/PMC if needed
     if (spectrum && countsPerPMC) {
-      spectrum = SpectrumValues.divideBy(spectrum, this.getCountPerPMCDenom(locationIndexes.length, spectrumSource));
+      spectrum = SpectrumValues.divideBy(spectrum, this.getCountPerPMCDenom(locationIndexes.length));
     }
 
     // The one we return should have the label that was specified to begin with!
@@ -327,11 +401,15 @@ export class SpectrumExpressionParser {
     return exprTerms;
   }
 
+  //////////////////////////////////////////////////////////////////////////
+  // Utility functions
+  //////////////////////////////////////////////////////////////////////////
+
   // Simply here to check for 0 - that's a special case meaning use the bulk-sum PMC, in which case we find the number of PMCs
   // that had a normal (or dwell) spectrum
-  private getCountPerPMCDenom(locationCount: number, spectrumSource: SpectrumExpressionDataSource): number {
+  private getCountPerPMCDenom(locationCount: number): number {
     if (locationCount == 0) {
-      return spectrumSource.locationsWithNormalSpectra;
+      return this._spectrumRemoteSvc.getScanNormalSpectraCount(this._scanId);
     }
     return locationCount;
   }
@@ -383,129 +461,5 @@ export class SpectrumExpressionParser {
 
     console.warn('Unknown combine func: "' + func + '" in expression: ' + lineExpression);
     return null;
-  }
-
-  private getBulkTerm(
-    spectrumSource: SpectrumExpressionDataSource,
-    locationIndexes: number[],
-    lineExpression: string,
-    exprTerm: string,
-    readType: SpectrumType
-  ): SpectrumValues | null {
-    return this.getTermSpectra(spectrumSource, locationIndexes, lineExpression, exprTerm, readType, false);
-  }
-
-  private getMaxTerm(
-    spectrumSource: SpectrumExpressionDataSource,
-    locationIndexes: number[],
-    lineExpression: string,
-    exprTerm: string,
-    readType: SpectrumType
-  ): SpectrumValues | null {
-    return this.getTermSpectra(spectrumSource, locationIndexes, lineExpression, exprTerm, readType, true);
-  }
-
-  // Scans lineExpression for terms which are then combined by outer functions. The only possible terms
-  // are the ones in getTerms, basically bulk() and max() of A or B
-  // These are returned in a map containing items: term->spectrum
-  private getTermSpectra(
-    spectrumSource: SpectrumExpressionDataSource,
-    locationIndexes: number[],
-    lineExpression: string,
-    exprTerm: string,
-    readType: SpectrumType,
-    countsPerMinWhenReading: boolean
-  ): SpectrumValues | null {
-    let detector = "";
-
-    for (const det of this.detectors) {
-      const term = "(" + det + ")";
-      if (exprTerm.indexOf(term) >= 0) {
-        detector = det;
-      }
-    }
-
-    if (detector.length <= 0) {
-      throw new Error('getExpressionTerms: bad term: "' + exprTerm + '" in expression: ' + lineExpression);
-    }
-
-    // Retrieve the spectrum this refers to. Note that if locationIndexes is empty, it's a special case where
-    // we're asking for the whole dataset. In this case, we look for the spectrums with expression type BulkSum or MaxValue
-    // instead of processing up all spectra ourselves. This is not only faster, but more accurate, as the sum/max was computed
-    // by PIQUANT in the GDS pipeline
-    // There may be datasets where this is not available, so as a fallback measure we can still calculate bulk sum
-    // for all location indexes
-    const spectra: SpectrumValues[] = [];
-
-    if (locationIndexes.length <= 0) {
-      let datasetSpectrumReadType = SpectrumType.SPECTRUM_UNKNOWN;
-      if (exprTerm.startsWith("bulk(")) {
-        datasetSpectrumReadType = SpectrumType.SPECTRUM_BULK;
-      } else if (exprTerm.startsWith("max(")) {
-        datasetSpectrumReadType = SpectrumType.SPECTRUM_MAX;
-      } else {
-        throw new Error('getExpressionTerms: unknown function in term: "' + exprTerm + '" in expression: ' + lineExpression);
-      }
-
-      let spectrum = spectrumSource.getSpectrum(-1, detector, datasetSpectrumReadType);
-      if (spectrum) {
-        if (countsPerMinWhenReading) {
-          spectrum = spectrum.getAsCountsPerMin();
-        }
-        spectra.push(spectrum);
-      }
-    } else {
-      for (const idx of locationIndexes) {
-        let spectrum: SpectrumValues | null = null;
-        try {
-          spectrum = spectrumSource.getSpectrum(idx, detector, readType);
-        } catch (e) {
-          // If we fail to read a spectrum, just skip it and continue
-          console.error(e);
-          continue;
-        }
-        if (spectrum) {
-          if (countsPerMinWhenReading) {
-            spectrum = spectrum.getAsCountsPerMin();
-          }
-          spectra.push(spectrum);
-        } else {
-          // It's possible the PMC didn't have a normal spectrum, or A/B, don't fail the whole thing just because of this
-          console.warn("Location index: " + idx + " no spectrum found for detector: " + detector + ", readtype: " + readType);
-        }
-      }
-    }
-
-    // depending on if we're max or bulk, combine the spectra we just read
-    let spectrumToStore: SpectrumValues | null = null;
-    if (exprTerm.startsWith("max(")) {
-      // With max we normalise BEFORE (see countsPerMinWhenReading)
-      spectrumToStore = SpectrumValues.maxValue(spectra);
-    } else if (exprTerm.startsWith("bulk(")) {
-      spectrumToStore = SpectrumValues.bulkSum(spectra);
-
-      // With bulk sum we normalise AFTER
-    }
-
-    return spectrumToStore;
-  }
-
-  private getTerms(lineExpression: string): string[] {
-    const result = [];
-
-    const toCheck = [];
-    for (const det of this.detectors) {
-      toCheck.push("bulk("+det+")");
-      toCheck.push("max("+det+")");
-    }
-
-    for (const check of toCheck) {
-      const idx = lineExpression.indexOf(check);
-      if (idx >= 0) {
-        result.push(check);
-      }
-    }
-
-    return result;
   }
 }
