@@ -1,18 +1,21 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, Subscription, combineLatest, map, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, combineLatest, map, shareReplay, switchMap } from "rxjs";
 
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { ExpressionDataSource } from "../models/expression-data-source";
 
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
-import { SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumAggregateResp, SpectrumDetectorsReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 
 import { SentryHelper } from "src/app/utils/utils";
 import { AnalysisLayoutService } from "../services/analysis-layout.service";
 import { SpectrumDataService } from "./spectrum-data.service";
 import { APICachedDataService } from "./apicacheddata.service";
+import { SpectrumDataRemoteService, SpectrumExpressionTerms } from "./spectrum-data-remote.service";
+import { SpectrumType } from "src/app/generated-protos/spectrum";
+import { SpectrumValues } from "../../spectrum/models/Spectrum";
 
 
 @Injectable({
@@ -30,7 +33,8 @@ export class EnergyCalibrationService {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
-    private _spectrumDataService: SpectrumDataService
+    private _spectrumDataService: SpectrumDataService,
+    private _spectrumDataRemoteService: SpectrumDataRemoteService
   ) {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
@@ -124,54 +128,25 @@ export class EnergyCalibrationService {
   }
 
   getScanCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
-    return combineLatest([
-      this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
-      this._spectrumDataService.getSpectra(scanId, [], true, false),
-    ]).pipe(
-      map(values => {
-        const metaResp = values[0] as ScanMetaLabelsAndTypesResp;
-        const spectrumResp = values[1] as SpectrumResp;
-
-        const calibration: SpectrumEnergyCalibration[] = [];
-
-        const eVStartMetaIdx = metaResp.metaLabels.indexOf("OFFSET");
-        const eVperChannelMetaIdx = metaResp.metaLabels.indexOf("XPERCHAN");
-
-        if (eVStartMetaIdx > -1 || eVperChannelMetaIdx > -1) {
-          for (const spectrum of spectrumResp.bulkSpectra) {
-            let eVstart = 0;
-            let eVperChannel = 1;
-
-            if (eVStartMetaIdx > -1) {
-              const eVstartMeta = spectrum.meta[eVStartMetaIdx];
-              if (eVstartMeta.fvalue !== undefined) {
-                eVstart = eVstartMeta.fvalue;
-              } else if (eVstartMeta.ivalue !== undefined) {
-                eVstart = eVstartMeta.ivalue;
+    return this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId})).pipe(
+      switchMap(detectorsResp => {
+        return this._spectrumDataRemoteService.getAggregateSpectra(
+            scanId,
+            new SpectrumExpressionTerms(detectorsResp.detectorId, true, false),
+            SpectrumType.SPECTRUM_NORMAL,
+            []
+          ).pipe(
+            map(spectrumAggResp => {
+              const calibrationAgg: SpectrumEnergyCalibration[] = [];
+              for (let s of spectrumAggResp.values()) {
+                calibrationAgg.push(new SpectrumEnergyCalibration(s.offset, s.xPerChan, s.sourceDetectorID))
               }
+              return calibrationAgg;
             }
-
-            if (eVperChannelMetaIdx > -1) {
-              const eVperChannelMeta = spectrum.meta[eVperChannelMetaIdx];
-              if (eVperChannelMeta.fvalue !== undefined) {
-                eVperChannel = eVperChannelMeta.fvalue;
-              } else if (eVperChannelMeta.ivalue !== undefined) {
-                eVperChannel = eVperChannelMeta.ivalue;
-              }
-            }
-
-            calibration.push(new SpectrumEnergyCalibration(eVstart, eVperChannel, spectrum.detector));
-          }
-        } else {
-          if (!this._scanIdsComplainedAbout.has(scanId)) {
-            SentryHelper.logMsg(true, `Scan: ${scanId} did not have OFFSET or XPERCHAN defined`);
-            this._scanIdsComplainedAbout.add(scanId);
-          }
-        }
-
-        return calibration;
-      }),
-      shareReplay(1)
+          ),
+          shareReplay(1)
+        )
+      })
     );
   }
 

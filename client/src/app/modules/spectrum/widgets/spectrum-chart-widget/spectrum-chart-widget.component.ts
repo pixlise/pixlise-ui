@@ -25,18 +25,17 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
 import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
 import { SpectrumFitContainerComponent, SpectrumFitData } from "./spectrum-fit-container/spectrum-fit-container.component";
-import { SpectrumExpressionDataSourceImpl } from "../../models/SpectrumRespDataSource";
 import { RGBA } from "src/app/utils/colours";
 import { SpectrumChartExporter } from "./spectrum-chart-exporter";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 
-import { AnalysisLayoutService, APIDataService, SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, SelectionService, SnackbarService, WidgetDataService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -44,10 +43,9 @@ import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/e
 import { SpectrumDataService } from "src/app/modules/pixlisecore/services/spectrum-data.service";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanIdConverterService } from "src/app/modules/pixlisecore/services/scan-id-converter.service";
-import { SpectrumAggregateReq, SpectrumDetectorsReq } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumDetectorsReq } from "src/app/generated-protos/spectrum-msgs";
 import { SubItemOptionItem } from "src/app/modules/roi/components/roi-item/roi-item.component";
-import { decompressZeroRunLengthEncoding, SpectrumChannels } from "src/app/utils/utils";
-import { environment } from "src/environments/environment";
+import { SpectrumDataRemoteService } from "src/app/modules/pixlisecore/services/spectrum-data-remote.service";
 
 
 @Component({
@@ -84,14 +82,13 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _viewRef: ViewContainerRef,
     private _analysisLayoutService: AnalysisLayoutService,
     private _spectrumService: SpectrumService,
-    private _spectrumDataService: SpectrumDataService,
     private _snackService: SnackbarService,
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
     private _selectionService: SelectionService,
     public _widgetDataService: WidgetDataService,
-    private _dataService: APIDataService,
+    private _spectrumRemoteSvc: SpectrumDataRemoteService,
     private _scanIdConverterService: ScanIdConverterService,
     public dialog: MatDialog,
     public clipboard: Clipboard
@@ -1096,7 +1093,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   private doSpectrumQuery(roiId: string, idxs: number[] | null, roi: RegionSettings, options: string[], readType: SpectrumType) {
     combineLatest([
       this._cachedDataService.getScanDetectors(SpectrumDetectorsReq.create({scanId: roi.region.scanId})),
-      this._spectrumDataService.getSpectra(roi.region.scanId, idxs, true, true),
       this._cachedDataService.getScanList(
         ScanListReq.create({
           searchFilters: { scanId: roi.region.scanId },
@@ -1106,7 +1102,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       // ROIs deliver PMCs in the badly named field
       this._scanIdConverterService.convertScanEntryPMCToIndex(roi.region.scanId, roi.region.scanEntryIndexesEncoded)
     ]).subscribe({
-      next: ([scanDetectorResp, spectrumResp, scanListResp, pmcToIdxResult]) => {
+      next: ([scanDetectorResp, scanListResp, pmcToIdxResult]) => {
         if (pmcToIdxResult.failedPMCs.length > 0) {
           throw new Error(`Spectrum generateLines failed due to bad PMC in ROI - couldn't look up PMCs: ${pmcToIdxResult.failedPMCs}`);
         }
@@ -1117,9 +1113,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         }
 
         // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
-        let values = new Map<string, SpectrumValues>();
-
-        const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
+        //let values = new Map<string, SpectrumValues>();
         const parser = new SpectrumExpressionParser(
           roi.region.scanId,
           pmcToIdxResult.result,
@@ -1128,9 +1122,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.mdl.yAxisCountsPerPMC,
           scanDetectorResp.detectorId,
           options,
-          this._dataService,
-          this._cachedDataService,
-          dataSrc
+          this._spectrumRemoteSvc
         );
 
         const reqs$: Observable<Map<string, SpectrumValues>>[] = [];

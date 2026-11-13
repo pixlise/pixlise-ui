@@ -27,20 +27,20 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Spectrum, SpectrumType } from "src/app/generated-protos/spectrum";
-import { APICachedDataService, APIDataService } from "../../pixlisecore/pixlisecore.module";
-import { SpectrumAggregateReq } from "src/app/generated-protos/spectrum-msgs";
-import { combineLatest, map, Observable, of, switchMap, throwError } from "rxjs";
-import { ScanMetaLabelsAndTypesReq } from "src/app/generated-protos/scan-msgs";
-import { environment } from "src/environments/environment";
-import { readTerms, SpectrumTermFetcher, SpectrumTermFetcherLocal, SpectrumTermFetcherRemote } from "./SpectrumFetch";
+import { SpectrumType } from "src/app/generated-protos/spectrum";
+import { map, Observable, of } from "rxjs";
+import { readTerms, SpectrumTermFetcherRemote } from "./SpectrumFetch";
+import { SpectrumDataRemoteService } from "../../pixlisecore/services/spectrum-data-remote.service";
 
 export class SpectrumValues {
   constructor(
-    public values: Float32Array,
-    public maxValue: number,
+    public values: Float32Array, // Counts (as float in case we're doing some weird log display stuff)
+    public maxValue: number, // The max value that appears in values array
     public sourceDetectorID: string,
-    public liveTimeSec: number
+    public liveTimeSec: number, // Integration time
+    public realTimeSec: number, // Integration time
+    public offset: number, // Energy calibration
+    public xPerChan: number // Energy calibration
   ) {}
 
   // Returns the sum of all spectra passed in
@@ -55,7 +55,16 @@ export class SpectrumValues {
     if (!firstSpectra) {
       return null;
     }
-    const result = new SpectrumValues(new Float32Array(firstSpectra.values), firstSpectra.maxValue, firstSpectra.sourceDetectorID, firstSpectra.liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(firstSpectra.values),
+      firstSpectra.maxValue,
+      firstSpectra.sourceDetectorID,
+      firstSpectra.liveTimeSec,
+      firstSpectra.realTimeSec,
+      firstSpectra.offset,
+      firstSpectra.xPerChan
+    );
+
     for (let c = 1; c < spectra.length; c++) {
       const spectraPoints = spectra[c];
       if (!spectraPoints) {
@@ -85,8 +94,19 @@ export class SpectrumValues {
       return null;
     }
 
-    const result = new SpectrumValues(new Float32Array(spectra[0].values), spectra[0].maxValue, spectra[0].sourceDetectorID, spectra[0].liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(spectra[0].values),
+      spectra[0].maxValue,
+      spectra[0].sourceDetectorID,
+      spectra[0].liveTimeSec,
+      spectra[0].realTimeSec,
+      spectra[0].offset,
+      spectra[0].xPerChan
+    );
+
     let totalLiveTime = spectra[0].liveTimeSec;
+    let totalOffset = spectra[0].offset;
+    let totalXPerChan = spectra[0].xPerChan;
 
     for (let c = 1; c < spectra.length; c++) {
       for (let i = 0; i < spectra[c].values.length; i++) {
@@ -100,10 +120,14 @@ export class SpectrumValues {
       }
 
       totalLiveTime += spectra[c].liveTimeSec;
+      totalOffset += spectra[c].offset;
+      totalXPerChan += spectra[c].xPerChan;
     }
 
     // Work out average live time
     result.liveTimeSec = totalLiveTime / spectra.length;
+    result.offset = totalOffset / spectra.length;
+    result.xPerChan = totalXPerChan / spectra.length;
 
     // Now that we have all the values decided, we can find the max value again
     result.maxValue = result.values[0];
@@ -123,8 +147,19 @@ export class SpectrumValues {
       return null;
     }
 
-    const result = new SpectrumValues(new Float32Array(spectra[0].values), spectra[0].maxValue, spectra[0].sourceDetectorID, spectra[0].liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(spectra[0].values),
+      spectra[0].maxValue,
+      spectra[0].sourceDetectorID,
+      spectra[0].liveTimeSec,
+      spectra[0].realTimeSec,
+      spectra[0].offset,
+      spectra[0].xPerChan
+    );
+
     let totalLiveTime = spectra[0].liveTimeSec;
+    let totalOffset = spectra[0].offset;
+    let totalXPerChan = spectra[0].xPerChan;
 
     for (let c = 1; c < spectra.length; c++) {
       for (let i = 0; i < spectra[c].values.length; i++) {
@@ -143,10 +178,14 @@ export class SpectrumValues {
       }
 
       totalLiveTime += spectra[c].liveTimeSec;
+      totalOffset += spectra[c].offset;
+      totalXPerChan += spectra[c].xPerChan;
     }
 
     // Work out average live time
     result.liveTimeSec = totalLiveTime / spectra.length;
+    result.offset = totalOffset / spectra.length;
+    result.xPerChan = totalXPerChan / spectra.length;
 
     return result;
   }
@@ -161,7 +200,11 @@ export class SpectrumValues {
       new Float32Array(A.values.length),
       0,
       A.sourceDetectorID == B.sourceDetectorID ? A.sourceDetectorID : "", // TODO: use Combined in this case?
-      (A.liveTimeSec + B.liveTimeSec) / 2
+      (A.liveTimeSec + B.liveTimeSec) / 2,
+      (A.realTimeSec + B.realTimeSec) / 2,
+      // TODO: Do we have anything better to do for the calibration??
+      A.offset,
+      A.xPerChan
     );
 
     for (let c = 0; c < B.values.length; c++) {
@@ -184,7 +227,11 @@ export class SpectrumValues {
       new Float32Array(checkDetector.values.length),
       0,
       checkDetector.sourceDetectorID, // Return check detector
-      checkDetector.liveTimeSec // Returns check detector livetime
+      checkDetector.liveTimeSec, // Returns check detector livetime
+      checkDetector.realTimeSec, // Returns check detector realtime
+      // TODO: Do we have anything better to do for the calibration??
+      checkDetector.offset,
+      checkDetector.xPerChan
     );
 
     for (let c = 0; c < checkDetector.values.length; c++) {
@@ -216,7 +263,10 @@ export class SpectrumValues {
       new Float32Array(this.values),
       Math.floor((sec * this.maxValue) / this.liveTimeSec),
       this.sourceDetectorID,
-      sec /*by definition*/
+      sec, /*livetime by definition*/
+      sec, /*realtime by definition*/
+      this.offset, // Not affected by integration time
+      this.xPerChan // Not affected by integration time
     );
 
     for (let c = 0; c < result.values.length; c++) {
@@ -234,7 +284,15 @@ export class SpectrumValues {
       return spectrum;
     }
 
-    const result = new SpectrumValues(new Float32Array(spectrum.values), spectrum.maxValue / denominator, spectrum.sourceDetectorID, spectrum.liveTimeSec);
+    const result = new SpectrumValues(
+      new Float32Array(spectrum.values),
+      spectrum.maxValue / denominator,
+      spectrum.sourceDetectorID,
+      spectrum.liveTimeSec,
+      spectrum.realTimeSec,
+      spectrum.offset,
+      spectrum.xPerChan
+    );
 
     // Divide each count
     for (let c = 0; c < result.values.length; c++) {
@@ -250,7 +308,7 @@ export interface SpectrumExpressionDataSource {
   // if it's bulk or max. Anything else should fail in this case.
   // If locationIndex is >= 0 then we assume it's just requesting a specific spectrum, in which case
   // readType should be normal or dwell, anything else should fail
-  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): SpectrumValues;
+  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): Observable<SpectrumValues>;
   locationsWithNormalSpectra: number;
 }
 
@@ -265,9 +323,7 @@ export class SpectrumExpressionParser {
     private _countsPerPMC: boolean,
     private _detectors: string[],
     private _allLines: string[],
-    private _dataService: APIDataService,
-    private _cachedDataService: APICachedDataService,
-    private _spectrumSource: SpectrumExpressionDataSource) {}
+    private _spectrumRemoteSvc: SpectrumDataRemoteService) {}
 
   getSpectrumValues(lineExpression: string, lineLabel: string): Observable<Map<string, SpectrumValues>> {
     // If we have pre-loaded terms, just process the expression now
@@ -286,13 +342,7 @@ export class SpectrumExpressionParser {
   private preLoadTerms(): Observable<Map<string, SpectrumValues>> {
     const terms = readTerms(this._allLines, this._detectors);
 
-    let fetcher: SpectrumTermFetcher;
-    if (environment.readAggregateSpectraFromBackEnd) {
-      fetcher = new SpectrumTermFetcherRemote(this._dataService, this._cachedDataService);
-    } else {
-      fetcher = new SpectrumTermFetcherLocal(this._spectrumSource);
-    }
-
+    const fetcher = new SpectrumTermFetcherRemote(this._spectrumRemoteSvc);
     return fetcher.fetch(this._scanId, terms, this._readType, this._locationIndexes);
   }
 
@@ -359,7 +409,7 @@ export class SpectrumExpressionParser {
   // that had a normal (or dwell) spectrum
   private getCountPerPMCDenom(locationCount: number): number {
     if (locationCount == 0) {
-      return this._spectrumSource.locationsWithNormalSpectra;
+      return this._spectrumRemoteSvc.getScanNormalSpectraCount(this._scanId);
     }
     return locationCount;
   }
