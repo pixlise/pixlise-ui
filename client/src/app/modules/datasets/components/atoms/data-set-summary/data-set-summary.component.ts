@@ -52,10 +52,13 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   private _title: string = "";
   private _missingData: string = "";
   private _thumbnail: string = "";
+  private _visible: boolean = false;
+  private _imageRequested: boolean = false;
 
   constructor(private _endpointsService: APIEndpointsService) {}
 
   ngOnInit() {
+    // Set this tile up!
     this.generateTitle();
   }
 
@@ -80,22 +83,45 @@ export class DataSetSummaryComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    if (!this._visible) {
+      return;
+    }
+
     if (changes["defaultImage"] && this.defaultImage && !this._thumbnail) {
-      // Load the thumbnail sized one
-      let loadImg = this.defaultImage;
-      /*const dotpos = loadImg.lastIndexOf(".");
-      loadImg = loadImg.substring(0, dotpos - 1) + "-width240" + loadImg.substring(dotpos);*/
-      loadImg += "?minwidth=240";
-      this._subs.add(
-        this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
-          this._thumbnail = img.src;
-        })
-      );
+      this.loadImage();
     }
 
     if (changes["summary"]) {
       this.generateTitle(changes["summary"].currentValue);
     }
+  }
+
+  onVisibilityChange(isVisible: boolean): void {
+    if (isVisible) {
+      this._visible = true;
+      this.loadImage();
+    }
+    
+    // Once we've been marked as visible, we don't care
+  }
+
+  private loadImage() {
+    if (!this.defaultImage || this._imageRequested) {
+      return;
+    }
+
+    this._imageRequested = true;
+
+    // Load the thumbnail sized one
+    let loadImg = this.defaultImage;
+    /*const dotpos = loadImg.lastIndexOf(".");
+    loadImg = loadImg.substring(0, dotpos - 1) + "-width240" + loadImg.substring(dotpos);*/
+    loadImg += "?minwidth=240";
+    this._subs.add(
+      this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
+        this._thumbnail = img.src;
+      })
+    );
   }
 
   get tileImage(): string {

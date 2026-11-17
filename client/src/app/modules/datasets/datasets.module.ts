@@ -16,6 +16,7 @@ import { TagsModule } from "../tags/tags.module";
 import { MarkdownModule } from "ngx-markdown";
 import { MatMenuModule } from "@angular/material/menu";
 import { DuplicateWorkspaceDialogComponent } from "./components/atoms/duplicate-workspace-dialog/duplicate-workspace-dialog.component";
+import { InViewportDirective } from "./directives/in-viewport.directive";
 
 
 const APP_ROUTES: Routes = [
@@ -58,6 +59,7 @@ const APP_ROUTES: Routes = [
     MatMenuModule,
     PIXLISECoreModule,
     TagsModule,
+    InViewportDirective,
     NgxDropzoneModule,
     MarkdownModule,
     RouterModule.forChild(APP_ROUTES),
