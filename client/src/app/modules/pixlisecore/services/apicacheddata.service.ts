@@ -37,7 +37,7 @@ import { VariogramPoint } from "src/app/modules/scatterplots/widgets/variogram-w
 import { Image3DModelPointsReq, Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
 import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
 import { ImageScanEntryDisplayElementsGetReq, ImageScanEntryDisplayElementsGetResp } from "src/app/generated-protos/scan-entry-polygon-msgs";
-import { SpectrumAggregateReq, SpectrumAggregateResp, SpectrumDetectorsReq, SpectrumDetectorsResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumAggregateReq, SpectrumAggregateResp, SpectrumDetectorsReq, SpectrumDetectorsResp, SpectrumRangeCalcReq, SpectrumRangeCalcResp } from "src/app/generated-protos/spectrum-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -84,6 +84,7 @@ export class APICachedDataService {
   private _imageScanEntryDisplayElemsReqMap = new Map<string, Observable<ImageScanEntryDisplayElementsGetResp>>();
   private _spectrumDetectorsReqMap = new Map<string, Observable<SpectrumDetectorsResp>>();
   private _spectrumAggregateReqMap = new Map<string, Observable<SpectrumAggregateResp>>();
+  private _spectrumRangeCalcReqMap = new Map<string, Observable<SpectrumRangeCalcResp>>();
 
   // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
   public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
@@ -171,6 +172,7 @@ export class APICachedDataService {
         this._scanBeamLocationReqMap.delete(id);
         this._spectrumDetectorsReqMap.delete(id);
         this._spectrumAggregateReqMap.delete(id);
+        this._spectrumRangeCalcReqMap.delete(id);
       }
     }
 
@@ -782,6 +784,21 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this.addToCache(cacheId, "spectrumAggregateReqMap", result, this._spectrumAggregateReqMap);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getSpectrumRangeWithOp(req: SpectrumRangeCalcReq): Observable<SpectrumRangeCalcResp> {
+    const cacheId = JSON.stringify(SpectrumRangeCalcReq.toJSON(req));
+    let result = this._spectrumRangeCalcReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendSpectrumRangeCalcRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this.addToCache(cacheId, "getSpectrumRangeWithOp", result, this._spectrumRangeCalcReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
