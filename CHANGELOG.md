@@ -1,8 +1,15 @@
-## 4.104.0 (LATEST)
+## 4.105.0 (LATEST)
+
+### New Feature
+- New "Files" tab on Datasets page right sidebar
+  - PDF, PPT, DOCX, and image files can be directly previewed and downloaded from here
+  - Permissions are tied to dataset, so anyone who can edit the dataset can attach files and anyone who can view the dataset can view files
+
+
+## 4.104.0 (2026-11-05)
 
 ### New Features
 - Spectrum data for the entire scan is no longer required to be downloaded from the server. This is to allow viewing larger scans in future. This was enabled by adding the ability to run expressions on the back-end (which is not yet enabled!), and adding a new spectrum query that can return the sum of any spectra requested (by index, read type, detector name). When viewing the spectrum chart PIXLISE will no longer download and add the spectra up in the browser, but will download an added-up spectrum from the back-end instead. Until expressions are enabled to run on the back-end however, we will still download spectra for that purpose. This is a feature that can be toggled off if required.
-
 ## 4.103.0 (2026-10-28)
 
 ### Bug Fixes

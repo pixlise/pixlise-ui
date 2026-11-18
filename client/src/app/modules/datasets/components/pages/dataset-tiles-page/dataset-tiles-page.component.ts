@@ -215,7 +215,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   selectedScanDescription: string = "";
   selectedScanTags: string[] = [];
 
-  selectedTab: "description" | "details" | "workspaces" | "snapshots" =
+  selectedTab: "description" | "details" | "files" | "workspaces" | "snapshots" =
     "description";
   descriptionModes: string[] = ["View", "Edit"];
   descriptionMode: "View" | "Edit" = "View";
@@ -390,6 +390,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   set searchType(value: "datasets" | "workspaces") {
     this._searchType = value;
+    if (value === "workspaces" && this.selectedTab === "files") {
+      this.selectedTab = "description";
+    }
     this.setListingMode(value);
     this.clearSelection();
     this.onSearch();

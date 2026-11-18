@@ -482,6 +482,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="tab-switcher">
           <span class="tab-btn" [class.active]="selectedTab === 'description'" (click)="selectedTab = 'description'">Description</span>
           <span class="tab-btn" [class.active]="selectedTab === 'details'" (click)="selectedTab = 'details'">Details</span>
+          <span class="tab-btn" [class.active]="selectedTab === 'files'" (click)="selectedTab = 'files'">Files</span>
           <!-- <span class="tab-btn" [class.active]="selectedTab === 'workspaces'" (click)="selectedTab = 'workspaces'">Workspaces</span> -->
         </div>
         <div *ngIf="selectedTab === 'description'" class="tab description">
@@ -557,6 +558,9 @@ POSSIBILITY OF SUCH DAMAGE.
               </div>
             </ng-template>
           </div>
+        </div>
+        <div *ngIf="selectedTab === 'files'" class="tab files">
+          <scan-files [scanId]="selectedScan.id" [canEdit]="(userCanEdit && selectedScan.owner?.canEdit) || false"></scan-files>
         </div>
       </div>
     </div>

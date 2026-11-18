@@ -296,6 +296,8 @@ export class EnvConfigurationInitService {
                 allowedList: [
                   APIPaths.getWithHost(APIPaths.api_websocket),
                   APIPaths.getWithHost(APIPaths.api_scan),
+                  APIPaths.getWithHost(APIPaths.api_scanfiles),
+                  APIPaths.getWithHost(APIPaths.api_scanfiles + "/*"),
                   APIPaths.getWithHost(APIPaths.api_images),
                   APIPaths.getWithHost(APIPaths.api_images + "/*"),
                   APIPaths.getWithHost(APIPaths.api_memoise),

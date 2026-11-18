@@ -1,0 +1,196 @@
+<div
+  class="scan-files"
+  [class.dragging]="dragging"
+  (dragenter)="onDragEnter($event)"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)">
+  <div class="files-toolbar">
+    <div class="search-box-group">
+      <div class="search-btn-container">
+        <img src="assets/button-icons/search.svg" />
+      </div>
+      <input class="search-box" [(ngModel)]="searchText" type="text" autocomplete="off" data-lpignore="true" placeholder="Search files..." />
+      <div class="filter-btn-container">
+        <icon-button
+          class="search-filter-btn"
+          title="Sort & Filter"
+          [matMenuTriggerFor]="filterMenu"
+          type="filter"
+          [hasBackground]="false"
+          [hoverYellow]="true"
+          [size]="24"
+          [notificationCount]="activeFilterCount"
+          badgeText="filters active"></icon-button>
+      </div>
+    </div>
+  </div>
+
+  <mat-menu #filterMenu="matMenu" class="scan-files-menu">
+    <div class="scan-files-filter-menu" (click)="$event.stopPropagation()">
+      <div class="menu-section">
+        <div class="section-header">
+          <div class="txt-dlg-heading">Sort</div>
+          <push-button class="clear-btn" buttonStyle="outline-small" [disabled]="!canClear" (onClick)="onClearFilters()" title="Clear filters"
+            >Clear</push-button
+          >
+        </div>
+        <div class="chip-row">
+          <button type="button" class="chip" [class.active]="sortField === 'name'" (click)="onSortBy('name')">
+            <span>Name</span><img *ngIf="sortField === 'name'" [src]="sortAsc ? 'assets/button-icons/arrow-up.svg' : 'assets/button-icons/arrow-down.svg'" />
+          </button>
+          <button type="button" class="chip" [class.active]="sortField === 'date'" (click)="onSortBy('date')">
+            <span>Date</span><img *ngIf="sortField === 'date'" [src]="sortAsc ? 'assets/button-icons/arrow-up.svg' : 'assets/button-icons/arrow-down.svg'" />
+          </button>
+          <button type="button" class="chip" [class.active]="sortField === 'size'" (click)="onSortBy('size')">
+            <span>Size</span><img *ngIf="sortField === 'size'" [src]="sortAsc ? 'assets/button-icons/arrow-up.svg' : 'assets/button-icons/arrow-down.svg'" />
+          </button>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <div class="txt-dlg-heading">Date Added</div>
+        <div class="chip-row">
+          <button type="button" class="chip" [class.active]="filterDate === 'any'" (click)="filterDate = 'any'">Any</button>
+          <button type="button" class="chip" [class.active]="filterDate === '7d'" (click)="filterDate = '7d'">7 days</button>
+          <button type="button" class="chip" [class.active]="filterDate === '30d'" (click)="filterDate = '30d'">30 days</button>
+          <button type="button" class="chip" [class.active]="filterDate === '1y'" (click)="filterDate = '1y'">1 year</button>
+        </div>
+      </div>
+
+      <div *ngIf="types.length > 1" class="menu-section">
+        <div class="txt-dlg-heading">Type</div>
+        <div class="option-row" *ngFor="let type of types">
+          <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="filterTypes.has(type)"
+            (onToggle)="onToggleType(type)"></two-state-icon-button>
+          <span class="option-label type" (click)="onToggleType(type)">{{ type }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="authors.length > 0" class="menu-section">
+        <div class="txt-dlg-heading">Author</div>
+        <div class="option-row" *ngFor="let author of authors">
+          <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="filterAuthorIds.has(author.id)"
+            (onToggle)="onToggleAuthor(author.id)"></two-state-icon-button>
+          <span class="option-label" (click)="onToggleAuthor(author.id)">{{ author.name }}</span>
+        </div>
+      </div>
+    </div>
+  </mat-menu>
+
+  <div *ngIf="uploads.length > 0" class="uploads">
+    <div *ngFor="let upload of uploads" class="upload" [class.failed]="upload.error">
+      <div class="upload-row">
+        <span class="upload-name" [title]="upload.name">{{ upload.name }}</span>
+        <span *ngIf="!upload.error" class="upload-percent">{{ upload.percent < 100 ? upload.percent + "%" : "Saving..." }}</span>
+        <mat-icon *ngIf="upload.error" class="dismiss" title="Dismiss" (click)="onDismissUpload(upload)">close</mat-icon>
+      </div>
+      <div *ngIf="!upload.error" class="progress"><div class="bar" [style.width.%]="upload.percent"></div></div>
+      <div *ngIf="upload.error" class="upload-error">{{ upload.error }}</div>
+    </div>
+  </div>
+
+  <div class="file-list">
+    <div *ngIf="loading" class="status"><wait-spinner></wait-spinner></div>
+    <div *ngIf="!loading && errorText" class="status">
+      <span>{{ errorText }}</span>
+      <push-button buttonStyle="gray" (onClick)="refresh()">Retry</push-button>
+    </div>
+    <div *ngIf="!loading && !errorText && files.length <= 0" class="status empty">
+      <mat-icon>folder_open</mat-icon>
+      <span class="empty-title">No files attached to this scan</span>
+      <span *ngIf="canEdit">Drag and drop files here, or use Add Files.</span>
+    </div>
+    <div *ngIf="!loading && files.length > 0 && filteredFiles.length <= 0" class="status">No files match your search or filters</div>
+
+    <div
+      *ngFor="let file of filteredFiles; trackBy: trackFile"
+      class="file-row"
+      [class.editing]="editingId === file.id"
+      (click)="onPreview(file)">
+      <div class="file-type {{ getKind(file) }}">
+        <span class="file-ext">{{ getExtension(file) }}</span>
+        <span class="file-size">{{ getSize(file) }}</span>
+      </div>
+
+      <div *ngIf="editingId !== file.id" class="file-info">
+        <span class="file-name" [title]="getDisplayName(file)">{{ getDisplayName(file) }}</span>
+        <span class="file-meta">
+          <user-icon class="file-author-icon" [userId]="file.creatorUserId" [defaultToCurrentUser]="false" size="16px"></user-icon>
+          <span class="file-author" [title]="file.creator?.name || ''">{{ file.creator?.name || "Unknown" }}</span>
+          <span class="file-date">{{ file.createdUnixSec * 1000 | date: "d MMM y" }}</span>
+        </span>
+        <span *ngIf="file.description" class="file-description" [title]="file.description">{{ file.description }}</span>
+      </div>
+
+      <div *ngIf="editingId === file.id" class="file-info" (click)="$event.stopPropagation()">
+        <input
+          class="edit-field"
+          [(ngModel)]="editName"
+          (keyup.enter)="onSaveEdit(file)"
+          (keyup.escape)="onCancelEdit()"
+          type="text"
+          maxlength="255"
+          autocomplete="off"
+          data-lpignore="true"
+          placeholder="File Name" />
+        <input
+          class="edit-field"
+          [(ngModel)]="editDescription"
+          (keyup.enter)="onSaveEdit(file)"
+          (keyup.escape)="onCancelEdit()"
+          type="text"
+          maxlength="2000"
+          autocomplete="off"
+          data-lpignore="true"
+          placeholder="Description (optional)" />
+      </div>
+
+      <div *ngIf="editingId !== file.id" class="file-actions" (click)="$event.stopPropagation()">
+        <div class="inline-actions">
+          <wait-spinner *ngIf="downloadingIds.has(file.id)" class="downloading"></wait-spinner>
+          <mat-icon *ngIf="!downloadingIds.has(file.id)" class="file-action" title="Download" (click)="onDownload(file)">download</mat-icon>
+          <ng-container *ngIf="canEdit">
+            <mat-icon class="file-action" title="Rename or edit description" (click)="onEdit(file)">edit</mat-icon>
+            <mat-icon class="file-action" title="Delete" (click)="onDelete(file)">delete</mat-icon>
+          </ng-container>
+        </div>
+
+        <mat-icon class="file-action menu-trigger" title="File actions" [matMenuTriggerFor]="fileMenu">more_vert</mat-icon>
+        <mat-menu #fileMenu="matMenu" class="scan-files-menu">
+          <button mat-menu-item [disabled]="downloadingIds.has(file.id)" (click)="onDownload(file)">
+            <mat-icon>download</mat-icon><span>Download</span>
+          </button>
+          <ng-container *ngIf="canEdit">
+            <button mat-menu-item (click)="onEdit(file)"><mat-icon>edit</mat-icon><span>Edit</span></button>
+            <button mat-menu-item (click)="onDelete(file)"><mat-icon>delete</mat-icon><span>Delete</span></button>
+          </ng-container>
+        </mat-menu>
+      </div>
+
+      <div *ngIf="editingId === file.id" class="file-actions" (click)="$event.stopPropagation()">
+        <mat-icon class="file-action" [class.disabled]="saving || !editName.trim()" title="Save" (click)="onSaveEdit(file)">check</mat-icon>
+        <mat-icon class="file-action" title="Cancel" (click)="onCancelEdit()">close</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <div class="files-footer">
+    <push-button *ngIf="canEdit" class="add-files-btn" buttonStyle="yellow" title="Attach files to this scan" (onClick)="fileInput.click()">
+      <span class="add-files-label"><mat-icon>add</mat-icon>Add Files</span>
+    </push-button>
+    <input #fileInput class="file-input" type="file" multiple (change)="onFilesChosen($event)" />
+    <span class="file-count">{{ fileCountText }}</span>
+  </div>
+
+  <div *ngIf="dragging" class="drop-overlay">
+    <mat-icon>upload_file</mat-icon>
+    <span>Drop files to attach them to this scan</span>
+  </div>
+</div>

@@ -1,0 +1,49 @@
+<div class="scan-file-preview">
+  <div class="preview-header">
+    <div class="file-title">
+      <span class="file-name" [title]="displayName">{{ displayName }}</span>
+      <div class="file-meta">
+        <user-icon *ngIf="file.creatorUserId" [userId]="file.creatorUserId" [defaultToCurrentUser]="false" size="16px"></user-icon>
+        <span *ngIf="file.creator?.name">{{ file.creator?.name }}</span>
+        <span>{{ file.createdUnixSec * 1000 | date: "medium" }}</span>
+        <span>{{ fileSize }}</span>
+      </div>
+    </div>
+    <mat-icon class="header-btn" title="Close" (click)="onClose()">close</mat-icon>
+  </div>
+
+  <div class="preview-body {{ kind }}">
+    <div *ngIf="loading" class="preview-status"><wait-spinner></wait-spinner></div>
+    <div *ngIf="!loading && statusText" class="preview-status">
+      <mat-icon>description</mat-icon>
+      <span>{{ statusText }}</span>
+    </div>
+
+    <iframe *ngIf="frameUrl" class="pdf-frame" [src]="frameUrl" title="PDF preview"></iframe>
+    <img *ngIf="mediaUrl && kind === 'image'" class="image-preview" [src]="mediaUrl" [alt]="displayName" />
+    <video *ngIf="mediaUrl && kind === 'video'" class="video-preview" [src]="mediaUrl" controls></video>
+    <audio *ngIf="mediaUrl && kind === 'audio'" [src]="mediaUrl" controls></audio>
+
+    <ng-container *ngIf="text">
+      <div *ngIf="textTruncated" class="truncated">Only the start of this file is shown. Download it to view everything.</div>
+      <markdown *ngIf="kind === 'markdown'" class="markdown-preview" [data]="text"></markdown>
+      <pre *ngIf="kind === 'text'" class="text-preview">{{ text }}</pre>
+    </ng-container>
+
+    <div #docContainer class="doc-container" [class.visible]="(kind === 'docx' || kind === 'pptx') && !statusText"></div>
+  </div>
+
+  <div class="preview-footer">
+    <div class="file-details">
+      <div *ngIf="file.description" class="file-description">{{ file.description }}</div>
+    </div>
+    <div class="footer-buttons">
+      <ng-container *ngIf="data.files.length > 1">
+        <mat-icon class="header-btn" [class.disabled]="!hasPrevious" title="Previous file" (click)="onStep(-1)">chevron_left</mat-icon>
+        <span class="file-count">{{ fileIndex + 1 }} / {{ data.files.length }}</span>
+        <mat-icon class="header-btn" [class.disabled]="!hasNext" title="Next file" (click)="onStep(1)">chevron_right</mat-icon>
+      </ng-container>
+      <push-button buttonStyle="yellow" (onClick)="onDownload()">Download</push-button>
+    </div>
+  </div>
+</div>
