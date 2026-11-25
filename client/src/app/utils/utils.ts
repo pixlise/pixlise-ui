@@ -294,7 +294,7 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
   return xys;
 }
 
-export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
+export function setsEqual<T>(a: Set<T>|undefined|null, b: Set<T>|undefined|null): boolean {
   if (!a || !b) {
     return false; // If we are passed undefined or null sets, stop here
   }

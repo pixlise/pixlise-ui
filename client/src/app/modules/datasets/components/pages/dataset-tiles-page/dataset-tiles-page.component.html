@@ -170,21 +170,23 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <div class="summary-container">
-    <div *ngIf="!errorString && !loading && datasetsMode" class="scrollable">
-      <div class="tiles" (onClick)="onClickTileArea()">
-        <data-set-summary
-          *ngFor="let item of filteredScans; let i = index; trackBy: trackScansBy"
-          [walkthroughId]="i === 0 ? 'datasets-first-tile' : ''"
-          (walkthroughNext)="onSelect(item)"
-          [summary]="item"
-          [defaultImage]="scanDefaultImages.get(item.id)"
-          [selected]="selectedScan"
-          [isMultiSelected]="newWorkspaceSelectedScans.has(item.id)"
-          (onSelect)="onSelect($event)"
-          (onCtrlSelect)="onMultiSelectScan($event)">
-        </data-set-summary>
+    @if (!errorString && !loading && datasetsMode) {
+      <div class="scrollable">
+        <div class="tiles" (onClick)="onClickTileArea()">
+          <data-set-summary
+            *ngFor="let item of filteredScans; let i = index; trackBy: trackScansBy"
+            [walkthroughId]="i === 0 ? 'datasets-first-tile' : ''"
+            (walkthroughNext)="onSelect(item)"
+            [summary]="item"
+            [defaultImage]="scanDefaultImages.get(item.id)"
+            [selected]="selectedScan"
+            [isMultiSelected]="newWorkspaceSelectedScans.has(item.id)"
+            (onSelect)="onSelect($event)"
+            (onCtrlSelect)="onMultiSelectScan($event)">
+          </data-set-summary>
+        </div>
       </div>
-    </div>
+    }
 
     <div class="workspaces-listing" *ngIf="!errorString && !loading && workspacesMode">
       <div class="workspace-summary-headers">
