@@ -1,4 +1,4 @@
-## 4.104.0 (LATEST)
+## 5.0.0 (LATEST)
 
 ### New features
 - At long last we've now got a generic "job runner" capability to the PIXLISE back-end. Jobs can be scheduled to run periodically or on downlink. Users who have access will now see a new "Job Manager" menu item on their user menu (top-right of PIXLISE once logged in). All job running functionality has been converted to use this and the job management page will be the primary way to make sense of what is being run. Going forward, auto-quants now need to be configured as scheduled jobs, so if they are misconfigured we won't see them generated! The job runner is able to calculate quantifications using PIQUANT, calculate and "memoise" Lua expression outputs (thereby removing that burden from the PIXLISE client and running it single-threaded in the browser!) and the newest addition:
@@ -6,16 +6,20 @@
 - Configure source code repositories - currently only tested with Github, but you can configure a private repository containing your Python code. The id generated can be added to a scheduled Python job.
 - Scheduled jobs can be run manually using the Run Job button, and it will ask for any required parameters
 - Jobs are run on separate EC2 virtual machines in the PIXLISE back-end so as not to hold up processing of requests of users logged in to PIXLISE. These virtual machines run for a configurable period then shut down to save costs. This is done differently to how PIQUANT previously ran, and they start up slower, but this new method should eliminate a lot of other overheads to running PIXLISE. This is part of the long term goal of significantly reducing monthly running costs.
+- PIXLISE now supports uploading larger scan files using same mechanism as the multi-part image uploader. This is intended to allow large scans from Bruker or other devices. Support for importing larger quantifications is also coming using the same multi-part uploader.
+- Spectrum range requests are also now handled by the back-end. This means larger scans with more points than we could handle previously can work, and if points are selected, their sum spectrum is calculated on the back-end, further reducing the need to download all spectra to the web browser.
+- Images on the dataset tiles screen are now "lazy-loaded" because we have almost 500 scans now.
 
 ### Bug Fixes
 - User icons (displayed on various parts of PIXLISE) could go hay-wire and download the list of users in an endless loop if one of the user ids wasn't recognised
+- Name of Fe2O3H2O fixed in RGBU mineral display
 
 ## 4.106.0 (2026-11-13)
 
 ### New Features
 - Spectrum data was still being downloaded for some obscure cases and the exporter was broken by the last release. Now there is no toggle switch left: all code related to displaying spectra, getting a spectrum calibration or exporting bulk/max spectra uses the new server-side aggregation feature. All spectra are still downloaded for local expression running and exporting all spectra cases, but these will be addressed next.
 
-## 4.104.0 (2026-11-13)
+## 4.104.0 (2026-11-06)
 
 ### New Features
 - Spectrum data for the entire scan is no longer required to be downloaded from the server. This is to allow viewing larger scans in future. This was enabled by adding the ability to run expressions on the back-end (which is not yet enabled!), and adding a new spectrum query that can return the sum of any spectra requested (by index, read type, detector name). When viewing the spectrum chart PIXLISE will no longer download and add the spectra up in the browser, but will download an added-up spectrum from the back-end instead. Until expressions are enabled to run on the back-end however, we will still download spectra for that purpose. This is a feature that can be toggled off if required.
