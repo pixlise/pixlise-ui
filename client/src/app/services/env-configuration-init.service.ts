@@ -67,8 +67,6 @@ export class AppConfig {
 
   maxUsersPerOwnershipItem: number = 5; // Max number of users that can be assigned as an editor or user for an ownership item
 
-  hidePIXLDevices: boolean = false; // Show PIXL-EM/FM, JPL and Stonybrook breadboard as import option formats
-
   // Public site settings
   publicSiteConfig: PublicSiteConfig = {
     imagePrefix: "",
@@ -295,6 +293,7 @@ export class EnvConfigurationInitService {
                 // we have to specify which requests to attach to, so:
                 allowedList: [
                   APIPaths.getWithHost(APIPaths.api_websocket),
+                  APIPaths.getWithHost(APIPaths.api_file),
                   APIPaths.getWithHost(APIPaths.api_scan),
                   APIPaths.getWithHost(APIPaths.api_images),
                   APIPaths.getWithHost(APIPaths.api_images + "/*"),

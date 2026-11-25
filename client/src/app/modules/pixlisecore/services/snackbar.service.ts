@@ -199,7 +199,7 @@ export class SnackbarService implements OnDestroy {
     msg!.instance.data.message = message;*/
   }
 
-  closeProgress(id: number, message: string): void {
+  closeProgress(id: number, message: string, details: string, isError: boolean): void {
     if(!this._activeProgressSnapshot.has(id)) {
       return;
     }
@@ -213,6 +213,14 @@ export class SnackbarService implements OnDestroy {
     // this._activeProgress.delete(id);
     this._activeProgressSnapshot.delete(id);
     this.inProgressJobs$.next(this._activeProgressSnapshot.size);
+
+    if (message.length > 0) {
+      if (isError) {
+        this.openError(message, details);
+      } else {
+        this.openSuccess(message, details);
+      }
+    }
   }
 
   clearHistory(): void {

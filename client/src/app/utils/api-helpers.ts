@@ -49,6 +49,7 @@ export class APIPaths {
   public static readonly api_componentVersions = "version-binary";
   public static readonly api_scan = "scan";
   public static readonly api_images = "images";
+  public static readonly api_file = "file";
   public static readonly api_imagedownload = "images/download/";
   public static readonly api_magiclink = "magiclink";
   public static readonly api_memoise = "memoise";

@@ -17,7 +17,7 @@ import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-p
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
-import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp, ScanUploadFormatsReq, ScanUploadFormatsResp } from "src/app/generated-protos/scan-msgs";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
@@ -85,6 +85,7 @@ export class APICachedDataService {
   private _spectrumDetectorsReqMap = new Map<string, Observable<SpectrumDetectorsResp>>();
   private _spectrumAggregateReqMap = new Map<string, Observable<SpectrumAggregateResp>>();
   private _spectrumRangeCalcReqMap = new Map<string, Observable<SpectrumRangeCalcResp>>();
+  private _scanUploadFormatsResp?: Observable<ScanUploadFormatsResp>;
 
   // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
   public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
@@ -800,6 +801,26 @@ export class APICachedDataService {
       // Add it to the map too so a subsequent request will get this
       this.addToCache(cacheId, "getSpectrumRangeWithOp", result, this._spectrumRangeCalcReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getScanUploadFormats(): Observable<ScanUploadFormatsResp> {
+    let result = this._scanUploadFormatsResp;
+
+    if (result === undefined) {
+      const req = ScanUploadFormatsReq.create({});
+      result = this._dataService.sendScanUploadFormatsRequest(req).pipe(shareReplay(1));
+
+      this._scanUploadFormatsResp = result.pipe(
+        catchError(err => {
+          // Remove from cache if it encountered an error
+          console.log(`Response cache cleared for ScanUploadFormatsResp due to: ${err}`);
+          this._scanUploadFormatsResp = undefined;
+          throw err;
+        })
+      );
     }
 
     return result;

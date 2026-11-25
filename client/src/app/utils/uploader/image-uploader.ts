@@ -1,29 +1,27 @@
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { concat, from, Observable, switchMap, tap } from "rxjs";
 
 import { ImageMatchTransform } from "src/app/generated-protos/image";
-import { ImageUploadHttpRequest, ImageUploadHttpPartialInfo } from "src/app/generated-protos/image-msgs";
 
-import { SnackbarService, AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { SnackbarService, AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult, APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIEndpointsService, UploadProgress, UploadStatus } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
-import { getPathBase, httpErrorToString, SDSFields } from "./utils";
+import { getPathBase, SDSFields } from "../utils";
+import { ImageImportReq } from "../../generated-protos/image-msgs";
+import { concat, forkJoin, map, Observable, of, switchMap, throwError } from "rxjs";
 
 
 export class ImageUploader {
   constructor(
-    private _snackService: SnackbarService,
     protected _endpointsService: APIEndpointsService,
-    protected _dialog: MatDialog,
-    protected setWait: ((chunkProgress: number, details?: string) => void)
+    protected _dataService: APIDataService,
+    protected _dialog: MatDialog
   ) {
   }
 
-  // Starts image upload flow, returns an error string (or blank string if no errors)
-  imageUpload(scanId: string, title: string, showMatchedOption: boolean, acceptTypes?: string): void {
+  // Starts image upload flow, returns an observable that reports progress or null if the dialog was cancelled
+  imageUpload(scanId: string, title: string, showMatchedOption: boolean, acceptTypes?: string): Observable<UploadProgress|null> {
     if (!scanId) {
-        this._snackService.openError("No scan id supplied");
-        return;
+      return throwError(() => new UploadProgress("", 0, 0, UploadStatus.US_ERROR, "No scan id supplied"));
     }
 
     if (!acceptTypes) {
@@ -39,23 +37,30 @@ export class ImageUploader {
     dialogConfig.data = new AddCustomImageParameters(acceptTypes, showMatchedOption, title, scanId, true);
     const dialogRef = this._dialog.open(AddCustomImageComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((result: AddCustomImageResult) => {
-      if (!result) {
-        // Cancelled
-        return;
-      }
+    return dialogRef.afterClosed().pipe(
+      switchMap(
+        (result: AddCustomImageResult) => {
+          if (!result) {
+            // Cancelled
+            return of(null);
+          }
 
-      for (let f of result.imagesToUpload) {
-        this.uploadImage(scanId, f, result.imageToMatch);
-      }
-    });
+          const uploads$: Observable<UploadProgress>[] = [];
+          for (let f of result.imagesToUpload) {
+            uploads$.push(this.uploadIndividualImage(scanId, f, result.imageToMatch));
+          }
+
+          return concat(...uploads$);
+        }
+      )
+    );
   }
 
-  private uploadImage(scanId: string, imageToUpload: File, imageToMatch: string) {
+  private uploadIndividualImage(scanId: string, imageToUpload: File, imageToMatch: string): Observable<UploadProgress> {
     const nameToSave = imageToUpload.name;
 
     if (nameToSave.toUpperCase().endsWith(".TIF") || nameToSave.toUpperCase().endsWith(".TIFF")) {
-      const errs = [];
+      const errs: string[] = [];
 
       // Check that the file name is not too long because of file extension. We expect it to just be TIF not TIFF
       if (!nameToSave.toUpperCase().endsWith(".TIF")) {
@@ -108,83 +113,61 @@ export class ImageUploader {
       }
 
       if (errs.length > 0) {
-        alert(`Invalid file name: "${imageToUpload.name}'\nErrors encountered:\n${errs.join("\n")}`);
-        return;
+        return throwError(() => new Error(`Invalid file name: "${imageToUpload.name}'\nErrors encountered:\n${errs.join("\n")}`));
       }
     }
 
-    this._snackService.open(`Uploading ${imageToUpload.name}...`);
-    this.setWait(0, `Checking resume for ${imageToUpload.name}...`);
+    return new Observable<UploadProgress>(observer => {
+      observer.next(new UploadProgress(imageToUpload.name, 0, 0, UploadStatus.US_UPLOADING, `Uploading ${imageToUpload.name}...`));
 
-    // Do the actual upload
-    let beamImageRef: ImageMatchTransform | undefined = undefined;
-    if (imageToMatch) {
-      // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
-      // is a matched image that _can_ be edited in this way
-      beamImageRef = ImageMatchTransform.create({
-        beamImageFileName: imageToMatch,
-        xOffset: 0,
-        yOffset: 0,
-        xScale: 1,
-        yScale: 1,
-      });
-    }
+      this._endpointsService.uploadFile(scanId, imageToUpload, "image").subscribe({
+        next: prog => {
+          // When it's complete, we don't send that out because we process it further!
+          if (prog.status == UploadStatus.US_COMPLETE) {
+            // Now import it
+            let beamImageRef: ImageMatchTransform | undefined = undefined;
+            if (imageToMatch) {
+              // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
+              // is a matched image that _can_ be edited in this way
+              beamImageRef = ImageMatchTransform.create({
+                beamImageFileName: imageToMatch,
+                xOffset: 0,
+                yOffset: 0,
+                xScale: 1,
+                yScale: 1,
+              });
+            }
+            
+            // We can now import the image
+            observer.next(new UploadProgress(
+              imageToUpload.name,
+              prog.uploadedBytes,
+              prog.uploadedPercent,
+              UploadStatus.US_PROCESSING,
+              `Processing upload ${imageToUpload.name}...`)
+            );
 
-    // First, see if we can resume it from a previous attempt
-    const imagePutResumeCheckReq = {
-      name: imageToUpload.name,
-      imageData: new Uint8Array(),
-      imageByteSize: imageToUpload.size,
-      associatedScanIds: [scanId],
-      originScanId: scanId,
-    };
-
-    this._endpointsService.uploadImage(ImageUploadHttpRequest.create(imagePutResumeCheckReq)).subscribe({
-      next: (resp: ImageUploadHttpPartialInfo) => {
-        const chunkSize = 20*1024*1024;
-        const totalChunks = Math.ceil(imageToUpload.size / chunkSize);
-
-        // Set up the observables
-        let chunks$ = this.readFileChunks(scanId, imageToUpload.name, imageToUpload, chunkSize, totalChunks, beamImageRef);
-
-        // Chop out the ones that we have sent already
-        if (resp?.bytesReceived > 0) {
-          // If it's not a round number of chunks, don't chop...
-          if (resp.bytesReceived % chunkSize != 0) {
-            console.error(`Error resuming upload, server does not have a multiple of ${chunkSize} bytes, has ${resp.bytesReceived} bytes.`);
+            this._dataService.sendImageImportRequest(ImageImportReq.create({
+              name: imageToUpload.name,
+              originScanId: scanId,
+              associatedScanIds: [scanId],
+              beamImageRef: beamImageRef,
+            })).subscribe(() => {
+              observer.complete();
+            });
           } else {
-            const skip = resp.bytesReceived / chunkSize;
-            chunks$ = chunks$.slice(skip);
+            observer.next(prog);
           }
+        },
+        error: err => {
+          observer.error(err);
+          observer.complete();
         }
-
-        // Subscribe on-by-one
-        concat(...chunks$).subscribe({
-          error: err => {
-            const errMsg = httpErrorToString(err, `Error uploading ${imageToUpload.name}`);
-            console.log(errMsg);
-
-            this._snackService.openError(errMsg);
-            this.setWait(-1);
-          },
-          complete: () => {
-            console.log(`Uploading ${imageToUpload.name} complete, ${totalChunks} x ${chunkSize} bytes`);
-
-            this._snackService.openSuccess(`Successfully uploaded ${imageToUpload.name}...`);
-            this.setWait(-1);
-          }
-        });
-      },
-      error: err => {
-        const errMsg = httpErrorToString(err, `Error determining resume position of ${imageToUpload.name}:`);
-        console.log(errMsg);
-
-        this._snackService.openError(errMsg);
-        this.setWait(-1);
-      }
+      });
     });
   }
 
+/*
   private readFileChunks(scanId: string, fileName: string, file: File, chunkSize: number, totalChunks: number, beamImageRef: ImageMatchTransform | undefined): Observable<ImageUploadHttpPartialInfo>[] {
     const chunks$: Observable<ImageUploadHttpPartialInfo>[] = [];
 
@@ -237,5 +220,5 @@ export class ImageUploader {
         console.log(`Upload OK: ${fileName} chunk ${idx}!`);
       })
     );
-  }
+  }*/
 }
