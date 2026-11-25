@@ -49,7 +49,7 @@ export class RGBUMineralRatios {
     "Fe3O4",
     "Fe2O3",
     "FeOOH",
-    "F2O3H20",
+    "Fe2O3H2O",
   ];
 
   // Values as R,G,B,U
