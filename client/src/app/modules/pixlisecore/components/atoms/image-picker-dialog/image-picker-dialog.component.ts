@@ -30,20 +30,25 @@
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from "@angular/material/dialog";
 import { catchError, from, mergeMap, Subscription, tap, timer, toArray } from "rxjs";
+import { AuthService } from "@auth0/auth0-angular";
+
 import { ScanImage, ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageDeleteReq, ImageDeleteResp, ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageListReq, ImageSetDefaultReq, ImageSetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
+
 import { AnalysisLayoutService } from "src/app/modules/pixlisecore/services/analysis-layout.service";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { makeImageTooltip } from "src/app/utils/image-details";
-import { clearSDSFileNameVersionField, getPathBase, getScanIdFromImagePath, invalidPMC, SDSFields } from "src/app/utils/utils";
-import { environment } from "src/environments/environment";
-import { ImageUploader } from "src/app/utils/image-upload";
+import { APIEndpointsService, UploadProgress, UploadStatus } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { LocalStorageService } from "../../../services/local-storage.service";
-import { AuthService } from "@auth0/auth0-angular";
+
+import { makeImageTooltip } from "src/app/utils/image-details";
+import { clearSDSFileNameVersionField, getPathBase, getScanIdFromImagePath, httpErrorToString, invalidPMC, SDSFields } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
+import { ImageUploader } from "src/app/utils/uploader/image-uploader";
+
+import { environment } from "src/environments/environment";
+
 
 export class ImageChoice {
   constructor(
@@ -570,29 +575,67 @@ export class ImagePickerDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let snackId = -1;
     const imageUploader = new ImageUploader(
-      this._snackService,
       this._endpointsService,
+      this._dataService,
       this.dialog,
-      (chunkProgress: number, details?: string) => {
-        if (chunkProgress == 0) {
-          // Create progress
-          snackId = this._snackService.openProgress(details || "");
-        } else if (chunkProgress < 0 && snackId > -1) {
-          // Finished, end display of progress
-          this._snackService.closeProgress(snackId, details || "");
-          snackId = -1;
+    );
+
+    let snackId = -1;
+    imageUploader.imageUpload(this._filterScanId, "Import Image", true).subscribe({
+      next: result => {
+        if (result === null) {
+          // dialog was cancelled
+          return;
+        }
+
+        const prog = result as UploadProgress;
+        if (prog.status == UploadStatus.US_UPLOADING) {
+          if (snackId < 0) {
+            snackId = this._snackService.openProgress(prog.message);
+          } else {
+            this._snackService.setProgress(snackId, prog.message);
+          }
+        } else if (prog.status == UploadStatus.US_PROCESSING) {
+          if (snackId > -1) {
+            this._snackService.setProgress(snackId, prog.message);
+          } else {
+            // Just show a snack
+            this._snackService.open(`Processing upload of ${prog.fileName}...`, prog.message);
+          }
+        } else if (prog.status == UploadStatus.US_ERROR) {
+          if (snackId > -1) {
+            this._snackService.closeProgress(snackId, `Failed to upload ${prog.fileName}`, prog.message, true);
+            snackId = -1;
+          } else {
+            this._snackService.openError(`Error uploading ${prog.fileName}`, prog.message);
+          }
+          
+          this.fetchImagesForScans([this._filterScanId], true);
+        //} else if (prog.status == UploadStatus.US_COMPLETE) {
+        } else {
+          if (snackId > -1) {
+            this._snackService.closeProgress(snackId, `Upload complete for ${prog.fileName}`, prog.message, false);
+            snackId = -1;
+          } else {
+            this._snackService.openSuccess(`Upload complete for ${prog.fileName}...`, prog.message);
+          }
 
           this.fetchImagesForScans([this._filterScanId], true);
-        } else {
-          // Update progress
-          this._snackService.setProgress(snackId, details || "");
+        }
+      },
+      error: err => {
+        if (snackId > -1) {
+            this._snackService.closeProgress(snackId, `Error while uploading for scan ${this._filterScanId}`, err, true);
+            snackId = -1;
+          } else {
+            this._snackService.openError(`Error while uploading image(s)`, err);
+          }
+
+          this.fetchImagesForScans([this._filterScanId], true);
         }
       }
     );
-
-    imageUploader.imageUpload(this._filterScanId, "Import Image", true);
   }
 
   onDeleteImage(imagePath: string): void {

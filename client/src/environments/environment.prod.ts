@@ -57,8 +57,7 @@ export const environment = {
   expressionCachePrefix: "exprcachev1",
   readBeamIJSwapped: true,
   comparePolygonGenerationOutput: false,
-  runExpressionsOnBackEnd: false,
-  //readAggregateSpectraFromBackEnd: false,
+  runExpressionsOnBackEnd: true,
 };
 
 /*

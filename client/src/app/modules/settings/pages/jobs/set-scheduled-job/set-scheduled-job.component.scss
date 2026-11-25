@@ -1,0 +1,54 @@
+@import "variables.scss";
+
+.set-scheduled-job-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: $sz-unit;
+  padding: $sz-double;
+
+  .header {
+    h1 {
+      font:
+        700 18px/24px Roboto,
+        monospace;
+    }
+  }
+
+  .divider {
+      margin-top: $sz-double;
+  }
+
+  table {
+    tr {
+      td:nth-child(1) {
+        font-weight: bold;
+        min-width: 100px;
+        color: $clr-gray-30;
+      }
+
+      td:nth-child(2) {
+        font-weight: bold;
+        color: $clr-gray-30;
+
+        padding: $sz-half;
+      }
+
+      .row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: $sz-unit;
+      }
+
+      mat-select {
+        width: 200px !important;
+      }
+    }
+  }
+
+  .button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}

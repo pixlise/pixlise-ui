@@ -29,10 +29,6 @@ const APP_ROUTES: Routes = [
         path: "datasets",
         loadChildren: () => import("./modules/datasets/datasets.module").then(m => m.DatasetsModule),
       },
-      {
-        path: "import",
-        loadChildren: () => import("./modules/import/import.module").then(m => m.ImportModule),
-      },
     ],
   },
   {

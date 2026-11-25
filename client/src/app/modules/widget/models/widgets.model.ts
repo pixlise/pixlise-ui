@@ -226,7 +226,7 @@ export const WIDGETS = {
     controlConfiguration: {},
   },
   "context-image2": {
-    name: "Context Image v2",
+    name: "Context Image HD",
     description: "Context Image with support for larger images and faster WebGL rendering",
     hasExpressions: true,
     widgetComponent: null,

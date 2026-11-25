@@ -45,6 +45,7 @@ import {
   doesVersionDiffer,
   makeValidFloatString,
   mimeTypeForImage,
+  getPathBase,
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation
@@ -453,7 +454,8 @@ describe("SDSFields.parseFileName", () => {
     const v = vals[c];
     it(v + "==" + exp[c], () => {
       const f = SDSFields.makeFromFileName(v);
-      expect(f.toDebugString() + " - " + f.PMC + "," + f.RTT + "," + f.SCLK + "," + f.SOL).toEqual(exp[c]);
+      expect(f).not.toBe(null);
+      expect(f!.toDebugString() + " - " + f!.PMC + "," + f!.RTT + "," + f!.SCLK + "," + f!.SOL).toEqual(exp[c]);
     });
   }
 });
@@ -596,3 +598,12 @@ describe("makeValidFloatString", () => {
     expect(makeValidFloatString("1,000")).toEqual("1.000");
   });
 });
+
+describe("getPathBase", () => {
+  it("getPathBase works", () => {
+    expect(getPathBase("path/to/file.jpg")).toEqual("file.jpg");
+    expect(getPathBase("/path/to/file.jpg")).toEqual("file.jpg");
+    expect(getPathBase("http://path/to/file.jpg")).toEqual("file.jpg");
+  });
+});
+

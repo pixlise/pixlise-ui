@@ -1,10 +1,11 @@
 import { Component, HostListener, OnDestroy, OnInit } from "@angular/core";
-import { AnalysisLayoutService } from "../../../pixlisecore/pixlisecore.module";
+import { AnalysisLayoutService, APIDataService } from "../../../pixlisecore/pixlisecore.module";
 import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration, selectDefaultScreenConfigurationForScan } from "../../models/screen-configuration.model";
 import { combineLatest, distinctUntilChanged, map, of, Subscription, switchMap } from "rxjs";
 import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActivatedRoute } from "@angular/router";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 
 
 export type ScreenConfigurationCSS = {
@@ -38,6 +39,7 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _usersService: UsersService,
+    private _dataService: APIDataService,
     private _route: ActivatedRoute
   ) {}
 
@@ -81,6 +83,22 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
                     return of(null);
                   }
                 }
+
+                // At this point, we may have a stale list of scans or something, try to get it directly from the server
+                // so we don't create the wrong screen config
+                return this._dataService.sendScanListRequest(ScanListReq.create({
+                  searchFilters: { scanId: scanIdQueryParam },
+                })).pipe(
+                  map((resp: ScanListResp) => {
+                    if (resp.scans.length == 1) {
+                      this.loadedScreenConfiguration = selectDefaultScreenConfigurationForScan(resp.scans[0]);
+                    } else {
+                      // Not found, so use the default for PIXL here
+                      this.loadedScreenConfiguration = createDefaultScreenConfiguration();
+                    }
+                    return null;
+                  })
+                );
               }
 
               // At this point we don't know what's coming, so go with the default for PIXL

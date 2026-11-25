@@ -4,11 +4,12 @@ import { APICommService } from "./apicomm.service";
 
 import { ResponseStatus, WSMessage } from "../../../generated-protos/websocket";
 import { getMessageName, WSError, WSMessageHandler, WSOustandingReq } from "./wsMessageHandler";
-import { randomString } from "src/app/utils/utils";
+import { isJobStatusActive, randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
-import { Subject, Subscription, interval } from "rxjs";
+import { Observable, Subject, Subscriber, Subscription, interval, map, throwError, timeout } from "rxjs";
 import { environment } from "src/environments/environment";
+import { JobStatus } from "src/app/generated-protos/job";
 
 const TIMEOUT_CHECK_INTERVAL_MS = 3000;
 const MESSAGE_TIMEOUT_MS = environment.wsTimeout;
@@ -34,6 +35,8 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
   // doesnt have to restart). If it overflows MAX_INT, it loops around, that's ok! We just make sure our counter
   // also restarts at MAX_INT
   private _lastMsgId = 0;
+
+  private _jobWaiters = new Map<string, Subscriber<JobStatus>[]>();
 
   protected nextMsgId() {
     this._lastMsgId++;
@@ -84,6 +87,23 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
           this.stopTimeoutChecks();
         },
       });
+
+    this.jobListUpd$.subscribe(upd => {
+        if (upd && upd.job && !isJobStatusActive(upd.job.status)) {
+          // See who's waiting for it to complete (or error)
+          const waiters = this._jobWaiters.get(upd.job.jobId);
+          if (waiters) {
+            // Notify everyone!
+            for (let waiter of waiters) {
+              waiter.next(upd.job);
+            }
+
+            // No longer waiting on this
+            this._jobWaiters.delete(upd.job.jobId);
+          }
+        }
+      }
+    );
   }
 
   private stopTimeoutChecks() {
@@ -269,5 +289,21 @@ export class APIDataService extends WSMessageHandler implements OnDestroy {
       this.outstandingRequests$.next(msg);
       this._lastOutstandingRequestInfo = msg;
     }
+  }
+
+  // Assists with listening for expression job completion
+  waitForJobCompletion(id: string): Observable<JobStatus> {
+    return new Observable<JobStatus>(observer => {
+      if (!this._jobWaiters.get(id)) {
+        this._jobWaiters.set(id, []);
+      }
+
+      const waiters = this._jobWaiters.get(id)!;
+
+      // Add a waiter for it
+      waiters.push(observer);
+    }).pipe(
+      timeout({ each: environment.luaTimeoutMs, with: () => throwError(()=>new Error(`expression job ${id} did not complete within ${environment.luaTimeoutMs/1000}sec`))})
+    );
   }
 }

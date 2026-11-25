@@ -34,6 +34,7 @@ import {
   TextFileViewingDialogData,
 } from "src/app/modules/pixlisecore/components/atoms/text-file-viewing-dialog/text-file-viewing-dialog.component";
 import { UsersService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { isJobStatusActive } from "src/app/utils/utils";
 
 const SelectQuantText = "Select a quantification job";
 
@@ -382,7 +383,7 @@ export class QuantJobsComponent implements OnInit {
     let end = Math.floor(Date.now() / 1000);
 
     // If it's completed, show how long it ran for
-    if (quant.status?.status == JobStatus_Status.COMPLETE || quant.status?.status == JobStatus_Status.ERROR) {
+    if (quant.status && !isJobStatusActive(quant.status.status)) {
       end = quant.status.endUnixTimeSec;
     }
 

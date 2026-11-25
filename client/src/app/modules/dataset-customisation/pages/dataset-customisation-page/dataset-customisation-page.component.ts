@@ -8,7 +8,7 @@ import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canv
 
 import { AnalysisLayoutService, APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { DatasetCustomisationService } from "../../services/dataset-customisation.service";
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { APIEndpointsService, UploadProgress, UploadStatus } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 
@@ -43,13 +43,13 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
 import { ColourRamp } from "src/app/utils/colours";
-import { getPathBase, isValidNumber, makeValidFloatString } from "src/app/utils/utils";
+import { getPathBase, httpErrorToString, isValidNumber, makeValidFloatString } from "src/app/utils/utils";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
 import { rgbBytesToImage } from "src/app/utils/drawing";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
-import { ImageUploader } from "src/app/utils/image-upload";
 import { ContextImageItemTransform } from "src/app/modules/pixlisecore/models/image-transform";
 import { ImageSelection } from "src/app/modules/pixlisecore/components/atoms/context-image-picker/context-image-picker.component";
+import { ImageUploader } from "src/app/utils/uploader/image-uploader";
 
 
 @Component({
@@ -370,20 +370,29 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   onAddImage(): void {
     const imageUploader = new ImageUploader(
-      this._snackService,
       this._endpointsService,
-      this.dialog,
-      (chunkProgress: number, details?: string) => {
-        this.setWait(this.waitUploadImage, chunkProgress > -1, details);
-
-        if (chunkProgress < 0) {
-          // No longer waiting, refresh images
-          this.refreshImages();
-        }
-      }
+      this._dataService,
+      this.dialog
     );
               
-    imageUploader.imageUpload(this.getScanId(), "Add Image", true);
+    imageUploader.imageUpload(this.getScanId(), "Add Image", true).subscribe({
+      next: result => {
+        if (result instanceof UploadProgress) {
+          const prog = result as UploadProgress;
+          let isActive = prog.status != UploadStatus.US_ERROR && prog.status != UploadStatus.US_COMPLETE;
+          this.setWait(this.waitUploadImage, isActive, prog.message);
+
+          if (!isActive) {
+            // No longer waiting, refresh images
+            this.refreshImages();
+          }
+        }
+      },
+      error: err => {
+        this.setWait(this.waitUploadImage, false, httpErrorToString(err, "Upload error"));
+        this._snackService.openError("Upload error", err);
+      }
+    });
   }
 
   onAdd3DPoints() {

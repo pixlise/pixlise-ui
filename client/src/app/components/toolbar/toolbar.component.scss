@@ -122,6 +122,11 @@
         white-space: pre;
       }
 
+      .upload-progress-btn {
+        margin-right: 4px;
+        white-space: pre;
+      }
+
       .changelog-btn {
         margin-right: 4px;
         white-space: pre;
@@ -388,4 +393,59 @@ user-icon {
     background: #454b50;
     border-radius: 4px;
   }
+}
+
+.upload-progress-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+
+  min-width: 400px;
+
+  .header {
+    h1 {
+      font:
+        700 18px/24px Roboto,
+        monospace;
+    }
+  }
+
+  .fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    .upload-item {
+      display: flex;
+      flex-direction: row;
+
+      justify-content: space-between;
+      align-items: center;
+      
+      padding: $sz-unit;
+      border-radius: $sz-half;
+
+      color: $clr-gray-20;
+      background-color: $clr-gray-90;
+
+      //font-size: 12px;
+    }
+  }
+
+  .button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+.upload-display {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+
+  align-items: center;
+  //padding: $sz-half;
+  //background-color: $clr-gray-80;
 }

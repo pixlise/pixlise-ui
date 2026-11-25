@@ -41,6 +41,27 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 </ng-template>
 
+<ng-template #uploadProgress>
+  <div class="upload-progress-dialog">
+    <div class="header">
+      <h1>Upload(s) In Progress</h1>
+    </div>
+    <div class="fields">
+      <div *ngFor="let p of uploadItems; let i = index;" class="upload-item">
+        <span>{{p}}</span>
+        <!-- <action-button 
+            action="delete"
+            confirmText="Are you sure you want to stop this upload?"
+            (onClick)="onStopUpload(i)"></action-button> -->
+      </div>
+    </div>
+    <div class="button-container">
+      <push-button buttonStyle="outline" (onClick)="onCloseUploadProgressDialog()">Close</push-button>
+      <!-- <push-button buttonStyle="yellow" [disabled]="newPeakPMC < 0 || newPeakEnergy <= 0" (onClick)="onAddPeak()">Add</push-button>-->
+    </div>
+  </div>
+</ng-template>
+
 <div *ngIf="isVisible" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }" aria-label="TopToolbar">
   <div class="logo-title">
     <img
@@ -150,6 +171,17 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="read-only">Read Only</span>
       </div>
       <wait-spinner *ngIf="outstandingInfo" #tooltip="matTooltip" [matTooltip]="outstandingInfo"></wait-spinner>
+
+      <push-button
+        *ngIf="uploads.length > 0"
+        class="upload-progress-btn"
+        buttonStyle="outline"
+        [customDialog]="uploadProgress" #uploadProgressBtn>
+        <div class="upload-display">
+          <span>{{uploads}}</span>
+          <wait-spinner></wait-spinner>
+        </div>
+      </push-button>
       <push-button
         title="PIXLISE Version Information"
         *ngIf="uiVersionLastCommitDate > 0"

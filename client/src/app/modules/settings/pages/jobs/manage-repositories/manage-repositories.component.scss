@@ -1,0 +1,62 @@
+@import "variables.scss";
+
+
+.dlg {
+    display: flex;
+    flex-direction: column;
+    gap: $sz-double;
+
+    padding: $sz-double;
+    border-radius: $sz-double;
+
+    span {
+        max-width: 400px;
+    }
+
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: $sz-unit;
+        justify-content: space-between;
+
+    }
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: $sz-unit;
+    }
+
+    .repo-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .repo {
+            align-items: center;
+            color: $clr-gray-10;
+            background-color: $clr-gray-70;
+            padding: $sz-double;
+
+            .name {
+                font-weight: bold;
+                font-size: 16px;
+            }
+
+            .details {
+                margin-left: $sz-unit;
+                color: $clr-gray-30;
+            }
+
+            .del-btn {
+                margin-left: $sz-unit;
+            }
+        }
+    }
+
+    .buttons {
+        display: flex;
+        flex-direction: row;
+        gap: $sz-unit;
+        justify-content: flex-end;
+    }
+}

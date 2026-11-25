@@ -28,16 +28,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import { MatDialogRef } from "@angular/material/dialog";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ScanCreateUserDefinedReq, ScanUploadReq, ScanUploadResp, ScanUploadUpd } from "src/app/generated-protos/scan-msgs";
+import { APICachedDataService, APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ScanCreateUserDefinedReq, ScanImportUpd } from "src/app/generated-protos/scan-msgs";
 
-import { httpErrorToString } from "src/app/utils/utils";
+import { httpErrorToString, isJobStatusActive } from "src/app/utils/utils";
 import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
-import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
-import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { APIEndpointsService, UploadProgress, UploadStatus } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { ScanUploader } from "src/app/utils/uploader/scan-uploader";
 
 @Component({
   standalone: false,
@@ -64,7 +64,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   mode: string = this.modeEntry;
 
   detector: string = "";
-  detectors = ["jpl-breadboard", "sbu-breadboard", "pixl-fm", "pixl-em", "user-defined"];
+  detectors: string[] = [];// We now request this from server! "jpl-breadboard", "sbu-breadboard", "pixl-fm", "pixl-em", "user-defined"];
 
   skipRows = 0;
   skipColumns = 0;
@@ -76,19 +76,24 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
     public dialogRef: MatDialogRef<boolean>,
     private _dataService: APIDataService,
-    private _endpointService: APIEndpointsService
+    private _cacheDataService: APICachedDataService,
+    private _endpointService: APIEndpointsService,
+    private _dialog: MatDialog,
+    private _snackService: SnackbarService,
   ) {
-    if (EnvConfigurationInitService.getConfig$.value!.hidePIXLDevices) {
-      this.detectors = ["user-defined"];
+    this._cacheDataService.getScanUploadFormats().subscribe(
+      resp => {
+        this.detectors = resp.formats;
 
-      // In this case, this is the only option anyway...
-      this.onChangeDetector(this.detectors[0]);
-    }
+        // Select the first detector option presented
+        this.onChangeDetector(this.detectors[0]);
+      }
+    );
   }
 
   ngOnInit(): void {
     this._subs.add(
-      this._dataService.scanUploadUpd$.subscribe((upd: ScanUploadUpd) => {
+      this._dataService.scanImportUpd$.subscribe((upd: ScanImportUpd) => {
         // If we get an update, try open logs, etc
         if (upd.status && upd.status.jobId == this._jobId) {
           // Preserve log id if we have one already and get a blank one
@@ -97,7 +102,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
           }
 
           this.setStatus(upd.status.status, upd.status.message);
-          this.complete = upd.status.status == JobStatus_Status.COMPLETE || upd.status.status == JobStatus_Status.ERROR;
+          this.complete = !isJobStatusActive(upd.status.status);
         }
       })
     );
@@ -115,12 +120,16 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     if (!this.detector) {
       return "";
     }
-
+/*
     if (this.detector.endsWith("breadboard")) {
       return "Drop spectrum zip file";
+    } else if (this.detector.indexOf("bruker") > -1) {
+    return "Drop zipped BCF file";
+
     }
 
-    return "Drop SDF-Peek output zip file";
+    return "Drop SDF-Peek output zip file";*/
+    return "Drop zip file to upload here";
   }
 
   setStatus(status: JobStatus_Status, statusMessage: string) {
@@ -175,13 +184,41 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
     this.mode = this.modeUpload;
     this.setStatus(JobStatus_Status.UNKNOWN, "Uploading dataset: " + zipName + " with job id: " + uploadId + "...");
 
+    const fileUploader = new ScanUploader(
+      this._endpointService,
+      this._dataService,
+    );
+
+    fileUploader.uploadScanZip(uploadId, this.droppedFiles[0], this.detector).subscribe(
+      resp => {
+        if (resp instanceof UploadProgress) {
+          const prog = resp as UploadProgress;
+
+          switch(prog.status) {
+          case UploadStatus.US_COMPLETE:
+            this.setStatus(JobStatus_Status.COMPLETE, prog.message);
+            break;
+          case UploadStatus.US_ERROR:
+            this.setStatus(JobStatus_Status.ERROR, prog.message);
+            break;
+          case UploadStatus.US_PROCESSING:
+            this.setStatus(JobStatus_Status.RUNNING, prog.message);
+            break;
+          case UploadStatus.US_UPLOADING:
+            this.setStatus(JobStatus_Status.STARTING, prog.message);
+            break
+          }
+        }
+      }
+    );
+/*
     // Here we trigger the dataset creation and monitor logs
     this.droppedFiles[0].arrayBuffer().then(
       (fileBytes: ArrayBuffer) => {
         this.complete = false;
 
         // First, we upload the file via HTTP
-        this._endpointService.uploadScanZip(uploadId, zipName, fileBytes).subscribe({
+        this.upl._endpointService.uploadScanZip(uploadId, zipName, fileBytes).subscribe({
           next: () => {
             // Now that it's uploaded...
             console.log(`Scan ${zipName} uploaded ${fileBytes} bytes. Starting import...`);
@@ -221,7 +258,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
       () => {
         this.setStatus(JobStatus_Status.ERROR, "Failed to read files to upload");
       }
-    );
+    );*/
   }
 
   get acceptTypes(): string {
@@ -233,7 +270,9 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
       return "Enter dataset name to create. You can add images, spectra, scan points, etc when opening the scan from the browse page.";
     } else if (this.detector == "pixl-em" || this.detector == "pixl-fm") {
       return "Zip file must contain files generated by SDF Peek - not all are required!\n\nDirectory stucture within the zip file doesn't matter. As long as:\n - sdf_raw.txt\n - *.msa histogram files\n - images (in .jpg format)\n\nare in the zip file, it will be imported.\n\nNOTE: sdf_raw.txt can contain data from multiple scans (with differing RTTs), so importing one zip may produce multiple dataset tiles in PIXLISE. You can delete the ones that are not required.\n\nTo prevent potentially overwriting an FM dataset, if an RTT being imported already exists in PIXLISE, it will be imported with _copy appended to its RTT";
-    } else if (this.detector.length > 0) {
+    } else if (this.detector == "bruker-bcf") {
+      return "Zip file must contain files one .BCF file generated by a Bruker device. Zipping is recommended because .BCF files compress well and the upload will be faster.";
+    } else if (this.detector.indexOf("breadboard") > 0) {
       // Breadboards... msa based!
       return "Zip files added must contain only .msa files, with no other files, and no directories in the zip file.";
     }
@@ -242,7 +281,8 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   }
 
   get datasetIdFieldName(): string {
-    if (this.detector == "pixl-em" || this.detector == "pixl-fm") {
+    // Comment just for searchability, we're checking if its pixl-em or pixl-fm
+    if (this.detector.startsWith("pixl-")) {
       return "RTT to import";
     }
     return "Dataset Name";

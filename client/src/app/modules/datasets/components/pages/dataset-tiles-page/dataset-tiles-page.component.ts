@@ -906,6 +906,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
                 `Scan "${scanTitle}" deleted successfully`
               );
               this.clearSelection();
+              this._analysisLayoutService.forceUpdateScanList();
             },
             error: (err) => {
               this._snackService.openError(err);
@@ -1345,7 +1346,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // TODO: we don't actually use the filtering stuff, search string needs to change for API
     // because we have multiple fields we can specify now...
     this.loading = true;
-    this._dataService.sendScanListRequest(ScanListReq.create({})).subscribe({
+    this._cachedDataService.getScanList(ScanListReq.create({}), 10).subscribe({
       next: (resp: ScanListResp) => {
         this.loading = false;
         this.errorString = "";
@@ -1707,14 +1708,20 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     //dialogConfig.data = ;
     const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
-    /* We used to re-run search, now we rely on ScanListUpd coming through
     dialogRef.afterClosed().subscribe(() => {
+      // NOTE: We used to re-run search, now we rely on ScanListUpd coming through
+      /*
       // Refresh scans in the near future, it should have appeared
       setTimeout(() => {
         this.onSearch();
       }, 2000);
+      */
+
+      // Looks like that's not enough, we have caching and other issues going on
+
+      // At this point, tell the layouts service to update its list of scans
+      this._analysisLayoutService.forceUpdateScanList();
     });
-    */
   }
 
   private spectraCount(count: number): string {

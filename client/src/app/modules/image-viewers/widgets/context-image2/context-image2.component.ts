@@ -14,7 +14,7 @@ import { TileImageLoader } from "./tile-loader";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { ImageDisplayOptions2, ImageOptions2Component, ImagePickerParams2, ImagePickerResult2 } from "./image-options2/image-options2-component/image-options2.component";
-import { isValidNumber, SentryHelper } from "src/app/utils/utils";
+import { httpErrorToString, isValidNumber, SentryHelper } from "src/app/utils/utils";
 import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
 import { ContextImageV2DataService } from "src/app/modules/pixlisecore/services/context-image-v2-data.service";
 import { CanvasMouseKeyEventHandler, ICanvasHost } from "src/app/modules/widget/components/interactive-canvas/canvas-mouse-key-event-handler";
@@ -230,12 +230,16 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
 
         // If it's our first time here... load!
         if (needInit && (!state || state.contextImage.length <= 0)) {
-          this.getDefaultImage().subscribe(
-            (resp: string) => {
-              this.load(resp).subscribe(() => {
-                this.mdl.setPanZoom(new Point(state.cameraPosition!.x, state.cameraPosition!.y), state.cameraZoom);
-                this.mdl.needsDraw$.next();
-              })
+          this.getDefaultImage().subscribe({
+              next: (resp: string) => {
+                this.load(resp).subscribe(() => {
+                  this.mdl.setPanZoom(new Point(state.cameraPosition!.x, state.cameraPosition!.y), state.cameraZoom);
+                  this.mdl.needsDraw$.next();
+                })
+              },
+              error: err => {
+                this._snackService.openError("Error retrieving default image", err);
+              }
             }
           )
           return;
@@ -318,8 +322,12 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
   }
 
   private load(imageName: string): Observable<void> {
+    this.widgetErrorMessage = "";
+
     if (!imageName) {
-      console.log(`ContextImageV2 load: image "${imageName}" not loading`)
+      this.widgetErrorMessage = `Please select an image to display!`;
+      //this.widgetErrorMessage = `ContextImageV2 load: image "${imageName}" not loading`;
+      console.error(this.widgetErrorMessage);
       return throwError(() => {});
     }
 
@@ -377,7 +385,8 @@ export class ContextImage2Component extends BaseWidgetModel implements OnInit, O
         this.isWidgetDataLoading = false;
       }),
       catchError((err) => {
-        this._snackService.openError(err);
+        this.widgetErrorMessage = httpErrorToString(err, "Error displaying image");
+        this._snackService.openError("Error displaying image", err);
         throw err;
       })
     );

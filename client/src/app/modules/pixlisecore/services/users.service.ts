@@ -53,7 +53,14 @@ export class UsersService {
           if (this.cachedUsers[userId]) {
             return of(this.cachedUsers[userId]);
           } else {
-            return of(UserInfo.create({}));
+            // User not found - save this in the cache too so we don't busy-loop sending user search request
+            // NOTE: This is usually a "special" user id, eg PIXLISEImport - log if it's something else
+            console.error(`WARNING: user service failed to find user with id: ${userId}, using dummy info`);
+
+              const dummyUser = UserInfo.create({});
+            this.cachedUsers[userId] = dummyUser;
+
+            return of(dummyUser);
           }
         }),
         catchError(err => {

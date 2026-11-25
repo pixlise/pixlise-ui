@@ -3,6 +3,11 @@
 
 .error-overlay {
     bottom: 10%;
+    max-width: 500px;
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+
     //display: block;
     z-index: 1;
     position: absolute;

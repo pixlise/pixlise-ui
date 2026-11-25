@@ -30,6 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
+  visibleInViewport
+  (visibleInViewport)="onVisibilityChange($event)"
   class="dataset-container clickable fx-start-center"
   [ngClass]="{ 'dataset-selected': isSelected || isMultiSelected }"
   (click)="onClickTileArea($event)"
@@ -41,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </ng-container>
     <ng-container *ngSwitchDefault>
-      <img [src]="tileImage" class="tile-img" />
+      <img [src]="tileImage" loading="lazy" class="tile-img" />
     </ng-container>
   </ng-container>
   <div class="title-container">

@@ -33,3 +33,7 @@
 </interactive-canvas-3d>
 
 <div *ngIf="imageDetails" class="overlay">{{imageDetails}}</div>
+
+@if (widgetErrorMessage) {
+  <div class="error-overlay">{{widgetErrorMessage}}</div>
+}

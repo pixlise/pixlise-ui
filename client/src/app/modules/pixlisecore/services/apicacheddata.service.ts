@@ -17,7 +17,7 @@ import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-p
 import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-protos/scan-entry-metadata-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
-import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp, ScanUploadFormatsReq, ScanUploadFormatsResp } from "src/app/generated-protos/scan-msgs";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
@@ -37,7 +37,7 @@ import { VariogramPoint } from "src/app/modules/scatterplots/widgets/variogram-w
 import { Image3DModelPointsReq, Image3DModelPointsResp } from "src/app/generated-protos/image-3d-model-point-msgs";
 import { ImagePyramidGetReq, ImagePyramidGetResp } from "src/app/generated-protos/image-pyramid-msgs";
 import { ImageScanEntryDisplayElementsGetReq, ImageScanEntryDisplayElementsGetResp } from "src/app/generated-protos/scan-entry-polygon-msgs";
-import { SpectrumAggregateReq, SpectrumAggregateResp, SpectrumDetectorsReq, SpectrumDetectorsResp } from "src/app/generated-protos/spectrum-msgs";
+import { SpectrumAggregateReq, SpectrumAggregateResp, SpectrumDetectorsReq, SpectrumDetectorsResp, SpectrumRangeCalcReq, SpectrumRangeCalcResp } from "src/app/generated-protos/spectrum-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -67,7 +67,7 @@ export class APICachedDataService {
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
   private _detectedDiffractionStatusReqMap = new Map<string, Observable<DiffractionPeakStatusListResp>>();
-  private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
+  private _scanListReqMap = new Map<string, [number, Observable<ScanListResp>]>();
   private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
   private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
   private _defaultImageReqMap = new Map<string, Observable<ImageGetDefaultResp>>();
@@ -84,6 +84,8 @@ export class APICachedDataService {
   private _imageScanEntryDisplayElemsReqMap = new Map<string, Observable<ImageScanEntryDisplayElementsGetResp>>();
   private _spectrumDetectorsReqMap = new Map<string, Observable<SpectrumDetectorsResp>>();
   private _spectrumAggregateReqMap = new Map<string, Observable<SpectrumAggregateResp>>();
+  private _spectrumRangeCalcReqMap = new Map<string, Observable<SpectrumRangeCalcResp>>();
+  private _scanUploadFormatsResp?: Observable<ScanUploadFormatsResp>;
 
   // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
   public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
@@ -105,12 +107,12 @@ export class APICachedDataService {
     private _memoisationService: MemoisationService,
     private _objChangeService: ObjectChangeMonitorService
   ) {
-    this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
-      next: (notificationResp: NotificationResp) => {
-        // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
-        console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
-      },
-    });
+    // this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
+    //   next: (notificationResp: NotificationResp) => {
+    //     // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+    //     console.debug(`NotificationResp contained: ${notificationResp.notification.length} items`);
+    //   },
+    // });
   }
 
   handleSysDataChangedNotification(upd: NotificationUpd) {
@@ -152,6 +154,11 @@ export class APICachedDataService {
     }
   }
 
+  clearScanListCache() {
+    this._scanListReqMap.clear();
+    this._defaultImageReqMap.clear(); // Clear all default scans because we tend to request one for each scan id
+  }
+
   private clearCacheForScanId(scanId: string) {
     // Clear all item caches relevant to this scan id
     const ids = this._scanIdCacheKeys.get(scanId);
@@ -166,6 +173,7 @@ export class APICachedDataService {
         this._scanBeamLocationReqMap.delete(id);
         this._spectrumDetectorsReqMap.delete(id);
         this._spectrumAggregateReqMap.delete(id);
+        this._spectrumRangeCalcReqMap.delete(id);
       }
     }
 
@@ -498,18 +506,35 @@ export class APICachedDataService {
     return result;
   }
 
-  getScanList(req: ScanListReq): Observable<ScanListResp> {
+  // Retrieves the given request, but if it's older than maxAge, it'll be re-requested from the back-end
+  getScanList(req: ScanListReq, maxAgeSec: number = 86400): Observable<ScanListResp> {
+    const now = Date.now();
+
     const cacheId = JSON.stringify(ScanListReq.toJSON(req));
-    let result = this._scanListReqMap.get(cacheId);
-    if (result === undefined) {
+    let cached = this._scanListReqMap.get(cacheId);
+    if (cached === undefined || ((now-cached[0])/1000 > maxAgeSec)) {
       // Have to request it!
-      result = this._dataService.sendScanListRequest(req).pipe(shareReplay(1));
+      const result = this._dataService.sendScanListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
-      this.addToCache(cacheId, "scanListReqMap", result, this._scanListReqMap);
+      const autoRemove = result.pipe(
+        catchError(err => {
+          // Remove from cache if it encountered an error
+          console.log(`Response cache cleared for ${cacheId}, type: scanListReqMap due to error: ${err}`);
+          this._scanListReqMap.delete(cacheId);
+          throw err;
+        })
+      );
+
+      cached = [now, result];
+
+      // Used to call:
+      //this.addToCache(cacheId, "scanListReqMap", cached, this._scanListReqMap);
+      // But now that we're storing time stamps with it, we define it here:
+      this._scanListReqMap.set(cacheId, [now, autoRemove]);
     }
 
-    return result;
+    return cached[1];
   }
 
   getDetectorConfig(req: DetectorConfigReq): Observable<DetectorConfigResp> {
@@ -761,6 +786,41 @@ export class APICachedDataService {
       // Add it to the map too so a subsequent request will get this
       this.addToCache(cacheId, "spectrumAggregateReqMap", result, this._spectrumAggregateReqMap);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getSpectrumRangeWithOp(req: SpectrumRangeCalcReq): Observable<SpectrumRangeCalcResp> {
+    const cacheId = JSON.stringify(SpectrumRangeCalcReq.toJSON(req));
+    let result = this._spectrumRangeCalcReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendSpectrumRangeCalcRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this.addToCache(cacheId, "getSpectrumRangeWithOp", result, this._spectrumRangeCalcReqMap);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getScanUploadFormats(): Observable<ScanUploadFormatsResp> {
+    let result = this._scanUploadFormatsResp;
+
+    if (result === undefined) {
+      const req = ScanUploadFormatsReq.create({});
+      result = this._dataService.sendScanUploadFormatsRequest(req).pipe(shareReplay(1));
+
+      this._scanUploadFormatsResp = result.pipe(
+        catchError(err => {
+          // Remove from cache if it encountered an error
+          console.log(`Response cache cleared for ScanUploadFormatsResp due to: ${err}`);
+          this._scanUploadFormatsResp = undefined;
+          throw err;
+        })
+      );
     }
 
     return result;

@@ -219,6 +219,14 @@ export class AnalysisLayoutService implements OnDestroy {
     this._subs.unsubscribe();
   }
 
+  forceUpdateScanList() {
+    // Tell cache service to invalidate scan listing caches
+    // because this new scan should appear in any future scan listing
+    this._cachedDataService.clearScanListCache();
+
+    this.fetchAvailableScans();
+  }
+
   get isMapsPage(): boolean {
     let strippedURL = this._router.url.split("?")[0];
     return strippedURL.endsWith("/datasets/maps");
@@ -341,7 +349,7 @@ export class AnalysisLayoutService implements OnDestroy {
     return image.imagePath.split("/").pop() || "";
   }
 
-  fetchAvailableScans() {
+  private fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
     });

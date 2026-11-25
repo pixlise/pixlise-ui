@@ -1,0 +1,59 @@
+<div class="page">
+    <div class="list-pane">
+        <div class="top-tabs">
+            <div class="tab clickable" [ngClass]="{'selected': !showScheduledJobs}" (click)="onTabActivePastJobs()">
+                <span>Active/Past Jobs</span>
+                @if (activeJobs) {
+                    <wait-spinner></wait-spinner>
+                }
+            </div>
+            <div class="tab clickable" [ngClass]="{'selected': showScheduledJobs}" (click)="onTabScheduledJobs()">Scheduled Jobs</div>
+        </div>
+        @if (showScheduledJobs) {
+            <scheduled-job-list
+                [selectedScheduledJobId]="selectedScheduledJob?.id || ''"
+                (onUpdateScheduledJob)="onUpdateScheduledJob($event)"
+                (onDeleteScheduledJob)="onDeleteScheduledJob($event)"
+                (onSelectScheduledJob)="onSelectScheduledJob($event)"></scheduled-job-list>
+        } @else {
+            <job-list
+                [selectedJobId]="selectedJob?.jobId || ''"
+                (onActiveJobs)="onActiveJobs($event)"
+                (onUpdateSelectJob)="onUpdateSelectJob($event)"
+                (onSelectJob)="onSelectJob($event)"></job-list>
+        }
+    </div>
+    <div class="info-pane">
+        @if (selectedJob) {
+            <general-job-view [job]="selectedJob"/>
+            @if (isQuantJob(selectedJob)) {
+                <quant-job-view
+                    [job]="selectedJob"
+                    [config]="selectedJobConfig"
+                    [quantSummary]="selectedJobQuantSummary">
+                </quant-job-view>
+            } @else if (isExpressionJob(selectedJob)) {
+                <expression-job-view
+                    [job]="selectedJob"
+                    [config]="selectedJobConfig">
+                </expression-job-view>
+            }
+
+            @if (selectedJobConfigError) {
+                <div class="req-error">Job Config Error: {{selectedJobConfigError}}</div>
+            }
+            @if (selectedJobQuantSummaryError) {
+                <div class="req-error">Quant Summary Error: {{selectedJobQuantSummaryError}}</div>
+            }
+        } @else if (selectedScheduledJob) {
+            <scheduled-job-view
+                [job]="selectedScheduledJob">
+            <!-- (onEdit)="onEditScheduledJob($event)"
+                (onDelete)="onDeleteScheduledJob($event)" -->
+            <!-- (onRunJob)="onRunScheduledJob($event)" -->
+            </scheduled-job-view>
+        } @else {
+            <div>Select a job!</div>
+        }
+    </div>
+</div>

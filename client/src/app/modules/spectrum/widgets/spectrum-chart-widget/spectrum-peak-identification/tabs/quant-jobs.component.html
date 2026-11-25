@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="left-panel">
         <cdk-virtual-scroll-viewport *ngIf="jobs.length > 0" [itemSize]="34" class="jobs-viewport">
             <quant-job-item
-                *ngFor="let job of jobs"
+                *cdkVirtualFor="let job of jobs"
                 [job]="job"
                 [selected]="job.jobId === selectedQuantId"
                 (click)="onSelectQuant(job.jobId)">

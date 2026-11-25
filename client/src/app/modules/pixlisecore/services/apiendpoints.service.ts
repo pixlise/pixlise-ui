@@ -1,17 +1,35 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, catchError, from, map, mergeMap, of, shareReplay, switchMap, throwError } from "rxjs";
+import { Observable, Observer, catchError, concat, concatAll, forkJoin, from, map, mergeMap, of, shareReplay, switchMap, tap, throwError } from "rxjs";
 import { RGBUImage, RGBUImageGenerated } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { arrayBufferToImageDataURL, mimeTypeForImage } from "src/app/utils/utils";
-import { ImageUploadHttpPartialInfo, ImageUploadHttpRequest } from "src/app/generated-protos/image-msgs";
 import { CachedImageItem, CachedRGBUImageItem } from "../models/local-storage-db";
 import { ReviewerMagicLinkLoginReq, ReviewerMagicLinkLoginResp } from "../../../generated-protos/user-management-msgs";
+import { UploadHttpResponseBody } from "src/app/generated-protos/scan-msgs";
+
+import * as _m0 from "protobufjs/minimal";
 
 const DefaultMaxTIFImageCacheAgeSec = 60 * 60 * 2;
 const DefaultMaxCachedTIFImageSizeBytes = 1024 * 1024 * 15;
+
+export enum UploadStatus {
+  US_UPLOADING,
+  US_PROCESSING,
+  US_COMPLETE,
+  US_ERROR
+}
+export class UploadProgress {
+  constructor(
+    public fileName: string,
+    public uploadedBytes: number,
+    public uploadedPercent: number,
+    public status: UploadStatus,
+    public message: string)
+  {}
+}
 
 @Injectable({
   providedIn: "root",
@@ -161,6 +179,10 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getImage(tiffPreviewKey)).pipe(
       switchMap(imageData => {
+        if (!imageData) {
+          throw new Error(`No image data returned for ${imagePath}`);
+        }
+
         if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return of(imageData.data);
         } else {
@@ -200,6 +222,10 @@ export class APIEndpointsService {
 
     return from(this.localStorageService.getRGBUImage(apiUrl)).pipe(
       switchMap(imageData => {
+        if (!imageData) {
+          throw new Error(`No image data returned for ${imagePath}`);
+        }
+
         if (this.isValidLocallyCachedImage(imageData, maxAgeSec)) {
           return RGBUImage.readImage(imageData.data, imagePath);
         } else {
@@ -236,35 +262,190 @@ export class APIEndpointsService {
   }
 
   public static getImageURL(imagePath: string): string {
-    const apiUrl = APIPaths.getWithHost(APIPaths.api_imagedownload + imagePath);
-    return apiUrl;
+    return APIPaths.getFileNameCorrectedURL(APIPaths.api_imagedownload, imagePath);
   }
 
-  uploadScanZip(scanId: string, zipName: string, imageData: ArrayBuffer): Observable<void> {
+  uploadFile(scanId: string, f: File, intent: string): Observable<UploadProgress> {
+    return new Observable<UploadProgress>(observer => {
+      observer.next(new UploadProgress(f.name, 0, 0, UploadStatus.US_UPLOADING, `Checking where to start ${f.name} upload...`));
+
+      this.resumeCheck(scanId, f.name, f.size, intent).subscribe({
+        next: (resumeResp: UploadHttpResponseBody) => {
+          const chunkSize = 20*1024*1024;
+
+          const bytesReceived = resumeResp.bytesReceived || 0;
+          const completed = resumeResp.completed || false;
+
+          if (completed) {
+            observer.next(new UploadProgress(
+              f.name,
+              bytesReceived,
+              bytesReceived / f.size * 100,
+              UploadStatus.US_COMPLETE,
+              `${f.name} is already uploaded...`
+            ));
+
+            observer.complete();
+            return;
+          }
+
+          // Start uploading:
+
+          // If it's not a round number of chunks, don't chop...
+          if (bytesReceived % chunkSize != 0) {
+            const err = `Error resuming upload, server does not have a multiple of ${chunkSize} bytes, has ${bytesReceived} bytes.`;
+            console.error(err);
+
+            observer.error(new UploadProgress(
+              f.name,
+              bytesReceived,
+              bytesReceived / f.size * 100,
+              UploadStatus.US_ERROR,
+              err
+            ));
+
+            observer.complete();
+            return;
+          }
+
+          // Skip to the upload start position
+          const chunkUploads$: Observable<void>[] = [];
+
+          for (let pos = bytesReceived; pos < f.size; pos += chunkSize) {
+            const chunkEnd = Math.min(pos + chunkSize, f.size);
+
+            // Read chunks from the file...
+            // Async wait for the read to finish
+            const chunkRead$ = this.readAndSendFileChunk(scanId, f, pos, chunkEnd, intent, observer);
+
+            chunkUploads$.push(chunkRead$);
+          }
+
+          // Run all the above stuff
+          concat(...chunkUploads$).subscribe({
+            error: err => {
+              observer.error(err);
+              observer.complete();
+            },
+            complete: () => {
+              observer.complete();
+            }
+          });
+        },
+        error: err => {
+          observer.error(err);
+          observer.complete();
+        }
+      })
+    });
+  }
+
+  private readAndSendFileChunk(
+    scanId: string,
+    f: File,
+    pos: number,
+    chunkEnd: number,
+    intent: string,
+    observer: Observer<UploadProgress>): Observable<void>
+  {
+    return from(new Promise((resolve, reject) => {
+      // Read this chunk - this doesn't SEEM to load the entire file into RAM...
+      // but who knows with different implementations of browsers... :(
+      const chunk = f.slice(pos, chunkEnd);
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        return resolve(reader.result);
+      };
+      reader.onerror = reject;
+
+      reader.readAsArrayBuffer(chunk);
+    })).pipe(
+      switchMap(chunk => {
+        const percent = pos / f.size * 100;
+        observer.next(new UploadProgress(
+          f.name,
+          pos,
+          percent,
+          UploadStatus.US_UPLOADING,
+          `${f.name} uploaded ${percent.toFixed(1)} %`
+        ));
+
+        return this.uploadFileChunk(scanId, f.name, f.size, intent, pos, chunk as Uint8Array).pipe(
+          map(uploadResp => {
+            chunk = null; // Hopefully forces it to be freed?
+
+            if (uploadResp?.completed) {
+              observer.next(new UploadProgress(
+                f.name,
+                uploadResp?.bytesReceived || f.size,
+                100,
+                UploadStatus.US_COMPLETE,
+                `Uploaded ${f.name}...`
+              ));
+            }
+          })
+        );
+      })
+    );
+  }
+
+  private static Q_SCAN_ID = "scan";
+  private static Q_FILENAME = "filename";
+  private static Q_INTENT = "intent";
+  private static Q_TOTAL_BYTES = "totalBytes";
+  private static Q_WRITE_POS = "writePos";
+
+  private resumeCheck(scanId: string, fileName: string, fileSizeBytes: number, intent: string) {
     const httpOptions = {
       headers: new HttpHeaders({
         "Content-Type": "application/octet-stream",
       }),
-      params: new HttpParams().set("scan", scanId).set("filename", zipName),
+      responseType: "arraybuffer" as "json",
+      params: new HttpParams().
+        set(APIEndpointsService.Q_SCAN_ID, scanId).
+        set(APIEndpointsService.Q_FILENAME, fileName).
+        set(APIEndpointsService.Q_TOTAL_BYTES, fileSizeBytes).
+        set(APIEndpointsService.Q_WRITE_POS, 0).
+        set(APIEndpointsService.Q_INTENT, intent)
     };
 
-    const apiUrl = APIPaths.getWithHost(APIPaths.api_scan);
-    return this.http.put<void>(apiUrl, imageData, httpOptions);
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_file);
+    return this.http.put<ArrayBuffer>(apiUrl, null, httpOptions).pipe(
+      map(resp => {
+        return this.readBodyAsHttpResponse(resp);
+      })
+    );
   }
 
-  uploadImage(req: ImageUploadHttpRequest): Observable<ImageUploadHttpPartialInfo> {
-    const writer = ImageUploadHttpRequest.encode(req);
-    const bytes = writer.finish();
-    const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  private readBodyAsHttpResponse(body: ArrayBuffer): UploadHttpResponseBody {
+    const bodyStr: string = new TextDecoder().decode(body);
+    const bodyJSON = JSON.parse(bodyStr);
+    return UploadHttpResponseBody.fromJSON(bodyJSON);
+  }
+
+  private uploadFileChunk(scanId: string, fileName: string, fileSizeBytes: number, intent: string, writePos: number, data: Uint8Array) {
+    const sendbuf = data.slice(data.byteOffset||0, (data.byteOffset||0) + data.byteLength);
 
     const httpOptions = {
       headers: new HttpHeaders({
         "Content-Type": "application/octet-stream",
       }),
+      responseType: "arraybuffer" as "json",
+      params: new HttpParams().
+        set(APIEndpointsService.Q_SCAN_ID, scanId).
+        set(APIEndpointsService.Q_FILENAME, fileName).
+        set(APIEndpointsService.Q_TOTAL_BYTES, fileSizeBytes).
+        set(APIEndpointsService.Q_WRITE_POS, writePos).
+        set(APIEndpointsService.Q_INTENT, intent)
     };
 
-    const apiUrl = APIPaths.getWithHost(APIPaths.api_images);
-    return this.http.put<ImageUploadHttpPartialInfo>(apiUrl, sendbuf, httpOptions);
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_file);
+    return this.http.put<ArrayBuffer>(apiUrl, sendbuf, httpOptions).pipe(
+      map(resp => {
+        return this.readBodyAsHttpResponse(resp);
+      })
+    );
   }
 
   private isValidLocallyCachedImage(imageData: CachedImageItem | CachedRGBUImageItem | undefined, maxAgeSec: number): boolean {
@@ -292,6 +473,9 @@ export class APIEndpointsService {
 
   magicLinkLogin(magiclinkReq: ReviewerMagicLinkLoginReq): Observable<ReviewerMagicLinkLoginResp> {
     const apiUrl = APIPaths.getWithHost(APIPaths.api_magiclink);
+
+    // NOTE: The only reason this works is because all fields in ReviewerMagicLinkLoginResp are strings.
+    //       We're supposed to read a string and use proto to decode it properly!
     return this.http.post<ReviewerMagicLinkLoginResp>(apiUrl, magiclinkReq);
   }
 }
