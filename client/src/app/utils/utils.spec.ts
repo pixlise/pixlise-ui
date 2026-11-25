@@ -454,7 +454,8 @@ describe("SDSFields.parseFileName", () => {
     const v = vals[c];
     it(v + "==" + exp[c], () => {
       const f = SDSFields.makeFromFileName(v);
-      expect(f.toDebugString() + " - " + f.PMC + "," + f.RTT + "," + f.SCLK + "," + f.SOL).toEqual(exp[c]);
+      expect(f).not.toBe(null);
+      expect(f!.toDebugString() + " - " + f!.PMC + "," + f!.RTT + "," + f!.SCLK + "," + f!.SOL).toEqual(exp[c]);
     });
   }
 });
